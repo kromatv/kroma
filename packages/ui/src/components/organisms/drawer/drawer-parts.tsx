@@ -97,7 +97,9 @@ type DrawerCloseProps = Omit<IconButtonProps, 'icon' | 'label' | 'onPress' | 'ch
 function Close({ variant = 'ghost', ...button }: Readonly<DrawerCloseProps>) {
   const { onClose } = useShell();
   const t = useTDefault();
-  if (!onClose) return null;
+  if (!onClose) {
+    return null;
+  }
   return (
     <IconButton
       {...button}

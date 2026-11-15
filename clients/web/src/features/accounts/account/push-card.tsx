@@ -29,8 +29,11 @@ export function PushCard() {
     setError(null);
     setTested(null);
     try {
-      if (subscribed) await disablePush(webPush, webRuntime.client);
-      else await enablePush(webPush, webRuntime.client);
+      if (subscribed) {
+        await disablePush(webPush, webRuntime.client);
+      } else {
+        await enablePush(webPush, webRuntime.client);
+      }
       await qc.invalidateQueries({ queryKey: webRuntime.queries.userQueries.pushKey().queryKey });
     } catch (e) {
       const reason = blockerOf(e);

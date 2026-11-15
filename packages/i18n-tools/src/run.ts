@@ -77,6 +77,8 @@ export async function run(argv: readonly string[], context: Context): Promise<nu
     return 0;
   }
   const command = COMMANDS[name];
-  if (!command) throw new Error(`unknown command '${name}'\n\n${usage(context.bin)}`);
+  if (!command) {
+    throw new Error(`unknown command '${name}'\n\n${usage(context.bin)}`);
+  }
   return command(context, rest);
 }

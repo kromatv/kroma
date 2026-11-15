@@ -6,8 +6,12 @@ function abbreviations(): Set<string> {
   const known = new Set<string>();
   for (const locale of SUPPORTED_LOCALES) {
     const copy = translate(locale, ABBREVIATIONS);
-    if (copy === ABBREVIATIONS) continue;
-    for (const word of copy.split(',')) known.add(word.trim().toLowerCase());
+    if (copy === ABBREVIATIONS) {
+      continue;
+    }
+    for (const word of copy.split(',')) {
+      known.add(word.trim().toLowerCase());
+    }
   }
   return known;
 }
@@ -21,13 +25,17 @@ function isLetter(char: string): boolean {
 function lastWord(text: string): string {
   const letters = [...text];
   let from = letters.length;
-  while (from > 0 && isLetter(letters[from - 1] ?? '')) from -= 1;
+  while (from > 0 && isLetter(letters[from - 1] ?? '')) {
+    from -= 1;
+  }
   return letters.slice(from).join('');
 }
 
 function endsOnAbbreviation(sentence: string, known: Set<string>): boolean {
   const word = lastWord(sentence);
-  if (!word) return false;
+  if (!word) {
+    return false;
+  }
   return (word.length === 1 && word === word.toUpperCase()) || known.has(word.toLowerCase());
 }
 
@@ -40,8 +48,12 @@ function endOfSentence(text: string, at: number): number {
   const wide = WIDE_STOPS.includes(text[at] ?? '');
   const stops = wide ? WIDE_STOPS : LATIN_STOPS;
   let end = at;
-  while (end < text.length && stops.includes(text[end] ?? '')) end += 1;
-  while (end < text.length && CLOSERS.includes(text[end] ?? '')) end += 1;
+  while (end < text.length && stops.includes(text[end] ?? '')) {
+    end += 1;
+  }
+  while (end < text.length && CLOSERS.includes(text[end] ?? '')) {
+    end += 1;
+  }
   const followed = end < text.length && SPACE.test(text[end] ?? '');
   return wide || followed ? end : -1;
 }
@@ -65,7 +77,9 @@ function byPunctuation(text: string): string[] {
     at = end;
   }
   const rest = text.slice(from).trim();
-  if (rest) sentences.push(rest);
+  if (rest) {
+    sentences.push(rest);
+  }
   return sentences;
 }
 
@@ -82,11 +96,15 @@ type SegmenterHost = {
 
 function sentencesOf(text: string, locale?: string): string[] {
   const { Segmenter } = Intl as unknown as SegmenterHost;
-  if (!Segmenter) return byPunctuation(text);
+  if (!Segmenter) {
+    return byPunctuation(text);
+  }
   const sentences: string[] = [];
   for (const { segment } of new Segmenter(locale, { granularity: 'sentence' }).segment(text)) {
     const sentence = segment.trim();
-    if (sentence) sentences.push(sentence);
+    if (sentence) {
+      sentences.push(sentence);
+    }
   }
   return sentences;
 }
@@ -109,12 +127,16 @@ export function synopsisLead(
   locale?: string,
 ): string {
   const text = (synopsis ?? '').replace(/\s+/g, ' ').trim();
-  if (widthOf(text) <= budget) return text;
+  if (widthOf(text) <= budget) {
+    return text;
+  }
   const [first = '', ...more] = sentencesOf(text, locale);
   let lead = first;
   for (const sentence of more) {
     const joined = `${lead} ${sentence}`;
-    if (widthOf(joined) > budget) break;
+    if (widthOf(joined) > budget) {
+      break;
+    }
     lead = joined;
   }
   return lead;

@@ -107,7 +107,9 @@ describe('an open stream', () => {
   it('stops draining at the byte limit', async () => {
     const { stream } = await opened();
 
-    for (let chunk = 0; chunk < 3; chunk += 1) stream.onData(randomBytes(4));
+    for (let chunk = 0; chunk < 3; chunk += 1) {
+      stream.onData(randomBytes(4));
+    }
 
     expect(await stream.drain({ limit: 8, timeoutMs: PATIENT_MS })).toHaveLength(8);
   });

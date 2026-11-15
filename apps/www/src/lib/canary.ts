@@ -5,8 +5,8 @@ import { z } from 'zod';
 // Same origin: `/api/*` is the one path the site's Worker answers.
 
 const File = z.object({
-  target: z.string().min(1),
-  label: z.string().min(1),
+  target: z.string().nonempty(),
+  label: z.string().nonempty(),
   contains: z.array(z.string()).default([]),
   bytes: z.number().int().nonnegative(),
   // No protocol pin: this is the site's own origin, which is http on localhost.
@@ -15,7 +15,7 @@ const File = z.object({
 
 const Build = z.object({
   version: z.string().nullish(),
-  commit: z.object({ short: z.string().min(1), title: z.string().default('') }),
+  commit: z.object({ short: z.string().nonempty(), title: z.string().default('') }),
   run: z.object({ url: z.url({ protocol: /^https$/ }), finishedAt: z.string() }),
   files: z.array(File).min(1),
 });
@@ -43,10 +43,14 @@ export async function fetchCanary(limit = 20): Promise<CanaryBuild[]> {
     const res = await fetch(`${INDEX_URL}?limit=${limit}`, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      return [];
+    }
 
     const body = await res.text();
-    if (body.length > MAX_BYTES) return [];
+    if (body.length > MAX_BYTES) {
+      return [];
+    }
 
     const parsed = Canary.safeParse(JSON.parse(body));
     return parsed.success ? parsed.data.builds : [];

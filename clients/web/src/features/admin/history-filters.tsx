@@ -47,7 +47,9 @@ function IdFilter<Id extends string>({
       return;
     }
     const picked = options.find((option) => option.id === next);
-    if (picked) onPick(picked.id);
+    if (picked) {
+      onPick(picked.id);
+    }
   };
   return (
     <Select.Root label={label} value={value ?? ANY_ID} onValueChange={pick}>

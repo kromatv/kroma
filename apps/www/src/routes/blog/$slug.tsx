@@ -12,13 +12,17 @@ export const Route = createFileRoute('/blog/$slug')({
   // function and cannot cross the SSR→client boundary.
   loader: ({ params }) => {
     const post = getPost(params.slug, getLocale());
-    if (!post) throw notFound();
+    if (!post) {
+      throw notFound();
+    }
     const { Component: _Component, ...meta } = post;
     return { meta };
   },
   head: ({ loaderData }) => {
     const meta = loaderData?.meta;
-    if (!meta) return {};
+    if (!meta) {
+      return {};
+    }
     return seo({
       lang: getLocale(),
       title: meta.title,
@@ -35,7 +39,9 @@ function BlogPost() {
   const slug = useParams({ strict: false }).slug;
   const lang = useLang();
   const post = slug ? getPost(slug, lang) : undefined;
-  if (!post) return null;
+  if (!post) {
+    return null;
+  }
   const { Component } = post;
 
   return (

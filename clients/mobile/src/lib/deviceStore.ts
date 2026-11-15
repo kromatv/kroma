@@ -13,9 +13,13 @@ const STORED = z.record(z.string(), z.string());
 function open(): File | null {
   try {
     const dir = new Directory(Paths.document, 'kroma');
-    if (!dir.exists) dir.create({ intermediates: true });
+    if (!dir.exists) {
+      dir.create({ intermediates: true });
+    }
     const file = new File(dir, FILE_NAME);
-    if (!file.exists) file.write('{}');
+    if (!file.exists) {
+      file.writeSync('{}');
+    }
     return file;
   } catch {
     return null;
@@ -42,7 +46,7 @@ class DeviceStore implements SessionStorage {
 
   private flush(): void {
     try {
-      this.file?.write(JSON.stringify(this.data));
+      this.file?.writeSync(JSON.stringify(this.data));
     } catch (cause) {
       console.warn('[kroma] preference store write failed:', cause);
     }
@@ -50,7 +54,9 @@ class DeviceStore implements SessionStorage {
 }
 
 function read(file: File | null): Record<string, string> {
-  if (!file) return {};
+  if (!file) {
+    return {};
+  }
   try {
     const parsed = STORED.safeParse(JSON.parse(file.textSync()));
     return parsed.success ? parsed.data : {};

@@ -81,8 +81,12 @@ export class AdbStream {
 
   async read(): Promise<Buffer | null> {
     while (this.chunks.length === 0) {
-      if (this.failure) throw this.failure;
-      if (this.ended) return null;
+      if (this.failure) {
+        throw this.failure;
+      }
+      if (this.ended) {
+        return null;
+      }
       await new Promise<void>((resolve) => {
         this.readable = resolve;
       });
@@ -95,12 +99,16 @@ export class AdbStream {
     let have = 0;
     while (have < length) {
       const chunk = await this.read();
-      if (!chunk) throw new Error('the TV closed the stream early');
+      if (!chunk) {
+        throw new Error('the TV closed the stream early');
+      }
       parts.push(chunk);
       have += chunk.length;
     }
     const all = Buffer.concat(parts);
-    if (all.length > length) this.chunks.unshift(all.subarray(length));
+    if (all.length > length) {
+      this.chunks.unshift(all.subarray(length));
+    }
     return all.subarray(0, length);
   }
 
@@ -109,21 +117,29 @@ export class AdbStream {
     let have = 0;
     for (let chunk = await this.read(); chunk; chunk = await this.read()) {
       have += chunk.length;
-      if (have > limit) throw new Error('the TV answered far more than expected');
+      if (have > limit) {
+        throw new Error('the TV answered far more than expected');
+      }
       parts.push(chunk);
     }
     return Buffer.concat(parts);
   }
 
   close(): void {
-    if (this.ended || this.remoteId === 0) return;
+    if (this.ended || this.remoteId === 0) {
+      return;
+    }
     this.ended = true;
     this.sender.close(this.localId, this.remoteId);
   }
 
   private writeChunk(chunk: Buffer): Promise<void> {
-    if (this.failure) return Promise.reject(this.failure);
-    if (this.ended) return Promise.reject(new Error('the TV closed the stream'));
+    if (this.failure) {
+      return Promise.reject(this.failure);
+    }
+    if (this.ended) {
+      return Promise.reject(new Error('the TV closed the stream'));
+    }
     return new Promise((resolve, reject) => {
       this.acked = { resolve, reject };
       this.sender.write(this.localId, this.remoteId, chunk);

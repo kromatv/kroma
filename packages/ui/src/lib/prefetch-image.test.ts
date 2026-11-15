@@ -15,7 +15,9 @@ function lastImage(): HTMLImageElement {
   const create = document.createElement.bind(document);
   vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
     const el = create(tag);
-    if (el instanceof HTMLImageElement) created.push(el);
+    if (el instanceof HTMLImageElement) {
+      created.push(el);
+    }
     return el;
   });
   return new Proxy({} as HTMLImageElement, {

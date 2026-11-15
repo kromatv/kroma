@@ -17,7 +17,9 @@ afterEach(cleanup);
 
 function only(container: HTMLElement, selector: string): HTMLElement & SVGElement {
   const el = container.querySelector(selector);
-  if (!el) throw new Error(`no ${selector} was rendered`);
+  if (!el) {
+    throw new Error(`no ${selector} was rendered`);
+  }
   return el as HTMLElement & SVGElement;
 }
 

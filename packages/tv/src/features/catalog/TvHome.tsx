@@ -71,9 +71,13 @@ export function TvHome() {
 
   const rows = useMemo<ReactNode[]>(() => {
     const drawn: ReactNode[] = [];
-    if (continueItems.length) drawn.push(<ContinueRail items={continueItems} onHold={hold} />);
+    if (continueItems.length) {
+      drawn.push(<ContinueRail items={continueItems} onHold={hold} />);
+    }
     for (const section of sections) {
-      if (section.layout === 'hero' || section.items.length === 0) continue;
+      if (section.layout === 'hero' || section.items.length === 0) {
+        continue;
+      }
       drawn.push(<HomeSection section={section} onHold={hold} />);
     }
     return drawn;

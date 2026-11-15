@@ -84,8 +84,12 @@ function ToastCard({
 }
 
 function wellTone(tone: ToastOptions['tone']): ColorToken {
-  if (tone === 'success') return 'success';
-  if (tone === 'accent') return 'accent';
+  if (tone === 'success') {
+    return 'success';
+  }
+  if (tone === 'accent') {
+    return 'accent';
+  }
   return 'text';
 }
 

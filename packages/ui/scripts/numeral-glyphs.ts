@@ -43,7 +43,9 @@ function tablesOf(font: DataView): Map<string, number> {
 
 function table(tables: Map<string, number>, tag: string): number {
   const at = tables.get(tag);
-  if (at === undefined) throw new Error(`${FACE} has no ${tag} table`);
+  if (at === undefined) {
+    throw new Error(`${FACE} has no ${tag} table`);
+  }
   return at;
 }
 
@@ -54,12 +56,18 @@ function glyphInSubtable(font: DataView, sub: number, code: number): number | un
   const deltas = starts + segments * 2;
   const offsets = deltas + segments * 2;
   for (let s = 0; s < segments; s += 1) {
-    if (code > font.getUint16(ends + s * 2)) continue;
+    if (code > font.getUint16(ends + s * 2)) {
+      continue;
+    }
     const start = font.getUint16(starts + s * 2);
-    if (code < start) return undefined;
+    if (code < start) {
+      return undefined;
+    }
     const delta = font.getInt16(deltas + s * 2);
     const offset = font.getUint16(offsets + s * 2);
-    if (offset === 0) return (code + delta) & 0xffff;
+    if (offset === 0) {
+      return (code + delta) & 0xffff;
+    }
     const id = font.getUint16(offsets + s * 2 + offset + (code - start) * 2);
     return id === 0 ? 0 : (id + delta) & 0xffff;
   }
@@ -70,9 +78,13 @@ function glyphIdOf(font: DataView, cmap: number, code: number): number {
   const subtables = font.getUint16(cmap + 2);
   for (let i = 0; i < subtables; i += 1) {
     const sub = cmap + font.getUint32(cmap + 4 + i * 8 + 4);
-    if (font.getUint16(sub) !== 4) continue;
+    if (font.getUint16(sub) !== 4) {
+      continue;
+    }
     const glyph = glyphInSubtable(font, sub, code);
-    if (glyph !== undefined) return glyph;
+    if (glyph !== undefined) {
+      return glyph;
+    }
   }
   throw new Error(`${FACE} maps no glyph to U+${code.toString(16)}`);
 }
@@ -83,10 +95,14 @@ function outlineOf(font: DataView, tables: Map<string, number>, glyph: number): 
   const offset = long ? font.getUint32(loca + glyph * 4) : font.getUint16(loca + glyph * 2) * 2;
   const at = table(tables, 'glyf') + offset;
   const contourCount = font.getInt16(at);
-  if (contourCount < 0) throw new Error(`glyph ${glyph} is a composite, which a digit is not`);
+  if (contourCount < 0) {
+    throw new Error(`glyph ${glyph} is a composite, which a digit is not`);
+  }
 
   const ends: number[] = [];
-  for (let c = 0; c < contourCount; c += 1) ends.push(font.getUint16(at + 10 + c * 2));
+  for (let c = 0; c < contourCount; c += 1) {
+    ends.push(font.getUint16(at + 10 + c * 2));
+  }
   const pointCount = (ends.at(-1) ?? -1) + 1;
   let cursor = at + 10 + contourCount * 2;
   cursor += 2 + font.getUint16(cursor);
@@ -96,8 +112,12 @@ function outlineOf(font: DataView, tables: Map<string, number>, glyph: number): 
     const flag = font.getUint8(cursor);
     cursor += 1;
     const repeats = flag & REPEAT ? font.getUint8(cursor) : 0;
-    if (flag & REPEAT) cursor += 1;
-    for (let r = 0; r <= repeats; r += 1) flags.push(flag);
+    if (flag & REPEAT) {
+      cursor += 1;
+    }
+    for (let r = 0; r <= repeats; r += 1) {
+      flags.push(flag);
+    }
   }
 
   const axis = (short: number, sameOrPositive: number): number[] => {
@@ -146,17 +166,23 @@ const between = (a: Point, b: Point): Point => ({
 
 function ringOf(contour: Point[]): Point[] {
   const start = contour.findIndex((point) => point.on);
-  if (start !== -1) return [...contour.slice(start), ...contour.slice(0, start)];
+  if (start !== -1) {
+    return [...contour.slice(start), ...contour.slice(0, start)];
+  }
   const last = contour.at(-1);
   const head = contour[0];
-  if (!last || !head) return [];
+  if (!last || !head) {
+    return [];
+  }
   return [between(last, head), ...contour];
 }
 
 function pathOf(contour: Point[], place: (point: Point) => string): string {
   const ring = ringOf(contour);
   const head = ring[0];
-  if (!head) return '';
+  if (!head) {
+    return '';
+  }
   const at = (index: number): Point => ring[index % ring.length] ?? head;
   let d = `M${place(head)}`;
   let index = 1;

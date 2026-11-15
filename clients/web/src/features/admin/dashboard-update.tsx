@@ -11,7 +11,9 @@ export function UpdateCallout() {
   const { client } = useAuth();
   const { data } = usePoll(['admin', 'updates'], () => client.admin.updates(), UPDATES_POLL_MS);
   const latest = data?.latest;
-  if (!data?.available || !latest) return null;
+  if (!data?.available || !latest) {
+    return null;
+  }
   const title =
     latest.version === data.version && latest.build
       ? t('admin.updateAvailableBuild', { version: latest.version, build: String(latest.build) })

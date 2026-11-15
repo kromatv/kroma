@@ -79,7 +79,9 @@ function expoWorkspaceConfig(projectRoot, aliases = {}, ui = {}) {
 }
 
 function exportedSubpath(target, rest) {
-  if (!rest) return rest;
+  if (!rest) {
+    return rest;
+  }
   let exportsMap;
   try {
     exportsMap = require(path.join(target, 'package.json')).exports;
@@ -93,11 +95,15 @@ function exportedSubpath(target, rest) {
 
 function assertReactNativeMatches(projectRoot, reactNative) {
   const declared = require(path.join(projectRoot, 'package.json')).dependencies?.['react-native'];
-  if (typeof declared !== 'string' || !declared.startsWith('npm:')) return;
+  if (typeof declared !== 'string' || !declared.startsWith('npm:')) {
+    return;
+  }
   // "npm:react-native-tvos@0.88.0-0" -> "react-native-tvos"
   const expected = declared.slice(4).split('@').find(Boolean);
   const actual = require(path.join(reactNative, 'package.json')).name;
-  if (actual === expected) return;
+  if (actual === expected) {
+    return;
+  }
   throw new Error(
     `Metro would bundle "${actual}" but ${path.basename(projectRoot)} pins ` +
       `"${expected}". Reinstall (bun install) before bundling: a mismatch here ` +

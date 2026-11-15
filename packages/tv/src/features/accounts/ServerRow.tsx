@@ -124,11 +124,19 @@ function MetaLine({ meta, pending }: Readonly<{ meta: string | null; pending: bo
 }
 
 function metaOf(probe: ServerProbe | undefined, t: Translate): string | null {
-  if (!probe?.online) return null;
+  if (!probe?.online) {
+    return null;
+  }
   const parts: string[] = [];
-  if (probe.version) parts.push(`v${probe.version}`);
-  if (probe.items !== undefined) parts.push(t('person.titleCount', { count: probe.items }));
-  if (probe.shows) parts.push(t('addProfile.showCount', { count: probe.shows }));
+  if (probe.version) {
+    parts.push(`v${probe.version}`);
+  }
+  if (probe.items !== undefined) {
+    parts.push(t('person.titleCount', { count: probe.items }));
+  }
+  if (probe.shows) {
+    parts.push(t('addProfile.showCount', { count: probe.shows }));
+  }
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 

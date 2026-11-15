@@ -79,7 +79,9 @@ function shipMessageKeys(from: string, typesDir: string): void {
   copyFileSync(source, target);
   const entry = join(typesDir, 'src', 'i18n.d.ts');
   const text = readFileSync(entry, 'utf8');
-  if (!text.includes(KEYS_REFERENCE.trim())) writeFileSync(entry, `${KEYS_REFERENCE}${text}`);
+  if (!text.includes(KEYS_REFERENCE.trim())) {
+    writeFileSync(entry, `${KEYS_REFERENCE}${text}`);
+  }
 }
 
 /** The one thing the CLI cannot carry: Vite's bundler is a native binary. */
@@ -110,8 +112,9 @@ function tablerIconNames(uiDir: string): string[] {
     'utf8',
   );
   const names = [...typings.matchAll(/ as (Icon[A-Za-z0-9]+)\b/g)].map((m) => m[1] ?? '');
-  if (names.length < 1000)
+  if (names.length < 1000) {
     throw new Error(`Tabler typings list ${names.length} icons; expected thousands`);
+  }
   return [...new Set(names)].sort((a, b) => (a < b ? -1 : 1));
 }
 
@@ -170,8 +173,12 @@ export async function stage(options: StageOptions): Promise<string> {
   for (const [dir] of BUILT_IN) {
     const from = join(root, 'packages', dir);
     await emitDeclarations(from, join(to, 'types', dir));
-    if (dir === 'ui') inlineIconNames(from, join(to, 'types', dir));
-    if (dir === 'core') shipMessageKeys(from, join(to, 'types', dir));
+    if (dir === 'ui') {
+      inlineIconNames(from, join(to, 'types', dir));
+    }
+    if (dir === 'core') {
+      shipMessageKeys(from, join(to, 'types', dir));
+    }
     manifests.push([dir, readManifest(from)]);
   }
   stageReactNativeTypes(join(root, 'packages', 'ui'), join(to, 'types', 'react-native'));
@@ -193,7 +200,9 @@ export async function stage(options: StageOptions): Promise<string> {
     ['i18n', 'schema/catalog.schema.json'],
   ] as const) {
     const source = join(root, 'packages', dir, rel);
-    if (!existsSync(source)) continue;
+    if (!existsSync(source)) {
+      continue;
+    }
     mkdirSync(join(to, rel, '..'), { recursive: true });
     copyFileSync(source, join(to, rel));
   }
@@ -201,7 +210,9 @@ export async function stage(options: StageOptions): Promise<string> {
   const packed = await $`bun pm pack --destination ${out} --quiet`.cwd(to).text();
   const file = packed.trim().split('\n').pop() ?? '';
   const path = join(out, file.split('/').pop() ?? file);
-  if (!existsSync(path)) throw new Error(`bun pm pack produced no tarball at ${path}`);
+  if (!existsSync(path)) {
+    throw new Error(`bun pm pack produced no tarball at ${path}`);
+  }
   rmSync(join(out, 'stage'), { recursive: true, force: true });
   return path;
 }

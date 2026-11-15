@@ -40,7 +40,9 @@ const plugin = (at: string): Hooks =>
   }) as unknown as Hooks;
 
 afterEach(() => {
-  if (repo) rmSync(repo, { recursive: true, force: true });
+  if (repo) {
+    rmSync(repo, { recursive: true, force: true });
+  }
   repo = '';
 });
 

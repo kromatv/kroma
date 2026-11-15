@@ -311,7 +311,9 @@ describe('useLibrarySearchCommands', () => {
     await typing('dune', MOVIE);
     const add = titles()[0]?.actions?.[1];
 
-    if (add && 'run' in add) await add.run?.();
+    if (add && 'run' in add) {
+      await add.run?.();
+    }
 
     expect(mocks.toggleList).toHaveBeenCalledWith('m1');
   });

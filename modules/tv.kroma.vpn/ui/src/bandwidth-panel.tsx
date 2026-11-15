@@ -83,10 +83,18 @@ function Body({
   onRetry: () => void;
   direction: BandwidthDirection;
 }>) {
-  if (loading) return <ModuleLoading panels={1} />;
-  if (failed) return <ModuleFailed retry={onRetry} />;
-  if (!view) return <Nothing message="vpnBandwidth.noEngine" />;
-  if (view.series.sealedDown.length === 0) return <Nothing message="vpnBandwidth.empty" />;
+  if (loading) {
+    return <ModuleLoading panels={1} />;
+  }
+  if (failed) {
+    return <ModuleFailed retry={onRetry} />;
+  }
+  if (!view) {
+    return <Nothing message="vpnBandwidth.noEngine" />;
+  }
+  if (view.series.sealedDown.length === 0) {
+    return <Nothing message="vpnBandwidth.empty" />;
+  }
   return (
     <>
       <SealBanner view={view} />
@@ -123,7 +131,9 @@ function Picker<V extends string>({
       value={value}
       onValueChange={(next) => {
         const picked = options.find((one) => one === next);
-        if (picked) onChange(picked);
+        if (picked) {
+          onChange(picked);
+        }
       }}
     >
       <Select.Trigger />

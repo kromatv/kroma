@@ -30,7 +30,9 @@ function samplesOf(
 ): ChartPoint[] {
   return times.map((ms, at) => {
     const point: ChartPoint = { at: nameAt(ms) };
-    for (const one of series) point[one.field] = one.data[at] ?? null;
+    for (const one of series) {
+      point[one.field] = one.data[at] ?? null;
+    }
     return point;
   });
 }

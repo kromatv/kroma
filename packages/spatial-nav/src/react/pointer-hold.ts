@@ -19,7 +19,9 @@ function usePointerHold(onLongSelect: (() => void) | undefined): PointerHold {
   });
 
   const end = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
     timer.current = null;
   }, []);
 
@@ -29,7 +31,9 @@ function usePointerHold(onLongSelect: (() => void) | undefined): PointerHold {
     down: (event) => {
       held.current = false;
       end();
-      if (event.nativeEvent.button !== 0) return;
+      if (event.nativeEvent.button !== 0) {
+        return;
+      }
       timer.current = setTimeout(() => {
         timer.current = null;
         held.current = true;

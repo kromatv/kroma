@@ -17,7 +17,9 @@ function pack(id: string, version: string, icon?: string): void {
   mkdirSync(project, { recursive: true });
   const manifest = { schemaVersion: 3, id, name: id, version, library: true };
   writeFileSync(join(project, 'module.json'), JSON.stringify(manifest));
-  if (icon) writeFileSync(join(project, 'icon.svg'), icon);
+  if (icon) {
+    writeFileSync(join(project, 'icon.svg'), icon);
+  }
   packBundle({
     project: { dir: project, manifest, server: null, ui: null },
     binPath: null,
@@ -152,7 +154,9 @@ describe('releaseCommand', () => {
   it('answers 1 and writes nothing when a version went backwards', async () => {
     const live = await firstRelease('tv.acme.notes', '0.1.0');
     const ahead = live.modules[0];
-    if (!ahead) throw new Error('the first release wrote no module');
+    if (!ahead) {
+      throw new Error('the first release wrote no module');
+    }
     ahead.version = '0.9.0';
     rmSync(join(dir, 'dist', 'registry'), { recursive: true, force: true });
     stubCatalog(live);

@@ -21,16 +21,22 @@ export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: 
   });
 
   const save = useCallback(() => {
-    if (!client.hasAuth) return;
+    if (!client.hasAuth) {
+      return;
+    }
     const p = portRef.current;
     const d = p.getDuration();
     const pos = p.getPosition();
-    if (!Number.isFinite(d) || d <= 0 || pos < 5) return;
+    if (!Number.isFinite(d) || d <= 0 || pos < 5) {
+      return;
+    }
     void client.playback.save(item.id, pos * 1000, d * 1000).catch(() => undefined);
   }, [client, item]);
 
   useEffect(() => {
-    if (!client.hasAuth) return;
+    if (!client.hasAuth) {
+      return;
+    }
     const interval = setInterval(save, 10000);
     return () => {
       clearInterval(interval);
@@ -39,10 +45,14 @@ export function useResumeAndPersist(client: KromaClient, item: MediaItem, port: 
   }, [client, save]);
 
   useEffect(() => {
-    if (port.paused) save();
+    if (port.paused) {
+      save();
+    }
   }, [port.paused, save]);
 
   useEffect(() => {
-    if (port.endedNonce > 0 && client.hasAuth) void client.playback.markWatched(item.id);
+    if (port.endedNonce > 0 && client.hasAuth) {
+      void client.playback.markWatched(item.id);
+    }
   }, [port.endedNonce, client, item]);
 }

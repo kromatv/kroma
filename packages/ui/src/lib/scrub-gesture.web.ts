@@ -12,14 +12,18 @@ export function useScrubGesture(
 
   useEffect(() => {
     const node = target.current as unknown as HTMLElement | null;
-    if (!node?.addEventListener) return;
+    if (!node?.addEventListener) {
+      return;
+    }
     const down = (e: PointerEvent) => {
       e.preventDefault();
       node.setPointerCapture(e.pointerId);
       scrub(e.clientY - node.getBoundingClientRect().top);
     };
     const move = (e: PointerEvent) => {
-      if (e.buttons === 0) return;
+      if (e.buttons === 0) {
+        return;
+      }
       scrub(e.clientY - node.getBoundingClientRect().top);
     };
     node.addEventListener('pointerdown', down);

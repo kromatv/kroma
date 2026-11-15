@@ -9,7 +9,9 @@ function install(root: string, name: string, manifest: object, files: Record<str
   mkdirSync(join(dir, 'esm'), { recursive: true });
   writeFileSync(join(dir, 'package.json'), JSON.stringify(manifest));
   writeFileSync(join(dir, 'esm', 'package.json'), JSON.stringify({ type: 'module' }));
-  for (const [file, text] of Object.entries(files)) writeFileSync(join(dir, file), text);
+  for (const [file, text] of Object.entries(files)) {
+    writeFileSync(join(dir, file), text);
+  }
   return dir;
 }
 

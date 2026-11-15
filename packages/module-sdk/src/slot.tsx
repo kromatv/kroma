@@ -71,7 +71,9 @@ export function ModuleSlot<Name extends SlotName>({
   // Disabled counts as absent: the fallback is what "this needs a module you do
   // not have" looks like, and turning one off has to reach the same state as
   // never installing it.
-  if (entries.length === 0) return <>{fallback}</>;
+  if (entries.length === 0) {
+    return <>{fallback}</>;
+  }
   return (
     <>
       {entries.map((entry) => {

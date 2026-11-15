@@ -40,10 +40,14 @@ export function reactivePref<T extends string>(
   return {
     get: () => chosen ?? stored().get(),
     set(value: T) {
-      if (value === (chosen ?? stored().get())) return;
+      if (value === (chosen ?? stored().get())) {
+        return;
+      }
       chosen = value;
       stored().set(value);
-      for (const listener of listeners) listener();
+      for (const listener of listeners) {
+        listener();
+      }
     },
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -105,6 +109,8 @@ export function useArtworkPref(): ReactivePref<ArtworkQuality> {
   const provided = useContext(ArtworkContext);
   const [owned] = useState(() => (provided ? null : createArtworkPref(storage)));
   const pref = provided ?? owned;
-  if (!pref) throw new Error('Artwork preference requires its owning root');
+  if (!pref) {
+    throw new Error('Artwork preference requires its owning root');
+  }
   return pref;
 }

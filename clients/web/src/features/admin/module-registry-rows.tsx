@@ -32,12 +32,13 @@ const HTTPS = /^https:\/\/\S+$/;
 
 export function StatusLine({ status }: Readonly<{ status: StoreRegistry }>) {
   const t = useT();
-  if (status.skipped)
+  if (status.skipped) {
     return (
       <Text variant="meta" color="textDim">
         {status.skipped}
       </Text>
     );
+  }
   if (status.error) {
     return (
       <Text variant="meta" color="danger">

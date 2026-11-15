@@ -32,14 +32,18 @@ export type ColorValue =
  *  trailing `/NN` is Tailwind's alpha syntax and means NN percent opacity. */
 export function color(value: string, theme: Theme = KROMA): string {
   const slash = value.lastIndexOf('/');
-  if (slash === -1) return named(value, theme);
+  if (slash === -1) {
+    return named(value, theme);
+  }
   const suffix = value.slice(slash + 1);
   const alpha = Number(suffix);
   const base = value.slice(0, slash);
   // An empty suffix is not an alpha: `Number('')` is 0, which would silently
   // make `white/` fully transparent. `rgb(255 0 0 / 50%)` is likewise a colour
   // that contains a slash rather than one carrying an alpha suffix.
-  if (suffix === '' || !Number.isFinite(alpha) || /[\s(),]/.test(base)) return named(value, theme);
+  if (suffix === '' || !Number.isFinite(alpha) || /[\s(),]/.test(base)) {
+    return named(value, theme);
+  }
   return withAlpha(named(base, theme), alpha / 100);
 }
 

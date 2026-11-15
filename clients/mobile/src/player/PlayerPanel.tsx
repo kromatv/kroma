@@ -48,7 +48,9 @@ export function PlayerPanel({
   // TV on the network is two rows, and two rows is not a panel.
   const minHeight = useSheetMinHeight();
 
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
   const corners = landscape ? s.leftCorners : s.topCorners;
   return (

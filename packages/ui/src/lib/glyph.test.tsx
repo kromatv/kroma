@@ -22,13 +22,17 @@ afterEach(cleanup);
  *  `null` dereference three lines later. */
 function svgIn(container: HTMLElement): SVGElement {
   const svg = container.querySelector('svg');
-  if (!svg) throw new Error('no <svg> was rendered');
+  if (!svg) {
+    throw new Error('no <svg> was rendered');
+  }
   return svg;
 }
 
 function parentOf(el: Element): HTMLElement {
   const parent = el.parentElement;
-  if (!parent) throw new Error('the glyph has no parent element');
+  if (!parent) {
+    throw new Error('the glyph has no parent element');
+  }
   return parent;
 }
 

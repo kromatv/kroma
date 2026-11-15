@@ -44,14 +44,18 @@ interface GridProps {
 /** The width of one cell in a `columns`-wide grid of `width`, with `gap`
  * between cells. Exported so a caller can size its own art requests to match. */
 function cellWidth(width: number, columns: number, gap: number): number {
-  if (columns <= 0) return width;
+  if (columns <= 0) {
+    return width;
+  }
   return Math.floor((width - gap * (columns - 1)) / columns);
 }
 
 /** How many `min`-wide cells fit in `width`. At least one, so a container
  * narrower than a single cell still renders it rather than nothing. */
 function columnsFor(width: number, min: number, gap: number): number {
-  if (min <= 0) return 1;
+  if (min <= 0) {
+    return 1;
+  }
   return Math.max(1, Math.floor((width + gap) / (min + gap)));
 }
 
@@ -61,7 +65,7 @@ function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<Grid
   const [measured, setMeasured] = useState(0);
   // Both the cell width and an auto-fill count need the room, so a grid handed
   // no width paints nothing until it has measured itself.
-  const room = measured || width || 0;
+  const room = measured > 0 ? measured : (width ?? 0);
   const count = columns ?? (min ? columnsFor(room, min, gap) : 1);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
@@ -90,7 +94,9 @@ function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<Grid
 function lines(children: ReactNode, count: number, cell: ViewStyle, line: ViewStyle): ReactNode[] {
   const cells = Children.toArray(children);
   const rows: ReactNode[][] = [];
-  for (let at = 0; at < cells.length; at += count) rows.push(cells.slice(at, at + count));
+  for (let at = 0; at < cells.length; at += count) {
+    rows.push(cells.slice(at, at + count));
+  }
   return rows.map((row, index) => (
     // Each line is also the page's scroll anchor (see <FocusLine>): inside
     // a <FocusSlot> taller than the screen, the page would otherwise pin

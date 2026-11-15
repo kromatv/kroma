@@ -16,7 +16,9 @@ const pad = (el: Element, side: 'Top' | 'Bottom') =>
 
 const boxOf = (text: string) => {
   const node = screen.getByText(text).parentElement;
-  if (!node) throw new Error(`${text} has no box`);
+  if (!node) {
+    throw new Error(`${text} has no box`);
+  }
   return node;
 };
 

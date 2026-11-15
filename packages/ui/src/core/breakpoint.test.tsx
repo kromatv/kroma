@@ -192,14 +192,18 @@ describe('<Box> and <Text> follow the width', () => {
   it('repaints when the surface crosses a breakpoint it names', () => {
     at(0);
     const { container } = render(<Box px={{ base: 16, md: 40 }} />);
-    act(() => at(breakpoint.md));
+    act(() => {
+      at(breakpoint.md);
+    });
     expect(css(box(container)).paddingLeft).toBe('40px');
   });
 
   it('leaves a flat box alone when the surface crosses', () => {
     at(0);
     const { container } = render(<Box px={16} />);
-    act(() => at(breakpoint.tv));
+    act(() => {
+      at(breakpoint.tv);
+    });
     expect(css(box(container)).paddingLeft).toBe('16px');
   });
 

@@ -19,13 +19,17 @@ export interface MessageTarget {
  */
 export function editTarget(probe: Probe | null): MessageTarget | null {
   const locale = renderedLocale();
-  if (!probe?.key || !locale || !engine().writable) return null;
+  if (!probe?.key || !locale || !engine().writable) {
+    return null;
+  }
   return { scope: probe.scope, locale, key: probe.key };
 }
 
 /** The translation a confirm would vouch for: the one under the pointer, where
  *  it is graded `outdated` or `unreviewed`, and `null` otherwise. */
 export function confirmTarget(probe: Probe | null): MessageTarget | null {
-  if (probe?.grade !== 'outdated' && probe?.grade !== 'unreviewed') return null;
+  if (probe?.grade !== 'outdated' && probe?.grade !== 'unreviewed') {
+    return null;
+  }
   return editTarget(probe);
 }

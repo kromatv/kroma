@@ -14,7 +14,9 @@ export interface Commit {
 /** A conventional commit read from its subject and body, or null for a subject that is not one. */
 export function parseCommit(sha: string, subject: string, body = ''): Commit | null {
   const groups = SUBJECT.exec(subject.trim())?.groups;
-  if (!groups?.type || !groups.text) return null;
+  if (!groups?.type || !groups.text) {
+    return null;
+  }
   return {
     sha,
     type: groups.type,

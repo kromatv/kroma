@@ -39,8 +39,9 @@ export function parseProfiles(xml: string): ParsedProfiles {
       const fields = Object.fromEntries(
         [...attributes.matchAll(ATTRIBUTE)].map(([, key = '', value = '']) => [key, value]),
       );
-      if (fields.key)
+      if (fields.key) {
         items.set(fields.distributor ?? '', { key: fields.key, password: fields.password ?? '' });
+      }
     }
     profiles.set(name, items);
   }
@@ -52,13 +53,17 @@ export function parseProfiles(xml: string): ParsedProfiles {
  * that signing needs none of those tools. Without a name, the active one.
  */
 export async function readProfile(name?: string): Promise<StudioProfile | null> {
-  if (!existsSync(PROFILES_XML)) return null;
+  if (!existsSync(PROFILES_XML)) {
+    return null;
+  }
   const { active, profiles } = parseProfiles(readFileSync(PROFILES_XML, 'utf8'));
 
   const wanted = name ?? active;
   const items = wanted ? profiles.get(wanted) : undefined;
   const author = items?.get('0');
-  if (!wanted || !author) return null;
+  if (!wanted || !author) {
+    return null;
+  }
 
   const distributor = items?.get('1');
   return {
@@ -76,8 +81,12 @@ export async function readProfile(name?: string): Promise<StudioProfile | null> 
  * that was never written.
  */
 async function secret(value: string): Promise<string> {
-  if (!value.endsWith('.pwd')) return value;
-  if (existsSync(value)) return readFileSync(value, 'utf8').trim();
+  if (!value.endsWith('.pwd')) {
+    return value;
+  }
+  if (existsSync(value)) {
+    return readFileSync(value, 'utf8').trim();
+  }
 
   const { code, output } = await run(['security', 'find-generic-password', '-a', value, '-w'], {
     timeoutMs: KEYCHAIN_TIMEOUT_MS,

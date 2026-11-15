@@ -205,7 +205,9 @@ function Grid({ children, ref }: Readonly<{ children: ReactNode; ref: Ref<Scroll
       {children}
     </Box>
   );
-  if (REMOTE) return tiles;
+  if (REMOTE) {
+    return tiles;
+  }
   return (
     <ScrollView ref={ref} style={{ maxHeight: Math.max(LEAST_GRID, window.height - AROUND_GRID) }}>
       {tiles}

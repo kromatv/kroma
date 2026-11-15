@@ -6,9 +6,13 @@ import { push as loadPush } from './native';
 async function askNotificationPermission(): Promise<void> {
   try {
     const Notifications = loadPush();
-    if (!Notifications) return;
+    if (!Notifications) {
+      return;
+    }
     const { status, canAskAgain } = await Notifications.getPermissionsAsync();
-    if (status === 'granted' || !canAskAgain) return;
+    if (String(status) === 'granted' || !canAskAgain) {
+      return;
+    }
     await Notifications.requestPermissionsAsync();
   } catch (e) {
     console.log(`[downloads] notification prompt failed: ${String(e)}`);

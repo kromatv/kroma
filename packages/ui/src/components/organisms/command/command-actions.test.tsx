@@ -252,7 +252,9 @@ describe('a panel longer than it can show', () => {
     chord();
     const asked = watchScroll();
 
-    for (let press = 0; press < 8; press += 1) key('ArrowDown');
+    for (let press = 0; press < 8; press += 1) {
+      key('ArrowDown');
+    }
 
     expect(asked.length).toBeGreaterThan(0);
   });

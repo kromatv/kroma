@@ -19,7 +19,9 @@ export function feOutDir(project: Project): string {
 
 function describe(project: Project): string {
   const server = project.server;
-  if (!server?.bin) return 'library, no component';
+  if (!server?.bin) {
+    return 'library, no component';
+  }
   const extras = server.features.length ? ` [+${server.features.join(',')}]` : '';
   return `bin ${server.bin}${extras}`;
 }

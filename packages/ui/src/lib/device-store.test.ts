@@ -42,7 +42,9 @@ describe('deviceStore', () => {
 
     const answer = deviceStore();
 
-    if (had) Object.defineProperty(globalThis, 'localStorage', had);
+    if (had) {
+      Object.defineProperty(globalThis, 'localStorage', had);
+    }
     expect(answer).toBeNull();
   });
 
@@ -57,7 +59,9 @@ describe('deviceStore', () => {
 
     const answer = deviceStore();
 
-    if (had) Object.defineProperty(globalThis, 'localStorage', had);
+    if (had) {
+      Object.defineProperty(globalThis, 'localStorage', had);
+    }
     expect(answer).toBeNull();
   });
 });

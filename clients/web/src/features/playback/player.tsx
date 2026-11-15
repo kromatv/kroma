@@ -132,10 +132,15 @@ export function Player({
       title={item.title}
       onCast={async () => {
         const picked = await castPicker();
-        if (!picked) return;
+        if (!picked) {
+          return;
+        }
         const failure = await cast.playOn(picked, item.id, Math.round(pb.getPosition() * 1000));
-        if (failure) toast({ message: t(failure) });
-        else onClose();
+        if (failure) {
+          toast({ message: t(failure) });
+        } else {
+          onClose();
+        }
       }}
       onClose={onClose}
     >

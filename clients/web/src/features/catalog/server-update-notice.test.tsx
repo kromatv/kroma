@@ -84,7 +84,9 @@ it('shows the release outside Admin and both controls link to its update page', 
     await screen.findByRole('link', { name: 'Update available Review' }),
     screen.getByRole('link', { name: 'KROMA 0.1.42 is available' }),
   ];
-  for (const link of links) expect(link.getAttribute('href')).toBe('/admin/updates');
+  for (const link of links) {
+    expect(link.getAttribute('href')).toBe('/admin/updates');
+  }
   expect(screen.getAllByTitle('KROMA 0.1.42 is available')).toHaveLength(2);
   expect(mocks.updates).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByText('Review'));

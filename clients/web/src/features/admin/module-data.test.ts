@@ -80,8 +80,8 @@ describe('useModuleData', () => {
 
   it('exposes each list reload on its own', () => {
     const { result } = renderHook(() => useModuleData());
-    act(() => result.current.reload());
-    act(() => result.current.reloadCatalog());
+    act(() => void result.current.reload());
+    act(() => void result.current.reloadCatalog());
     expect(H.order).toEqual(['modules', 'catalog']);
   });
 });

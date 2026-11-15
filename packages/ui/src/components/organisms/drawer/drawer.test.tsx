@@ -18,7 +18,9 @@ function scrollerOver(label: string): HTMLElement | null {
   let node = screen.getByText(label).parentElement;
   while (node) {
     const overflow = getComputedStyle(node).overflowY;
-    if (overflow === 'auto' || overflow === 'scroll') return node;
+    if (overflow === 'auto' || overflow === 'scroll') {
+      return node;
+    }
     node = node.parentElement;
   }
   return null;
@@ -152,7 +154,9 @@ describe('the exit', () => {
       );
       expect(screen.getByText('Rien')).toBeTruthy();
 
-      act(() => vi.advanceTimersByTime(500));
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
       expect(screen.queryByText('Rien')).toBeNull();
     } finally {
       vi.useRealTimers();

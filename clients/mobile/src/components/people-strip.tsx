@@ -19,7 +19,9 @@ export function PeopleStrip({ people }: Readonly<{ people: readonly PersonHit[] 
   const client = useClient();
   const router = useRouter();
   const gutters = useGutters();
-  if (people.length === 0) return null;
+  if (people.length === 0) {
+    return null;
+  }
   return (
     <Box>
       <SectionTitle>{t('search.people')}</SectionTitle>

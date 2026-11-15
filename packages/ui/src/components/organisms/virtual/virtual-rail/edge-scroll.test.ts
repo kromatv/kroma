@@ -29,8 +29,12 @@ describe('edgeScrollOffset', () => {
 
   it('is symmetric: walking out and back returns to where it started', () => {
     let offset = 0;
-    for (let index = 0; index <= 12; index++) offset = at(offset, index);
-    for (let index = 12; index >= 0; index--) offset = at(offset, index);
+    for (let index = 0; index <= 12; index++) {
+      offset = at(offset, index);
+    }
+    for (let index = 12; index >= 0; index--) {
+      offset = at(offset, index);
+    }
     expect(offset).toBe(0);
   });
 

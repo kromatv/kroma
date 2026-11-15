@@ -37,10 +37,16 @@ export function createFocusMirror(pointerDriving: () => boolean) {
     const y = view?.scrollY ?? 0;
     element.focus();
     for (const [at, top, left] of scrollers) {
-      if (at.scrollTop !== top) at.scrollTop = top;
-      if (at.scrollLeft !== left) at.scrollLeft = left;
+      if (at.scrollTop !== top) {
+        at.scrollTop = top;
+      }
+      if (at.scrollLeft !== left) {
+        at.scrollLeft = left;
+      }
     }
-    if (view && (view.scrollX !== x || view.scrollY !== y)) view.scrollTo(x, y);
+    if (view && (view.scrollX !== x || view.scrollY !== y)) {
+      view.scrollTo(x, y);
+    }
   }
 
   const isFocused = (element: HTMLElement) => element.ownerDocument.activeElement === element;
@@ -48,7 +54,9 @@ export function createFocusMirror(pointerDriving: () => boolean) {
   function letGo(): void {
     const held = mirrored;
     mirrored = null;
-    if (held && isFocused(held)) held.blur();
+    if (held && isFocused(held)) {
+      held.blur();
+    }
   }
 
   /**
@@ -57,15 +65,21 @@ export function createFocusMirror(pointerDriving: () => boolean) {
    * the focus back to the page instead, and a field holding the caret keeps it.
    */
   function mirrorFocus(view: unknown): void {
-    if (!isElement(view)) return;
+    if (!isElement(view)) {
+      return;
+    }
     if (pointerDriving()) {
       letGo();
       return;
     }
     const active = view.ownerDocument.activeElement;
-    if (holdsCaret(active)) return;
+    if (holdsCaret(active)) {
+      return;
+    }
     if (active !== view) {
-      if (view.tabIndex < 0) view.setAttribute('tabindex', '-1');
+      if (view.tabIndex < 0) {
+        view.setAttribute('tabindex', '-1');
+      }
       focusInPlace(view);
     }
     mirrored = view;
@@ -86,7 +100,9 @@ export function createFocusMirror(pointerDriving: () => boolean) {
    */
   function redeliverKey(event: KeyboardEvent): void {
     const target = event.target;
-    if (!isElement(target) || target !== mirrored) return;
+    if (!isElement(target) || target !== mirrored) {
+      return;
+    }
     event.stopImmediatePropagation();
     const copy = new KeyboardEvent(event.type, {
       key: event.key,
@@ -103,7 +119,9 @@ export function createFocusMirror(pointerDriving: () => boolean) {
     const legacy = event as LegacyKeys;
     Object.defineProperty(copy, 'keyCode', { value: legacy.keyCode });
     Object.defineProperty(copy, 'which', { value: legacy.which });
-    if (!target.ownerDocument.body.dispatchEvent(copy)) event.preventDefault();
+    if (!target.ownerDocument.body.dispatchEvent(copy)) {
+      event.preventDefault();
+    }
   }
 
   return { mirrorFocus, isMirrored, redeliverKey };

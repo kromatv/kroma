@@ -47,7 +47,9 @@ export function nativePlayerPlane(): NativePlayer['plane'] {
 /** The buffer bounds to hand expo-video's `bufferOptions`, or null where the
  * platform is left to decide for itself. */
 export function nativeBufferBudget(): NativeBufferBudget | null {
-  if (Platform.OS !== 'android') return null;
+  if (Platform.OS !== 'android') {
+    return null;
+  }
   return {
     preferredForwardBufferDuration: FORWARD_BUFFER_SEC,
     maxBufferBytes: MAX_BUFFER_BYTES,

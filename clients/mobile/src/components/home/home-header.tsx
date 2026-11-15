@@ -23,7 +23,9 @@ function DownloadsGlyph() {
 
   const downloads = useDownloads();
   const pending = downloads.downloading.length + downloads.queuedItems.length;
-  if (pending === 0) return <Icon name="download" size={22} thickness={2} />;
+  if (pending === 0) {
+    return <Icon name="download" size={22} thickness={2} />;
+  }
   const progress = downloads.downloading[0]?.progress ?? -1;
   return (
     <Box style={s.dlGlyph}>
@@ -60,7 +62,7 @@ export function HomeHeader() {
           diameter={40}
           glyph={22}
           hitSlop={10}
-          onPress={() => router.push('/downloads' as never)}
+          onPress={() => router.push('/downloads')}
         >
           <DownloadsGlyph />
         </IconButton>

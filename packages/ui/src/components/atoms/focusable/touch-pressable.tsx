@@ -64,7 +64,9 @@ function boxLayout(
   own: ((event: LayoutChangeEvent) => void) | undefined,
 ): ((event: LayoutChangeEvent) => void) | undefined {
   const measure = dip.onLayout;
-  if (!measure) return own;
+  if (!measure) {
+    return own;
+  }
   return (event: LayoutChangeEvent) => {
     measure(event);
     own?.(event);

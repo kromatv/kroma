@@ -39,7 +39,9 @@ export const context = (index: number, contents: Buffer) => encode(CLASS_CONTEXT
 export function integer(value: Buffer | number): Buffer {
   const raw = typeof value === 'number' ? unsigned(value) : value;
   let start = 0;
-  while (start < raw.length - 1 && raw[start] === 0) start++;
+  while (start < raw.length - 1 && raw[start] === 0) {
+    start++;
+  }
   const bytes = raw.length === 0 ? Buffer.from([0]) : raw.subarray(start);
   const first = bytes[0] ?? 0;
   return encode(TAG.integer, first & 0x80 ? Buffer.concat([Buffer.from([0]), bytes]) : bytes);
@@ -53,7 +55,9 @@ export function oid(dotted: string): Buffer {
   const parts = dotted.split('.').map(Number);
   const [first = 0, second = 0, ...rest] = parts;
   const bytes = [first * 40 + second];
-  for (const part of rest) bytes.push(...base128(part));
+  for (const part of rest) {
+    bytes.push(...base128(part));
+  }
   return encode(TAG.oid, Buffer.from(bytes));
 }
 
@@ -72,7 +76,9 @@ export function utcTime(date: Date): Buffer {
 }
 
 function length(size: number): Buffer {
-  if (size < 0x80) return Buffer.from([size]);
+  if (size < 0x80) {
+    return Buffer.from([size]);
+  }
   const bytes = unsigned(size);
   return Buffer.concat([Buffer.from([0x80 | bytes.length]), bytes]);
 }

@@ -26,7 +26,9 @@ export type FlowOutcome = z.infer<typeof FlowOutcome>;
 function read<T>(key: string, schema: z.ZodType<T>): T | null {
   try {
     const stored = window.sessionStorage.getItem(key);
-    if (!stored) return null;
+    if (!stored) {
+      return null;
+    }
     const parsed = schema.safeParse(JSON.parse(stored));
     return parsed.success ? parsed.data : null;
   } catch {
@@ -70,7 +72,9 @@ export function leaveOutcome(outcome: FlowOutcome): void {
 /** Reads the result a flow of `purpose` left, once. */
 export function takeOutcome(purpose: FlowPurpose): FlowOutcome | null {
   const outcome = read(OUTCOME_KEY, FlowOutcome);
-  if (outcome?.purpose !== purpose) return null;
+  if (outcome?.purpose !== purpose) {
+    return null;
+  }
   remove(OUTCOME_KEY);
   return outcome;
 }

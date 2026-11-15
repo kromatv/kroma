@@ -74,7 +74,9 @@ export function ModuleHostProvider({ children }: Readonly<{ children: ReactNode 
     routes: ModuleRoute[];
     panels: ModulePanel[];
   }>(() => {
-    if (!host) return { nav: [], routes: [], panels: [] };
+    if (!host) {
+      return { nav: [], routes: [], panels: [] };
+    }
     try {
       return {
         nav: moduleRegistry.navItems(),
@@ -146,10 +148,14 @@ export function useModuleNavAll(): ModuleNav[] {
     () =>
       nav
         .filter((n) => {
-          if (disabledIds.has(n.moduleId)) return false;
+          if (disabledIds.has(n.moduleId)) {
+            return false;
+          }
           if (n.requires) {
             const cap = n.requires as Parameters<typeof hasPermission>[1];
-            if (!user || !hasPermission(user, cap)) return false;
+            if (!user || !hasPermission(user, cap)) {
+              return false;
+            }
           }
           return true;
         })

@@ -28,7 +28,9 @@ export function MyListRail({ filter }: Readonly<{ filter: TitleFilter }>) {
       const found = await Promise.all(
         (ids.data ?? []).slice(0, MAX_TITLES).map(async (id): Promise<SectionItem | null> => {
           const movie = await client.media.item(ItemId.parse(id)).catch(() => null);
-          if (movie) return { type: 'movie', item: movie };
+          if (movie) {
+            return { type: 'movie', item: movie };
+          }
           const detail = await client.media.show(ShowId.parse(id)).catch(() => null);
           return detail ? { type: 'show', show: detail.show } : null;
         }),
@@ -37,7 +39,9 @@ export function MyListRail({ filter }: Readonly<{ filter: TitleFilter }>) {
     },
   });
   const entries = filterEntries(items.data ?? [], filter);
-  if (entries.length === 0) return null;
+  if (entries.length === 0) {
+    return null;
+  }
   return (
     <Box>
       <SectionTitle>{t('nav.myList')}</SectionTitle>

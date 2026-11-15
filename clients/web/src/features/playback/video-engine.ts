@@ -117,7 +117,9 @@ export interface AttachSourceOptions {
 const MEDIA_ERR_ABORTED = 1;
 
 function seekToAnchor(v: HTMLVideoElement, startSec: number): void {
-  if (startSec <= 0.5) return;
+  if (startSec <= 0.5) {
+    return;
+  }
   const apply = () => {
     if (Math.abs(v.currentTime - startSec) > 1) {
       try {
@@ -127,8 +129,11 @@ function seekToAnchor(v: HTMLVideoElement, startSec: number): void {
       }
     }
   };
-  if (v.readyState >= 1) apply();
-  else v.addEventListener('loadedmetadata', apply, { once: true });
+  if (v.readyState >= 1) {
+    apply();
+  } else {
+    v.addEventListener('loadedmetadata', apply, { once: true });
+  }
 }
 
 /**
@@ -190,11 +195,15 @@ export function attachMediaSource(
   // is honoured even on Safari, where native HLS would otherwise take it.
   if (useShaka) {
     const onMediaError = () => {
-      if (!destroyed && v.error?.code !== MEDIA_ERR_ABORTED) onGiveUp();
+      if (!destroyed && v.error?.code !== MEDIA_ERR_ABORTED) {
+        onGiveUp();
+      }
     };
     // Shaka reports the same relative clock as hls.js, so `baseSec` applies here too.
     void import('shaka-player/dist/shaka-player.compiled.js').then(async (mod) => {
-      if (destroyed) return;
+      if (destroyed) {
+        return;
+      }
       const shaka = (mod as unknown as { default: ShakaStatic }).default;
       shaka.polyfill.installAll();
       if (!shaka.Player.isBrowserSupported()) {
@@ -210,7 +219,9 @@ export function attachMediaSource(
         await player.load(url, 0);
       } catch (e: unknown) {
         const status = shakaHttpStatus(e);
-        if (!destroyed && status !== null) onRefused(status);
+        if (!destroyed && status !== null) {
+          onRefused(status);
+        }
       }
     });
     return () => {
@@ -233,7 +244,9 @@ export function attachMediaSource(
   }
 
   void import('hls.js').then(({ default: Hls }) => {
-    if (destroyed) return;
+    if (destroyed) {
+      return;
+    }
     if (!Hls.isSupported()) {
       v.src = url;
       return;

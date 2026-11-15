@@ -106,9 +106,15 @@ function scopeOf(
   season: number | null,
   episode: number | null,
 ): SearchScope {
-  if (kind === 'movie') return { scope: 'movie' };
-  if (season === null) return { scope: 'all' };
-  if (episode === null) return { scope: 'season', season };
+  if (kind === 'movie') {
+    return { scope: 'movie' };
+  }
+  if (season === null) {
+    return { scope: 'all' };
+  }
+  if (episode === null) {
+    return { scope: 'season', season };
+  }
   return { scope: 'episode', season, episode };
 }
 
@@ -123,8 +129,12 @@ async function unitsOf(
   season: number | null,
   episode: number | null,
 ): Promise<SearchUnit[]> {
-  if (title.kind === 'movie' || season === null) return [];
-  if (episode !== null) return [{ season, episode }];
+  if (title.kind === 'movie' || season === null) {
+    return [];
+  }
+  if (episode !== null) {
+    return [{ season, episode }];
+  }
   const ledger = await client.monitoring.seasonLedger(title.tmdbId, season);
   return ledger.episodes.map((one: LedgerEpisode) => ({ season, episode: one.episode }));
 }
@@ -135,7 +145,9 @@ function subject(
   season: number | null,
   episode: number | null,
 ): string {
-  if (season === null) return title;
+  if (season === null) {
+    return title;
+  }
   const unit =
     episode === null
       ? t('acq.seasonNumber', { season })

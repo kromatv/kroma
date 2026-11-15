@@ -11,11 +11,15 @@ export const MODE_LABEL: Record<ConditionMode, string> = {
 };
 
 export function modeOf(condition: Pick<Condition, 'negate' | 'required'>): ConditionMode {
-  if (condition.negate) return 'excluded';
+  if (condition.negate) {
+    return 'excluded';
+  }
   return condition.required ? 'required' : 'optional';
 }
 
 export function withMode(condition: Condition, mode: ConditionMode): Condition {
-  if (mode === 'excluded') return { ...condition, required: true, negate: true };
+  if (mode === 'excluded') {
+    return { ...condition, required: true, negate: true };
+  }
   return { ...condition, required: mode === 'required', negate: false };
 }

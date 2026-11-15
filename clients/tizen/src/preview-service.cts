@@ -31,10 +31,10 @@ function message(e: unknown): string | undefined {
 function log(msg: string) {
   // `console` may be absent in the Tizen service runtime, so guard it.
   try {
-    if (typeof console !== 'undefined' && console.log) {
+    if (console?.log) {
       console.log(`[kroma preview] ${msg}`);
     }
-  } catch (_e) {
+  } catch {
     /* logging must never break the service */
   }
 }
@@ -42,7 +42,7 @@ function log(msg: string) {
 function exit() {
   try {
     tizen.application.getCurrentApplication().exit();
-  } catch (_e) {
+  } catch {
     /* nothing else to do */
   }
 }

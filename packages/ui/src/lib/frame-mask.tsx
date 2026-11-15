@@ -34,7 +34,9 @@ export function FrameMask({
   active,
   children,
 }: Readonly<{ inset: number; active: boolean; children: ReactNode }>): ReactNode {
-  if (!FRAME_MASKS) return children;
+  if (!FRAME_MASKS) {
+    return children;
+  }
   const mask = active ? (
     <View style={{ flex: 1 }}>
       <View style={{ height: inset }} />

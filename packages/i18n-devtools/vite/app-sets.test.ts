@@ -30,7 +30,9 @@ const WEBSITE = {
 };
 
 afterEach(() => {
-  for (const root of made.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of made.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 describe('the sets the running app renders', () => {

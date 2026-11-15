@@ -49,12 +49,16 @@ interface Attached {
 }
 
 function listed(postProcess: I18nOptions['postProcess']): string[] {
-  if (typeof postProcess === 'string') return [postProcess];
+  if (typeof postProcess === 'string') {
+    return [postProcess];
+  }
   return postProcess ? [...postProcess] : [];
 }
 
 function varsOf(params: Record<string, unknown> | undefined): Vars | undefined {
-  if (!params) return undefined;
+  if (!params) {
+    return undefined;
+  }
   const vars: Vars = {};
   for (const [name, value] of Object.entries(params)) {
     vars[name] = typeof value === 'number' ? value : String(value);
@@ -145,19 +149,27 @@ export function i18next(instance: I18n): Engine {
     name: 'i18next',
     locales: () => {
       const { supportedLngs } = instance.options;
-      if (Array.isArray(supportedLngs)) return supportedLngs.filter((code) => code !== 'cimode');
+      if (Array.isArray(supportedLngs)) {
+        return supportedLngs.filter((code) => code !== 'cimode');
+      }
       return Object.keys(instance.services?.resourceStore?.data ?? {});
     },
     activeLocale: () => instance.resolvedLanguage ?? instance.language,
     inspect: (inspector) => {
-      if (inspector === (attached?.inspector ?? null)) return;
-      if (attached) detach(attached);
+      if (inspector === (attached?.inspector ?? null)) {
+        return;
+      }
+      if (attached) {
+        detach(attached);
+      }
       attached = inspector && attach(inspector);
       instance.emit('languageChanged', instance.language);
     },
     overrideLocale: (locale) => {
       if (locale === null) {
-        if (original !== null) void instance.changeLanguage(original);
+        if (original !== null) {
+          void instance.changeLanguage(original);
+        }
         original = null;
         return;
       }

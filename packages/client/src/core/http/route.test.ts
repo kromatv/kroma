@@ -12,11 +12,21 @@ const answer = (status = 200) =>
 
 type Reply = (url: string, init?: RequestInit) => Promise<Response>;
 
+function urlOf(input: RequestInfo | URL): string {
+  if (typeof input === 'string') {
+    return input;
+  }
+  if (input instanceof URL) {
+    return input.href;
+  }
+  return input.url;
+}
+
 function over(route: Route, reply: Reply) {
   const urls: string[] = [];
   const fetchFn = ((input: RequestInfo | URL, init?: RequestInit) => {
-    urls.push(String(input));
-    return reply(String(input), init);
+    urls.push(urlOf(input));
+    return reply(urlOf(input), init);
   }) as typeof globalThis.fetch;
   const ctx = createRequestContext({
     route,
@@ -31,7 +41,9 @@ function over(route: Route, reply: Reply) {
 }
 
 const unreachableLan: Reply = async (url) => {
-  if (url.startsWith(LAN)) throw new TypeError('Failed to fetch');
+  if (url.startsWith(LAN)) {
+    throw new TypeError('Failed to fetch');
+  }
   return answer();
 };
 
@@ -163,7 +175,9 @@ describe('a request on the direct route', () => {
     const route = createRoute(CANONICAL);
     route.useDirect(LAN);
     const { ctx, urls } = over(route, (url, init) => {
-      if (!url.startsWith(LAN)) return Promise.resolve(answer());
+      if (!url.startsWith(LAN)) {
+        return Promise.resolve(answer());
+      }
       return new Promise((_, reject) => {
         init?.signal?.addEventListener('abort', () => reject(new DOMException('x', 'AbortError')));
       });

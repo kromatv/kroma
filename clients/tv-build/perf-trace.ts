@@ -13,10 +13,16 @@ export interface TraceEvent {
 export function longestTaskWindow(events: TraceEvent[]): { start: number; end: number } | null {
   let best: TraceEvent | null = null;
   for (const e of events) {
-    if (e.ph !== 'X' || e.name !== 'RunTask' || e.dur == null || e.ts == null) continue;
-    if (!best || e.dur > (best.dur ?? 0)) best = e;
+    if (e.ph !== 'X' || e.name !== 'RunTask' || e.dur == null || e.ts == null) {
+      continue;
+    }
+    if (!best || e.dur > (best.dur ?? 0)) {
+      best = e;
+    }
   }
-  if (!best?.ts || !best.dur) return null;
+  if (!best?.ts || !best.dur) {
+    return null;
+  }
   return { start: best.ts, end: best.ts + best.dur };
 }
 
@@ -40,13 +46,19 @@ export function traceSummary(events: TraceEvent[]): Record<string, number> {
   let longTasks = 0;
   let longest = 0;
   for (const e of events) {
-    if (e.ph !== 'X' || e.dur == null) continue;
+    if (e.ph !== 'X' || e.dur == null) {
+      continue;
+    }
     if (e.name === 'RunTask') {
       const ms = e.dur / 1000;
-      if (ms >= 50) longTasks += 1;
+      if (ms >= 50) {
+        longTasks += 1;
+      }
       longest = Math.max(longest, ms);
     }
-    if (KINDS.has(e.name)) out[e.name] = Math.round((out[e.name] ?? 0) + e.dur / 1000);
+    if (KINDS.has(e.name)) {
+      out[e.name] = Math.round((out[e.name] ?? 0) + e.dur / 1000);
+    }
   }
   out.longTasks = longTasks;
   out.longestTaskMs = Math.round(longest);

@@ -24,7 +24,9 @@ describe('URL_ROWS', () => {
     for (const l of KEYBOARD_LAYOUTS) {
       const rows = URL_ROWS[l];
       expect(rows).toHaveLength(4);
-      for (const row of rows) expect(row).toHaveLength(10);
+      for (const row of rows) {
+        expect(row).toHaveLength(10);
+      }
     }
   });
 

@@ -13,7 +13,9 @@ export interface HeightGlideProps {
 /** Glides with a compositor-side CSS transition on the box's height. */
 export function HeightGlide({ height, durationMs, children }: Readonly<HeightGlideProps>) {
   const scope = useStyleScope();
-  if (height === undefined) return <>{children}</>;
+  if (height === undefined) {
+    return <>{children}</>;
+  }
   const glide = sharedStyle(
     `height-glide:${durationMs}`,
     {

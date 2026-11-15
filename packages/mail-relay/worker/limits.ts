@@ -24,7 +24,9 @@ export async function takeDaily(
 ): Promise<boolean> {
   const bucket = `${key}:${Math.floor(nowSecs / DAY_SECS)}`;
   const used = Number((await kv.get(bucket)) ?? '0');
-  if (used >= limit) return false;
+  if (used >= limit) {
+    return false;
+  }
   await kv.put(bucket, String(used + 1), { expirationTtl: 2 * DAY_SECS });
   return true;
 }

@@ -4,7 +4,9 @@ const BAR_WIDTH = 16;
 
 export function percent(tally: Tally): string {
   const share = coverage(tally) * 100;
-  if (tally.missing === 0) return '100%';
+  if (tally.missing === 0) {
+    return '100%';
+  }
   return `${Math.min(share, 99.9).toFixed(1)}%`;
 }
 
@@ -102,7 +104,9 @@ function fileRows(status: LocaleStatus): Row[] {
 }
 
 function keyList(title: string, keys: readonly string[], limit: number): string[] {
-  if (keys.length === 0) return [];
+  if (keys.length === 0) {
+    return [];
+  }
   const shown = keys.slice(0, limit).map((key) => `  ${key}`);
   const rest = keys.length > limit ? [`  and ${keys.length - limit} more`] : [];
   return ['', `${title} (${keys.length})`, ...shown, ...rest];
@@ -114,7 +118,9 @@ export function detail(language: LanguageStatus, names: Names, limit: number): s
   const { tally } = language;
   const summary = `${title}: ${stageLabel(language)}, ${percent(tally)} of ${tally.total} messages (${tally.outdated} outdated, ${tally.missing} missing, ${tally.unreviewed} unreviewed)`;
   const rows = language.sets.flatMap(fileRows);
-  if (rows.length === 0) return `${summary}\nNothing left to translate.`;
+  if (rows.length === 0) {
+    return `${summary}\nNothing left to translate.`;
+  }
   const table = aligned(
     [
       [

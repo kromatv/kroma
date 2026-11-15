@@ -22,7 +22,9 @@ export const certificateCommand = defineCommand({
  */
 async function certificate(host: string): Promise<number> {
   const duid = await duidAt(host);
-  if (!duid) throw new Error(`${host} would not say its DUID`);
+  if (!duid) {
+    throw new Error(`${host} would not say its DUID`);
+  }
   console.log(`${style.green('set')}          ${host}, DUID ${duid}`);
 
   const obtained = await obtainCertificates({ duid, log: (line) => console.log(style.dim(line)) });

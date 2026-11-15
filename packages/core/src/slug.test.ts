@@ -8,6 +8,8 @@ describe('slugify', () => {
   });
 
   it('is idempotent, so a slug read back off a URL folds to itself', () => {
-    for (const { slug } of cases) expect(slugify(slug)).toBe(slug);
+    for (const { slug } of cases) {
+      expect(slugify(slug)).toBe(slug);
+    }
   });
 });

@@ -99,27 +99,35 @@ const ELSEWHERE: readonly (readonly [keyof CommandItem, number])[] = [
 
 function fieldScore(item: CommandItem, field: keyof CommandItem, query: string): number | null {
   const text = item[field];
-  if (typeof text !== 'string' || !text) return null;
+  if (typeof text !== 'string' || !text) {
+    return null;
+  }
   const hit = matchText(text, query, { strict: true });
-  return hit && hit.score;
+  return hit?.score ?? null;
 }
 
 function bestScore(item: CommandItem, query: string): number | null {
   let best = matchText(item.label, query)?.score ?? null;
   for (const [field, weight] of ELSEWHERE) {
     const score = fieldScore(item, field, query);
-    if (score !== null) best = Math.max(best ?? 0, score * weight);
+    if (score !== null) {
+      best = Math.max(best ?? 0, score * weight);
+    }
   }
   return best;
 }
 
 function scoreAcross(item: CommandItem, query: string): number | null {
   const terms = queryTerms(query);
-  if (terms.length < 2) return null;
+  if (terms.length < 2) {
+    return null;
+  }
   let total = 0;
   for (const term of terms) {
     const score = bestScore(item, term);
-    if (score === null) return null;
+    if (score === null) {
+      return null;
+    }
     total += score;
   }
   return (total / terms.length) * ACROSS_FIELDS;
@@ -129,7 +137,9 @@ function rank(item: CommandItem, query: string, boost: CommandBoost | undefined)
   const score = item.always
     ? (matchText(item.label, query)?.score ?? null)
     : (bestScore(item, query) ?? scoreAcross(item, query));
-  if (score === null) return item.always ? { item, score: FLOOR } : null;
+  if (score === null) {
+    return item.always ? { item, score: FLOOR } : null;
+  }
   return { item, score: score + (boost?.(item, query) ?? 0) };
 }
 
@@ -194,9 +204,13 @@ function offsetOf(sections: readonly CommandSection[], index: number): number {
   let y = METRICS.pad;
   let seen = 0;
   for (const section of sections) {
-    if (section.title) y += METRICS.heading;
+    if (section.title) {
+      y += METRICS.heading;
+    }
     for (const item of section.items) {
-      if (seen === index) return y;
+      if (seen === index) {
+        return y;
+      }
       y += heightOf(item);
       seen += 1;
     }
@@ -210,7 +224,9 @@ function revealed(
   offset: number,
   viewport: number,
 ): number | null {
-  if (y >= offset && y + height <= offset + viewport) return null;
+  if (y >= offset && y + height <= offset + viewport) {
+    return null;
+  }
   return Math.max(0, y < offset ? y - pad : y + height - viewport + pad);
 }
 
@@ -240,8 +256,12 @@ function opensDanger(actions: readonly CommandAction[], index: number): boolean 
 function actionOffsetOf(actions: readonly CommandAction[], index: number): number {
   let y = ACTION_METRICS.pad;
   for (let at = 0; at <= index; at += 1) {
-    if (opensDanger(actions, at)) y += ACTION_METRICS.rule;
-    if (at < index) y += ACTION_METRICS.row;
+    if (opensDanger(actions, at)) {
+      y += ACTION_METRICS.rule;
+    }
+    if (at < index) {
+      y += ACTION_METRICS.row;
+    }
   }
   return y;
 }
@@ -253,7 +273,9 @@ function scrollActionsTo(
   offset: number,
   viewport: number,
 ): number | null {
-  if (index < 0) return null;
+  if (index < 0) {
+    return null;
+  }
   const row = {
     y: actionOffsetOf(actions, index),
     height: ACTION_METRICS.row,
@@ -264,7 +286,9 @@ function scrollActionsTo(
 
 /** The cursor `delta` rows on, wrapping at both ends. */
 function stepTo(from: number, delta: number, length: number): number {
-  if (length === 0) return 0;
+  if (length === 0) {
+    return 0;
+  }
   const at = Math.min(Math.max(0, from), length - 1);
   // The extra turn keeps a backwards step non-negative before the modulo,
   // whatever a page step is worth.

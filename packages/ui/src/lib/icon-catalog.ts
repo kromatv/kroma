@@ -33,8 +33,12 @@ function createIconCatalog(catalog: IconCatalog) {
   function iconEntry(name: string): IconEntry | null {
     const flat = flatten(name);
     const hit = index.get(flat);
-    if (hit) return hit;
-    if (!flat.endsWith(FILLED)) return null;
+    if (hit) {
+      return hit;
+    }
+    if (!flat.endsWith(FILLED)) {
+      return null;
+    }
     return index.get(flat.slice(0, -FILLED.length)) ?? null;
   }
 

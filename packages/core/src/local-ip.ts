@@ -19,7 +19,9 @@ function once<T>(resolve: (value: T) => void): (value: T) => void {
 function tizenLocalIp(): Promise<string | null> {
   const tizen = (globalThis as { tizen?: TizenSystemInfo }).tizen;
   const si = tizen?.systeminfo;
-  if (!si?.getPropertyValue) return Promise.resolve(null);
+  if (!si?.getPropertyValue) {
+    return Promise.resolve(null);
+  }
   return new Promise((resolve) => {
     const finish = once(resolve);
     const good = (ip?: string) => (ip && ip !== '0.0.0.0' ? ip : null);
@@ -28,7 +30,9 @@ function tizenLocalIp(): Promise<string | null> {
         'WIFI_NETWORK',
         (w) => {
           const ip = good(w?.ipAddress);
-          if (ip) return finish(ip);
+          if (ip) {
+            return finish(ip);
+          }
           si.getPropertyValue(
             'ETHERNET_NETWORK',
             (e) => finish(good(e?.ipAddress)),
@@ -51,7 +55,9 @@ function tizenLocalIp(): Promise<string | null> {
 
 function webosLocalIp(): Promise<string | null> {
   const svc = (globalThis as { webOS?: WebOSBridge }).webOS?.service;
-  if (!svc?.request) return Promise.resolve(null);
+  if (!svc?.request) {
+    return Promise.resolve(null);
+  }
   return new Promise((resolve) => {
     const finish = once(resolve);
     try {
@@ -70,7 +76,9 @@ function webosLocalIp(): Promise<string | null> {
 
 function webrtcLocalIp(): Promise<string | null> {
   const RTC = (globalThis as { RTCPeerConnection?: typeof RTCPeerConnection }).RTCPeerConnection;
-  if (!RTC) return Promise.resolve(null);
+  if (!RTC) {
+    return Promise.resolve(null);
+  }
   return new Promise((resolve) => {
     let settled = false;
     const finish = (v: string | null) => {
@@ -90,10 +98,14 @@ function webrtcLocalIp(): Promise<string | null> {
       pc.createDataChannel('kroma');
       pc.onicecandidate = (e) => {
         const cand = e.candidate?.candidate;
-        if (!cand) return;
+        if (!cand) {
+          return;
+        }
         // Ignore mDNS-obfuscated candidates (`*.local`); take a private IPv4.
         const ip = /\b(\d{1,3}(?:\.\d{1,3}){3})\b/.exec(cand)?.[1];
-        if (ip && isPrivateIPv4(ip)) finish(ip);
+        if (ip && isPrivateIPv4(ip)) {
+          finish(ip);
+        }
       };
       pc.createOffer()
         .then((offer) => pc.setLocalDescription(offer))

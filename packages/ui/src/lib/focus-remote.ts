@@ -76,7 +76,9 @@ export function createRemoteTransport({ enabled }: RemoteTransportOptions) {
       okDownAt = null;
     },
     subscribe(handle: (direction: Direction) => void) {
-      if (!enabled) return () => {};
+      if (!enabled) {
+        return () => {};
+      }
       handlers.add(handle);
       return () => {
         handlers.delete(handle);
@@ -84,12 +86,18 @@ export function createRemoteTransport({ enabled }: RemoteTransportOptions) {
     },
     stepRing(direction: Direction, from: Transport, perf?: PerfSampler | null) {
       owner ??= from;
-      if (owner !== from) return;
+      if (owner !== from) {
+        return;
+      }
       perf?.markPress();
-      for (const handle of handlers) handle(direction);
+      for (const handle of handlers) {
+        handle(direction);
+      }
     },
     postRemoteDirection(direction: Direction) {
-      for (const handle of handlers) handle(direction);
+      for (const handle of handlers) {
+        handle(direction);
+      }
     },
   };
 }
@@ -109,33 +117,50 @@ export function useRemoteBridge(on = true): void {
   const perf = usePerfSampler();
   const repeat = useRef<ReturnType<typeof setInterval> | null>(null);
   const stop = () => {
-    if (repeat.current) clearInterval(repeat.current);
+    if (repeat.current) {
+      clearInterval(repeat.current);
+    }
     repeat.current = null;
   };
   useEffect(() => stop, []);
   useRemoteEvents((event: HWEvent) => {
     stop();
-    if (!on) return;
+    if (!on) {
+      return;
+    }
     // A full-screen overlay (the brand intro) owns the remote while it's up.
-    if (inputHeld()) return;
+    if (inputHeld()) {
+      return;
+    }
     const held = HELD[event.eventType];
     if (held) {
-      if (event.eventKeyAction === 1) return;
+      if (event.eventKeyAction === 1) {
+        return;
+      }
       remote.stepRing(held, 'events', perf);
       repeat.current = setInterval(() => {
-        if (inputHeld()) stop();
-        else remote.stepRing(held, 'events', perf);
+        if (inputHeld()) {
+          stop();
+        } else {
+          remote.stepRing(held, 'events', perf);
+        }
       }, REPEAT_MS);
       return;
     }
-    for (const direction of directionsOf(event)) remote.stepRing(direction, 'events', perf);
+    for (const direction of directionsOf(event)) {
+      remote.stepRing(direction, 'events', perf);
+    }
   });
 }
 
 function directionsOf(event: HWEvent): readonly Direction[] {
-  if (event.eventType === 'longSelect') return [event.eventKeyAction === 1 ? RELEASE : HOLD];
+  if (event.eventType === 'longSelect') {
+    return [event.eventKeyAction === 1 ? RELEASE : HOLD];
+  }
   if (event.eventType === 'select') {
-    if (!IS_ANDROID) return TAP;
+    if (!IS_ANDROID) {
+      return TAP;
+    }
     return [isRemoteKeyUp(event) ? RELEASE : Directions.ENTER];
   }
   const direction = isRemoteKeyUp(event) ? undefined : REMOTE[event.eventType];
@@ -185,32 +210,47 @@ export function useRemoteHostProps(on = true): RemoteHostProps {
   const perf = usePerfSampler();
   const onKeyDown = useCallback(
     (event: NativeSyntheticEvent<TVKeyEvent>) => {
-      if (inputHeld()) return;
+      if (inputHeld()) {
+        return;
+      }
       const { code, key, altKey, ctrlKey, metaKey } = event.nativeEvent;
       // Auto-repeat from a held direction is how a TV scrolls a long rail.
       const direction = KEY_CODES[code];
       if (direction) {
-        if (direction !== Directions.ENTER || !remote.okRepeats())
+        if (direction !== Directions.ENTER || !remote.okRepeats()) {
           remote.stepRing(direction, 'host', perf);
+        }
         // Fanned to the player chrome as well, the same way `useTVEventHandler`
         // feeds both the navigator bridge and the player on tvOS. Sent whatever
         // `stepRing` decided: the chrome keeps its own virtual focus and counts
         // its own presses (see player/hooks/use-player-keys), so suppressing this
         // to match the ring would leave the player deaf instead of steady.
         const remoteKey = REMOTE_KEY[code];
-        if (remoteKey) for (const sub of remote.remoteKeys) sub(remoteKey);
+        if (remoteKey) {
+          for (const sub of remote.remoteKeys) {
+            sub(remoteKey);
+          }
+        }
         return;
       }
       // Not a direction: may be someone typing. See `useHardwareKeys`.
-      if (altKey || ctrlKey || metaKey) return;
-      if (key !== 'Backspace' && key.length !== 1) return;
-      for (const handle of remote.typists) handle(key);
+      if (altKey || ctrlKey || metaKey) {
+        return;
+      }
+      if (key !== 'Backspace' && key.length !== 1) {
+        return;
+      }
+      for (const handle of remote.typists) {
+        handle(key);
+      }
     },
     [perf, inputHeld, remote],
   );
   const onKeyUp = useCallback(
     (event: NativeSyntheticEvent<TVKeyEvent>) => {
-      if (KEY_CODES[event.nativeEvent.code] !== Directions.ENTER) return;
+      if (KEY_CODES[event.nativeEvent.code] !== Directions.ENTER) {
+        return;
+      }
       remote.okReleased();
       remote.stepRing(RELEASE, 'host', perf);
     },

@@ -87,8 +87,12 @@ export async function sweepOrphans(
     const known = new Set<string>([INDEX, WANTED]);
     for (const entry of entries) {
       known.add(entry.fileUri);
-      for (const sub of entry.subs ?? []) known.add(sub.path);
-      if (entry.storyboard) known.add(entry.storyboard.spritePath);
+      for (const sub of entry.subs ?? []) {
+        known.add(sub.path);
+      }
+      if (entry.storyboard) {
+        known.add(entry.storyboard.spritePath);
+      }
     }
     for (const uri of live) {
       known.add(uri);

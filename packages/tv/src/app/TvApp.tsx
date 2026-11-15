@@ -291,26 +291,38 @@ function TvRouterGuard() {
   useEffect(() => {
     // Routing on a session that has not been resumed yet would send the TV home
     // and back to the picker when the exchange turns out to fail.
-    if (!ready) return;
+    if (!ready) {
+      return;
+    }
     const target = resolveRedirect(GUARD, { signedIn: Boolean(user) }, nav.route.name);
-    if (target) nav.replace(target);
+    if (target) {
+      nav.replace(target);
+    }
   }, [ready, user, nav]);
 
   // Siri search, only once signed in: there is no catalogue before that.
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     return onSearchRequest(() => nav.reset('search'));
   }, [user, nav, onSearchRequest]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
     return onListenRequest(() => {
-      if (nav.route.name !== 'search') nav.reset('search');
+      if (nav.route.name !== 'search') {
+        nav.reset('search');
+      }
     });
   }, [user, nav, onListenRequest]);
 
   useEffect(() => {
-    if (!user || !deepLink) return;
+    if (!user || !deepLink) {
+      return;
+    }
     if (deepLink.type === 'movie') {
       const movie = movies.find((m) => m.id === deepLink.id);
       if (movie) {

@@ -57,11 +57,15 @@ export function TagsInput({
 
   const add = (names: readonly string[]) => {
     const next = withTags(value, names);
-    if (next.length !== value.length) onValueChange(next);
+    if (next.length !== value.length) {
+      onValueChange(next);
+    }
   };
   const type = (text: string) => {
     const { closed, rest } = cutTags(text, separators);
-    if (closed.length > 0) add(closed);
+    if (closed.length > 0) {
+      add(closed);
+    }
     setDraft(rest);
   };
   const close = () => {

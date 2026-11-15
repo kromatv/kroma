@@ -33,20 +33,29 @@ let files = 0;
 function* sources(dir: string): Generator<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const at = join(dir, entry.name);
-    if (entry.isDirectory()) yield* sources(at);
-    else if (/\.tsx?$/.test(entry.name)) yield at;
+    if (entry.isDirectory()) {
+      yield* sources(at);
+    } else if (/\.tsx?$/.test(entry.name)) {
+      yield at;
+    }
   }
 }
 
 for (const file of sources(SRC)) {
   const rel = relative(SRC, file);
-  if (rel.includes('.test.') || rel.includes('.stories.') || rel.includes('.demo.')) continue;
-  if (needle && !rel.includes(needle)) continue;
+  if (rel.includes('.test.') || rel.includes('.stories.') || rel.includes('.demo.')) {
+    continue;
+  }
+  if (needle && !rel.includes(needle)) {
+    continue;
+  }
   files += 1;
   const source = readFileSync(file, 'utf8');
   try {
     const result = compileReactSource(source, file, false, true);
-    if (result?.code.includes('react/compiler-runtime')) memoizedFiles += 1;
+    if (result?.code.includes('react/compiler-runtime')) {
+      memoizedFiles += 1;
+    }
     for (const error of result?.errors ?? []) {
       const offset = error.labels[0]?.start;
       const line =
@@ -78,6 +87,8 @@ console.log(
 );
 for (const [file, list] of [...byFile].sort(([a], [b]) => a.localeCompare(b))) {
   console.log(`\n${file}`);
-  for (const skip of list) console.log(`  ${skip.reason}${skip.loc}`);
+  for (const skip of list) {
+    console.log(`  ${skip.reason}${skip.loc}`);
+  }
 }
 process.exit(skips.length > 0 ? 1 : 0);

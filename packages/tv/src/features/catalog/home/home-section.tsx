@@ -12,7 +12,11 @@ interface HomeSectionProps {
 /** One home section below the hero, drawn the way its layout asks. Any layout
  * without a shape of its own here is a rail. */
 export function HomeSection({ section, onHold }: Readonly<HomeSectionProps>) {
-  if (section.layout === 'ranked') return <RankedRail section={section} onHold={onHold} />;
-  if (section.layout === 'spotlight') return <SpotlightBand section={section} onHold={onHold} />;
+  if (section.layout === 'ranked') {
+    return <RankedRail section={section} onHold={onHold} />;
+  }
+  if (section.layout === 'spotlight') {
+    return <SpotlightBand section={section} onHold={onHold} />;
+  }
   return <SectionRail section={section} onHold={onHold} />;
 }

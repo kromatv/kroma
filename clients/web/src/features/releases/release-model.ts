@@ -17,7 +17,9 @@ export function formatReleaseDate(
   style: 'long' | 'medium',
 ): string | null {
   const day = iso ? ISO_DAY.exec(iso) : null;
-  if (!day) return null;
+  if (!day) {
+    return null;
+  }
   const at = Date.UTC(Number(day[1]), Number(day[2]) - 1, Number(day[3]));
   return new Intl.DateTimeFormat(locale, { dateStyle: style, timeZone: 'UTC' }).format(at);
 }
@@ -41,6 +43,8 @@ export function highlightLayout(
   const lead = first?.image ? first : null;
   const rest = lead ? others : highlights;
   const rows: Highlight[][] = [];
-  for (let at = 0; at < rest.length; at += columns) rows.push(rest.slice(at, at + columns));
+  for (let at = 0; at < rest.length; at += columns) {
+    rows.push(rest.slice(at, at + columns));
+  }
   return { lead, rows };
 }

@@ -104,7 +104,9 @@ export function useRefusalText(): (
   const fmt = useFormat();
   return useCallback(
     (refusal, fallback) => {
-      if (!refusal) return fallback ?? null;
+      if (!refusal) {
+        return fallback ?? null;
+      }
       return sentence(t, fmt.bytes, refusal) ?? fallback ?? t('acq.refusal.other');
     },
     [t, fmt],

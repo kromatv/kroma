@@ -24,16 +24,22 @@ export function usePrefetchRows<T>({
   cell,
 }: Readonly<PrefetchRowsArgs<T>>): void {
   const [travel, setTravel] = useState({ row: focusedRow, down: true });
-  if (travel.row !== focusedRow) setTravel({ row: focusedRow, down: focusedRow >= travel.row });
+  if (travel.row !== focusedRow) {
+    setTravel({ row: focusedRow, down: focusedRow >= travel.row });
+  }
 
   const uris = useMemo(() => {
-    if (!art || cell <= 0) return [];
+    if (!art || cell <= 0) {
+      return [];
+    }
     const found: string[] = [];
     for (const row of aheadRows({ start, end }, travel.down, metrics)) {
       const first = (row - metrics.headerRows) * columns;
       for (const item of data.slice(first, first + columns)) {
         const uri = art(item, cell);
-        if (uri) found.push(uri);
+        if (uri) {
+          found.push(uri);
+        }
       }
     }
     return found;

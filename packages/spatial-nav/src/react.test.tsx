@@ -28,7 +28,9 @@ function Probe() {
 }
 
 function navigator(): SpatialNavigator {
-  if (!held.nav) throw new Error('nothing mounted a navigator');
+  if (!held.nav) {
+    throw new Error('nothing mounted a navigator');
+  }
   return held.nav;
 }
 
@@ -142,7 +144,9 @@ describe('<NavigatorRoot>', () => {
     const { rerender } = render(<RowOf ids={ids(4)} open="t0" />);
     rerender(<RowOf ids={ids(8)} open="t0" />);
 
-    for (let step = 0; step < 7; step += 1) press('right');
+    for (let step = 0; step < 7; step += 1) {
+      press('right');
+    }
 
     expect(screen.queryByTestId('t7')).toBeNull();
     expect(lit()).toBe(1);
@@ -238,7 +242,9 @@ describe('<NavigatorNode>', () => {
 function Locker({ hold }: Readonly<{ hold: boolean }>) {
   const { lock, unlock } = useLockNavigator();
   useEffect(() => {
-    if (!hold) return;
+    if (!hold) {
+      return;
+    }
     lock();
     return unlock;
   }, [hold, lock, unlock]);

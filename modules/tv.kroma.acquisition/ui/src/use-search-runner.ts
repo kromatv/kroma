@@ -47,7 +47,9 @@ export function useSearchRunner(
       setState({ ...IDLE, busy: true, scope });
       search(scope)
         .then((view) => {
-          if (generation.current === mine) setState({ ...IDLE, view, scope });
+          if (generation.current === mine) {
+            setState({ ...IDLE, view, scope });
+          }
         })
         .catch((e) => {
           if (generation.current === mine) {
@@ -61,12 +63,16 @@ export function useSearchRunner(
   const grab = useCallback(
     (release: ScoredReleaseView) => {
       const scope = state.scope;
-      if (!scope) return;
+      if (!scope) {
+        return;
+      }
       const mine = generation.current;
       setState((s) => ({ ...s, grabbing: true, grabbed: null }));
       grabOne(scope, release)
         .then(() => {
-          if (generation.current !== mine) return;
+          if (generation.current !== mine) {
+            return;
+          }
           setState((s) => ({
             ...s,
             grabbing: false,
@@ -74,7 +80,9 @@ export function useSearchRunner(
           }));
         })
         .catch((e) => {
-          if (generation.current !== mine) return;
+          if (generation.current !== mine) {
+            return;
+          }
           setState((s) => ({
             ...s,
             grabbing: false,

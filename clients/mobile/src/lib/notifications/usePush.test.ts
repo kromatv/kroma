@@ -273,7 +273,9 @@ describe('routing a tap', () => {
 
     unmount();
     tap.fire?.('/show/abc');
-    for (let i = 0; i < 20; i += 1) await Promise.resolve();
+    for (let i = 0; i < 20; i += 1) {
+      await Promise.resolve();
+    }
 
     expect(push).not.toHaveBeenCalled();
     expect(notifications.addNotificationResponseReceivedListener).not.toHaveBeenCalled();

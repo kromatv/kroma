@@ -77,7 +77,9 @@ function List() {
   const scroller = useCursorScroll(scroll, METRICS.maxHeight);
   const height = useListHeight();
 
-  if (shown === 0) return null;
+  if (shown === 0) {
+    return null;
+  }
 
   return (
     <ScrollView
@@ -117,7 +119,9 @@ function List() {
 function Empty({ children }: Readonly<{ children?: ReactNode }>) {
   const { shown } = useCommand('Empty');
   const height = useListHeight();
-  if (shown > 0) return null;
+  if (shown > 0) {
+    return null;
+  }
   return (
     <Box h={height} center>
       <Text variant="meta" color="textDim">

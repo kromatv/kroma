@@ -7,15 +7,23 @@ const ANY_DEPTH = '**';
 export function matchesWildcard(name: string, pattern: string): boolean {
   const [head = '', ...rest] = pattern.split('*');
   const tail = rest.pop();
-  if (tail === undefined) return name === head;
-  if (name.length < head.length + tail.length) return false;
-  if (!name.startsWith(head) || !name.endsWith(tail)) return false;
+  if (tail === undefined) {
+    return name === head;
+  }
+  if (name.length < head.length + tail.length) {
+    return false;
+  }
+  if (!name.startsWith(head) || !name.endsWith(tail)) {
+    return false;
+  }
 
   const end = name.length - tail.length;
   let from = head.length;
   for (const part of rest) {
     const at = name.indexOf(part, from);
-    if (at === -1 || at + part.length > end) return false;
+    if (at === -1 || at + part.length > end) {
+      return false;
+    }
     from = at + part.length;
   }
   return true;
@@ -40,7 +48,9 @@ function walk(directory: string, [segment = '', ...rest]: readonly string[]): st
   }
 
   const named = entries.filter((entry) => matchesWildcard(entry.name, segment));
-  if (rest.length === 0) return named.map((entry) => join(directory, entry.name));
+  if (rest.length === 0) {
+    return named.map((entry) => join(directory, entry.name));
+  }
   return named
     .filter((entry) => entry.isDirectory())
     .flatMap((entry) => walk(join(directory, entry.name), rest));

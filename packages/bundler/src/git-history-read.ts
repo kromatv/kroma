@@ -80,7 +80,9 @@ export async function historyFingerprint({ repo, root }: GitHistoryOptions): Pro
  */
 export async function readGitHistory({ repo, root }: GitHistoryOptions): Promise<GitHistory> {
   const shallow = (await git(repo, ['rev-parse', '--is-shallow-repository'])).trim() === 'true';
-  if (shallow) return { ...NO_HISTORY, shallow: true };
+  if (shallow) {
+    return { ...NO_HISTORY, shallow: true };
+  }
 
   const tracked = splitPaths(await git(repo, ['ls-files', '-z', '--', root]));
   const working = parseStatus(await git(repo, statusArgs(root)));

@@ -9,7 +9,9 @@ const pageBrowser: FlowBrowser = {
     window.location.assign(url);
     return new Promise((resolve) => {
       const restored = (event: PageTransitionEvent) => {
-        if (!event.persisted) return;
+        if (!event.persisted) {
+          return;
+        }
         window.removeEventListener('pageshow', restored);
         resolve(null);
       };

@@ -8,8 +8,12 @@ export type PublishDecision = { publish: boolean; reason: string };
 const PackageObject = z.record(z.string(), z.unknown());
 
 function sortKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortKeys);
-  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) {
+    return value.map(sortKeys);
+  }
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
   return Object.fromEntries(
     Object.entries(value)
       .sort(([a], [b]) => Number(a > b) - Number(a < b))
@@ -21,26 +25,34 @@ function sortKeys(value: unknown): unknown {
  *  one source stamped with different versions serialise identically. */
 export function normalisePackageJson(bytes: Uint8Array): Uint8Array {
   const parsed = PackageObject.safeParse(JSON.parse(new TextDecoder().decode(bytes)));
-  if (!parsed.success) throw new Error('package.json is not an object');
+  if (!parsed.success) {
+    throw new Error('package.json is not an object');
+  }
   const { version: _version, ...rest } = parsed.data;
   return new TextEncoder().encode(JSON.stringify(sortKeys(rest)));
 }
 
 function stampedVersion(files: PackageFiles): string | undefined {
   const raw = files.get('package.json');
-  if (!raw) return undefined;
+  if (!raw) {
+    return undefined;
+  }
   const { version } = JSON.parse(new TextDecoder().decode(raw)) as { version?: unknown };
   return typeof version === 'string' && version ? version : undefined;
 }
 
 function maskVersion(bytes: Uint8Array, version: string | undefined): Uint8Array {
-  if (!version) return bytes;
+  if (!version) {
+    return bytes;
+  }
   const text = Buffer.from(bytes).toString('latin1');
   return Buffer.from(text.replaceAll(version, '\0version\0'), 'latin1');
 }
 
 function byCodeUnit(a: string, b: string): number {
-  if (a === b) return 0;
+  if (a === b) {
+    return 0;
+  }
   return a < b ? -1 : 1;
 }
 
@@ -66,8 +78,12 @@ export function decide(input: {
   local: PackageFiles;
   published: PackageFiles | null;
 }): PublishDecision {
-  if (input.tag !== 'canary') return { publish: true, reason: `tag ${input.tag} always publishes` };
-  if (!input.published) return { publish: true, reason: 'no canary is published yet' };
+  if (input.tag !== 'canary') {
+    return { publish: true, reason: `tag ${input.tag} always publishes` };
+  }
+  if (!input.published) {
+    return { publish: true, reason: 'no canary is published yet' };
+  }
   const local = contentHash(input.local);
   const published = contentHash(input.published);
   if (local === published) {

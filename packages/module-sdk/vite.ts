@@ -32,7 +32,9 @@ function withoutPointer(catalog: Readonly<Record<string, string>>): Record<strin
 
 function catalogsOf(entry: string): Injected {
   const dir = join(dirname(entry), '..', '..', 'locales');
-  if (catalogLayout(dir) === 'flat') return { expression: FLAT_CATALOGS, read: [] };
+  if (catalogLayout(dir) === 'flat') {
+    return { expression: FLAT_CATALOGS, read: [] };
+  }
   const found = scanCatalogs(dir);
   const files = found.map(
     (file) => [`${file.locale}/${file.file}.json`, withoutPointer(readCatalog(dir, file))] as const,
@@ -53,9 +55,13 @@ export function kromaModule(): Plugin {
     enforce: 'pre',
     transform(code, id) {
       const file = id.split('?', 1)[0] ?? id;
-      if (!MODULE_ENTRY.test(file) || !OPTIONS_ONLY_CALL.test(code)) return null;
+      if (!MODULE_ENTRY.test(file) || !OPTIONS_ONLY_CALL.test(code)) {
+        return null;
+      }
       const { expression: locales, read } = catalogsOf(file);
-      for (const catalog of read) this.addWatchFile(catalog);
+      for (const catalog of read) {
+        this.addWatchFile(catalog);
+      }
       const injected = `import __kromaManifest from '../../module.json';\n${code}`.replace(
         OPTIONS_ONLY_CALL,
         () => `defineModule({ manifest: __kromaManifest, locales: ${locales},`,

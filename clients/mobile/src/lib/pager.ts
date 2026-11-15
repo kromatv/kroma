@@ -1,7 +1,9 @@
 /** The page a horizontal pager rests nearest to at a scroll offset, held to the
  *  pages it has: an overscroll past either end reads as that end. */
 export function pageAt(offset: number, pageWidth: number, count: number): number {
-  if (pageWidth <= 0 || count <= 0) return 0;
+  if (pageWidth <= 0 || count <= 0) {
+    return 0;
+  }
   return Math.min(count - 1, Math.max(0, Math.round(offset / pageWidth)));
 }
 

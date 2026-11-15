@@ -13,10 +13,18 @@ type Device = 'macos' | 'windows' | 'linux' | 'tv' | 'mobile' | 'nas';
 const subscribeNever = () => () => undefined;
 const clientDevice = (): Device => {
   const guess = guessPlatform(navigator.userAgent);
-  if (!guess) return 'macos';
-  if (guess.family !== 'desktop') return guess.family;
-  if (guess.targets.includes('windows-exe')) return 'windows';
-  if (guess.targets.includes('linux-appimage')) return 'linux';
+  if (!guess) {
+    return 'macos';
+  }
+  if (guess.family !== 'desktop') {
+    return guess.family;
+  }
+  if (guess.targets.includes('windows-exe')) {
+    return 'windows';
+  }
+  if (guess.targets.includes('linux-appimage')) {
+    return 'linux';
+  }
   return 'macos';
 };
 const serverDevice = (): Device => 'macos';
@@ -43,7 +51,9 @@ export function AppPlatforms() {
             value={selected}
             onChange={(event) => {
               const device = devices.find((item) => item.id === event.target.value);
-              if (device) setChosen(device.id);
+              if (device) {
+                setChosen(device.id);
+              }
             }}
             className="w-full appearance-none rounded-xl border border-border bg-surface-1 py-3 pl-4 pr-10 text-sm font-semibold text-text"
           >

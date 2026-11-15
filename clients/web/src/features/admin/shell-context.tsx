@@ -10,6 +10,8 @@ export const AdminContext = createContext<AdminCtx | null>(null);
 /** The console's shared data surface: the server every page reports on. */
 export function useAdmin(): AdminCtx {
   const ctx = useContext(AdminContext);
-  if (!ctx) throw new Error('useAdmin must be used within <AdminProvider>');
+  if (!ctx) {
+    throw new Error('useAdmin must be used within <AdminProvider>');
+  }
   return ctx;
 }

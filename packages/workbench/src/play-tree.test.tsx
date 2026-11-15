@@ -37,7 +37,9 @@ describe('the fiber behind a stage', () => {
 
   it('is found whatever else the host node carries', () => {
     const node = mount(<Text>Pilot</Text>).current;
-    if (!node) throw new Error('stage was not mounted');
+    if (!node) {
+      throw new Error('stage was not mounted');
+    }
     const key = Object.keys(node).find((at) => at.startsWith('__reactFiber$')) as string;
     expect(fiberFor({ id: 'stage', [key]: Reflect.get(node, key) })).toBe(fiberFor(node));
   });
@@ -120,7 +122,9 @@ describe('a stage React Native shaped', () => {
       </Box>,
     );
     const node = stage.current;
-    if (!node) throw new Error('stage was not mounted');
+    if (!node) {
+      throw new Error('stage was not mounted');
+    }
     const key = Object.keys(node).find((at) => at.startsWith('__reactFiber$')) as string;
     const result = await runPlay({
       stage: { _internalInstanceHandle: Reflect.get(node, key) },

@@ -37,7 +37,9 @@ export function extendedReasons(source: PermissionSource, t: Translate): string[
  *  its isolation, or null when it does not. */
 export function extendedSentence(source: PermissionSource, t: Translate): string | null {
   const reasons = extendedReasons(source, t);
-  if (reasons.length === 0) return null;
+  if (reasons.length === 0) {
+    return null;
+  }
   return t('modulePermissions.verdictExtended', { reasons: opening(listOf(reasons, t)) });
 }
 
@@ -61,7 +63,9 @@ export function consentOverview(
   );
   const extended = declared.flatMap(({ id, name, source }) => {
     const reasons = extendedReasons(source, t);
-    if (reasons.length === 0) return [];
+    if (reasons.length === 0) {
+      return [];
+    }
     return [{ id, line: t('modulePermissions.extendedBy', { name, reasons: listOf(reasons, t) }) }];
   });
   const reached = declared.map(({ name, source }) => ({

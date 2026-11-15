@@ -141,7 +141,9 @@ describe('SettingsPanes', () => {
 
   it('shows a panel on the right as its row takes focus, and Back returns to the row', () => {
     mount();
-    for (let i = 0; i < 4; i += 1) press('ArrowDown');
+    for (let i = 0; i < 4; i += 1) {
+      press('ArrowDown');
+    }
     const notes = screen.getByRole('button', { name: 'Release notes' });
     expect(wearsRing(notes)).toBe(false);
 

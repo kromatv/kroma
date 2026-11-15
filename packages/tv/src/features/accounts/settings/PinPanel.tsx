@@ -37,8 +37,9 @@ const MANAGE: readonly PinAction[] = [
 ];
 
 function subtitle(step: Exclude<Step, { kind: 'menu' }>): MessageKey {
-  if (step.kind === 'current')
+  if (step.kind === 'current') {
     return step.next === 'remove' ? 'pin.clearSubtitle' : 'pin.changeSubtitle';
+  }
   return step.kind === 'confirm' ? 'pin.confirmSubtitle' : 'pin.setSubtitle';
 }
 
@@ -53,19 +54,27 @@ export function PinPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | nu
   const settled = step.kind === 'menu' && step.done;
 
   useEffect(() => {
-    if (settled) entry.current?.focus();
+    if (settled) {
+      entry.current?.focus();
+    }
   }, [settled, entry]);
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
 
   const save = async (pin: string, current?: string): Promise<MessageKey | undefined> => {
     try {
       const res = await client?.accounts.setPin(pin, current);
-      if (!res) return undefined;
+      if (!res) {
+        return undefined;
+      }
       updateUser(res.user);
       setStep({ kind: 'menu', done: true });
       return undefined;
     } catch (e) {
-      if (current === undefined || isPinLockout(e)) throw e;
+      if (current === undefined || isPinLockout(e)) {
+        throw e;
+      }
       setStep({ kind: 'current', next: 'change' });
       return 'auth.pinCurrentWrong';
     }
@@ -73,7 +82,9 @@ export function PinPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | nu
 
   const remove = async (current: string) => {
     const res = await client?.accounts.clearPin(current);
-    if (!res) return;
+    if (!res) {
+      return;
+    }
     updateUser(res.user);
     setStep({ kind: 'menu', done: true });
   };
@@ -91,7 +102,9 @@ export function PinPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | nu
       setStep({ kind: 'confirm', current: step.current, first: pin });
       return undefined;
     }
-    if (step.kind !== 'confirm') return undefined;
+    if (step.kind !== 'confirm') {
+      return undefined;
+    }
     if (pin !== step.first) {
       setStep({ kind: 'new', current: step.current });
       return 'pin.mismatch';

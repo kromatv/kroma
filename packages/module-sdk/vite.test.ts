@@ -18,7 +18,9 @@ function transform(id: string, code: string): TransformResult {
 const dirs: string[] = [];
 
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 function moduleWith(files: Record<string, object>): string {

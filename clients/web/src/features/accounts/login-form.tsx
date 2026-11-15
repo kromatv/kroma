@@ -87,11 +87,16 @@ export function LoginForm({
   const formLeads = layout.lead === 'password' || presses.length === 0;
 
   const submit = () => {
-    if (identifier.trim() && password) onSubmit(identifier.trim(), password);
+    if (identifier.trim() && password) {
+      onSubmit(identifier.trim(), password);
+    }
   };
   const press = (pressed: SignInPress) => {
-    if (pressed.kind === 'passkey') onPasskey?.();
-    else onProvider?.(pressed.provider);
+    if (pressed.kind === 'passkey') {
+      onPasskey?.();
+    } else {
+      onProvider?.(pressed.provider);
+    }
   };
 
   const buttons =

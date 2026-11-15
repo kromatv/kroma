@@ -66,7 +66,9 @@ export function LocaleProvider({
   // below).
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- mount-only; account changes are handled separately.
   useEffect(() => {
-    if (accountLocale) return;
+    if (accountLocale) {
+      return;
+    }
     const detected = deviceLocale(storage);
     applied.current = detected;
     client?.setLocale(detected);
@@ -81,7 +83,9 @@ export function LocaleProvider({
   });
   const signedInWithoutLanguage = onAccountChange !== undefined && !accountLocale;
   useEffect(() => {
-    if (signedInWithoutLanguage) saveToAccount();
+    if (signedInWithoutLanguage) {
+      saveToAccount();
+    }
   }, [signedInWithoutLanguage]);
 
   // The signed-in account's preference is authoritative: adopt it whenever it
@@ -107,8 +111,11 @@ export function LocaleProvider({
   }, [client]);
 
   useEffect(() => {
-    // oxlint-disable-next-line no-restricted-globals -- audited - guarded; there is no <html lang> to sync on a native target.
-    if (syncHtmlLang && typeof document !== 'undefined') document.documentElement.lang = locale;
+    /* oxlint-disable no-restricted-globals -- audited - guarded; there is no <html lang> to sync on a native target. */
+    if (syncHtmlLang && typeof document !== 'undefined') {
+      document.documentElement.lang = locale;
+    }
+    /* oxlint-enable no-restricted-globals */
   }, [locale, syncHtmlLang]);
 
   const handleChange = useCallback(

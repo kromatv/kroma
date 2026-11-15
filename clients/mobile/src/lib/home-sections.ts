@@ -52,8 +52,9 @@ export function entryTitle(entry: HomeEntry): string {
 /** The art a title is drawn on at 16:9: its backdrop, else its poster. */
 export function entryBackdrop(entry: HomeEntry, client: KromaClient): string {
   const { artwork } = client.media;
-  if (entry.type === 'movie')
+  if (entry.type === 'movie') {
     return artwork.backdropFor(entry.item) ?? artwork.posterFor(entry.item);
+  }
   return artwork.backdropFor(entry.show) ?? artwork.showPosterFor(entry.show);
 }
 

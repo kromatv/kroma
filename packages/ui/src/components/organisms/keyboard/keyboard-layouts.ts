@@ -57,7 +57,9 @@ function buildUrlRows(layout: KeyboardLayout): readonly (readonly string[])[] {
     DELETE_KEY,
   ];
   const rows: string[][] = [['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']];
-  for (let i = 0; i < keys.length; i += 10) rows.push(keys.slice(i, i + 10));
+  for (let i = 0; i < keys.length; i += 10) {
+    rows.push(keys.slice(i, i + 10));
+  }
   return rows;
 }
 

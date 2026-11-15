@@ -31,7 +31,7 @@ afterEach(() => {
 const GB = 1024 ** 3;
 
 function withNavigator(extra: Record<string, unknown>) {
-  vi.stubGlobal('navigator', { ...globalThis.navigator, userAgent: 'test', ...extra });
+  vi.stubGlobal('navigator', { userAgent: 'test', ...extra });
 }
 
 function mount(platform = 'Tizen') {

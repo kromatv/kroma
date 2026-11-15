@@ -12,7 +12,7 @@ function subscribe(onChange: () => void): () => void {
 export function useReducedMotion(): boolean {
   return useSyncExternalStore(
     subscribe,
-    () => window.matchMedia?.(QUERY).matches === true,
+    () => window.matchMedia?.(QUERY).matches,
     () => false,
   );
 }

@@ -89,8 +89,11 @@ function Root({
 function sort(children: ReactNode): { control: ReactNode[]; note: ReactNode[] } {
   const at: { control: ReactNode[]; note: ReactNode[] } = { control: [], note: [] };
   for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Hint) at.note.push(child);
-    else at.control.push(child);
+    if (isValidElement(child) && child.type === Hint) {
+      at.note.push(child);
+    } else {
+      at.control.push(child);
+    }
   }
   return at;
 }
@@ -166,7 +169,9 @@ function Textarea({ value, defaultValue, onValueChange, ...props }: Readonly<Fie
 function Hint({ children }: Readonly<{ children?: ReactNode }>) {
   const { error } = useField('Hint');
   const note = error ?? children;
-  if (!note) return null;
+  if (!note) {
+    return null;
+  }
   return (
     <Text variant="meta" color={error ? 'danger' : 'textDim'}>
       {note}

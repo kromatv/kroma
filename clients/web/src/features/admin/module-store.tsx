@@ -67,7 +67,9 @@ function CardAction({
   onUpdate: () => void;
 }>) {
   const t = useT();
-  if (op) return <OpProgress op={op} />;
+  if (op) {
+    return <OpProgress op={op} />;
+  }
   if (canUpdate(m)) {
     return (
       <Button variant="primary" size="sm" label={t('admin.modulesUpdate')} onPress={onUpdate} />

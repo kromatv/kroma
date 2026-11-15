@@ -127,7 +127,9 @@ function MetaLine({
 
 function Backdrop({ url }: Readonly<{ url: string | null }>) {
   const s = useStyles(sDefinition);
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   return (
     <>
       <Image src={sizedImageUrl(url, 1280)} fit="cover" style={s.art} />
@@ -165,7 +167,9 @@ function HeroActions({
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (ok) onUnfollow();
+    if (ok) {
+      onUnfollow();
+    }
   };
   return (
     <Row wrap gap={10} align="center">

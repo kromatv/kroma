@@ -27,11 +27,17 @@ export function useServerProbes(urls: string[]): Record<string, ServerProbe> {
           const health = await makeClient(url, requestLocale()).media.health({
             signal: abort.signal,
           });
-          if (cancelled) return;
+          if (cancelled) {
+            return;
+          }
           setProbes((prev) => ({ ...prev, [url]: { online: true, name: health.name } }));
-          if (health.name) renameServer(url, health.name);
+          if (health.name) {
+            renameServer(url, health.name);
+          }
         } catch {
-          if (!cancelled) setProbes((prev) => ({ ...prev, [url]: { online: false } }));
+          if (!cancelled) {
+            setProbes((prev) => ({ ...prev, [url]: { online: false } }));
+          }
         } finally {
           clearTimeout(timer);
         }

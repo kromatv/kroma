@@ -20,13 +20,21 @@ type Part = 'server' | 'ui' | 'bundle';
 
 export function partOf(project: Project, file: string): Part | null {
   const rel = relative(project.dir, file);
-  if (rel.startsWith('..') || rel.startsWith('dist') || rel.startsWith('.bundle')) return null;
-  if (rel.startsWith('server/'))
+  if (rel.startsWith('..') || rel.startsWith('dist') || rel.startsWith('.bundle')) {
+    return null;
+  }
+  if (rel.startsWith('server/')) {
     return rel.endsWith('.rs') || rel.endsWith('Cargo.toml') ? 'server' : null;
-  if (rel.startsWith('ui/'))
+  }
+  if (rel.startsWith('ui/')) {
     return rel.includes('/dist/') || rel.includes('node_modules') ? null : 'ui';
-  if (rel.startsWith('locales/') || rel === 'module.json') return 'ui';
-  if (rel.startsWith('icon.')) return 'bundle';
+  }
+  if (rel.startsWith('locales/') || rel === 'module.json') {
+    return 'ui';
+  }
+  if (rel.startsWith('icon.')) {
+    return 'bundle';
+  }
   return null;
 }
 
@@ -43,11 +51,17 @@ class Loop {
   ) {}
 
   request(parts: Iterable<Part>): void {
-    for (const p of parts) this.pending.add(p);
-    if (this.running) return;
+    for (const p of parts) {
+      this.pending.add(p);
+    }
+    if (this.running) {
+      return;
+    }
     this.running = this.drain().finally(() => {
       this.running = null;
-      if (this.pending.size > 0) this.request([]);
+      if (this.pending.size > 0) {
+        this.request([]);
+      }
     });
   }
 
@@ -105,7 +119,9 @@ export async function devCommand(options: DevOptions): Promise<number> {
   for (const root of roots) {
     watch(root, { recursive: true }, (_event, file) => {
       const part = partOf(project, join(root, file ?? ''));
-      if (!part) return;
+      if (!part) {
+        return;
+      }
       clearTimeout(timers.get(part));
       timers.set(
         part,

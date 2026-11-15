@@ -37,9 +37,13 @@ const pct = (fraction: number): `${number}%` => `${fraction * 100}%`;
 // watches round. It arrives with the card and leaves once the picture is back.
 function useCardRadius(settingsShrink: boolean): number {
   const [rounded, setRounded] = useState(settingsShrink);
-  if (settingsShrink && !rounded) setRounded(true);
+  if (settingsShrink && !rounded) {
+    setRounded(true);
+  }
   useEffect(() => {
-    if (settingsShrink) return;
+    if (settingsShrink) {
+      return;
+    }
     const out = setTimeout(() => setRounded(false), CARD_MS);
     return () => clearTimeout(out);
   }, [settingsShrink]);

@@ -21,7 +21,9 @@ export function parseDeviceDescription(xml: string): UpnpDevice {
 /** The UPnP description a television's SSDP reply points at, or null if it lies. */
 export async function fetchDeviceDescription(location: string): Promise<UpnpDevice | null> {
   const xml = await fetchText(location, { maxBytes: MAX_DESCRIPTION_BYTES });
-  if (!xml) return null;
+  if (!xml) {
+    return null;
+  }
   const device = parseDeviceDescription(xml);
   return device.friendlyName || device.manufacturer ? device : null;
 }

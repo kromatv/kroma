@@ -20,7 +20,9 @@ export function PermPicker({
       value={[...selected]}
       onValueChange={(next) => {
         const moved = diff(selected, next);
-        if (moved) toggle(moved);
+        if (moved) {
+          toggle(moved);
+        }
       }}
     >
       {PERMISSIONS.map((p) => (
@@ -47,8 +49,11 @@ export function usePermissionSet(
   const toggle = useCallback((p: Permission) => {
     setPerms((s) => {
       const next = new Set(s);
-      if (next.has(p)) next.delete(p);
-      else next.add(p);
+      if (next.has(p)) {
+        next.delete(p);
+      } else {
+        next.add(p);
+      }
       return next;
     });
   }, []);

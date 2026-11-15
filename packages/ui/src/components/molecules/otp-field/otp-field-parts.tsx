@@ -40,7 +40,9 @@ function Group({ children, ...box }: Readonly<OtpGroupProps>) {
 // A filled slot reads as filled even while it is also the active one: the
 // character is the stronger signal.
 function slotState(slot: OtpSlotState): 'filled' | 'active' | 'empty' {
-  if (slot.char != null) return 'filled';
+  if (slot.char != null) {
+    return 'filled';
+  }
   return slot.active ? 'active' : 'empty';
 }
 

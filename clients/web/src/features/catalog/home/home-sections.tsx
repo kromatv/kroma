@@ -19,8 +19,12 @@ export function SectionsSkeleton() {
 }
 
 function SectionRow({ section }: Readonly<{ section: HomeSection }>) {
-  if (section.layout === 'ranked') return <RankedRail section={section} />;
-  if (section.layout === 'wide') return <WideRail section={section} />;
+  if (section.layout === 'ranked') {
+    return <RankedRail section={section} />;
+  }
+  if (section.layout === 'wide') {
+    return <WideRail section={section} />;
+  }
   return (
     <PosterRail
       data={section.items}
@@ -32,8 +36,12 @@ function SectionRow({ section }: Readonly<{ section: HomeSection }>) {
 /** One section of the home, drawn the way it asks to be. The hero is not one
  * of these: the page places it itself, above the viewer's own rows. */
 export function HomeSectionView({ section }: Readonly<{ section: HomeSection }>) {
-  if (section.items.length === 0 || section.layout === 'hero') return null;
-  if (section.layout === 'spotlight') return <Spotlight section={section} />;
+  if (section.items.length === 0 || section.layout === 'hero') {
+    return null;
+  }
+  if (section.layout === 'spotlight') {
+    return <Spotlight section={section} />;
+  }
   return (
     <section>
       <SectionHeading title={section.title} reason={section.reason} />

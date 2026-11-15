@@ -22,7 +22,7 @@ interface PlayerTransportProps {
 /** The scrub bar and the control row. Written to give it a storyboard and
  *  chapters; the row itself is the Root's, which sheds controls a narrow stage
  *  has no room for and keeps the D-pad order honest. */
-function Transport(_: Readonly<PlayerTransportProps>) {
+function Transport(_props: Readonly<PlayerTransportProps>) {
   useSlot('Transport');
   return null;
 }
@@ -33,7 +33,7 @@ interface PlayerUpNextProps {
 }
 
 /** The peeking sheet of what to watch next. */
-function UpNext(_: Readonly<PlayerUpNextProps>) {
+function UpNext(_props: Readonly<PlayerUpNextProps>) {
   useSlot('UpNext');
   return null;
 }
@@ -48,7 +48,7 @@ interface PlayerCreditsProps {
 }
 
 /** The card that offers the next episode over the closing credits. */
-function Credits(_: Readonly<PlayerCreditsProps>) {
+function Credits(_props: Readonly<PlayerCreditsProps>) {
   useSlot('Credits');
   return null;
 }
@@ -62,7 +62,7 @@ interface PlayerPostPlayProps {
 }
 
 /** The full-screen offer at the end of the film. */
-function PostPlay(_: Readonly<PlayerPostPlayProps>) {
+function PostPlay(_props: Readonly<PlayerPostPlayProps>) {
   useSlot('PostPlay');
   return null;
 }
@@ -75,7 +75,7 @@ interface PlayerSkipIntroProps {
 }
 
 /** The skip pill, over the bottom right of the stage. */
-function SkipIntro(_: Readonly<PlayerSkipIntroProps>) {
+function SkipIntro(_props: Readonly<PlayerSkipIntroProps>) {
   useSlot('SkipIntro');
   return null;
 }
@@ -90,7 +90,7 @@ interface PlayerResumeProps {
 
 /** The prompt that says a film opened where it was left, and offers the way back
  *  to the beginning. It leaves on its own. */
-function Resume(_: Readonly<PlayerResumeProps>) {
+function Resume(_props: Readonly<PlayerResumeProps>) {
   useSlot('Resume');
   return null;
 }
@@ -104,7 +104,7 @@ interface PlayerSubtitlesProps {
 
 /** The subtitles half of the settings panel: the picked track, how it looks, and
  *  generating a new one. */
-function Subtitles(_: Readonly<PlayerSubtitlesProps>) {
+function Subtitles(_props: Readonly<PlayerSubtitlesProps>) {
   useSlot('Subtitles');
   return null;
 }
@@ -115,7 +115,7 @@ interface PlayerReportProps {
 
 /** Reporting a problem with what is playing. The settings menu grows the row
  *  only when this is written, so a surface with its own flow is unaffected. */
-function Report(_: Readonly<PlayerReportProps>) {
+function Report(_props: Readonly<PlayerReportProps>) {
   useSlot('Report');
   return null;
 }

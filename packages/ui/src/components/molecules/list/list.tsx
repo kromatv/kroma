@@ -92,7 +92,9 @@ function Marker({ marker, checked }: Readonly<{ marker: number | null; checked?:
       </Box>
     );
   }
-  if (marker === null) return <Box shrink={0} radius="pill" bg="textDim" style={s.bullet} />;
+  if (marker === null) {
+    return <Box shrink={0} radius="pill" bg="textDim" style={s.bullet} />;
+  }
   return (
     <Text variant="body" color="textDim" style={s.marker}>
       {`${marker}.`}

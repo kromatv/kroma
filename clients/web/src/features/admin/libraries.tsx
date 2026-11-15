@@ -39,7 +39,9 @@ const KIND_LABEL = {
 } as const;
 
 export function LibrariesScreen() {
-  if (!useCap('library.manage')) return <Denied />;
+  if (!useCap('library.manage')) {
+    return <Denied />;
+  }
   return <LibrariesPageInner />;
 }
 
@@ -49,10 +51,14 @@ function LibrariesPageInner() {
   const { data, reload } = usePoll(['admin', 'libraries'], () => client.library.list(), 8000);
 
   const openAdd = async () => {
-    if (await AddLibraryModal.call()) await reload();
+    if (await AddLibraryModal.call()) {
+      await reload();
+    }
   };
   const openManage = async (lib: AdminLibrary) => {
-    if (await ManageLibraryModal.call({ lib })) await reload();
+    if (await ManageLibraryModal.call({ lib })) {
+      await reload();
+    }
   };
 
   const libraries = data?.libraries ?? [];

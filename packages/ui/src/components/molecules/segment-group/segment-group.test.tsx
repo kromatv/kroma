@@ -166,7 +166,9 @@ describe('a segment that holds more than a string', () => {
 
 const scrollerOf = (group: HTMLElement) => {
   let node = group.parentElement;
-  while (node && getComputedStyle(node).overflowX !== 'auto') node = node.parentElement;
+  while (node && getComputedStyle(node).overflowX !== 'auto') {
+    node = node.parentElement;
+  }
   return node;
 };
 

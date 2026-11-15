@@ -49,7 +49,9 @@ export function SpotlightBand({ section, onHold }: Readonly<SpotlightBandProps>)
   const t = useT();
   const tileOf = useHomeTile(onHold);
   const entry = section.items[0];
-  if (!entry) return null;
+  if (!entry) {
+    return null;
+  }
   const tile = tileOf(entry);
   const note = section.notes[entryId(entry)];
   const synopsis = synopsisLead(entryMetadata(entry)?.overview, SYNOPSIS_BUDGET);

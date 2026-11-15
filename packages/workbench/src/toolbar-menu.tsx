@@ -106,7 +106,9 @@ function Face({
     );
   }
   const name = choice?.glyph ?? fallback;
-  if (!name) return null;
+  if (!name) {
+    return null;
+  }
   return <Icon name={name} size={15} color={on ? 'accent' : 'textMuted'} />;
 }
 

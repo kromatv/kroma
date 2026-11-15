@@ -30,7 +30,9 @@ export function syncPayload(id: string, payload: Buffer): Buffer {
 }
 
 export function parseSyncMessage(buffer: Buffer): SyncMessage | null {
-  if (buffer.length < SYNC_HEADER_BYTES) return null;
+  if (buffer.length < SYNC_HEADER_BYTES) {
+    return null;
+  }
   return { id: buffer.subarray(0, 4).toString('ascii'), value: buffer.readUInt32LE(4) };
 }
 
@@ -62,8 +64,12 @@ export async function pushFile(
     await stream.write(syncRequest('DONE', Math.floor(Date.now() / 1000)), timeoutMs);
 
     const reply = await readReply(stream, timeoutMs);
-    if (reply.id === 'FAIL') throw new Error(`sdb: the device refused the file: ${reply.text}`);
-    if (reply.id !== 'OKAY') throw new Error(`sdb: unexpected sync reply "${reply.id}"`);
+    if (reply.id === 'FAIL') {
+      throw new Error(`sdb: the device refused the file: ${reply.text}`);
+    }
+    if (reply.id !== 'OKAY') {
+      throw new Error(`sdb: unexpected sync reply "${reply.id}"`);
+    }
     await stream.write(syncRequest('QUIT', 0), timeoutMs).catch(() => undefined);
   } finally {
     stream.close();
@@ -77,12 +83,20 @@ async function readReply(
   let buffer = Buffer.alloc(0);
   for (;;) {
     const chunk = await stream.read(timeoutMs);
-    if (!chunk) throw new Error('sdb: the sync service closed before answering');
+    if (!chunk) {
+      throw new Error('sdb: the sync service closed before answering');
+    }
     buffer = Buffer.concat([buffer, chunk]);
     const message = parseSyncMessage(buffer);
-    if (!message) continue;
-    if (message.id !== 'FAIL') return { id: message.id, text: '' };
-    if (buffer.length < SYNC_HEADER_BYTES + message.value) continue;
+    if (!message) {
+      continue;
+    }
+    if (message.id !== 'FAIL') {
+      return { id: message.id, text: '' };
+    }
+    if (buffer.length < SYNC_HEADER_BYTES + message.value) {
+      continue;
+    }
     const text = buffer
       .subarray(SYNC_HEADER_BYTES, SYNC_HEADER_BYTES + message.value)
       .toString('utf8');

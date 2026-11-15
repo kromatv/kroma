@@ -54,13 +54,21 @@ function wordsOf(chars: readonly string[], folded: readonly string[]): Word[] {
   let text = '';
   let start = 0;
   const flush = () => {
-    if (text) words.push({ text, start });
+    if (text) {
+      words.push({ text, start });
+    }
     text = '';
   };
   chars.forEach((char, at) => {
-    if (SEPARATOR.test(char)) return flush();
-    if (isCapital(char) && !isCapital(chars[at - 1] ?? 'A')) flush();
-    if (!text) start = at;
+    if (SEPARATOR.test(char)) {
+      return flush();
+    }
+    if (isCapital(char) && !isCapital(chars[at - 1] ?? 'A')) {
+      flush();
+    }
+    if (!text) {
+      start = at;
+    }
     text += folded[at] ?? '';
   });
   flush();
@@ -96,13 +104,17 @@ function editDistance(a: string, b: string): number {
 }
 
 function typoBudget(term: string): number {
-  if (term.length < 4) return 0;
+  if (term.length < 4) {
+    return 0;
+  }
   return term.length <= 8 ? 1 : 2;
 }
 
 function onWord(term: string, word: Word): Found | null {
   const end = word.start + word.text.length;
-  if (word.text === term) return { score: WHOLE_WORD, ranges: [[word.start, end]] };
+  if (word.text === term) {
+    return { score: WHOLE_WORD, ranges: [[word.start, end]] };
+  }
   if (word.text.startsWith(term)) {
     const share = term.length / word.text.length;
     return {
@@ -118,7 +130,9 @@ function onWord(term: string, word: Word): Found | null {
     };
   }
   const budget = typoBudget(term);
-  if (budget === 0 || !word.text.startsWith(term.charAt(0))) return null;
+  if (budget === 0 || !word.text.startsWith(term.charAt(0))) {
+    return null;
+  }
   const distance =
     term.length < STILL_TYPING
       ? editDistance(term, word.text)
@@ -126,7 +140,9 @@ function onWord(term: string, word: Word): Found | null {
           editDistance(term, word.text),
           editDistance(term, word.text.slice(0, term.length)),
         );
-  if (distance > budget) return null;
+  if (distance > budget) {
+    return null;
+  }
   return { score: TYPO - TYPO_STEP * (distance - 1), ranges: [[word.start, end]] };
 }
 
@@ -139,13 +155,21 @@ function onWords(terms: readonly string[], words: readonly Word[]): Found | null
   for (const term of terms) {
     let best: { found: Found; word: Word } | null = null;
     for (const word of words) {
-      if (used.has(word)) continue;
+      if (used.has(word)) {
+        continue;
+      }
       const found = onWord(term, word);
-      if (found && (!best || found.score > best.found.score)) best = { found, word };
+      if (found && (!best || found.score > best.found.score)) {
+        best = { found, word };
+      }
     }
-    if (!best) return null;
+    if (!best) {
+      return null;
+    }
     used.add(best.word);
-    if (best.word.start < last) inOrder = false;
+    if (best.word.start < last) {
+      inOrder = false;
+    }
     last = best.word.start;
     score += best.found.score;
     ranges.push(...best.found.ranges);
@@ -154,14 +178,18 @@ function onWords(terms: readonly string[], words: readonly Word[]): Found | null
 }
 
 function onInitials(needle: string, words: readonly Word[]): Found | null {
-  if (needle.length < 2 || words.length < needle.length) return null;
+  if (needle.length < 2 || words.length < needle.length) {
+    return null;
+  }
   const ranges: (readonly [number, number])[] = [];
   let at = 0;
   for (const word of words) {
     if (word.text.startsWith(needle.charAt(at))) {
       ranges.push([word.start, word.start + 1]);
       at += 1;
-      if (at === needle.length) return { score: INITIALS, ranges };
+      if (at === needle.length) {
+        return { score: INITIALS, ranges };
+      }
     }
   }
   return null;
@@ -174,15 +202,23 @@ function onCompact(
 ): Found | null {
   const kept: number[] = [];
   chars.forEach((char, at) => {
-    if (!SEPARATOR.test(char)) kept.push(at);
+    if (!SEPARATOR.test(char)) {
+      kept.push(at);
+    }
   });
   const compact = kept.map((at) => folded[at] ?? '').join('');
   const index = compact.indexOf(needle);
-  if (index < 0) return null;
+  if (index < 0) {
+    return null;
+  }
   const from = kept[index] as number;
   const to = (kept[index + needle.length - 1] as number) + 1;
-  if (compact === needle) return { score: WHOLE_TEXT, ranges: [[from, to]] };
-  if (index === 0) return { score: TEXT_PREFIX, ranges: [[from, to]] };
+  if (compact === needle) {
+    return { score: WHOLE_TEXT, ranges: [[from, to]] };
+  }
+  if (index === 0) {
+    return { score: TEXT_PREFIX, ranges: [[from, to]] };
+  }
   return { score: INSIDE, ranges: [[from, to]] };
 }
 
@@ -191,23 +227,35 @@ function onScattered(
   folded: readonly string[],
   words: readonly Word[],
 ): Found | null {
-  if (needle.length < SHORTEST_SCATTER) return null;
+  if (needle.length < SHORTEST_SCATTER) {
+    return null;
+  }
   let best: Found | null = null;
   for (const word of words) {
-    if (!word.text.startsWith(needle.charAt(0))) continue;
+    if (!word.text.startsWith(needle.charAt(0))) {
+      continue;
+    }
     const hits: number[] = [word.start];
     let from = word.start + 1;
     for (const char of needle.slice(1)) {
       const at = folded.indexOf(char, from);
-      if (at < 0) break;
+      if (at < 0) {
+        break;
+      }
       hits.push(at);
       from = at + 1;
     }
-    if (hits.length < needle.length) continue;
+    if (hits.length < needle.length) {
+      continue;
+    }
     const span = (hits.at(-1) as number) - word.start + 1;
-    if (span > needle.length * WIDEST_SCATTER) continue;
+    if (span > needle.length * WIDEST_SCATTER) {
+      continue;
+    }
     const score = SCATTERED + COVERAGE * (needle.length / span);
-    if (!best || score > best.score) best = { score, ranges: hits.map((at) => [at, at + 1]) };
+    if (!best || score > best.score) {
+      best = { score, ranges: hits.map((at) => [at, at + 1]) };
+    }
   }
   return best;
 }
@@ -216,8 +264,11 @@ function merged(ranges: readonly (readonly [number, number])[]): (readonly [numb
   const out: [number, number][] = [];
   for (const [from, to] of [...ranges].sort((a, b) => a[0] - b[0])) {
     const last = out.at(-1);
-    if (last && from <= last[1]) last[1] = Math.max(last[1], to);
-    else out.push([from, to]);
+    if (last && from <= last[1]) {
+      last[1] = Math.max(last[1], to);
+    } else {
+      out.push([from, to]);
+    }
   }
   return out;
 }
@@ -235,7 +286,9 @@ function matchText(
   { strict = false }: TextMatchOptions = {},
 ): TextMatch | null {
   const terms = queryTerms(query);
-  if (terms.length === 0) return { score: 0, ranges: [] };
+  if (terms.length === 0) {
+    return { score: 0, ranges: [] };
+  }
   const chars = Array.from(text);
   const folded = chars.map(fold);
   const words = wordsOf(chars, folded);
@@ -247,7 +300,9 @@ function matchText(
     (strict ? null : onInitials(needle, words)) ??
     compact ??
     (strict ? null : onScattered(needle, folded, words));
-  if (!found) return null;
+  if (!found) {
+    return null;
+  }
   const share = Math.min(1, needle.length / Math.max(1, chars.length));
   return { score: found.score + COVERAGE * share, ranges: merged(found.ranges) };
 }
@@ -258,11 +313,15 @@ function textRuns(text: string, match: TextMatch | null): TextRun[] {
   const runs: TextRun[] = [];
   let at = 0;
   for (const [from, to] of match?.ranges ?? []) {
-    if (from > at) runs.push({ text: chars.slice(at, from).join(''), hit: false, at });
+    if (from > at) {
+      runs.push({ text: chars.slice(at, from).join(''), hit: false, at });
+    }
     runs.push({ text: chars.slice(from, to).join(''), hit: true, at: from });
     at = to;
   }
-  if (at < chars.length) runs.push({ text: chars.slice(at).join(''), hit: false, at });
+  if (at < chars.length) {
+    runs.push({ text: chars.slice(at).join(''), hit: false, at });
+  }
   return runs;
 }
 

@@ -126,7 +126,9 @@ describe('replaying what is queued', () => {
     const reached: string[] = [];
     const target = server({
       save: async (itemId) => {
-        if (itemId === 'gone') throw new KromaApiError(404, 'PUT /progress/gone failed (404)');
+        if (itemId === 'gone') {
+          throw new KromaApiError(404, 'PUT /progress/gone failed (404)');
+        }
         reached.push(itemId);
       },
     });

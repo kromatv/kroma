@@ -51,13 +51,15 @@ export function githubContext(repo: string): AttachContext {
  */
 export async function attach(file: string, context: AttachContext): Promise<string> {
   const contentType = CONTENT_TYPES[extname(file).toLowerCase()];
-  if (!contentType) throw new Error(`${file}: GitHub attaches images and video only`);
+  if (!contentType) {
+    throw new Error(`${file}: GitHub attaches images and video only`);
+  }
   const query = new URLSearchParams({
     name: basename(file),
     content_type: contentType,
     repository_id: context.repositoryId,
   });
-  const response = await (context.fetch ?? fetch)(`${UPLOAD_URL}?${query}`, {
+  const response = await (context.fetch ?? fetch)(`${UPLOAD_URL}?${query.toString()}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${context.token}`,

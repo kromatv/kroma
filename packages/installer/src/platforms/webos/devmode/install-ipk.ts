@@ -58,10 +58,16 @@ export async function installIpk(
 
 function installVerdict(reply: unknown, log: LogLine): string | undefined {
   const parsed = InstallReply.safeParse(reply);
-  if (!parsed.success) return undefined;
+  if (!parsed.success) {
+    return undefined;
+  }
   const { state, reason } = parsed.data.details;
-  if (/FAILED/i.test(state)) throw new Error(`the TV refused the package: ${reason ?? state}`);
-  if (/installed|^SUCCESS/i.test(state)) return state;
+  if (/FAILED/i.test(state)) {
+    throw new Error(`the TV refused the package: ${reason ?? state}`);
+  }
+  if (/installed|^SUCCESS/i.test(state)) {
+    return state;
+  }
   log(state);
   return undefined;
 }

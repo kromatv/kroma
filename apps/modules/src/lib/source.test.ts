@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { jsonResponse, loadCatalog, UNAVAILABLE } from './source';
+import { requestUrl } from './request-url.fixture';
 
 const FRESH = 'https://kroma-modules.cache/catalog-fresh';
 const STALE = 'https://kroma-modules.cache/catalog-stale';
@@ -34,7 +35,7 @@ function upstream(body: string, status = 200) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(String(input));
+      calls.push(requestUrl(input));
       return new Response(body, { status });
     }),
   );

@@ -25,7 +25,7 @@ export function WideRail({ entries }: Readonly<{ entries: readonly RowEntry[] }>
         title: entryTitle(entry),
         detail: note,
         art: sizedImageUrl(entryBackdrop(entry, client), artWidth),
-        onPress: () => router.push(entryRoute(entry) as never),
+        onPress: () => router.push(entryRoute(entry)),
       }))}
     />
   );

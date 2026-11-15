@@ -59,14 +59,18 @@ const Ctx = createContext<AuthSession | null>(null);
 
 export function useSession(): AuthSession {
   const value = useContext(Ctx);
-  if (!value) throw new Error('useSession outside SessionProvider');
+  if (!value) {
+    throw new Error('useSession outside SessionProvider');
+  }
   return value;
 }
 
 /** The signed-in client; screens behind the auth gate can rely on it. */
 export function useClient(): QueryClient {
   const { client } = useSession();
-  if (!client) throw new Error('useClient before sign-in');
+  if (!client) {
+    throw new Error('useClient before sign-in');
+  }
   return client;
 }
 
@@ -146,7 +150,9 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   );
   const login = useCallback(
     async (identifier: string, password: string) => {
-      if (!serverUrl) throw new Error('no server');
+      if (!serverUrl) {
+        throw new Error('no server');
+      }
       adopt(serverUrl, await requestClient(serverUrl).accounts.login(identifier, password));
     },
     [serverUrl, adopt, requestClient],
@@ -194,8 +200,9 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
       if (forgetActive && activeUser && serverUrl) {
         accounts.forget(serverUrl, activeUser.id);
         forgetSecrets(serverUrl, activeUser.id);
-        if (current && active)
+        if (current && active) {
           void current.accounts.logout(active.accessToken).catch(() => undefined);
+        }
       } else if (current && active) {
         // Back to the profile picker: re-arm the PIN gate on this credential.
         void current.accounts.relock(active.accessToken).catch(() => undefined);
@@ -227,7 +234,9 @@ export function SessionProvider({ children }: Readonly<{ children: ReactNode }>)
   const updateUser = useCallback(
     (u: User) => {
       setUser(u);
-      if (!serverUrl) return;
+      if (!serverUrl) {
+        return;
+      }
       accounts.persist(
         accounts.ref.current.map((a) => (sameAccount(a, serverUrl, u.id) ? { ...a, user: u } : a)),
       );

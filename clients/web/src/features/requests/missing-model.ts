@@ -17,7 +17,9 @@ export interface MissingGroup {
  * gap arrives as `missing`, and a `wanted` row with no request behind it is one
  * monitoring holds. */
 export function entryOrigin(entry: CalendarEntry): MissingOrigin {
-  if (entry.requestId !== null) return 'request';
+  if (entry.requestId !== null) {
+    return 'request';
+  }
   return entry.status === 'missing' ? 'gap' : 'monitored';
 }
 

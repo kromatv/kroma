@@ -14,6 +14,8 @@ export function DirectConnectionProvider({ children }: Readonly<{ children: Reac
 
 export function useDirectRoute(): DirectConnectionView {
   const view = useContext(Context);
-  if (!view) throw new Error('DirectConnectionProvider is required');
+  if (!view) {
+    throw new Error('DirectConnectionProvider is required');
+  }
   return view;
 }

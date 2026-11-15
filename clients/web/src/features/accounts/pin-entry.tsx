@@ -25,7 +25,9 @@ export function PinEntry({
   const shake = useShake(rejections);
 
   useEffect(() => {
-    if (cooldown <= 0) return;
+    if (cooldown <= 0) {
+      return;
+    }
     const id = setInterval(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
     return () => clearInterval(id);
   }, [cooldown]);
@@ -33,19 +35,25 @@ export function PinEntry({
   const locked = busy || cooldown > 0;
 
   const submit = async (value: string) => {
-    if (locked) return;
+    if (locked) {
+      return;
+    }
     setBusy(true);
     setError(null);
     const r = await onSubmit(value);
     setBusy(false);
-    if (r.ok) return; // the gate unmounts on success
+    if (r.ok) {
+      return;
+    } // the gate unmounts on success
     // Dead token, not a wrong PIN: a PIN can't fix it, so route to a full re-login.
     if (!r.needsPin) {
       onExpired();
       return;
     }
     setPin('');
-    if (r.retryAfter) setCooldown(r.retryAfter);
+    if (r.retryAfter) {
+      setCooldown(r.retryAfter);
+    }
     setError(r.error || t('auth.pinIncorrect'));
     setRejections((n) => n + 1);
   };

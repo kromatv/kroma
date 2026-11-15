@@ -28,11 +28,15 @@ const NO_SLOTS = Object.freeze({ root: undefined }) as unknown as ReturnType<Any
 /** What `next` changes about `base`, so a state coat can be layered over a
  *  caller's own style without reasserting everything underneath it. */
 function deltaOf(base: object | undefined, next: object | undefined): ViewStyle | null {
-  if (!base || !next || base === next) return null;
+  if (!base || !next || base === next) {
+    return null;
+  }
   const out: Record<string, unknown> = {};
   let any = false;
   for (const [key, value] of Object.entries(next)) {
-    if (Reflect.get(base, key) === value) continue;
+    if (Reflect.get(base, key) === value) {
+      continue;
+    }
     out[key] = value;
     any = true;
   }
@@ -41,9 +45,13 @@ function deltaOf(base: object | undefined, next: object | undefined): ViewStyle 
 
 function statedBy(style: unknown, keys = new Set<string>()): Set<string> {
   if (Array.isArray(style)) {
-    for (const one of style) statedBy(one, keys);
+    for (const one of style) {
+      statedBy(one, keys);
+    }
   } else if (style && typeof style === 'object') {
-    for (const key of Object.keys(style)) keys.add(key);
+    for (const key of Object.keys(style)) {
+      keys.add(key);
+    }
   }
   return keys;
 }
@@ -51,10 +59,14 @@ function statedBy(style: unknown, keys = new Set<string>()): Set<string> {
 /** `delta` without what the caller's own `style` states, so a fill the caller
  *  chose holds while the control is pressed, the way it holds on hover. */
 function under(delta: ViewStyle | null, style: StyleProp<ViewStyle>): ViewStyle | null {
-  if (!delta || style == null) return delta;
+  if (!delta || style == null) {
+    return delta;
+  }
   const stated = statedBy(style);
   const kept = Object.entries(delta).filter(([key]) => !stated.has(key));
-  if (kept.length === Object.keys(delta).length) return delta;
+  if (kept.length === Object.keys(delta).length) {
+    return delta;
+  }
   return kept.length > 0 ? (Object.freeze(Object.fromEntries(kept)) as ViewStyle) : null;
 }
 
@@ -62,7 +74,9 @@ function under(delta: ViewStyle | null, style: StyleProp<ViewStyle>): ViewStyle 
 // native `splitBoxLayers` memo below is not re-run on every render.
 function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
   return useMemo(() => {
-    if (a == null) return b;
+    if (a == null) {
+      return b;
+    }
     return b == null ? a : [a, b];
   }, [a, b]);
 }

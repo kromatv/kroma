@@ -33,7 +33,11 @@ function mount(props: ImgProps) {
     draws: () => leaves.length,
     classes: () => (view.container.firstElementChild as HTMLElement).className,
     load: () => act(() => leaves.at(-1)?.onLoad?.({ width: 600, height: 900 })),
-    settle: () => act(() => vi.advanceTimersByTime(400)),
+    settle: () => {
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+    },
     rerender: (next: ImgProps) =>
       view.rerender(
         <KitProvider config={{ image: backend, ground: 'dark' }}>

@@ -63,7 +63,9 @@ export class SpatialNavigator {
 
   unregisterNode(id: string): void {
     const node = this.tree.get(id);
-    if (node === undefined) return;
+    if (node === undefined) {
+      return;
+    }
     const focused = this.owner.focusedNode;
     if (focused !== null && this.tree.contains(node, focused)) {
       this.owner.move(fallbackFocus(this.tree, node));
@@ -73,20 +75,34 @@ export class SpatialNavigator {
 
   focus(id: string): boolean {
     const node = this.tree.reachable(id);
-    if (node === undefined) return false;
+    if (node === undefined) {
+      return false;
+    }
     const target = focusableIn(this.tree, node);
-    if (target === null) return false;
+    if (target === null) {
+      return false;
+    }
     this.owner.move(target);
     return true;
   }
 
   handle(direction: Direction): boolean {
-    if (direction === 'release') return this.release();
-    if (this.locked) return false;
-    if (this.answered(direction)) return true;
-    if (direction === 'hold') return this.longSelect();
+    if (direction === 'release') {
+      return this.release();
+    }
+    if (this.locked) {
+      return false;
+    }
+    if (this.answered(direction)) {
+      return true;
+    }
+    if (direction === 'hold') {
+      return this.longSelect();
+    }
     const move = moveOf(direction);
-    if (move === null) return this.select();
+    if (move === null) {
+      return this.select();
+    }
     this.drop();
     const from = this.owner.focusedNode;
     const target = from === null ? firstFocusable(this.tree) : resolveMove(this.tree, from, move);
@@ -100,9 +116,13 @@ export class SpatialNavigator {
 
   private answered(direction: Direction): boolean {
     const focused = this.owner.focusedNode;
-    if (focused === null) return false;
+    if (focused === null) {
+      return false;
+    }
     for (const node of [focused, ...this.tree.ancestorsOf(focused)]) {
-      if (node.config.onKey?.(direction) === true) return true;
+      if (node.config.onKey?.(direction) === true) {
+        return true;
+      }
     }
     return false;
   }
@@ -117,7 +137,9 @@ export class SpatialNavigator {
 
   private select(): boolean {
     const focused = this.owner.focusedNode;
-    if (focused === null) return false;
+    if (focused === null) {
+      return false;
+    }
     if (focused.config.holds?.() !== true) {
       focused.config.onSelect?.();
       return true;
@@ -128,28 +150,47 @@ export class SpatialNavigator {
 
   private release(): boolean {
     const press = this.press;
-    if (press === null) return false;
+    if (press === null) {
+      return false;
+    }
     this.drop();
-    if (this.locked) return false;
-    if (press.timer === null) return true;
+    if (this.locked) {
+      return false;
+    }
+    if (press.timer === null) {
+      return true;
+    }
     const focused = this.owner.focusedNode;
-    if (focused?.id === press.id) focused.config.onSelect?.();
+    if (focused?.id === press.id) {
+      focused.config.onSelect?.();
+    }
     return true;
   }
 
   private longSelect(): boolean {
     const press = this.press;
-    if (press?.timer) clearTimeout(press.timer);
+    if (press?.timer) {
+      clearTimeout(press.timer);
+    }
     const focused = this.owner.focusedNode;
-    if (press) this.press = { id: press.id, timer: null };
-    if (this.locked || focused === null || (press && focused.id !== press.id)) return false;
-    if (focused.config.holds?.() === true) focused.config.onLongSelect?.();
-    else focused.config.onSelect?.();
+    if (press) {
+      this.press = { id: press.id, timer: null };
+    }
+    if (this.locked || focused === null || (press && focused.id !== press.id)) {
+      return false;
+    }
+    if (focused.config.holds?.() === true) {
+      focused.config.onLongSelect?.();
+    } else {
+      focused.config.onSelect?.();
+    }
     return true;
   }
 
   private drop(): void {
-    if (this.press?.timer) clearTimeout(this.press.timer);
+    if (this.press?.timer) {
+      clearTimeout(this.press.timer);
+    }
     this.press = null;
   }
 }

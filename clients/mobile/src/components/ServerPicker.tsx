@@ -35,8 +35,11 @@ export function ServerPicker({
       <ServerList>
         {saved.map((server) => {
           let host: string | null = null;
-          if (server.offline) host = t('profiles.serverOffline');
-          else if (server.name !== server.host) host = server.host;
+          if (server.offline) {
+            host = t('profiles.serverOffline');
+          } else if (server.name !== server.host) {
+            host = server.host;
+          }
           return (
             <ServerRow
               key={server.url}

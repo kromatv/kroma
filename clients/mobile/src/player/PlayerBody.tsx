@@ -140,14 +140,19 @@ export function PlayerBody({
   });
 
   useEffect(() => {
-    if (engine.endedNonce === 0 || navigatedRef.current) return;
+    if (engine.endedNonce === 0 || navigatedRef.current) {
+      return;
+    }
     navigatedRef.current = true;
     engine.shutdown();
     void client.playback
       .nextEpisode(item.id)
       .then((next) => {
-        if (next) router.replace(`/player/${next.id}` as never);
-        else goBack(router);
+        if (next) {
+          router.replace(`/player/${next.id}` as never);
+        } else {
+          goBack(router);
+        }
       })
       .catch(() => goBack(router));
   }, [engine.endedNonce, engine, client, item.id, router]);
@@ -235,7 +240,9 @@ export function PlayerBody({
           onPlayNext={() => {
             navigatedRef.current = true;
             engine.shutdown();
-            if (next.data) router.replace(`/player/${next.data.id}` as never);
+            if (next.data) {
+              router.replace(`/player/${next.data.id}` as never);
+            }
           }}
         />
       }
@@ -245,7 +252,9 @@ export function PlayerBody({
         onClose={() => setCastOpen(false)}
         onPick={async (id) => {
           setCastOpen(false);
-          if (!id) return;
+          if (!id) {
+            return;
+          }
           const failure = await cast.playOn(id, item.id, Math.round(engine.cur * 1000));
           // Stop local playback once the TV picks up the same title, to avoid
           // two screens playing it at once.

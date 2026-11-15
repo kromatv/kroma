@@ -2,11 +2,15 @@ import type { PlayEnv } from '@kromatv/core';
 import { getTauri, mpvAvailable } from '#tv/features/playback/player/engine';
 
 export function detectTvEnv(): PlayEnv {
-  if (mpvAvailable()) return { platform: 'desktop', safari: false };
+  if (mpvAvailable()) {
+    return { platform: 'desktop', safari: false };
+  }
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
   // Tauri on macOS is WKWebView (Safari engine: native HEVC + AC3/EAC3), so treating
   // it as Safari web matches the in-page <video> and spawns no second mpv window.
-  if (getTauri() != null && /Mac|Macintosh/i.test(ua)) return { platform: 'web', safari: true };
+  if (getTauri() != null && /Mac|Macintosh/i.test(ua)) {
+    return { platform: 'web', safari: true };
+  }
   const webos = /web0?s/i.test(ua) || Reflect.get(globalThis, 'webOS') !== undefined;
   const chromeMajor = Number(/Chrome\/(\d+)/i.exec(ua)?.[1]);
   return {

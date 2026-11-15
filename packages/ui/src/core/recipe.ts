@@ -55,10 +55,14 @@ function cascadeOf(
   for (const group of groups) {
     const pick = pickOf(group);
     const layer = pick === undefined ? undefined : compiled.options[group]?.[String(pick)];
-    if (layer) layers.push(layer);
+    if (layer) {
+      layers.push(layer);
+    }
   }
   for (const rule of compiled.rules) {
-    if (rule.when.every(([group, value]) => pickOf(group) === value)) layers.push(rule.layers);
+    if (rule.when.every(([group, value]) => pickOf(group) === value)) {
+      layers.push(rule.layers);
+    }
   }
   return layers;
 }
@@ -73,10 +77,14 @@ function coatsOf(
 ): Record<string, unknown>[] {
   const coats: Record<string, unknown>[] = [];
   for (const name of SV_STATES) {
-    if (state[name] !== true) continue;
+    if (state[name] !== true) {
+      continue;
+    }
     for (const layer of layers) {
       const coat = layer[slot]?.states[name];
-      if (coat) coats.push(coat);
+      if (coat) {
+        coats.push(coat);
+      }
     }
   }
   return coats;
@@ -91,10 +99,16 @@ function mergeSlot(
   const parts: Record<string, unknown>[] = [];
   for (const layer of layers) {
     const rest = layer[slot]?.rest;
-    if (rest) parts.push(rest);
+    if (rest) {
+      parts.push(rest);
+    }
   }
-  if (stateful && state) parts.push(...coatsOf(layers, slot, state));
-  if (isStaticStyle(parts[0])) return mergeStatic(parts);
+  if (stateful && state) {
+    parts.push(...coatsOf(layers, slot, state));
+  }
+  if (isStaticStyle(parts[0])) {
+    return mergeStatic(parts);
+  }
   return stabilise(Object.assign({}, ...parts));
 }
 
@@ -150,7 +164,9 @@ function compileSv(
           throw new Error(`sv: slot "${name}" must be a style object.`);
         }
         const piece = split(declaration, at, activeTheme(scope.theme));
-        for (const state of piece?.declared ?? []) declared.add(state);
+        for (const state of piece?.declared ?? []) {
+          declared.add(state);
+        }
         breakpoints |= piece?.breakpoints ?? 0;
         return piece;
       });
@@ -158,7 +174,9 @@ function compileSv(
 
     const bases = names.map((name) => {
       const piece = split(slots[name], at, activeTheme(scope.theme)) as Split;
-      for (const state of piece.declared) declared.add(state);
+      for (const state of piece.declared) {
+        declared.add(state);
+      }
       breakpoints |= piece.breakpoints;
       return piece;
     });
@@ -166,8 +184,9 @@ function compileSv(
     const options: Compiled['options'] = {};
     for (const group of groups) {
       const bucket: Record<string, (Split | undefined)[]> = {};
-      for (const [option, layer] of Object.entries(variants?.[group] ?? {}))
+      for (const [option, layer] of Object.entries(variants?.[group] ?? {})) {
         bucket[option] = layersOf(layer);
+      }
       options[group] = bucket;
     }
 
@@ -205,11 +224,15 @@ function compileSv(
     const pickOf: PickOf = (group) => picks?.[group] ?? defaults[group];
 
     let key = '';
-    for (const group of groups) key += `${String(pickOf(group))}|`;
+    for (const group of groups) {
+      key += `${String(pickOf(group))}|`;
+    }
     key += stateSuffix(state, active.mask);
 
     const hit = active.cache.get(key);
-    if (hit) return hit;
+    if (hit) {
+      return hit;
+    }
 
     const layers = cascadeOf(active, groups, pickOf);
     const out: Record<string, unknown> = {};
@@ -218,7 +241,9 @@ function compileSv(
     }
 
     const frozen = Object.freeze(out) as Record<string, object>;
-    if (active.cache.size < CACHE_LIMIT) active.cache.set(key, frozen);
+    if (active.cache.size < CACHE_LIMIT) {
+      active.cache.set(key, frozen);
+    }
     return frozen;
   }) as unknown as SvFn<SlotShapes, VariantGroups<SlotShapes>> & Record<string, unknown>;
 
@@ -249,7 +274,9 @@ export function svFor<P extends SlotShapes>() {
 const BIND_RECIPE = Symbol('scoped-recipe');
 const RECIPE_MASK = Symbol('recipe-breakpoints');
 function recipeMask(value: unknown): number {
-  if (!value || typeof value !== 'object') return 0;
+  if (!value || typeof value !== 'object') {
+    return 0;
+  }
   return Object.values(value).reduce<number>(
     (mask, child) => mask | recipeMask(child),
     declaredBreakpoints(value),
@@ -272,7 +299,9 @@ function defineRecipe(config: Parameters<typeof compileSv>[0]): ReturnType<typeo
       const version = themeVersion(scope.theme);
       const index = breakpointStep(mask, breakpointIndex(scope.breakpoints));
       const hit = roots.get(scope);
-      if (hit?.version === version && hit.index === index) return hit.fn;
+      if (hit?.version === version && hit.index === index) {
+        return hit.fn;
+      }
       const fn = compileSv(config, scope);
       roots.set(scope, { version, index, fn });
       return fn;

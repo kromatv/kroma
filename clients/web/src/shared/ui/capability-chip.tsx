@@ -38,6 +38,8 @@ const HDR_LABELS: ReadonlyArray<readonly [keyof HdrCapabilities, string]> = [
 ] as const;
 
 function hdrLabels(caps: PlaybackCapabilities | null): string[] {
-  if (!caps) return [];
+  if (!caps) {
+    return [];
+  }
   return HDR_LABELS.filter(([key]) => caps.hdr[key]).map(([, label]) => label);
 }

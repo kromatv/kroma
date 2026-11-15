@@ -19,22 +19,32 @@ function focusQueue(navigator: SpatialNavigator): FocusQueue {
 
   return {
     request(id) {
-      if (navigator.focus(id)) return;
+      if (navigator.focus(id)) {
+        return;
+      }
       pending = id;
       requested = true;
     },
     claim(id) {
-      if (navigator.focusedId || pending) return;
-      if (navigator.focus(id)) return;
+      if (navigator.focusedId || pending) {
+        return;
+      }
+      if (navigator.focus(id)) {
+        return;
+      }
       pending = id;
     },
     flush() {
-      if (pending === null) return;
+      if (pending === null) {
+        return;
+      }
       if (!requested && navigator.focusedId) {
         pending = null;
         return;
       }
-      if (!navigator.focus(pending)) return;
+      if (!navigator.focus(pending)) {
+        return;
+      }
       pending = null;
       requested = false;
     },

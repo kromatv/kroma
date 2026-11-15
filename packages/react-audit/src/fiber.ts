@@ -43,7 +43,9 @@ type Named = { displayName?: string; name?: string; render?: Named };
 /** The name a person would recognise: the component's, or the element's. */
 function nameOf(fiber: Fiber): string | null {
   const type = fiber.type;
-  if (typeof type === 'string') return type;
+  if (typeof type === 'string') {
+    return type;
+  }
   // A function is the component itself; an object is a wrapper (memo, forwardRef)
   // holding the one that has the name.
   if (typeof type === 'function') {
@@ -73,7 +75,9 @@ function* walk(root: Root): Generator<Fiber> {
   const stack: (Fiber | null)[] = [root.current];
   while (stack.length > 0) {
     const fiber = stack.pop();
-    if (!fiber) continue;
+    if (!fiber) {
+      continue;
+    }
     yield fiber;
     stack.push(fiber.child, fiber.sibling);
   }

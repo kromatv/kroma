@@ -20,7 +20,9 @@ function AdminRoute() {
   const { ready } = useRequireAuth();
   // `useRequireAuth` redirects signed-out users; the `user` check also narrows
   // it non-null for the checks below.
-  if (!ready || !user) return null;
+  if (!ready || !user) {
+    return null;
+  }
 
   const allowed =
     hasPermission(user, 'users.manage') ||

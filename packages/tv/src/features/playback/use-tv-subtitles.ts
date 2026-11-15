@@ -84,7 +84,9 @@ export function useTvSubtitles(
         return;
       }
       const language = sel.rendered.find((s) => s.index === index)?.language;
-      if (language) setSubtitle(language);
+      if (language) {
+        setSubtitle(language);
+      }
     },
     [pick, setSubtitle, sel.rendered],
   );
@@ -102,7 +104,9 @@ export function useTvSubtitles(
   const onStart = useCallback(
     (req: SubtitleGenRequest) => {
       const lang = GEN_LANGS.find((l) => l.code === req.lang) ?? GEN_LANGS[0];
-      if (!lang) return;
+      if (!lang) {
+        return;
+      }
       const done = () => {
         refresh();
         sel.reload();
@@ -119,7 +123,9 @@ export function useTvSubtitles(
           .catch(() => undefined);
       } else {
         const src = sel.rendered.find((s) => s.index === req.sourceIndex && s.url);
-        if (!src) return;
+        if (!src) {
+          return;
+        }
         void client.subtitles
           .generate(item.id, {
             mode: 'translate',

@@ -57,7 +57,9 @@ export function useSubtitles(
   const hintRef = useRef(0);
 
   useEffect(() => {
-    if (offline) return;
+    if (offline) {
+      return;
+    }
     let cancelled = false;
     client.subtitles
       .downloaded(item.id)
@@ -129,7 +131,9 @@ export function useSubtitles(
 
   useEffect(() => {
     const track = tracks.find((t) => t.index === active);
-    if (active === null || !track) return;
+    if (active === null || !track) {
+      return;
+    }
     let cancelled = false;
     // Local sidecar VTTs are file:// URIs; RN fetch cannot read those.
     const load = track.url.startsWith('file:')
@@ -141,13 +145,17 @@ export function useSubtitles(
     // working, and a picker row that silently does nothing reads as a broken
     // app. Mark it and step aside, so the sheet can say "unavailable".
     const broke = () => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       setFailed((prev) => new Set(prev).add(active));
       setActive(null);
     };
     load
       .then((raw) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         const parsed = parseVtt(raw);
         if (parsed.length === 0) {
           broke();
@@ -162,14 +170,16 @@ export function useSubtitles(
     };
   }, [active, tracks]);
 
-  const cues = loaded !== null && loaded.index === active ? loaded.cues : null;
+  const cues = loaded?.index === active ? loaded.cues : null;
   const loading = cues === null && tracks.some((t) => t.index === active);
 
   const pick = useCallback((index: number | null) => setActive(index), []);
 
   const cueAt = useCallback(
     (absSec: number): string => {
-      if (!cues || cues.length === 0) return '';
+      if (!cues || cues.length === 0) {
+        return '';
+      }
       const hit = activeCueText(cues, absSec, hintRef.current);
       hintRef.current = hit.index;
       return hit.text;

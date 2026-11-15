@@ -80,13 +80,17 @@ export function stallWatch(): StallWatch {
         since = nowMs;
         stuck = false;
         advances += 1;
-        if (advances >= RESUMED_POLLS) taken = 0;
+        if (advances >= RESUMED_POLLS) {
+          taken = 0;
+        }
         return MOVING;
       }
 
       advances = 0;
       // A stall persists between rungs: only movement ends it.
-      if (nowMs - since < STALL_MS) return { step: null, stalled: stuck };
+      if (nowMs - since < STALL_MS) {
+        return { step: null, stalled: stuck };
+      }
       stuck = true;
       const step = LADDER[taken] ?? null;
       if (step) {
@@ -134,19 +138,27 @@ export function driveStallRecovery(
       target.nudge();
       return;
     }
-    if (step === 'recover' && target.recover()) return;
-    if (nowMs - restartedAt < RESTART_COOLDOWN_MS) return;
+    if (step === 'recover' && target.recover()) {
+      return;
+    }
+    if (nowMs - restartedAt < RESTART_COOLDOWN_MS) {
+      return;
+    }
     restartedAt = nowMs;
     target.restart();
   };
 
   const id = setInterval(() => {
     const sample = target.sample();
-    if (!sample) return;
+    if (!sample) {
+      return;
+    }
     const now = Date.now();
     const { step, stalled } = watch.observe(sample, now);
     onStalled(stalled);
-    if (step) apply(step, now);
+    if (step) {
+      apply(step, now);
+    }
   }, STALL_POLL_MS);
 
   return () => {
@@ -172,8 +184,12 @@ export function recoverMse(
   shaka: ShakaRecoverable | null,
   hls: Pick<HlsInstanceLike, 'recoverMediaError'> | null,
 ): boolean {
-  if (shaka) return shaka.retryStreaming();
-  if (!hls) return false;
+  if (shaka) {
+    return shaka.retryStreaming();
+  }
+  if (!hls) {
+    return false;
+  }
   hls.recoverMediaError();
   return true;
 }
@@ -200,8 +216,12 @@ export type StreamRefusal = 'denied' | 'missing';
 
 /** The refusal an HTTP status is, or null for one a retry may still get past. */
 export function streamRefusal(status: number): StreamRefusal | null {
-  if (status === 401 || status === 403) return 'denied';
-  if (status === 404 || status === 410) return 'missing';
+  if (status === 401 || status === 403) {
+    return 'denied';
+  }
+  if (status === 404 || status === 410) {
+    return 'missing';
+  }
   return null;
 }
 
@@ -224,7 +244,9 @@ export function attachHlsRecovery(
   let last = 0;
 
   hls.on(hlsClass.Events.ERROR, (_event, data) => {
-    if (!data.fatal) return;
+    if (!data.fatal) {
+      return;
+    }
     const status = data.response?.code;
     if (onRefused && status !== undefined && streamRefusal(status)) {
       onRefused(status);

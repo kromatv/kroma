@@ -22,7 +22,9 @@ export function createSessionScope() {
    *  `KromaClient.setAuthToken` calls this, so one call serves both. */
   function setSessionToken(token: string | undefined): void {
     memorySessionToken = token;
-    if (settledExchange?.token !== token) settledExchange = undefined;
+    if (settledExchange?.token !== token) {
+      settledExchange = undefined;
+    }
   }
 
   let memoryMediaTicket: string | undefined;
@@ -47,14 +49,18 @@ export function createSessionScope() {
   function sharedTokenExchange<U>(
     exchange: () => Promise<TokenExchange<U>>,
   ): Promise<TokenExchange<U>> {
-    if (inflightExchange) return inflightExchange as Promise<TokenExchange<U>>;
+    if (inflightExchange) {
+      return inflightExchange as Promise<TokenExchange<U>>;
+    }
     const p = exchange()
       .then((result) => {
         settledExchange = result;
         return result;
       })
       .finally(() => {
-        if (inflightExchange === p) inflightExchange = null;
+        if (inflightExchange === p) {
+          inflightExchange = null;
+        }
       });
     inflightExchange = p as Promise<TokenExchange>;
     return p;

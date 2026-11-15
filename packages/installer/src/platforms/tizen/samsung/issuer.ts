@@ -21,7 +21,9 @@ function form({ access, csr, file, extra }: Fields): FormData {
   const body = new FormData();
   body.set('access_token', access.accessToken);
   body.set('user_id', access.userId);
-  for (const [name, value] of Object.entries(extra)) body.set(name, value);
+  for (const [name, value] of Object.entries(extra)) {
+    body.set(name, value);
+  }
   body.set('csr', new Blob([csr], { type: 'application/octet-stream' }), file);
   return body;
 }

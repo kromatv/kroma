@@ -41,10 +41,14 @@ export function foldReleases(releases: z.infer<typeof Release>[]): Index {
   const index: Index = {};
   for (const release of releases) {
     const at = release.tag_name.lastIndexOf('@');
-    if (at <= 0) continue; // a server release, or the rolling catalog one
+    if (at <= 0) {
+      continue;
+    } // a server release, or the rolling catalog one
     const id = release.tag_name.slice(0, at);
     const version = release.tag_name.slice(at + 1);
-    if (!version) continue;
+    if (!version) {
+      continue;
+    }
     const asset = release.assets.find((a) => a.name.endsWith('.kmod')) ?? null;
     const rows = index[id] ?? [];
     rows.push({
@@ -64,7 +68,9 @@ async function buildIndex(env: Env): Promise<Index> {
   const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, {
     headers: { ...githubHeaders(env), accept: 'application/vnd.github+json' },
   });
-  if (!res.ok) throw new Error(`releases ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`releases ${res.status}`);
+  }
   const parsed = z.array(Release).safeParse(await res.json());
   // GitHub lists releases newest first, which is the order the page wants.
   return parsed.success ? foldReleases(parsed.data) : {};
@@ -83,7 +89,9 @@ export async function moduleHistory(
   const hit = await cache?.match(CACHE_KEY);
   if (hit) {
     const cached = Index.safeParse(await hit.json().catch(() => null));
-    if (cached.success) return cached.data[id] ?? [];
+    if (cached.success) {
+      return cached.data[id] ?? [];
+    }
   }
   try {
     const index = await buildIndex(env);

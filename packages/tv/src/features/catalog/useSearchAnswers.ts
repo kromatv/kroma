@@ -32,7 +32,9 @@ export function useSearchAnswers(
   const [wasEmpty, setWasEmpty] = useState(empty);
   if (wasEmpty !== empty) {
     setWasEmpty(empty);
-    if (empty) setAnswers(NOTHING);
+    if (empty) {
+      setAnswers(NOTHING);
+    }
   }
 
   useEffect(() => {
@@ -56,7 +58,9 @@ export function useSearchAnswers(
           () => [] as DiscoverEntry[],
         ),
       ]).then(([found, discover]) => {
-        if (mine === seq.current) setAnswers({ query, ...found, discover });
+        if (mine === seq.current) {
+          setAnswers({ query, ...found, discover });
+        }
       });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);

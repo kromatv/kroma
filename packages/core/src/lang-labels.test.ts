@@ -59,7 +59,9 @@ describe('PREF_LANGS / langOptions', () => {
   });
 
   it('names every offered code (no raw keys leak into a picker)', () => {
-    for (const code of PREF_LANGS) expect(langKey(code)).toBe(`lang.${code}`);
+    for (const code of PREF_LANGS) {
+      expect(langKey(code)).toBe(`lang.${code}`);
+    }
   });
 
   it('orders rows by their translated label, not by code', () => {

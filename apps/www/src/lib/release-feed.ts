@@ -5,7 +5,7 @@ import { z } from 'zod';
 const Https = z.url({ protocol: /^https$/ });
 
 const Asset = z.object({
-  name: z.string().min(1),
+  name: z.string().nonempty(),
   size: z.number().int().positive(),
   browser_download_url: Https,
   // Nullish because an asset uploaded before GitHub shipped the field carries none.
@@ -17,7 +17,7 @@ const Asset = z.object({
 export type Asset = z.infer<typeof Asset>;
 
 export const Release = z.object({
-  tag_name: z.string().min(1),
+  tag_name: z.string().nonempty(),
   body: z.string().nullish(),
   draft: z.boolean().default(false),
   prerelease: z.boolean().default(false),

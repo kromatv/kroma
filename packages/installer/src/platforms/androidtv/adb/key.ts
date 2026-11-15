@@ -41,7 +41,9 @@ function fromBase64Url(text: string): bigint {
 
 function inverseModWord(odd: bigint): bigint {
   let inverse = 1n;
-  for (let step = 0; step < 5; step += 1) inverse = (inverse * (2n - odd * inverse)) % WORD;
+  for (let step = 0; step < 5; step += 1) {
+    inverse = (inverse * (2n - odd * inverse)) % WORD;
+  }
   return ((inverse % WORD) + WORD) % WORD;
 }
 
@@ -51,7 +53,9 @@ function inverseModWord(odd: bigint): bigint {
  */
 export function androidPublicKey(privateKey: KeyObject, label = `kroma@${hostname()}`): string {
   const jwk = privateKey.export({ format: 'jwk' });
-  if (!jwk.n || !jwk.e) throw new Error('the adb key is not an RSA key');
+  if (!jwk.n || !jwk.e) {
+    throw new Error('the adb key is not an RSA key');
+  }
   const modulus = fromBase64Url(jwk.n);
   const exponent = Number(fromBase64Url(jwk.e));
   if (modulus >> 2040n === 0n || modulus >> 2048n !== 0n) {
@@ -81,7 +85,9 @@ export function signToken(privateKey: KeyObject, token: Buffer): Buffer {
 async function readKey(path: string): Promise<AdbKey | null> {
   try {
     const pem = await readFile(path, 'utf8');
-    if (pem.length > LARGEST_KEY_FILE) return null;
+    if (pem.length > LARGEST_KEY_FILE) {
+      return null;
+    }
     const privateKey = createPrivateKey(pem);
     return { privateKey, publicKey: androidPublicKey(privateKey) };
   } catch {
@@ -92,7 +98,9 @@ async function readKey(path: string): Promise<AdbKey | null> {
 /** This tool's own key, made the first time and readable by its owner alone. */
 export async function kromaKey(path = KROMA_ADB_KEY): Promise<AdbKey> {
   const kept = await readKey(path);
-  if (kept) return kept;
+  if (kept) {
+    return kept;
+  }
 
   const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048, publicExponent: 65537 });
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });

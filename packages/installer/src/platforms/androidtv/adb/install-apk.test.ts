@@ -35,7 +35,9 @@ function syncReceiver(answer: Buffer): Service {
           return;
         } else if (pending.length >= 8 + length) {
           pending = pending.subarray(8 + length);
-        } else return;
+        } else {
+          return;
+        }
       }
     };
   };

@@ -91,13 +91,17 @@ export function usePlayerNav(
   const poke = useCallback(() => {
     setRevealed(true);
     clearHide();
-    if (!playing || overlay) return;
+    if (!playing || overlay) {
+      return;
+    }
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
   }, [clearHide, playing, overlay]);
 
   const rearmHide = useCallback(() => {
     clearHide();
-    if (!playing || overlay) return;
+    if (!playing || overlay) {
+      return;
+    }
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
   }, [clearHide, playing, overlay]);
 
@@ -111,13 +115,18 @@ export function usePlayerNav(
   if (chromeKeyOf.playing !== playing || chromeKeyOf.overlay !== overlay) {
     const keptHidden = quietToggle && chromeKeyOf.overlay === overlay;
     setChromeKeyOf({ playing, overlay });
-    if (keptHidden) setQuietToggle(false);
-    else setRevealed(true);
+    if (keptHidden) {
+      setQuietToggle(false);
+    } else {
+      setRevealed(true);
+    }
   }
 
   useEffect(() => {
     clearHide();
-    if (playing && !overlay) rearmHide();
+    if (playing && !overlay) {
+      rearmHide();
+    }
     return clearHide;
   }, [playing, overlay, rearmHide, clearHide]);
 
@@ -165,22 +174,31 @@ export function usePlayerNav(
         poke();
         return;
       }
-      if (PLAY_KEYS.has(key)) setQuietToggle(true);
+      if (PLAY_KEYS.has(key)) {
+        setQuietToggle(true);
+      }
       rearmHide();
       return;
     }
-    if (key !== 'Back') return;
+    if (key !== 'Back') {
+      return;
+    }
     if (overlay) {
       closeOverlay();
       return;
     }
-    if (revealed) hide();
-    else actions.onExit('back');
+    if (revealed) {
+      hide();
+    } else {
+      actions.onExit('back');
+    }
   });
 
   const chromeKey = useEffectEvent((direction: Direction): boolean => {
     if (!revealed) {
-      if (spot === 'skip') return false;
+      if (spot === 'skip') {
+        return false;
+      }
       poke();
       return true;
     }
@@ -190,7 +208,9 @@ export function usePlayerNav(
       return true;
     }
     if (direction === 'down' && spot !== null && controls.includes(spot as ControlId)) {
-      if (actions.sheetHasItems) openOverlay('sheet');
+      if (actions.sheetHasItems) {
+        openOverlay('sheet');
+      }
       return true;
     }
     return false;

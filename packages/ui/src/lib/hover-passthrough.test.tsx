@@ -15,7 +15,9 @@ function Inner() {
 // could not do.
 function Swapping({ guarded }: Readonly<{ guarded: boolean }>) {
   const passthrough = useHoverPassthrough<HTMLDivElement>();
-  if (guarded) return <span data-testid="inner" />;
+  if (guarded) {
+    return <span data-testid="inner" />;
+  }
   return <div ref={passthrough} data-testid="inner" />;
 }
 

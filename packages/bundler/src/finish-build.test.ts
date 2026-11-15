@@ -38,7 +38,7 @@ async function finish(precompress: boolean): Promise<void> {
   const { handler } = finishBuild({ precompress }).buildApp as {
     handler: (b: unknown) => Promise<void>;
   };
-  await handler.call(null, builder);
+  await handler(builder);
 }
 
 describe('finishBuild', () => {
@@ -64,7 +64,7 @@ describe('finishBuild', () => {
       handler: (b: unknown) => Promise<void>;
     };
 
-    await handler.call(null, { environments: {} });
+    await handler({ environments: {} });
 
     expect(await readFile(join(root, 'dist/client/_shell.html'), 'utf8')).toBe(SHELL);
   });

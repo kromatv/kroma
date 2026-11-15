@@ -3,7 +3,9 @@ const HOST = /^[a-z][a-z0-9+.-]*:\/\/(\[[^\]]*\]|[^/:?#]*)/i;
 
 function isPrivateV4(octets: readonly number[]): boolean {
   const [a = -1, b = -1] = octets;
-  if (octets.some((octet) => octet > 255)) return false;
+  if (octets.some((octet) => octet > 255)) {
+    return false;
+  }
   return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
 }
 
@@ -11,7 +13,9 @@ function isPrivateV4(octets: readonly number[]): boolean {
  * direct route takes. Anything else in an offer is ignored. */
 export function isLanRoute(route: string): boolean {
   const match = IPV4_ROUTE.exec(route);
-  if (!match) return false;
+  if (!match) {
+    return false;
+  }
   const numbers = match.slice(1).map(Number);
   const port = numbers.pop() ?? 0;
   return port > 0 && port < 65536 && isPrivateV4(numbers);
@@ -22,8 +26,12 @@ export function isLanRoute(route: string): boolean {
  * gain from a direct route. */
 export function isLanBase(base: string): boolean {
   const host = HOST.exec(base)?.[1]?.toLowerCase() ?? '';
-  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) return true;
+  if (host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local')) {
+    return true;
+  }
   const octets = host.split('.').map(Number);
-  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet))) return false;
+  if (octets.length !== 4 || octets.some((octet) => !Number.isInteger(octet))) {
+    return false;
+  }
   return octets[0] === 127 || isPrivateV4(octets);
 }

@@ -22,7 +22,7 @@ function stubLogin(status: number, body: unknown) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (url: string, init?: RequestInit) => {
-      requests.push({ url, body: JSON.parse(String(init?.body)) });
+      requests.push({ url, body: JSON.parse(typeof init?.body === 'string' ? init.body : '') });
       return new Response(JSON.stringify(body), { status });
     }),
   );

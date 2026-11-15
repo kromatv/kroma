@@ -19,7 +19,7 @@ export function PlayerRelated({
   const s = useStyles(definition);
   const t = useT();
   const client = useClient();
-  if (next)
+  if (next) {
     return (
       <Box style={s.nextSection}>
         <Text style={s.sectionTitle}>{t('player.upNextTitle')}</Text>
@@ -45,7 +45,10 @@ export function PlayerRelated({
         </Pressable>
       </Box>
     );
-  if (!similar.length) return null;
+  }
+  if (!similar.length) {
+    return null;
+  }
   return (
     <Box style={s.section}>
       <Text style={[s.sectionTitle, s.inset]}>{t('content.similarTitles')}</Text>

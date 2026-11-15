@@ -62,7 +62,9 @@ export function RequestsQueue() {
   // The detail page subscribes to this same query (shared cache), so it stays
   // fresh here without an explicit push.
   const act = (label: string, fn: () => Promise<unknown>) => {
-    if (!canReview) return Promise.resolve();
+    if (!canReview) {
+      return Promise.resolve();
+    }
     return fn()
       .then(() => {
         flash(label);
@@ -179,7 +181,7 @@ export function RequestsQueue() {
         onOpenRequest={(id) => {
           setAdding(false);
           void reload();
-          navigate({ to: '/admin/requests/$id', params: { id } });
+          void navigate({ to: '/admin/requests/$id', params: { id } });
         }}
       />
       <ConsoleToast toast={toast} />

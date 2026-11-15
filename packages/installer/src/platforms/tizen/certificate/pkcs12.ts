@@ -20,14 +20,18 @@ export function readPkcs12({ archive, password }: ProfileKey): Pkcs12 {
     input: `${password}\n`,
     encoding: 'utf8',
   });
-  if (openssl.error) throw new Error('openssl is needed to read a .p12 and is not here');
+  if (openssl.error) {
+    throw new Error('openssl is needed to read a .p12 and is not here');
+  }
   if (openssl.status !== 0) {
     throw new Error(`openssl could not open ${archive}: ${openssl.stderr.trim()}`);
   }
 
   const blocks = [...openssl.stdout.matchAll(PEM_BLOCK)];
   const keyBlock = blocks.find(([, label]) => label?.endsWith('PRIVATE KEY'));
-  if (!keyBlock) throw new Error(`${archive} holds no private key`);
+  if (!keyBlock) {
+    throw new Error(`${archive} holds no private key`);
+  }
 
   const key = createPrivateKey(keyBlock[0]);
   const certificates = blocks
@@ -38,14 +42,18 @@ export function readPkcs12({ archive, password }: ProfileKey): Pkcs12 {
 
 function chainFrom(certificates: X509Certificate[], key: KeyObject): X509Certificate[] {
   const leaf = certificates.find((certificate) => certificate.checkPrivateKey(key));
-  if (!leaf) throw new Error('no certificate in the .p12 belongs to its private key');
+  if (!leaf) {
+    throw new Error('no certificate in the .p12 belongs to its private key');
+  }
 
   const chain = [leaf];
   const rest = certificates.filter((certificate) => certificate !== leaf);
   while (rest.length > 0) {
     const issuer = chain.at(-1)?.issuer;
     const next = rest.findIndex((certificate) => certificate.subject === issuer);
-    if (next < 0) break;
+    if (next < 0) {
+      break;
+    }
     chain.push(...rest.splice(next, 1));
   }
   return chain;

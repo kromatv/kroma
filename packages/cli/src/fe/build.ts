@@ -14,7 +14,9 @@ export async function buildFrontend(
   mode: Mode,
 ): Promise<boolean> {
   const ui = project.ui;
-  if (!ui) return false;
+  if (!ui) {
+    return false;
+  }
   await build({
     configFile: false,
     envDir: false,

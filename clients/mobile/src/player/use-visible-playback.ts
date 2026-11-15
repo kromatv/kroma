@@ -17,7 +17,9 @@ export function useVisiblePlayback(player: VideoPlayer, inPip: boolean): void {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const changed = (state: AppStateStatus) => {
       clearTimeout(timeout);
-      if (state !== 'background' || inPip) return;
+      if (state !== 'background' || inPip) {
+        return;
+      }
       // Automatic PiP enters during the same app-background transition.
       timeout = setTimeout(() => pause(player), PIP_TRANSITION_MS);
     };

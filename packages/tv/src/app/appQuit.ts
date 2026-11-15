@@ -46,6 +46,9 @@ export function exitNeedsConfirm(): boolean {
  * whether to exit (webOS 6 and later) or returns to the Home launcher. */
 export function exitOnBack(): void {
   const tizen = tizenApplication();
-  if (tizen) tizen.getCurrentApplication().exit();
-  else palmSystem()?.platformBack?.();
+  if (tizen) {
+    tizen.getCurrentApplication().exit();
+  } else {
+    palmSystem()?.platformBack?.();
+  }
 }

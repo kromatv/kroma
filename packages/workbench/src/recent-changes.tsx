@@ -19,13 +19,19 @@ function RecentChanges() {
 
   const kit = useKitHistory();
   const [now] = useState(() => Date.now());
-  if (!kit) return null;
-  if (kit.rows.length === 0) return <Nothing shallow={kit.shallow} />;
+  if (!kit) {
+    return null;
+  }
+  if (kit.rows.length === 0) {
+    return <Nothing shallow={kit.shallow} />;
+  }
   return (
     <Box gap={space[6]}>
       {BUCKETS.map((bucket) => {
         const rows = kit.rows.filter((row) => bucketOf(row.entry, now) === bucket);
-        if (rows.length === 0) return null;
+        if (rows.length === 0) {
+          return null;
+        }
         return (
           <Box key={bucket} gap={space[2]}>
             <Box row align="center" gap={space[2]}>

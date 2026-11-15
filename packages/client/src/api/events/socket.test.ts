@@ -86,7 +86,9 @@ describe('KromaEvents send', () => {
     });
     ev.connect();
     const ws = FakeWS.instances[0];
-    if (ws) ws.readyState = 1;
+    if (ws) {
+      ws.readyState = 1;
+    }
     expect(ev.open).toBe(true);
     expect(ev.send({ type: 'cast.ack', seq: 3 } as never)).toBe(true);
     expect(ws?.sent).toEqual([JSON.stringify({ type: 'cast.ack', seq: 3 })]);

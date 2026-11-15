@@ -11,7 +11,9 @@ interface ManifestHooks {
 const dirs: string[] = [];
 
 afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of dirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 function injected(files: Record<string, object>): string {

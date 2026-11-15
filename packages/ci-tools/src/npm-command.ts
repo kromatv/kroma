@@ -16,7 +16,9 @@ async function runPublish(argv: string[]): Promise<void> {
     },
   });
   const [tarball] = positionals;
-  if (!tarball || !values.tag) throw new Error(USAGE);
+  if (!tarball || !values.tag) {
+    throw new Error(USAGE);
+  }
   const result = await publishTarball(
     {
       tarball,
@@ -41,6 +43,8 @@ const USAGE = 'usage: bun run ci npm publish <tarball> --tag <tag> [--provenance
 
 export async function main(argv: string[]): Promise<void> {
   const [sub, ...rest] = argv;
-  if (sub === 'publish') return runPublish(rest);
+  if (sub === 'publish') {
+    return runPublish(rest);
+  }
   throw new Error(USAGE);
 }

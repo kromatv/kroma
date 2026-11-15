@@ -62,7 +62,9 @@ export function fakeVideo(init: Record<string, unknown> = {}): FakeVideo {
   return {
     el: v as unknown as HTMLVideoElement,
     fire: (t) => {
-      for (const fn of listeners.get(t) ?? []) fn(new Event(t));
+      for (const fn of listeners.get(t) ?? []) {
+        fn(new Event(t));
+      }
     },
     setBuffered: (r) => {
       ranges = r;

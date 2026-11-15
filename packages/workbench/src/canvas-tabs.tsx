@@ -94,7 +94,9 @@ function CanvasTabs({
 }
 
 function tabInk(active: boolean, focused: boolean, selected: ColorToken): ColorToken {
-  if (active) return selected;
+  if (active) {
+    return selected;
+  }
   return focused ? 'textMuted' : 'textDim';
 }
 

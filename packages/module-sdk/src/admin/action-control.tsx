@@ -11,7 +11,9 @@ export function ActionControl({ actionKey }: Readonly<{ actionKey: string }>) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
   const action = ACTIONS[actionKey];
-  if (!action) return null;
+  if (!action) {
+    return null;
+  }
   return (
     <Box align="flex-end" gap={6} maxW={380}>
       <Button

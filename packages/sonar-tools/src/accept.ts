@@ -27,10 +27,12 @@ async function open(rule: string, branch: string, token: string): Promise<Issue[
     resolved: 'false',
     ps: String(PAGE_SIZE),
   });
-  const response = await fetch(`${API}/issues/search?${query}`, {
+  const response = await fetch(`${API}/issues/search?${query.toString()}`, {
     headers: { Authorization: authorization(token) },
   });
-  if (!response.ok) throw new Error(`issues/search answered ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`issues/search answered ${response.status}`);
+  }
   return Issues.parse(await response.json()).issues;
 }
 
@@ -47,7 +49,9 @@ async function accept(issue: Issue, reason: string, token: string): Promise<bool
 
   const commented = await post('issues/add_comment', { issue: issue.key, text: reason });
   const moved = await post('issues/do_transition', { issue: issue.key, transition: TRANSITION });
-  if (commented.ok && moved.ok) return true;
+  if (commented.ok && moved.ok) {
+    return true;
+  }
 
   console.error(`${issue.key}: comment ${commented.status}, transition ${moved.status}`);
   return false;
@@ -68,7 +72,9 @@ export async function main(argv: string[]): Promise<void> {
     },
   });
   const token = process.env.SONAR_TOKEN;
-  if (!token) throw new Error('SONAR_TOKEN is not set: make one at sonarcloud.io/account/security');
+  if (!token) {
+    throw new Error('SONAR_TOKEN is not set: make one at sonarcloud.io/account/security');
+  }
   if (!values.rule || !values.reason) {
     throw new Error('usage: bun run sonar accept --rule <rule> --reason <why> [--branch <branch>]');
   }
@@ -79,7 +85,11 @@ export async function main(argv: string[]): Promise<void> {
     console.log(`  ${issue.component.split(':').at(-1)}:${issue.line ?? ''}`);
   }
   console.log(`accepted ${done.filter(Boolean).length} of ${issues.length} for ${values.rule}`);
-  if (done.some((ok) => !ok)) process.exit(1);
+  if (done.some((ok) => !ok)) {
+    process.exit(1);
+  }
 }
 
-if (import.meta.main) await main(process.argv.slice(2));
+if (import.meta.main) {
+  await main(process.argv.slice(2));
+}

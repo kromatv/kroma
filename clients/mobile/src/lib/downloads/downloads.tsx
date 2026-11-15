@@ -33,7 +33,9 @@ const Ctx = createContext<DownloadsApi | null>(null);
 
 export function useDownloads(): DownloadsApi {
   const value = useContext(Ctx);
-  if (!value) throw new Error('useDownloads outside DownloadsProvider');
+  if (!value) {
+    throw new Error('useDownloads outside DownloadsProvider');
+  }
   return value;
 }
 
@@ -90,10 +92,14 @@ export function DownloadsProvider({
     (itemId: string): DownloadState => {
       const progress = active[itemId];
       if (progress !== undefined) {
-        if (pausedIds.includes(itemId)) return { status: 'paused', progress };
+        if (pausedIds.includes(itemId)) {
+          return { status: 'paused', progress };
+        }
         return { status: 'downloading', progress };
       }
-      if (queuedIds.includes(itemId)) return { status: 'queued' };
+      if (queuedIds.includes(itemId)) {
+        return { status: 'queued' };
+      }
       const entry = entries.find((e) => e.itemId === itemId);
       return entry ? { status: 'done', entry } : { status: 'none' };
     },
@@ -105,7 +111,9 @@ export function DownloadsProvider({
   const downloading = useMemo(
     () =>
       Object.entries(active).flatMap(([id, progress]) => {
-        if (pausedIds.includes(id)) return [];
+        if (pausedIds.includes(id)) {
+          return [];
+        }
         const item = activeItems.get(id);
         return item ? [{ item, progress }] : [];
       }),

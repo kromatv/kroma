@@ -46,9 +46,15 @@ interface Sorted {
 }
 
 function spoken(node: ReactNode): string {
-  if (typeof node === 'string' || typeof node === 'number') return String(node);
-  if (Array.isArray(node)) return node.map(spoken).join('');
-  if (!isValidElement(node)) return '';
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(spoken).join('');
+  }
+  if (!isValidElement(node)) {
+    return '';
+  }
   return spoken((node.props as { children?: ReactNode }).children);
 }
 
@@ -56,10 +62,16 @@ function sort(children: ReactNode): Sorted {
   const at: Sorted = { clear: [], middle: [], actions: [], status: '' };
   for (const child of Children.toArray(children)) {
     const part = isValidElement(child) ? child.type : null;
-    if (part === Clear) at.clear.push(child);
-    else if (part === Actions) at.actions.push(child);
-    else at.middle.push(child);
-    if (part === Status) at.status = spoken(child as ReactElement);
+    if (part === Clear) {
+      at.clear.push(child);
+    } else if (part === Actions) {
+      at.actions.push(child);
+    } else {
+      at.middle.push(child);
+    }
+    if (part === Status) {
+      at.status = spoken(child as ReactElement);
+    }
   }
   return at;
 }
@@ -85,7 +97,9 @@ function Root({
   const bar = useRef<View>(null);
   const [width, setWidth] = useState(0);
   const [held, setHeld] = useState<Held>({ count, children });
-  if (shown && held.count !== count) setHeld({ count, children });
+  if (shown && held.count !== count) {
+    setHeld({ count, children });
+  }
   const drawn = shown ? children : held.children;
 
   useSelectionKeys(shown, bar, onClear);

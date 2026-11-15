@@ -138,7 +138,9 @@ describe('replaying what the device was holding', () => {
 
     mounted(
       fakeClient(async (_itemId, positionMs) => {
-        if (!reachable) throw new TypeError('network request failed');
+        if (!reachable) {
+          throw new TypeError('network request failed');
+        }
         saved.push(positionMs);
       }),
     );

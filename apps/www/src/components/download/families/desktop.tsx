@@ -53,10 +53,8 @@ export function DesktopFamily({
     >
       {computer.targets.map((target: TargetId) => {
         const download = release?.downloads.find((file) => file.target === target);
-        const label =
-          target === 'macos' || target === 'macos-intel'
-            ? TARGETS[target].arch!
-            : TARGETS[target].ext;
+        const { arch, ext } = TARGETS[target];
+        const label = (target === 'macos' || target === 'macos-intel') && arch ? arch : ext;
         return download ? (
           <DownloadButton
             key={target}

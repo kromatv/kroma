@@ -34,7 +34,9 @@ export function useSearchShell(): SearchShell | null {
 /** Null when unregistered or its probe reports unavailable; a throwing probe
  * also counts as unavailable rather than taking the search screen down. */
 export function searchShell(current: SearchShell | null = null): SearchShell | null {
-  if (!current) return null;
+  if (!current) {
+    return null;
+  }
   try {
     return current.available() ? current : null;
   } catch {

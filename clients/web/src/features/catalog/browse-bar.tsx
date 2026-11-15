@@ -116,18 +116,24 @@ function useStuck(bar: RefObject<HTMLDivElement | null>): boolean {
     const measure = () => {
       raf = 0;
       const el = bar.current;
-      if (!el) return;
+      if (!el) {
+        return;
+      }
       const top = Number.parseFloat(getComputedStyle(el).top) || 0;
       setStuck(el.getBoundingClientRect().top <= top + 1);
     };
     const onScroll = () => {
-      if (raf === 0) raf = requestAnimationFrame(measure);
+      if (raf === 0) {
+        raf = requestAnimationFrame(measure);
+      }
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     measure();
     return () => {
       window.removeEventListener('scroll', onScroll);
-      if (raf !== 0) cancelAnimationFrame(raf);
+      if (raf !== 0) {
+        cancelAnimationFrame(raf);
+      }
     };
   }, [bar]);
   return stuck;
@@ -142,7 +148,9 @@ function useEdgeFades(strip: RefObject<HTMLDivElement | null>, deps: readonly un
   });
   const update = () => {
     const el = strip.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const left = el.scrollLeft > 2;
     const right = el.scrollLeft < el.scrollWidth - el.clientWidth - 2;
     setFades((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
@@ -159,7 +167,9 @@ function useEdgeFades(strip: RefObject<HTMLDivElement | null>, deps: readonly un
 }
 
 function fadeMask({ left, right }: { left: boolean; right: boolean }): string | undefined {
-  if (!(left || right)) return undefined;
+  if (!(left || right)) {
+    return undefined;
+  }
   const from = left ? 'transparent, #000 32px' : '#000';
   const to = right ? '#000 calc(100% - 32px), transparent' : '#000';
   return `linear-gradient(90deg, ${from}, ${to})`;
@@ -211,7 +221,9 @@ export function BrowseBar({
   const inline = genres.slice(0, INLINE_GENRES);
   if (active && !inline.some((g) => g.slug === active)) {
     const extra = genres.find((g) => g.slug === active);
-    if (extra) inline.push(extra);
+    if (extra) {
+      inline.push(extra);
+    }
   }
   const activeLabel = active ? genreLabel(t, active) : undefined;
   const { fades, update } = useEdgeFades(strip, [inline.length]);
@@ -221,7 +233,9 @@ export function BrowseBar({
   // otherwise sit scrolled out of view after a reload or a back-navigation.
   useEffect(() => {
     const el = strip.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     const index = activeLabel
       ? [...el.children].findIndex((c) => c.textContent === activeLabel)
       : 0;

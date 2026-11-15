@@ -42,9 +42,13 @@ const CONTAINER_MIME: Record<string, string> = {
 // the server remux instead.
 function webviewCanDirectPlay(item: MediaItem): boolean {
   const doc = webDocument();
-  if (!doc) return true;
+  if (!doc) {
+    return true;
+  }
   const mime = CONTAINER_MIME[(item.container ?? '').toLowerCase()];
-  if (!mime) return false;
+  if (!mime) {
+    return false;
+  }
   return doc.createElement('video').canPlayType(mime) !== '';
 }
 
@@ -78,7 +82,9 @@ export function planEngine(
   let eng = resolveEngine(pref, env, autoDirect);
   // A direct `<video>` on a container the webview can't demux (MKV/AVI in Safari)
   // would spin forever, so fall back to the server remux which repackages it.
-  if (eng === 'video-direct' && !webviewCanDirectPlay(item)) eng = 'video-remux';
+  if (eng === 'video-direct' && !webviewCanDirectPlay(item)) {
+    eng = 'video-remux';
+  }
   const useMpv = eng === 'mpv';
   const useAvplay = eng === 'avplay';
   const avplayDirect = useAvplay && avplayDirectPlayable(item);
@@ -156,7 +162,9 @@ export function createTvEngine(args: CreateEngineArgs<EnginePlan>): TvEngine | n
       listeners,
     });
   }
-  if (!video) return null;
+  if (!video) {
+    return null;
+  }
   return new HtmlEngine({
     video,
     client,

@@ -28,7 +28,9 @@ export type LegacyTier = 'legacy' | 'deep';
 const PROFILE = process.env.KROMA_PROFILE === '1';
 
 function lanIp(): string | undefined {
-  if (process.env.KROMA_TV_HOST) return process.env.KROMA_TV_HOST;
+  if (process.env.KROMA_TV_HOST) {
+    return process.env.KROMA_TV_HOST;
+  }
   return Object.values(networkInterfaces())
     .flatMap((addrs) => addrs ?? [])
     .find((a) => a.family === 'IPv4' && !a.internal)?.address;
@@ -127,7 +129,9 @@ export function tvShellLegacyConfig(
 ): UserConfig {
   const deep = tier === 'deep';
   const chrome = deep ? target.deepLegacyChrome : target.legacyChrome;
-  if (!chrome) throw new Error(`tv.target for ${target.platform} has no ${tier} chrome floor`);
+  if (!chrome) {
+    throw new Error(`tv.target for ${target.platform} has no ${tier} chrome floor`);
+  }
   const dir = deep ? 'deep' : 'legacy';
   const entry = deep ? 'src/main.deep.ts' : 'src/main.legacy.ts';
   const tiers = target.deepLegacyChrome

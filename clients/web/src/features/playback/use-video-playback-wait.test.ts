@@ -60,7 +60,9 @@ function render() {
 function fire(v: Element, type: string) {
   const calls = v.addEventListener.mock.calls as [string, () => void][];
   const handler = [...calls].reverse().find(([name]) => name === type)?.[1];
-  if (!handler) throw new Error(`nothing listens for ${type}`);
+  if (!handler) {
+    throw new Error(`nothing listens for ${type}`);
+  }
   act(() => handler());
 }
 

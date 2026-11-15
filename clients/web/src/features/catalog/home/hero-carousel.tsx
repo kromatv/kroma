@@ -73,13 +73,18 @@ export function HeroCarousel({ section }: Readonly<{ section: HomeSection }>) {
   const backdrop = entry ? entryBackdrop(client, entry, BACKDROP_W) : null;
   const previous = useCrossfade(backdrop);
 
-  if (!entry || !backdrop) return null;
+  if (!entry || !backdrop) {
+    return null;
+  }
   const [from, to] = posterColors(entryId(entry));
   const wash = `linear-gradient(158deg, ${from}, ${to})`;
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'ArrowRight') carousel.step(1);
-    else if (event.key === 'ArrowLeft') carousel.step(-1);
+    if (event.key === 'ArrowRight') {
+      carousel.step(1);
+    } else if (event.key === 'ArrowLeft') {
+      carousel.step(-1);
+    }
   };
 
   return (

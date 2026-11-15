@@ -18,7 +18,9 @@ export function RulesTestBox() {
   const [view, setView] = useState<RulesTestView | null>(null);
 
   const run = () => {
-    if (name.trim() === '') return;
+    if (name.trim() === '') {
+      return;
+    }
     setBusy(true);
     setError(null);
     acquisition

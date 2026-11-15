@@ -59,7 +59,9 @@ export function SignInPage() {
 
   useBlocker({
     shouldBlockFn: async ({ current, next }) => {
-      if (!unsaved || next.pathname === current.pathname) return false;
+      if (!unsaved || next.pathname === current.pathname) {
+        return false;
+      }
       const leave = await confirm({
         title: t('admin.signInLeaveTitle'),
         message: t('admin.signInLeaveMessage'),
@@ -76,7 +78,9 @@ export function SignInPage() {
     let cancelled = false;
     client.sso.config().then(
       (config) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setSaved(toForm(config));
         setForm(toForm(config));
         setRedirectUris(config.redirectUris);
@@ -89,8 +93,12 @@ export function SignInPage() {
     };
   }, [client]);
 
-  if (!canManage) return <Denied />;
-  if (!form || !saved) return null;
+  if (!canManage) {
+    return <Denied />;
+  }
+  if (!form || !saved) {
+    return null;
+  }
   const last = form.methods.length - 1;
 
   const update = (methods: MethodForm[]) => {
@@ -130,7 +138,9 @@ export function SignInPage() {
   };
 
   const test = async (provider: ProviderForm) => {
-    if (!provider.id) return;
+    if (!provider.id) {
+      return;
+    }
     setTesting(provider.key);
     setError(null);
     try {

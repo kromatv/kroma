@@ -19,8 +19,12 @@ export function scaleFor(peak: number): Scale {
       const step = digit * 10 ** power;
       for (const lines of LINE_COUNTS) {
         const top = step * lines;
-        if (top < Math.max(peak, 1)) continue;
-        if (!best || top < best.top) best = { top, lines };
+        if (top < Math.max(peak, 1)) {
+          continue;
+        }
+        if (!best || top < best.top) {
+          best = { top, lines };
+        }
       }
     }
   }

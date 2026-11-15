@@ -14,7 +14,9 @@ import { useTDefault } from '#ui/services/i18n';
 function DismissBackdrop({ onPress }: Readonly<{ onPress?: () => void }>) {
   const t = useTDefault();
   const backdrop = useRef<View>(null);
-  if (!onPress || !WEB) return null;
+  if (!onPress || !WEB) {
+    return null;
+  }
   return (
     <Pressable
       ref={backdrop}

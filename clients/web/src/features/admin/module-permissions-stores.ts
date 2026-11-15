@@ -34,10 +34,15 @@ function reached(access: Access | null | undefined, wordOf: (entry: string) => W
   const visit = (entries: readonly string[] | null | undefined, writes: boolean) => {
     for (const entry of entries ?? []) {
       const word = wordOf(entry);
-      if (!word) continue;
+      if (!word) {
+        continue;
+      }
       const seen = byText.get(word.text) ?? { word, reads: false, writes: false };
-      if (writes) seen.writes = true;
-      else seen.reads = true;
+      if (writes) {
+        seen.writes = true;
+      } else {
+        seen.reads = true;
+      }
       byText.set(word.text, seen);
     }
   };
@@ -51,7 +56,9 @@ function byAccess(items: readonly Reached[], t: Translate) {
   return ACCESS_KINDS.flatMap(({ reads, writes }) => {
     const alike = ordered.filter((item) => item.reads === reads && item.writes === writes);
     const [first] = alike;
-    if (!first) return [];
+    if (!first) {
+      return [];
+    }
     const said = listOf(
       alike.map((item) => item.word.text),
       t,
@@ -66,7 +73,9 @@ function nounGroup(
   unnamed: MessageKey,
   t: Translate,
 ): PermissionGroup | null {
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
   const named = items.filter((item) => item.word.named).map((item) => item.word.text);
   const rest = items.length - named.length;
   const said = (shown: number) =>
@@ -109,12 +118,16 @@ export function settingsGroup(
   const variables = env ?? [];
   const items = reached(settings, (key) => settingWord(key, t));
   const group = nounGroup('settings', items, 'modulePermissions.settingsUnnamed', t);
-  if (variables.length === 0) return group;
+  if (variables.length === 0) {
+    return group;
+  }
   const envDetails = variables.map((name) => ({
     text: name,
     hint: t('modulePermissions.envHint'),
   }));
-  if (group) return { ...group, details: [...group.details, ...envDetails] };
+  if (group) {
+    return { ...group, details: [...group.details, ...envDetails] };
+  }
   const summary = t('modulePermissions.envSummary', { count: variables.length });
   return {
     category: 'settings',

@@ -40,7 +40,9 @@ function foldLabels(
   relative: (at: number) => string,
   t: Translate,
 ): { span: string | null; repeat: string | null } {
-  if (one.count <= 1) return { span: null, repeat: null };
+  if (one.count <= 1) {
+    return { span: null, repeat: null };
+  }
   const oldest = relative(one.createdAt);
   return {
     span: oldest === latest ? null : t('notifications.repeatSpan', { first: oldest, last: latest }),
@@ -49,7 +51,9 @@ function foldLabels(
 }
 
 function settledLabel(one: Notification, t: Translate): string | null {
-  if (!one.resolved) return null;
+  if (!one.resolved) {
+    return null;
+  }
   const by = one.resolvedBy?.name;
   return by ? t('notifications.resolvedBy', { user: by }) : t('notifications.resolved');
 }

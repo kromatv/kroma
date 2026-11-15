@@ -17,8 +17,11 @@ export function namedIn(texts: Iterable<string>): Named {
   const prefixes = new Set<string>();
   for (const text of texts) {
     for (const [, literal = '', built] of text.matchAll(LITERAL)) {
-      if (built !== undefined || literal.endsWith('.')) prefixes.add(literal);
-      else exact.add(literal);
+      if (built !== undefined || literal.endsWith('.')) {
+        prefixes.add(literal);
+      } else {
+        exact.add(literal);
+      }
     }
   }
   return { exact, prefixes };
@@ -26,7 +29,9 @@ export function namedIn(texts: Iterable<string>): Named {
 
 export function namedInFiles(paths: readonly string[]): Named {
   function* texts() {
-    for (const path of paths) yield readFileSync(path, 'utf8');
+    for (const path of paths) {
+      yield readFileSync(path, 'utf8');
+    }
   }
   return namedIn(texts());
 }
@@ -35,7 +40,9 @@ export function namedInFiles(paths: readonly string[]): Named {
 // `email.reset.subject` from `"email.reset"` and a suffix.
 function under(key: string, exact: ReadonlySet<string>): boolean {
   for (let cut = key.length; cut > 0; cut = key.lastIndexOf('.', cut - 1)) {
-    if (exact.has(key.slice(0, cut))) return true;
+    if (exact.has(key.slice(0, cut))) {
+      return true;
+    }
   }
   return false;
 }

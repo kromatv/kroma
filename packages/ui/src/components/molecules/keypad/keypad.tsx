@@ -127,8 +127,11 @@ function Keypad({
   // every time the PIN behind them grows a digit.
   const press = useStableCallback((value: string) => {
     void haptics?.selectionAsync();
-    if (value === DELETE) onDelete();
-    else onDigit(value);
+    if (value === DELETE) {
+      onDelete();
+    } else {
+      onDigit(value);
+    }
   });
   return (
     <FocusColumn grid style={[HAND, s.pad, gapOf(gap, scope)]}>

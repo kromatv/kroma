@@ -78,7 +78,9 @@ const KEY_NAMES: Record<string, RemoteKey> = {
 /** Resolve a KeyboardEvent into a logical remote key, or null if unmapped. */
 export function resolveRemoteKey(e: KeyboardEvent): RemoteKey | null {
   const named = e.key ? KEY_NAMES[e.key] : undefined;
-  if (named) return named;
+  if (named) {
+    return named;
+  }
   // Legacy fallback: old TV browsers report only the numeric code. Read it through
   // a plain structural type so we don't touch the deprecated `KeyboardEvent.keyCode`.
   const legacyCode = (e as { keyCode: number }).keyCode;
@@ -107,13 +109,17 @@ export function dispatchRemoteKey(
   opts: { ignoreRepeat?: readonly RemoteKey[] } = {},
 ): RemoteKey | null {
   const key = resolveRemoteKey(e);
-  if (!key) return null;
+  if (!key) {
+    return null;
+  }
   if (e.repeat && opts.ignoreRepeat?.includes(key)) {
     e.preventDefault();
     return key;
   }
   const handler = map[key];
-  if (handler && handler(e) !== false) e.preventDefault();
+  if (handler && handler(e) !== false) {
+    e.preventDefault();
+  }
   return key;
 }
 
@@ -140,7 +146,9 @@ export function registerTvMediaKeys(): void {
   const tizen = (globalThis as { tizen?: { tvinputdevice?: { registerKey(k: string): void } } })
     .tizen;
   const dev = tizen?.tvinputdevice;
-  if (!dev) return;
+  if (!dev) {
+    return;
+  }
   for (const k of TIZEN_KEYS) {
     try {
       dev.registerKey(k);

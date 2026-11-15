@@ -43,10 +43,14 @@ export function createIconLibrary({
     };
   };
   const notify = () => {
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   };
   const load = () => {
-    if (current.ready) return Promise.resolve();
+    if (current.ready) {
+      return Promise.resolve();
+    }
     fetching ??= Promise.all([
       loadGlyphs
         ? Promise.resolve()

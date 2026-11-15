@@ -17,7 +17,9 @@ export function ContinueRow() {
   const { user, ready } = useAuth();
   // Per-user data: don't fetch behind the login gate. A skeleton fills the rail
   // while it loads, then collapses to nothing if there's nothing to resume.
-  if (!ready || !user) return null;
+  if (!ready || !user) {
+    return null;
+  }
   return (
     <Suspense fallback={<RailSkeleton count={6} />}>
       <ContinueRail />
@@ -32,7 +34,9 @@ function ContinueRail() {
   const { client } = useAuth();
   const { data: items } = useSuspenseQuery(webRuntime.queries.userQueries.continueWatching());
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return null;
+  }
 
   return (
     <section>

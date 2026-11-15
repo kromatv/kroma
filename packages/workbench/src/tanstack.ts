@@ -84,12 +84,14 @@ function tanstackRouter({
         // story - still has to produce a whole path, so the current values fill
         // the gaps.
         const story = next.story ?? at.story;
-        if (!story) return;
+        if (!story) {
+          return;
+        }
         const view = viewPath(next.view ?? at.view);
         // `preview` is spelled by being ABSENT, which is what makes the shortest
         // URL the one for the state you are in nine times out of ten - and why
         // there are two routes rather than one with a placeholder segment.
-        navigate({
+        void navigate({
           to: view ? viewRoute : storyRoute,
           params: view ? { storyId: story, view } : { storyId: story },
           // Flipping to the matrix tab is not a page you should be able to press

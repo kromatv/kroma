@@ -12,7 +12,9 @@ import type { NotificationSubject } from '@kromatv/client/notifications';
  * back to {@link mobileRoute} and usually stay a message.
  */
 export function subjectRoute(subject: NotificationSubject | undefined): string | null {
-  if (!subject?.id) return null;
+  if (!subject?.id) {
+    return null;
+  }
   switch (subject.kind) {
     case 'movie':
     case 'episode':
@@ -30,9 +32,13 @@ export function subjectRoute(subject: NotificationSubject | undefined): string |
  * on the web maps to `/player/:id` here.
  */
 export function mobileRoute(link: string | undefined | null): string | null {
-  if (!link) return null;
+  if (!link) {
+    return null;
+  }
   const [path] = link.split('?');
-  if (!path?.startsWith('/')) return null;
+  if (!path?.startsWith('/')) {
+    return null;
+  }
   const [, head, id] = path.split('/');
   switch (head) {
     case '':

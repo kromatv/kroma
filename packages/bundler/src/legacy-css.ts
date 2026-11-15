@@ -24,16 +24,24 @@ function splitSpace(value: string): string[] {
   let depth = 0;
   let cur = '';
   for (const ch of value.trim()) {
-    if (ch === '(') depth += 1;
-    if (ch === ')') depth -= 1;
+    if (ch === '(') {
+      depth += 1;
+    }
+    if (ch === ')') {
+      depth -= 1;
+    }
     if (/\s/.test(ch) && depth === 0) {
-      if (cur) parts.push(cur);
+      if (cur) {
+        parts.push(cur);
+      }
       cur = '';
     } else {
       cur += ch;
     }
   }
-  if (cur) parts.push(cur);
+  if (cur) {
+    parts.push(cur);
+  }
   return parts;
 }
 
@@ -47,7 +55,9 @@ function half(value: string, sign: '' | '-'): string {
 function collectRatioVars(root: Root): Map<string, string> {
   const map = new Map<string, string>();
   root.walkDecls(/^--/, (d) => {
-    if (RATIO.test(d.value)) map.set(d.prop, d.value);
+    if (RATIO.test(d.value)) {
+      map.set(d.prop, d.value);
+    }
   });
   return map;
 }
@@ -60,12 +70,18 @@ function shimAspect(root: Root, ratios: Map<string, string>): void {
   });
   for (const decl of decls) {
     const rule = decl.parent;
-    if (rule?.type !== 'rule') continue;
+    if (rule?.type !== 'rule') {
+      continue;
+    }
     let raw = decl.value.trim();
     const viaVar = /^var\((--[\w-]+)\)$/.exec(raw);
-    if (viaVar) raw = ratios.get(viaVar[1] ?? '') ?? raw;
+    if (viaVar) {
+      raw = ratios.get(viaVar[1] ?? '') ?? raw;
+    }
     const m = RATIO.exec(raw) ?? (/^\d+(?:\.\d+)?$/.test(raw) ? [raw, raw, '1'] : null);
-    if (!m) continue; // unresolvable ratio: leave it (the compat check will flag it)
+    if (!m) {
+      continue;
+    } // unresolvable ratio: leave it (the compat check will flag it)
     const pct = Math.round((Number(m[2]) / Number(m[1])) * 10000) / 100;
     const strut = rule.cloneAfter({
       selectors: rule.selectors.map((s) => `${s}::before`),
@@ -77,7 +93,9 @@ function shimAspect(root: Root, ratios: Map<string, string>): void {
       { prop: 'padding-bottom', value: `${pct}%` },
     );
     decl.remove();
-    if (rule.nodes.length === 0) rule.remove();
+    if (rule.nodes.length === 0) {
+      rule.remove();
+    }
   }
 }
 
@@ -89,7 +107,9 @@ function shimGap(root: Root): void {
   });
   for (const decl of decls) {
     const rule = decl.parent;
-    if (rule?.type !== 'rule') continue;
+    if (rule?.type !== 'rule') {
+      continue;
+    }
     const parts = splitSpace(decl.value);
     const rowV = parts[0] ?? decl.value;
     const colV = decl.prop === 'gap' ? (parts[1] ?? rowV) : rowV;
@@ -131,12 +151,16 @@ function shimGap(root: Root): void {
 function stripGridDisplay(root: Root): void {
   const decls: Declaration[] = [];
   root.walkDecls('display', (d) => {
-    if (/^(inline-)?grid$/.test(d.value.trim())) decls.push(d);
+    if (/^(inline-)?grid$/.test(d.value.trim())) {
+      decls.push(d);
+    }
   });
   for (const d of decls) {
     const rule = d.parent;
     d.remove();
-    if (rule?.nodes.length === 0) rule.remove();
+    if (rule?.nodes.length === 0) {
+      rule.remove();
+    }
   }
 }
 
@@ -148,12 +172,19 @@ function atomicClasses(root: Root): Map<string, string[]> {
   root.walkRules((r: Rule) => {
     const cls = ATOMIC.exec(r.selector);
     const only = r.nodes.length === 1 ? r.nodes[0] : undefined;
-    if (!cls?.[1] || only?.type !== 'decl') return;
+    if (!cls?.[1] || only?.type !== 'decl') {
+      return;
+    }
     const value = only.value.trim();
     let key: string | null = null;
-    if (only.prop === 'position') key = `position:${value}`;
-    else if (ZERO.test(value)) key = `${only.prop}:0`;
-    if (!key) return;
+    if (only.prop === 'position') {
+      key = `position:${value}`;
+    } else if (ZERO.test(value)) {
+      key = `${only.prop}:0`;
+    }
+    if (!key) {
+      return;
+    }
     byDecl.set(key, [...(byDecl.get(key) ?? []), cls[1]]);
   });
   return byDecl;
@@ -168,10 +199,16 @@ function stretchPinnedButtons(root: Root): void {
   ];
   for (const { from, to, size } of axes) {
     const selectors: string[] = [];
-    for (const a of absolute)
-      for (const start of byDecl.get(from) ?? [])
-        for (const end of byDecl.get(to) ?? []) selectors.push(`button.${a}.${start}.${end}`);
-    if (selectors.length === 0) continue;
+    for (const a of absolute) {
+      for (const start of byDecl.get(from) ?? []) {
+        for (const end of byDecl.get(to) ?? []) {
+          selectors.push(`button.${a}.${start}.${end}`);
+        }
+      }
+    }
+    if (selectors.length === 0) {
+      continue;
+    }
     root.append(cssRule({ selectors }).append({ prop: size, value: '100%' }));
   }
 }

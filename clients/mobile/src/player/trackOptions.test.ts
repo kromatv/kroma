@@ -24,9 +24,9 @@ const NAMES: Record<string, string> = {
   'error.subtitleUnavailable': 'Indisponible',
 };
 const t = ((key: string, params?: Record<string, unknown>) =>
-  key === 'player.subtitleTrack' ? `Piste ${params?.number}` : (NAMES[key] ?? key)) as ReturnType<
-  typeof useT
->;
+  key === 'player.subtitleTrack'
+    ? `Piste ${String(params?.number)}`
+    : (NAMES[key] ?? key)) as ReturnType<typeof useT>;
 
 const track = (fields: Partial<AudioTrack>): AudioTrack => ({
   index: 0,

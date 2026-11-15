@@ -56,7 +56,9 @@ export function turn(rotation: CropRotation, direction: 'left' | 'right'): CropR
 }
 
 function within(value: number, limit: number): number {
-  if (limit === 0) return 0;
+  if (limit === 0) {
+    return 0;
+  }
   return Math.min(limit, Math.max(-limit, value));
 }
 
@@ -133,9 +135,14 @@ export function outputSize(
   aspect: number,
 ): PixelSize {
   const { width, height } = requested;
-  if (width !== undefined && height !== undefined)
+  if (width !== undefined && height !== undefined) {
     return { width: side(width), height: side(height) };
-  if (width !== undefined) return { width: side(width), height: side(width / aspect) };
-  if (height !== undefined) return { width: side(height * aspect), height: side(height) };
+  }
+  if (width !== undefined) {
+    return { width: side(width), height: side(width / aspect) };
+  }
+  if (height !== undefined) {
+    return { width: side(height * aspect), height: side(height) };
+  }
   return natural;
 }

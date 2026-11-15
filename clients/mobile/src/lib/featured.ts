@@ -31,8 +31,12 @@ export function featuredProgress(
   entry: HomeEntry,
   resumable: readonly ContinueItem[],
 ): number | null {
-  if (entry.type === 'show') return ratio(entry.show.progress ?? 0, SHOW_PROGRESS_SCALE);
+  if (entry.type === 'show') {
+    return ratio(entry.show.progress ?? 0, SHOW_PROGRESS_SCALE);
+  }
   const at = resumable.find((item) => item.item.id === entry.item.id);
-  if (!at) return null;
+  if (!at) {
+    return null;
+  }
   return ratio(at.positionMs, at.durationMs ?? entry.item.durationMs ?? 0);
 }

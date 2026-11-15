@@ -58,7 +58,9 @@ const UNQUOTABLE = /["'`\\\r\n\u2028\u2029]/;
  *  directory named with one is refused rather than written into a module. */
 export function specifier(path: string): string {
   const forward = path.split(sep).join('/');
-  if (UNQUOTABLE.test(forward)) throw new Error(`catalog path cannot be imported: ${path}`);
+  if (UNQUOTABLE.test(forward)) {
+    throw new Error(`catalog path cannot be imported: ${path}`);
+  }
   return `"${forward}"`;
 }
 
@@ -86,7 +88,9 @@ export function renderCatalogModule(
   lines.push(
     `announceCatalogs(${JSON.stringify(file)}, { ${entries.join(', ')} }, ${JSON.stringify(complete)});`,
   );
-  if (!eager) lines.push(...savedListener(file));
+  if (!eager) {
+    lines.push(...savedListener(file));
+  }
   return `${lines.join('\n')}\n`;
 }
 
@@ -149,8 +153,12 @@ export function catalogs({ dir, eager = false, onSave, report, boot }: CatalogsO
   const isProject = (file: string) => file === join(root, PROJECT_FILE);
   const isSource = (id: string) => {
     const [file = ''] = id.split('?');
-    if (id.startsWith('\0') || !SOURCE.test(file) || file.endsWith('.d.ts')) return false;
-    if (file.includes(`${sep}node_modules${sep}`)) return false;
+    if (id.startsWith('\0') || !SOURCE.test(file) || file.endsWith('.d.ts')) {
+      return false;
+    }
+    if (file.includes(`${sep}node_modules${sep}`)) {
+      return false;
+    }
     return !within(root, file) && !within(ENGINE, file);
   };
 
@@ -171,22 +179,32 @@ export function catalogs({ dir, eager = false, onSave, report, boot }: CatalogsO
           file === LABEL_NAMESPACE ? [RESOLVED + file, RESOLVED_NAMES] : [RESOLVED + file];
         for (const id of ids) {
           const served = server.moduleGraph?.getModuleById(id);
-          if (served) server.moduleGraph.invalidateModule(served);
+          if (served) {
+            server.moduleGraph.invalidateModule(served);
+          }
         }
       };
       const onMoved = (file: string) => {
-        if (!isCatalog(file)) return;
+        if (!isCatalog(file)) {
+          return;
+        }
         rescan();
         const at = catalogAt(file);
-        if (at) stale(at.file);
+        if (at) {
+          stale(at.file);
+        }
         onSave?.();
       };
       server.watcher.on('add', onMoved);
       server.watcher.on('unlink', onMoved);
       server.watcher.on('change', (file: string) => {
-        if (isProject(file)) return rescan();
+        if (isProject(file)) {
+          return rescan();
+        }
         const at = isCatalog(file) ? catalogAt(file) : null;
-        if (!at) return;
+        if (!at) {
+          return;
+        }
         stale(at.file);
         if (at.locale === source) {
           keys.set(at.file, keysOf(root, at));
@@ -201,7 +219,9 @@ export function catalogs({ dir, eager = false, onSave, report, boot }: CatalogsO
     // halfway through an edit, is left to Vite.
     handleHotUpdate({ file, server }) {
       const at = isCatalog(file) ? catalogAt(file) : null;
-      if (!at) return undefined;
+      if (!at) {
+        return undefined;
+      }
       let catalog: Catalog;
       try {
         catalog = readCatalog(root, at);
@@ -216,7 +236,9 @@ export function catalogs({ dir, eager = false, onSave, report, boot }: CatalogsO
       return [];
     },
     generateBundle(_options, bundle) {
-      if (!measured) return;
+      if (!measured) {
+        return;
+      }
       const base = searchForWorkspaceRoot(this.environment.config.root);
       const built = usageByChunk(bundle, usage, keys, {
         importers: (id) => this.getModuleInfo(id)?.importers ?? [],
@@ -224,24 +246,34 @@ export function catalogs({ dir, eager = false, onSave, report, boot }: CatalogsO
         label: (id) => relative(base, id),
       });
       reports[this.environment.name] = built;
-      if (report) writeFileSync(report, renderUsage(reports));
+      if (report) {
+        writeFileSync(report, renderUsage(reports));
+      }
       const over =
         boot !== undefined && this.environment.name === 'client'
           ? overBoot(built.boot, boot)
           : null;
-      if (over) this.error(over);
+      if (over) {
+        this.error(over);
+      }
     },
     resolveId(id) {
-      if (id === NAMES) return RESOLVED_NAMES;
+      if (id === NAMES) {
+        return RESOLVED_NAMES;
+      }
       return id.startsWith(VIRTUAL) ? RESOLVED + id.slice(VIRTUAL.length) : undefined;
     },
     load(id) {
       if (id === RESOLVED_NAMES) {
         return `export default ${JSON.stringify(localeNames(root, files))};\n`;
       }
-      if (!id.startsWith(RESOLVED)) return undefined;
+      if (!id.startsWith(RESOLVED)) {
+        return undefined;
+      }
       const file = id.slice(RESOLVED.length);
-      if (!keys.has(file)) return undefined;
+      if (!keys.has(file)) {
+        return undefined;
+      }
       return renderCatalogModule(
         root,
         file,
@@ -251,10 +283,16 @@ export function catalogs({ dir, eager = false, onSave, report, boot }: CatalogsO
       );
     },
     transform(code, id) {
-      if (!isSource(id)) return undefined;
+      if (!isSource(id)) {
+        return undefined;
+      }
       const named = keysNamedIn(code, keys);
-      if (named.size === 0) return undefined;
-      if (measured) usage.set(id, named);
+      if (named.size === 0) {
+        return undefined;
+      }
+      if (measured) {
+        usage.set(id, named);
+      }
       const imports = [...named.keys()]
         .sort((a, b) => a.localeCompare(b))
         .map((file) => `import ${JSON.stringify(VIRTUAL + file)};`);

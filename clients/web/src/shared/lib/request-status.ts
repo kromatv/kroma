@@ -79,6 +79,8 @@ export const requestStatusMeta = (s: RequestStatus): RequestStatusMeta =>
 
 /** "S1, S3" / null for a whole-show or movie request. */
 export function seasonsSummary(seasons: number[] | null | undefined): string | null {
-  if (!seasons || seasons.length === 0) return null;
+  if (!seasons || seasons.length === 0) {
+    return null;
+  }
   return seasons.map((s) => `S${s}`).join(', ');
 }

@@ -22,7 +22,9 @@ import { TagsInput } from '#web/shared/ui/tags-input';
 const sDefinition = styles({ mono: { fontFamily: 'monospace' } });
 
 function said(found: Discovered, t: Translate): string {
-  if (found.ok) return t('admin.signInAddressFound', { issuer: found.issuer ?? '' });
+  if (found.ok) {
+    return t('admin.signInAddressFound', { issuer: found.issuer ?? '' });
+  }
   const key = found.reason ? reasonKey(found.reason) : null;
   return key ? t(key) : t('sso.reason.other', { reason: found.reason ?? '' });
 }

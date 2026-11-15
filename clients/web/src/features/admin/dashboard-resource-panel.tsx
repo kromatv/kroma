@@ -42,15 +42,19 @@ export function useScopeChoice<S extends ChartScope>(scopes: readonly [S, ...S[]
 }
 
 export function startedAtOf(metrics: MetricsSnapshot | null): number | undefined {
-  return metrics?.startedAt || undefined;
+  const startedAt = metrics?.startedAt ?? 0;
+  return startedAt === 0 ? undefined : startedAt;
 }
 
 export function stepSecOf(metrics: MetricsSnapshot | null): number {
-  return metrics?.stepSecs || (metrics?.sampleIntervalMs ?? DEFAULT_SAMPLE_MS) / 1000;
+  const stepSecs = metrics?.stepSecs ?? 0;
+  return stepSecs > 0 ? stepSecs : (metrics?.sampleIntervalMs ?? DEFAULT_SAMPLE_MS) / 1000;
 }
 
 export function meanOf(mean: number | undefined, values: readonly number[]): number {
-  if (mean !== undefined) return mean;
+  if (mean !== undefined) {
+    return mean;
+  }
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 }
 

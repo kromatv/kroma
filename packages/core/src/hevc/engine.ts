@@ -24,10 +24,16 @@ const MP4_CONTAINERS = new Set(['mp4', 'mov', 'm4v', 'm4a', 'isom']);
 
 function plainCompatibleMp4(item: MediaItem, caps: PlaybackCapabilities): boolean {
   const container = (item.container ?? '').toLowerCase();
-  if (!MP4_CONTAINERS.has(container)) return false;
-  if (!canDirectPlay(item, caps).canDirectPlay) return false;
+  if (!MP4_CONTAINERS.has(container)) {
+    return false;
+  }
+  if (!canDirectPlay(item, caps).canDirectPlay) {
+    return false;
+  }
   const tracks = audioTracksOf(item);
-  if (tracks.length !== 1) return false;
+  if (tracks.length !== 1) {
+    return false;
+  }
   const def = tracks.find((t) => t.default) ?? tracks[0];
   return canDecodeAudioCodec(def?.codec, caps);
 }
@@ -41,7 +47,9 @@ const AVPLAY_CONTAINERS = new Set(['mp4', 'mov', 'm4v', 'mkv', 'webm', 'ts', 'm2
  * playback error. */
 export function avplayDirectPlayable(item: MediaItem): boolean {
   const container = (item.container ?? '').toLowerCase();
-  if (!AVPLAY_CONTAINERS.has(container)) return false;
+  if (!AVPLAY_CONTAINERS.has(container)) {
+    return false;
+  }
   return canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay;
 }
 
@@ -68,7 +76,9 @@ const NATIVE_CONTAINERS = {
  */
 export function nativeDirectPlayable(item: MediaItem, os: keyof typeof NATIVE_CONTAINERS): boolean {
   const container = (item.container ?? '').toLowerCase();
-  if (!NATIVE_CONTAINERS[os].has(container)) return false;
+  if (!NATIVE_CONTAINERS[os].has(container)) {
+    return false;
+  }
   return canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay;
 }
 
@@ -85,14 +95,17 @@ export function selectEngine(item: MediaItem, env: PlayEnv): EngineDecision {
     return { kind: 'tizen-avplay', aacMaster: false };
   }
   if (env.platform === 'webos') {
-    if (plainCompatibleMp4(item, NATIVE_TV_CAPS)) return { kind: 'direct', aacMaster: false };
+    if (plainCompatibleMp4(item, NATIVE_TV_CAPS)) {
+      return { kind: 'direct', aacMaster: false };
+    }
     // The webOS MSE/hls.js path cannot decode AC3/EAC3; the TV's native pipeline can.
     return { kind: 'webos', aacMaster: !env.nativeHls };
   }
   const caps = env.safari ? SAFARI_CAPS : MSE_CAPS;
   // Prefer the probed runtime over the static table: modern Chromium
   // hardware-decodes HEVC in a bare `<video>` where available.
-  if (plainCompatibleMp4(item, env.runtimeCaps ?? caps))
+  if (plainCompatibleMp4(item, env.runtimeCaps ?? caps)) {
     return { kind: 'direct', aacMaster: false };
+  }
   return { kind: 'web-mse', aacMaster: masterNeedsAac(item, caps) };
 }

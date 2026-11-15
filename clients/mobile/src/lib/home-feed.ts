@@ -15,10 +15,14 @@ export function useHomeFeed() {
   const followed = useRef(saved);
 
   useEffect(() => {
-    if (saved === undefined || saved === followed.current) return;
+    if (saved === undefined || saved === followed.current) {
+      return;
+    }
     const changed = followed.current !== undefined;
     followed.current = saved;
-    if (changed) void queryClient.invalidateQueries({ queryKey: feed.queryKey });
+    if (changed) {
+      void queryClient.invalidateQueries({ queryKey: feed.queryKey });
+    }
   }, [saved, queryClient, feed.queryKey]);
 
   return home;

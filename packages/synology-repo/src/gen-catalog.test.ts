@@ -54,7 +54,9 @@ const savedEnv = { ...process.env };
 // Run the generator with `env` applied, and return the files it wrote.
 async function generate(env: Record<string, string | undefined>) {
   for (const key of Object.keys(process.env)) {
-    if (key.startsWith('CATALOG_')) delete process.env[key];
+    if (key.startsWith('CATALOG_')) {
+      delete process.env[key];
+    }
   }
   Object.assign(process.env, env);
   // The script does its work at import time, so each run needs a fresh module
@@ -78,7 +80,9 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(work, { recursive: true, force: true });
   for (const key of Object.keys(process.env)) {
-    if (key.startsWith('CATALOG_')) delete process.env[key];
+    if (key.startsWith('CATALOG_')) {
+      delete process.env[key];
+    }
   }
   Object.assign(process.env, savedEnv);
 });

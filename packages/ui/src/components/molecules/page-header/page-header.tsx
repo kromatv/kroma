@@ -36,7 +36,9 @@ function tag<T extends object>(component: T, part: Part): T {
 }
 
 function partOf(child: ReactNode): Part | null {
-  if (!isValidElement(child)) return null;
+  if (!isValidElement(child)) {
+    return null;
+  }
   const type = child.type as { [PART]?: Part } | undefined;
   return type?.[PART] ?? null;
 }
@@ -45,9 +47,13 @@ function sort(children: ReactNode): Buckets {
   const at: Buckets = { back: [], column: [], actions: [] };
   for (const child of Children.toArray(children)) {
     const part = partOf(child);
-    if (part === 'actions') at.actions.push(child);
-    else if (part === 'back') at.back.push(child);
-    else at.column.push(child);
+    if (part === 'actions') {
+      at.actions.push(child);
+    } else if (part === 'back') {
+      at.back.push(child);
+    } else {
+      at.column.push(child);
+    }
   }
   return at;
 }
@@ -93,7 +99,9 @@ function Title({ suffix, icon, children }: Readonly<PageHeaderTitleProps>) {
       ) : null}
     </Text>
   );
-  if (!icon) return heading;
+  if (!icon) {
+    return heading;
+  }
   return (
     <Box row align="center" gap={GLYPH_GAP}>
       <Icon name={icon} size={GLYPH_SIZE} thickness={2} color="accent" />

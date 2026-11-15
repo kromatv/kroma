@@ -35,7 +35,9 @@ function perPlatform(id: string, version: string, hashes: Record<string, string>
     contentHash,
   }));
   const [first] = artifacts;
-  if (!first) throw new Error('an entry needs at least one artifact');
+  if (!first) {
+    throw new Error('an entry needs at least one artifact');
+  }
   const { file, url, size, sha256 } = first;
   return { id, name: id, version, artifacts, file, url, size, sha256 };
 }

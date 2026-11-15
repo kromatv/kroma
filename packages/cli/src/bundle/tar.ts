@@ -26,7 +26,9 @@ function header(name: string, size: number, mode: number, dir: boolean): Uint8Ar
   put('ustar\0', 257);
   put('00', 263);
   let sum = 0;
-  for (const b of buf) sum += b;
+  for (const b of buf) {
+    sum += b;
+  }
   put(`${sum.toString(8).padStart(6, '0')}\0 `, 148);
   return buf;
 }
@@ -49,7 +51,9 @@ function entryList(staging: string, entries: readonly string[]): Entry[] {
       out.push({ name: rel, dir: false, mode: 0o644 });
     }
   };
-  for (const entry of [...entries].sort(byCodeUnit)) walk(entry);
+  for (const entry of [...entries].sort(byCodeUnit)) {
+    walk(entry);
+  }
   return out;
 }
 
@@ -69,7 +73,9 @@ export function deterministicTar(staging: string, entries: readonly string[]): U
     const data = readFileSync(join(staging, e.name));
     parts.push(header(e.name, data.length, e.mode, false), data);
     const pad = data.length % BLOCK;
-    if (pad) parts.push(new Uint8Array(BLOCK - pad));
+    if (pad) {
+      parts.push(new Uint8Array(BLOCK - pad));
+    }
   }
   parts.push(new Uint8Array(BLOCK * 2));
   const buf = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
@@ -88,7 +94,9 @@ export function tarRead(tar: Uint8Array, wanted: string): Uint8Array | null {
   let off = 0;
   while (off + BLOCK <= tar.length) {
     const name = field(off, 100);
-    if (!name) break;
+    if (!name) {
+      break;
+    }
     const size = Number.parseInt(field(off + 124, 12).trim() || '0', 8);
     if (name === wanted || name === `./${wanted}`) {
       return tar.subarray(off + BLOCK, off + BLOCK + size);
@@ -106,7 +114,9 @@ export function tarNames(tar: Uint8Array): string[] {
   let off = 0;
   while (off + BLOCK <= tar.length) {
     const name = field(off, 100);
-    if (!name) break;
+    if (!name) {
+      break;
+    }
     names.push(name);
     const size = Number.parseInt(field(off + 124, 12).trim() || '0', 8);
     off += BLOCK + Math.ceil(size / BLOCK) * BLOCK;

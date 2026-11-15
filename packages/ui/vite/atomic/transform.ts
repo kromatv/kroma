@@ -3,7 +3,7 @@
 // the sheet. A leaf the evaluator cannot read stays as written and resolves at
 // runtime, so a module is never rejected, only left partly compiled.
 
-import MagicString from 'magic-string';
+import { MagicString } from 'magic-string';
 import type { RuleEntry } from '#ui/core/atomic';
 import { type BoxLeaf, boxLocals, compileBox } from './box-props.ts';
 import type { CompiledRule } from './compile.ts';
@@ -66,7 +66,9 @@ export interface TransformInput {
 function kitBindings(scope: ModuleScope): Map<string, Api> {
   const out = new Map<string, Api>();
   for (const [local, { source, imported }] of scope.imports) {
-    if (KIT_SOURCES.has(source) && APIS.has(imported)) out.set(local, imported as Api);
+    if (KIT_SOURCES.has(source) && APIS.has(imported)) {
+      out.set(local, imported as Api);
+    }
   }
   return out;
 }
@@ -103,7 +105,11 @@ class Rewrite {
 
   skip(node: Node, reason: string): void {
     let line = 1;
-    for (let i = 0; i < node.start; i++) if (this.code.codePointAt(i) === 10) line++;
+    for (let i = 0; i < node.start; i++) {
+      if (this.code.codePointAt(i) === 10) {
+        line++;
+      }
+    }
     this.skipped.push({ line, reason });
   }
 
@@ -116,7 +122,9 @@ class Rewrite {
       }
       return compileDeclaration(value);
     } catch (error) {
-      if (!(error instanceof Unstatic)) throw error;
+      if (!(error instanceof Unstatic)) {
+        throw error;
+      }
       this.skip(node, error.reason);
       return null;
     }
@@ -125,21 +133,29 @@ class Rewrite {
   box(opening: Node, locals: ReadonlySet<string>): void {
     try {
       const box = compileBox(opening, locals, this.scope, this.loader);
-      if (box) this.boxes.push(box);
+      if (box) {
+        this.boxes.push(box);
+      }
     } catch (error) {
-      if (!(error instanceof Unstatic)) throw error;
+      if (!(error instanceof Unstatic)) {
+        throw error;
+      }
       this.skip(opening, error.reason);
     }
   }
 
   single(node: Node): void {
     const leaf = this.leaf(node);
-    if (leaf) this.edits.push({ node, leaf });
+    if (leaf) {
+      this.edits.push({ node, leaf });
+    }
   }
 
   /** Each entry of a `styles({...})` set on its own: one that fails stays. */
   set(object: Node): void {
-    for (const [, value] of properties(object)) this.single(value);
+    for (const [, value] of properties(object)) {
+      this.single(value);
+    }
   }
 
   /** A recipe compiles whole per slot, or not at all: its layers merge as
@@ -158,7 +174,9 @@ class Rewrite {
     const edits: Edit[] = [];
     for (const node of slots) {
       const leaf = this.leaf(node);
-      if (!leaf) return;
+      if (!leaf) {
+        return;
+      }
       edits.push({ node, leaf });
     }
     this.edits.push(...edits);
@@ -169,12 +187,18 @@ function slotNodes(shape: RecipeLayers, compiledSlots: Set<string>): Node[] | No
   const nodes: Node[] = [];
   for (const layer of shape.layers) {
     if (shape.flat) {
-      if (compiledSlots.has('root')) nodes.push(layer);
+      if (compiledSlots.has('root')) {
+        nodes.push(layer);
+      }
       continue;
     }
-    if (layer.type !== 'ObjectExpression') return layer;
+    if (layer.type !== 'ObjectExpression') {
+      return layer;
+    }
     for (const [slot, node] of properties(layer)) {
-      if (compiledSlots.has(slot)) nodes.push(node);
+      if (compiledSlots.has(slot)) {
+        nodes.push(node);
+      }
     }
   }
   return nodes;
@@ -182,14 +206,22 @@ function slotNodes(shape: RecipeLayers, compiledSlots: Set<string>): Node[] | No
 
 function walk(node: unknown, visit: (node: Node) => void): void {
   if (Array.isArray(node)) {
-    for (const child of node) walk(child, visit);
+    for (const child of node) {
+      walk(child, visit);
+    }
     return;
   }
-  if (typeof node !== 'object' || node === null) return;
+  if (typeof node !== 'object' || node === null) {
+    return;
+  }
   const record = node as Node;
-  if (typeof record.type === 'string') visit(record);
+  if (typeof record.type === 'string') {
+    visit(record);
+  }
   for (const key of Object.keys(record)) {
-    if (key !== 'type' && key !== 'start' && key !== 'end') walk(record[key], visit);
+    if (key !== 'type' && key !== 'start' && key !== 'end') {
+      walk(record[key], visit);
+    }
   }
 }
 
@@ -197,24 +229,39 @@ function visitCall(node: Node, bindings: Map<string, Api>, rewrite: Rewrite): vo
   const callee = node.callee as Node;
   const args = node.arguments as Node[];
   const argument = args[0];
-  if (!argument || args.length !== 1) return;
-  if (callee.type === 'Identifier') {
-    const api = bindings.get(callee.name as string);
-    if (api === 'styles' && argument.type === 'ObjectExpression') rewrite.set(argument);
-    else if (api === 'style') rewrite.single(argument);
-    else if (api === 'sv') rewrite.recipe(argument, (slots) => new Set(slots));
+  if (!argument || args.length !== 1) {
     return;
   }
-  if (callee.type !== 'CallExpression') return;
+  if (callee.type === 'Identifier') {
+    const api = bindings.get(callee.name as string);
+    if (api === 'styles' && argument.type === 'ObjectExpression') {
+      rewrite.set(argument);
+    } else if (api === 'style') {
+      rewrite.single(argument);
+    } else if (api === 'sv') {
+      rewrite.recipe(argument, (slots) => new Set(slots));
+    }
+    return;
+  }
+  if (callee.type !== 'CallExpression') {
+    return;
+  }
   const inner = callee.callee as Node;
-  if (inner.type !== 'Identifier' || bindings.get(inner.name as string) !== 'svFor') return;
+  if (inner.type !== 'Identifier' || bindings.get(inner.name as string) !== 'svFor') {
+    return;
+  }
   const styled = styleSlotsOf(callee.typeArguments as Node | null | undefined);
-  if (styled) rewrite.recipe(argument, () => styled);
-  else rewrite.skip(node, 'svFor without an inline slot type');
+  if (styled) {
+    rewrite.recipe(argument, () => styled);
+  } else {
+    rewrite.skip(node, 'svFor without an inline slot type');
+  }
 }
 
 function wearLayout(s: MagicString, box: BoxLeaf, name: string): string {
-  for (const attribute of box.shorthand) s.remove(attribute.start, attribute.end);
+  for (const attribute of box.shorthand) {
+    s.remove(attribute.start, attribute.end);
+  }
   if (box.style) {
     s.prependLeft(box.style.start, `[${name}, `);
     s.appendRight(box.style.end, ']');
@@ -243,19 +290,28 @@ export function transformModule({
   loader,
   inject,
 }: TransformInput): TransformResult | null {
-  if (!PREFILTER.test(code)) return null;
+  if (!PREFILTER.test(code)) {
+    return null;
+  }
   const program = parseModule(code, file);
   const scope = scopeOf(program, file);
   const bindings = kitBindings(scope);
   const boxes = boxLocals(scope);
-  if (bindings.size === 0 && boxes.size === 0) return null;
+  if (bindings.size === 0 && boxes.size === 0) {
+    return null;
+  }
   const rewrite = new Rewrite(code, scope, loader);
   walk(program.body, (node) => {
-    if (node.type === 'CallExpression') visitCall(node, bindings, rewrite);
-    else if (node.type === 'JSXOpeningElement' && boxes.size > 0) rewrite.box(node, boxes);
+    if (node.type === 'CallExpression') {
+      visitCall(node, bindings, rewrite);
+    } else if (node.type === 'JSXOpeningElement' && boxes.size > 0) {
+      rewrite.box(node, boxes);
+    }
   });
   if (rewrite.edits.length === 0 && rewrite.boxes.length === 0) {
-    if (rewrite.skipped.length === 0) return null;
+    if (rewrite.skipped.length === 0) {
+      return null;
+    }
     return { code: null, map: null, rules: [], compiled: 0, skipped: rewrite.skipped };
   }
 
@@ -266,7 +322,9 @@ export function transformModule({
     rules.push(...leaf.rules);
   }
   const hoisted = rewrite.boxes.map((box, at) => wearLayout(s, box, `${BOX}${at}`)).join('');
-  for (const box of rewrite.boxes) rules.push(...box.leaf.rules);
+  for (const box of rewrite.boxes) {
+    rules.push(...box.leaf.rules);
+  }
   s.prepend(header(inject, rules, hoisted));
   return {
     code: s.toString(),

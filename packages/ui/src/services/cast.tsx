@@ -35,7 +35,9 @@ import { livePosition, type PositionBase } from './cast-position';
 const TICK_MS = 500;
 
 function failureOf(e: unknown): CastFailure {
-  if (!(e instanceof KromaApiError) || e.status !== 404) return 'cast.failed';
+  if (!(e instanceof KromaApiError) || e.status !== 404) {
+    return 'cast.failed';
+  }
   return apiErrorBody(e).code === 'error.itemNotFound' ? 'cast.titleGone' : 'cast.gone';
 }
 
@@ -87,7 +89,9 @@ export function CastProvider({
   });
 
   const refresh = useCallback(() => {
-    if (!enabled || !client) return;
+    if (!enabled || !client) {
+      return;
+    }
     client.cast
       .receivers()
       .then(setReceivers)
@@ -116,7 +120,9 @@ export function CastProvider({
 
   // Roster: fetched once, then kept live off the bus.
   useEffect(() => {
-    if (!enabled || !client) return;
+    if (!enabled || !client) {
+      return;
+    }
     refresh();
     const events = new KromaEvents(client.baseUrl, {
       token: () => client.sessionToken,
@@ -132,7 +138,9 @@ export function CastProvider({
         // HTTP, with nothing on either side to reveal the split. The receiver
         // half re-sends `cast.hello` on every open for exactly this reason.
         const driving = drivingRef.current;
-        if (driving) events.send({ type: 'cast.control', receiverId: driving, name: name.current });
+        if (driving) {
+          events.send({ type: 'cast.control', receiverId: driving, name: name.current });
+        }
       },
       onEvent: (e) =>
         applyCastEvent(e, {
@@ -165,7 +173,9 @@ export function CastProvider({
   // only while it is needed: an idle or paused receiver costs nothing.
   const playing = active?.nowPlaying?.state === 'playing';
   useEffect(() => {
-    if (!playing) return;
+    if (!playing) {
+      return;
+    }
     const iv = setInterval(rerender, TICK_MS);
     return () => clearInterval(iv);
   }, [playing]);
@@ -177,7 +187,9 @@ export function CastProvider({
 
   const sendTo = useCallback(
     async (receiverId: DeviceId, command: CastCommand): Promise<CastFailure | null> => {
-      if (!client) return 'cast.failed';
+      if (!client) {
+        return 'cast.failed';
+      }
       try {
         await client.cast.command(receiverId, command);
         setError(null);

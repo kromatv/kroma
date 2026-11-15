@@ -53,11 +53,15 @@ export function BuiltinIndexerForm({
         // edit the server keeps stored secrets when a field is left empty).
         const seed: Record<string, string> = {};
         for (const s of d.settings) {
-          if (s.kind.startsWith('info')) continue;
+          if (s.kind.startsWith('info')) {
+            continue;
+          }
           seed[s.name] = s.default ?? (s.kind === 'checkbox' ? 'false' : '');
         }
         setSettings(seed);
-        if (!indexer) setBaseUrl(d.links[0] ?? '');
+        if (!indexer) {
+          setBaseUrl(d.links[0] ?? '');
+        }
       })
       .catch((e) => setLoadError(apiErrorText(e, t('indexers.testFailed'))));
   }, [definitionId]);
@@ -78,8 +82,11 @@ export function BuiltinIndexerForm({
           definitionId,
           settings,
         };
-        if (indexer) await indexerApi.update(indexer.id, body);
-        else await indexerApi.create(body);
+        if (indexer) {
+          await indexerApi.update(indexer.id, body);
+        } else {
+          await indexerApi.create(body);
+        }
         end(true);
       },
       (e) => apiErrorText(e, t('requests.actionFailed')),
@@ -88,7 +95,9 @@ export function BuiltinIndexerForm({
   const remove = () =>
     run(
       async () => {
-        if (!indexer) return;
+        if (!indexer) {
+          return;
+        }
         await indexerApi.remove(indexer.id);
         end(true);
       },

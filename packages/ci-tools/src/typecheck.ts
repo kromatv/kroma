@@ -8,7 +8,7 @@ import { root } from './root';
 
 const Root = z.object({ workspaces: z.array(z.string()) });
 const Manifest = z.object({
-  name: z.string().min(1),
+  name: z.string().nonempty(),
   scripts: z.record(z.string(), z.string()).default({}),
 });
 
@@ -25,9 +25,13 @@ function workspaces(script: string): Workspace[] {
   for (const glob of globs) {
     for (const dir of new Bun.Glob(glob).scanSync({ cwd: root, onlyFiles: false })) {
       const manifest = join(root, dir, 'package.json');
-      if (!existsSync(manifest)) continue;
+      if (!existsSync(manifest)) {
+        continue;
+      }
       const { name, scripts } = Manifest.parse(JSON.parse(readFileSync(manifest, 'utf8')));
-      if (script in scripts) out.push({ name, dir: join(root, dir) });
+      if (script in scripts) {
+        out.push({ name, dir: join(root, dir) });
+      }
     }
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
@@ -65,7 +69,9 @@ async function pool(list: Workspace[], script: string, jobs: number): Promise<Ou
       outcomes.push(outcome);
       const mark = outcome.ok ? 'ok  ' : 'FAIL';
       console.log(`${mark} ${outcome.name} (${outcome.seconds.toFixed(1)}s)`);
-      if (!outcome.ok) console.log(outcome.output);
+      if (!outcome.ok) {
+        console.log(outcome.output);
+      }
     }
   };
   await Promise.all(Array.from({ length: Math.min(jobs, list.length) }, worker));
@@ -81,11 +87,15 @@ export async function main(argv: string[]): Promise<void> {
     },
   });
   const jobs = Number(values.jobs);
-  if (!Number.isInteger(jobs) || jobs < 1) throw new Error(`--jobs must be a positive integer`);
+  if (!Number.isInteger(jobs) || jobs < 1) {
+    throw new Error(`--jobs must be a positive integer`);
+  }
 
   const list = workspaces(values.script);
   console.log(`${values.script}: ${list.length} workspace(s), ${jobs} at a time`);
   const outcomes = await pool(list, values.script, jobs);
   const failed = outcomes.filter((o) => !o.ok).map((o) => o.name);
-  if (failed.length > 0) throw new Error(`${values.script} failed in: ${failed.join(', ')}`);
+  if (failed.length > 0) {
+    throw new Error(`${values.script} failed in: ${failed.join(', ')}`);
+  }
 }

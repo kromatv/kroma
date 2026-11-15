@@ -1,5 +1,5 @@
 import mdx from '@mdx-js/rollup';
-import rehypePrettyCode from 'rehype-pretty-code';
+import { rehypePrettyCode } from 'rehype-pretty-code';
 import rehypeSlug from 'rehype-slug';
 import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';

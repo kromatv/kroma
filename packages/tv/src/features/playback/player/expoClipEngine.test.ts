@@ -37,7 +37,9 @@ const { players, FakePlayer } = vi.hoisted(() => {
       };
     }
     emit(event: string, payload: unknown = {}): void {
-      for (const handler of this.handlers.get(event) ?? []) handler(payload as never);
+      for (const handler of this.handlers.get(event) ?? []) {
+        handler(payload as never);
+      }
     }
   }
   return { players: [] as FakePlayer[], FakePlayer };

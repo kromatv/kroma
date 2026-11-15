@@ -77,7 +77,9 @@ export type FailureStatus = 410 | 429 | 502;
 export function failure(e: unknown): { status: FailureStatus; error: string } {
   const code = typeof e === 'object' && e && 'code' in e ? String(e.code) : '';
   console.error(JSON.stringify({ event: 'relay.rejected', code, message: printable(String(e)) }));
-  if (code === 'E_RECIPIENT_SUPPRESSED') return { status: 410, error: 'address suppressed' };
+  if (code === 'E_RECIPIENT_SUPPRESSED') {
+    return { status: 410, error: 'address suppressed' };
+  }
   if (code === 'E_RATE_LIMIT_EXCEEDED' || code === 'E_DAILY_LIMIT_EXCEEDED') {
     return { status: 429, error: 'the mail service is throttling' };
   }

@@ -29,7 +29,7 @@ function frame(pad: Gamepad, state: PadState): string[] {
   return [...activeKeys(pad, state)].sort();
 }
 
-const zeros = (n: number): number[] => new Array(n).fill(0);
+const zeros = (n: number): number[] => Array.from({ length: n }, () => 0);
 
 describe('standard mapping', () => {
   it('maps D-pad buttons 12-15 to directions', () => {

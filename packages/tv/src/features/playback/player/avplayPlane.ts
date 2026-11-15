@@ -17,7 +17,9 @@ export const FULL_PLANE: PlaneBox = { x: 0, y: 0, w: AVPLAY_W, h: AVPLAY_H };
 
 /** The pixel box for a fraction-rect, or the whole canvas for `null`. */
 export function planeBox(rect: PlaneRect | null): PlaneBox {
-  if (!rect) return FULL_PLANE;
+  if (!rect) {
+    return FULL_PLANE;
+  }
   return {
     x: Math.round(rect.x * AVPLAY_W),
     y: Math.round(rect.y * AVPLAY_H),

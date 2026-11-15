@@ -118,11 +118,19 @@ export function mobileVideoCodecs(): string[] {
 export function canRawDownload(item: MediaItem): boolean {
   const caps = mobileCaps();
   const containers = Platform.OS === 'ios' ? IOS_CONTAINERS : ANDROID_CONTAINERS;
-  if (!containers.has((item.container ?? '').toLowerCase())) return false;
-  if (!canDirectPlay(item, caps).canDirectPlay) return false;
+  if (!containers.has((item.container ?? '').toLowerCase())) {
+    return false;
+  }
+  if (!canDirectPlay(item, caps).canDirectPlay) {
+    return false;
+  }
   const tracks = audioTracksOf(item);
-  if (tracks.length === 0) return false;
-  if (Platform.OS === 'ios' && tracks.length > 1) return false;
+  if (tracks.length === 0) {
+    return false;
+  }
+  if (Platform.OS === 'ios' && tracks.length > 1) {
+    return false;
+  }
   return tracks.every((t) => !!t.codec && decodableAudioCodecs(caps).has(t.codec));
 }
 
@@ -131,15 +139,23 @@ export function decideSource(item: MediaItem): SourceDecision {
   const containers = Platform.OS === 'ios' ? IOS_CONTAINERS : ANDROID_CONTAINERS;
   const container = (item.container ?? '').toLowerCase();
   const aacMaster = masterNeedsAac(item, caps);
-  if (!containers.has(container)) return { direct: false, aacMaster };
-  if (!canDirectPlay(item, caps).canDirectPlay) return { direct: false, aacMaster };
+  if (!containers.has(container)) {
+    return { direct: false, aacMaster };
+  }
+  if (!canDirectPlay(item, caps).canDirectPlay) {
+    return { direct: false, aacMaster };
+  }
   const tracks = audioTracksOf(item);
   if (Platform.OS === 'ios') {
     // AVPlayer offers no in-place audio selection on plain MP4s, so only a
     // single-audio file whose track decodes natively goes direct.
-    if (tracks.length !== 1) return { direct: false, aacMaster };
+    if (tracks.length !== 1) {
+      return { direct: false, aacMaster };
+    }
     const def = tracks.find((t) => t.default) ?? tracks[0];
-    if (!canDecodeAudioCodec(def?.codec, caps)) return { direct: false, aacMaster };
+    if (!canDecodeAudioCodec(def?.codec, caps)) {
+      return { direct: false, aacMaster };
+    }
     return { direct: true, aacMaster };
   }
   // ExoPlayer: optimistic direct for any demuxable container whose video

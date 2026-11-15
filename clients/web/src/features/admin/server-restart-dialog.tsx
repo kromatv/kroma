@@ -26,7 +26,9 @@ export function ServerRestartDialog({
   const restarted = useEffectEvent(onRestarted);
 
   useEffect(() => {
-    if (!stopped) return;
+    if (!stopped) {
+      return;
+    }
     const controller = new AbortController();
     const { signal } = controller;
     const readBootId = () => client.media.health({ signal }).then((health) => health.bootId);

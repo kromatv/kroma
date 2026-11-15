@@ -37,7 +37,7 @@ export function SpotlightCard({ row }: Readonly<{ row: RowEntry }>) {
 
   return (
     <Pressable
-      onPress={() => router.push(entryRoute(entry) as never)}
+      onPress={() => router.push(entryRoute(entry))}
       accessibilityRole="button"
       accessibilityLabel={title}
       accessibilityHint={t('content.seeDetails')}

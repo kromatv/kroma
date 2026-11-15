@@ -4,9 +4,9 @@ import { Text } from '#ui/components/atoms/text';
 import { AlphabetRail } from './alphabet-rail';
 import type { LetterRange } from './alphabet-rail-context';
 
-export const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
+export const LETTERS = ['#', ...Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ')];
 
-export const AVAILABLE = new Set([...'ABCDEGHILMNOPRSTVWYZ', '#']);
+export const AVAILABLE = new Set([...Array.from('ABCDEGHILMNOPRSTVWYZ'), '#']);
 
 function Rail({
   range,

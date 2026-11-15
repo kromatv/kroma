@@ -39,8 +39,12 @@ export function goalOf(
   profile: QualityProfile | undefined,
   formats: readonly GoalFormat[],
 ): QualityGoal | null {
-  if (!profile) return null;
-  if (!profile.upgradesAllowed) return { kind: 'keep' };
+  if (!profile) {
+    return null;
+  }
+  if (!profile.upgradesAllowed) {
+    return { kind: 'keep' };
+  }
   const tiers = profile.tiers.filter((tier) => tier.allowed);
   const cutoffTier = tiers.findIndex((tier) => tier.qualities.includes(profile.cutoff));
   return {
@@ -55,9 +59,13 @@ export function goalOf(
 
 function rungOf(tier: Pick<QualityTier, 'name' | 'qualities'>): QualityRung {
   const name = tier.name?.trim();
-  if (name) return { kind: 'named', name };
+  if (name) {
+    return { kind: 'named', name };
+  }
   const [only, ...rest] = tier.qualities;
-  if (only !== undefined && rest.length === 0) return { kind: 'quality', quality: only };
+  if (only !== undefined && rest.length === 0) {
+    return { kind: 'quality', quality: only };
+  }
   const resolutions = new Set(tier.qualities.map(qualityResolution));
   const [resolution] = resolutions;
   return resolutions.size === 1 && resolution
@@ -67,16 +75,24 @@ function rungOf(tier: Pick<QualityTier, 'name' | 'qualities'>): QualityRung {
 
 function goalFormats(profile: QualityProfile, formats: readonly GoalFormat[]): GoalFormats {
   const need = profile.upgradeUntilScore;
-  if (need <= 0) return { kind: 'none' };
+  if (need <= 0) {
+    return { kind: 'none' };
+  }
   const scored = formats
     .map(({ id, name }) => ({ format: { id, name }, score: profile.formatScores[id] ?? 0 }))
     .filter((one) => one.score > 0);
   const [first, second, ...more] = scored
     .filter((one) => one.score >= need)
     .map((one) => one.format);
-  if (first && !second) return { kind: 'one', format: first };
-  if (first && second && more.length === 0) return { kind: 'either', formats: [first, second] };
-  if (first) return { kind: 'score', score: need };
+  if (first && !second) {
+    return { kind: 'one', format: first };
+  }
+  if (first && second && more.length === 0) {
+    return { kind: 'either', formats: [first, second] };
+  }
+  if (first) {
+    return { kind: 'score', score: need };
+  }
   const [pair, ...others] = scored.flatMap((one, at) =>
     scored
       .slice(at + 1)
@@ -99,7 +115,9 @@ export type Shortfall =
   | { kind: 'score'; score: number; need: number };
 
 export function shortfallsOf(goal: QualityGoal | null, evaluation: Evaluation): Shortfall[] {
-  if (goal?.kind !== 'target') return [];
+  if (goal?.kind !== 'target') {
+    return [];
+  }
   const quality = qualityShortfall(goal, evaluation);
   const formats = evaluation.formatScore < goal.need ? formatShortfall(goal, evaluation) : null;
   return [quality, formats].filter((one) => one !== null);
@@ -108,9 +126,15 @@ export function shortfallsOf(goal: QualityGoal | null, evaluation: Evaluation): 
 function qualityShortfall(goal: TargetGoal, evaluation: Evaluation): Shortfall | null {
   const { quality } = evaluation;
   const at = goal.tiers.findIndex((tier) => tier.includes(quality));
-  if (evaluation.qualityRank === null || at === -1) return { kind: 'refused', quality };
-  if (goal.cutoffTier === -1 || at <= goal.cutoffTier) return null;
-  if (goal.rung.kind !== 'resolution') return { kind: 'lower', quality, byResolution: false };
+  if (evaluation.qualityRank === null || at === -1) {
+    return { kind: 'refused', quality };
+  }
+  if (goal.cutoffTier === -1 || at <= goal.cutoffTier) {
+    return null;
+  }
+  if (goal.rung.kind !== 'resolution') {
+    return { kind: 'lower', quality, byResolution: false };
+  }
   return qualityResolution(quality) === goal.rung.resolution
     ? { kind: 'ranked', quality }
     : { kind: 'lower', quality, byResolution: true };

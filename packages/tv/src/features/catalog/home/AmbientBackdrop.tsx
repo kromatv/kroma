@@ -58,6 +58,8 @@ export function entryPoster(client: KromaClient, e: CatalogEntry, width: number)
 }
 
 function entryBackdrop(client: KromaClient, e: CatalogEntry | null): string | null {
-  if (!e) return null;
+  if (!e) {
+    return null;
+  }
   return client.media.artwork.backdropFor(e.item, STAGE_W) ?? entryPoster(client, e, STAGE_W);
 }

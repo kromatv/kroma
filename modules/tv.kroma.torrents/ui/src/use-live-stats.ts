@@ -12,7 +12,9 @@ export function useLiveStats(polled: DownloadStatsView): DownloadStatsView {
   const [feed, setFeed] = useState<{ live: DownloadStatsEvent; trail: SpeedSample[] } | null>(null);
 
   useServerEvents<DownloadStatsEvent>((e) => {
-    if (e.type !== 'downloads.stats') return;
+    if (e.type !== 'downloads.stats') {
+      return;
+    }
     const sample = {
       atMs: Date.now(),
       downBps: e.downBps,
@@ -26,7 +28,9 @@ export function useLiveStats(polled: DownloadStatsView): DownloadStatsView {
     }));
   });
 
-  if (!feed) return polled;
+  if (!feed) {
+    return polled;
+  }
   const { live, trail } = feed;
   const polledThrough = polled.history.at(-1)?.atMs ?? 0;
   const since = trail.filter((sample) => sample.atMs > polledThrough);

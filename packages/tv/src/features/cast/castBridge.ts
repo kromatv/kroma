@@ -22,7 +22,9 @@ interface Target {
 // `buffering` is "playing, stalled": the sender keeps the pause button and
 // adds a spinner.
 function transportState(controller: PlayerController): 'buffering' | 'playing' | 'paused' {
-  if (controller.waiting) return 'buffering';
+  if (controller.waiting) {
+    return 'buffering';
+  }
   return controller.playing ? 'playing' : 'paused';
 }
 
@@ -43,7 +45,9 @@ export function createCastBridge() {
   }
 
   function materialSignature(): string {
-    if (!target) return '';
+    if (!target) {
+      return '';
+    }
     const { item, controller } = target;
     return [
       item.id,
@@ -63,14 +67,20 @@ export function createCastBridge() {
   // reported state several times a second; deferring to a microtask collapses
   // the pair into the one state true at the end of the tick.
   function notifyChange(): void {
-    if (notifyQueued) return;
+    if (notifyQueued) {
+      return;
+    }
     notifyQueued = true;
     queueMicrotask(() => {
       notifyQueued = false;
       const now = materialSignature();
-      if (now === signature) return;
+      if (now === signature) {
+        return;
+      }
       signature = now;
-      for (const listener of listeners) listener();
+      for (const listener of listeners) {
+        listener();
+      }
     });
   }
 
@@ -93,7 +103,9 @@ export function createCastBridge() {
   }
 
   function takeCastSeek(itemId: string): number | null {
-    if (pendingSeek?.itemId !== itemId) return null;
+    if (pendingSeek?.itemId !== itemId) {
+      return null;
+    }
     const { positionMs } = pendingSeek;
     pendingSeek = null;
     return positionMs;
@@ -103,7 +115,9 @@ export function createCastBridge() {
    * track lists are the player's own, so a phone offers what this TV can
    * actually switch to. */
   function castReport(t: Translate): CastPlaybackReport | null {
-    if (!target) return null;
+    if (!target) {
+      return null;
+    }
     const { item, controller } = target;
     return {
       itemId: item.id,
@@ -145,7 +159,9 @@ export function CastPlaybackProvider({ children }: { children: ReactNode }) {
 }
 export function useCastBridge(): CastBridge {
   const bridge = useContext(Context);
-  if (!bridge) throw new Error('Cast playback requires CastPlaybackProvider');
+  if (!bridge) {
+    throw new Error('Cast playback requires CastPlaybackProvider');
+  }
   return bridge;
 }
 
@@ -162,8 +178,12 @@ export function useCastTarget(item: MediaItem, controller: PlayerController): vo
 
   const { ready, seekTo } = controller;
   useEffect(() => {
-    if (!ready) return;
+    if (!ready) {
+      return;
+    }
     const positionMs = takeCastSeek(item.id);
-    if (positionMs != null) seekTo(positionMs / 1000);
+    if (positionMs != null) {
+      seekTo(positionMs / 1000);
+    }
   }, [ready, item.id, seekTo, takeCastSeek]);
 }

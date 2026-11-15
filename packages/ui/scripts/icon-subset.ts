@@ -21,13 +21,17 @@ const IGNORED = ['.test.', '.story.', '.demo.', '.fixture', '.docs.'];
 // be identical on every machine rather than follow the build's locale. Same
 // reason `@kromatv/ui/bundler` sorts its own subset this way.
 function byCodeUnit(a: string, b: string): number {
-  if (a === b) return 0;
+  if (a === b) {
+    return 0;
+  }
   return a < b ? -1 : 1;
 }
 
 function exportName(slug: string): string {
   let out = 'Icon';
-  for (const word of slug.split('-')) out += word.charAt(0).toUpperCase() + word.slice(1);
+  for (const word of slug.split('-')) {
+    out += word.charAt(0).toUpperCase() + word.slice(1);
+  }
   return out;
 }
 
@@ -43,9 +47,13 @@ function available(pkgRoot: string, pkg: string): Map<string, string> {
   );
   const out = new Map<string, string>();
   for (const [, names, file] of barrel.matchAll(BARREL_EXPORT)) {
-    if (!names || !file) continue;
+    if (!names || !file) {
+      continue;
+    }
     for (const [, alias] of names.matchAll(EXPORTED_AS)) {
-      if (alias) out.set(alias, `${pkg}/dist/esm/icons/${file}.mjs`);
+      if (alias) {
+        out.set(alias, `${pkg}/dist/esm/icons/${file}.mjs`);
+      }
     }
   }
   return out;
@@ -53,13 +61,17 @@ function available(pkgRoot: string, pkg: string): Map<string, string> {
 
 function walk(dir: string, onSource: (source: string) => void): void {
   for (const name of readdirSync(dir)) {
-    if (SKIP.has(name)) continue;
+    if (SKIP.has(name)) {
+      continue;
+    }
     const path = join(dir, name);
     if (statSync(path).isDirectory()) {
       walk(path, onSource);
       continue;
     }
-    if (!/\.(ts|tsx)$/.test(name) || IGNORED.some((mark) => name.includes(mark))) continue;
+    if (!/\.(ts|tsx)$/.test(name) || IGNORED.some((mark) => name.includes(mark))) {
+      continue;
+    }
     onSource(readFileSync(path, 'utf8'));
   }
 }
@@ -72,7 +84,9 @@ export function iconSubset(pkgRoot: string, pkg = '@tabler/icons-react'): string
   walk(join(pkgRoot, 'src'), (source) => {
     for (const [, slug] of source.matchAll(LITERAL)) {
       const name = exportName(slug as string);
-      if (glyphs.has(name)) used.add(name);
+      if (glyphs.has(name)) {
+        used.add(name);
+      }
     }
   });
   const names = [...used].sort(byCodeUnit);

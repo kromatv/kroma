@@ -87,13 +87,19 @@ export function Hero({ slides, onPlay, onSelectEntry, maskInset }: Readonly<Hero
 
   const shownBefore = useRef(index);
   useEffect(() => {
-    if (shownBefore.current === index) return;
+    if (shownBefore.current === index) {
+      return;
+    }
     shownBefore.current = index;
-    if (held) primary.current?.focus();
+    if (held) {
+      primary.current?.focus();
+    }
   }, [index, held]);
 
   const slide = slides[index];
-  if (!slide) return <Box h={HERO_EMPTY_HEIGHT} />;
+  if (!slide) {
+    return <Box h={HERO_EMPTY_HEIGHT} />;
+  }
   const { entry } = slide;
   const id = entryId(entry);
   const meta = entryMetadata(entry);
@@ -145,10 +151,16 @@ export function Hero({ slides, onPlay, onSelectEntry, maskInset }: Readonly<Hero
           style={s.heroActions}
           onKey={(direction) => {
             touch();
-            if (slides.length < 2) return false;
-            if (direction === 'left' && focused === 'primary') page(-1);
-            else if (direction === 'right' && focused === last) page(1);
-            else return false;
+            if (slides.length < 2) {
+              return false;
+            }
+            if (direction === 'left' && focused === 'primary') {
+              page(-1);
+            } else if (direction === 'right' && focused === last) {
+              page(1);
+            } else {
+              return false;
+            }
             return true;
           }}
         >

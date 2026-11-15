@@ -99,7 +99,9 @@ export abstract class BaseTvEngine implements TvEngine {
   // `audioUnsupported`: the device can't decode the source audio track, so
   // the master must transcode it to AAC. Each fallback below fires once.
   protected fail(audioUnsupported = false): void {
-    if (this.destroyed) return;
+    if (this.destroyed) {
+      return;
+    }
     const pos = this.position();
     if (audioUnsupported && !this.forceAac) {
       this.forceAac = true;

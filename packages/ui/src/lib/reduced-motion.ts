@@ -16,7 +16,9 @@ export function useReducedMotion(): boolean {
   useEffect(() => {
     let live = true;
     void AccessibilityInfo.isReduceMotionEnabled().then((on) => {
-      if (live) setReduced(on);
+      if (live) {
+        setReduced(on);
+      }
     });
     // react-native-web hands back nothing at all where there is no `matchMedia`
     // to listen to, so the subscription is optional however it is typed.

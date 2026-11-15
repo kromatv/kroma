@@ -57,8 +57,12 @@ function isPart(node: ReactNode, part: unknown): boolean {
 }
 
 function markOf(type: unknown): ChartMark {
-  if (type === Bar) return 'bar';
-  if (type === Area) return 'area';
+  if (type === Bar) {
+    return 'bar';
+  }
+  if (type === Area) {
+    return 'area';
+  }
   return 'line';
 }
 
@@ -76,7 +80,9 @@ function seriesOf(marks: readonly MarkElement[], data: readonly ChartPoint[]): C
   let group = -1;
   for (const mark of marks) {
     const key = mark.props.series;
-    if (seen.has(key)) continue;
+    if (seen.has(key)) {
+      continue;
+    }
     seen.add(key);
     const column = columnOf(data, key);
     const entry: ChartSeries = {
@@ -87,8 +93,9 @@ function seriesOf(marks: readonly MarkElement[], data: readonly ChartPoint[]): C
       column,
     };
     if (entry.mark === 'bar') {
-      if (mark.props.stack && group >= 0) entry.base = stackBase(stack, data.length);
-      else {
+      if (mark.props.stack && group >= 0) {
+        entry.base = stackBase(stack, data.length);
+      } else {
         stack.length = 0;
         group += 1;
       }
@@ -205,7 +212,9 @@ function Root({
 
   const track = (event: PointerEvent) => {
     const next = indexAtX(event.nativeEvent.offsetX, state.count, plot.width, band);
-    if (next !== active) setActive(next);
+    if (next !== active) {
+      setActive(next);
+    }
   };
 
   return (

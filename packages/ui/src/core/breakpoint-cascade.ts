@@ -36,7 +36,9 @@ export function stepsReached(index: number): string {
 /** The step a design width falls in, as a position in {@link BREAKPOINTS}. */
 export function breakpointAt(width: number): number {
   let at = 0;
-  while (at < LAST_BREAKPOINT && width >= (WIDTH[at + 1] as number)) at++;
+  while (at < LAST_BREAKPOINT && width >= (WIDTH[at + 1] as number)) {
+    at++;
+  }
   return at;
 }
 
@@ -47,10 +49,14 @@ export function breakpointAt(width: number): number {
  * breakpoint axis, exactly as an empty state mask keeps it off the state axis.
  */
 export function breakpointBits(value: unknown): number {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return 0;
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return 0;
+  }
   let bits = 0;
   for (let at = 0; at <= LAST_BREAKPOINT; at++) {
-    if ((BREAKPOINTS[at] as string) in value) bits |= 1 << at;
+    if ((BREAKPOINTS[at] as string) in value) {
+      bits |= 1 << at;
+    }
   }
   return bits;
 }
@@ -60,7 +66,9 @@ export function breakpointBits(value: unknown): number {
 export function valueAt(value: object, index: number): unknown {
   for (let at = Math.min(index, LAST_BREAKPOINT); at >= 0; at--) {
     const found: unknown = Reflect.get(value, BREAKPOINTS[at] as string);
-    if (found !== undefined) return found;
+    if (found !== undefined) {
+      return found;
+    }
   }
   return breakpointBits(value) === 0 ? value : undefined;
 }
@@ -75,9 +83,13 @@ export function valueAt(value: object, index: number): unknown {
  * forever - so it mints exactly the one entry it does today.
  */
 export function stepAt(mask: number, index: number): number {
-  if (mask === 0) return 0;
+  if (mask === 0) {
+    return 0;
+  }
   for (let step = Math.min(index, LAST_BREAKPOINT); step > 0; step--) {
-    if ((mask & (1 << step)) !== 0) return step;
+    if ((mask & (1 << step)) !== 0) {
+      return step;
+    }
   }
   return 0;
 }

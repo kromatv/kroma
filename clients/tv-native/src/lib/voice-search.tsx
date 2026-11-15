@@ -34,14 +34,18 @@ function ListenSession({ onText, onDone, locale }: Readonly<VoiceSessionProps>) 
     }
     let live = true;
     const finish = () => {
-      if (!live) return;
+      if (!live) {
+        return;
+      }
       live = false;
       handlers.current.onDone();
     };
     const subs = [
       mod.addListener('partial', ({ text }) => handlers.current.onText(text)),
       mod.addListener('result', ({ text }) => {
-        if (text) handlers.current.onText(text);
+        if (text) {
+          handlers.current.onText(text);
+        }
         finish();
       }),
       // Nothing heard, no network, no permission: end rather than leave a panel
@@ -54,7 +58,9 @@ function ListenSession({ onText, onDone, locale }: Readonly<VoiceSessionProps>) 
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
       ).catch(() => null);
-      if (!live) return;
+      if (!live) {
+        return;
+      }
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
         finish();
         return;
@@ -68,7 +74,9 @@ function ListenSession({ onText, onDone, locale }: Readonly<VoiceSessionProps>) 
 
     return () => {
       live = false;
-      for (const sub of subs) sub.remove();
+      for (const sub of subs) {
+        sub.remove();
+      }
       void mod.cancel().catch(() => {});
     };
   }, [locale]);

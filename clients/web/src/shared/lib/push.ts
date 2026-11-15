@@ -13,7 +13,9 @@ import { deviceInfo } from '#web/shared/lib/device';
 
 async function register(): Promise<ServiceWorkerRegistration> {
   const existing = await navigator.serviceWorker.getRegistration('/');
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   return navigator.serviceWorker.register('/sw.js', { scope: '/' });
 }
 
@@ -31,16 +33,20 @@ function isStandalone(): boolean {
 
 /** `null` means push is available here. */
 export function pushBlocker(): PushBlocker | null {
-  if (typeof window === 'undefined') return 'unsupported';
+  if (typeof window === 'undefined') {
+    return 'unsupported';
+  }
   // Service workers need a secure context: http://localhost qualifies, a LAN IP
   // over plain http does not.
-  if (!window.isSecureContext) return 'insecure';
+  if (!window.isSecureContext) {
+    return 'insecure';
+  }
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     // iOS exposes PushManager only to home-screen installs, so distinguish
     // "your browser can't" from "install it first and it can".
     return isIos() && !isStandalone() ? 'needs-install' : 'unsupported';
   }
-  if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+  if (globalThis.Notification?.permission === 'denied') {
     return 'denied';
   }
   return null;
@@ -55,13 +61,17 @@ export const webPush: PushCapability = {
     // Requested inside the user's click, never on page load: a prompt fired at
     // startup is the fastest way to get denied forever.
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') throw new Error('denied');
+    if (permission !== 'granted') {
+      throw new Error('denied');
+    }
 
     const registration = await register();
     // Re-subscribing with a different applicationServerKey throws, so drop any
     // stale subscription first.
     const existing = await registration.pushManager.getSubscription();
-    if (existing) await existing.unsubscribe();
+    if (existing) {
+      await existing.unsubscribe();
+    }
 
     const subscription = await registration.pushManager.subscribe({
       // A push that isn't shown to the user gets the site's permission revoked.
@@ -79,7 +89,9 @@ export const webPush: PushCapability = {
   },
 
   async endpoint() {
-    if (pushBlocker()) return null;
+    if (pushBlocker()) {
+      return null;
+    }
     const registration = await navigator.serviceWorker.getRegistration('/');
     const subscription = await registration?.pushManager.getSubscription();
     return subscription?.endpoint ?? null;
@@ -94,6 +106,8 @@ export const webPush: PushCapability = {
 
 function keyOf(subscription: PushSubscription, name: 'p256dh' | 'auth'): string {
   const raw = subscription.getKey(name);
-  if (!raw) throw new Error('unsupported');
+  if (!raw) {
+    throw new Error('unsupported');
+  }
   return bytesToBase64Url(new Uint8Array(raw));
 }

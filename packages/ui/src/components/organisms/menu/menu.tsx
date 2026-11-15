@@ -149,7 +149,9 @@ function Trigger({
     expanded: open,
     onPress: () => setOpen(true, 'trigger'),
   };
-  if (render) return render(bind, { open });
+  if (render) {
+    return render(bind, { open });
+  }
   return (
     <TriggerButton
       {...button}

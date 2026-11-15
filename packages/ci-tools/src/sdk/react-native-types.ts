@@ -14,7 +14,9 @@ function declarationFiles(dir: string): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name !== 'node_modules') out.push(...declarationFiles(path));
+      if (entry.name !== 'node_modules') {
+        out.push(...declarationFiles(path));
+      }
     } else if (entry.name.endsWith('.d.ts')) {
       out.push(path);
     }
@@ -33,7 +35,9 @@ export function stageReactNativeTypes(uiDir: string, outDir: string): number {
   const require = createRequire(join(uiDir, 'package.json'));
   const from = dirname(require.resolve('react-native/package.json'));
   const entry = join(from, 'types_DEPRECATED', 'index.d.ts');
-  if (!existsSync(entry)) throw new Error(`${from}: no types_DEPRECATED/index.d.ts to ship`);
+  if (!existsSync(entry)) {
+    throw new Error(`${from}: no types_DEPRECATED/index.d.ts to ship`);
+  }
   const files = declarationFiles(from);
   for (const file of files) {
     const to = join(outDir, relative(from, file));

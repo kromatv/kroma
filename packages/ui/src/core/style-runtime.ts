@@ -61,8 +61,12 @@ export function createStyleRuntime(
         return;
       }
       mode = next;
-      if (!CSS_COLORS) theme.setTheme(resolveMode(next) === 'light' ? KROMA_LIGHT : KROMA);
-      for (const listener of listeners) listener();
+      if (!CSS_COLORS) {
+        theme.setTheme(resolveMode(next) === 'light' ? KROMA_LIGHT : KROMA);
+      }
+      for (const listener of listeners) {
+        listener();
+      }
     },
     onModeChange: inheritedTheme
       ? inheritedTheme.onModeChange

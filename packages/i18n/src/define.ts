@@ -35,7 +35,9 @@ function endonyms(
   codes: readonly string[],
 ): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const code of codes) out[code] = names?.[code] ?? catalogs[code]?.[labelKey(code)] ?? code;
+  for (const code of codes) {
+    out[code] = names?.[code] ?? catalogs[code]?.[labelKey(code)] ?? code;
+  }
   return out;
 }
 

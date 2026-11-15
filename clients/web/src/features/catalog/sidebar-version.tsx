@@ -77,7 +77,9 @@ function VersionStamp() {
   const { data: health } = useQuery(webRuntime.queries.serverQueries.health());
 
   useEffect(() => {
-    if (state === 'idle') return;
+    if (state === 'idle') {
+      return;
+    }
     const timer = setTimeout(() => setState('idle'), CONFIRM_MS);
     return () => clearTimeout(timer);
   }, [state]);

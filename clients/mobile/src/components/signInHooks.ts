@@ -33,19 +33,25 @@ export function useClientCache(): (url: string) => KromaClient {
 export function useDiscoveryLoop(active: boolean): DiscoveredServer[] {
   const [found, setFound] = useState<DiscoveredServer[]>([]);
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const sweep = async () => {
       try {
         const localIp = await getDeviceLocalIp();
         const hits = await discoverServers({ localIp: localIp ?? undefined });
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         setFound(hits);
       } catch {
         // Transient network error; the next sweep retries.
       }
-      if (alive) timer = setTimeout(() => void sweep(), 4000);
+      if (alive) {
+        timer = setTimeout(() => void sweep(), 4000);
+      }
     };
     void sweep();
     return () => {
@@ -67,7 +73,9 @@ export function useBiometricLockedKeys(accounts: MobileAccount[]): Set<string> {
         (await isBiometricLockEnabled(a.serverUrl, a.user.id)) ? keyOf(a) : null,
       ),
     ).then((keys) => {
-      if (!cancelled) setLocked(new Set(keys.filter((k): k is string => k !== null)));
+      if (!cancelled) {
+        setLocked(new Set(keys.filter((k): k is string => k !== null)));
+      }
     });
     return () => {
       cancelled = true;
@@ -84,15 +92,21 @@ export function useServerRoster(serverUrl: string | null): PublicUser[] {
   const { requestLocale } = useSession();
   const [loaded, setLoaded] = useState<{ serverUrl: string; users: PublicUser[] } | null>(null);
   useEffect(() => {
-    if (!serverUrl) return;
+    if (!serverUrl) {
+      return;
+    }
     let cancelled = false;
     void (async () => {
       try {
         const probe = makeClient(serverUrl, requestLocale());
         const config = await probe.accounts.config();
-        if (cancelled || !config.publicUserList || !config.hasAccounts) return;
+        if (cancelled || !config.publicUserList || !config.hasAccounts) {
+          return;
+        }
         const users = await probe.accounts.users();
-        if (!cancelled) setLoaded({ serverUrl, users });
+        if (!cancelled) {
+          setLoaded({ serverUrl, users });
+        }
       } catch {
         // No roster; saved accounts + the form still work.
       }
@@ -101,5 +115,5 @@ export function useServerRoster(serverUrl: string | null): PublicUser[] {
       cancelled = true;
     };
   }, [serverUrl, requestLocale]);
-  return loaded !== null && loaded.serverUrl === serverUrl ? loaded.users : EMPTY_ROSTER;
+  return loaded?.serverUrl === serverUrl ? loaded.users : EMPTY_ROSTER;
 }

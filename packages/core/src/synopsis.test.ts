@@ -16,7 +16,9 @@ describe.each(['the platform segmenter', 'the punctuation rule'])('synopsisLead 
   });
 
   afterEach(() => {
-    if (segmenter) Object.defineProperty(Intl, 'Segmenter', segmenter);
+    if (segmenter) {
+      Object.defineProperty(Intl, 'Segmenter', segmenter);
+    }
   });
 
   it('keeps a synopsis that fits as it is', () => {

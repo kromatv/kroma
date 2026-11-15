@@ -25,13 +25,17 @@ interface HistoryScreenProps {
 }
 
 export function HistoryScreen(props: Readonly<HistoryScreenProps>) {
-  if (!useCap('users.manage')) return <Denied />;
+  if (!useCap('users.manage')) {
+    return <Denied />;
+  }
   return <HistoryPageInner {...props} />;
 }
 
 function titleOf(plays: readonly PlayEntry[]): string | null {
   const first = plays[0];
-  if (!first) return null;
+  if (!first) {
+    return null;
+  }
   return first.showTitle ?? first.title;
 }
 

@@ -55,13 +55,17 @@ export function splitShorthand(
     }
     shorthand[name] = value;
     any = true;
-    if (value === undefined) continue;
+    if (value === undefined) {
+      continue;
+    }
     // A breakpoint object and a transform are objects; everything else is a
     // primitive. The primitive side is named explicitly so String() never meets
     // an object.
     const primitive =
       typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
-    if (!primitive) breakpoints |= breakpointBits(value);
+    if (!primitive) {
+      breakpoints |= breakpointBits(value);
+    }
     parts.push(`${name}:${primitive ? String(value) : JSON.stringify(value)}`);
   }
   parts.sort((a, b) => (a < b ? -1 : 1));
@@ -79,7 +83,9 @@ export function declaredBreakpoints(
 ): number {
   let breakpoints = 0;
   for (const [name, value] of Object.entries(decl)) {
-    if (names.has(name)) breakpoints |= breakpointBits(value);
+    if (names.has(name)) {
+      breakpoints |= breakpointBits(value);
+    }
   }
   return breakpoints;
 }
@@ -90,7 +96,9 @@ function applyRule(out: Record<string, unknown>, rule: Rule, value: unknown, the
   } else if (typeof rule === 'function') {
     Object.assign(out, rule(value, theme));
   } else if (Array.isArray(rule)) {
-    for (const longhand of rule) out[longhand] = value;
+    for (const longhand of rule) {
+      out[longhand] = value;
+    }
   } else if (value) {
     Object.assign(out, rule);
   }
@@ -112,9 +120,13 @@ function applyShorthands(
 ): void {
   for (const key of RULE_KEYS) {
     const raw = p[key];
-    if (raw === undefined) continue;
+    if (raw === undefined) {
+      continue;
+    }
     const value = flatAt(raw, index);
-    if (value !== undefined) applyRule(out, RULES[key], value, theme);
+    if (value !== undefined) {
+      applyRule(out, RULES[key], value, theme);
+    }
   }
 }
 
@@ -123,7 +135,9 @@ function applyCircleRadius(
   p: Readonly<BoxStyleProps>,
   index: number,
 ): void {
-  if (flatAt(p.radius, index) !== 'circle') return;
+  if (flatAt(p.radius, index) !== 'circle') {
+    return;
+  }
   // A disc is half of ITSELF, so a stated side beats the clamped fallback.
   const height = flatAt(p.h, index);
   const stated = typeof height === 'number' ? height : flatAt(p.w, index);
@@ -141,7 +155,9 @@ export function boxStyle(
 ): ViewStyle {
   const out: Record<string, unknown> = {};
   applyShorthands(out, p, index, theme);
-  if (p.radius !== undefined) applyCircleRadius(out, p, index);
+  if (p.radius !== undefined) {
+    applyCircleRadius(out, p, index);
+  }
   return out as ViewStyle;
 }
 
@@ -172,7 +188,9 @@ export function textStyle(
   const family = decl.font;
   const hasRole = typeof role === 'string' && role in theme.type;
   const hasFamily = typeof family === 'string' && family in theme.fonts;
-  if (!hasRole && !hasFamily) return undefined;
+  if (!hasRole && !hasFamily) {
+    return undefined;
+  }
   const out: Record<string, unknown> = {};
   if (hasRole) {
     Object.assign(out, theme.type[role as TypeRole]);

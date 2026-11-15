@@ -23,7 +23,9 @@ export interface Harness {
 // out of public/, where the artefact only exists if somebody ran a build.
 const [output] = (await build({ ...standaloneOptions(swScript), outfile: undefined, write: false }))
   .outputFiles;
-if (!output) throw new Error('esbuild produced no service worker to test');
+if (!output) {
+  throw new Error('esbuild produced no service worker to test');
+}
 const SOURCE = output.text;
 
 export function load(clientList: Array<Record<string, unknown>> = []): Harness {
@@ -100,7 +102,9 @@ export function load(clientList: Array<Record<string, unknown>> = []): Harness {
     },
     fire: async (type, event) => {
       const fn = listeners.get(type);
-      if (!fn) throw new Error(`the worker never registered a "${type}" listener`);
+      if (!fn) {
+        throw new Error(`the worker never registered a "${type}" listener`);
+      }
       const withWaitUntil = {
         ...event,
         waitUntil: (p: Promise<unknown>) => {
@@ -130,12 +134,16 @@ export const pushEvent = (data: unknown) => ({ data: { json: () => data } });
 
 export function shownAt(sw: Harness, n = 0): Shown {
   const found = sw.shown[n];
-  if (!found) throw new Error(`the worker showed ${sw.shown.length} notifications, wanted #${n}`);
+  if (!found) {
+    throw new Error(`the worker showed ${sw.shown.length} notifications, wanted #${n}`);
+  }
   return found;
 }
 
 export function fetchAt(sw: Harness, n = 0): { url: string; init?: RequestInit } {
   const found = sw.fetches[n];
-  if (!found) throw new Error(`the worker made ${sw.fetches.length} requests, wanted #${n}`);
+  if (!found) {
+    throw new Error(`the worker made ${sw.fetches.length} requests, wanted #${n}`);
+  }
   return found;
 }

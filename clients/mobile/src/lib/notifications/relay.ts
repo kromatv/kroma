@@ -17,7 +17,7 @@ const PREF_KEY = 'push.grant';
 const REFRESH_BEFORE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const GrantResponse = z.object({
-  grant: z.string().min(1),
+  grant: z.string().nonempty(),
   expiresAt: z.number(),
 });
 
@@ -25,15 +25,17 @@ const GrantResponse = z.object({
 // handset) is detected and re-minted rather than silently notifying the wrong device.
 const StoredGrant = z.object({
   transport: z.enum(['apns', 'fcm']),
-  token: z.string().min(1),
-  grant: z.string().min(1),
+  token: z.string().nonempty(),
+  grant: z.string().nonempty(),
   expiresAt: z.number(),
 });
 type StoredGrant = z.infer<typeof StoredGrant>;
 
 async function read(): Promise<StoredGrant | null> {
   const raw = await loadPref(PREF_KEY);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     const parsed = StoredGrant.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : null;
@@ -55,7 +57,9 @@ async function mint(transport: 'apns' | 'fcm', token: string): Promise<StoredGra
       body: JSON.stringify({ transport, token }),
       signal: controller.signal,
     });
-    if (!response.ok) throw new Error(`relay returned ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`relay returned ${response.status}`);
+    }
     // Parsed, not trusted: this is a network boundary like any other.
     const { grant, expiresAt } = GrantResponse.parse(await response.json());
     return { transport, token, grant, expiresAt };
@@ -74,7 +78,9 @@ export async function grantFor(transport: 'apns' | 'fcm', token: string): Promis
     stored?.token === token &&
     stored.transport === transport &&
     stored.expiresAt - Date.now() > REFRESH_BEFORE_MS;
-  if (stored && usable) return stored.grant;
+  if (stored && usable) {
+    return stored.grant;
+  }
 
   const minted = await mint(transport, token);
   await savePref(PREF_KEY, JSON.stringify(minted));
@@ -111,8 +117,12 @@ export interface GrantRefresh {
  */
 export async function refreshGrant(): Promise<GrantRefresh | null> {
   const stored = await read();
-  if (!stored) return null;
-  if (stored.expiresAt - Date.now() > REFRESH_BEFORE_MS) return null;
+  if (!stored) {
+    return null;
+  }
+  if (stored.expiresAt - Date.now() > REFRESH_BEFORE_MS) {
+    return null;
+  }
   const minted = await mint(stored.transport, stored.token);
   return {
     grant: minted.grant,

@@ -50,9 +50,15 @@ export type WatchNextItem = {
 const STARTED_MS = 120_000;
 
 function isStarted(c: ContinueItem): boolean {
-  if (c.positionMs <= 0) return true;
-  if (c.positionMs >= STARTED_MS) return true;
-  if (c.item.kind === 'episode') return false;
+  if (c.positionMs <= 0) {
+    return true;
+  }
+  if (c.positionMs >= STARTED_MS) {
+    return true;
+  }
+  if (c.item.kind === 'episode') {
+    return false;
+  }
   return c.durationMs ? c.positionMs / c.durationMs >= 0.03 : false;
 }
 
@@ -73,10 +79,14 @@ function programsOf(section: CardSection, client: KromaClient): HomeProgram[] {
   const seen = new Set<string>();
   const items: HomeProgram[] = [];
   for (const e of section.items) {
-    if (e.type !== 'movie' || seen.has(e.item.id)) continue;
+    if (e.type !== 'movie' || seen.has(e.item.id)) {
+      continue;
+    }
     seen.add(e.item.id);
     items.push(toProgram(e.item, client));
-    if (items.length >= MAX_PROGRAMS) break;
+    if (items.length >= MAX_PROGRAMS) {
+      break;
+    }
   }
   return items;
 }
@@ -89,9 +99,13 @@ export function buildHomeChannels(
   const channels: HomeChannelSpec[] = [];
   for (const id of GENERIC_HOME_ROWS) {
     const s = byId.get(id);
-    if (!s) continue;
+    if (!s) {
+      continue;
+    }
     const items = programsOf(s, client);
-    if (items.length) channels.push({ title: s.title, items });
+    if (items.length) {
+      channels.push({ title: s.title, items });
+    }
   }
   // A server that renamed those ids would silently publish nothing.
   if (!channels.length && sections.length) {
@@ -103,7 +117,9 @@ export function buildHomeChannels(
 function cardArt(c: ContinueItem, client: KromaClient): string {
   const progress = c.durationMs ? c.positionMs / c.durationMs : 0;
   const params = new URLSearchParams({ label: 'Reprendre', v: c.item.addedAt });
-  if (progress > 0) params.set('progress', progress.toFixed(3));
+  if (progress > 0) {
+    params.set('progress', progress.toFixed(3));
+  }
   return `${client.baseUrl}/api/items/${encodeURIComponent(c.item.id)}/card?${params}`;
 }
 
@@ -114,10 +130,16 @@ export function buildWatchNext(items: ContinueItem[], client: KromaClient): Watc
   // of the same show.
   const shows = new Set<string>();
   const eligible = items.filter((c) => {
-    if (!isStarted(c)) return false;
+    if (!isStarted(c)) {
+      return false;
+    }
     const show = c.item.showId;
-    if (!show) return true;
-    if (shows.has(show)) return false;
+    if (!show) {
+      return true;
+    }
+    if (shows.has(show)) {
+      return false;
+    }
     shows.add(show);
     return true;
   });

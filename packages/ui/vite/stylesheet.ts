@@ -70,7 +70,9 @@ const unknown = (asked: string) =>
 const expand = (code: string, display: FontDisplay) =>
   code.replace(DIRECTIVE, (_, which: string | undefined) => {
     const css = emit(which ? which.slice(1) : AGGREGATE, display);
-    if (css === null) throw unknown(`${SPECIFIER}${which}`);
+    if (css === null) {
+      throw unknown(`${SPECIFIER}${which}`);
+    }
     return css;
   });
 
@@ -92,9 +94,13 @@ const partOf = (id: string) => queryless(id).slice(RESOLVED.length, -SUFFIX.leng
 // resolve import" says nothing about which parts exist.
 const claim = (source: string): string | null => {
   const path = queryless(source);
-  if (path !== SPECIFIER && !path.startsWith(`${SPECIFIER}/`)) return null;
+  if (path !== SPECIFIER && !path.startsWith(`${SPECIFIER}/`)) {
+    return null;
+  }
   const part = path === SPECIFIER ? AGGREGATE : path.slice(SPECIFIER.length + 1);
-  if (!isPart(part)) throw unknown(path);
+  if (!isPart(part)) {
+    throw unknown(path);
+  }
   return `${RESOLVED}${part}${SUFFIX}${queryOf(source)}`;
 };
 
@@ -196,38 +202,60 @@ export function kromaTokens(): CssPlugin {
       base = config.base ?? '/';
       const mine = config.plugins.findIndex((plugin) => plugin.name === NAME);
       const tailwind = config.plugins.findIndex((plugin) => plugin.name.startsWith(TAILWIND));
-      if (mine === -1 || tailwind === -1 || tailwind > mine) return;
+      if (mine === -1 || tailwind === -1 || tailwind > mine) {
+        return;
+      }
       throw new Error(OUT_OF_ORDER);
     },
     resolveId(source) {
-      if (isResolved(source)) return source;
+      if (isResolved(source)) {
+        return source;
+      }
       return claim(source);
     },
     load(id) {
-      if (!isResolved(id)) return null;
+      if (!isResolved(id)) {
+        return null;
+      }
       if (wantsUrl(id)) {
-        if (command === 'build') return null;
+        if (command === 'build') {
+          return null;
+        }
         return `export default ${JSON.stringify(servedUrl(base, queryless(id)))};`;
       }
       const part = partOf(id);
       const css = emit(part, display());
-      if (css === null) throw unknown(specifier(part));
-      for (const file of SOURCES) this.addWatchFile?.(file);
+      if (css === null) {
+        throw unknown(specifier(part));
+      }
+      for (const file of SOURCES) {
+        this.addWatchFile?.(file);
+      }
       expanded.add(id);
       return css;
     },
     transform(code, id) {
-      if (!id.includes('.css')) return null;
+      if (!id.includes('.css')) {
+        return null;
+      }
       DIRECTIVE.lastIndex = 0;
-      if (!DIRECTIVE.test(code)) return null;
-      for (const file of SOURCES) this.addWatchFile?.(file);
+      if (!DIRECTIVE.test(code)) {
+        return null;
+      }
+      for (const file of SOURCES) {
+        this.addWatchFile?.(file);
+      }
       expanded.add(id);
       return { code: expand(code, display()), map: null };
     },
     async hotUpdate({ file, read }) {
-      if (!(await foldAlphas(SOURCE_ROOTS, KNOWN_COLOR_NAMES, file, read))) return;
+      if (!(await foldAlphas(SOURCE_ROOTS, KNOWN_COLOR_NAMES, file, read))) {
+        return;
+      }
       const environment = this.environment;
-      if (!environment?.reloadModule) return;
+      if (!environment?.reloadModule) {
+        return;
+      }
       const stale = [...expanded]
         .map((id) => environment.moduleGraph.getModuleById(id))
         .filter((module) => module !== undefined);
@@ -235,8 +263,12 @@ export function kromaTokens(): CssPlugin {
     },
     generateBundle(_options, bundle) {
       for (const file of Object.values(bundle)) {
-        if (file.type !== 'asset' || !file.fileName.endsWith('.css')) continue;
-        if (typeof file.source !== 'string' || !file.source.includes('@kromatv/ui')) continue;
+        if (file.type !== 'asset' || !file.fileName.endsWith('.css')) {
+          continue;
+        }
+        if (typeof file.source !== 'string' || !file.source.includes('@kromatv/ui')) {
+          continue;
+        }
         file.source = expand(file.source, display());
       }
     },

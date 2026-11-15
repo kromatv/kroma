@@ -5,9 +5,13 @@ const ADDRESS = /\((\d+\.\d+\.\d+\.\d+)\)/;
 export function parseArpTable(output: string): string[] {
   const hosts: string[] = [];
   for (const line of output.split('\n')) {
-    if (line.includes('incomplete')) continue;
+    if (line.includes('incomplete')) {
+      continue;
+    }
     const address = ADDRESS.exec(line)?.[1];
-    if (address && !hosts.includes(address)) hosts.push(address);
+    if (address && !hosts.includes(address)) {
+      hosts.push(address);
+    }
   }
   return hosts;
 }

@@ -21,14 +21,18 @@ const KEY_SETTLE_MS = 340;
  * Every screen worth photographing sits behind a profile, and a TV cannot be
  * signed in from the outside. */
 function seedEntries(seedPath: string | undefined): Record<string, string> {
-  if (!seedPath) return {};
+  if (!seedPath) {
+    return {};
+  }
   const parsed: unknown = JSON.parse(readFileSync(seedPath, 'utf8'));
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error(`${seedPath}: expected a JSON object of localStorage entries`);
   }
   const entries: Record<string, string> = {};
   for (const [key, value] of Object.entries(parsed)) {
-    if (typeof value !== 'string') throw new Error(`${seedPath}: "${key}" is not a string`);
+    if (typeof value !== 'string') {
+      throw new TypeError(`${seedPath}: "${key}" is not a string`);
+    }
     entries[key] = value;
   }
   return entries;
@@ -51,12 +55,16 @@ export async function captureDom(
 ): Promise<void> {
   const { viewport } = target;
   const port = portOverride ?? target.port;
-  if (!port || !viewport) throw new Error(`${target.id}: a dom target needs a port and a viewport`);
+  if (!port || !viewport) {
+    throw new Error(`${target.id}: a dom target needs a port and a viewport`);
+  }
   await assertServing(port, target);
 
   const local = seedEntries(seedPath);
   const session: Record<string, string> = { [INTRO_SEEN_KEY]: '1' };
-  if (target.routing === 'dev-nav') session[DEV_NAV_KEY] = navStack(screen);
+  if (target.routing === 'dev-nav') {
+    session[DEV_NAV_KEY] = navStack(screen);
+  }
 
   const browser = await chromium.launch();
   try {
@@ -64,7 +72,9 @@ export async function captureDom(
     page.on('pageerror', (error) => console.log(`  [pageerror] ${String(error).slice(0, 200)}`));
     await page.addInitScript(
       ([localEntries, sessionEntries]) => {
-        for (const [key, value] of Object.entries(localEntries)) localStorage.setItem(key, value);
+        for (const [key, value] of Object.entries(localEntries)) {
+          localStorage.setItem(key, value);
+        }
         for (const [key, value] of Object.entries(sessionEntries)) {
           sessionStorage.setItem(key, value);
         }
@@ -106,7 +116,9 @@ async function assertKroma(
   port: number,
 ): Promise<void> {
   const title = await page.title();
-  if (/kroma/i.test(title)) return;
+  if (/kroma/i.test(title)) {
+    return;
+  }
   throw new Error(
     `port ${port} is serving "${title || 'an untitled page'}", not KROMA. ` +
       `Something else is on that port; free it and start \`bun run ${target.serveScript}\`.`,

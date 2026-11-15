@@ -43,7 +43,9 @@ export function useDirectConnection(
   );
 
   useEffect(() => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     const started = startDirectConnection(client, {
       fetch: withLocalAddressSpace(globalThis.fetch.bind(globalThis)),
       permission: lanPermission,
@@ -59,7 +61,9 @@ export function useDirectConnection(
   useEffect(() => connection.current?.setSignedIn(signedIn), [client, signedIn]);
   useEffect(() => connection.current?.setForeground(inFront), [client, inFront]);
   useEffect(() => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     const recheck = () => connection.current?.recheck();
     const stopOnline = onOnline(recheck);
     const stopNetwork = platform.onNetworkChange?.(recheck);

@@ -14,7 +14,9 @@ export function HeroBeams({ anchorRef }: Readonly<HeroBeamsProps>) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      return;
+    }
     return mountBeams(canvas, { anchor: anchorRef.current });
   }, [anchorRef]);
 

@@ -62,7 +62,9 @@ function dictionary() {
     words,
     of(word: string): number {
       const seen = at.get(word);
-      if (seen !== undefined) return seen;
+      if (seen !== undefined) {
+        return seen;
+      }
       at.set(word, words.length);
       words.push(word);
       return words.length - 1;

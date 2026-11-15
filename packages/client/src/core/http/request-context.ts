@@ -151,7 +151,9 @@ type AnyOptions = RequestOptions & { params?: Record<string, string | number> };
 function headersOf(options?: AnyOptions): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [name, value] of Object.entries(options?.headers ?? {})) {
-    if (value !== undefined) out[name] = value;
+    if (value !== undefined) {
+      out[name] = value;
+    }
   }
   return out;
 }
@@ -183,13 +185,21 @@ export function createRequestContext(config: TransportConfig): RequestContext {
     const headers = new Headers(init?.headers);
     const token = auth === 'public' ? undefined : config.token();
     const locale = config.locale();
-    if (token) headers.set('Authorization', `Bearer ${token}`);
-    if (locale) headers.set('Accept-Language', locale);
-    if (config.app) headers.set(APP_VERSION_HEADER, config.app);
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    if (locale) {
+      headers.set('Accept-Language', locale);
+    }
+    if (config.app) {
+      headers.set(APP_VERSION_HEADER, config.app);
+    }
     const send = (base: string, signal: AbortSignal | undefined) =>
       fetchFn(`${base}/api${path}`, { ...init, headers, signal });
     const signal = init?.signal ?? config.signal;
-    if (canonical) return send(route.canonical, signal ?? undefined);
+    if (canonical) {
+      return send(route.canonical, signal ?? undefined);
+    }
     return sendOnRoute(route, { method: init?.method ?? 'GET', signal }, send);
   };
 
@@ -201,9 +211,13 @@ export function createRequestContext(config: TransportConfig): RequestContext {
   ): Promise<Response> {
     const auth = options.auth ?? 'bearer';
     const res = await fetchPath(path, init, auth, options.canonical);
-    if (res.ok) return res;
+    if (res.ok) {
+      return res;
+    }
     if (res.status === 401 && !retried && auth !== 'public') {
-      if (await config.refresh()) return checked(path, init, options, true);
+      if (await config.refresh()) {
+        return checked(path, init, options, true);
+      }
     }
     const body = await readBoundedJson(res, path).catch(() => undefined);
     throw new KromaApiError(
@@ -220,9 +234,13 @@ export function createRequestContext(config: TransportConfig): RequestContext {
     options?: AnyOptions,
   ) {
     const res = await checked(path, init, options);
-    if (!schema) return undefined;
+    if (!schema) {
+      return undefined;
+    }
     const parsed = z.safeParse(schema, await readBoundedJson(res, path));
-    if (!parsed.success) throw new KromaSchemaError(path, parsed.error.issues);
+    if (!parsed.success) {
+      throw new KromaSchemaError(path, parsed.error.issues);
+    }
     return parsed.data;
   }
 

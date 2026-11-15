@@ -28,7 +28,9 @@ export default defineRule(
       },
     },
     create(context) {
-      if (!/^index\.tsx?$/.test(basename(context.filename))) return {};
+      if (!/^index\.tsx?$/.test(basename(context.filename))) {
+        return {};
+      }
       return {
         Program(node) {
           const routeFactories = new Set(
@@ -62,14 +64,19 @@ export default defineRule(
                     routeFactories.has(declaration.init.callee.callee.name),
                 ),
             );
-          if (fileRoute) return;
+          if (fileRoute) {
+            return;
+          }
           for (const statement of node.body) {
-            if (statement.type === 'EmptyStatement') continue;
+            if (statement.type === 'EmptyStatement') {
+              continue;
+            }
             if (
               ['ExportNamedDeclaration', 'ExportAllDeclaration'].includes(statement.type) &&
               statement.source
-            )
+            ) {
               continue;
+            }
             context.report({ node: statement, messageId: 'violation' });
           }
         },

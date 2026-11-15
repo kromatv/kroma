@@ -19,20 +19,20 @@ const JWKS_TTL_MS = 60 * 60 * 1000;
 const CLOCK_SKEW_SECS = 60;
 
 const Jwk = z.object({
-  kid: z.string().min(1),
+  kid: z.string().nonempty(),
   kty: z.literal('RSA'),
-  n: z.string().min(1),
-  e: z.string().min(1),
+  n: z.string().nonempty(),
+  e: z.string().nonempty(),
   alg: z.string().optional(),
 });
 
 const Jwks = z.object({ keys: z.array(Jwk).min(1) });
 
-const Header = z.object({ alg: z.literal('RS256'), kid: z.string().min(1) });
+const Header = z.object({ alg: z.literal('RS256'), kid: z.string().nonempty() });
 
 const Claims = z.object({
   aud: z.union([z.string(), z.array(z.string())]),
-  iss: z.string().min(1),
+  iss: z.string().nonempty(),
   exp: z.int(),
   iat: z.int().optional(),
   nbf: z.int().optional(),
@@ -64,7 +64,9 @@ export function configFrom(env: {
     .split(',')
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  if (!teamDomain || !aud || emails.length === 0) return null;
+  if (!teamDomain || !aud || emails.length === 0) {
+    return null;
+  }
   return { teamDomain, aud, emails };
 }
 
@@ -77,7 +79,9 @@ function fromB64url(s: string): Uint8Array<ArrayBuffer> | null {
     const padded = s.replaceAll('-', '+').replaceAll('_', '/');
     const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4));
     const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.codePointAt(i) ?? 0;
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.codePointAt(i) ?? 0;
+    }
     return bytes;
   } catch {
     return null;
@@ -86,7 +90,9 @@ function fromB64url(s: string): Uint8Array<ArrayBuffer> | null {
 
 function jsonPart(part: string): unknown {
   const bytes = fromB64url(part);
-  if (!bytes) return null;
+  if (!bytes) {
+    return null;
+  }
   try {
     return JSON.parse(new TextDecoder().decode(bytes));
   } catch {
@@ -101,14 +107,20 @@ async function keysFor(
   now: number,
   fetcher: typeof fetch,
 ): Promise<z.infer<typeof Jwks>['keys'] | null> {
-  if (cache?.domain === teamDomain && now - cache.at < JWKS_TTL_MS) return cache.keys;
+  if (cache?.domain === teamDomain && now - cache.at < JWKS_TTL_MS) {
+    return cache.keys;
+  }
   const res = await fetcher(`https://${teamDomain}/cdn-cgi/access/certs`);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return null;
+  }
   // A 200 carrying something that is not JSON is the identity provider being
   // unreachable in a different costume, not a reason to throw.
   const document = await res.json().catch(() => null);
   const parsed = Jwks.safeParse(document);
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return null;
+  }
   cache = { at: now, domain: teamDomain, keys: parsed.data.keys };
   return parsed.data.keys;
 }
@@ -132,19 +144,27 @@ export async function verify(
   nowMs: number,
   fetcher: typeof fetch = fetch,
 ): Promise<Verdict> {
-  if (!token) return { ok: false, status: 401, reason: 'no access assertion' };
+  if (!token) {
+    return { ok: false, status: 401, reason: 'no access assertion' };
+  }
   const [rawHeader, rawClaims, rawSignature] = token.split('.');
   if (!rawHeader || !rawClaims || !rawSignature) {
     return { ok: false, status: 401, reason: 'malformed assertion' };
   }
 
   const header = Header.safeParse(jsonPart(rawHeader));
-  if (!header.success) return { ok: false, status: 401, reason: 'unexpected assertion header' };
+  if (!header.success) {
+    return { ok: false, status: 401, reason: 'unexpected assertion header' };
+  }
 
   const keys = await keysFor(config.teamDomain, nowMs, fetcher);
-  if (!keys) return { ok: false, status: 503, reason: 'cannot reach the identity provider' };
+  if (!keys) {
+    return { ok: false, status: 503, reason: 'cannot reach the identity provider' };
+  }
   const jwk = keys.find((k) => k.kid === header.data.kid);
-  if (!jwk) return { ok: false, status: 401, reason: 'unknown signing key' };
+  if (!jwk) {
+    return { ok: false, status: 401, reason: 'unknown signing key' };
+  }
 
   const key = await crypto.subtle.importKey(
     'jwk',
@@ -154,13 +174,19 @@ export async function verify(
     ['verify'],
   );
   const signature = fromB64url(rawSignature);
-  if (!signature) return { ok: false, status: 401, reason: 'malformed assertion' };
+  if (!signature) {
+    return { ok: false, status: 401, reason: 'malformed assertion' };
+  }
   const signed = new TextEncoder().encode(`${rawHeader}.${rawClaims}`);
   const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature, signed);
-  if (!valid) return { ok: false, status: 401, reason: 'bad signature' };
+  if (!valid) {
+    return { ok: false, status: 401, reason: 'bad signature' };
+  }
 
   const claims = Claims.safeParse(jsonPart(rawClaims));
-  if (!claims.success) return { ok: false, status: 401, reason: 'unexpected assertion claims' };
+  if (!claims.success) {
+    return { ok: false, status: 401, reason: 'unexpected assertion claims' };
+  }
   const { aud, iss, exp, nbf, email } = claims.data;
 
   const audiences = Array.isArray(aud) ? aud : [aud];
@@ -172,7 +198,9 @@ export async function verify(
   }
 
   const nowSecs = Math.floor(nowMs / 1000);
-  if (exp + CLOCK_SKEW_SECS < nowSecs) return { ok: false, status: 401, reason: 'expired' };
+  if (exp + CLOCK_SKEW_SECS < nowSecs) {
+    return { ok: false, status: 401, reason: 'expired' };
+  }
   if (nbf !== undefined && nbf - CLOCK_SKEW_SECS > nowSecs) {
     return { ok: false, status: 401, reason: 'not yet valid' };
   }

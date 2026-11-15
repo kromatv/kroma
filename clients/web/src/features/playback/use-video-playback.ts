@@ -20,7 +20,9 @@ export type { VideoPlayback } from '#web/features/playback/video-engine';
 const MAX_GIVE_UPS = 2;
 
 function modeOf(decision: EngineDecision): PlaybackMode {
-  if (decision.kind === 'direct') return 'direct';
+  if (decision.kind === 'direct') {
+    return 'direct';
+  }
   return decision.aacMaster ? 'transcode' : 'remux';
 }
 
@@ -58,7 +60,9 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   if (!audioPrefApplied && user) {
     setAudioPrefApplied(true);
     const idx = preferredAudioIndex(audioTracks, user.audioLanguage);
-    if (idx != null) setAudioIndex(idx);
+    if (idx != null) {
+      setAudioIndex(idx);
+    }
   }
 
   const { env, decision, enginePref, setEnginePrefState, setForceHls } = useEngineDecision(item);
@@ -77,12 +81,15 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     restartAt,
   });
 
-  const knownDurationMs =
-    item.durationMs || (serverDurSec > 0 ? Math.round(serverDurSec * 1000) : 0);
+  const itemDurationMs = item.durationMs ?? 0;
+  const serverDurationMs = serverDurSec > 0 ? Math.round(serverDurSec * 1000) : 0;
+  const knownDurationMs = itemDurationMs > 0 ? itemDurationMs : serverDurationMs;
   const [seenDurationMs, setSeenDurationMs] = useState(knownDurationMs);
   if (seenDurationMs !== knownDurationMs) {
     setSeenDurationMs(knownDurationMs);
-    if (knownDurationMs > 0) setDur(knownDurationMs / 1000);
+    if (knownDurationMs > 0) {
+      setDur(knownDurationMs / 1000);
+    }
   }
 
   // Re-binds on anchor/audio change: those remount the <video> (keyed by
@@ -90,7 +97,9 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- rebind on remount.
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
+    if (!v) {
+      return;
+    }
     return bindMediaEvents(
       v,
       item,
@@ -120,15 +129,20 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   const onRefused = useCallback((status: number) => refused(status, absNow()), [refused, absNow]);
   const giveUp = useCallback(() => {
     giveUps.current += 1;
-    if (giveUps.current > MAX_GIVE_UPS) fail('broken');
-    else restartAt(absNow());
+    if (giveUps.current > MAX_GIVE_UPS) {
+      fail('broken');
+    } else {
+      restartAt(absNow());
+    }
   }, [absNow, restartAt, fail]);
 
   // The chosen audio is muxed into the stream URL, so a language change remounts
   // the element rather than switching renditions in place.
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || bootAnchor === null || !srcReady) return;
+    if (!v || bootAnchor === null || !srcReady) {
+      return;
+    }
     // Shaka is the default MSE engine; hls.js only on the explicit `remux`
     // override. Safari keeps native HLS unless the user picks Shaka.
     const safariNative = env.safari && enginePref !== 'shaka';
@@ -192,7 +206,9 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- rebind on remount.
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || decision.kind !== 'direct') return;
+    if (!v || decision.kind !== 'direct') {
+      return;
+    }
     const onErr = () => {
       setAnchor(Math.max(0, Math.floor(v.currentTime)));
       setForceHls(true);
@@ -219,9 +235,13 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   // `audioTrack` swap, which can leave the new audio out of sync with the picture.
   const setAudio = useCallback(
     (index: number) => {
-      if (index === audioIndex) return;
+      if (index === audioIndex) {
+        return;
+      }
       setAudioIndex(index);
-      if (decision.kind !== 'direct') setAnchor(Math.max(0, Math.floor(absNow())));
+      if (decision.kind !== 'direct') {
+        setAnchor(Math.max(0, Math.floor(absNow())));
+      }
     },
     [audioIndex, decision.kind, absNow, setAnchor],
   );

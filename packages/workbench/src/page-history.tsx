@@ -42,7 +42,9 @@ function PageHistory({ path }: Readonly<{ path: string }>) {
 
   const source = usePathSource(path);
   const [open, setOpen] = useState(false);
-  if (!source) return null;
+  if (!source) {
+    return null;
+  }
   const { entry, href, repository } = source;
   const commits = entry?.commits.length ?? 0;
   return (

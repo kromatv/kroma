@@ -36,21 +36,30 @@ export function restated(
 export function collectSteps(css: string, found: Map<string, string[]>): void {
   for (const match of css.matchAll(/--[a-z0-9_-]+/g)) {
     const property = match[0];
-    if (!property.startsWith('--kroma-')) continue;
+    if (!property.startsWith('--kroma-')) {
+      continue;
+    }
     if (
       !css
         .slice(match.index + property.length)
         .trimStart()
         .startsWith(':')
-    )
+    ) {
       continue;
+    }
     const separator = property.lastIndexOf('-');
     const name = property.slice('--kroma-'.length, separator);
     const step = property.slice(separator + 1);
-    if (!name || !/^[a-z0-9-]+$/.test(name)) continue;
-    if (step !== 'opaque' && step !== 'alpha' && !/^\d+(?:_\d+)?$/.test(step)) continue;
+    if (!name || !/^[a-z0-9-]+$/.test(name)) {
+      continue;
+    }
+    if (step !== 'opaque' && step !== 'alpha' && !/^\d+(?:_\d+)?$/.test(step)) {
+      continue;
+    }
     const steps = found.get(name) ?? [];
-    if (!steps.includes(step)) steps.push(step);
+    if (!steps.includes(step)) {
+      steps.push(step);
+    }
     found.set(name, steps);
   }
 }
@@ -68,8 +77,12 @@ export function rulesOf(sheet: CSSStyleSheet): readonly CSSRule[] {
 function derived(token: string, value: string, steps: readonly string[]) {
   const faded = splitAlpha(value);
   return steps.map((step) => {
-    if (step === 'opaque') return [`${cssVar(token)}-opaque`, faded.color] as const;
-    if (step === 'alpha') return [`${cssVar(token)}-alpha`, String(faded.opacity)] as const;
+    if (step === 'opaque') {
+      return [`${cssVar(token)}-opaque`, faded.color] as const;
+    }
+    if (step === 'alpha') {
+      return [`${cssVar(token)}-alpha`, String(faded.opacity)] as const;
+    }
     const alpha = Number(step.replace('_', '.'));
     return [cssVar(token, step), withAlpha(value, alpha / 100)] as const;
   });

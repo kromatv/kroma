@@ -55,7 +55,9 @@ export function keepInView(host: HTMLElement): () => void {
   const clamp = () => {
     const left = Number.parseFloat(host.style.left);
     const top = Number.parseFloat(host.style.top);
-    if (Number.isNaN(left) || Number.isNaN(top)) return;
+    if (Number.isNaN(left) || Number.isNaN(top)) {
+      return;
+    }
     moveTo(host, left, top);
   };
   const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(clamp);
@@ -83,7 +85,9 @@ export function draggable(host: HTMLElement, onDrop: (x: number, y: number) => v
   let release = () => {};
 
   const down = (event: PointerEvent) => {
-    if (!(event.target as Element | null)?.closest?.(GRIP)) return;
+    if (!(event.target as Element | null)?.closest?.(GRIP)) {
+      return;
+    }
     const box = host.getBoundingClientRect();
     const grab: Grab = {
       pointerX: event.clientX,
@@ -98,7 +102,9 @@ export function draggable(host: HTMLElement, onDrop: (x: number, y: number) => v
     const move = (moved: PointerEvent) => {
       const dx = moved.clientX - grab.pointerX;
       const dy = moved.clientY - grab.pointerY;
-      if (!dragged && Math.hypot(dx, dy) < THRESHOLD_PX) return;
+      if (!dragged && Math.hypot(dx, dy) < THRESHOLD_PX) {
+        return;
+      }
       dragged = true;
       moveTo(host, grab.left + dx, grab.top + dy, grab);
     };
@@ -121,7 +127,9 @@ export function draggable(host: HTMLElement, onDrop: (x: number, y: number) => v
   };
 
   const click = (event: MouseEvent) => {
-    if (!dragged) return;
+    if (!dragged) {
+      return;
+    }
     dragged = false;
     event.stopPropagation();
     event.preventDefault();

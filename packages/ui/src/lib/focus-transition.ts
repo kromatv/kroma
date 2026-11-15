@@ -22,7 +22,9 @@ export function useFocusScale(focused: boolean, to: number): Record<string, unkn
   useEffect(() => {
     // A focusable with no scale (to === 1) never animates; skip the work
     // entirely rather than running a no-op timing on every rail tile.
-    if (to === 1) return;
+    if (to === 1) {
+      return;
+    }
     const anim = Animated.timing(value, {
       toValue: focused ? to : 1,
       duration: motion.duration.base,

@@ -9,7 +9,9 @@ const { color, setTheme } = styleHost;
 
 const luminance = (hex: string): number => {
   const m = /^#([0-9a-f]{6})$/i.exec(hex)?.[1];
-  if (!m) throw new Error(`not a hex colour: ${hex}`);
+  if (!m) {
+    throw new Error(`not a hex colour: ${hex}`);
+  }
   const channel = (v: number) => {
     const c = v / 255;
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;

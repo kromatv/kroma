@@ -16,7 +16,9 @@ function template(): string {
 }
 
 afterEach(() => {
-  if (dir) rmSync(dir, { recursive: true, force: true });
+  if (dir) {
+    rmSync(dir, { recursive: true, force: true });
+  }
   dir = '';
 });
 

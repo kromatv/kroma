@@ -98,6 +98,7 @@ export default function NamingPage() {
   const [sample, setSample] = useState<{ movie: string; episode: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     torrents
@@ -125,7 +126,9 @@ export default function NamingPage() {
 
   const set = (key: keyof NamingTemplatesView, value: string) => {
     setTpl((prev) => {
-      if (!prev) return prev;
+      if (!prev) {
+        return prev;
+      }
       const next = { ...prev, [key]: value };
       refreshSample(next);
       setSaved(false);
@@ -135,7 +138,9 @@ export default function NamingPage() {
   const setField = (key: FieldKey) => (value: string) => set(key, value);
 
   const openTokens = (key: FieldKey) => {
-    if (!tpl) return;
+    if (!tpl) {
+      return;
+    }
     void NamingTokenModal.call({
       fieldKey: key,
       fieldLabel: t(FIELDS.find((f) => f.key === key)?.labelKey as Parameters<typeof t>[0]),
@@ -145,19 +150,27 @@ export default function NamingPage() {
   };
 
   const save = () => {
-    if (!tpl) return;
+    if (!tpl) {
+      return;
+    }
     setSaving(true);
+    setSaveError(null);
     torrents
       .saveNaming(tpl)
       .then(() => {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
       })
+      .catch((e) => setSaveError(apiErrorText(e, t('naming.saveFailed'))))
       .finally(() => setSaving(false));
   };
 
-  if (!canManage) return <Denied />;
-  if (!tpl) return failed ? <ModuleFailed /> : <ModuleLoading />;
+  if (!canManage) {
+    return <Denied />;
+  }
+  if (!tpl) {
+    return failed ? <ModuleFailed /> : <ModuleLoading />;
+  }
 
   return (
     <>
@@ -230,6 +243,11 @@ export default function NamingPage() {
               {t('common.saved')}
             </Text>
           ) : null}
+          {saveError ? (
+            <Text variant="meta" color="danger">
+              {saveError}
+            </Text>
+          ) : null}
         </Row>
       </Surface>
 
@@ -286,7 +304,9 @@ function RenameSection() {
       confirmLabel: t('naming.confirmApply'),
       cancelLabel: t('common.cancel'),
     });
-    if (ok) apply();
+    if (ok) {
+      apply();
+    }
   };
 
   return (
@@ -329,12 +349,7 @@ function RenameSection() {
             <>
               <div style={MOVE_LIST}>
                 {plan.moves.slice(0, 200).map((m, index, shown) => (
-                  <MoveRow
-                    key={`${m.from}`}
-                    from={m.from}
-                    to={m.to}
-                    last={index === shown.length - 1}
-                  />
+                  <MoveRow key={m.from} from={m.from} to={m.to} last={index === shown.length - 1} />
                 ))}
               </div>
               <Row mt={16}>

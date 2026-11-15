@@ -24,11 +24,15 @@ interface InDocument {
 }
 
 function onScreen(view: View | null): Rect | null {
-  if (view === null) return null;
+  if (view === null) {
+    return null;
+  }
   // A browser says where an element is at once, where react-native-web's
   // `measureInWindow` answers a tick too late for the move that asked.
   const box = (view as InDocument).getBoundingClientRect?.();
-  if (box) return { x: box.left, y: box.top, width: box.width, height: box.height };
+  if (box) {
+    return { x: box.left, y: box.top, width: box.width, height: box.height };
+  }
   // Fabric answers before `measureInWindow` returns; a platform that answers
   // later leaves the rect unknown, and the navigator to its own order.
   const found: { rect: Rect | null } = { rect: null };
@@ -143,8 +147,11 @@ function ItemView({
   // The navigator's focus is not the platform's, so a screen reader activating
   // an item the ring is not on has to move the ring before it acts.
   const activate = () => {
-    if (host.navigator.focusedId === id) onSelect?.();
-    else host.requestFocus(id);
+    if (host.navigator.focusedId === id) {
+      onSelect?.();
+    } else {
+      host.requestFocus(id);
+    }
   };
 
   const { ref: given, ...rest } = (viewProps ?? {}) as ViewProps &
@@ -155,10 +162,14 @@ function ItemView({
     ? {
         onMouseEnter: () => {
           viewProps?.onMouseEnter?.();
-          if (device.current === 'pointer') host.requestFocus(id);
+          if (device.current === 'pointer') {
+            host.requestFocus(id);
+          }
         },
         onClick: () => {
-          if (!hold.tookClick()) onSelect?.();
+          if (!hold.tookClick()) {
+            onSelect?.();
+          }
         },
         ...(onLongSelect ? holdHandlers(hold, viewProps) : null),
       }

@@ -20,9 +20,13 @@ export interface CargoBuild {
  */
 export function targetDir(cwd: string, projects: readonly Project[]): string {
   const env = process.env.KMOD_TARGET_DIR?.trim();
-  if (env) return env;
+  if (env) {
+    return env;
+  }
   const only = projects[0];
-  if (projects.length === 1 && only?.dir === cwd) return join(only.dir, 'server/target');
+  if (projects.length === 1 && only?.dir === cwd) {
+    return join(only.dir, 'server/target');
+  }
   return join(cwd, 'target/kmod');
 }
 
@@ -38,8 +42,12 @@ export function cargoBuild(
   dir: string,
 ): CargoBuild {
   const args = ['build', '--bin', bin];
-  if (profile === 'release-kmod') args.push('--profile', 'release-kmod');
-  if (features.length) args.push('--features', features.join(','));
+  if (profile === 'release-kmod') {
+    args.push('--profile', 'release-kmod');
+  }
+  if (features.length) {
+    args.push('--features', features.join(','));
+  }
   args.push('--target', COMPONENT_TARGET);
   const outDir = profile === 'release-kmod' ? 'release-kmod' : 'debug';
   return { args, binPath: join(dir, COMPONENT_TARGET, outDir, `${bin}.wasm`) };
@@ -69,16 +77,24 @@ export async function buildComponent(
 ): Promise<string | null> {
   const server = project.server;
   const id = project.manifest.id;
-  if (!server) return null;
+  if (!server) {
+    return null;
+  }
   if (!server.bin) {
-    if (project.manifest.library) return null;
+    if (project.manifest.library) {
+      return null;
+    }
     throw new Error(
       `${id}: server/Cargo.toml declares no [[bin]], so no component is built; a module without one is "library": true`,
     );
   }
   const { args, binPath } = cargoBuild(server.bin, server.features, profile, dir);
   const code = await cargo(server.dir, args, dir);
-  if (code !== 0) throw new Error(`${id}: cargo build failed`);
-  if (!existsSync(binPath)) throw new Error(`${id}: cargo built no component at ${binPath}`);
+  if (code !== 0) {
+    throw new Error(`${id}: cargo build failed`);
+  }
+  if (!existsSync(binPath)) {
+    throw new Error(`${id}: cargo built no component at ${binPath}`);
+  }
   return binPath;
 }

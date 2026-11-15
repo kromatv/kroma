@@ -44,7 +44,9 @@ export function setCell(draft: SizesDraft, key: string, value: string): SizesDra
 
 function read(value: string | undefined): number | null | 'bad' {
   const trimmed = (value ?? '').trim();
-  if (trimmed === '') return null;
+  if (trimmed === '') {
+    return null;
+  }
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 'bad';
 }
@@ -54,12 +56,16 @@ function read(value: string | undefined): number | null | 'bad' {
 export function badCell(draft: SizesDraft, qualities: readonly QualityId[]): string | null {
   for (const runtime of ['movieRuntime', 'episodeRuntime'] as const) {
     const minutes = read(draft[runtime]);
-    if (minutes === 'bad' || minutes === null || minutes < 1) return runtime;
+    if (minutes === 'bad' || minutes === null || minutes < 1) {
+      return runtime;
+    }
   }
   for (const table of ['movie', 'episode'] as const) {
     for (const quality of qualities) {
       const bad = badLimit(draft, table, quality);
-      if (bad) return bad;
+      if (bad) {
+        return bad;
+      }
     }
   }
   return null;
@@ -68,13 +74,19 @@ export function badCell(draft: SizesDraft, qualities: readonly QualityId[]): str
 function badLimit(draft: SizesDraft, table: SizeTable, quality: QualityId): string | null {
   const values = SIZE_FIELDS.map((field) => read(draft.cells[cellKey(table, quality, field)]));
   const bad = SIZE_FIELDS.find((_, at) => values[at] === 'bad');
-  if (bad) return cellKey(table, quality, bad);
+  if (bad) {
+    return cellKey(table, quality, bad);
+  }
   const [min, preferred, max] = values as (number | null)[];
   const ceiling = max ?? Number.POSITIVE_INFINITY;
   const floor = min ?? 0;
-  if (floor > ceiling) return cellKey(table, quality, 'max');
+  if (floor > ceiling) {
+    return cellKey(table, quality, 'max');
+  }
   const wanted = preferred ?? floor;
-  if (wanted < floor || wanted > ceiling) return cellKey(table, quality, 'preferred');
+  if (wanted < floor || wanted > ceiling) {
+    return cellKey(table, quality, 'preferred');
+  }
   return null;
 }
 
@@ -91,7 +103,9 @@ const MEGABYTE = 1_048_576;
 export function limitBytes(draft: SizesDraft, table: SizeTable, quality: QualityId): number | null {
   const minutes = number(draft[table === 'movie' ? 'movieRuntime' : 'episodeRuntime']);
   const max = number(draft.cells[cellKey(table, quality, 'max')]);
-  if (minutes === null || max === null || minutes < 1 || max <= 0) return null;
+  if (minutes === null || max === null || minutes < 1 || max <= 0) {
+    return null;
+  }
   return max * minutes * MEGABYTE;
 }
 

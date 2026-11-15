@@ -119,7 +119,9 @@ function TouchForm({ at }: Readonly<{ at: TouchAt }>): ReactNode {
       }
     </TouchPressable>
   );
-  if (!layers) return control;
+  if (!layers) {
+    return control;
+  }
   return (
     <FocusTargetHost focused={at.focused} radius={radiusOf(face)} style={[layers.box, lift]}>
       {control}

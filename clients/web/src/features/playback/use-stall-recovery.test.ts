@@ -111,7 +111,9 @@ describe('useStallRecovery', () => {
   it('leaves alone anything that is not meant to be advancing', () => {
     for (const state of [{ paused: true }, { ended: true }, { seeking: true }, { readyState: 2 }]) {
       const { fv, opts } = harness();
-      for (const [key, value] of Object.entries(state)) fv.set(key, value);
+      for (const [key, value] of Object.entries(state)) {
+        fv.set(key, value);
+      }
 
       const { result } = renderHook(() => useStallRecovery(opts));
       act(() => {

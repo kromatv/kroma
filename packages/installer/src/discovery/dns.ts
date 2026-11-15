@@ -22,7 +22,9 @@ function encodeName(name: string): Buffer {
   const labels = name.split('.').filter(Boolean);
   const parts = labels.flatMap((label) => {
     const text = Buffer.from(label, 'utf8');
-    if (text.length > 63) throw new Error(`the DNS label ${label} is too long`);
+    if (text.length > 63) {
+      throw new Error(`the DNS label ${label} is too long`);
+    }
     return [Buffer.from([text.length]), text];
   });
   return Buffer.concat([...parts, Buffer.from([0])]);
@@ -46,12 +48,16 @@ export function encodeQuery(questions: readonly DnsQuestion[], unicast = false):
 
 function pointedAt(message: Buffer, at: number): number {
   const low = message[at + 1];
-  if (low === undefined) throw new Error('a DNS name runs past its message');
+  if (low === undefined) {
+    throw new Error('a DNS name runs past its message');
+  }
   return (((message[at] ?? 0) & ~POINTER) << 8) | low;
 }
 
 function labelAt(message: Buffer, at: number, length: number): string {
-  if (at + 1 + length > message.length) throw new Error('a DNS label runs past its message');
+  if (at + 1 + length > message.length) {
+    throw new Error('a DNS label runs past its message');
+  }
   return message.toString('utf8', at + 1, at + 1 + length);
 }
 
@@ -61,10 +67,16 @@ function readName(message: Buffer, start: number): { name: string; end: number }
   let end = -1;
   for (let jumps = 0; jumps <= LARGEST_NAME_JUMPS;) {
     const length = message[at];
-    if (length === undefined) throw new Error('a DNS name runs past its message');
-    if (length === 0) return { name: labels.join('.'), end: end === -1 ? at + 1 : end };
+    if (length === undefined) {
+      throw new Error('a DNS name runs past its message');
+    }
+    if (length === 0) {
+      return { name: labels.join('.'), end: end === -1 ? at + 1 : end };
+    }
     if ((length & POINTER) === POINTER) {
-      if (end === -1) end = at + 2;
+      if (end === -1) {
+        end = at + 2;
+      }
       at = pointedAt(message, at);
       jumps += 1;
     } else {
@@ -77,12 +89,16 @@ function readName(message: Buffer, start: number): { name: string; end: number }
 
 function readRecord(message: Buffer, start: number): { record: DnsRecord | null; end: number } {
   const { name, end: fixed } = readName(message, start);
-  if (fixed + 10 > message.length) throw new Error('a DNS record runs past its message');
+  if (fixed + 10 > message.length) {
+    throw new Error('a DNS record runs past its message');
+  }
   const type = message.readUInt16BE(fixed);
   const size = message.readUInt16BE(fixed + 8);
   const data = fixed + 10;
   const end = data + size;
-  if (end > message.length) throw new Error('a DNS record runs past its message');
+  if (end > message.length) {
+    throw new Error('a DNS record runs past its message');
+  }
 
   if (type === DNS_TYPE.ptr) {
     return { record: { kind: 'ptr', name, target: readName(message, data).name }, end };
@@ -105,17 +121,25 @@ function readRecord(message: Buffer, start: number): { record: DnsRecord | null;
  * or a message that does not parse, holds none.
  */
 export function parseResponse(message: Buffer): DnsRecord[] {
-  if (message.length < HEADER_BYTES || message.length > LARGEST_MESSAGE) return [];
-  if ((message.readUInt16BE(2) & 0x8000) === 0) return [];
+  if (message.length < HEADER_BYTES || message.length > LARGEST_MESSAGE) {
+    return [];
+  }
+  if ((message.readUInt16BE(2) & 0x8000) === 0) {
+    return [];
+  }
   const questions = message.readUInt16BE(4);
   const total = message.readUInt16BE(6) + message.readUInt16BE(8) + message.readUInt16BE(10);
   const records: DnsRecord[] = [];
   try {
     let at = HEADER_BYTES;
-    for (let asked = 0; asked < questions; asked += 1) at = readName(message, at).end + 4;
+    for (let asked = 0; asked < questions; asked += 1) {
+      at = readName(message, at).end + 4;
+    }
     for (let read = 0; read < Math.min(total, MOST_RECORDS); read += 1) {
       const { record, end } = readRecord(message, at);
-      if (record) records.push(record);
+      if (record) {
+        records.push(record);
+      }
       at = end;
     }
   } catch {

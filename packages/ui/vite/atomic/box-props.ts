@@ -27,7 +27,9 @@ export interface BoxLeaf {
 export function boxLocals(scope: ModuleScope): Set<string> {
   const out = new Set<string>();
   for (const [local, { source, imported }] of scope.imports) {
-    if (imported === 'Box' && BOX_SOURCES.has(source)) out.add(local);
+    if (imported === 'Box' && BOX_SOURCES.has(source)) {
+      out.add(local);
+    }
   }
   return out;
 }
@@ -39,11 +41,19 @@ function attributeName(attribute: Node): string | null {
 
 function attributeValue(attribute: Node, scope: ModuleScope, loader: ModuleLoader): unknown {
   const value = attribute.value as Node | null;
-  if (value === null) return true;
-  if (value.type === 'Literal') return value.value;
-  if (value.type !== 'JSXExpressionContainer') throw new Unstatic(`a ${value.type} attribute`);
+  if (value === null) {
+    return true;
+  }
+  if (value.type === 'Literal') {
+    return value.value;
+  }
+  if (value.type !== 'JSXExpressionContainer') {
+    throw new Unstatic(`a ${value.type} attribute`);
+  }
   const expression = value.expression as Node;
-  if (expression.type === 'JSXEmptyExpression') throw new Unstatic('an empty attribute');
+  if (expression.type === 'JSXEmptyExpression') {
+    throw new Unstatic('an empty attribute');
+  }
   return evaluate(expression, scope, loader);
 }
 
@@ -59,25 +69,36 @@ export function compileBox(
   loader: ModuleLoader,
 ): BoxLeaf | null {
   const name = opening.name as Node;
-  if (name.type !== 'JSXIdentifier' || !locals.has(name.name as string)) return null;
+  if (name.type !== 'JSXIdentifier' || !locals.has(name.name as string)) {
+    return null;
+  }
   const shorthand: Node[] = [];
   const decl: Record<string, unknown> = {};
   let style: Node | null = null;
   for (const attribute of opening.attributes as Node[]) {
-    if (attribute.type === 'JSXSpreadAttribute') throw new Unstatic('a box with spread props');
+    if (attribute.type === 'JSXSpreadAttribute') {
+      throw new Unstatic('a box with spread props');
+    }
     const prop = attributeName(attribute);
     if (prop === 'style') {
       const value = attribute.value as Node | null;
-      if (value?.type !== 'JSXExpressionContainer')
+      if (value?.type !== 'JSXExpressionContainer') {
         throw new Unstatic('a style that is no expression');
+      }
       style = value.expression as Node;
       continue;
     }
-    if (prop === null || !BOX_STYLE_PROPS.has(prop)) continue;
+    if (prop === null || !BOX_STYLE_PROPS.has(prop)) {
+      continue;
+    }
     const value = attributeValue(attribute, scope, loader);
     shorthand.push(attribute);
-    if (value !== undefined) decl[prop] = value;
+    if (value !== undefined) {
+      decl[prop] = value;
+    }
   }
-  if (shorthand.length === 0) return null;
+  if (shorthand.length === 0) {
+    return null;
+  }
   return { shorthand, style, nameEnd: name.end, leaf: compileDeclaration(decl) };
 }

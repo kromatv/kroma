@@ -33,7 +33,9 @@ export async function chooseVersion(): Promise<Source | null> {
  */
 export async function chooseKinds(source?: Source): Promise<string[] | null> {
   const kinds = platforms().filter((module) => !source || module.sources().includes(source));
-  if (kinds.length <= 1) return kinds.map((module) => module.id);
+  if (kinds.length <= 1) {
+    return kinds.map((module) => module.id);
+  }
 
   const chosen = await p.select({
     message: 'Which kind of TV?',
@@ -46,7 +48,9 @@ export async function chooseKinds(source?: Source): Promise<string[] | null> {
       { value: EVERY_KIND, label: 'Every kind' },
     ],
   });
-  if (p.isCancel(chosen)) return null;
+  if (p.isCancel(chosen)) {
+    return null;
+  }
   return chosen === EVERY_KIND ? kinds.map((module) => module.id) : [chosen];
 }
 
@@ -57,11 +61,17 @@ export async function askPlatforms(
   const answers = new Map<string, PlatformOptions>();
   for (const module of platforms()) {
     const mine = sets.filter((tv) => tv.platform === module.id);
-    if (!module.prompt || mine.length === 0) continue;
+    if (!module.prompt || mine.length === 0) {
+      continue;
+    }
 
     const given = await module.prompt(mine);
-    if (given === null) return null;
-    for (const [host, options] of given) answers.set(host, options);
+    if (given === null) {
+      return null;
+    }
+    for (const [host, options] of given) {
+      answers.set(host, options);
+    }
   }
   return answers;
 }

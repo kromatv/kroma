@@ -38,7 +38,9 @@ export function renderNotices(title: string, notices: readonly Notice[]): string
   );
   const users = new Map<string, string[]>();
   for (const notice of sorted) {
-    for (const text of notice.texts) users.set(text, [...(users.get(text) ?? []), label(notice)]);
+    for (const text of notice.texts) {
+      users.set(text, [...(users.get(text) ?? []), label(notice)]);
+    }
   }
   const bare = sorted.filter((notice) => notice.texts.length === 0);
 

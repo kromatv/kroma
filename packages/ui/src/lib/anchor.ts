@@ -46,8 +46,9 @@ export function placeUnder(
 ): AnchorPlacement {
   const bottomEdge = trigger.top + trigger.height;
   const width = at.matchWidth ? Math.max(trigger.width, at.minWidth) : at.minWidth;
-  if (!view)
+  if (!view) {
     return { left: trigger.left, top: bottomEdge + ANCHOR_GAP, width, maxHeight: at.maxHeight };
+  }
   const below = view.height - bottomEdge - ANCHOR_GAP - EDGE;
   const above = trigger.top - ANCHOR_GAP - EDGE;
   const flip = below < MIN_ROOM && above > below;
@@ -65,10 +66,14 @@ function spread(
 ): Pick<AnchorPlacement, 'left' | 'right' | 'maxWidth'> {
   const wanted = at.align === 'end' ? trigger.left + trigger.width - at.width : trigger.left;
   const left = Math.max(EDGE, Math.min(wanted, view.width - at.width - EDGE));
-  if (!at.grow) return { left };
+  if (!at.grow) {
+    return { left };
+  }
   const right = view.width - left - at.width;
   const rightward = Math.max(at.width, view.width - left - EDGE);
   const leftward = left + at.width - EDGE;
-  if (right < EDGE || rightward >= leftward) return { left, maxWidth: rightward };
+  if (right < EDGE || rightward >= leftward) {
+    return { left, maxWidth: rightward };
+  }
   return { right, maxWidth: leftward };
 }

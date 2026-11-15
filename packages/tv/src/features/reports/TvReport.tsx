@@ -40,8 +40,11 @@ export function TvReport() {
     typingRef.current = typing;
   });
   const onBack = useCallback(() => {
-    if (typingRef.current) setTyping(false);
-    else nav.back();
+    if (typingRef.current) {
+      setTyping(false);
+    } else {
+      nav.back();
+    }
   }, [nav]);
   useFocusNav({ onBack, resetKey: typing ? 'typing' : 'form' });
 
@@ -50,12 +53,16 @@ export function TvReport() {
   const leaving = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     return () => {
-      if (leaving.current) clearTimeout(leaving.current);
+      if (leaving.current) {
+        clearTimeout(leaving.current);
+      }
     };
   }, []);
 
   const submit = () => {
-    if (!category || state === 'busy') return;
+    if (!category || state === 'busy') {
+      return;
+    }
     setState('busy');
     setError(null);
     // An episode subject is the episode's own id; the series keeps the kind it

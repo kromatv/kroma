@@ -44,7 +44,9 @@ const complaints: string[] = [];
 try {
   const page = await browser.newPage({ viewport: tall ? TALL : STAGE, deviceScaleFactor: 1 });
   page.on('console', (entry) => {
-    if (entry.type() === 'error') complaints.push(entry.text());
+    if (entry.type() === 'error') {
+      complaints.push(entry.text());
+    }
   });
   page.on('pageerror', (error) => complaints.push(`pageerror: ${error.message}`));
 
@@ -56,8 +58,12 @@ try {
   await stubApi(page, catalogue(items));
   await page.addInitScript(
     ([device, session]) => {
-      for (const [key, value] of Object.entries(device)) localStorage.setItem(key, value);
-      for (const [key, value] of Object.entries(session)) sessionStorage.setItem(key, value);
+      for (const [key, value] of Object.entries(device)) {
+        localStorage.setItem(key, value);
+      }
+      for (const [key, value] of Object.entries(session)) {
+        sessionStorage.setItem(key, value);
+      }
     },
     [deviceEntries(origin, locale), SESSION_ENTRIES] as const,
   );
@@ -69,7 +75,9 @@ try {
   await startFrames(page);
   const walked = await walk(remote(page), presses);
   const measured = await frames(page);
-  if (shot) await page.screenshot({ path: shot });
+  if (shot) {
+    await page.screenshot({ path: shot });
+  }
 
   const verdicts = checks({
     atRest,
@@ -81,9 +89,13 @@ try {
   });
 
   const printed = report({ origin, destination, presses, items, throttle, verdicts, complaints });
-  for (const line of printed) console.log(line);
+  for (const line of printed) {
+    console.log(line);
+  }
 
-  if (verdicts.some(({ ok }) => !ok)) process.exitCode = 1;
+  if (verdicts.some(({ ok }) => !ok)) {
+    process.exitCode = 1;
+  }
 } finally {
   await browser.close();
   serving?.stop();

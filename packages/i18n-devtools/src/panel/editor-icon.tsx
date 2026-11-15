@@ -30,7 +30,9 @@ const GLYPHS: Readonly<Record<string, IconName>> = {
 export function EditorIcon({ id }: Readonly<{ id: string }>) {
   const key = id.toLowerCase().replace(/(?:64)?(?:\.exe)?$/, '');
   const path = PATHS[ALIASES[key] ?? key];
-  if (!path) return <Icon name={GLYPHS[key] ?? 'file-code'} size={18} color="textMuted" />;
+  if (!path) {
+    return <Icon name={GLYPHS[key] ?? 'file-code'} size={18} color="textMuted" />;
+  }
   return (
     <svg
       width={18}

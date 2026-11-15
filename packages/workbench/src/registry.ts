@@ -49,7 +49,9 @@ function glyphFor(group: string): IconName {
 /** Case-insensitive match on everything the row says about itself. Takes the
  * shape rather than a `Story`, so an article is searched the same way. */
 function matches(entry: Searchable, query: string): boolean {
-  if (!query) return true;
+  if (!query) {
+    return true;
+  }
   const needle = query.toLowerCase();
   return [entry.name, entry.group, entry.tier, entry.summary].some((field) =>
     (field ?? '').toLowerCase().includes(needle),
@@ -77,8 +79,12 @@ const TIER_ORDER = ['Foundations', 'Atoms', 'Molecules', 'Organisms', 'Templates
 /** Which atomic level a story belongs to, read from where its file sits. */
 function tierFor(path: string): string {
   const at = /\/components\/(atoms|molecules|organisms|templates)\//.exec(path);
-  if (at?.[1]) return `${at[1].charAt(0).toUpperCase()}${at[1].slice(1)}`;
-  if (path.includes('/foundations/')) return 'Foundations';
+  if (at?.[1]) {
+    return `${at[1].charAt(0).toUpperCase()}${at[1].slice(1)}`;
+  }
+  if (path.includes('/foundations/')) {
+    return 'Foundations';
+  }
   return 'Other';
 }
 
@@ -96,7 +102,9 @@ function nameFromPath(path: string, suffix: string): string {
  * that orders by the host's locale, so the same tree would sort differently on
  * a laptop than in CI. */
 function byText(a: string, b: string): number {
-  if (a < b) return -1;
+  if (a < b) {
+    return -1;
+  }
   return a > b ? 1 : 0;
 }
 
@@ -114,8 +122,11 @@ function groupBy<T, K>(items: readonly T[], key: (item: T) => K): { key: K; item
   for (const item of items) {
     const at = key(item);
     const bucket = out.get(at);
-    if (bucket) bucket.push(item);
-    else out.set(at, [item]);
+    if (bucket) {
+      bucket.push(item);
+    } else {
+      out.set(at, [item]);
+    }
   }
   return [...out].map(([at, entries]) => ({ key: at, items: entries }));
 }

@@ -31,7 +31,9 @@ export interface TitleLines {
 }
 
 export function titleLines(play: PlayEntry): TitleLines {
-  if (!play.showTitle) return { lead: play.title, detail: null };
+  if (!play.showTitle) {
+    return { lead: play.title, detail: null };
+  }
   const number = play.season == null ? null : `S${play.season}E${play.episode ?? '?'}`;
   return { lead: play.showTitle, detail: [number, play.title].filter(Boolean).join(' · ') };
 }
@@ -42,8 +44,14 @@ interface TitlePage {
 }
 
 export function titlePage(play: PlayEntry): TitlePage | null {
-  if (!play.inCatalog) return null;
-  if (play.showId) return { page: 'show', id: play.showId };
-  if (play.kind === 'movie' && play.itemId) return { page: 'movie', id: play.itemId };
+  if (!play.inCatalog) {
+    return null;
+  }
+  if (play.showId) {
+    return { page: 'show', id: play.showId };
+  }
+  if (play.kind === 'movie' && play.itemId) {
+    return { page: 'movie', id: play.itemId };
+  }
   return null;
 }

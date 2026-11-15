@@ -18,7 +18,9 @@ function repeated(module: Platform, given: PlatformOptions): RememberedSet['opti
   const kept: Record<string, string | boolean> = {};
   for (const name of module.remembers ?? []) {
     const value = given[name];
-    if (value !== undefined) kept[name] = value;
+    if (value !== undefined) {
+      kept[name] = value;
+    }
   }
   return Object.keys(kept).length > 0 ? kept : undefined;
 }

@@ -7,7 +7,9 @@ import { useRankingPreview } from './use-ranking-preview';
 export function RankingPreview({ profile }: Readonly<{ profile: QualityProfile }>) {
   const t = useT();
   const preview = useRankingPreview(profile);
-  if (preview.failed) return null;
+  if (preview.failed) {
+    return null;
+  }
   return (
     <Surface radius="lg" pad="sm" tone="raised">
       <Box gap={8}>

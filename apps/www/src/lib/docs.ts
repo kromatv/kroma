@@ -62,8 +62,11 @@ export function docMarkdownPath(slug: DocSlug, lang: string): string {
 export function repoPathOf(key: string, base: string): string {
   const parts = base.split('/').filter(Boolean);
   for (const segment of key.split('/')) {
-    if (segment === '..') parts.pop();
-    else if (segment !== '.' && segment !== '') parts.push(segment);
+    if (segment === '..') {
+      parts.pop();
+    } else if (segment !== '.' && segment !== '') {
+      parts.push(segment);
+    }
   }
   return parts.join('/');
 }
@@ -83,17 +86,23 @@ export function createDocs(modules: Record<string, DocModule>, base: string) {
   for (const [key, mod] of Object.entries(modules)) {
     const { name, lang } = parseContentPath(key);
     const slug = name === 'README' ? 'index' : name;
-    if (!isDocSlug(slug)) continue;
+    if (!isDocSlug(slug)) {
+      continue;
+    }
     const byLang = versions.get(slug) ?? {};
     byLang[lang] = { mod, source: repoPathOf(key, base) };
     versions.set(slug, byLang);
   }
 
   function getDoc(slug: string, lang: Lang): Doc | undefined {
-    if (!isDocSlug(slug)) return undefined;
+    if (!isDocSlug(slug)) {
+      return undefined;
+    }
     const byLang = versions.get(slug);
     const version = byLang?.[lang] ?? byLang?.[CONTENT_FALLBACK_LANG];
-    if (!version) return undefined;
+    if (!version) {
+      return undefined;
+    }
     return {
       slug,
       section: sectionOf(slug),
@@ -115,7 +124,9 @@ export function createDocs(modules: Record<string, DocModule>, base: string) {
   function neighbours(slug: DocSlug): { prev?: DocSlug; next?: DocSlug } {
     const order = listed();
     const at = order.indexOf(slug);
-    if (at === -1) return {};
+    if (at === -1) {
+      return {};
+    }
     return { prev: order[at - 1], next: order[at + 1] };
   }
 

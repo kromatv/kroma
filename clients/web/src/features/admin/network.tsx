@@ -33,7 +33,9 @@ interface NetworkPageProps {
 }
 
 export function NetworkPage(props: Readonly<NetworkPageProps>) {
-  if (!useCap('settings.manage')) return <Denied />;
+  if (!useCap('settings.manage')) {
+    return <Denied />;
+  }
   return <NetworkPageInner {...props} />;
 }
 
@@ -54,16 +56,22 @@ function NetworkPageInner({ tab, onTab }: Readonly<NetworkPageProps>) {
 
   useBlocker({
     shouldBlockFn: async ({ current, next }) => {
-      if (!unsaved || next.pathname === current.pathname) return false;
+      if (!unsaved || next.pathname === current.pathname) {
+        return false;
+      }
       return !(await confirmLeave());
     },
     enableBeforeUnload: () => unsaved,
   });
 
   const pick = async (next: string) => {
-    if (!isNetworkTab(next) || next === tab) return;
+    if (!isNetworkTab(next) || next === tab) {
+      return;
+    }
     if (unsaved) {
-      if (!(await confirmLeave())) return;
+      if (!(await confirmLeave())) {
+        return;
+      }
       setRulesDirty(false);
     }
     onTab(next);

@@ -1,4 +1,5 @@
 import { createServer, type TLSSocket } from 'node:tls';
+import { listenOnLoopback } from '../fake-listener.fixture';
 import { SERVER_TLS } from '../fake-tls.fixture';
 import { ByteReader } from './bytes';
 import { PairingCipher } from './cipher';
@@ -33,7 +34,9 @@ async function serve(socket: TLSSocket, code: string, guid: string, fake: FakePa
   const sealed = cipher.seal(peerInfo(PEER.deviceGuid, guid));
   socket.write(Buffer.concat([pairingHeader(PACKET.peerInfo, sealed.length), sealed]));
   const theirs = cipher.open(await readPacket(bytes, PACKET.peerInfo, SEALED_PEER_INFO_BYTES));
-  if (theirs?.[0] !== PEER.publicKey) return socket.destroy();
+  if (theirs?.[0] !== PEER.publicKey) {
+    return socket.destroy();
+  }
   fake.paired.push(theirs.toString('utf8', 1, theirs.indexOf(0, 1)));
   socket.end();
 }
@@ -47,13 +50,5 @@ export async function fakePairing(code: string, guid = 'adb-FAKE-a1b2c3'): Promi
     socket.on('error', () => undefined);
     serve(socket, code, guid, fake).catch(() => socket.destroy());
   });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const address = server.address();
-  fake.port = typeof address === 'object' && address ? address.port : 0;
-  fake.close = () =>
-    new Promise((resolve) => {
-      for (const socket of sockets) socket.destroy();
-      server.close(() => resolve());
-    });
-  return fake;
+  return Object.assign(fake, await listenOnLoopback(server, sockets));
 }

@@ -31,9 +31,15 @@ let server = 0;
 function gate(finish: object) {
   const serverUrl = `https://kroma-${server++}.example`;
   const { client, calls } = recordingClient((url) => {
-    if (url.endsWith('/auth/sso/finish')) return { json: finish };
-    if (url.endsWith('/auth/sso/start')) return { json: STARTED };
-    if (url.endsWith('/auth/login')) return { json: session };
+    if (url.endsWith('/auth/sso/finish')) {
+      return { json: finish };
+    }
+    if (url.endsWith('/auth/sso/start')) {
+      return { json: STARTED };
+    }
+    if (url.endsWith('/auth/login')) {
+      return { json: session };
+    }
     if (url.endsWith('/auth/config')) {
       return {
         json: {

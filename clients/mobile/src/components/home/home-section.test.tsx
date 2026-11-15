@@ -60,7 +60,9 @@ const section = (over: Partial<CardSection> & Pick<CardSection, 'items'>): CardS
 function draw(drawn: CardSection, filter: 'movie' | 'show' | null = null) {
   const { hero, rows } = planHome([drawn], filter);
   const row = hero ?? rows[0];
-  if (!row) throw new Error('the filter left the section nothing to draw');
+  if (!row) {
+    throw new Error('the filter left the section nothing to draw');
+  }
   return render(
     <QueryClientProvider client={new QueryClient()}>
       <HomeSection row={row} resumable={[]} />

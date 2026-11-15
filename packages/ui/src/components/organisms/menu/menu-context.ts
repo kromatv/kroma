@@ -42,7 +42,9 @@ const MenuRowContext = createContext<MenuRowState | null>(null);
 
 function useMenuRow(part: string): MenuRowState {
   const state = useContext(MenuRowContext);
-  if (!state) throw new Error(`<Menu.${part}> must be a direct child of <Menu.Root>`);
+  if (!state) {
+    throw new Error(`<Menu.${part}> must be a direct child of <Menu.Root>`);
+  }
   return state;
 }
 

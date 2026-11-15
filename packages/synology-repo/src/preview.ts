@@ -55,8 +55,12 @@ const server = createServer((req, res) => {
 
 // Watch the dir (survives editors' atomic saves) and push a reload on template edits.
 watch(dir, (_event, filename) => {
-  if (filename !== templateFile) return;
-  for (const res of clients) res.write('data: reload\n\n');
+  if (filename !== templateFile) {
+    return;
+  }
+  for (const res of clients) {
+    res.write('data: reload\n\n');
+  }
 });
 
 server.listen(port, () => {

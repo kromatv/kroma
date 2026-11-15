@@ -39,7 +39,9 @@ function asReactNative<T>(os: 'ios' | 'android', fn: () => T): T {
     return fn();
   } finally {
     rn.os = 'web';
-    if (real) Object.defineProperty(globalThis, 'navigator', real);
+    if (real) {
+      Object.defineProperty(globalThis, 'navigator', real);
+    }
   }
 }
 
@@ -112,7 +114,9 @@ describe('detectCapabilities (node baseline: no DOM, no MediaSource)', () => {
     try {
       expect(detectCapabilities().source).toBe('videoElement');
     } finally {
-      if (real) Object.defineProperty(globalThis, 'navigator', real);
+      if (real) {
+        Object.defineProperty(globalThis, 'navigator', real);
+      }
     }
   });
 });

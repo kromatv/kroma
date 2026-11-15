@@ -19,7 +19,9 @@ function useCursorScroll(
 
   useEffect(() => {
     const y = reveal(offset.current, height.current);
-    if (y !== null) ref.current?.scrollTo({ y, animated: false });
+    if (y !== null) {
+      ref.current?.scrollTo({ y, animated: false });
+    }
   }, [reveal]);
 
   return {

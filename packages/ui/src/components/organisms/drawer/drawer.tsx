@@ -89,7 +89,9 @@ function Root({
     </DrawerSurface>
   ) : null;
   useOverlay(surface);
-  if (!mounted || hosted) return null;
+  if (!mounted || hosted) {
+    return null;
+  }
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose}>
       <ScopeCarrier>{surface}</ScopeCarrier>
@@ -186,7 +188,9 @@ function DrawerSurface({
 }
 
 function edgeOf(side: DrawerSide, inset: number, scope: StyleScope): ViewStyle {
-  if (inset) return resolveStyles(sDefinition, scope).card;
+  if (inset) {
+    return resolveStyles(sDefinition, scope).card;
+  }
   return side === 'right'
     ? resolveStyles(sDefinition, scope).panelRight
     : resolveStyles(sDefinition, scope).panelLeft;

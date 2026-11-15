@@ -63,7 +63,9 @@ export function ogPlugin(): Plugin {
   const cache = new Map<string, Promise<Buffer>>();
   const cardFor = (file: string) => {
     const card = Object.values(OG_CARDS).find((c) => c.file === file);
-    if (!card) return undefined;
+    if (!card) {
+      return undefined;
+    }
     let png = cache.get(file);
     if (!png) {
       png = getRenderer().then((renderer) => renderCard(card, renderer));
@@ -85,7 +87,9 @@ export function ogPlugin(): Plugin {
       server.middlewares.use((req, res, next) => {
         const file = req.url?.split('?')[0]?.replace(/^\//, '') ?? '';
         const png = cardFor(file);
-        if (!png) return next();
+        if (!png) {
+          return next();
+        }
         png
           .then((body) => {
             res.setHeader('content-type', 'image/png');
@@ -99,12 +103,16 @@ export function ogPlugin(): Plugin {
     // Only the client build's output is served (dist/client); the server/prerender build
     // would write a second, unreachable copy.
     async generateBundle() {
-      if (this.environment?.name !== 'client') return;
+      if (this.environment?.name !== 'client') {
+        return;
+      }
       const rendered = await Promise.all(
         Object.values(OG_CARDS).map(async (card) => ({ card, png: await cardFor(card.file) })),
       );
       for (const { card, png } of rendered) {
-        if (!png) continue;
+        if (!png) {
+          continue;
+        }
         this.emitFile({ type: 'asset', fileName: card.file, source: png });
       }
     },

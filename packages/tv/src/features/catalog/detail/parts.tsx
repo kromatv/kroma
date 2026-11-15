@@ -25,7 +25,9 @@ export function EndsAtHint({ runtimeMs }: Readonly<{ runtimeMs?: number | null }
   const t = useT();
   const locale = useLocale();
   const at = endsAtClock(runtimeMs, locale);
-  if (!at) return null;
+  if (!at) {
+    return null;
+  }
   return (
     <Box row align="center" gap={9} mt={12}>
       <Icon name="clock" size={16} thickness={1.8} color="accentText" />
@@ -69,7 +71,9 @@ export function CastRow({
   const client = useClient();
   const nav = useNav();
   const faces = useMemo(() => billing(t, cast, crew), [t, cast, crew]);
-  if (faces.length === 0) return null;
+  if (faces.length === 0) {
+    return null;
+  }
   return (
     <Box mt={32} gap={16}>
       <Text style={s.sectionLabel} color="text/55">

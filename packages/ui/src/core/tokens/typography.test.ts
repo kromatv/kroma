@@ -53,7 +53,9 @@ describe('the 10-foot ramp', () => {
   it('leaves no hole a call site would have to fill by hand', () => {
     const sizes = [...new Set(ramp.map(([, spec]) => spec.size))];
     const jumps = sizes.slice(1).map((size, i) => (sizes[i] as number) / size);
-    for (const jump of jumps) expect(jump).toBeLessThanOrEqual(MAX_STEP);
+    for (const jump of jumps) {
+      expect(jump).toBeLessThanOrEqual(MAX_STEP);
+    }
   });
 
   it('pairs every step with its own leading', () => {
@@ -90,7 +92,9 @@ describe('the base ramp', () => {
       (size) => size < typeSpec.hero.size,
     );
     const jumps = sizes.slice(1).map((size, i) => (sizes[i] as number) / size);
-    for (const jump of jumps) expect(jump).toBeLessThanOrEqual(MAX_STEP);
+    for (const jump of jumps) {
+      expect(jump).toBeLessThanOrEqual(MAX_STEP);
+    }
   });
 
   it('pairs every step with its own leading', () => {

@@ -49,7 +49,9 @@ export function addTally(into: Tally, from: Tally): Tally {
  *  writes, the ones it takes from the language it is a region of, and the
  *  outdated ones, which are shown, only not as the source now says it. */
 export function coverage(tally: Tally): number {
-  if (tally.total === 0) return 1;
+  if (tally.total === 0) {
+    return 1;
+  }
   return (tally.translated + tally.inherited + tally.outdated) / tally.total;
 }
 
@@ -71,7 +73,11 @@ export function readSource(set: CatalogSet): Source {
   const catalog = merged(files);
   const { messages } = groupMessages(catalog);
   const home = new Map<string, string>();
-  for (const [file, own] of files) for (const key of Object.keys(own)) home.set(key, file);
+  for (const [file, own] of files) {
+    for (const key of Object.keys(own)) {
+      home.set(key, file);
+    }
+  }
   return { locale, files, catalog, messages, bases: new Set(messages.keys()), home };
 }
 
@@ -82,9 +88,13 @@ export function readSource(set: CatalogSet): Source {
  * named after its namespace.
  */
 export function fileOf(set: CatalogSet, source: Source, key: string): string {
-  if (set.layout === 'flat') return WHOLE;
+  if (set.layout === 'flat') {
+    return WHOLE;
+  }
   const written = source.home.get(key);
-  if (written !== undefined) return written;
+  if (written !== undefined) {
+    return written;
+  }
   const base = variantOf(key, source.bases)?.base ?? key;
   return source.home.get(base) ?? source.home.get(`${base}_other`) ?? namespaceOf(key);
 }
@@ -120,10 +130,14 @@ function inheritedBy(set: CatalogSet, source: Source, locale: string): Set<strin
   const known = new Set(localesOf(set));
   const inherited = new Set<string>();
   for (const parent of parentTags(locale)) {
-    if (!known.has(parent)) continue;
+    if (!known.has(parent)) {
+      continue;
+    }
     const catalog = parent === source.locale ? source.catalog : merged(readFiles(set, parent));
     for (const [key, message] of groupMessages(catalog, source.bases).messages) {
-      if (translatedIn(message)) inherited.add(key);
+      if (translatedIn(message)) {
+        inherited.add(key);
+      }
     }
   }
   return inherited;
@@ -139,7 +153,9 @@ function reconciled(
   recorded: LockEntry | undefined,
 ): { recorded: LockEntry; outdated: boolean } {
   const untouched = recorded?.translation === said;
-  if (recorded && untouched && recorded.source !== from) return { recorded, outdated: true };
+  if (recorded && untouched && recorded.source !== from) {
+    return { recorded, outdated: true };
+  }
   const entry: LockEntry =
     untouched && recorded?.machine
       ? { source: from, translation: said, machine: true }
@@ -165,10 +181,14 @@ function standingOf(message: Message, measured: Measured): Standing {
   if (!translatedIn(translation)) {
     return measured.inherited.has(message.key) ? 'inherited' : 'missing';
   }
-  if (measured.locale === measured.source.locale) return 'translated';
+  if (measured.locale === measured.source.locale) {
+    return 'translated';
+  }
   const entry = reconciled(digest(message), digest(translation), measured.lock.get(message.key));
   measured.nextLock.set(message.key, entry.recorded);
-  if (entry.outdated) return 'outdated';
+  if (entry.outdated) {
+    return 'outdated';
+  }
   return entry.recorded.machine ? 'unreviewed' : 'translated';
 }
 
@@ -206,7 +226,9 @@ export function inspectLocale(set: CatalogSet, source: Source, locale: string): 
     const state = standingOf(message, { source, locale, messages, inherited, lock, nextLock });
     count(message.key, 'total');
     count(message.key, state === 'unreviewed' ? 'translated' : state);
-    if (state === 'unreviewed') count(message.key, 'unreviewed');
+    if (state === 'unreviewed') {
+      count(message.key, 'unreviewed');
+    }
     listed[state]?.push(message.key);
   }
 
@@ -230,7 +252,11 @@ export function inspectLocale(set: CatalogSet, source: Source, locale: string): 
  *  the app's, and whatever a later set ships beyond them. */
 export function workspaceLocales(sets: readonly CatalogSet[]): string[] {
   const seen = new Set<string>();
-  for (const set of sets) for (const locale of localesOf(set)) seen.add(locale);
+  for (const set of sets) {
+    for (const locale of localesOf(set)) {
+      seen.add(locale);
+    }
+  }
   const [primary] = sets;
   const first = primary ? [primary.project.source] : [];
   return [...new Set([...first, ...[...seen].sort((a, b) => a.localeCompare(b))])];
@@ -248,7 +274,9 @@ export interface LanguageStatus {
 /** How every language stands, the source language of the first set leading. */
 export function inspectWorkspace(sets: readonly CatalogSet[]): LanguageStatus[] {
   const [primary] = sets;
-  if (!primary) return [];
+  if (!primary) {
+    return [];
+  }
   const sources = new Map(sets.map((set) => [set.name, readSource(set)]));
   return workspaceLocales(sets).map((locale) => {
     const statuses = sets.map((set) => inspectLocale(set, sources.get(set.name) as Source, locale));

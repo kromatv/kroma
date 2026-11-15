@@ -20,7 +20,9 @@ const TIZEN_BY_MODEL_YEAR: Readonly<Record<number, { version: string; chromium: 
 export function tizenRuntime(model: string | undefined): Runtime | null {
   const year = /^(\d{2})_/.exec(model ?? '')?.[1];
   const dated = year === undefined ? undefined : TIZEN_BY_MODEL_YEAR[2000 + Number(year)];
-  if (!dated) return null;
+  if (!dated) {
+    return null;
+  }
   return {
     name: 'Tizen',
     version: dated.version,

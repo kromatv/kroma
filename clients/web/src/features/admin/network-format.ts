@@ -8,8 +8,12 @@ const NOTHING = '-';
 /** A connection's duration at the scale it was lived: milliseconds under a
  * second, tenths of a second under a minute, then minutes and seconds. */
 export function flowDuration(ms: number, fmt: Pick<Format, 'decimal'>): string {
-  if (ms < SECOND_MS) return `${Math.round(ms)} ms`;
-  if (ms < MINUTE_MS) return `${fmt.decimal(ms / SECOND_MS, 1)} s`;
+  if (ms < SECOND_MS) {
+    return `${Math.round(ms)} ms`;
+  }
+  if (ms < MINUTE_MS) {
+    return `${fmt.decimal(ms / SECOND_MS, 1)} s`;
+  }
   const totalSeconds = Math.round(ms / SECOND_MS);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -21,7 +25,9 @@ export function flowVolume(
   flow: Pick<Flow, 'bytesIn' | 'bytesOut'>,
   fmt: Pick<Format, 'bytes'>,
 ): string {
-  if (flow.bytesIn === 0 && flow.bytesOut === 0) return NOTHING;
+  if (flow.bytesIn === 0 && flow.bytesOut === 0) {
+    return NOTHING;
+  }
   return `${fmt.bytes(flow.bytesIn)} / ${fmt.bytes(flow.bytesOut)}`;
 }
 

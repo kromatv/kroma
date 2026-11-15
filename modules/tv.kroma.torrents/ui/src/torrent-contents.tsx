@@ -190,8 +190,12 @@ function GroupBlock({
 }
 
 function headingOf(group: ContentsGroup, t: ReturnType<typeof useT>): string {
-  if (group.kind === 'extras') return t('contents.extras', { count: group.files.length });
-  if (group.kind === 'film') return t('contents.film');
+  if (group.kind === 'extras') {
+    return t('contents.extras', { count: group.files.length });
+  }
+  if (group.kind === 'film') {
+    return t('contents.film');
+  }
   return t('contents.season', { season: group.season ?? 0, count: group.files.length });
 }
 

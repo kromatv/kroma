@@ -41,15 +41,23 @@ export function parseVtt(raw: string): Cue[] {
   for (const block of raw.replaceAll('\r', '').split('\n\n')) {
     const lines = block.split('\n');
     const ti = lines.findIndex((l) => l.includes('-->'));
-    if (ti === -1) continue;
+    if (ti === -1) {
+      continue;
+    }
     const timing = lines[ti];
-    if (timing === undefined) continue;
+    if (timing === undefined) {
+      continue;
+    }
     const [a, b] = timing.split('-->').map((s) => s.trim().split(/\s+/)[0] ?? '');
     const start = parseTs(a ?? '');
     const end = parseTs(b ?? '');
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) continue;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      continue;
+    }
     const text = clean(lines.slice(ti + 1).join('\n'));
-    if (text) cues.push({ start, end, text });
+    if (text) {
+      cues.push({ start, end, text });
+    }
   }
   return cues.sort((x, y) => x.start - y.start);
 }
@@ -59,9 +67,15 @@ type CueHit = { text: string; index: number };
 function walkForwardCue(cues: Cue[], t: number, hint: number): CueHit | null {
   for (let i = hint + 1; i < cues.length && i <= hint + 3; i++) {
     const c = cues[i];
-    if (!c) continue;
-    if (t < c.start) return { text: '', index: hint };
-    if (t <= c.end) return { text: c.text, index: i };
+    if (!c) {
+      continue;
+    }
+    if (t < c.start) {
+      return { text: '', index: hint };
+    }
+    if (t <= c.end) {
+      return { text: c.text, index: i };
+    }
   }
   return null;
 }
@@ -72,10 +86,16 @@ function binarySearchCue(cues: Cue[], t: number): CueHit {
   while (lo <= hi) {
     const mid = (lo + hi) >> 1;
     const c = cues[mid];
-    if (!c) break;
-    if (t < c.start) hi = mid - 1;
-    else if (t > c.end) lo = mid + 1;
-    else return { text: c.text, index: mid };
+    if (!c) {
+      break;
+    }
+    if (t < c.start) {
+      hi = mid - 1;
+    } else if (t > c.end) {
+      lo = mid + 1;
+    } else {
+      return { text: c.text, index: mid };
+    }
   }
   return { text: '', index: Math.max(0, lo - 1) };
 }
@@ -83,13 +103,19 @@ function binarySearchCue(cues: Cue[], t: number): CueHit {
 /** `hint` is the index this returned last time; passing it back keeps normal
  *  playback O(1) amortised, and a seek re-syncs with a binary search. */
 export function activeCueText(cues: Cue[], t: number, hint: number): CueHit {
-  if (cues.length === 0) return { text: '', index: 0 };
+  if (cues.length === 0) {
+    return { text: '', index: 0 };
+  }
 
   const cur = cues[hint];
-  if (cur && t >= cur.start && t <= cur.end) return { text: cur.text, index: hint };
+  if (cur && t >= cur.start && t <= cur.end) {
+    return { text: cur.text, index: hint };
+  }
   if (cur && t > cur.end) {
     const forward = walkForwardCue(cues, t, hint);
-    if (forward) return forward;
+    if (forward) {
+      return forward;
+    }
   }
   return binarySearchCue(cues, t);
 }

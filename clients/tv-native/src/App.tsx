@@ -82,7 +82,9 @@ export function App() {
   useEffect(() => {
     let alive = true;
     void hydrateSessionStorage().then((store) => {
-      if (alive) setDeviceStore(store);
+      if (alive) {
+        setDeviceStore(store);
+      }
     });
     return () => {
       alive = false;
@@ -98,8 +100,12 @@ export function App() {
   // problem; blocking on it renders nothing at all, and on a television that is
   // indistinguishable from a frozen app, with no way to find out why.
   const [fontsLoaded, fontError] = useFonts(KIT_FONTS);
-  if (!deviceStore) return null;
-  if (!fontsLoaded && !fontError) return null;
+  if (!deviceStore) {
+    return null;
+  }
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
   // No <StatusBar>: a TV has none. tvOS does not even ship the native module
   // behind it, so asking to hide a status bar throws ("undefined is not a
   // function" out of NativeStatusBarManagerIOS) rather than being a no-op.

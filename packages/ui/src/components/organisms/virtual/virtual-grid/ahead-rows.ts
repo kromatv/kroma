@@ -7,7 +7,9 @@ export function aheadRows(shown: RowWindow, down: boolean, metrics: RowMetrics):
   const rows: number[] = [];
   for (let step = 1; step <= budget; step += 1) {
     const row = down ? shown.end + step : shown.start - step;
-    if (row < metrics.headerRows || row >= metrics.count) break;
+    if (row < metrics.headerRows || row >= metrics.count) {
+      break;
+    }
     rows.push(row);
   }
   return rows;

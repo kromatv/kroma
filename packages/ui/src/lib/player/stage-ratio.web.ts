@@ -20,7 +20,9 @@ import { webDocument, webWindow } from '#ui/lib/dom';
 
 function ratioOf(stageId: string): number | null {
   const node = webDocument()?.getElementById(stageId);
-  if (!node) return null;
+  if (!node) {
+    return null;
+  }
   const rect = node.getBoundingClientRect();
   return rect.height > 0 ? rect.width / rect.height : null;
 }

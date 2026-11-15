@@ -30,7 +30,9 @@ export function useVoiceSearchBackend(): VoiceSearchBackend | null {
 export function voiceSearchBackend(
   current: VoiceSearchBackend | null = null,
 ): VoiceSearchBackend | null {
-  if (!current) return null;
+  if (!current) {
+    return null;
+  }
   try {
     return current.available() ? current : null;
   } catch {

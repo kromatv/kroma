@@ -49,7 +49,9 @@ const BARE_CODE = /^\d{4,8}$/;
  * `code` query param, or a bare numeric code. */
 export function codeFromQr(payload: string): string | null {
   const fromQuery = QUERY_CODE.exec(payload);
-  if (fromQuery?.[1]) return fromQuery[1];
+  if (fromQuery?.[1]) {
+    return fromQuery[1];
+  }
   const bare = BARE_CODE.exec(payload.trim());
   return bare ? bare[0] : null;
 }
@@ -65,11 +67,15 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
   const scannedRef = useRef(false);
 
   useEffect(() => {
-    if (!camera) return;
+    if (!camera) {
+      return;
+    }
     let cancelled = false;
     void (async () => {
       const current = await camera.Camera.getCameraPermissionsAsync();
-      if (!cancelled && current.granted) setCameraOn(true);
+      if (!cancelled && current.granted) {
+        setCameraOn(true);
+      }
     })();
     return () => {
       cancelled = true;
@@ -95,20 +101,32 @@ export function ScanCode({ onConnected }: Readonly<{ onConnected: () => void }>)
   const enter = (next: string) => {
     const digits = next.replace(/\D/g, '').slice(0, CODE_LENGTH);
     setCode(digits);
-    if (state === 'error') setState('idle');
-    if (digits.length === CODE_LENGTH) void submit(digits);
+    if (state === 'error') {
+      setState('idle');
+    }
+    if (digits.length === CODE_LENGTH) {
+      void submit(digits);
+    }
   };
 
   const enableCamera = async () => {
-    if (!camera) return;
+    if (!camera) {
+      return;
+    }
     const result = await camera.Camera.requestCameraPermissionsAsync();
-    if (result.granted) setCameraOn(true);
+    if (result.granted) {
+      setCameraOn(true);
+    }
   };
 
   const onScanned = (payload: string) => {
-    if (scannedRef.current || state === 'busy') return;
+    if (scannedRef.current || state === 'busy') {
+      return;
+    }
     const scanned = codeFromQr(payload);
-    if (!scanned) return;
+    if (!scanned) {
+      return;
+    }
     scannedRef.current = true;
     enter(scanned);
   };

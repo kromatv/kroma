@@ -61,7 +61,9 @@ function averageBitrateBps(item: MediaItem): number | undefined {
   const file = files.find((f) => f.id === item.defaultFileId) ?? files[0];
   const size = file?.size ?? 0;
   const durationMs = file?.durationMs ?? item.durationMs ?? 0;
-  if (size <= 0 || durationMs <= 0) return undefined;
+  if (size <= 0 || durationMs <= 0) {
+    return undefined;
+  }
   return (size * 8) / (durationMs / 1000);
 }
 
@@ -85,7 +87,9 @@ export function reachableBufferEnd(ranges: TimeRanges, t: number): number {
     const start = ranges.start(i);
     const stop = ranges.end(i);
     if (Number.isNaN(end)) {
-      if (start - t <= SKIPPABLE_GAP_SEC && t <= stop) end = stop;
+      if (start - t <= SKIPPABLE_GAP_SEC && t <= stop) {
+        end = stop;
+      }
     } else if (start - end <= SKIPPABLE_GAP_SEC) {
       end = stop;
     } else {
@@ -109,7 +113,9 @@ const SEEK_TAIL_SEC = 0.3;
  */
 export function isPlayableAt(ranges: TimeRanges, t: number): boolean {
   for (let i = 0; i < ranges.length; i += 1) {
-    if (t >= ranges.start(i) - SEEK_HEAD_SEC && t <= ranges.end(i) - SEEK_TAIL_SEC) return true;
+    if (t >= ranges.start(i) - SEEK_HEAD_SEC && t <= ranges.end(i) - SEEK_TAIL_SEC) {
+      return true;
+    }
   }
   return false;
 }

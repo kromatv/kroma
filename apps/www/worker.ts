@@ -36,7 +36,9 @@ const BASE = '/api/canary';
 
 function trimTrailingSlashes(pathname: string): string {
   let end = pathname.length;
-  while (end > 0 && pathname[end - 1] === '/') end--;
+  while (end > 0 && pathname[end - 1] === '/') {
+    end--;
+  }
   return pathname.slice(0, end);
 }
 
@@ -61,7 +63,9 @@ async function index(env: Env, origin: string, limit: number, ctx: ExecCtx): Pro
   const cache = edgeCache();
   const key = cacheKey(limit);
   const hit = await cache?.match(key);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
 
   const runs = await latestRuns(env, limit);
   const resolved = await Promise.all(
@@ -81,7 +85,9 @@ async function index(env: Env, origin: string, limit: number, ctx: ExecCtx): Pro
     200,
     CACHE_SECONDS,
   );
-  if (cache) ctx.waitUntil(cache.put(key, res.clone()));
+  if (cache) {
+    ctx.waitUntil(cache.put(key, res.clone()));
+  }
   return res;
 }
 
@@ -92,10 +98,14 @@ async function currentDownloads(request: Request, env: Env, ctx: ExecCtx): Promi
   const cache = edgeCache();
   const key = `${new URL(request.url).origin}/api/downloads/canary.json`;
   const hit = await cache?.match(key);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   try {
     const res = json(await rollingReleases(env), 200, CACHE_SECONDS);
-    if (cache) ctx.waitUntil(cache.put(key, res.clone()));
+    if (cache) {
+      ctx.waitUntil(cache.put(key, res.clone()));
+    }
     return res;
   } catch (err) {
     console.error('downloads refresh failed', err);
@@ -106,16 +116,24 @@ async function currentDownloads(request: Request, env: Env, ctx: ExecCtx): Promi
 // Resolved fresh on every hit rather than read from the cached index: the URL
 // GitHub answers with expires in minutes, so a cached redirect is a dead link.
 async function download(env: Env, runId: number, target: string): Promise<Response> {
-  if (!isTargetId(target)) return json({ error: 'unknown platform' }, 404);
+  if (!isTargetId(target)) {
+    return json({ error: 'unknown platform' }, 404);
+  }
 
   const artifacts = await artifactsOf(env, runId);
-  if (!artifacts) return json({ error: 'unknown build' }, 404);
+  if (!artifacts) {
+    return json({ error: 'unknown build' }, 404);
+  }
 
   const artifact = artifactFor(artifacts, target);
-  if (!artifact) return json({ error: 'this build carries no file for that platform' }, 404);
+  if (!artifact) {
+    return json({ error: 'this build carries no file for that platform' }, 404);
+  }
 
   const location = await signedUrl(env, artifact.id);
-  if (!location) return json({ error: 'GitHub declined the download' }, 502);
+  if (!location) {
+    return json({ error: 'GitHub declined the download' }, 502);
+  }
   return Response.redirect(location, 302);
 }
 
@@ -130,10 +148,14 @@ async function download(env: Env, runId: number, target: string): Promise<Respon
 export default {
   async fetch(request: Request, env: Env, ctx: ExecCtx): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === '/api/downloads/canary.json') return currentDownloads(request, env, ctx);
+    if (url.pathname === '/api/downloads/canary.json') {
+      return currentDownloads(request, env, ctx);
+    }
     const path = (trimTrailingSlashes(url.pathname) || '/').slice(BASE.length) || '/';
 
-    if (!url.pathname.startsWith(BASE)) return renderPage(request);
+    if (!url.pathname.startsWith(BASE)) {
+      return renderPage(request);
+    }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       return json({ error: 'method not allowed' }, 405);
     }
@@ -151,14 +173,18 @@ export default {
       const pinned = /^\/dl\/(\d+)\/([a-z]+)$/.exec(path);
       if (pinned?.[1] && pinned[2]) {
         const runId = readRunId(pinned[1]);
-        if (!runId) return json({ error: 'unknown build' }, 404);
+        if (!runId) {
+          return json({ error: 'unknown build' }, 404);
+        }
         return await download(env, runId, pinned[2]);
       }
 
       const newest = /^\/dl\/([a-z]+)$/.exec(path);
       if (newest?.[1]) {
         const [run] = await latestRuns(env, 1);
-        if (!run) return json({ error: 'no build available' }, 503);
+        if (!run) {
+          return json({ error: 'no build available' }, 503);
+        }
         return await download(env, run.id, newest[1]);
       }
     } catch (err) {

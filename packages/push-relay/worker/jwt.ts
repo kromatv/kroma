@@ -15,7 +15,9 @@ function pemBody(pem: string): Uint8Array<ArrayBuffer> {
     .replace(/-----BEGIN [^-]+-----/, '')
     .replace(/-----END [^-]+-----/, '')
     .replace(/\s+/g, '');
-  if (!body) throw new Error('empty PEM');
+  if (!body) {
+    throw new Error('empty PEM');
+  }
   return fromB64url(body.replaceAll('+', '-').replaceAll('/', '_'));
 }
 

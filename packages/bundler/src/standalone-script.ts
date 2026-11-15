@@ -56,7 +56,9 @@ export function standaloneScript(options: StandaloneScriptOptions): Plugin {
       // and this plugin does not get to assume which it was handed.
       server.watcher.add(options.entry);
       server.watcher.on('change', (file) => {
-        if (file !== options.entry) return;
+        if (file !== options.entry) {
+          return;
+        }
         run().catch((err: unknown) => server.config.logger.error(String(err)));
       });
     },

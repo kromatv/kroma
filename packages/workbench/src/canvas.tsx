@@ -146,9 +146,13 @@ function Staged({
 }>) {
   const s = useStyles(sDefinition);
 
-  if (stage.width === undefined) return <Fit available={room}>{children}</Fit>;
+  if (stage.width === undefined) {
+    return <Fit available={room}>{children}</Fit>;
+  }
   const sized = <Box w={stage.width}>{children}</Box>;
-  if (!stage.scroll) return sized;
+  if (!stage.scroll) {
+    return sized;
+  }
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator style={s.scrollX}>
       {sized}

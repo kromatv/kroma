@@ -90,8 +90,12 @@ describe('the remote’s vocabulary', () => {
     const { unmount } = renderHook(() => usePlayerKeys(params('a')));
     // The clickpad and the touch surface are different gesture recognisers and
     // never both fire for one gesture, so both spellings have to be mapped.
-    for (const event of ['up', 'down', 'left', 'right']) press(event);
-    for (const event of ['swipeUp', 'swipeDown', 'swipeLeft', 'swipeRight']) press(event);
+    for (const event of ['up', 'down', 'left', 'right']) {
+      press(event);
+    }
+    for (const event of ['swipeUp', 'swipeDown', 'swipeLeft', 'swipeRight']) {
+      press(event);
+    }
     expect(routed()).toEqual(['Up', 'Down', 'Left', 'Right', 'Up', 'Down', 'Left', 'Right']);
     unmount();
   });
@@ -118,7 +122,9 @@ describe('the remote’s vocabulary', () => {
       ['nextTrack', 'Next'],
       ['previousTrack', 'Prev'],
     ];
-    for (const [event] of transport) press(event);
+    for (const [event] of transport) {
+      press(event);
+    }
     expect(routed()).toEqual(transport.map(([, key]) => key));
     unmount();
   });
@@ -127,7 +133,9 @@ describe('the remote’s vocabulary', () => {
     const { unmount } = renderHook(() => usePlayerKeys(params('a')));
     // focus/blur/pan and the long-press variants all land here; an explicit map
     // rather than a fallthrough is what keeps them out.
-    for (const event of ['focus', 'blur', 'pan', 'longSelect', 'longUp']) press(event);
+    for (const event of ['focus', 'blur', 'pan', 'longSelect', 'longUp']) {
+      press(event);
+    }
     expect(routeRemoteKey).not.toHaveBeenCalled();
     unmount();
   });
@@ -161,7 +169,9 @@ describe('the Android key host', () => {
     // On the new architecture the remote arrives through the focus root's key
     // host, not the event handler, so the player subscribes to both.
     act(() => {
-      for (const key of ['Up', 'Down', 'Left', 'Right', 'Enter'] as RemoteKey[]) host.onKey?.(key);
+      for (const key of ['Up', 'Down', 'Left', 'Right', 'Enter'] as RemoteKey[]) {
+        host.onKey?.(key);
+      }
     });
     expect(routed()).toEqual(['Up', 'Down', 'Left', 'Right', 'Enter']);
     unmount();
@@ -185,7 +195,9 @@ describe('the Android key host', () => {
     rn.os = 'android';
     const { unmount } = renderHook(() => usePlayerKeys(params('a')));
     act(() => {
-      for (let i = 0; i < 4; i++) host.onKey?.('Right');
+      for (let i = 0; i < 4; i++) {
+        host.onKey?.('Right');
+      }
     });
     expect(routed()).toEqual(['Right', 'Right', 'Right', 'Right']);
     unmount();

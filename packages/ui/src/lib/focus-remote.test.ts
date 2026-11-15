@@ -36,12 +36,18 @@ function press(key: string, init: KeyboardEventInit = {}) {
 /** A focused element of the given tag, as a click would have left it. */
 function focus(tag: string, editable = false) {
   const el = document.createElement(tag);
-  if (editable) el.setAttribute('contenteditable', 'true');
-  if (tag === 'BUTTON' || tag === 'button') el.setAttribute('tabindex', '0');
+  if (editable) {
+    el.setAttribute('contenteditable', 'true');
+  }
+  if (tag === 'BUTTON' || tag === 'button') {
+    el.setAttribute('tabindex', '0');
+  }
   document.body.append(el);
   const blur = vi.spyOn(el, 'blur');
   Object.defineProperty(document, 'activeElement', { value: el, configurable: true });
-  if (editable) Object.defineProperty(el, 'isContentEditable', { value: true });
+  if (editable) {
+    Object.defineProperty(el, 'isContentEditable', { value: true });
+  }
   return { el, blur };
 }
 

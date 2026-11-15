@@ -24,7 +24,9 @@ function useRevealOnFocusBy(self: Anchor, pointerDriving: () => boolean): () => 
   return useCallback(() => {
     // A focus the pointer produced reveals nothing: scrolling under a cursor
     // that has not moved cascades into the page walking off on its own.
-    if (pointerDriving()) return;
+    if (pointerDriving()) {
+      return;
+    }
     rail?.(self);
     page?.(row ?? self);
   }, [page, rail, row, self, pointerDriving]);
@@ -38,7 +40,9 @@ function useRevealWhenFocused(focused: boolean): (view: View | null) => void {
   const self = useRef<View>(null);
   const reveal = useRevealOnFocus(self);
   useEffect(() => {
-    if (focused) reveal();
+    if (focused) {
+      reveal();
+    }
   }, [focused, reveal]);
   return useCallback((view: View | null) => {
     self.current = view;

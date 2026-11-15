@@ -58,8 +58,12 @@ export async function fetchStats(signal?: AbortSignal): Promise<Stats> {
   const res = await fetch(`${site.statsUrl}/v1/stats`, {
     signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
   });
-  if (!res.ok) throw new Error(`the collector answered ${res.status}`);
+  if (!res.ok) {
+    throw new Error(`the collector answered ${res.status}`);
+  }
   const body = await res.text();
-  if (body.length > MAX_BYTES) throw new Error('the collector answered with too much');
+  if (body.length > MAX_BYTES) {
+    throw new Error('the collector answered with too much');
+  }
   return Stats.parse(JSON.parse(body));
 }

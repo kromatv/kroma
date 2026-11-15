@@ -6,8 +6,12 @@ const WORDMARK = ['█▄▀ █▀█ █▀█ █▀▄▀█ ▄▀█', '�
 
 /** How this run was started, so the help it prints can be typed back as it is. */
 export function invocation(env: NodeJS.ProcessEnv = process.env): string {
-  if (env.npm_command === 'exec') return `npx ${PUBLISHED_PACKAGE}`;
-  if (env.npm_lifecycle_event === 'tv') return 'bun run tv';
+  if (env.npm_command === 'exec') {
+    return `npx ${PUBLISHED_PACKAGE}`;
+  }
+  if (env.npm_lifecycle_event === 'tv') {
+    return 'bun run tv';
+  }
   return 'kroma-tv';
 }
 

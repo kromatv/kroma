@@ -14,7 +14,9 @@ const SIZES: readonly ControlSize[] = ['sm', 'md', 'tv'];
 // property names.
 const roleSize = (fontSize: string): number => {
   const role = /--type-([a-z0-9-]+)-size/.exec(fontSize)?.[1];
-  if (!role) return Number.parseFloat(fontSize);
+  if (!role) {
+    return Number.parseFloat(fontSize);
+  }
   const camel = role.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase()) as TypeRole;
   return typeSpec[camel].size;
 };

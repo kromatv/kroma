@@ -25,10 +25,10 @@ function messagesFor(runtime: FakeRuntime) {
   return {
     hello: (inputs?: { name?: unknown }, options?: { locale?: string }) =>
       (options?.locale ?? runtime.getLocale()) === 'fr'
-        ? `Bonjour ${inputs?.name}`
-        : `Hello ${inputs?.name}`,
+        ? `Bonjour ${String(inputs?.name)}`
+        : `Hello ${String(inputs?.name)}`,
     unread: (inputs?: { count?: unknown; name?: unknown }) =>
-      `${inputs?.count} for ${inputs?.name}`,
+      `${String(inputs?.count)} for ${String(inputs?.name)}`,
   };
 }
 
@@ -40,7 +40,9 @@ function adapter(resolved: Locale = 'en') {
 // What the adapter holds outlives a module reload on purpose, so a test that
 // wants a fresh page has to say so.
 async function reloaded({ page = 'fresh' }: { page?: 'fresh' | 'same' } = {}) {
-  if (page === 'fresh') Reflect.deleteProperty(globalThis, '__kromaI18nParaglide');
+  if (page === 'fresh') {
+    Reflect.deleteProperty(globalThis, '__kromaI18nParaglide');
+  }
   vi.resetModules();
   return await import('./paraglide');
 }
@@ -207,7 +209,7 @@ describe('the messages the app renders', () => {
   it('ignores a symbol a message reads off its inputs', () => {
     const engine = paraglide({
       runtime: runtimeFor('en'),
-      messages: { whole: (inputs: object) => `${inputs}` },
+      messages: { whole: (inputs: unknown) => String(inputs) },
     });
     const seen = inspected(engine);
 

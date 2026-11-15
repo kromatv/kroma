@@ -6,9 +6,13 @@ import { kromaI18nDevtools } from './index.ts';
 const PROVIDER = '/repo/packages/i18n/src/react/provider.tsx';
 
 function inject(plugin: Plugin, id: string, options?: { ssr: boolean }): string | null {
-  if (typeof plugin.transform !== 'function') throw new Error('the plugin lost its transform');
+  if (typeof plugin.transform !== 'function') {
+    throw new Error('the plugin lost its transform');
+  }
   const result = plugin.transform.call({} as never, 'export const x = 1;', id, options);
-  if (result === null || result === undefined || typeof result === 'string') return null;
+  if (result === null || result === undefined || typeof result === 'string') {
+    return null;
+  }
   return 'code' in result ? (result.code ?? null) : null;
 }
 
@@ -40,17 +44,23 @@ async function pluginNames(command: 'build' | 'serve'): Promise<string[]> {
 }
 
 async function aliases(plugin: Plugin): Promise<Record<string, string>> {
-  if (typeof plugin.config !== 'function') throw new Error('the plugin lost its config');
+  if (typeof plugin.config !== 'function') {
+    throw new Error('the plugin lost its config');
+  }
   const config = await plugin.config.call(
     {} as never,
     {},
     { command: 'serve', mode: 'development' },
   );
   const alias = config?.resolve?.alias;
-  if (!Array.isArray(alias)) return alias ?? {};
+  if (!Array.isArray(alias)) {
+    return alias ?? {};
+  }
   const found: Record<string, string> = {};
   for (const { find, replacement } of alias as Array<{ find: unknown; replacement: string }>) {
-    if (typeof find === 'string') found[find] = replacement;
+    if (typeof find === 'string') {
+      found[find] = replacement;
+    }
   }
   return found;
 }
@@ -131,7 +141,9 @@ function serving(
         hot: {
           on: (event: string, run: (data: unknown, c: unknown) => void) => handlers.set(event, run),
           send: (payload: { updates?: Array<{ path: string }> }) => {
-            for (const u of payload.updates ?? []) reloaded.push(u.path);
+            for (const u of payload.updates ?? []) {
+              reloaded.push(u.path);
+            }
           },
         },
         transformRequest: () => Promise.resolve(over.transform ?? null),
@@ -226,9 +238,13 @@ function paraglidePlugin(): Plugin {
 
 function wired(code: string): string | null {
   const plugin = paraglidePlugin();
-  if (typeof plugin.transform !== 'function') throw new Error('the plugin lost its transform');
+  if (typeof plugin.transform !== 'function') {
+    throw new Error('the plugin lost its transform');
+  }
   const result = plugin.transform.call({} as never, code, MESSAGES, undefined);
-  if (result === null || result === undefined || typeof result === 'string') return null;
+  if (result === null || result === undefined || typeof result === 'string') {
+    return null;
+  }
   return 'code' in result ? (result.code ?? null) : null;
 }
 
@@ -266,7 +282,9 @@ describe('the module an engine renders every message through', () => {
 describe('what the panel needs to render at all', () => {
   it('brings the react-native pipeline the kit is authored against', async () => {
     const plugin = kromaI18nDevtools();
-    if (typeof plugin.config !== 'function') throw new Error('the plugin lost its config');
+    if (typeof plugin.config !== 'function') {
+      throw new Error('the plugin lost its config');
+    }
 
     const config = await plugin.config.call(
       {} as never,
@@ -289,7 +307,9 @@ describe('what the panel needs to render at all', () => {
 
   it('asks for none of it where the panel is not installed beside the shell', async () => {
     const plugin = await withoutPanel();
-    if (typeof plugin.config !== 'function') throw new Error('the plugin lost its config');
+    if (typeof plugin.config !== 'function') {
+      throw new Error('the plugin lost its config');
+    }
 
     const config = await plugin.config.call(
       {} as never,

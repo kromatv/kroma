@@ -33,22 +33,30 @@ export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
   const [prevKey, setPrevKey] = useState(key);
   if (prevKey !== key) {
     setPrevKey(key);
-    if (!key) setMap({});
+    if (!key) {
+      setMap({});
+    }
   }
 
   useEffect(() => {
     const list = key ? key.split('|') : [];
-    if (list.length === 0) return;
+    if (list.length === 0) {
+      return;
+    }
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let failedRounds = 0;
 
     const round = async () => {
       const results = await Promise.all(list.map(probeServer));
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       setMap(Object.fromEntries(results));
       failedRounds = results.every(([, probe]) => probe.online) ? 0 : failedRounds + 1;
-      timer = setTimeout(round, nextRoundIn(failedRounds));
+      timer = setTimeout(() => {
+        void round();
+      }, nextRoundIn(failedRounds));
     };
     void round();
 
@@ -62,7 +70,9 @@ export function useServersHealth(urls: string[]): Record<string, ServerProbe> {
 }
 
 function nextRoundIn(failedRounds: number): number {
-  if (failedRounds === 0) return INTERVAL_MS;
+  if (failedRounds === 0) {
+    return INTERVAL_MS;
+  }
   return Math.min(INTERVAL_MS, FIRST_RETRY_MS * 2 ** (failedRounds - 1));
 }
 
@@ -72,12 +82,16 @@ async function probeServer(url: string): Promise<[string, ServerProbe]> {
   const started = Date.now();
   try {
     const res = await fetch(`${url}/api/health`, { signal: ctrl.signal });
-    if (!res.ok) return [url, { online: false }];
+    if (!res.ok) {
+      return [url, { online: false }];
+    }
     const parsed = Health.safeParse(await res.json());
     const latencyMs = Date.now() - started;
     // It answered, so it IS up even when the body is one we can't read (a much
     // older server, a captive portal): report reachable, just anonymous.
-    if (!parsed.success) return [url, { online: true, latencyMs }];
+    if (!parsed.success) {
+      return [url, { online: true, latencyMs }];
+    }
     const { name, version, libraries, items, shows } = parsed.data;
     return [url, { online: true, latencyMs, name, version, libraries, items, shows }];
   } catch {

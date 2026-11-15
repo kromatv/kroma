@@ -9,8 +9,12 @@ import { useAuth } from '#web/shared/lib/auth';
  * happens to name every library today: a library added tomorrow would not be in
  * it. */
 export function accessLabel(granted: readonly LibraryId[] | null, t: Translate): string {
-  if (granted === null) return t('admin.allLibraries');
-  if (granted.length === 0) return t('admin.noLibraryGranted');
+  if (granted === null) {
+    return t('admin.allLibraries');
+  }
+  if (granted.length === 0) {
+    return t('admin.noLibraryGranted');
+  }
   return t('admin.libraryCount', { count: granted.length });
 }
 

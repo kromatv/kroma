@@ -5,7 +5,7 @@ import { summary } from './actions';
 import { type Entry, stale } from './cache-entries';
 
 const Entries = z.array(
-  z.object({ id: z.number().int(), key: z.string().min(1), createdAt: z.string() }),
+  z.object({ id: z.number().int(), key: z.string().nonempty(), createdAt: z.string() }),
 );
 
 async function list(prefix: string): Promise<Entry[]> {
@@ -23,7 +23,9 @@ export async function main(argv: string[]): Promise<void> {
     throw new Error('usage: bun run ci cache prune --prefix <key-prefix> [--keep N]');
   }
   const gone = stale(await list(values.prefix), Number(values.keep));
-  for (const entry of gone) await $`gh cache delete ${entry.id}`;
+  for (const entry of gone) {
+    await $`gh cache delete ${entry.id}`;
+  }
   const lines = gone.map((e) => `- ${e.key}`).join('\n');
   summary(
     `### Cache (\`${values.prefix}*\`)\n\n${gone.length} entr${gone.length === 1 ? 'y' : 'ies'} retired\n${lines}`,

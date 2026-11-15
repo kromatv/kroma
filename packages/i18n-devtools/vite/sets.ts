@@ -10,14 +10,14 @@ const MAX_PAYLOAD_CHARS = 48_000;
 /** The longest key a request may name, a plural variant included. */
 export const MAX_KEY_CHARS = 256;
 
-export const Locale = z.string().min(1).max(35);
+export const Locale = z.string().nonempty().max(35);
 
 /** One message of one locale, as the page names it: no scope is the app's own
  *  catalogs, and a scope is the set of that name. */
 export const Target = z.object({
-  scope: z.string().min(1).max(128).nullable(),
+  scope: z.string().nonempty().max(128).nullable(),
   locale: Locale,
-  key: z.string().min(1).max(MAX_KEY_CHARS),
+  key: z.string().nonempty().max(MAX_KEY_CHARS),
 });
 
 export type Target = z.infer<typeof Target>;
@@ -33,9 +33,13 @@ export interface Located {
 /** What the page sent, as `schema` reads it, or why it is refused. The size is
  *  bounded before the schema reads any of it. */
 export function parsed<T>(schema: z.ZodType<T>, payload: unknown): T | string {
-  if (JSON.stringify(payload ?? null).length > MAX_PAYLOAD_CHARS) return 'the request is too large';
+  if (JSON.stringify(payload ?? null).length > MAX_PAYLOAD_CHARS) {
+    return 'the request is too large';
+  }
   const result = schema.safeParse(payload);
-  if (result.success) return result.data;
+  if (result.success) {
+    return result.data;
+  }
   const said = result.error.issues.map(({ path, message }) =>
     `${path.join('.')} ${message}`.trim(),
   );
@@ -47,11 +51,17 @@ export function parsed<T>(schema: z.ZodType<T>, payload: unknown): T | string {
  *  source language. */
 export function locate(sets: Sets, { scope, locale, key }: Target): Located | string {
   const set = scope === null ? sets()[0] : sets().find(({ name }) => name === scope);
-  if (!set) return `no catalogs are known for ${scope ?? 'the app'}`;
-  if (!localesOf(set).includes(locale)) return `${set.name} has no catalog for ${locale}`;
+  if (!set) {
+    return `no catalogs are known for ${scope ?? 'the app'}`;
+  }
+  if (!localesOf(set).includes(locale)) {
+    return `${set.name} has no catalog for ${locale}`;
+  }
   const source = readSource(set);
   const message = source.messages.get(key);
-  if (!message) return `${key} is not a message of ${set.name}`;
+  if (!message) {
+    return `${key} is not a message of ${set.name}`;
+  }
   return { set, source, message };
 }
 

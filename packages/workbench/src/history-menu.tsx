@@ -20,7 +20,9 @@ interface StoryHistoryProps {
  * the build read no history at all - off a checkout, or on Metro. */
 function StoryHistory({ open, onOpen, onClose }: Readonly<StoryHistoryProps>) {
   const provenance = useStoryHistory();
-  if (!provenance?.entry) return null;
+  if (!provenance?.entry) {
+    return null;
+  }
   return (
     <Box>
       <IconTool

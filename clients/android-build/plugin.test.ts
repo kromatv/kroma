@@ -20,7 +20,9 @@ describe('Android release Expo plugin', () => {
   it.each(['mobile', 'tv'] as const)('sets device filters for %s', async (formFactor) => {
     const config = configuration(formFactor);
     const action = config.mods?.android?.manifest;
-    if (!action) throw new Error('Manifest mod was not registered');
+    if (!action) {
+      throw new Error('Manifest mod was not registered');
+    }
     const result = await action({
       ...config,
       modRawConfig: config,
@@ -46,7 +48,9 @@ describe('Android release Expo plugin', () => {
   it('updates existing TV feature declarations without dropping unrelated features', async () => {
     const config = configuration('tv');
     const action = config.mods?.android?.manifest;
-    if (!action) throw new Error('Manifest mod was not registered');
+    if (!action) {
+      throw new Error('Manifest mod was not registered');
+    }
     const result = await action({
       ...config,
       modRawConfig: config,
@@ -71,7 +75,9 @@ describe('Android release Expo plugin', () => {
   it.each(['groovy', 'kt'] as const)('validates the %s Gradle template', async (language) => {
     const config = configuration('mobile');
     const action = config.mods?.android?.appBuildGradle;
-    if (!action) throw new Error('Gradle mod was not registered');
+    if (!action) {
+      throw new Error('Gradle mod was not registered');
+    }
     const run = action({
       ...config,
       modRawConfig: config,
@@ -83,7 +89,10 @@ describe('Android release Expo plugin', () => {
           'android {\n    buildTypes {\n        release { signingConfig signingConfigs.debug }\n    }\n}',
       },
     });
-    if (language === 'kt') await expect(run).rejects.toThrow(/Groovy/);
-    else expect((await run).modResults.contents).toContain('KROMA Android upload signing');
+    if (language === 'kt') {
+      await expect(run).rejects.toThrow(/Groovy/);
+    } else {
+      expect((await run).modResults.contents).toContain('KROMA Android upload signing');
+    }
   });
 });

@@ -81,10 +81,14 @@ function Root({
   const [measured, setMeasured] = useState<Measured | null>(null);
   const image = measured?.src === src ? measured.size : null;
   useEffect(() => {
-    if (!src) return;
+    if (!src) {
+      return;
+    }
     let current = true;
     void imageSize(src).then((size) => {
-      if (current && size) setMeasured({ src, size });
+      if (current && size) {
+        setMeasured({ src, size });
+      }
     });
     return () => {
       current = false;
@@ -108,7 +112,9 @@ function Root({
   const setTransform = useCallback(
     (next: CropTransform) => {
       const clamped = clampTransform(covering, next, bounds);
-      if (sameTransform(clamped, latest.current)) return;
+      if (sameTransform(clamped, latest.current)) {
+        return;
+      }
       latest.current = clamped;
       setRaw(clamped);
     },

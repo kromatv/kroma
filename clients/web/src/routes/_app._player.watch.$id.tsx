@@ -9,7 +9,9 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 const sDefinition = styles({ black: { position: 'fixed', inset: 0, bg: 'black' } });
 export const Route = createFileRoute('/_app/_player/watch/$id')({
   loader: async ({ params, context: { runtime: webRuntime, queryClient } }) => {
-    if (!isAuthed()) throw redirect({ to: '/' });
+    if (!isAuthed()) {
+      throw redirect({ to: '/' });
+    }
     // The next episode (for the Netflix-style "up next" autoplay) is sequence-based
     // and public, so it loads alongside the item.
     await queryClient.ensureQueryData(

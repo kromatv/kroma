@@ -19,8 +19,9 @@ interface Source {
 function sources(dir: string, out: Source[] = []): Source[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const at = join(dir, entry.name);
-    if (entry.isDirectory()) sources(at, out);
-    else if (/\.tsx?$/.test(entry.name) && !/\.(test|fixture)\./.test(entry.name)) {
+    if (entry.isDirectory()) {
+      sources(at, out);
+    } else if (/\.tsx?$/.test(entry.name) && !/\.(test|fixture)\./.test(entry.name)) {
       out.push({ path: relative(ROOT, at), text: readFileSync(at, 'utf8') });
     }
   }
@@ -30,8 +31,11 @@ function sources(dir: string, out: Source[] = []): Source[] {
 function braced(source: string, open: number): string {
   let depth = 0;
   for (let at = open; at < source.length; at++) {
-    if (source[at] === '{') depth++;
-    else if (source[at] === '}' && --depth === 0) return source.slice(open + 1, at);
+    if (source[at] === '{') {
+      depth++;
+    } else if (source[at] === '}' && --depth === 0) {
+      return source.slice(open + 1, at);
+    }
   }
   return source.slice(open);
 }
@@ -40,16 +44,22 @@ function statementAt(source: string, from: number): string {
   let depth = 0;
   for (let at = from; at < source.length; at++) {
     const char = source[at] ?? '';
-    if ('({['.includes(char)) depth++;
-    else if (')}]'.includes(char)) depth--;
-    else if (char === ';' && depth === 0) return source.slice(from, at);
+    if ('({['.includes(char)) {
+      depth++;
+    } else if (')}]'.includes(char)) {
+      depth--;
+    } else if (char === ';' && depth === 0) {
+      return source.slice(from, at);
+    }
   }
   return source.slice(from);
 }
 
 function handlerOf(source: string, written: string): string {
   const name = /^[A-Za-z_$][\w$]*$/.exec(written.trim())?.[0];
-  if (!name) return written;
+  if (!name) {
+    return written;
+  }
   const declared = new RegExp(`\\bconst ${name}\\s*=`).exec(source);
   return declared ? statementAt(source, declared.index) : '';
 }
@@ -63,7 +73,9 @@ function navigatorHooks(files: readonly Source[]): string[] {
   for (const { text } of files) {
     for (const hook of text.matchAll(HOOK)) {
       const body = braced(text, text.indexOf('{', hook.index + hook[0].length));
-      if (calls(body, 'useNavigate')) named.add(hook[1] as string);
+      if (calls(body, 'useNavigate')) {
+        named.add(hook[1] as string);
+      }
     }
   }
   return [...named];
@@ -87,7 +99,9 @@ function handlersThatNavigate(files: readonly Source[]): string[] {
     for (const press of text.matchAll(PRESS)) {
       const handler = handlerOf(text, braced(text, press.index + press[0].length - 1));
       const through = navigators.find(([held]) => calls(handler, held));
-      if (!through) continue;
+      if (!through) {
+        continue;
+      }
       found.push(`${path} -> ${DESTINATION.exec(handler)?.[1] ?? through[1]}`);
     }
   }

@@ -136,21 +136,30 @@ function causeOf(error: unknown): { kind: FailureKind; status?: number } {
   if (error instanceof KromaApiError) {
     return { kind: BY_STATUS[error.status] ?? 'unknown', status: error.status };
   }
-  if (error instanceof TypeError || causeCode(error)) return { kind: 'serverDown' };
+  if (error instanceof TypeError || causeCode(error)) {
+    return { kind: 'serverDown' };
+  }
   return { kind: 'unknown' };
 }
 
 function causeCode(error: unknown): string | undefined {
   const cause = error instanceof Error ? error.cause : undefined;
-  if (cause instanceof Error && 'code' in cause && typeof cause.code === 'string')
+  if (cause instanceof Error && 'code' in cause && typeof cause.code === 'string') {
     return cause.code;
+  }
   return undefined;
 }
 
 function messageOf(error: unknown): string | undefined {
-  if (error instanceof KromaApiError) return apiErrorText(error, error.message);
-  if (typeof error === 'string') return error || undefined;
-  if (!(error instanceof Error)) return undefined;
+  if (error instanceof KromaApiError) {
+    return apiErrorText(error, error.message);
+  }
+  if (typeof error === 'string') {
+    return error || undefined;
+  }
+  if (!(error instanceof Error)) {
+    return undefined;
+  }
   const code = causeCode(error);
   return code ? `${error.message} (${code})` : error.message;
 }

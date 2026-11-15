@@ -18,7 +18,9 @@ function AvatarEditor({
   const busy = save.status === 'saving';
 
   const submit = () => {
-    if (busy) return;
+    if (busy) {
+      return;
+    }
     void save.run(async () => {
       const framed = await crop({ width: AVATAR_SIDE, height: AVATAR_SIDE });
       const { avatarUrl } = await client.accounts.uploadAvatar(framed ?? file);

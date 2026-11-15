@@ -47,7 +47,9 @@ export function HeroCarousel({
   const realign = useEffectEvent(() => turnTo(page, false));
 
   useEffect(() => {
-    if (count < 2 || held || still || !inFront) return;
+    if (count < 2 || held || still || !inFront) {
+      return;
+    }
     const timer = setTimeout(turn, TURN_EVERY_MS);
     return () => clearTimeout(timer);
   }, [count, held, still, inFront, page]);

@@ -20,7 +20,9 @@ export async function catalogPayload(origin: string): Promise<{
   const registry = origin;
   const body = await loadCatalog(env, waitUntil);
   const catalog = body ? parseCatalog(body) : null;
-  if (!catalog) return { registry, modules: [], generatedAt: null };
+  if (!catalog) {
+    return { registry, modules: [], generatedAt: null };
+  }
   return {
     registry,
     modules: withIconUrls(catalog.modules),

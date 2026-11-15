@@ -8,10 +8,11 @@ import { type GroupPosition, GroupSlotContext, groupSlot, useGroupShape } from '
 const at =
   (position: GroupPosition) =>
   ({ children }: { children: ReactNode }) =>
-    createElement(GroupSlotContext.Provider, {
-      value: groupSlot('horizontal', position, 12, 'md'),
+    createElement(
+      GroupSlotContext.Provider,
+      { value: groupSlot('horizontal', position, 12, 'md') },
       children,
-    });
+    );
 
 const inGroup = at('first');
 

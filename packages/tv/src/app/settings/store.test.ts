@@ -16,7 +16,7 @@ import {
 // jsdom ships no Storage implementation, so this test provides one rather than
 // skipping the assertion that the store actually persists to it.
 class MemoryStorage {
-  private data = new Map<string, string>();
+  private readonly data = new Map<string, string>();
   getItem = (k: string) => this.data.get(k) ?? null;
   setItem = (k: string, v: string) => void this.data.set(k, String(v));
   removeItem = (k: string) => void this.data.delete(k);

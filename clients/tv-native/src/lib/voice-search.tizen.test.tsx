@@ -82,7 +82,9 @@ describe('Tizen voice search', () => {
     press('pressIn');
     heard('du');
     const Session = nativeVoiceSearch?.Session;
-    if (!Session) throw new Error('no voice backend');
+    if (!Session) {
+      throw new Error('no voice backend');
+    }
     const panel = render(<Session onText={onText} onDone={onDone} locale="fr" />);
     heard('dune');
     ended();
@@ -97,7 +99,9 @@ describe('Tizen voice search', () => {
   it('listens when the panel opens on its own and aborts when it closes early', async () => {
     const { nativeVoiceSearch } = await load();
     const Session = nativeVoiceSearch?.Session;
-    if (!Session) throw new Error('no voice backend');
+    if (!Session) {
+      throw new Error('no voice backend');
+    }
 
     const panel = render(<Session onText={() => undefined} onDone={() => undefined} locale="fr" />);
     panel.unmount();

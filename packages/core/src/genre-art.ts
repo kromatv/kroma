@@ -15,8 +15,12 @@ function bestUnused<T extends Sortable>(list: readonly T[], used: ReadonlySet<T>
   let best: T | undefined;
   let free: T | undefined;
   for (const it of list) {
-    if (best === undefined || byRating(it, best) < 0) best = it;
-    if (!used.has(it) && (free === undefined || byRating(it, free) < 0)) free = it;
+    if (best === undefined || byRating(it, best) < 0) {
+      best = it;
+    }
+    if (!used.has(it) && (free === undefined || byRating(it, free) < 0)) {
+      free = it;
+    }
   }
   return free ?? best;
 }
@@ -30,11 +34,16 @@ function bestUnused<T extends Sortable>(list: readonly T[], used: ReadonlySet<T>
 export function genreShowcases<T extends Sortable>(items: readonly T[]): Map<string, T> {
   const byGenre = new Map<string, T[]>();
   for (const it of items) {
-    if (!it.metadata?.backdropUrl) continue;
+    if (!it.metadata?.backdropUrl) {
+      continue;
+    }
     for (const slug of genreSlugs(it.metadata)) {
       const list = byGenre.get(slug);
-      if (list) list.push(it);
-      else byGenre.set(slug, [it]);
+      if (list) {
+        list.push(it);
+      } else {
+        byGenre.set(slug, [it]);
+      }
     }
   }
   const order = [...byGenre.entries()].sort(
@@ -44,7 +53,9 @@ export function genreShowcases<T extends Sortable>(items: readonly T[]): Map<str
   const picks = new Map<string, T>();
   for (const [slug, list] of order) {
     const pick = bestUnused(list, used);
-    if (pick === undefined) continue; // unreachable: every list has at least one entry
+    if (pick === undefined) {
+      continue;
+    } // unreachable: every list has at least one entry
     picks.set(slug, pick);
     used.add(pick);
   }

@@ -22,7 +22,9 @@ export async function run(
   options: RunOptions = {},
 ): Promise<RunResult> {
   const [file, ...args] = command;
-  if (!file) throw new Error('run() needs a command');
+  if (!file) {
+    throw new Error('run() needs a command');
+  }
 
   const child = spawn(file, args, { cwd: options.cwd, stdio: ['ignore', 'pipe', 'pipe'] });
   const exited = new Promise<number>((resolve, reject) => {
@@ -67,7 +69,11 @@ async function* lines(stream: Readable): AsyncGenerator<string> {
     carry += decoder.decode(chunk as Uint8Array, { stream: true });
     const parts = carry.split('\n');
     carry = parts.pop() ?? '';
-    for (const part of parts) yield part.trimEnd();
+    for (const part of parts) {
+      yield part.trimEnd();
+    }
   }
-  if (carry.trim()) yield carry.trimEnd();
+  if (carry.trim()) {
+    yield carry.trimEnd();
+  }
 }

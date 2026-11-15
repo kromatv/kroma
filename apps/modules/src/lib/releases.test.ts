@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { releaseHistory } from './releases';
+import { requestUrl } from './request-url.fixture';
 
 const DIGEST = `sha256:${'ab'.repeat(32)}`;
 const SRI = `sha256-${btoa(String.fromCharCode(...Array(32).fill(0xab)))}`;
@@ -27,8 +28,8 @@ function serving(pages: unknown[][]) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
-      calls.push(String(input));
-      const page = Number(new URL(String(input)).searchParams.get('page') ?? '1');
+      calls.push(requestUrl(input));
+      const page = Number(new URL(requestUrl(input)).searchParams.get('page') ?? '1');
       return new Response(JSON.stringify(pages[page - 1] ?? []));
     }),
   );

@@ -12,7 +12,9 @@ describe('settings groups', () => {
   it('gives every declared setting a group when signed in', () => {
     const grouped = new Set(PROFILE_GROUPS.flatMap((g) => g.items.map((item) => item.id)));
     expect(SETTINGS.length).toBeGreaterThan(0);
-    for (const item of SETTINGS) expect(grouped.has(item.id)).toBe(true);
+    for (const item of SETTINGS) {
+      expect(grouped.has(item.id)).toBe(true);
+    }
   });
 
   it('names each setting once, so a value has one home', () => {
@@ -31,13 +33,17 @@ describe('settings groups', () => {
 
   it('summarises a group only with settings it holds', () => {
     for (const group of [...PROFILE_GROUPS, ...DEVICE_GROUPS]) {
-      for (const item of group.summary) expect(group.items).toContain(item);
+      for (const item of group.summary) {
+        expect(group.items).toContain(item);
+      }
     }
   });
 
   it('hides a group whose every item is gated away on this platform', () => {
     const [group] = PROFILE_GROUPS;
-    if (!group) throw new Error('no group');
+    if (!group) {
+      throw new Error('no group');
+    }
     const gated = group.items.map((item) => ({ ...item, available: () => false }));
     expect(groupAvailable(group)).toBe(true);
     expect(groupAvailable({ ...group, items: gated })).toBe(false);

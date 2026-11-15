@@ -23,9 +23,9 @@ import { z } from 'zod';
 
 const SERVICE_ID = 'tv.kroma.webos.service';
 const txtSchema = z
-  .record(z.string().min(1).max(63), z.unknown())
+  .record(z.string().nonempty().max(63), z.unknown())
   .refine((value) => Object.keys(value).length <= 64);
-const txtValue = z.string().min(1).max(255);
+const txtValue = z.string().nonempty().max(255);
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;

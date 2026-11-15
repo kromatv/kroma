@@ -9,12 +9,16 @@ const MAX_ANSWER_BYTES = 1024;
 
 async function boundedText(response: Response): Promise<string | null> {
   const reader = response.body?.getReader();
-  if (!reader) return null;
+  if (!reader) {
+    return null;
+  }
   const chunks: Uint8Array[] = [];
   let size = 0;
   for (;;) {
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) {
+      break;
+    }
     size += value.byteLength;
     if (size > MAX_ANSWER_BYTES) {
       await reader.cancel();
@@ -39,9 +43,13 @@ async function boundedText(response: Response): Promise<string | null> {
  * at its word, because nobody can be lured to it.
  */
 export async function provesOrigin(origin: string, publicKey: string): Promise<boolean> {
-  if (isPrivateHost(new URL(origin).hostname)) return true;
+  if (isPrivateHost(new URL(origin).hostname)) {
+    return true;
+  }
   const key = await importPublicKey(publicKey);
-  if (!key) return false;
+  if (!key) {
+    return false;
+  }
   const challenge = nonce();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -52,11 +60,17 @@ export async function provesOrigin(origin: string, publicKey: string): Promise<b
       signal: controller.signal,
       headers: { accept: 'application/json' },
     });
-    if (response.status !== 200) return false;
+    if (response.status !== 200) {
+      return false;
+    }
     const text = await boundedText(response);
-    if (text === null) return false;
+    if (text === null) {
+      return false;
+    }
     const answer = ChallengeAnswer.safeParse(JSON.parse(text));
-    if (!answer.success || answer.data.nonce !== challenge) return false;
+    if (!answer.success || answer.data.nonce !== challenge) {
+      return false;
+    }
     return verify(key, challenge, answer.data.signature);
   } catch {
     return false;

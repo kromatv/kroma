@@ -27,9 +27,13 @@ const KmodFeatures = z.object({
 // What a bundle ships with, checked in a second pass so the default one stays
 // cheap. Not `--all-features`, which would ask for builds nobody publishes.
 function shippedFeatures(ws: Workspace): string[] {
-  if (ws.id === SERVER.id) return [];
+  if (ws.id === SERVER.id) {
+    return [];
+  }
   const manifest = join(ws.dir, 'Cargo.toml');
-  if (!existsSync(manifest)) return [];
+  if (!existsSync(manifest)) {
+    return [];
+  }
   const read = KmodFeatures.safeParse(parseToml(readFileSync(manifest, 'utf8')));
   return read.success ? (read.data.package?.metadata?.kmod?.features ?? []) : [];
 }
@@ -50,7 +54,9 @@ export function workspaces(): Workspace[] {
     a.name.localeCompare(b.name),
   );
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory()) {
+      continue;
+    }
     const dir = entry.name === 'lib' ? join(modules, 'lib') : join(modules, entry.name, 'server');
     if (existsSync(join(dir, 'Cargo.toml'))) {
       out.push({ id: entry.name, dir, targetDir: KMOD_TARGET_DIR });
@@ -91,10 +97,14 @@ export function dependencyGraph(list = workspaces()): Graph {
   const graph: Record<string, string[]> = Object.fromEntries(list.map((ws) => [ws.id, []]));
   for (const manifest of manifests) {
     const from = owner(list, dirname(manifest));
-    if (!from) continue;
+    if (!from) {
+      continue;
+    }
     for (const [, path] of readFileSync(manifest, 'utf8').matchAll(PATH_DEP)) {
       const to = owner(list, resolve(dirname(manifest), path ?? ''));
-      if (to && to !== from && !graph[from]?.includes(to)) graph[from]?.push(to);
+      if (to && to !== from && !graph[from]?.includes(to)) {
+        graph[from]?.push(to);
+      }
     }
   }
   return graph;

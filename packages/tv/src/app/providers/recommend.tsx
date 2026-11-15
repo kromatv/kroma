@@ -42,18 +42,26 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
   }
 
   useEffect(() => {
-    if (!ready || !user || !client) return;
+    if (!ready || !user || !client) {
+      return;
+    }
     let cancelled = false;
     client.media
       .homeCards({ layouts: DRAWN_LAYOUTS })
       .then((home) => {
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setSections(home);
-        if (home.some((section) => section.layout === 'hero')) return null;
+        if (home.some((section) => section.layout === 'hero')) {
+          return null;
+        }
         return client.media.featured();
       })
       .then((pick) => {
-        if (!cancelled && pick) setFeatured(pick);
+        if (!cancelled && pick) {
+          setFeatured(pick);
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -65,11 +73,17 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
   // serialized payload so render churn does not re-push. No-op without a backend.
   const lastPushed = useRef<{ backend: typeof launcher; json: string } | null>(null);
   useEffect(() => {
-    if (!launcher || !client) return;
+    if (!launcher || !client) {
+      return;
+    }
     const json = JSON.stringify(buildHomeChannels(sections, client));
-    if (lastPushed.current?.backend === launcher && json === lastPushed.current.json) return;
+    if (lastPushed.current?.backend === launcher && json === lastPushed.current.json) {
+      return;
+    }
     // An empty push is only meaningful as a clear after something was published.
-    if (json === '[]' && lastPushed.current === null) return;
+    if (json === '[]' && lastPushed.current === null) {
+      return;
+    }
     lastPushed.current = { backend: launcher, json };
     launcher.setHomeChannel(json);
   }, [sections, client, launcher]);
@@ -80,6 +94,8 @@ export function RecommendProvider({ children }: Readonly<{ children: ReactNode }
 
 export function useRecommend(): Recommend {
   const c = useContext(Ctx);
-  if (!c) throw new Error('useRecommend() must be used inside <RecommendProvider>');
+  if (!c) {
+    throw new Error('useRecommend() must be used inside <RecommendProvider>');
+  }
   return c;
 }

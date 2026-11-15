@@ -11,22 +11,32 @@ import { radius, spacing, type } from '#mobile/lib/theme';
 import { useTrailerLink } from '#mobile/lib/useTrailerLink';
 
 function downloadBarLabel(state: DownloadState, t: ReturnType<typeof useT>): string {
-  if (state.status === 'done') return t('offline.downloaded');
-  if (state.status === 'downloading')
+  if (state.status === 'done') {
+    return t('offline.downloaded');
+  }
+  if (state.status === 'downloading') {
     return state.progress >= 0
       ? t('offline.downloading', { percent: Math.round(state.progress * 100) })
       : t('offline.downloading', { percent: '' }).replace('%', '').trim();
-  if (state.status === 'paused')
+  }
+  if (state.status === 'paused') {
     return state.progress >= 0
       ? `${t('offline.paused')} · ${Math.round(state.progress * 100)}%`
       : t('offline.paused');
-  if (state.status === 'queued') return t('offline.queued');
+  }
+  if (state.status === 'queued') {
+    return t('offline.queued');
+  }
   return t('offline.download');
 }
 
 function downloadIcon(state: DownloadState): IconName {
-  if (state.status === 'done') return 'check';
-  if (state.status === 'paused') return 'player-pause-filled';
+  if (state.status === 'done') {
+    return 'check';
+  }
+  if (state.status === 'paused') {
+    return 'player-pause-filled';
+  }
   return 'download';
 }
 
@@ -108,9 +118,11 @@ export function DetailActions({
         label={downloadBarLabel(state, t)}
         progress={state.status === 'downloading' || state.status === 'paused' ? state.progress : 0}
         onPress={() => {
-          if (state.status === 'none') downloads.start(item);
-          else if (state.status === 'queued') downloads.cancel(item.id);
-          else if (state.status === 'downloading') {
+          if (state.status === 'none') {
+            downloads.start(item);
+          } else if (state.status === 'queued') {
+            downloads.cancel(item.id);
+          } else if (state.status === 'downloading') {
             Alert.alert(title, undefined, [
               { text: t('offline.pause'), onPress: () => downloads.pause(item.id) },
               {
@@ -130,7 +142,9 @@ export function DetailActions({
               },
               { text: t('common.back'), style: 'cancel' },
             ]);
-          } else if (state.status === 'done') void downloads.remove(item.id);
+          } else if (state.status === 'done') {
+            void downloads.remove(item.id);
+          }
         }}
       />
       {trailer ? (
@@ -199,7 +213,9 @@ export function DetailActions({
         offerLocal={false}
         onPick={(id) => {
           devices.current?.dismiss();
-          if (id) void playOn(id, item.id);
+          if (id) {
+            void playOn(id, item.id);
+          }
         }}
       />
     </Box>

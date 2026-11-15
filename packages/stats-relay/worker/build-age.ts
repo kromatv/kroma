@@ -15,7 +15,9 @@ export type BuildAge = (typeof BUILD_AGES)[number];
 
 /** How long before `now` a CI build was made, as a band; `source` for build 0. */
 export function buildAge(build: number, now: number): BuildAge {
-  if (build === 0) return 'source';
+  if (build === 0) {
+    return 'source';
+  }
   const days = (now - (BUILD_EPOCH + build * 60)) / DAY;
   return BANDS.find(([, limit]) => days <= limit)?.[0] ?? 'older';
 }

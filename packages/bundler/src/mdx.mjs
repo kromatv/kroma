@@ -62,7 +62,9 @@ function collapseSoftWraps(text) {
     let end = at;
     let wrapped = false;
     while (end < text.length && WHITESPACE.test(text[end])) {
-      if (text[end] === '\n') wrapped = true;
+      if (text[end] === '\n') {
+        wrapped = true;
+      }
       end += 1;
     }
     out += wrapped ? ' ' : text.slice(at, end);
@@ -74,14 +76,18 @@ function collapseSoftWraps(text) {
 function rehypeFixWhitespace() {
   return (tree) => {
     const walk = (node, verbatim) => {
-      if (!Array.isArray(node.children)) return;
+      if (!Array.isArray(node.children)) {
+        return;
+      }
       const name = node.type === 'root' ? 'root' : node.tagName;
       if (LAYOUT_PARENTS.has(name)) {
         node.children = node.children.filter((child) => !isLayoutWhitespace(child));
       }
       const inside = verbatim || VERBATIM.has(name);
       for (const child of node.children) {
-        if (child.type === 'text' && !inside) child.value = collapseSoftWraps(child.value);
+        if (child.type === 'text' && !inside) {
+          child.value = collapseSoftWraps(child.value);
+        }
         walk(child, inside);
       }
     };

@@ -25,7 +25,9 @@ export const reachesEvery = (file: string) => matchesAny(file, EVERY);
  * reads. The core catalogs are the server's, which embeds them.
  */
 export function workspaceOf(file: string): string | null {
-  if (file.startsWith('server/') || file.startsWith('packages/core/src/locales/')) return 'server';
+  if (file.startsWith('server/') || file.startsWith('packages/core/src/locales/')) {
+    return 'server';
+  }
   return MODULE.exec(file)?.[1] ?? null;
 }
 
@@ -37,12 +39,18 @@ export function workspaceOf(file: string): string | null {
  */
 export function affected(files: readonly string[] | 'all', graph: Graph): string[] {
   const ids = Object.keys(graph);
-  if (files === 'all') return ids;
+  if (files === 'all') {
+    return ids;
+  }
   const hit = new Set<string>();
-  if (files.some(reachesEvery)) return ids;
+  if (files.some(reachesEvery)) {
+    return ids;
+  }
   for (const file of files) {
     const ws = workspaceOf(file);
-    if (ws !== null && ws in graph) hit.add(ws);
+    if (ws !== null && ws in graph) {
+      hit.add(ws);
+    }
   }
   let grew = true;
   while (grew) {

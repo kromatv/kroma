@@ -21,9 +21,13 @@ function codeAt(codes: StoryCodes, path: string): StoryCode | undefined {
   let at = 0;
   for (;;) {
     const hit = codes[path.slice(at)];
-    if (hit) return hit;
+    if (hit) {
+      return hit;
+    }
     const next = path.indexOf('/', at);
-    if (next === -1) return undefined;
+    if (next === -1) {
+      return undefined;
+    }
     at = next + 1;
   }
 }

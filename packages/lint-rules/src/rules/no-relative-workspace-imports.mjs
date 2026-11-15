@@ -8,10 +8,14 @@ const workspaceFolders = new Set(['packages', 'clients', 'apps', 'modules']);
 
 function workspaceFor(filename) {
   const [folder, name] = relative(root, filename).split(sep);
-  if (!workspaceFolders.has(folder) || !name) return;
+  if (!workspaceFolders.has(folder) || !name) {
+    return;
+  }
   const directory = join(root, folder, name);
   const manifest = join(directory, 'package.json');
-  if (!existsSync(manifest)) return;
+  if (!existsSync(manifest)) {
+    return;
+  }
   return { directory, name: JSON.parse(readFileSync(manifest, 'utf8')).name };
 }
 
@@ -40,14 +44,22 @@ export default defineRule(
     },
     create(context) {
       const filename = context.filename;
-      if (!isAbsolute(filename)) return {};
+      if (!isAbsolute(filename)) {
+        return {};
+      }
       const owner = workspaceFor(filename);
-      if (!owner) return {};
+      if (!owner) {
+        return {};
+      }
 
       function check(source) {
-        if (typeof source?.value !== 'string' || !source.value.startsWith('.')) return;
+        if (typeof source?.value !== 'string' || !source.value.startsWith('.')) {
+          return;
+        }
         const target = workspaceFor(resolve(dirname(filename), source.value));
-        if (!target || target.directory === owner.directory) return;
+        if (!target || target.directory === owner.directory) {
+          return;
+        }
         context.report({
           node: source,
           messageId: 'boundary',
@@ -61,10 +73,14 @@ export default defineRule(
         ExportAllDeclaration: (node) => check(node.source),
         ImportExpression: (node) => check(node.source),
         CallExpression(node) {
-          if (node.callee.type !== 'Identifier' || node.callee.name !== 'require') return;
+          if (node.callee.type !== 'Identifier' || node.callee.name !== 'require') {
+            return;
+          }
           let scope = context.sourceCode.getScope(node);
           while (scope) {
-            if (scope.set.get('require')?.defs.length) return;
+            if (scope.set.get('require')?.defs.length) {
+              return;
+            }
             scope = scope.upper;
           }
           check(node.arguments[0]);

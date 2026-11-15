@@ -43,7 +43,9 @@ vi.mock('expo-file-system', () => {
     constructor(base: { path: string } | string, name?: string) {
       const root = typeof base === 'string' ? base : base.path;
       this.path = name ? `${root}/${name}` : root;
-      if (fs.refusing.has(root)) throw new Error(`no access to ${root}`);
+      if (fs.refusing.has(root)) {
+        throw new Error(`no access to ${root}`);
+      }
     }
     get exists() {
       return fs.created.includes(this.path);
@@ -68,10 +70,14 @@ vi.mock('expo-file-system', () => {
       this.writeSync(data);
     }
     writeSync(data: string) {
-      if (fs.failing.has(this.dir)) throw new Error(`cannot write to ${this.dir}`);
+      if (fs.failing.has(this.dir)) {
+        throw new Error(`cannot write to ${this.dir}`);
+      }
       fs.writes.push({ dir: this.dir, data });
       // The tvOS lie: the call succeeds and nothing is kept.
-      if (fs.lying.has(this.dir)) return;
+      if (fs.lying.has(this.dir)) {
+        return;
+      }
       fs.files.set(this.key, {
         exists: true,
         contents: data,
@@ -80,9 +86,13 @@ vi.mock('expo-file-system', () => {
       });
     }
     async text() {
-      if (fs.unreadable.has(this.dir)) throw new Error(`cannot read ${this.key}`);
+      if (fs.unreadable.has(this.dir)) {
+        throw new Error(`cannot read ${this.key}`);
+      }
       const file = fs.files.get(this.key);
-      if (!file) throw new Error(`no such file: ${this.key}`);
+      if (!file) {
+        throw new Error(`no such file: ${this.key}`);
+      }
       return file.contents ?? '';
     }
   }
@@ -107,7 +117,9 @@ const FILE = 'kroma-session.json';
 
 function store() {
   const installed = ownedStores.at(-1);
-  if (!installed) throw new Error('no session store was installed');
+  if (!installed) {
+    throw new Error('no session store was installed');
+  }
   return installed as {
     getItem(key: string): string | null;
     setItem(key: string, value: string): void;

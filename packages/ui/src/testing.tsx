@@ -31,13 +31,19 @@ const kebab = (property: string) => property.replace(/[A-Z]/g, (c) => `-${c.toLo
 function declaredByClass(el: Element, property: string): string | null {
   const classes = [...el.classList].map((name) => `.${name}`);
   const doc = webDocument();
-  if (classes.length === 0 || !doc) return null;
+  if (classes.length === 0 || !doc) {
+    return null;
+  }
   let found: string | null = null;
   for (const sheet of doc.styleSheets) {
     for (const rule of sheet.cssRules) {
-      if (!(rule instanceof CSSStyleRule) || !classes.includes(rule.selectorText)) continue;
+      if (!(rule instanceof CSSStyleRule) || !classes.includes(rule.selectorText)) {
+        continue;
+      }
       const value = rule.style.getPropertyValue(property);
-      if (value) found = value;
+      if (value) {
+        found = value;
+      }
     }
   }
   return found;
@@ -91,7 +97,9 @@ export function measuring(root: Element): Element {
 export function layout(node: Element, box: Partial<LayoutRectangle>): void {
   const fire = (node as { __reactLayoutHandler?: (event: LayoutChangeEvent) => void })
     .__reactLayoutHandler;
-  if (!fire) throw new Error('this node has no onLayout');
+  if (!fire) {
+    throw new Error('this node has no onLayout');
+  }
   act(() => {
     fire({
       nativeEvent: { layout: { x: 0, y: 0, width: 0, height: 0, ...box } },
@@ -110,6 +118,8 @@ export function contentRoot(container: Element): HTMLElement {
   while (node instanceof HTMLElement && node.dataset.kromaBp !== undefined) {
     node = node.firstElementChild;
   }
-  if (!(node instanceof HTMLElement)) throw new Error('expected rendered screen content');
+  if (!(node instanceof HTMLElement)) {
+    throw new TypeError('expected rendered screen content');
+  }
   return node;
 }

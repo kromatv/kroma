@@ -9,7 +9,9 @@ describe('sharedBoxStyle', () => {
   });
 
   it('stops caching past the cap rather than growing without bound', () => {
-    for (let i = 0; i < 4096; i++) sharedBoxStyle(`w-${i}`, { w: i });
+    for (let i = 0; i < 4096; i++) {
+      sharedBoxStyle(`w-${i}`, { w: i });
+    }
     expect(sharedBoxStyle('over-the-cap', { w: 1 })).not.toBe(
       sharedBoxStyle('over-the-cap', { w: 1 }),
     );

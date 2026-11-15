@@ -15,12 +15,12 @@ const QUALITY = [
 ];
 
 const AddServer = z.object({
-  name: z.string().min(1, msg('form.required')),
-  address: z.string().min(1, msg('form.required')),
+  name: z.string().nonempty(msg('form.required')),
+  address: z.string().nonempty(msg('form.required')),
   // The entry is text and the parsed value is a number, so `field('port')` still
   // binds a string while `onSubmit` is handed the number.
   port: z.string().regex(/^\d+$/, msg('form.number')).transform(Number),
-  quality: z.string().min(1, msg('form.required')),
+  quality: z.string().nonempty(msg('form.required')),
 });
 
 /**

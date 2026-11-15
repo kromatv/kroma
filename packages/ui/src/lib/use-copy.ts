@@ -49,7 +49,9 @@ function useCopy(): Copier {
 
   const copy = useCallback((text: string | undefined) => {
     const board = clipboard();
-    if (!board || !text) return;
+    if (!board || !text) {
+      return;
+    }
     const settle = (next: 'copied' | 'failed') => {
       setState(next);
       clearTimeout(timer.current);

@@ -39,9 +39,12 @@ const moved = (what: string) =>
 const withConscryptDependency: ConfigPlugin = (config) =>
   withAppBuildGradle(config, (cfg) => {
     const contents = cfg.modResults.contents;
-    if (contents.includes(CONSCRYPT)) return cfg;
-    if (!contents.includes(GRADLE_ANCHOR))
+    if (contents.includes(CONSCRYPT)) {
+      return cfg;
+    }
+    if (!contents.includes(GRADLE_ANCHOR)) {
       throw moved('the react-android dependency in app/build.gradle');
+    }
 
     cfg.modResults.contents = contents.replace(
       GRADLE_ANCHOR,
@@ -53,13 +56,18 @@ const withConscryptDependency: ConfigPlugin = (config) =>
 const withConscryptProvider: ConfigPlugin = (config) =>
   withMainApplication(config, (cfg) => {
     let contents = cfg.modResults.contents;
-    if (contents.includes('Conscrypt')) return cfg;
+    if (contents.includes('Conscrypt')) {
+      return cfg;
+    }
 
-    if (!contents.includes(IMPORT_ANCHOR))
+    if (!contents.includes(IMPORT_ANCHOR)) {
       throw moved('the Application import in MainApplication.kt');
+    }
     contents = contents.replace(IMPORT_ANCHOR, `${IMPORT_ANCHOR}\n${IMPORTS}`);
 
-    if (!contents.includes(ONCREATE_ANCHOR)) throw moved('super.onCreate() in MainApplication.kt');
+    if (!contents.includes(ONCREATE_ANCHOR)) {
+      throw moved('super.onCreate() in MainApplication.kt');
+    }
     cfg.modResults.contents = contents.replace(ONCREATE_ANCHOR, `${ONCREATE_ANCHOR}${INSTALL}`);
     return cfg;
   });

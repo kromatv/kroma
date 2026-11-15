@@ -65,12 +65,16 @@ function PlatformSearch({ value, onChange, placeholder, children }: Readonly<Sea
   // left in it, which up or left against the top row means the ring is under the
   // keyboard and the keyboard should have the focus again.
   const onEdge = useCallback((direction: FocusDirection) => {
-    if (direction === 'up' || direction === 'left') setOwner('platform');
+    if (direction === 'up' || direction === 'left') {
+      setOwner('platform');
+    }
   }, []);
 
   usePlatformFocus(owner, onEdge);
 
-  if (!NativeSearchView) return null;
+  if (!NativeSearchView) {
+    return null;
+  }
 
   return (
     <NativeSearchView

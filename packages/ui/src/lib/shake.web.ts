@@ -38,14 +38,18 @@ export function useShake(at: number): Animated.WithAnimatedValue<ViewStyle> {
   }
 
   useEffect(() => {
-    if (at === 0 || reduced) return;
+    if (at === 0 || reduced) {
+      return;
+    }
     // Each leg is scheduled off the same instant, so a late timer costs its own
     // leg and never the ones behind it.
     const timers = LEGS.slice(1).map((to, leg) =>
       setTimeout(() => setTravel(to), (leg + 1) * LEG_MS),
     );
     return () => {
-      for (const timer of timers) clearTimeout(timer);
+      for (const timer of timers) {
+        clearTimeout(timer);
+      }
     };
   }, [at, reduced]);
 

@@ -45,12 +45,15 @@ export function bindMediaEvents(
     setRate,
     setReady,
   } = setters;
-  const durMs = knownDurationMs || item.durationMs || 0;
+  const durMs = knownDurationMs > 0 ? knownDurationMs : (item.durationMs ?? 0);
   const onTime = () => setCur(baseSec + v.currentTime);
   const onDur = () => {
     const total = durMs ? durMs / 1000 : 0;
-    if (total > 0) setDur(total);
-    else if (Number.isFinite(v.duration)) setDur(baseSec + v.duration);
+    if (total > 0) {
+      setDur(total);
+    } else if (Number.isFinite(v.duration)) {
+      setDur(baseSec + v.duration);
+    }
   };
   const onProg = () => {
     const end = reachableBufferEnd(v.buffered, v.currentTime);
@@ -67,9 +70,13 @@ export function bindMediaEvents(
   let started = false;
   const onReady = () => {
     setReady(true);
-    if (started || !autoplay || !v.paused) return;
+    if (started || !autoplay || !v.paused) {
+      return;
+    }
     v.play()?.catch((e: unknown) => {
-      if (e instanceof DOMException && e.name === 'NotAllowedError') setPlaying(false);
+      if (e instanceof DOMException && e.name === 'NotAllowedError') {
+        setPlaying(false);
+      }
     });
   };
   const onStarted = () => {

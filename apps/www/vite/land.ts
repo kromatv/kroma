@@ -28,7 +28,9 @@ export function landPlugin({ rows = DEFAULT_ROWS }: LandOptions = {}): Plugin {
       return id === VIRTUAL_ID ? RESOLVED_ID : null;
     },
     async load(id) {
-      if (id !== RESOLVED_ID) return null;
+      if (id !== RESOLVED_ID) {
+        return null;
+      }
       points ??= loadLand(root).then((land) => landDots(land, rows));
       return `export const points = ${JSON.stringify(await points)};`;
     },

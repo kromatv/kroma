@@ -15,7 +15,9 @@ const bytes = (buffer: ArrayBuffer | Uint8Array) => [
 let received: { publicKey: Record<string, unknown> } | null = null;
 
 function sent(): Record<string, unknown> {
-  if (!received) throw new Error('navigator.credentials was never called');
+  if (!received) {
+    throw new Error('navigator.credentials was never called');
+  }
   return received.publicKey;
 }
 

@@ -71,7 +71,9 @@ const CURSORDefinition = styles({
 });
 
 function grabBox(column: boolean, upright: boolean) {
-  if (column) return { absolute: true, top: 0, bottom: 0, right: 0, w: COLUMN_GRAB } as const;
+  if (column) {
+    return { absolute: true, top: 0, bottom: 0, right: 0, w: COLUMN_GRAB } as const;
+  }
   return upright ? { w: HANDLE_THICKNESS } : { h: HANDLE_THICKNESS };
 }
 
@@ -125,7 +127,9 @@ function Seam({
   const pressedAt = useRef(0);
   const press = useCallback(() => {
     const now = Date.now();
-    if (now - draggedAt.current < AFTER_DRAG_MS) return;
+    if (now - draggedAt.current < AFTER_DRAG_MS) {
+      return;
+    }
     if (now - pressedAt.current < DOUBLE_PRESS_MS) {
       pressedAt.current = 0;
       restore();

@@ -73,9 +73,12 @@ const destination = (pushed: readonly Buffer[]): string =>
     .split(',')[0] ?? '';
 
 afterEach(async () => {
-  for (const device of attached.splice(0)) device.close();
-  for (const directory of directories.splice(0))
+  for (const device of attached.splice(0)) {
+    device.close();
+  }
+  for (const directory of directories.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
+  }
   await Promise.all(televisions.splice(0).map((set) => set.close()));
 });
 

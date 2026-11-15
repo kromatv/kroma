@@ -75,15 +75,22 @@ function rewriteImport(statement: string, key: string, tmp: string): string {
     return `${HELPER_FN}(${JSON.stringify(key)});`;
   }
   const fromAt = statement.lastIndexOf(' from ');
-  if (!statement.startsWith('import') || fromAt < 0)
+  if (!statement.startsWith('import') || fromAt < 0) {
     throw new Error(`cannot rewrite: ${statement}`);
+  }
   const lines = [take];
   const [braces, afterBraces] = takeBraces(statement.slice('import'.length, fromAt).trim());
-  if (braces) lines.push(`const ${pattern(braces)} = ${tmp};`);
+  if (braces) {
+    lines.push(`const ${pattern(braces)} = ${tmp};`);
+  }
   const [ns, afterNs] = takeNamespace(afterBraces);
-  if (ns) lines.push(`const ${ns} = ${tmp};`);
+  if (ns) {
+    lines.push(`const ${ns} = ${tmp};`);
+  }
   const def = afterNs.replaceAll(',', '').trim();
-  if (def) lines.push(`const ${def} = ${tmp}.default;`);
+  if (def) {
+    lines.push(`const ${def} = ${tmp}.default;`);
+  }
   return lines.join(' ');
 }
 
@@ -103,7 +110,9 @@ type Reads = Map<string, Set<string>>;
 
 function note(reads: Reads, key: string, names: string[]): void {
   const into = reads.get(key) ?? new Set<string>();
-  for (const name of names) into.add(name);
+  for (const name of names) {
+    into.add(name);
+  }
   reads.set(key, into);
 }
 
@@ -116,11 +125,15 @@ function entryReads(
   const queue = [REMOTE_ENTRY];
   for (const file of queue) {
     const chunk = bundle[file];
-    if (seen.has(file) || chunk?.type !== 'chunk') continue;
+    if (seen.has(file) || chunk?.type !== 'chunk') {
+      continue;
+    }
     seen.add(file);
     queue.push(...chunk.imports);
     for (const id of chunk.moduleIds) {
-      for (const [key, names] of reads.get(id) ?? []) note(merged, key, [...names]);
+      for (const [key, names] of reads.get(id) ?? []) {
+        note(merged, key, [...names]);
+      }
     }
   }
   return Object.fromEntries(
@@ -131,7 +144,9 @@ function entryReads(
 }
 
 function byCodeUnit(a: string, b: string): number {
-  if (a === b) return 0;
+  if (a === b) {
+    return 0;
+  }
   return a < b ? -1 : 1;
 }
 
@@ -156,7 +171,9 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
     name: 'kroma-remote:manifest',
     enforce: 'pre',
     transform(code, id) {
-      if (posix(clean(id)) !== entry || !OPTIONS_ONLY_CALL.test(code)) return null;
+      if (posix(clean(id)) !== entry || !OPTIONS_ONLY_CALL.test(code)) {
+        return null;
+      }
       const locales = catalogsExpression(options.localesDir, localesGlob);
       const injected = `import __kromaManifest from '${manifestImport}';\n${code}`.replace(
         OPTIONS_ONLY_CALL,
@@ -170,9 +187,13 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
     name: 'kroma-remote:shared',
     enforce: 'post',
     resolveId(id, importer) {
-      if (id === HELPER) return RESOLVED_HELPER;
+      if (id === HELPER) {
+        return RESOLVED_HELPER;
+      }
       const key = sharedKey(id);
-      if (key) return { id: `${HELPER}:${key}`, external: true };
+      if (key) {
+        return { id: `${HELPER}:${key}`, external: true };
+      }
       if (id.startsWith('@kromatv/')) {
         this.error(
           `${importer ?? 'a module file'} imports '${id}', which the host does not provide. The SDK packages carry types only; a page may import ${SHARED_MODULES.join(', ')} and any @kromatv/client/<domain>.`,
@@ -181,7 +202,9 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
       return null;
     },
     load(id) {
-      if (id !== RESOLVED_HELPER) return null;
+      if (id !== RESOLVED_HELPER) {
+        return null;
+      }
       return [
         `export function ${HELPER_FN}(key) {`,
         `  const shared = globalThis[${JSON.stringify(SHARED_GLOBAL)}];`,
@@ -193,8 +216,12 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
     },
     async transform(code, id) {
       const file = clean(id);
-      if (id.startsWith('\0') || !SCRIPT.test(file)) return null;
-      if (!code.includes('import') && !code.includes('export')) return null;
+      if (id.startsWith('\0') || !SCRIPT.test(file)) {
+        return null;
+      }
+      if (!code.includes('import') && !code.includes('export')) {
+        return null;
+      }
       await init();
       const [imports, exports] = parse(code, file);
       if (
@@ -208,9 +235,13 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
       reads.set(id, taken);
       let count = 0;
       for (const imp of imports) {
-        if (!imp.specifier) continue;
+        if (!imp.specifier) {
+          continue;
+        }
         const key = sharedKey(imp.specifier);
-        if (!key) continue;
+        if (!key) {
+          continue;
+        }
         const tmp = `__ks${count++}`;
         if (imp.type === 'dynamic') {
           note(taken, key, [WHOLE_NAMESPACE]);
@@ -228,19 +259,25 @@ export function kromaRemote(options: RemoteOptions): Plugin[] {
           : rewriteImport(statement, key, tmp);
         s.overwrite(imp.importStart, imp.importEnd, rewritten);
       }
-      if (count === 0) return null;
+      if (count === 0) {
+        return null;
+      }
       s.prepend(`import { ${HELPER_FN} } from ${JSON.stringify(HELPER)};\n`);
       return { code: s.toString(), map: s.generateMap({ hires: true }) };
     },
     generateBundle(_options, bundle) {
       const entry = bundle[REMOTE_ENTRY];
-      if (entry?.type !== 'chunk') return;
+      if (entry?.type !== 'chunk') {
+        return;
+      }
       this.emitFile({
         type: 'asset',
         fileName: REMOTE_SHARED,
         source: `${JSON.stringify(entryReads(bundle, reads), null, 2)}\n`,
       });
-      if (REMOTE_STYLES in bundle) entry.code = `${LINK_STYLES}\n${entry.code}`;
+      if (REMOTE_STYLES in bundle) {
+        entry.code = `${LINK_STYLES}\n${entry.code}`;
+      }
     },
   };
 

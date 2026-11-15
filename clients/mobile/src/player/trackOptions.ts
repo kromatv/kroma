@@ -40,7 +40,9 @@ export function audioOptions(
           (track) => language && langBase(track.language) === language,
         );
         metadata = matches.length === 1 ? matches[0] : itemAudio[i];
-        if (language && langBase(metadata?.language) !== language) metadata = undefined;
+        if (language && langBase(metadata?.language) !== language) {
+          metadata = undefined;
+        }
       }
       return {
         index: i,
@@ -61,7 +63,9 @@ function distinguishOptions<T extends { index: number; label: string }>(
   options: T[],
 ): T[] {
   const counts = new Map<string, number>();
-  for (const option of options) counts.set(option.label, (counts.get(option.label) ?? 0) + 1);
+  for (const option of options) {
+    counts.set(option.label, (counts.get(option.label) ?? 0) + 1);
+  }
   return options.map((option) =>
     (counts.get(option.label) ?? 0) > 1
       ? {
@@ -94,7 +98,9 @@ export function subtitleRowLabel(t: ReturnType<typeof useT>, track: SubView): st
 }
 
 export function subtitleLabel(subs: Subtitles, t: ReturnType<typeof useT>): string {
-  if (subs.active === null) return t('player.subtitlesOff');
+  if (subs.active === null) {
+    return t('player.subtitlesOff');
+  }
   const track = subtitleOptions(t, subs.tracks).find((s) => s.index === subs.active);
   return track ? track.label : `#${(subs.active ?? 0) + 1}`;
 }
@@ -104,14 +110,20 @@ export function subNote(
   subs: Subtitles,
   index: number,
 ): string | undefined {
-  if (subs.failed.has(index)) return t('error.subtitleUnavailable');
-  if (subs.active === index && subs.loading) return t('player.subPreparing');
+  if (subs.failed.has(index)) {
+    return t('error.subtitleUnavailable');
+  }
+  if (subs.active === index && subs.loading) {
+    return t('player.subPreparing');
+  }
   return undefined;
 }
 
 export function qualityBadge(item: MediaItem): string {
   const v = item.video;
-  if (!v) return '';
+  if (!v) {
+    return '';
+  }
   const res = v.height ? `${v.height}p` : null;
   const codec = v.codec ? v.codec.toUpperCase() : null;
   const parts = [res, codec, v.hdr ? 'HDR' : null].filter(Boolean);

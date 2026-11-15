@@ -19,7 +19,9 @@ describe('image ready set', () => {
     markImageReady('/second.webp');
     markImageReady('/first.webp');
 
-    for (let i = 0; i < 799; i += 1) markImageReady(`/${i}.webp`);
+    for (let i = 0; i < 799; i += 1) {
+      markImageReady(`/${i}.webp`);
+    }
 
     expect(isImageReady('/first.webp')).toBe(true);
     expect(isImageReady('/second.webp')).toBe(false);

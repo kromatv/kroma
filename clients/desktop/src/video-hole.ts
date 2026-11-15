@@ -69,7 +69,9 @@ function clip(box: Box, to: Box): Box {
 export function union(boxes: readonly Box[]): Box | null {
   let out: Box | null = null;
   for (const box of boxes) {
-    if (area(box) <= 0) continue;
+    if (area(box) <= 0) {
+      continue;
+    }
     out = out
       ? {
           left: Math.min(out.left, box.left),
@@ -102,30 +104,44 @@ export function holeShape(
   width: number,
   height: number,
 ): HoleShape | null {
-  if (!(width > 0 && height > 0)) return null;
+  if (!(width > 0 && height > 0)) {
+    return null;
+  }
   const window: Box = { left: 0, top: 0, right: width, bottom: height };
   const box = clip(stage, window);
-  if (box.right - box.left < MIN_SIDE_PX || box.bottom - box.top < MIN_SIDE_PX) return null;
+  if (box.right - box.left < MIN_SIDE_PX || box.bottom - box.top < MIN_SIDE_PX) {
+    return null;
+  }
   const kept: HoleRect[] = [];
   for (const cover of covers) {
-    if (!intersects(box, cover)) continue;
+    if (!intersects(box, cover)) {
+      continue;
+    }
     const inside = clip(cover, box);
-    if (area(inside) > 0) kept.push(fraction(inside, width, height));
+    if (area(inside) > 0) {
+      kept.push(fraction(inside, width, height));
+    }
   }
   return { rect: fraction(box, width, height), covers: kept };
 }
 
 /** Whether two shapes differ by more than a pixel's worth of the window. */
 export function moved(a: HoleShape | null, b: HoleShape | null): boolean {
-  if (a === null || b === null) return a !== b;
-  if (a.covers.length !== b.covers.length) return true;
+  if (a === null || b === null) {
+    return a !== b;
+  }
+  if (a.covers.length !== b.covers.length) {
+    return true;
+  }
   const step = 1 / 4096;
   const apart = (x: HoleRect, y: HoleRect) =>
     Math.abs(x.x - y.x) > step ||
     Math.abs(x.y - y.y) > step ||
     Math.abs(x.w - y.w) > step ||
     Math.abs(x.h - y.h) > step;
-  if (apart(a.rect, b.rect)) return true;
+  if (apart(a.rect, b.rect)) {
+    return true;
+  }
   return a.covers.some((cover, i) => {
     const other = b.covers[i];
     return other === undefined || apart(cover, other);
@@ -146,7 +162,9 @@ function boxOf(el: Element): Box {
 
 function opacityOf(el: Element): number {
   const style = getComputedStyle(el);
-  if (style.visibility === 'hidden' || style.display === 'none') return 0;
+  if (style.visibility === 'hidden' || style.display === 'none') {
+    return 0;
+  }
   return Number.parseFloat(style.opacity || '1');
 }
 
@@ -157,13 +175,19 @@ function opacityOf(el: Element): number {
 // (the mask around the shrunk picture) is clear where its rect says it is.
 function paints(el: Element): boolean {
   const style = getComputedStyle(el);
-  if (style.backgroundImage !== 'none') return true;
-  if (!/^(rgba?\(0, 0, 0, 0\)|transparent)$/.test(style.backgroundColor)) return true;
+  if (style.backgroundImage !== 'none') {
+    return true;
+  }
+  if (!/^(rgba?\(0, 0, 0, 0\)|transparent)$/.test(style.backgroundColor)) {
+    return true;
+  }
   if (Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderLeftWidth) > 0) {
     return true;
   }
   for (const node of el.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) return true;
+    if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim()) {
+      return true;
+    }
   }
   return false;
 }
@@ -180,12 +204,20 @@ interface Layer {
 function chromeLayers(root: Element, stage: Element): Layer[] {
   const layers: Layer[] = [];
   for (const el of root.querySelectorAll<HTMLElement>('*')) {
-    if (el === stage || stage.contains(el)) continue;
+    if (el === stage || stage.contains(el)) {
+      continue;
+    }
     const position = getComputedStyle(el).position;
-    if (position !== 'absolute' && position !== 'fixed') continue;
-    if (layers.some((layer) => layer.root.contains(el))) continue;
+    if (position !== 'absolute' && position !== 'fixed') {
+      continue;
+    }
+    if (layers.some((layer) => layer.root.contains(el))) {
+      continue;
+    }
     const leaves = [el, ...el.querySelectorAll<HTMLElement>('*')].filter(paints);
-    if (leaves.length > 0) layers.push({ root: el, leaves });
+    if (leaves.length > 0) {
+      layers.push({ root: el, leaves });
+    }
   }
   return layers;
 }
@@ -193,14 +225,20 @@ function chromeLayers(root: Element, stage: Element): Layer[] {
 function coversOver(layers: readonly Layer[]): Box[] {
   const covers: Box[] = [];
   for (const layer of layers) {
-    if (opacityOf(layer.root) <= VISIBLE_OPACITY) continue;
+    if (opacityOf(layer.root) <= VISIBLE_OPACITY) {
+      continue;
+    }
     const box = union(layer.leaves.map(boxOf));
-    if (box) covers.push(box);
+    if (box) {
+      covers.push(box);
+    }
   }
   const cue = document.getElementById(PLAYER_SUBTITLE_ID);
   if (cue && opacityOf(cue) > VISIBLE_OPACITY) {
     const box = union([...cue.querySelectorAll<HTMLElement>('*')].filter(paints).map(boxOf));
-    if (box) covers.push(box);
+    if (box) {
+      covers.push(box);
+    }
   }
   return covers;
 }
@@ -240,7 +278,9 @@ export function nativePlane(): boolean {
  */
 export function installVideoHole(): void {
   const invoke = tauriInvoke();
-  if (!invoke || !nativePlane()) return;
+  if (!invoke || !nativePlane()) {
+    return;
+  }
 
   let last: HoleShape | null = null;
   let layers: Layer[] = [];
@@ -251,7 +291,9 @@ export function installVideoHole(): void {
   let dirty = true;
 
   const send = (shape: HoleShape | null) => {
-    if (!dirty && !moved(shape, last)) return;
+    if (!dirty && !moved(shape, last)) {
+      return;
+    }
     dirty = false;
     last = shape;
     push(invoke, shape);
@@ -277,7 +319,9 @@ export function installVideoHole(): void {
     const root = document.getElementById(PLAYER_ROOT_ID);
     const stage = document.getElementById(PLAYER_STAGE_ID);
     layers = root && stage ? chromeLayers(root, stage) : [];
-    if (stage && frame === null) frame = requestAnimationFrame(tick);
+    if (stage && frame === null) {
+      frame = requestAnimationFrame(tick);
+    }
   };
 
   new MutationObserver(sync).observe(document.body, { childList: true, subtree: true });

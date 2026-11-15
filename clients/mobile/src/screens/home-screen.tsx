@@ -52,8 +52,10 @@ export default function Home() {
     staleTime: 30_000,
   });
 
-  if (home.isPending) return <Loading label={t('common.loading')} />;
-  if (home.isError)
+  if (home.isPending) {
+    return <Loading label={t('common.loading')} />;
+  }
+  if (home.isError) {
     return (
       <ErrorView
         message={t('error.serverBody')}
@@ -61,6 +63,7 @@ export default function Home() {
         onRetry={() => home.refetch()}
       />
     );
+  }
 
   const plan = planHome(home.data, filter);
   const resumable = cont.data ?? [];
@@ -76,7 +79,9 @@ export default function Home() {
           onRefresh={() => {
             void home.refetch();
             void cont.refetch();
-            if (olderServer) void featured.refetch();
+            if (olderServer) {
+              void featured.refetch();
+            }
           }}
           tintColor={color('textMuted', activeTheme(scope.theme))}
         />

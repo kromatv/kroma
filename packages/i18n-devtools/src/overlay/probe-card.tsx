@@ -31,7 +31,9 @@ function namedHoles(holes: readonly string[]): string {
 }
 
 function said(name: string, value: string | number, locale: string | null): string {
-  if (name !== 'count' || typeof value !== 'number') return `${name} = ${value}`;
+  if (name !== 'count' || typeof value !== 'number') {
+    return `${name} = ${value}`;
+  }
   return `${name} = ${value} → ${categoryOf(locale ?? 'en', value)}`;
 }
 
@@ -48,7 +50,9 @@ export interface ProbeCardProps {
 export function ProbeCard({ editKey, confirmKey }: Readonly<ProbeCardProps>) {
   const probe = useSyncExternalStore(onProbe, probed, probed);
   const origin = useOrigin(probe?.origin ?? null);
-  if (!probe) return null;
+  if (!probe) {
+    return null;
+  }
 
   const from = source(probe.scope, probe.locale);
   const vars = Object.entries(probe.vars ?? {});

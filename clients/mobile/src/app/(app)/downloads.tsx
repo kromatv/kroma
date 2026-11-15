@@ -101,13 +101,17 @@ function activeLabel(
   progress: number,
   mode: 'downloading' | 'paused' | 'queued',
 ): string {
-  if (mode === 'queued') return t('offline.queued');
+  if (mode === 'queued') {
+    return t('offline.queued');
+  }
   if (mode === 'paused') {
     return progress >= 0
       ? `${t('offline.paused')} · ${Math.round(progress * 100)}%`
       : t('offline.paused');
   }
-  if (progress >= 0) return t('offline.downloading', { percent: Math.round(progress * 100) });
+  if (progress >= 0) {
+    return t('offline.downloading', { percent: Math.round(progress * 100) });
+  }
   return t('offline.downloading', { percent: '' }).replace('%', '').trim();
 }
 
@@ -206,7 +210,9 @@ function StorageMeter() {
     }),
     refetchInterval: 30_000,
   });
-  if (!storage.data || storage.data.total <= 0) return null;
+  if (!storage.data || storage.data.total <= 0) {
+    return null;
+  }
   const { free, total } = storage.data;
   const app = downloads.totalBytes;
   const other = Math.max(0, total - free - app);

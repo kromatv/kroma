@@ -62,7 +62,9 @@ export interface PosterActionBarProps {
  */
 export function PosterActionBar({ actions, shown }: Readonly<PosterActionBarProps>) {
   const t = useT();
-  if (actions.length === 0) return null;
+  if (actions.length === 0) {
+    return null;
+  }
   const overflow = actions.length > INLINE + 1 ? actions.slice(INLINE) : [];
   const discs = overflow.length > 0 ? actions.slice(0, INLINE) : actions;
   return (

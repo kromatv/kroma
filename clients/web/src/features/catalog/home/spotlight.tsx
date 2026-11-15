@@ -50,7 +50,9 @@ export function Spotlight({ section }: Readonly<{ section: HomeSection }>) {
   const t = useT();
   const { client } = useAuth();
   const entry = section.items[0];
-  if (!entry) return null;
+  if (!entry) {
+    return null;
+  }
   const id = entryId(entry);
   const metadata = entryMetadata(entry);
   const note = section.notes[id] ?? section.reason ?? null;

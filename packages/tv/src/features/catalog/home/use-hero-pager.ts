@@ -21,14 +21,18 @@ export function useHeroPager(count: number, held: boolean): HeroPager {
   const playing = held && !pagedByHand && !reducedMotion && count > 1;
 
   useEffect(() => {
-    if (!playing) return;
+    if (!playing) {
+      return;
+    }
     const dwell = setTimeout(() => setIndex((shown + 1) % count), HERO_DWELL_MS);
     return () => clearTimeout(dwell);
   }, [playing, shown, count, presses]);
 
   const page = useCallback(
     (by: 1 | -1) => {
-      if (count < 2) return;
+      if (count < 2) {
+        return;
+      }
       setPagedByHand(true);
       setIndex((at) => ((at < count ? at : 0) + by + count) % count);
     },

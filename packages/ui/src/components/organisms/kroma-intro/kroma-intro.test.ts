@@ -24,7 +24,9 @@ async function mount(onDone: () => void) {
   const view = render(createElement(KromaIntro, { onDone }));
   await act(async () => undefined);
   const video = view.container.querySelector('video');
-  if (!video) throw new Error('no <video> rendered');
+  if (!video) {
+    throw new Error('no <video> rendered');
+  }
   return { ...view, video };
 }
 
@@ -87,7 +89,9 @@ describe('KromaIntro (film path)', () => {
     act(() => {
       video.dispatchEvent(new Event('error'));
     });
-    act(() => vi.advanceTimersByTime(EXIT_MS));
+    act(() => {
+      vi.advanceTimersByTime(EXIT_MS);
+    });
 
     expect(onDone).toHaveBeenCalledTimes(1);
     // The CSS fallback renders no <video>.
@@ -126,7 +130,9 @@ describe('KromaIntro (mounted while the page is hidden)', () => {
     const onDone = vi.fn();
 
     await mount(onDone);
-    act(() => vi.advanceTimersByTime(SAFETY_MS + EXIT_MS));
+    act(() => {
+      vi.advanceTimersByTime(SAFETY_MS + EXIT_MS);
+    });
 
     expect(onDone).not.toHaveBeenCalled();
   });
@@ -135,7 +141,9 @@ describe('KromaIntro (mounted while the page is hidden)', () => {
     const onDone = vi.fn();
 
     await mount(onDone);
-    act(() => vi.advanceTimersByTime((HIDDEN_RECHECKS + 1) * SAFETY_MS + EXIT_MS));
+    act(() => {
+      vi.advanceTimersByTime((HIDDEN_RECHECKS + 1) * SAFETY_MS + EXIT_MS);
+    });
 
     expect(onDone).toHaveBeenCalledTimes(1);
   });

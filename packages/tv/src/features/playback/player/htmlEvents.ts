@@ -17,8 +17,11 @@ export function bindMediaEvents(
 ): () => void {
   const onTime = () => L.onTime(anchor() + v.currentTime);
   const onDur = () => {
-    if (total > 0) L.onDuration(total);
-    else if (Number.isFinite(v.duration)) L.onDuration(v.duration);
+    if (total > 0) {
+      L.onDuration(total);
+    } else if (Number.isFinite(v.duration)) {
+      L.onDuration(v.duration);
+    }
   };
   const onProg = () => {
     const end = reachableBufferEnd(v.buffered, v.currentTime);
@@ -34,7 +37,9 @@ export function bindMediaEvents(
   // The DISPLAY size, so an anamorphic stream is already corrected. `resize`
   // covers a variant switch mid-playback, not just the first metadata.
   const onResize = () => {
-    if (v.videoHeight > 0) L.onAspect?.(v.videoWidth / v.videoHeight);
+    if (v.videoHeight > 0) {
+      L.onAspect?.(v.videoWidth / v.videoHeight);
+    }
   };
 
   const evs: [string, EventListener][] = [
@@ -56,9 +61,13 @@ export function bindMediaEvents(
     ['loadedmetadata', onResize],
     ['resize', onResize],
   ];
-  for (const [t, fn] of evs) v.addEventListener(t, fn);
+  for (const [t, fn] of evs) {
+    v.addEventListener(t, fn);
+  }
   return () => {
-    for (const [t, fn] of evs) v.removeEventListener(t, fn);
+    for (const [t, fn] of evs) {
+      v.removeEventListener(t, fn);
+    }
   };
 }
 
@@ -76,7 +85,9 @@ const LANDING_EVENTS = ['loadedmetadata', 'canplay', 'seeked', 'timeupdate'];
 export function startStreamAt(v: HTMLVideoElement, atSec: number): () => void {
   let tries = 0;
   const stop = () => {
-    for (const type of LANDING_EVENTS) v.removeEventListener(type, land);
+    for (const type of LANDING_EVENTS) {
+      v.removeEventListener(type, land);
+    }
   };
   const land = () => {
     if (Math.abs(v.currentTime - atSec) <= LANDING_SLACK_SEC || tries >= LANDING_TRIES) {
@@ -86,7 +97,9 @@ export function startStreamAt(v: HTMLVideoElement, atSec: number): () => void {
     tries += 1;
     v.currentTime = atSec;
   };
-  for (const type of LANDING_EVENTS) v.addEventListener(type, land);
+  for (const type of LANDING_EVENTS) {
+    v.addEventListener(type, land);
+  }
   return stop;
 }
 

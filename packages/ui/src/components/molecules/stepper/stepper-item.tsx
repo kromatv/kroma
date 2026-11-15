@@ -73,7 +73,9 @@ type StepSlots = ReturnType<typeof stepperVariants>;
 const [ItemContext, useStepperFace] = partContext<StepSlots>('Stepper.Item');
 
 function stepStateOf(active: boolean, complete: boolean): StepState {
-  if (active) return 'current';
+  if (active) {
+    return 'current';
+  }
   return complete ? 'complete' : 'ahead';
 }
 
@@ -96,8 +98,12 @@ function MarkerFace({
   complete,
   slots,
 }: Readonly<{ position: number; icon?: IconName; complete: boolean; slots: StepSlots }>) {
-  if (complete) return <Icon name="check" {...slots.glyph} />;
-  if (icon) return <Icon name={icon} {...slots.glyph} />;
+  if (complete) {
+    return <Icon name="check" {...slots.glyph} />;
+  }
+  if (icon) {
+    return <Icon name={icon} {...slots.glyph} />;
+  }
   return <Text style={slots.number}>{position}</Text>;
 }
 

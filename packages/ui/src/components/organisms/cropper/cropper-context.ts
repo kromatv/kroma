@@ -38,7 +38,9 @@ const [CropperContext, useCropperPart] = partContext<CropperState>('Cropper.Root
  */
 function useCropper(): CropperState {
   const state = useContext(CropperContext);
-  if (!state) throw new Error('useCropper() must be used inside <Cropper.Root>');
+  if (!state) {
+    throw new Error('useCropper() must be used inside <Cropper.Root>');
+  }
   return state;
 }
 

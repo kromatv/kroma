@@ -15,7 +15,9 @@ function countWords(node: MdastNode): number {
   if ((node.type === 'text' || node.type === 'code' || node.type === 'inlineCode') && node.value) {
     n += node.value.trim().split(/\s+/).filter(Boolean).length;
   }
-  for (const child of node.children ?? []) n += countWords(child);
+  for (const child of node.children ?? []) {
+    n += countWords(child);
+  }
   return n;
 }
 

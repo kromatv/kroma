@@ -42,12 +42,16 @@ function partsOf(text: string): string[] {
   TOKEN.lastIndex = 0;
   let match = TOKEN.exec(text);
   while (match) {
-    if (match.index > at) parts.push(text.slice(at, match.index));
+    if (match.index > at) {
+      parts.push(text.slice(at, match.index));
+    }
     parts.push(match[1] as HintKey);
     at = match.index + match[0].length;
     match = TOKEN.exec(text);
   }
-  if (at < text.length) parts.push(text.slice(at));
+  if (at < text.length) {
+    parts.push(text.slice(at));
+  }
   return parts;
 }
 

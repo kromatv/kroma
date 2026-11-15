@@ -26,8 +26,12 @@ const RESUME_MIN_MS = 30_000;
 const RESUME_NEAR_END_RATIO = 0.95;
 
 function resumeSec(positionMs: number | undefined, durationMs: number | null): number {
-  if (!positionMs || positionMs < RESUME_MIN_MS) return 0;
-  if (durationMs && positionMs > durationMs * RESUME_NEAR_END_RATIO) return 0;
+  if (!positionMs || positionMs < RESUME_MIN_MS) {
+    return 0;
+  }
+  if (durationMs && positionMs > durationMs * RESUME_NEAR_END_RATIO) {
+    return 0;
+  }
   return positionMs / 1000;
 }
 
@@ -87,7 +91,9 @@ function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
     retry: 0,
   });
 
-  if (!focused) return null;
+  if (!focused) {
+    return null;
+  }
 
   // A downloaded title plays from its on-device snapshot, network or not.
   if (offline) {

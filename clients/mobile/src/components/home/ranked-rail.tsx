@@ -38,7 +38,7 @@ export function RankedRail({ entries }: Readonly<{ entries: readonly RowEntry[] 
         return (
           <Pressable
             key={card.key}
-            onPress={() => router.push(card.route as never)}
+            onPress={() => router.push(card.route)}
             accessibilityRole="button"
             accessibilityLabel={[t('content.rankOf', { rank }), card.title].join(', ')}
             style={({ pressed }) => [s.tile, pressed && s.tilePressed]}

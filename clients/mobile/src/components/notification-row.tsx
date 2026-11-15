@@ -55,8 +55,12 @@ export function NotificationRow({
   }
 
   function open() {
-    if (unread) void perform(() => client.notifications.markRead([row.id]));
-    if (route) router.push(route as never);
+    if (unread) {
+      void perform(() => client.notifications.markRead([row.id]));
+    }
+    if (route) {
+      router.push(route as never);
+    }
   }
 
   function putAway() {
@@ -150,13 +154,21 @@ export function NotificationRow({
 
 function destinationOf(row: Notification): string | null {
   const about = subjectRoute(row.subject);
-  if (about) return about;
+  if (about) {
+    return about;
+  }
   const own = mobileRoute(row.link);
-  if (own) return own;
+  if (own) {
+    return own;
+  }
   for (const action of row.actions) {
-    if (action.kind !== 'link') continue;
+    if (action.kind !== 'link') {
+      continue;
+    }
     const target = mobileRoute(action.href);
-    if (target) return target;
+    if (target) {
+      return target;
+    }
   }
   return null;
 }
@@ -192,10 +204,16 @@ function eventGlyph(event: NotificationEvent): { name: IconName; color: string }
 // ships without full ICU data, so the constructor isn't there on a phone.
 function sinceLabel(t: ReturnType<typeof useT>, createdAt: number): string {
   const mins = Math.max(0, Math.round((Date.now() - createdAt) / 60_000));
-  if (mins < 1) return t('time.justNow');
-  if (mins < 60) return t('time.minutesAgo', { n: mins });
+  if (mins < 1) {
+    return t('time.justNow');
+  }
+  if (mins < 60) {
+    return t('time.minutesAgo', { n: mins });
+  }
   const hours = Math.round(mins / 60);
-  if (hours < 24) return t('time.hoursAgo', { n: hours });
+  if (hours < 24) {
+    return t('time.hoursAgo', { n: hours });
+  }
   return t('time.daysAgo', { n: Math.round(hours / 24) });
 }
 

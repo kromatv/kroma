@@ -34,8 +34,12 @@ export function extentOf(series: readonly (readonly number[])[], reference?: num
     min = Math.min(min, reference);
     max = Math.max(max, reference);
   }
-  if (min === Number.POSITIVE_INFINITY) return { min: 0, max: 1 };
-  if (max === min) return { min: min - 1, max: max + 1 };
+  if (min === Number.POSITIVE_INFINITY) {
+    return { min: 0, max: 1 };
+  }
+  if (max === min) {
+    return { min: min - 1, max: max + 1 };
+  }
   return { min, max };
 }
 
@@ -44,7 +48,9 @@ function spanOf(series: readonly (readonly number[])[]): { min: number; max: num
   let max = Number.NEGATIVE_INFINITY;
   for (const data of series) {
     for (const v of data) {
-      if (!Number.isFinite(v)) continue;
+      if (!Number.isFinite(v)) {
+        continue;
+      }
       min = Math.min(min, v);
       max = Math.max(max, v);
     }
@@ -78,7 +84,9 @@ export function px(n: number): number {
  * a single sample is a dot's worth of information and reads as a glitch.
  */
 export function seriesPath(data: readonly number[], extent: Extent, box: ChartBox): string {
-  if (data.length < 2) return '';
+  if (data.length < 2) {
+    return '';
+  }
   let d = '';
   for (let i = 0; i < data.length; i += 1) {
     const value = Number.isFinite(data[i] as number) ? (data[i] as number) : extent.min;
@@ -99,7 +107,9 @@ export function bandPath(
   box: ChartBox,
 ): string {
   const n = Math.min(upper.length, lower.length);
-  if (n < 2) return '';
+  if (n < 2) {
+    return '';
+  }
   let d = '';
   for (let i = 0; i < n; i += 1) {
     d += `${i === 0 ? 'M' : 'L'}${px(xAt(i, n, box))} ${px(yAt(upper[i] as number, extent, box))}`;
@@ -118,7 +128,9 @@ export function endPoint(
   extent: Extent,
   box: ChartBox,
 ): { x: number; y: number } | null {
-  if (data.length < 2) return null;
+  if (data.length < 2) {
+    return null;
+  }
   const last = data.at(-1) as number;
   return {
     x: px(xAt(data.length - 1, data.length, box)),

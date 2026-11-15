@@ -13,9 +13,9 @@ import { z } from 'zod';
 import { mobileRoute, subjectRoute } from './route';
 
 export const PushAction = z.object({
-  id: z.string().min(1),
-  method: z.string().min(1).catch('POST'),
-  href: z.string().min(1),
+  id: z.string().nonempty(),
+  method: z.string().nonempty().catch('POST'),
+  href: z.string().nonempty(),
 });
 export type PushAction = z.infer<typeof PushAction>;
 
@@ -27,18 +27,20 @@ const PushActions = z
   .pipe(z.array(z.unknown()).catch([]))
   .transform((list) => list.flatMap((e) => PushAction.safeParse(e).data ?? []));
 
-const PushSubject = z.union([z.string().transform(jsonOrNull), z.unknown()]).pipe(
-  z
-    .object({ kind: z.string().min(1), id: z.string().min(1) })
-    .optional()
-    .catch(undefined),
-);
+const PushSubject = z
+  .union([z.string().transform(jsonOrNull), z.unknown()])
+  .pipe(
+    z
+      .object({ kind: z.string().nonempty(), id: z.string().nonempty() })
+      .optional()
+      .catch(undefined),
+  );
 
 export const PushData = z.object({
-  id: z.string().min(1).optional().catch(undefined),
+  id: z.string().nonempty().optional().catch(undefined),
   subject: PushSubject.catch(undefined),
-  link: z.string().min(1).optional().catch(undefined),
-  category: z.string().min(1).optional().catch(undefined),
+  link: z.string().nonempty().optional().catch(undefined),
+  category: z.string().nonempty().optional().catch(undefined),
   actions: PushActions.catch([]),
 });
 export type PushData = z.infer<typeof PushData>;

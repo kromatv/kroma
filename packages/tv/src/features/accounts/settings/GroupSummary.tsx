@@ -21,7 +21,9 @@ function SummaryPart({ item, lead }: Readonly<{ item: ChoiceItem; lead: boolean 
   const locale = useLocale();
   const [value] = item.useValue();
   const options = useMemo(() => item.options(t, locale), [item, t, locale]);
-  if (options.length < 2) return null;
+  if (options.length < 2) {
+    return null;
+  }
   const label = choiceValueText(item, t, value);
   const text = item.summary ? t(item.summary, { value: label }) : label;
   return `${lead ? ' · ' : ''}${text}`;

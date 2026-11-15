@@ -53,9 +53,13 @@ const ExportedRule = z.object({
 
 async function fetchText(path: string): Promise<string> {
   const response = await fetch(`${API}${path}`);
-  if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`${path}: HTTP ${response.status}`);
+  }
   const text = await response.text();
-  if (text.length > MAX_BODY) throw new Error(`${path}: response over ${MAX_BODY} bytes`);
+  if (text.length > MAX_BODY) {
+    throw new Error(`${path}: response over ${MAX_BODY} bytes`);
+  }
   return text;
 }
 
@@ -83,13 +87,17 @@ async function activeRules(): Promise<Map<string, Params>> {
     ),
   );
   const profile = profiles.find((one) => one.language === 'ts');
-  if (!profile) throw new Error('the project has no TypeScript quality profile');
+  if (!profile) {
+    throw new Error('the project has no TypeScript quality profile');
+  }
   const xml = await fetchText(
     `/qualityprofiles/export?organization=${ORGANIZATION}&language=ts&qualityProfile=${encodeURIComponent(profile.name)}`,
   );
   const active = new Map<string, Params>();
   for (const rule of exportedRules(xml)) {
-    if (rule.repository === 'typescript') active.set(rule.key, rule.params);
+    if (rule.repository === 'typescript') {
+      active.set(rule.key, rule.params);
+    }
   }
   return active;
 }
@@ -104,12 +112,18 @@ function nativeRules(active: Map<string, Params>): Record<string, unknown> {
   for (const [name, rule] of Object.entries(SONAR_RULES)) {
     const docs = RuleDocs.parse(rule.meta?.docs ?? {});
     const key = sonarKey(docs.url);
-    if (!key || docs.requiresTypeChecking) continue;
+    if (!key || docs.requiresTypeChecking) {
+      continue;
+    }
     const params = active.get(key);
-    if (!params) continue;
+    if (!params) {
+      continue;
+    }
     const options = OPTIONS[name];
     if (Object.keys(params).length && !options) {
-      throw new Error(`sonarjs/${name} (${key}) takes ${Object.keys(params)}: map them in OPTIONS`);
+      throw new Error(
+        `sonarjs/${name} (${key}) takes ${Object.keys(params).join(',')}: map them in OPTIONS`,
+      );
     }
     rules[`sonarjs/${name}`] = options ? ['error', ...options(params)] : 'error';
   }
@@ -120,9 +134,13 @@ function properties(text: string): Map<string, string> {
   const joined = text.replaceAll(/\\\r?\n\s*/g, '');
   const values = new Map<string, string>();
   for (const line of joined.split(/\r?\n/)) {
-    if (/^\s*(#|$)/.test(line)) continue;
+    if (/^\s*(#|$)/.test(line)) {
+      continue;
+    }
     const at = line.indexOf('=');
-    if (at > 0) values.set(line.slice(0, at).trim(), line.slice(at + 1).trim());
+    if (at > 0) {
+      values.set(line.slice(0, at).trim(), line.slice(at + 1).trim());
+    }
   }
   return values;
 }
@@ -144,7 +162,9 @@ function ignoredPerFile(
     const file = props.get(`sonar.issue.ignore.multicriteria.${id}.resourceKey`);
     const key = /^(?:type|java)script:(S\d+)$/.exec(ruleKey)?.[1];
     const rule = key ? mirrored.get(key) : undefined;
-    if (!file || !rule) continue;
+    if (!file || !rule) {
+      continue;
+    }
     byFile.set(file, { ...byFile.get(file), [rule]: 'off' });
   }
   return [...byFile]

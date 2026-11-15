@@ -32,9 +32,13 @@ async function dsmParams(request: Request, url: URL): Promise<URLSearchParams> {
 
 function dsmPackages(catalog: Catalog, params: URLSearchParams, origin: string) {
   const arch = params.get('arch');
-  if (!archSupported(arch)) return { packages: [] };
+  if (!archSupported(arch)) {
+    return { packages: [] };
+  }
   const major = Number.parseInt(params.get('major') ?? '', 10);
-  if (!Number.isNaN(major) && major < 7) return { packages: [] };
+  if (!Number.isNaN(major) && major < 7) {
+    return { packages: [] };
+  }
 
   const beta = params.get('package_update_channel') === 'beta';
   const stable = catalog.entries.find((e) => e.channel === 'stable');
@@ -58,15 +62,21 @@ async function icon(repo: string, ctx: ExecCtx, fresh: boolean): Promise<Respons
   const src = `https://raw.githubusercontent.com/${repo}/main/clients/synology/spk/PACKAGE_ICON_256.PNG`;
   const cache = (globalThis as unknown as { caches?: { default?: Cache } }).caches?.default;
   const hit = fresh ? undefined : await cache?.match(src);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   const res = await fetch(fresh ? `${src}?cb=${Date.now()}` : src, {
     cf: { cacheTtl: fresh ? 0 : 300 },
   } as RequestInit);
-  if (!res.ok) return new Response('icon unavailable', { status: 404 });
+  if (!res.ok) {
+    return new Response('icon unavailable', { status: 404 });
+  }
   const out = new Response(res.body, {
     headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' },
   });
-  if (cache) ctx.waitUntil(cache.put(src, out.clone()));
+  if (cache) {
+    ctx.waitUntil(cache.put(src, out.clone()));
+  }
   return out;
 }
 
@@ -84,7 +94,9 @@ export async function machineResponse(
   const origin = url.origin;
   const path = url.pathname.replace(/(^|[^/])\/+$/, '$1') || '/';
 
-  if (path === '/ping') return new Response('pong');
+  if (path === '/ping') {
+    return new Response('pong');
+  }
   if (path === '/icon.png') {
     return icon(env.GITHUB_REPO || DEFAULT_REPO, ctx, url.searchParams.has('fresh'));
   }
@@ -98,7 +110,9 @@ export async function machineResponse(
   }
 
   const isFeed = path === '/catalog.json' || path === '/canary.json' || path === '/all.json';
-  if (path !== '/' && !isFeed) return null;
+  if (path !== '/' && !isFeed) {
+    return null;
+  }
 
   // DSM's add-source probe sends a browser-like Accept with no arch/unique params,
   // and answering it with HTML makes DSM parse the page as JSON and fail silently.
@@ -107,7 +121,9 @@ export async function machineResponse(
     (request.headers.get('accept') ?? '').includes('text/html') &&
     !url.searchParams.has('arch') &&
     !url.searchParams.has('unique');
-  if (path === '/' && wantsHtml) return Response.redirect(`${origin}/browse`, 302);
+  if (path === '/' && wantsHtml) {
+    return Response.redirect(`${origin}/browse`, 302);
+  }
 
   let catalog: Catalog;
   try {

@@ -54,12 +54,16 @@ export function useNearbyTvs(opts: NearbyTvsOptions): NearbyTvs {
   const ourServer = ourServerFor.client === client ? ourServerFor.id : null;
 
   useEffect(() => {
-    if (!client) return;
+    if (!client) {
+      return;
+    }
     let cancelled = false;
     client.media
       .health()
       .then((h) => {
-        if (!cancelled) setOurServerFor({ client, id: h.instanceId ?? null });
+        if (!cancelled) {
+          setOurServerFor({ client, id: h.instanceId ?? null });
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -68,12 +72,16 @@ export function useNearbyTvs(opts: NearbyTvsOptions): NearbyTvs {
   }, [client]);
 
   const sources = useMemo(() => {
-    if (!client) return [];
+    if (!client) {
+      return [];
+    }
     return lan?.browse ? [serverSource(client), lanSource(lan)] : [serverSource(client)];
   }, [client, lan]);
 
   useEffect(() => {
-    if (sources.length === 0) return;
+    if (sources.length === 0) {
+      return;
+    }
     return watchNearbyTvs({ sources, onRows: setHeard });
   }, [sources]);
   const rows = sources.length === 0 ? EMPTY_ROWS : heard;
@@ -96,7 +104,9 @@ export function useNearbyTvs(opts: NearbyTvsOptions): NearbyTvs {
 
   const connect = useCallback(
     async (device: DiscoveredTv, check?: string): Promise<GrantResult> => {
-      if (!client || inFlight.current) return 'dropped';
+      if (!client || inFlight.current) {
+        return 'dropped';
+      }
       inFlight.current = true;
       setConnecting(device);
       try {

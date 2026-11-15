@@ -41,7 +41,9 @@ const AT_BUTTON = 1;
 // The index is ordered, so a test naming a position means it.
 function entryAt(index: readonly StoryEntry[], at: number): StoryEntry {
   const entry = index[at];
-  if (!entry) throw new Error(`the index holds nothing at ${at}`);
+  if (!entry) {
+    throw new Error(`the index holds nothing at ${at}`);
+  }
   return entry;
 }
 

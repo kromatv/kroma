@@ -36,12 +36,17 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
         /* not yet seekable harmless */
       }
       const p = a.play();
-      if (typeof p?.then === 'function') p.then(onset).catch(onset);
-      else onset();
+      if (typeof p?.then === 'function') {
+        p.then(onset).catch(onset);
+      } else {
+        onset();
+      }
     } else {
       onset();
     }
-    if (!loop) armSafety(SAFETY_MS, exit);
+    if (!loop) {
+      armSafety(SAFETY_MS, exit);
+    }
   });
 
   const start = useEffectEvent(() => {
@@ -58,7 +63,9 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
   // Autoplay may have blocked the sting; the first gesture is allowed to start it.
   const unblock = useEffectEvent(() => {
     const a = audioRef.current;
-    if (!a?.paused) return;
+    if (!a?.paused) {
+      return;
+    }
     try {
       a.currentTime = 0;
     } catch {
@@ -71,8 +78,11 @@ export function CssIntro({ onDone, loop = false, tagline, lite = false }: Readon
   });
 
   const onEnded = useEffectEvent(() => {
-    if (loop) replay();
-    else exit();
+    if (loop) {
+      replay();
+    } else {
+      exit();
+    }
   });
 
   useIntroKeys({ exit, replay, unblock });

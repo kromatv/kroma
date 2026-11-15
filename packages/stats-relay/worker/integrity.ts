@@ -44,12 +44,19 @@ function fingerprint(row: InstanceRow): string {
 export function burstIds(rows: InstanceRow[], now: number, limit: number = BURST_LIMIT): string[] {
   const groups = new Map<string, string[]>();
   for (const row of rows) {
-    if (row.flagged) continue;
-    if (row.firstSeen > now - SETTLE_DAYS * DAY) continue;
+    if (row.flagged) {
+      continue;
+    }
+    if (row.firstSeen > now - SETTLE_DAYS * DAY) {
+      continue;
+    }
     const key = fingerprint(row);
     const group = groups.get(key);
-    if (group) group.push(row.id);
-    else groups.set(key, [row.id]);
+    if (group) {
+      group.push(row.id);
+    } else {
+      groups.set(key, [row.id]);
+    }
   }
   return [...groups.values()]
     .filter((ids) => ids.length >= limit)

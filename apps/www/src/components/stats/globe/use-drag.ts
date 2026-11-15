@@ -29,7 +29,9 @@ export function useDrag(
   const [dragging, setDragging] = useState(false);
 
   const end: Handler = (event) => {
-    if (touch.current?.id !== event.pointerId) return;
+    if (touch.current?.id !== event.pointerId) {
+      return;
+    }
     touch.current = null;
     release(motion.current);
     setDragging(false);
@@ -37,7 +39,9 @@ export function useDrag(
 
   const handlers: DragHandlers = {
     onPointerDown(event) {
-      if (event.button !== 0 || touch.current) return;
+      if (event.button !== 0 || touch.current) {
+        return;
+      }
       event.currentTarget.setPointerCapture(event.pointerId);
       touch.current = {
         id: event.pointerId,
@@ -49,7 +53,9 @@ export function useDrag(
     },
     onPointerMove(event) {
       const from = touch.current;
-      if (!from || from.id !== event.pointerId) return;
+      if (!from || from.id !== event.pointerId) {
+        return;
+      }
       const perPixel = Math.PI / Math.max(1, event.currentTarget.clientWidth);
       const seconds = (event.timeStamp - from.at) / 1000;
       drag(

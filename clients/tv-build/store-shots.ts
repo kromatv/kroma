@@ -22,14 +22,18 @@ import { chromium } from 'playwright';
 
 const REPO = new URL('../..', import.meta.url).pathname;
 const port = process.argv[2];
-if (!port) throw new Error('usage: store-shots.ts <preview-port> <out-dir>');
+if (!port) {
+  throw new Error('usage: store-shots.ts <preview-port> <out-dir>');
+}
 
 // `resolve()` canonicalizes the CLI argument but validates nothing - it will hand
 // back `/etc` just as readily as `.store-art`, and the next line is an `mkdirSync`.
 // A build script has no business creating directories outside the checkout, so
 // that is the boundary enforced here.
 function outDirIn(repo, arg, usage) {
-  if (!arg) throw new Error(usage);
+  if (!arg) {
+    throw new Error(usage);
+  }
   const root = resolve(repo);
   const dir = resolve(root, arg);
   if (dir !== root && !dir.startsWith(`${root}${sep}`)) {
@@ -103,7 +107,9 @@ page.on('pageerror', (e) => console.log('  [pageerror]', String(e).slice(0, 200)
 if (SEED) {
   const entries = JSON.parse(readFileSync(SEED, 'utf8'));
   await page.addInitScript((seeded) => {
-    for (const [k, v] of Object.entries(seeded)) localStorage.setItem(k, v);
+    for (const [k, v] of Object.entries(seeded)) {
+      localStorage.setItem(k, v);
+    }
   }, entries);
 }
 
@@ -117,7 +123,9 @@ await page.goto(`http://localhost:${port}/`, { waitUntil: 'networkidle' });
 await page.waitForTimeout(INTRO_MS);
 
 for (const { name, keys } of SCREENS) {
-  for (const key of keys) await press(key);
+  for (const key of keys) {
+    await press(key);
+  }
   await page.waitForTimeout(400);
   writeFileSync(outPath(`${name}.png`), await page.screenshot({ type: 'png' }));
   // Samsung takes JPG only, capped at 500 kB - and a 1920x1080 frame of TV
@@ -127,9 +135,13 @@ for (const { name, keys } of SCREENS) {
   let jpeg: Buffer | undefined;
   for (const quality of [92, 82, 72, 62]) {
     jpeg = await page.screenshot({ type: 'jpeg', quality });
-    if (jpeg.length <= SAMSUNG_MAX_BYTES) break;
+    if (jpeg.length <= SAMSUNG_MAX_BYTES) {
+      break;
+    }
   }
-  if (!jpeg) throw new Error('screenshot produced no jpeg');
+  if (!jpeg) {
+    throw new Error('screenshot produced no jpeg');
+  }
   writeFileSync(outPath(`${name}.jpg`), jpeg);
   if (jpeg.length > SAMSUNG_MAX_BYTES) {
     console.log(`  ! ${name}.jpg is ${Math.round(jpeg.length / 1024)} kB - over Samsung's 500 kB`);

@@ -39,11 +39,15 @@ export interface PlayerKeysParams {
 export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): void {
   const { nav } = p;
   if (p.locked) {
-    if (key === 'Back' || key === 'Enter') nav.exit('back');
+    if (key === 'Back' || key === 'Enter') {
+      nav.exit('back');
+    }
     return;
   }
   if (p.postPlay?.active) {
-    if (key === 'Back') p.postPlay.onBack();
+    if (key === 'Back') {
+      p.postPlay.onBack();
+    }
     return;
   }
   if (key !== 'Back') {
@@ -51,7 +55,9 @@ export function routeRemoteKey(p: Readonly<PlayerKeysParams>, key: RemoteKey): v
     return;
   }
   if (nav.overlay) {
-    if (p.panelRef.current?.onKey(key)) return;
+    if (p.panelRef.current?.onKey(key)) {
+      return;
+    }
     nav.handleKey(key);
     return;
   }

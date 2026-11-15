@@ -18,10 +18,16 @@ export function frostCoat(
   scope: StyleScope,
   reach: FrostReach,
 ): FrostCoat {
-  if (reach.layer) return { style: null, layer: <FrostMark layer={reach.layer} /> };
-  if (reach.layerOnly) return BARE;
+  if (reach.layer) {
+    return { style: null, layer: <FrostMark layer={reach.layer} /> };
+  }
+  if (reach.layerOnly) {
+    return BARE;
+  }
   const cached = coats.get(amount);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const coat: FrostCoat = {
     style: sharedStyle(`frost:${amount}`, backdropBlur(amount) as never, scope) as ViewStyle,
     layer: null,

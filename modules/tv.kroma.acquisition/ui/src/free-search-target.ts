@@ -55,9 +55,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
  * there is nothing to search for yet. */
 export function queryPreview(query: string, target: FreeTarget, season: string, episode: string) {
   const text = query.trim();
-  if (!text) return '';
+  if (!text) {
+    return '';
+  }
   const scope = scopeOf(target, season, episode);
-  if (scope.season == null) return text;
+  if (scope.season == null) {
+    return text;
+  }
   const tag =
     scope.episode == null ? `S${pad(scope.season)}` : `S${pad(scope.season)}E${pad(scope.episode)}`;
   return `${text} ${tag}`;
@@ -66,8 +70,12 @@ export function queryPreview(query: string, target: FreeTarget, season: string, 
 /** Whether the form can be submitted: some text, and the numbers the target
  * needs. A season search with no season is a film search wearing a label. */
 export function canSearch(query: string, target: FreeTarget, season: string, episode: string) {
-  if (!query.trim()) return false;
+  if (!query.trim()) {
+    return false;
+  }
   const scope = scopeOf(target, season, episode);
-  if (needsSeason(target) && scope.season == null) return false;
+  if (needsSeason(target) && scope.season == null) {
+    return false;
+  }
   return !(needsEpisode(target) && scope.episode == null);
 }

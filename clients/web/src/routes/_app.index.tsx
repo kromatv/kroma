@@ -16,7 +16,9 @@ export const Route = createFileRoute('/_app/')({
   loader: ({ context: { runtime: webRuntime, queryClient } }) => {
     // The catalogue is auth-gated: skip until signed in (the gate covers the UI;
     // the root invalidates queries on login so these prefetch then).
-    if (!isAuthed()) return;
+    if (!isAuthed()) {
+      return;
+    }
     const { userQueries } = webRuntime.queries;
     void queryClient.prefetchQuery(userQueries.home());
     void queryClient.prefetchQuery(userQueries.continueWatching());
@@ -65,8 +67,12 @@ function CatalogueHero() {
   const { data: movies } = useSuspenseQuery(catalogQueries.moviesView());
   const { data: shows } = useSuspenseQuery(catalogQueries.showsView());
   const first = movies[0];
-  if (first) return <Hero entry={{ type: 'movie', movie: first }} />;
-  if (shows.length > 0) return null;
+  if (first) {
+    return <Hero entry={{ type: 'movie', movie: first }} />;
+  }
+  if (shows.length > 0) {
+    return null;
+  }
   return (
     <EmptyState.Root icon="movie">
       <EmptyState.Title>{t('content.homeEmpty')}</EmptyState.Title>

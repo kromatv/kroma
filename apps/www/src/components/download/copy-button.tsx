@@ -10,7 +10,9 @@ export function CopyButton({ value }: Readonly<CopyButtonProps>) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      return;
+    }
     void navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);

@@ -10,7 +10,9 @@ import type { AdminModule } from '#web/features/admin/module-api';
 export type DepState = 'ok' | 'missing' | 'disabled' | 'optional';
 
 export function depState(target: AdminModule | undefined, optional: boolean): DepState {
-  if (!target) return optional ? 'optional' : 'missing';
+  if (!target) {
+    return optional ? 'optional' : 'missing';
+  }
   return target.enabled ? 'ok' : 'disabled';
 }
 
@@ -43,9 +45,13 @@ export function DepChip({ label, state }: Readonly<{ label: string; state: DepSt
 function dependents(module: AdminModule, all: AdminModule[]): AdminModule[] {
   const answers = module.contributes ?? [];
   return all.filter((other) => {
-    if (other.id === module.id) return false;
+    if (other.id === module.id) {
+      return false;
+    }
     const deps = [...depEntries(other.dependencies), ...depEntries(other.optionalDependencies)];
-    if (deps.some((d) => d.id === module.id)) return true;
+    if (deps.some((d) => d.id === module.id)) {
+      return true;
+    }
     return (other.consumes ?? []).some((r) =>
       answers.some((c) => c.point === r.point && (!r.id || c.id === r.id)),
     );
@@ -83,7 +89,9 @@ export function ModuleDeps({ module, all }: Readonly<{ module: AdminModule; all:
   ];
   const reqs = module.consumes ?? [];
   const requiredBy = dependents(module, all);
-  if (deps.length === 0 && reqs.length === 0 && requiredBy.length === 0) return null;
+  if (deps.length === 0 && reqs.length === 0 && requiredBy.length === 0) {
+    return null;
+  }
   return (
     <Box mt={8} gap={6}>
       {deps.length > 0 && (

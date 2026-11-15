@@ -37,7 +37,9 @@ function ships<L extends string>(locales: readonly L[], locale: string): locale 
 function watched(inputs: Inputs, read: Set<string>): Inputs {
   return new Proxy(inputs, {
     get(target, name, receiver) {
-      if (typeof name === 'string') read.add(name);
+      if (typeof name === 'string') {
+        read.add(name);
+      }
       return Reflect.get(target, name, receiver);
     },
   });
@@ -52,7 +54,9 @@ function text(value: unknown): string {
 function varsIn(inputs: Inputs): Vars | undefined {
   const vars: Vars = {};
   for (const [name, value] of Object.entries(inputs)) {
-    if (value === undefined) continue;
+    if (value === undefined) {
+      continue;
+    }
     vars[name] = typeof value === 'number' ? value : text(value);
   }
   return Object.keys(vars).length > 0 ? vars : undefined;
@@ -125,7 +129,9 @@ export function paraglide<L extends string, M extends Messages>({
   function wrap(key: string, message: Rendering): Rendering {
     return (inputs, options) => {
       const inspect = held.inspector;
-      if (!inspect) return message(inputs, options);
+      if (!inspect) {
+        return message(inputs, options);
+      }
       const given = inputs ?? {};
       const read = new Set<string>();
       const text = message(watched(given, read), options);
@@ -149,24 +155,34 @@ export function paraglide<L extends string, M extends Messages>({
     // re-runs the module that installs it, and a second refresh from that run
     // would never stop.
     inspect(next) {
-      if (held.inspector === next) return;
+      if (held.inspector === next) {
+        return;
+      }
       held.inspector = next;
       refresh();
     },
     overrideLocale(locale) {
       resolve ??= runtime.getLocale;
-      if (locale !== null && !ships(runtime.locales, locale)) return;
+      if (locale !== null && !ships(runtime.locales, locale)) {
+        return;
+      }
       const next: () => L = locale === null ? resolve : () => locale;
-      if (runtime.getLocale() === next()) return;
+      if (runtime.getLocale() === next()) {
+        return;
+      }
       runtime.overwriteGetLocale(next);
       refresh();
     },
     messages: new Proxy(messages, {
       get(target, name, receiver) {
         const value: unknown = Reflect.get(target, name, receiver);
-        if (typeof value !== 'function') return value;
+        if (typeof value !== 'function') {
+          return value;
+        }
         const known = wrappers.get(name);
-        if (known) return known;
+        if (known) {
+          return known;
+        }
         const made = wrap(String(name), value as Rendering);
         wrappers.set(name, made);
         return made;

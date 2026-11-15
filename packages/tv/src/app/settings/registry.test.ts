@@ -62,7 +62,9 @@ describe('locale setting', () => {
 
   it('labels a locale with its own name', () => {
     const first = LOCALES[0];
-    if (!first) throw new Error('no locales are shipped');
+    if (!first) {
+      throw new Error('no locales are shipped');
+    }
     expect(labelOf(localeSetting, first.code)).toBe(first.labelKey);
   });
 
@@ -115,7 +117,9 @@ describe('keyboard layout setting', () => {
   it('labels every layout it offers', () => {
     const options = optionsOf(keyboardLayoutSetting);
     expect(options.length).toBeGreaterThan(1);
-    for (const option of options) expect(labelOf(keyboardLayoutSetting, option)).toBeTruthy();
+    for (const option of options) {
+      expect(labelOf(keyboardLayoutSetting, option)).toBeTruthy();
+    }
   });
 });
 

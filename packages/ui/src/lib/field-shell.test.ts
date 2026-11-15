@@ -33,7 +33,7 @@ describe('the shell defaults', () => {
   it('reads control metrics from its root and lets explicit size win', () => {
     const { result } = renderHook(() => [useControlMetrics(), useControlMetrics('sm')], {
       wrapper: ({ children }: { children: ReactNode }) =>
-        createElement(KitProvider, { config: { formFactor: 'tv' }, children }),
+        createElement(KitProvider, { config: { formFactor: 'tv' } }, children),
     });
     expect(result.current).toEqual([CONTROL.tv, CONTROL.sm]);
     expect(controlMetrics()).toBe(CONTROL.md);

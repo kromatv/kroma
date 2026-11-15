@@ -24,7 +24,9 @@ export function pairingHeader(type: number, size: number): Buffer {
 
 /** The payload size a pairing header announces, or null when it is not one of `type`. */
 export function payloadSize(header: Buffer, type: number, largest: number): number | null {
-  if (header.length !== HEADER_BYTES || header[0] !== VERSION || header[1] !== type) return null;
+  if (header.length !== HEADER_BYTES || header[0] !== VERSION || header[1] !== type) {
+    return null;
+  }
   const size = header.readUInt32BE(2);
   return size > 0 && size <= largest ? size : null;
 }
@@ -44,6 +46,8 @@ export async function readPacket(
   largest: number,
 ): Promise<Buffer> {
   const size = payloadSize(await bytes.read(HEADER_BYTES), type, largest);
-  if (size === null) throw new Error('the TV answered with something that is not adb pairing');
+  if (size === null) {
+    throw new Error('the TV answered with something that is not adb pairing');
+  }
   return bytes.read(size);
 }

@@ -69,9 +69,15 @@ function nextSort(
   const alone = !multiple || (place !== null && columns.length === 1);
   const direction =
     NEXT_DIRECTION[place?.direction ?? 'none'] ?? (required && alone ? 'asc' : null);
-  if (!multiple) return direction ? [{ column, direction }] : [];
-  if (!direction) return columns.filter((entry) => entry.column !== column);
-  if (!place) return [...columns, { column, direction }];
+  if (!multiple) {
+    return direction ? [{ column, direction }] : [];
+  }
+  if (!direction) {
+    return columns.filter((entry) => entry.column !== column);
+  }
+  if (!place) {
+    return [...columns, { column, direction }];
+  }
   return columns.map((entry) => (entry.column === column ? { column, direction } : entry));
 }
 

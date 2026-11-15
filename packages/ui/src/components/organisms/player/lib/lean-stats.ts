@@ -34,7 +34,9 @@ export interface LeanStatsInput {
 }
 
 function audioFormatLabel(track: PlayerAudioTrack | undefined): string | undefined {
-  if (!track) return undefined;
+  if (!track) {
+    return undefined;
+  }
   const channels = track.channels ? ` ${track.channels}.0` : '';
   const lang = track.language ? ` (${track.language})` : '';
   return `${track.codec.toUpperCase()}${channels}${lang}`;
@@ -48,8 +50,10 @@ export function buildLeanStats(s: LeanStatsInput): PlayerStats {
   const { item, cur, dur, bufEnd, audioTracks, audioIndex, video, mode, t } = s;
   const target = s.bufferTarget ?? LOW_BUFFER_SEC;
   const selAudio = audioTracks.find((a) => a.index === audioIndex) ?? audioTracks[0];
-  const vw = video?.videoWidth || item.video?.width || 0;
-  const vh = video?.videoHeight || item.video?.height || 0;
+  const liveWidth = video?.videoWidth ?? 0;
+  const liveHeight = video?.videoHeight ?? 0;
+  const vw = liveWidth > 0 ? liveWidth : (item.video?.width ?? 0);
+  const vh = liveHeight > 0 ? liveHeight : (item.video?.height ?? 0);
   const q = video?.getVideoPlaybackQuality?.();
   const bufferAhead = bufEnd == null ? null : Math.max(0, bufEnd - cur);
 

@@ -19,11 +19,19 @@ import { RouteLink } from '#web/shared/ui/route-link';
 type HeroBadge = '4K' | 'HDR' | 'H.265';
 
 function heroBadges(v: MovieCardView['video']): HeroBadge[] {
-  if (!v) return [];
+  if (!v) {
+    return [];
+  }
   const out: HeroBadge[] = [];
-  if ((v.width ?? 0) >= 3840) out.push('4K');
-  if (v.hdr) out.push('HDR');
-  if (v.codec === 'hevc') out.push('H.265');
+  if ((v.width ?? 0) >= 3840) {
+    out.push('4K');
+  }
+  if (v.hdr) {
+    out.push('HDR');
+  }
+  if (v.codec === 'hevc') {
+    out.push('H.265');
+  }
   return out;
 }
 

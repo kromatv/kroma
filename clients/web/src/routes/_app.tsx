@@ -17,10 +17,14 @@ export const Route = createFileRoute('/_app')({
   // Without this the loaders race the boot exchange and 401-then-retry every
   // request on each reload.
   beforeLoad: async ({ context: { runtime: webRuntime } }) => {
-    if (isAuthed()) await webRuntime.ensureSession();
+    if (isAuthed()) {
+      await webRuntime.ensureSession();
+    }
   },
   loader: ({ context: { runtime: webRuntime, queryClient } }) => {
-    if (isAuthed()) void queryClient.prefetchQuery(webRuntime.queries.userQueries.notifications());
+    if (isAuthed()) {
+      void queryClient.prefetchQuery(webRuntime.queries.userQueries.notifications());
+    }
   },
   component: AppLayout,
 });
@@ -47,7 +51,9 @@ function AppLayout() {
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';
   useNotificationStream();
-  if (!(ready && authed)) return null;
+  if (!(ready && authed)) {
+    return null;
+  }
   return (
     <CastProvider client={webRuntime.client} enabled deviceName={BROWSER_LABEL}>
       <Box row={wide} minH="100%">

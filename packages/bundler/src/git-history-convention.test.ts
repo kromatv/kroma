@@ -15,17 +15,20 @@ import { groupFiles } from './git-history-parse.ts';
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
 const ROOT = 'packages/ui/src';
 
-function tree(dir: string, prefix: string, out: string[] = []): string[] {
+function tree(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(`${REPO}${dir}`, { withFileTypes: true })) {
     const path = `${dir}/${entry.name}`;
-    if (entry.isDirectory()) tree(path, prefix, out);
-    else out.push(path);
+    if (entry.isDirectory()) {
+      tree(path, out);
+    } else {
+      out.push(path);
+    }
   }
   return out;
 }
 
 describe('the story suffix the grouping keys on', () => {
-  const files = tree(ROOT, ROOT);
+  const files = tree(ROOT);
 
   it('finds the kit its stories', () => {
     expect(files.length).toBeGreaterThan(0);

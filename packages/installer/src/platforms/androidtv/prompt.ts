@@ -10,7 +10,9 @@ const PROBE_TIMEOUT_MS = 5000;
 
 async function wantsPairing(host: string): Promise<boolean> {
   const endpoint = await adbEndpoint(host);
-  if (!endpoint?.wireless) return false;
+  if (!endpoint?.wireless) {
+    return false;
+  }
   try {
     const keys = await adbKeys();
     (await AdbConnection.open(host, endpoint.port, { keys, timeoutMs: PROBE_TIMEOUT_MS })).close();
@@ -27,7 +29,9 @@ async function pair(tv: Television): Promise<boolean> {
       validate: (value) =>
         pairingCode(value ?? '') === null ? 'the six digits the TV shows' : undefined,
     });
-    if (p.isCancel(typed)) return false;
+    if (p.isCancel(typed)) {
+      return false;
+    }
     try {
       await pairSet(tv.host, pairingCode(typed) ?? '');
       p.log.success(`${tv.name} is paired with this computer`);
@@ -48,11 +52,16 @@ export async function askPairingCodes(
 ): Promise<Map<string, PlatformOptions> | null> {
   let explained = false;
   for (const tv of sets) {
-    if (!(await wantsPairing(tv.host))) continue;
-    if (!explained)
+    if (!(await wantsPairing(tv.host))) {
+      continue;
+    }
+    if (!explained) {
       p.log.info(`To pair, ${PAIRING_STEPS}.\nThe code stays on screen until it is used.`);
+    }
     explained = true;
-    if (!(await pair(tv))) return null;
+    if (!(await pair(tv))) {
+      return null;
+    }
   }
   return new Map();
 }

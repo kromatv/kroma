@@ -32,14 +32,18 @@ export const Route = createFileRoute('/_app/genres/$id')({
   // `/genre/family` both predate the id and may sit in a history.
   beforeLoad: ({ params, search }) => {
     const slug = genreOfSegment(params.id);
-    if (!slug) throw redirect({ to: '/genres', replace: true });
+    if (!slug) {
+      throw redirect({ to: '/genres', replace: true });
+    }
     const canonical = genreSegment(slug);
     if (canonical !== params.id) {
       throw redirect({ to: '/genres/$id', params: { id: canonical }, search, replace: true });
     }
   },
   loader: async ({ context: { runtime: webRuntime, queryClient } }) => {
-    if (!isAuthed()) return;
+    if (!isAuthed()) {
+      return;
+    }
     await Promise.all([
       queryClient.ensureQueryData(webRuntime.queries.catalogQueries.moviesView()),
       queryClient.ensureQueryData(webRuntime.queries.catalogQueries.showsView()),

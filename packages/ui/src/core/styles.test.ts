@@ -85,7 +85,9 @@ describe('sharedStyle', () => {
   });
 
   it('stops remembering past its cap, and still resolves correctly', () => {
-    for (let i = 0; i < 4096; i++) sharedStyle(`fill:${i}`, { width: i });
+    for (let i = 0; i < 4096; i++) {
+      sharedStyle(`fill:${i}`, { width: i });
+    }
     const first = sharedStyle('overflow', { width: 7 });
     const second = sharedStyle('overflow', { width: 7 });
     expect(flat(first)).toEqual({ width: 7 });

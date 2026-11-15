@@ -34,8 +34,9 @@ export default defineRule(
           type.type !== 'TSTypeReference' ||
           type.typeName.type !== 'Identifier' ||
           type.typeName.name !== 'Record'
-        )
+        ) {
           return;
+        }
         const parameters = (type.typeArguments ?? type.typeParameters)?.params;
         if (
           parameters?.length === 2 &&

@@ -20,7 +20,9 @@ const CLOSED: DevtoolsSession = { open: false, editor: null, x: null, y: null };
 export function readSession(): DevtoolsSession {
   try {
     const stored = sessionStorage.getItem(KEY);
-    if (!stored || stored.length > MAX_CHARS) return CLOSED;
+    if (!stored || stored.length > MAX_CHARS) {
+      return CLOSED;
+    }
     const parsed = Session.safeParse(JSON.parse(stored));
     return parsed.success ? parsed.data : CLOSED;
   } catch {

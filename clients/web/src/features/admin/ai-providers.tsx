@@ -137,7 +137,9 @@ export function ProviderCard({
     try {
       const r = await client.llm.models(probeBody());
       setModels(r.models);
-      if (r.error) setProbe({ ok: false, text: r.error });
+      if (r.error) {
+        setProbe({ ok: false, text: r.error });
+      }
     } finally {
       setBusy('idle');
     }

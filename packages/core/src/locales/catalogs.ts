@@ -31,7 +31,9 @@ function bundled(): Bundled {
   const later: Record<string, string[]> = {};
   for (const key of context.keys()) {
     const at = parseCatalogPath(key);
-    if (!at) continue;
+    if (!at) {
+      continue;
+    }
     if (at.file === LABEL_NAMESPACE) {
       shipped[at.locale] = context(key);
       continue;

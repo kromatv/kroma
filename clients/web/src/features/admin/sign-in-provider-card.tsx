@@ -41,8 +41,12 @@ function hostOf(issuer: string): string {
 
 function StatusBadge({ provider: p }: Readonly<{ provider: ProviderForm }>) {
   const t = useT();
-  if (!p.enabled) return <Badge tone="neutral">{t('admin.signInOff')}</Badge>;
-  if (p.live) return <Badge tone="success">{t('admin.signInLive')}</Badge>;
+  if (!p.enabled) {
+    return <Badge tone="neutral">{t('admin.signInOff')}</Badge>;
+  }
+  if (p.live) {
+    return <Badge tone="success">{t('admin.signInLive')}</Badge>;
+  }
   return <Badge tone="warning">{t('admin.signInNotTested')}</Badge>;
 }
 

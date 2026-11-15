@@ -32,7 +32,9 @@ export default function AcquisitionPage() {
   const t = useT();
   const allowed = useCap('settings.manage');
   const [tab, setTab] = useState<Tab>('settings');
-  if (!allowed) return <Denied />;
+  if (!allowed) {
+    return <Denied />;
+  }
   return (
     <Box gap={24}>
       <PageHeader.Root>
@@ -95,7 +97,9 @@ function TabPanel({ tab }: Readonly<{ tab: Tab }>) {
 
 function RulesPanel({ tab }: Readonly<{ tab: RulesTab }>) {
   const rules = useRules();
-  if (rules.loading) return <ModuleLoading panels={2} />;
+  if (rules.loading) {
+    return <ModuleLoading panels={2} />;
+  }
   if (rules.failed || !rules.data) {
     return <ModuleFailed error={rules.error} retry={() => void rules.reload()} />;
   }

@@ -26,7 +26,9 @@ async function elementsOf(path: string): Promise<string[]> {
   const table = /const _components = \{([\s\S]{0,4000}?)\.\.\.props\.components/.exec(
     compiled,
   )?.[1];
-  if (!table) throw new Error('MDX emitted no element table: the fixture compiled to nothing.');
+  if (!table) {
+    throw new Error('MDX emitted no element table: the fixture compiled to nothing.');
+  }
   return [...table.matchAll(/(\w{1,64}): "\w{1,64}"/g)].map((pair) => pair[1] as string);
 }
 
@@ -92,9 +94,9 @@ describe('the element map', () => {
 // which react-native-web answers with a real <ul> and <li>. Finding one of the
 // three says nothing about whether MDX's element was mapped; the two tests
 // above are what gate that.
-const PAINTED_BY_THE_KIT = ['img', 'ul', 'li'];
+const PAINTED_BY_THE_KIT = new Set(['img', 'ul', 'li']);
 
-const htmlSweep = () => EMITTABLE.filter((name) => !PAINTED_BY_THE_KIT.includes(name)).join(',');
+const htmlSweep = () => EMITTABLE.filter((name) => !PAINTED_BY_THE_KIT.has(name)).join(',');
 
 describe('rendering a compiled document', () => {
   it('puts no HTML element in the tree: every one went through the map', () => {

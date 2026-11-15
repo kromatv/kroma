@@ -16,7 +16,9 @@ export function useRootBack(): FocusNavHandlers['onBack'] {
   const t = useT();
   const asking = useRef(false);
   const ask = useCallback(() => {
-    if (asking.current) return false;
+    if (asking.current) {
+      return false;
+    }
     if (!exitNeedsConfirm()) {
       back();
       return;
@@ -28,7 +30,9 @@ export function useRootBack(): FocusNavHandlers['onBack'] {
       cancelLabel: t('common.cancel'),
     }).then((yes) => {
       asking.current = false;
-      if (yes) back();
+      if (yes) {
+        back();
+      }
     });
   }, [back, t, confirm]);
   return canExit ? ask : undefined;

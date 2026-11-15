@@ -22,7 +22,9 @@ function withBus(): { calls: Call[]; answer: () => void } {
   return {
     calls,
     answer: () => {
-      for (const bridge of bridges) bridge.onservicecallback?.('{"returnValue":true}');
+      for (const bridge of bridges) {
+        bridge.onservicecallback?.('{"returnValue":true}');
+      }
     },
   };
 }

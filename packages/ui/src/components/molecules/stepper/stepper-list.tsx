@@ -23,7 +23,9 @@ function List({ children, style }: Readonly<StepperListProps>) {
   const walk = (delta: -1 | 1) => {
     for (let at = flow.index + delta; at >= 0 && at < flow.count; at += delta) {
       const key = flow.steps[at];
-      if (key === undefined || !flow.reachable(key)) continue;
+      if (key === undefined || !flow.reachable(key)) {
+        continue;
+      }
       flow.goTo(key);
       return;
     }
@@ -44,8 +46,11 @@ function List({ children, style }: Readonly<StepperListProps>) {
         accessibilityLabel={label}
         onKeyDown={(event) => {
           const key = event.nativeEvent.key;
-          if (key === 'ArrowLeft' || key === 'ArrowUp') walk(-1);
-          else if (key === 'ArrowRight' || key === 'ArrowDown') walk(1);
+          if (key === 'ArrowLeft' || key === 'ArrowUp') {
+            walk(-1);
+          } else if (key === 'ArrowRight' || key === 'ArrowDown') {
+            walk(1);
+          }
         }}
         style={style}
       >

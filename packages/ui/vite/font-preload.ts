@@ -29,7 +29,9 @@ const toUrlPath = (path: string) => path.split(sep).join('/');
 
 const withoutTrailingSlash = (url: string) => {
   let end = url.length;
-  while (end > 0 && url[end - 1] === '/') end -= 1;
+  while (end > 0 && url[end - 1] === '/') {
+    end -= 1;
+  }
   return url.slice(0, end);
 };
 

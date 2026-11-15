@@ -78,7 +78,9 @@ export function FocusLiftHost({ children }: Readonly<{ children: (held: boolean)
   // while another is rendering, and StrictMode double-invokes it and counts the
   // subtree twice. The cleanup is what lets go when a lifted subtree unmounts.
   useEffect(() => {
-    if (!parent || !lifted) return;
+    if (!parent || !lifted) {
+      return;
+    }
     parent(true);
     return () => parent(false);
   }, [lifted, parent]);

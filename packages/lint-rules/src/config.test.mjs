@@ -29,6 +29,12 @@ it('loads all custom rules through the real config and preserves runtime exclusi
     assert.ok([0, 1].includes(result.status), result.stderr);
     return format === 'json' ? JSON.parse(result.stdout) : result.stdout;
   }
+  function houseRules(name, source) {
+    return lint(name, source)
+      .diagnostics.map(({ code: id }) => id)
+      .filter((id) => id.startsWith('kroma('))
+      .sort();
+  }
   try {
     const code = [
       "import { thing } from '../../../../core/src/index';",
@@ -36,18 +42,16 @@ it('loads all custom rules through the real config and preserves runtime exclusi
       'export let value = 0;',
       '// ---- helpers ----',
     ].join('\n');
-    const result = lint('invalid.ts', code);
-    assert.deepEqual(result.diagnostics.map(({ code: id }) => id).sort(), [
+    assert.deepEqual(houseRules('invalid.ts', code), [
       'kroma(no-comment-banners)',
       'kroma(no-module-mutable-bindings)',
       'kroma(no-react-forward-ref)',
       'kroma(no-relative-workspace-imports)',
     ]);
-    assert.equal(lint('owner.test.ts', 'export let fixture = 0;').diagnostics.length, 0);
-    assert.equal(
-      lint('valid.ts', 'export function create() { let value = 0; return () => ++value; }')
-        .diagnostics.length,
-      0,
+    assert.deepEqual(houseRules('owner.test.ts', 'export let fixture = 0;'), []);
+    assert.deepEqual(
+      houseRules('valid.ts', 'export function create() { let value = 0; return () => ++value; }'),
+      [],
     );
     assert.match(lint('agent.ts', code, 'agent'), /bun run --cwd packages\/lint-rules rules/);
     const cases = [
@@ -66,17 +70,21 @@ it('loads all custom rules through the real config and preserves runtime exclusi
       ],
       ['copy.ts', `const text = "Start ${String.fromCodePoint(0x2014)} end";`, 'no-em-dashes'],
       ['design.ts', "const style = { color: '#fff' };", 'no-raw-design-values'],
+      [
+        'flag.ts',
+        'export function render(compact: boolean) { return compact; }',
+        'no-boolean-flag-param',
+      ],
+      [
+        'schema.ts',
+        "import { z } from 'zod';\nexport const Name = z.string().min(1);",
+        'zod-nonempty',
+      ],
     ];
     for (const [name, source, rule] of cases) {
-      assert.deepEqual(
-        lint(name, source).diagnostics.map(({ code: id }) => id),
-        [`kroma(${rule})`],
-      );
+      assert.deepEqual(houseRules(name, source), [`kroma(${rule})`]);
     }
-    assert.equal(
-      lint('palette.fixture.ts', "const style = { color: '#fff' };").diagnostics.length,
-      0,
-    );
+    assert.deepEqual(houseRules('palette.fixture.ts', "const style = { color: '#fff' };"), []);
   } finally {
     rmSync(scratch, { recursive: true, force: true });
   }

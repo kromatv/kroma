@@ -14,9 +14,13 @@ interface VpnState {
 export function DownloadsVpnBanner({ vpn }: Readonly<{ vpn: VpnState }>) {
   const t = useT();
   let message: string;
-  if (vpn.connected) message = t('downloads.vpnOk', { ip: vpn.exitIp ?? '?' });
-  else if (vpn.paused) message = t('downloads.vpnBlocked');
-  else message = t('downloads.vpnDown');
+  if (vpn.connected) {
+    message = t('downloads.vpnOk', { ip: vpn.exitIp ?? '?' });
+  } else if (vpn.paused) {
+    message = t('downloads.vpnBlocked');
+  } else {
+    message = t('downloads.vpnDown');
+  }
   return (
     <Box mb={16}>
       <Callout.Root
@@ -40,7 +44,9 @@ function RecentTransfer() {
     () => torrents.bandwidth('24h'),
     POLL_MS,
   );
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
   const line = transferLine(t, fmt, data.totals);
   return line ? <Callout.Detail>{line}</Callout.Detail> : null;
 }
@@ -51,7 +57,9 @@ function transferLine(
   totals: VpnBandwidthTotals,
 ): string | null {
   const unsealed = totals.unsealedDownBytes + totals.unsealedUpBytes;
-  if (unsealed > 0) return t('downloads.vpnUnsealedDay', { total: fmt.bytes(unsealed) });
+  if (unsealed > 0) {
+    return t('downloads.vpnUnsealedDay', { total: fmt.bytes(unsealed) });
+  }
   const sealed = totals.sealedDownBytes + totals.sealedUpBytes;
   return sealed > 0 ? t('downloads.vpnSealedDay', { total: fmt.bytes(sealed) }) : null;
 }

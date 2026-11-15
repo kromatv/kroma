@@ -127,7 +127,9 @@ function Button({
 // double-paint - and the fill's alpha stays above that group, or the frost
 // child would have nothing left to blur.
 function Dimmable({ dim, children }: Readonly<{ dim: boolean; children: ReactNode }>) {
-  if (!dim) return children;
+  if (!dim) {
+    return children;
+  }
   return (
     <Box row center gap={CONTENT_GAP} opacity={0.5}>
       {children}

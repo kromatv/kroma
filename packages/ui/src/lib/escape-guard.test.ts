@@ -17,7 +17,9 @@ afterEach(() => {
 function modalCloseSpy() {
   const closed = vi.fn();
   const onKeyUp = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') closed();
+    if (event.key === 'Escape') {
+      closed();
+    }
   };
   document.addEventListener('keyup', onKeyUp);
   return { closed, dispose: () => document.removeEventListener('keyup', onKeyUp) };

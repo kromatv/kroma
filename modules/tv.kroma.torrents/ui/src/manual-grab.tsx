@@ -70,7 +70,9 @@ export function ManualGrabModal({
   };
 
   const analyze = (magnet: string) => {
-    if (!magnet) return;
+    if (!magnet) {
+      return;
+    }
     setAnalyzing(true);
     setAnalyzeErr(null);
     setAnalysis(null);
@@ -98,7 +100,9 @@ export function ManualGrabModal({
   const add = () =>
     run(
       async () => {
-        if (!source) return;
+        if (!source) {
+          return;
+        }
         const onlyFiles =
           analysis && selected.size > 0 && selected.size < videoFiles.length
             ? [...selected].sort((a, b) => a - b)

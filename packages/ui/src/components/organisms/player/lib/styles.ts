@@ -24,7 +24,9 @@ export const STAGE_STYLE_ID = 'kroma-player-stage-style';
 /** Idempotent: injects the stage-surface rule once per document. */
 export function injectStageStyles(): void {
   const doc = webDocument();
-  if (!doc || doc.getElementById(STAGE_STYLE_ID)) return;
+  if (!doc || doc.getElementById(STAGE_STYLE_ID)) {
+    return;
+  }
   const el = doc.createElement('style');
   el.id = STAGE_STYLE_ID;
   el.textContent = STAGE_SURFACE;

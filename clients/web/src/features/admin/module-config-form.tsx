@@ -36,9 +36,15 @@ function initial(field: ConfigField, stored: unknown): ConfigValue {
       return Number.isFinite(n) ? n : 0;
     }
     default:
-      if (raw == null) return '';
-      if (typeof raw === 'string') return raw;
-      if (typeof raw === 'number' || typeof raw === 'boolean') return String(raw);
+      if (raw == null) {
+        return '';
+      }
+      if (typeof raw === 'string') {
+        return raw;
+      }
+      if (typeof raw === 'number' || typeof raw === 'boolean') {
+        return String(raw);
+      }
       return JSON.stringify(raw);
   }
 }

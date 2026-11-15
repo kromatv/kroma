@@ -22,10 +22,14 @@ const all = await scanTrees(compiler(), ROOT, shippedTargets());
 const found = all.filter((f) => (!needle || f.file.includes(needle)) && (!only || f.rule === only));
 
 const byRule = new Map<Rule, number>();
-for (const f of found) byRule.set(f.rule, (byRule.get(f.rule) ?? 0) + 1);
+for (const f of found) {
+  byRule.set(f.rule, (byRule.get(f.rule) ?? 0) + 1);
+}
 
 const byFile = new Map<string, typeof found>();
-for (const f of found) byFile.set(f.file, [...(byFile.get(f.file) ?? []), f]);
+for (const f of found) {
+  byFile.set(f.file, [...(byFile.get(f.file) ?? []), f]);
+}
 
 console.log(`\n  ${found.length} findings in ${byFile.size} files, over ${trees.length} trees\n`);
 for (const [rule, count] of [...byRule].sort((a, b) => b[1] - a[1])) {

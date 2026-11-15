@@ -150,7 +150,9 @@ function Verdict({ file, goal }: Readonly<{ file: JudgedFile; goal: QualityGoal 
 }
 
 function verdictOf(file: JudgedFile, goal: QualityGoal | null): FileVerdict {
-  if (goal?.kind === 'keep') return 'kept';
+  if (goal?.kind === 'keep') {
+    return 'kept';
+  }
   return file.belowTarget ? 'below' : 'reached';
 }
 
@@ -160,9 +162,13 @@ function fileName(file: JudgedFile): string {
 }
 
 function unitLabel(file: JudgedFile): string {
-  if (file.season == null) return '';
+  if (file.season == null) {
+    return '';
+  }
   const season = `S${String(file.season).padStart(2, '0')}`;
-  if (file.episode == null) return season;
+  if (file.episode == null) {
+    return season;
+  }
   const first = String(file.episode).padStart(2, '0');
   const last = file.episodeEnd == null ? null : String(file.episodeEnd).padStart(2, '0');
   return last && last !== first ? `${season}E${first}-E${last}` : `${season}E${first}`;

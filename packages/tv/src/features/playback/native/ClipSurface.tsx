@@ -16,7 +16,9 @@ export function ClipSurface({
 }: Readonly<ClipSurfaceProps<ExpoClipEngine>>): ReactNode {
   const radius = useSurfaceRadius();
   const player = clip.engineRef.current?.player ?? null;
-  if (!player) return null;
+  if (!player) {
+    return null;
+  }
   return (
     <Animated.View style={[StyleSheet.absoluteFill, CLIP, { borderRadius: radius }]}>
       <VideoView

@@ -32,15 +32,17 @@ function messages(sectionStart: string, summary: string) {
 
 function resolved(at: string): Plugin {
   const plugin = llmsPlugin();
-  if (typeof plugin.configResolved !== 'function')
+  if (typeof plugin.configResolved !== 'function') {
     throw new Error('the plugin lost configResolved');
-  plugin.configResolved.call({} as never, { root: at } as never);
+  }
+  void plugin.configResolved.call({} as never, { root: at } as never);
   return plugin;
 }
 
 async function emitted(plugin: Plugin, environment: string): Promise<Map<string, string>> {
-  if (typeof plugin.generateBundle !== 'function')
+  if (typeof plugin.generateBundle !== 'function') {
     throw new Error('the plugin lost generateBundle');
+  }
   const files = new Map<string, string>();
   const emitFile = (file: { fileName: string; source: string }) => {
     files.set(file.fileName, file.source);
@@ -55,14 +57,17 @@ async function emitted(plugin: Plugin, environment: string): Promise<Map<string,
 }
 
 function middlewareOf(plugin: Plugin): Middleware {
-  if (typeof plugin.configureServer !== 'function')
+  if (typeof plugin.configureServer !== 'function') {
     throw new Error('the plugin lost configureServer');
+  }
   let found: Middleware | undefined;
   const use = (fn: Middleware) => {
     found = fn;
   };
   void plugin.configureServer.call({} as never, { middlewares: { use } } as never);
-  if (!found) throw new Error('the plugin mounted no middleware');
+  if (!found) {
+    throw new Error('the plugin mounted no middleware');
+  }
   return found;
 }
 

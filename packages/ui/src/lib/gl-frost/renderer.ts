@@ -32,7 +32,9 @@ function program(gl: GL, fs: string): WebGLProgram {
     [gl.FRAGMENT_SHADER, fs],
   ] as const) {
     const s = gl.createShader(type);
-    if (!s || !p) throw new Error('gl-frost: no shader');
+    if (!s || !p) {
+      throw new Error('gl-frost: no shader');
+    }
     gl.shaderSource(s, src);
     gl.compileShader(s);
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
@@ -40,10 +42,14 @@ function program(gl: GL, fs: string): WebGLProgram {
     }
     gl.attachShader(p, s);
   }
-  if (!p) throw new Error('gl-frost: no program');
+  if (!p) {
+    throw new Error('gl-frost: no program');
+  }
   gl.bindAttribLocation(p, 0, 'a');
   gl.linkProgram(p);
-  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('gl-frost: link');
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    throw new Error('gl-frost: link');
+  }
   return p;
 }
 
@@ -54,8 +60,11 @@ function texture(gl: GL, source: TexImageSource | null, w = 1, h = 1): WebGLText
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  if (source) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
-  else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  if (source) {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+  } else {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  }
   return t;
 }
 
@@ -97,7 +106,9 @@ export function createFrostRenderer(gl: GL): FrostRenderer {
   const where = new Map<string, WebGLUniformLocation | null>();
   const uni = (p: WebGLProgram, name: string) => {
     const key = `${[sharp, blur, frost].indexOf(p)}${name}`;
-    if (!where.has(key)) where.set(key, gl.getUniformLocation(p, name));
+    if (!where.has(key)) {
+      where.set(key, gl.getUniformLocation(p, name));
+    }
     return where.get(key) ?? null;
   };
   const box = (
@@ -134,7 +145,9 @@ export function createFrostRenderer(gl: GL): FrostRenderer {
       smallSize = { w: sw, h: sh };
       blurred = false;
     }
-    if (blurred) return;
+    if (blurred) {
+      return;
+    }
     const [a, b] = small;
     gl.viewport(0, 0, sw, sh);
     gl.bindFramebuffer(gl.FRAMEBUFFER, a.fb);
@@ -159,8 +172,12 @@ export function createFrostRenderer(gl: GL): FrostRenderer {
 
   return {
     setArt(next) {
-      if (art) gl.deleteTexture(art);
-      if (veil) gl.deleteTexture(veil);
+      if (art) {
+        gl.deleteTexture(art);
+      }
+      if (veil) {
+        gl.deleteTexture(veil);
+      }
       art = texture(gl, next.art);
       veil = texture(gl, next.veil);
       blurred = false;
@@ -171,13 +188,17 @@ export function createFrostRenderer(gl: GL): FrostRenderer {
       blurred = false;
     },
     draw(rects) {
-      if (!art) return;
+      if (!art) {
+        return;
+      }
       const w = gl.drawingBufferWidth;
       const h = gl.drawingBufferHeight;
       prepare(w, h);
       gl.viewport(0, 0, w, h);
       drawSharp(w, h);
-      if (rects.length === 0 || !small) return;
+      if (rects.length === 0 || !small) {
+        return;
+      }
       gl.enable(gl.BLEND);
       gl.useProgram(frost);
       gl.activeTexture(gl.TEXTURE0);
@@ -191,9 +212,19 @@ export function createFrostRenderer(gl: GL): FrostRenderer {
       gl.disable(gl.BLEND);
     },
     dispose() {
-      for (const t of [art, veil, small?.[0].tex, small?.[1].tex]) if (t) gl.deleteTexture(t);
-      for (const f of [small?.[0].fb, small?.[1].fb]) if (f) gl.deleteFramebuffer(f);
-      for (const p of [sharp, blur, frost]) gl.deleteProgram(p);
+      for (const t of [art, veil, small?.[0].tex, small?.[1].tex]) {
+        if (t) {
+          gl.deleteTexture(t);
+        }
+      }
+      for (const f of [small?.[0].fb, small?.[1].fb]) {
+        if (f) {
+          gl.deleteFramebuffer(f);
+        }
+      }
+      for (const p of [sharp, blur, frost]) {
+        gl.deleteProgram(p);
+      }
       gl.deleteBuffer(quad);
     },
   };

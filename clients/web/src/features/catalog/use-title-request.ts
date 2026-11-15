@@ -13,7 +13,9 @@ function nextViewAfterRequest(
   seasons: number[] | null,
   episodes?: EpisodeRef[],
 ): TitleView {
-  if (episodes?.length) return { ...v, requestStatus: status };
+  if (episodes?.length) {
+    return { ...v, requestStatus: status };
+  }
   const target = new Set(
     seasons ?? v.seasons.filter((s) => !s.available && !s.requested).map((s) => s.number),
   );
@@ -26,7 +28,9 @@ function nextViewAfterRequest(
 
 function addPendingEpisodes(prev: Set<string>, episodes: EpisodeRef[]): Set<string> {
   const next = new Set(prev);
-  for (const e of episodes) next.add(epKey(e.season, e.episode));
+  for (const e of episodes) {
+    next.add(epKey(e.season, e.episode));
+  }
   return next;
 }
 
@@ -56,14 +60,18 @@ export function useTitleRequest(initial: TitleView): TitleRequestState {
   const [pendingEps, setPendingEps] = useState<Set<string>>(() => new Set());
 
   const doRequest = (seasons: number[] | null, episodes?: EpisodeRef[]) => {
-    if (view.tmdbId == null) return;
+    if (view.tmdbId == null) {
+      return;
+    }
     setBusy(true);
     setError(null);
     client.requests
       .create({ kind: view.kind, tmdbId: view.tmdbId, seasons, episodes })
       .then((req) => {
         setView((v) => nextViewAfterRequest(v, req.status, seasons, episodes));
-        if (episodes?.length) setPendingEps((prev) => addPendingEpisodes(prev, episodes));
+        if (episodes?.length) {
+          setPendingEps((prev) => addPendingEpisodes(prev, episodes));
+        }
         setSelected(new Set());
       })
       .catch((e) => setError(apiErrorText(e, t('discover.requestFailed'))))
@@ -74,7 +82,9 @@ export function useTitleRequest(initial: TitleView): TitleRequestState {
     setSelected((prev) => toggle(prev, epKey(season, episode)));
   const requestSelected = () => {
     const episodes = toEpisodeRefs(selected);
-    if (episodes.length > 0) doRequest(null, episodes);
+    if (episodes.length > 0) {
+      doRequest(null, episodes);
+    }
   };
   const requestSeason = (season: number) => doRequest([season]);
   const requestAllSeasons = () => doRequest(null);

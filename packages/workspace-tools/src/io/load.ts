@@ -16,11 +16,11 @@ interface LoadOptions {
 }
 
 const rangesSchema = z
-  .record(z.string().min(1).max(256), z.string().max(256))
+  .record(z.string().nonempty().max(256), z.string().max(256))
   .refine((ranges) => Object.keys(ranges).length <= 1000, 'Too many dependencies');
 const manifestSchema = z.object({
-  name: z.string().min(1).max(256).optional(),
-  id: z.string().min(1).max(256).optional(),
+  name: z.string().nonempty().max(256).optional(),
+  id: z.string().nonempty().max(256).optional(),
   version: z.string().max(128).optional(),
   dependencies: rangesSchema.optional(),
   devDependencies: rangesSchema.optional(),
@@ -30,7 +30,9 @@ const manifestSchema = z.object({
 function readJson(path: string): z.infer<typeof manifestSchema> | null {
   try {
     const source = readFileSync(path, 'utf8');
-    if (source.length > 1_000_000) return null;
+    if (source.length > 1_000_000) {
+      return null;
+    }
     return manifestSchema.parse(JSON.parse(source));
   } catch {
     return null;
@@ -39,7 +41,9 @@ function readJson(path: string): z.infer<typeof manifestSchema> | null {
 
 function subdirs(root: string, rel: string): string[] {
   const abs = join(root, rel);
-  if (!existsSync(abs)) return [];
+  if (!existsSync(abs)) {
+    return [];
+  }
   return readdirSync(abs, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => `${rel}/${e.name}`);
@@ -52,7 +56,9 @@ function cargoVersion(text: string): string {
 // The Rust server, when the tree has one.
 function serverProject(root: string, manifest: string): Project | undefined {
   const path = join(root, manifest);
-  if (!existsSync(path)) return undefined;
+  if (!existsSync(path)) {
+    return undefined;
+  }
   return {
     name: 'server',
     dir: manifest.replace(/\/Cargo\.toml$/, ''),
@@ -69,7 +75,9 @@ function npmProjects(root: string, workspaceRoots: string[]): Project[] {
   for (const wsRoot of workspaceRoots) {
     for (const dir of subdirs(root, wsRoot)) {
       const pkg = readJson(join(root, dir, 'package.json'));
-      if (!pkg || typeof pkg.name !== 'string') continue;
+      if (!pkg || typeof pkg.name !== 'string') {
+        continue;
+      }
       const deps = {
         ...pkg.dependencies,
         ...pkg.devDependencies,
@@ -98,7 +106,9 @@ function moduleProjects(root: string, modulesDir: string): Project[] {
   const out: Project[] = [];
   for (const dir of subdirs(root, modulesDir)) {
     const manifest = readJson(join(root, dir, 'module.json'));
-    if (!manifest || typeof manifest.id !== 'string') continue;
+    if (!manifest || typeof manifest.id !== 'string') {
+      continue;
+    }
     const ranges = manifest.dependencies;
     out.push({
       name: manifest.id,

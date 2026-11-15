@@ -36,9 +36,15 @@ const COPY: Record<Kind, { code: string; title: MessageKey; body: MessageKey }> 
 
 function kindOf(error: unknown): Kind {
   const status = error instanceof KromaApiError ? error.status : undefined;
-  if (status === 404) return 'notFound';
-  if (status === 401) return 'unauthorized';
-  if (status === 403) return 'forbidden';
+  if (status === 404) {
+    return 'notFound';
+  }
+  if (status === 401) {
+    return 'unauthorized';
+  }
+  if (status === 403) {
+    return 'forbidden';
+  }
   return 'server';
 }
 
@@ -178,8 +184,12 @@ export function RouteError({ error, reset }: Readonly<ErrorComponentProps>) {
 // The stack when the throw carries one (a client-side crash), the composed
 // status line when it does not (an API 500 has no client stack worth reading).
 function traceOf(error: unknown): string | null {
-  if (error instanceof Error && error.stack) return error.stack;
-  if (error instanceof KromaApiError) return `${error.name}: ${error.message}`;
+  if (error instanceof Error && error.stack) {
+    return error.stack;
+  }
+  if (error instanceof KromaApiError) {
+    return `${error.name}: ${error.message}`;
+  }
   return String(error) || null;
 }
 

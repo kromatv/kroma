@@ -8,6 +8,8 @@ export function TrailerButton({
   title,
 }: Readonly<{ kind: TmdbKind; tmdbId: number | null | undefined; title: string }>) {
   const trailer = useTrailerLink(kind, tmdbId, title);
-  if (!trailer) return null;
+  if (!trailer) {
+    return null;
+  }
   return <Button variant="outline" icon="movie" label={trailer.label} onPress={trailer.open} />;
 }

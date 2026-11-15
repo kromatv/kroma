@@ -15,8 +15,12 @@ export function confidencePercent(score: number): number {
 
 /** The score's ink: solid, because it also paints the meter beside it. */
 export function confidenceTone(score: number): ColorValue {
-  if (score >= STRONG_SCORE) return 'success';
-  if (score >= LIKELY_SCORE) return 'accent';
+  if (score >= STRONG_SCORE) {
+    return 'success';
+  }
+  if (score >= LIKELY_SCORE) {
+    return 'accent';
+  }
   return 'glyphDim';
 }
 
@@ -32,8 +36,12 @@ function bandOf(candidate: MatchCandidate): CandidateBand {
 }
 
 function compare(a: MatchCandidate, b: MatchCandidate): number {
-  if (a.current !== b.current) return a.current ? -1 : 1;
-  if (a.score !== b.score) return b.score - a.score;
+  if (a.current !== b.current) {
+    return a.current ? -1 : 1;
+  }
+  if (a.score !== b.score) {
+    return b.score - a.score;
+  }
   return a.tmdbId - b.tmdbId;
 }
 

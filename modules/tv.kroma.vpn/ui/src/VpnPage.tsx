@@ -39,7 +39,9 @@ import { VpnConfigDialog } from './vpn-config-dialog';
 // network-wide toggles (kill switch, route indexers through the tunnel).
 export default function VpnPage() {
   const t = useT();
-  if (!useCap('settings.manage')) return <Denied />;
+  if (!useCap('settings.manage')) {
+    return <Denied />;
+  }
   return (
     <>
       <PageHeader.Root>
@@ -72,7 +74,9 @@ export function VpnCard() {
 
   // Before the first answer, `wgConfigured: false` would paint the whole
   // not-configured card - a claim about the server we cannot make yet.
-  if (!data) return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading panels={1} />;
+  if (!data) {
+    return failed ? <ModuleFailed retry={reload} /> : <ModuleLoading panels={1} />;
+  }
   const state = data;
   const configured = state.wgConfigured;
   const connected = state.status?.connected ?? false;
@@ -157,13 +161,19 @@ function StatusIcon({
   connected,
 }: Readonly<{ configured: boolean; connected: boolean }>) {
   const paint = statusColor(configured, connected);
-  if (!configured) return <Icon name="shield" size={18} thickness={1.8} color={paint} />;
-  if (connected) return <Icon name="shield-check" size={18} thickness={1.8} color={paint} />;
+  if (!configured) {
+    return <Icon name="shield" size={18} thickness={1.8} color={paint} />;
+  }
+  if (connected) {
+    return <Icon name="shield-check" size={18} thickness={1.8} color={paint} />;
+  }
   return <Icon name="shield-x" size={18} thickness={1.8} color={paint} />;
 }
 
 function statusColor(configured: boolean, connected: boolean): ColorValue {
-  if (!configured) return 'text/50';
+  if (!configured) {
+    return 'text/50';
+  }
   return connected ? 'success' : 'accent';
 }
 
@@ -205,7 +215,9 @@ function TestResultLine({
 function ModeLine({ state }: Readonly<{ state: VpnAdminView }>) {
   const t = useT();
   const provider = state.provider;
-  if (!state.wgConfigured) return <>{t('vpn.modeOff')}</>;
+  if (!state.wgConfigured) {
+    return <>{t('vpn.modeOff')}</>;
+  }
   if (provider?.kind === 'mullvad') {
     const place = provider.cityName
       ? `${provider.countryName}, ${provider.cityName}`

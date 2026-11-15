@@ -27,7 +27,9 @@ export function useTrailerLink(
     enabled: tmdbId != null,
   });
   const trailer = playableTrailer(data);
-  if (!trailer || tmdbId == null) return null;
+  if (!trailer || tmdbId == null) {
+    return null;
+  }
   return {
     label: t(TRAILER_LABEL[trailer.version]),
     open: () => router.push(trailerHref(kind, tmdbId, title) as never),

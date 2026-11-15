@@ -39,14 +39,18 @@ export function useCarousel(count: number, resting: boolean, holdMs: number = HO
   const running = count > 1 && !stopped && !resting && !hidden;
 
   useEffect(() => {
-    if (!running) return;
+    if (!running) {
+      return;
+    }
     const timer = setTimeout(() => setAt((index + 1) % count), holdMs);
     return () => clearTimeout(timer);
   }, [running, index, count, holdMs]);
 
   const go = useCallback(
     (to: number) => {
-      if (count > 0) setAt(((to % count) + count) % count);
+      if (count > 0) {
+        setAt(((to % count) + count) % count);
+      }
     },
     [count],
   );

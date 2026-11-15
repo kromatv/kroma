@@ -5,7 +5,9 @@ import { Feed } from './release-feed';
 export async function fetchLatestDownloads(signal: AbortSignal): Promise<ChannelBuild[]> {
   try {
     const response = await fetch('/api/downloads/canary.json', { signal });
-    if (!response.ok) return [];
+    if (!response.ok) {
+      return [];
+    }
     return toCanaryBuilds(Feed.parse(await response.json()));
   } catch {
     return [];

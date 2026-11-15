@@ -49,8 +49,12 @@ export function groupContents(files: readonly TorrentFileView[]): ContentsGroup[
       season,
       files: [...seasonFiles].sort((a, b) => (a.episode ?? 0) - (b.episode ?? 0)),
     }));
-  if (loose.length > 0) out.push({ key: 'film', kind: 'film', season: null, files: loose });
-  if (extras.length > 0) out.push({ key: 'extras', kind: 'extras', season: null, files: extras });
+  if (loose.length > 0) {
+    out.push({ key: 'film', kind: 'film', season: null, files: loose });
+  }
+  if (extras.length > 0) {
+    out.push({ key: 'extras', kind: 'extras', season: null, files: extras });
+  }
   return out;
 }
 
@@ -75,8 +79,11 @@ export function withFilesSelected(
 ): Set<number> {
   const next = new Set(selected);
   for (const file of files) {
-    if (include) next.add(file.index);
-    else next.delete(file.index);
+    if (include) {
+      next.add(file.index);
+    } else {
+      next.delete(file.index);
+    }
   }
   return next;
 }

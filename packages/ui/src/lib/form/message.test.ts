@@ -9,8 +9,8 @@ const catalog: Record<string, string> = {
 };
 
 const t = (key: string, vars?: Record<string, string | number>) => {
-  const plural =
-    typeof vars?.count === 'number' ? `${key}_${vars.count === 1 ? 'one' : 'other'}` : key;
+  const form = vars?.count === 1 ? 'one' : 'other';
+  const plural = typeof vars?.count === 'number' ? `${key}_${form}` : key;
   const template = catalog[plural] ?? catalog[key] ?? key;
   return template.replace(/\{(\w+)}/g, (whole, name: string) =>
     vars && name in vars ? String(vars[name]) : whole,

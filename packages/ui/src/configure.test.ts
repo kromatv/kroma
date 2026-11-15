@@ -14,7 +14,7 @@ const { renderHook, setTheme } = styleHost;
 
 function wrapper(config: KitConfig) {
   return ({ children }: { children: ReactNode }) =>
-    createElement(KitProvider, { config, children });
+    createElement(KitProvider, { config }, children);
 }
 function useConfiguredKit() {
   return {

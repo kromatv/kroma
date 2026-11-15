@@ -59,7 +59,9 @@ const BOUND = new WeakMap<Translate, Format>();
 
 function formatFor(locale: Locale, t: Translate): Format {
   const cached = BOUND.get(t);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const bound: Format = {
     bytes: (bytes) => formatBytes(bytes, locale),
     decimal: (n, digits) => decimal(n, locale, digits),

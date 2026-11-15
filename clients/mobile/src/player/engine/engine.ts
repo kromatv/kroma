@@ -89,8 +89,12 @@ export function useKromaEngine(
 
   const sourceUrl = useCallback(
     (anchor: number): string => {
-      if (localUri) return localUri;
-      if (core.mode === 'direct') return client.media.streamUrl(item.id);
+      if (localUri) {
+        return localUri;
+      }
+      if (core.mode === 'direct') {
+        return client.media.streamUrl(item.id);
+      }
       const f = core.filter === 'off' ? undefined : core.filter;
       return client.media.hlsMasterUrl(item.id, core.forceAac, anchor, core.audioIndex, {
         filter: f,
@@ -106,7 +110,9 @@ export function useKromaEngine(
   // clock stays honest.
   const load = useCallback(
     async (absSec: number) => {
-      if (!core.active || core.terminal) return;
+      if (!core.active || core.terminal) {
+        return;
+      }
       const id = nextLoadId(core);
       const resume = resumeOnLoad(core, player);
       setWaiting(true);
@@ -116,7 +122,9 @@ export function useKromaEngine(
       const uri = sourceUrl(absSec);
       patchCore(core, { sourceUri: uri });
       const baseSec = loadingMode === 'direct' ? 0 : await resolveMasterStart(uri, absSec);
-      if (!core.active || core.terminal || id !== core.loadId) return;
+      if (!core.active || core.terminal || id !== core.loadId) {
+        return;
+      }
       const pendingSeek = loadingMode === 'direct' && absSec > 0 ? absSec : null;
       patchCore(core, {
         baseSec,
@@ -143,7 +151,9 @@ export function useKromaEngine(
           failTerminal(error, uri, id);
         })
         .finally(() => {
-          if (!core.active || core.terminal) stopNativePlayer(player);
+          if (!core.active || core.terminal) {
+            stopNativePlayer(player);
+          }
         });
     },
     [core, player, sourceUrl, client, item, clearFailure, failTerminal],
@@ -153,7 +163,9 @@ export function useKromaEngine(
   // retries once as AAC; anything else surfaces.
   const fail = useCallback(
     (error?: unknown) => {
-      if (!core.active || core.terminal) return;
+      if (!core.active || core.terminal) {
+        return;
+      }
       if (localUri) {
         // Offline: there is no server to fall back to.
         failTerminal(error, localUri, core.loadId);
@@ -178,24 +190,32 @@ export function useKromaEngine(
   useEffect(() => {
     const subs = [
       player.addListener('statusChange', ({ status, error }) => {
-        if (!core.active || core.terminal) return;
+        if (!core.active || core.terminal) {
+          return;
+        }
         if (status === 'error') {
           fail(error);
           return;
         }
-        if (status === 'loading') setWaiting(true);
+        if (status === 'loading') {
+          setWaiting(true);
+        }
         if (status === 'readyToPlay') {
           setReady(true);
           setWaiting(false);
           clearFailure();
           // Local files: surface the tracks actually in the file (iOS often
           // has them ready here without ever firing the change event).
-          if (localUri) setLocalAudio(player.availableAudioTracks);
+          if (localUri) {
+            setLocalAudio(player.availableAudioTracks);
+          }
           if (core.pendingSeek != null) {
             player.currentTime = core.pendingSeek;
             patchCore(core, { elSec: core.pendingSeek, pendingSeek: null });
           }
-          if (core.mode === 'direct' && player.duration > 0) setDur(player.duration);
+          if (core.mode === 'direct' && player.duration > 0) {
+            setDur(player.duration);
+          }
           if (core.resumeOnLoad) {
             patchCore(core, { resumeOnLoad: false });
             player.play();
@@ -203,16 +223,24 @@ export function useKromaEngine(
         }
       }),
       player.addListener('timeUpdate', ({ currentTime, bufferedPosition }) => {
-        if (!core.active || core.terminal) return;
+        if (!core.active || core.terminal) {
+          return;
+        }
         const advanced = currentTime - core.elSec;
-        if (player.playing && advanced > 0 && advanced < 2) setWaiting(false);
-        if (currentTime > 0.5) patchCore(core, { started: true });
+        if (player.playing && advanced > 0 && advanced < 2) {
+          setWaiting(false);
+        }
+        if (currentTime > 0.5) {
+          patchCore(core, { started: true });
+        }
         patchCore(core, { elSec: currentTime, bufSec: Math.max(0, bufferedPosition) });
         setCur(core.baseSec + currentTime);
         setBuffered(core.baseSec + Math.max(currentTime, core.bufSec));
       }),
       player.addListener('playingChange', ({ isPlaying }) => {
-        if (!core.active || core.terminal) return;
+        if (!core.active || core.terminal) {
+          return;
+        }
         setPlaying(isPlaying);
       }),
       // ExoPlayer reports ENDED for the empty initial source and again on
@@ -220,21 +248,35 @@ export function useKromaEngine(
       // end. Only trust it once this source has produced playback time and
       // the clock sits near the actual end.
       player.addListener('playToEnd', () => {
-        if (!core.active || core.terminal) return;
-        if (!core.started) return;
+        if (!core.active || core.terminal) {
+          return;
+        }
+        if (!core.started) {
+          return;
+        }
         const end = Math.max(player.duration, 0);
-        if (end > 0 && player.currentTime < end - 5) return;
+        if (end > 0 && player.currentTime < end - 5) {
+          return;
+        }
         setEndedNonce((n) => n + 1);
       }),
       player.addListener('availableAudioTracksChange', ({ availableAudioTracks }) => {
-        if (!core.active || core.terminal) return;
-        if (localUri) setLocalAudio(availableAudioTracks);
+        if (!core.active || core.terminal) {
+          return;
+        }
+        if (localUri) {
+          setLocalAudio(availableAudioTracks);
+        }
       }),
       // Keep the selected ordinal honest whichever side initiated the switch
       // (our setter, the system Now Playing UI, or the platform's default pick).
       player.addListener('audioTrackChange', ({ audioTrack }) => {
-        if (!core.active || core.terminal) return;
-        if (!localUri || !audioTrack) return;
+        if (!core.active || core.terminal) {
+          return;
+        }
+        if (!localUri || !audioTrack) {
+          return;
+        }
         const i = player.availableAudioTracks.findIndex(
           (t) => nativeTrackKey(t) === nativeTrackKey(audioTrack),
         );
@@ -245,7 +287,9 @@ export function useKromaEngine(
       }),
     ];
     return () => {
-      for (const s of subs) s.remove();
+      for (const s of subs) {
+        s.remove();
+      }
     };
   }, [player, core, fail, localUri, clearFailure]);
 
@@ -256,7 +300,9 @@ export function useKromaEngine(
   }, [item.id]);
 
   useEffect(() => {
-    if (!core.active || core.terminal || localUri || subtitle === core.subtitle) return;
+    if (!core.active || core.terminal || localUri || subtitle === core.subtitle) {
+      return;
+    }
     patchCore(core, { subtitle, mode: 'master' });
     // oxlint-disable-next-line react-compiler/set-state-in-effect -- replacing the native source reports its loading state
     void load(core.baseSec + core.elSec);

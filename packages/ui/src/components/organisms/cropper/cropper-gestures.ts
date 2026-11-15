@@ -18,7 +18,9 @@ interface Grip {
 
 function fingerSpread(event: GestureResponderEvent): number | null {
   const [first, second] = event.nativeEvent.touches;
-  if (!first || !second) return null;
+  if (!first || !second) {
+    return null;
+  }
   return Math.hypot(first.pageX - second.pageX, first.pageY - second.pageY);
 }
 
@@ -46,7 +48,9 @@ function useCropGestures(cropper: CropperState, box: PixelSize | null): CropGest
   });
   const move = useEffectEvent((event: GestureResponderEvent, gesture: PanResponderGestureState) => {
     const held = grip.current;
-    if (!held || !box) return;
+    if (!held || !box) {
+      return;
+    }
     const spread = fingerSpread(event);
     if ((spread === null) !== (held.spread === null)) {
       grip.current = gripAt(cropper.transform, event, gesture);

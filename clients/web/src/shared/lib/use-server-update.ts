@@ -10,7 +10,9 @@ export function useServerUpdate(type: ServerEvent['type'], reload: () => void): 
       token: () => client.sessionToken,
       refresh: () => client.refreshSession(),
       onEvent: (event) => {
-        if (event.type === type) reload();
+        if (event.type === type) {
+          reload();
+        }
       },
     });
     events.connect();

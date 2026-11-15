@@ -40,15 +40,19 @@ export default function MyList() {
         continue;
       }
       const show = showById.get(id);
-      if (show) out.push(showCard(show, client, cardW));
+      if (show) {
+        out.push(showCard(show, client, cardW));
+      }
     }
     return out;
   }, [ids.data, movies.data, shows.data, client, cardW]);
 
   const pending = ids.isPending || movies.isPending || shows.isPending;
   const error = ids.isError || movies.isError || shows.isError;
-  if (pending) return <Loading label={t('common.loading')} />;
-  if (error)
+  if (pending) {
+    return <Loading label={t('common.loading')} />;
+  }
+  if (error) {
     return (
       <ErrorView
         message={t('error.serverBody')}
@@ -56,6 +60,7 @@ export default function MyList() {
         onRetry={() => void ids.refetch()}
       />
     );
+  }
 
   const header = (
     <Box style={{ paddingTop: insets.top + spacing.sm }}>

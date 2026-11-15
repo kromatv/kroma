@@ -32,7 +32,9 @@ type QueryValue = string | number | boolean | null | undefined;
 function queryString(query: Record<string, QueryValue>): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null || value === '') continue;
+    if (value === undefined || value === null || value === '') {
+      continue;
+    }
     params.set(key, String(value));
   }
   const search = params.toString();

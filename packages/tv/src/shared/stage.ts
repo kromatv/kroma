@@ -42,7 +42,9 @@ export interface StageFit {
  * {@link MIN_STAGE_W} and the height at {@link STAGE_H}.
  */
 export function fitStage(windowW: number, windowH: number): StageFit {
-  if (windowW <= 0 || windowH <= 0) return { scale: 1, width: STAGE_W, height: STAGE_H };
+  if (windowW <= 0 || windowH <= 0) {
+    return { scale: 1, width: STAGE_W, height: STAGE_H };
+  }
   const scale = Math.min(windowH / STAGE_H, windowW / MIN_STAGE_W);
   return { scale, width: Math.round(windowW / scale), height: Math.round(windowH / scale) };
 }
@@ -57,7 +59,9 @@ export function fitStage(windowW: number, windowH: number): StageFit {
 export function installStage(): void {
   const doc = webDocument();
   const win = webWindow();
-  if (!doc || !win) return;
+  if (!doc || !win) {
+    return;
+  }
   const style = doc.createElement('style');
   style.textContent = `
     html, body { height: 100%; margin: 0; overflow: hidden; background: var(--kroma-bg, #0a0a0c); }

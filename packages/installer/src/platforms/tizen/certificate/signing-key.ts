@@ -20,7 +20,9 @@ export function pemCertificates(pem: string): X509Certificate[] {
 
 /** The key a signature is made with and its chain, leaf first, wherever it is kept. */
 export function readSigningKey(source: SigningKey): Pkcs12 {
-  if ('archive' in source) return readPkcs12(source);
+  if ('archive' in source) {
+    return readPkcs12(source);
+  }
 
   const key = createPrivateKey(readFileSync(source.key));
   const chain = pemCertificates(readFileSync(source.chain, 'utf8'));

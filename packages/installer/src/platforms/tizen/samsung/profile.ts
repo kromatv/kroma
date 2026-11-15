@@ -31,7 +31,9 @@ export function samsungFiles(directory = SAMSUNG_PROFILE): SamsungFiles {
 export function readSamsungProfile(directory = SAMSUNG_PROFILE): SigningProfile | null {
   const files = samsungFiles(directory);
   const kept = [files.authorKey, files.authorChain, files.distributorKey, files.distributorChain];
-  if (!kept.every((path) => existsSync(path))) return null;
+  if (!kept.every((path) => existsSync(path))) {
+    return null;
+  }
   return {
     name: 'samsung',
     author: { key: files.authorKey, chain: files.authorChain },
@@ -46,7 +48,9 @@ export function duidsIn(subjectAltName: string | undefined): string[] {
 
 /** When the leaf of a kept chain stops being valid, or null when none is kept. */
 export function keptUntil(chain: string): Date | null {
-  if (!existsSync(chain)) return null;
+  if (!existsSync(chain)) {
+    return null;
+  }
   const [leaf] = pemCertificates(readFileSync(chain, 'utf8'));
   return leaf ? new Date(leaf.validTo) : null;
 }
@@ -63,7 +67,9 @@ export function coversSet(duid: string, now = new Date(), directory = SAMSUNG_PR
 /** The sets the kept distributor certificate was issued for. */
 export function keptDuids(directory = SAMSUNG_PROFILE): string[] {
   const { distributorChain } = samsungFiles(directory);
-  if (!existsSync(distributorChain)) return [];
+  if (!existsSync(distributorChain)) {
+    return [];
+  }
   const [leaf] = pemCertificates(readFileSync(distributorChain, 'utf8'));
   return duidsIn(leaf?.subjectAltName);
 }

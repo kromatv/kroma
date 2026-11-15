@@ -21,7 +21,9 @@ function property(name: string): string {
 }
 
 function shape(variables: ReadonlyMap<string, 'number' | 'value'>): string {
-  if (variables.size === 0) return '{}';
+  if (variables.size === 0) {
+    return '{}';
+  }
   const fields = [...variables]
     .sort(([a], [b]) => alphabetical(a, b))
     .map(([name, kind]) => `${property(name)}: ${kind === 'number' ? 'number' : 'V'}`);

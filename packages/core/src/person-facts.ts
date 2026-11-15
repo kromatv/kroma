@@ -10,20 +10,28 @@ export function personAge(
   today: Date = new Date(),
 ): number | null {
   const born = parseDay(birthday);
-  if (!born) return null;
+  if (!born) {
+    return null;
+  }
   const end = parseDay(deathday) ?? today;
   let age = end.getFullYear() - born.getFullYear();
   const monthDiff = end.getMonth() - born.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && end.getDate() < born.getDate())) age -= 1;
+  if (monthDiff < 0 || (monthDiff === 0 && end.getDate() < born.getDate())) {
+    age -= 1;
+  }
   return age >= 0 ? age : null;
 }
 
 // Local midnight, never UTC: `new Date('1988-04-30')` is UTC midnight, which is
 // the day before in the Americas.
 function parseDay(day: string | null | undefined): Date | null {
-  if (!day) return null;
+  if (!day) {
+    return null;
+  }
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(day.trim());
-  if (!m) return null;
+  if (!m) {
+    return null;
+  }
   const [, y, mo, d] = m;
   const date = new Date(Number(y), Number(mo) - 1, Number(d));
   return Number.isNaN(date.getTime()) ? null : date;
@@ -32,7 +40,9 @@ function parseDay(day: string | null | undefined): Date | null {
 /** Falls back to the raw string when the runtime has no Intl data. */
 export function formatDay(day: string | null | undefined, locale?: string): string | null {
   const date = parseDay(day);
-  if (!date) return null;
+  if (!date) {
+    return null;
+  }
   try {
     return date.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
   } catch {
@@ -53,7 +63,9 @@ export function personFacts(
   detail: PersonDetailFacts | null | undefined,
   locale?: string,
 ): PersonFact[] {
-  if (!detail) return [];
+  if (!detail) {
+    return [];
+  }
   const facts: PersonFact[] = [];
   const born = formatDay(detail.birthday, locale);
   const age = personAge(detail.birthday, detail.deathday);
@@ -72,7 +84,9 @@ export function personFacts(
     facts.push({ key: 'birthplace', label: t('person.birthplace'), value: detail.placeOfBirth });
   }
   const known = departmentLabel(t, detail.knownFor);
-  if (known) facts.push({ key: 'knownFor', label: t('person.knownFor'), value: known });
+  if (known) {
+    facts.push({ key: 'knownFor', label: t('person.knownFor'), value: known });
+  }
   return facts;
 }
 

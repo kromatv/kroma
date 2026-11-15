@@ -50,7 +50,9 @@ function ReportProblem({ id }: Readonly<{ id: string }>) {
   const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
-    if (!category) return;
+    if (!category) {
+      return;
+    }
     setState('busy');
     setError(null);
     try {

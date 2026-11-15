@@ -31,7 +31,9 @@ export function useEngineFailure({
   }, []);
   const failTerminal = useCallback(
     (error: unknown, uri: string, id: number) => {
-      if (!core.active || core.terminal || core.loadId !== id) return;
+      if (!core.active || core.terminal || core.loadId !== id) {
+        return;
+      }
       patchCore(core, { terminal: true, resumeOnLoad: false, pendingSeek: null, started: false });
       stopNativePlayer(player);
       setFailed(true);
@@ -39,10 +41,14 @@ export function useEngineFailure({
       setReady(false);
       setWaiting(false);
       setPlaying(false);
-      if (localUri) return;
+      if (localUri) {
+        return;
+      }
       void diagnosePlaybackFailure(uri, error)
         .then((diagnosed) => {
-          if (core.active && core.loadId === id) setFailure(diagnosed);
+          if (core.active && core.loadId === id) {
+            setFailure(diagnosed);
+          }
         })
         .catch(() => undefined);
     },

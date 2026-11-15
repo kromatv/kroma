@@ -39,14 +39,18 @@ const { players, FakePlayer } = vi.hoisted(() => {
     }
 
     get duration(): number {
-      if (this.throwOnRead) throw new Error('native shared object released');
+      if (this.throwOnRead) {
+        throw new Error('native shared object released');
+      }
       return this.durationValue;
     }
     set duration(value: number) {
       this.durationValue = value;
     }
     get bufferedPosition(): number {
-      if (this.throwOnRead) throw new Error('native shared object released');
+      if (this.throwOnRead) {
+        throw new Error('native shared object released');
+      }
       return this.bufferedValue;
     }
     set bufferedPosition(value: number) {
@@ -63,7 +67,9 @@ const { players, FakePlayer } = vi.hoisted(() => {
       this.released = true;
     }
     replace(source: { uri: string }): void {
-      if (this.replaceThrows) throw new Error('will not take a new source');
+      if (this.replaceThrows) {
+        throw new Error('will not take a new source');
+      }
       this.uri = source.uri;
       this.replaced.push(source.uri);
     }
@@ -77,10 +83,18 @@ const { players, FakePlayer } = vi.hoisted(() => {
       };
     }
     emit(event: string, payload: unknown = {}): void {
-      for (const sub of this.subs) if (sub.event === event && !sub.removed) sub.handler(payload);
+      for (const sub of this.subs) {
+        if (sub.event === event && !sub.removed) {
+          sub.handler(payload);
+        }
+      }
     }
     emitStale(event: string, payload: unknown = {}): void {
-      for (const sub of this.subs) if (sub.event === event) sub.handler(payload);
+      for (const sub of this.subs) {
+        if (sub.event === event) {
+          sub.handler(payload);
+        }
+      }
     }
   }
 

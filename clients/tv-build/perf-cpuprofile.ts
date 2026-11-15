@@ -20,7 +20,9 @@ export function bottomUp(
   window?: { start: number; end: number } | null,
 ): { label: string; ms: number; pct: number }[] {
   const byNode = new Map<number, CpuProfileNode>();
-  for (const n of profile.nodes) byNode.set(n.id, n);
+  for (const n of profile.nodes) {
+    byNode.set(n.id, n);
+  }
 
   // Sample-accurate self time: each sample's delta belongs to the node it hit.
   // `timeDeltas` are gaps BETWEEN samples, so walking them also reconstructs each
@@ -32,7 +34,9 @@ export function bottomUp(
   let counted = 0;
   for (let i = 0; i < samples.length; i += 1) {
     at += deltas[i] ?? 0;
-    if (window && (at < window.start || at > window.end)) continue;
+    if (window && (at < window.start || at > window.end)) {
+      continue;
+    }
     const id = samples[i] as number;
     const ms = Math.max(0, (deltas[i] ?? 0) / 1000);
     self.set(id, (self.get(id) ?? 0) + ms);
@@ -45,7 +49,9 @@ export function bottomUp(
   const merged = new Map<string, number>();
   for (const [id, ms] of self) {
     const node = byNode.get(id);
-    if (!node) continue;
+    if (!node) {
+      continue;
+    }
     const frame = node.callFrame;
     const where = frame.url ? frame.url.split('/').pop() : '';
     const name = frame.functionName || '(anonymous)';

@@ -62,6 +62,8 @@ export function ReleaseList({
 }
 
 function emptyKeyOf(tab: ReleaseTab, counts: TabCounts, unsearched: boolean): string {
-  if (counts.all === 0) return unsearched ? 'requests.indexersAllFailed' : 'requests.noReleases';
+  if (counts.all === 0) {
+    return unsearched ? 'requests.indexersAllFailed' : 'requests.noReleases';
+  }
   return tab === 'refused' ? 'acq.noneRefused' : 'acq.noneAccepted';
 }

@@ -59,7 +59,9 @@ export function archOf(name: string): string | null {
 export function keysOf(name: string): string[] {
   const kind = KINDS.find((k) => k.suffix.test(name));
   const arch = archOf(name);
-  if (!kind || !arch) return [];
+  if (!kind || !arch) {
+    return [];
+  }
   const platform = `${kind.os}-${arch}`;
   return kind.generic
     ? [`${platform}-${kind.installer}`, platform]
@@ -90,9 +92,13 @@ export function feed(
   for (const bundle of bundles) {
     const name = basename(bundle.name);
     const keys = keysOf(name);
-    if (keys.length === 0) throw new Error(`${name} is not an update bundle this feed knows`);
+    if (keys.length === 0) {
+      throw new Error(`${name} is not an update bundle this feed knows`);
+    }
     for (const key of keys) {
-      if (platforms[key]) throw new Error(`two bundles answer ${key}`);
+      if (platforms[key]) {
+        throw new Error(`two bundles answer ${key}`);
+      }
       platforms[key] = {
         signature: bundle.signature.trim(),
         url: `${baseUrl}/${encodeURIComponent(name)}`,
@@ -100,6 +106,8 @@ export function feed(
     }
   }
   const missing = REQUIRED_PLATFORMS.filter((key) => !platforms[key]);
-  if (missing.length > 0) throw new Error(`no bundle for ${missing.join(', ')}`);
+  if (missing.length > 0) {
+    throw new Error(`no bundle for ${missing.join(', ')}`);
+  }
   return { version, notes, pub_date: pubDate.toISOString(), platforms };
 }

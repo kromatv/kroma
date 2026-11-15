@@ -31,7 +31,9 @@ interface Placed {
 }
 
 function digitsOf(value: number): number[] {
-  if (!Number.isFinite(value)) return [];
+  if (!Number.isFinite(value)) {
+    return [];
+  }
   return [...String(Math.trunc(Math.abs(value)))].map(Number);
 }
 
@@ -42,7 +44,9 @@ function place(value: number, height: number, thickness: number) {
   let x = thickness;
   for (const [at, digit] of digitsOf(value).entries()) {
     const glyph = NUMERAL_GLYPHS[digit];
-    if (!glyph) continue;
+    if (!glyph) {
+      continue;
+    }
     placed.push({ key: `${at}:${digit}`, d: glyph.d, x });
     x += glyph.width * scale + gap;
   }
@@ -52,7 +56,9 @@ function place(value: number, height: number, thickness: number) {
 
 function fit(value: number, height: number, thickness: number, maxWidth?: number) {
   const natural = place(value, height, thickness);
-  if (maxWidth === undefined || natural.width <= maxWidth) return natural;
+  if (maxWidth === undefined || natural.width <= maxWidth) {
+    return natural;
+  }
   const digits = digitsOf(value);
   const drawn = digits.reduce((sum, digit) => sum + (NUMERAL_GLYPHS[digit]?.width ?? 0), 0);
   const perHeight = drawn / NUMERAL_BOX + TRACKING * (digits.length - 1);
@@ -88,7 +94,9 @@ function Numeral({
 }: Readonly<NumeralProps>) {
   const theme = activeTheme(useStyleScope().theme);
   const { placed, scale, width, height: drawn } = fit(value, height, thickness, maxWidth);
-  if (placed.length === 0 || scale === 0) return null;
+  if (placed.length === 0 || scale === 0) {
+    return null;
+  }
   const box = Math.ceil(width);
   const stroke = resolve(color, theme);
   const ground = resolve(fill, theme);

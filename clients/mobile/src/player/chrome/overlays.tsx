@@ -70,7 +70,9 @@ export function CueLine({
 }: Readonly<{ cue: string; bottom: number; appearance: SubtitleAppearance }>) {
   const s = useStyles(sDefinition);
 
-  if (!cue) return null;
+  if (!cue) {
+    return null;
+  }
   return (
     <Box style={[s.cueBox, { bottom }]}>
       <Text style={[s.cueText, cueStyle(appearance)]}>{cue}</Text>

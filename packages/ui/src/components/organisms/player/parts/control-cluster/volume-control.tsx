@@ -49,8 +49,12 @@ const railOf = (height: number, width: number, paddingRight: number, scope: Styl
 // Shared by the volume pill and the bare mute key a narrow row collapses to,
 // so the two never disagree about what "muted" looks like.
 export function volumeGlyph(level: number, size: number): ReactNode {
-  if (level === 0) return <IconMute size={size} />;
-  if (level < 0.5) return <IconVolLow size={size} />;
+  if (level === 0) {
+    return <IconMute size={size} />;
+  }
+  if (level < 0.5) {
+    return <IconVolLow size={size} />;
+  }
   return <IconVolHigh size={size} />;
 }
 
@@ -101,7 +105,9 @@ export function VolumeControl({
 
   const setAt = useStableCallback((x: number) => {
     const offset = track.offsetOf(x);
-    if (offset == null || track.width <= 0) return;
+    if (offset == null || track.width <= 0) {
+      return;
+    }
     onVolume(sliderToVolume(clamp01(offset / track.width), max));
   });
 
@@ -144,7 +150,9 @@ export function VolumeControl({
         onFocus={onFocus}
         onBlur={onBlur}
         onKey={(direction) => {
-          if (direction !== 'up' && direction !== 'down') return false;
+          if (direction !== 'up' && direction !== 'down') {
+            return false;
+          }
           onNudge(direction === 'up' ? 1 : -1);
           return true;
         }}

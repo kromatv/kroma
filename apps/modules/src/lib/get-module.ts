@@ -13,7 +13,9 @@ export async function moduleVersions({ data }: { data: { id: string } }): Promis
     .string()
     .regex(/^[a-z0-9][a-z0-9.-]{1,63}$/i)
     .safeParse(data.id);
-  if (!parsed.success) return [];
+  if (!parsed.success) {
+    return [];
+  }
   const { env, waitUntil } = await workerContext();
   return moduleHistory(env, waitUntil, parsed.data);
 }

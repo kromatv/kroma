@@ -20,7 +20,7 @@ const BLOCK_SALT = 'kroma.mail.relay/block';
 export const Pending = z.strictObject({
   a: Address,
   o: Origin,
-  t: z.string().min(1),
+  t: z.string().nonempty(),
   i: z.string().max(45),
   e: z.number(),
 });
@@ -46,7 +46,9 @@ export function activationUrl(publicUrl: string, blob: string): string {
 /** The blob inside an activation link, or `null` when the link is not one of ours. */
 export function activationBlob(publicUrl: string, url: string): string | null {
   const prefix = `${publicUrl}/confirm/`;
-  if (!url.startsWith(prefix)) return null;
+  if (!url.startsWith(prefix)) {
+    return null;
+  }
   const blob = url.slice(prefix.length);
   return /^[A-Za-z0-9._-]+$/.test(blob) ? blob : null;
 }
@@ -92,7 +94,9 @@ export class Marks {
     // and inherit a real server's activation. A relay sender needs a real
     // public origin (Remote Access).
     try {
-      if (isPrivateHost(new URL(origin).hostname)) return false;
+      if (isPrivateHost(new URL(origin).hostname)) {
+        return false;
+      }
     } catch {
       return false;
     }
@@ -110,7 +114,9 @@ export class Marks {
   async refresh(origin: string): Promise<void> {
     const key = `active:${await this.originKey(origin)}`;
     const by = await this.kv.get(key);
-    if (by !== null) await this.kv.put(key, by, { expirationTtl: ACTIVE_TTL_SECS });
+    if (by !== null) {
+      await this.kv.put(key, by, { expirationTtl: ACTIVE_TTL_SECS });
+    }
   }
 
   /** Withdraw the activation when `address` is the mailbox that gave it. */

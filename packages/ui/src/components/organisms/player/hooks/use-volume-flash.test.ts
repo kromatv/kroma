@@ -14,10 +14,14 @@ describe('useVolumeFlash', () => {
     act(() => result.current.show(0.75));
     expect(result.current.flash).toEqual({ kind: 'volume', level: 0.75 });
 
-    act(() => vi.advanceTimersByTime(699));
+    act(() => {
+      vi.advanceTimersByTime(699);
+    });
     expect(result.current.flash).not.toBeNull();
 
-    act(() => vi.advanceTimersByTime(1));
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
     expect(result.current.flash).toBeNull();
   });
 
@@ -25,9 +29,13 @@ describe('useVolumeFlash', () => {
     const { result } = renderHook(() => useVolumeFlash());
 
     act(() => result.current.show(0.5));
-    act(() => vi.advanceTimersByTime(500));
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
     act(() => result.current.show(0.55));
-    act(() => vi.advanceTimersByTime(500));
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
 
     expect(result.current.flash).toEqual({ kind: 'volume', level: 0.55 });
   });
@@ -37,7 +45,9 @@ describe('useVolumeFlash', () => {
     act(() => result.current.show(1));
 
     unmount();
-    act(() => vi.advanceTimersByTime(1000));
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
 
     expect(vi.getTimerCount()).toBe(0);
   });

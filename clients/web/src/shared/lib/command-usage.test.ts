@@ -55,7 +55,9 @@ describe('recordCommandUse', () => {
   });
 
   it('keeps a bounded number of rows, the latest', () => {
-    for (let at = 0; at < 130; at += 1) recordCommandUse(VIEWER, `row${at}`, '', NOW + at);
+    for (let at = 0; at < 130; at += 1) {
+      recordCommandUse(VIEWER, `row${at}`, '', NOW + at);
+    }
 
     const usage = readCommandUsage(VIEWER);
 

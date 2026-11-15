@@ -22,7 +22,9 @@ export const isThemeMode = (v: unknown): v is ThemeMode =>
 const COOKIE = new RegExp(String.raw`(?:^|;\s*)${THEME_COOKIE}=([^;]+)`);
 
 function stored(jar?: string, storage?: DeviceStore | null): string | null {
-  if (WEB) return COOKIE.exec(jar ?? webDocument()?.cookie ?? '')?.[1] ?? null;
+  if (WEB) {
+    return COOKIE.exec(jar ?? webDocument()?.cookie ?? '')?.[1] ?? null;
+  }
   try {
     return (storage === undefined ? deviceStorage() : storage)?.getItem(THEME_KEY) ?? null;
   } catch {
@@ -33,7 +35,9 @@ function stored(jar?: string, storage?: DeviceStore | null): string | null {
 function store(mode: ThemeMode, storage?: DeviceStore | null): void {
   if (WEB) {
     const doc = webDocument();
-    if (doc) doc.cookie = `${THEME_COOKIE}=${mode};path=/;max-age=31536000;samesite=lax`;
+    if (doc) {
+      doc.cookie = `${THEME_COOKIE}=${mode};path=/;max-age=31536000;samesite=lax`;
+    }
     return;
   }
   try {
@@ -46,7 +50,9 @@ function store(mode: ThemeMode, storage?: DeviceStore | null): void {
 /** The ground a mode resolves to right now. Anything `system` cannot be told
  *  about reads as dark, the product's default ground. */
 export function resolveMode(mode: ThemeMode): 'light' | 'dark' {
-  if (mode !== 'system') return mode;
+  if (mode !== 'system') {
+    return mode;
+  }
   return Appearance.getColorScheme() === 'light' ? 'light' : 'dark';
 }
 

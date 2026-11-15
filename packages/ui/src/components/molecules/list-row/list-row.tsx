@@ -33,7 +33,9 @@ interface Sorted {
 // `<ListRow.Leading>{maybe}</ListRow.Leading>` for a value that turned out
 // undefined gets the `icon` sugar back, rather than a row with a hole in it.
 function filled(child: ReactNode): boolean {
-  if (!isValidElement(child)) return false;
+  if (!isValidElement(child)) {
+    return false;
+  }
   return Children.toArray((child.props as { children?: ReactNode }).children).length > 0;
 }
 
@@ -42,16 +44,24 @@ function sort(children: ReactNode): Sorted {
   for (const child of Children.toArray(children)) {
     const part = isValidElement(child) ? child.type : null;
     if (part === Leading) {
-      if (filled(child)) at.leading.push(child);
+      if (filled(child)) {
+        at.leading.push(child);
+      }
     } else if (part === Trailing) {
-      if (filled(child)) at.trailing.push(child);
-    } else at.content.push(child);
+      if (filled(child)) {
+        at.trailing.push(child);
+      }
+    } else {
+      at.content.push(child);
+    }
   }
   return at;
 }
 
 function iconWell(name: IconName | undefined, size: ControlSize): ReactNode {
-  if (name === undefined) return null;
+  if (name === undefined) {
+    return null;
+  }
   return (
     <Leading>
       <IconWell name={name} size={WELL[size]} />

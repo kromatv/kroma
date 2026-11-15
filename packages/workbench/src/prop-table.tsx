@@ -49,7 +49,9 @@ function PropTable({ name, sections }: Readonly<PropTableProps>) {
   const s = useStyles(sDefinition);
 
   const single = sections.length === 1 ? sections[0] : undefined;
-  if (single && !single.part) return <PropRows props={single.props} />;
+  if (single && !single.part) {
+    return <PropRows props={single.props} />;
+  }
   return (
     <Box gap={22}>
       {sections.map((section) => (

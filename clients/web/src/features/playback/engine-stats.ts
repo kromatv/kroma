@@ -52,8 +52,12 @@ export function readEngineStats(
   hls: HlsInstance | null,
   shaka: ShakaPlayerLike | null,
 ): EngineLiveStats | null {
-  if (shaka) return shakaStats(shaka);
-  if (hls) return hlsStats(hls);
+  if (shaka) {
+    return shakaStats(shaka);
+  }
+  if (hls) {
+    return hlsStats(hls);
+  }
   return null;
 }
 
@@ -68,7 +72,9 @@ export function makeFpsSampler(now: () => number = () => performance.now()) {
   let fps: number | undefined;
   return (v: HTMLVideoElement | null): number | undefined => {
     const q = v?.getVideoPlaybackQuality?.();
-    if (!q) return fps;
+    if (!q) {
+      return fps;
+    }
     const t = now();
     const frames = q.totalVideoFrames;
     if (!lastT) {

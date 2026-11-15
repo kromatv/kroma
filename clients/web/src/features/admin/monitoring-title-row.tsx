@@ -254,7 +254,9 @@ function MissingBadge({ row }: Readonly<{ row: LibraryTitle }>) {
   if (row.grabbed > 0) {
     return <Badge tone="info">{t('monitoring.grabbedCount', { count: row.grabbed })}</Badge>;
   }
-  if (!row.monitored) return null;
+  if (!row.monitored) {
+    return null;
+  }
   return <Badge tone="success">{t('monitoring.allHere')}</Badge>;
 }
 

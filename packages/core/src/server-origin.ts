@@ -16,9 +16,13 @@ export async function resolveServerOrigin(
   opts: { fetch?: typeof globalThis.fetch; timeoutMs?: number; port?: number } = {},
 ): Promise<ResolvedOrigin | null> {
   const fetchFn = opts.fetch ?? globalThis.fetch?.bind(globalThis);
-  if (!fetchFn) return null;
+  if (!fetchFn) {
+    return null;
+  }
   const typed = stripTrailingSlash(address.trim());
-  if (!typed) return null;
+  if (!typed) {
+    return null;
+  }
   const timeoutMs = opts.timeoutMs ?? 2500;
 
   const candidates = originCandidates(typed, opts.port ?? 4040);
@@ -44,7 +48,9 @@ function originCandidates(typed: string, defaultPort: number): string[] {
     // project's server actually lives.
     return hasPort ? [typed] : [typed, `${typed}:${defaultPort}`];
   }
-  if (hasPort) return [`https://${typed}`, `http://${typed}`];
+  if (hasPort) {
+    return [`https://${typed}`, `http://${typed}`];
+  }
   return [
     `https://${typed}`,
     `http://${typed}`,

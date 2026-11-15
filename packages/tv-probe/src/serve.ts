@@ -49,12 +49,14 @@ export async function serveTvShell(): Promise<Serving> {
     stdio: 'ignore',
     detached: true,
   });
-  let exited: number | null = null;
+  const state: { exited: number | null } = { exited: null };
   vite.on('exit', (code) => {
-    exited = code ?? 0;
+    state.exited = code ?? 0;
   });
   const stop = () => {
-    if (exited !== null || !vite.pid) return;
+    if (state.exited !== null || !vite.pid) {
+      return;
+    }
     try {
       process.kill(-vite.pid, 'SIGTERM');
     } catch {
@@ -69,8 +71,12 @@ export async function serveTvShell(): Promise<Serving> {
   const url = `http://localhost:${port}`;
   const deadline = Date.now() + READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    if (exited !== null) throw new Error(`the tv-web dev server exited (${exited})`);
-    if (await answering(url)) return { url, stop };
+    if (state.exited !== null) {
+      throw new Error(`the tv-web dev server exited (${state.exited})`);
+    }
+    if (await answering(url)) {
+      return { url, stop };
+    }
     await new Promise((done) => setTimeout(done, 500));
   }
   stop();

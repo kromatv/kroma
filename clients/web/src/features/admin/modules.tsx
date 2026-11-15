@@ -38,7 +38,9 @@ import { Denied, PageHeader, useAsyncAction, useCap } from '#web/features/admin/
 type Tab = 'discover' | 'installed' | 'points' | 'updates';
 
 export function ModulesAdminPage() {
-  if (!useCap('settings.manage')) return <Denied />;
+  if (!useCap('settings.manage')) {
+    return <Denied />;
+  }
   return <ModulesInner />;
 }
 
@@ -63,7 +65,9 @@ function ModulesInner() {
   const openDetail = (id: string) => void navigate({ to: '/admin/modules/$id', params: { id } });
 
   const requestInstall = async (id: string) => {
-    if (await InstallModal.call({ id })) void refreshAll();
+    if (await InstallModal.call({ id })) {
+      void refreshAll();
+    }
   };
 
   const runUpdate = (ids?: string[]) =>
@@ -81,15 +85,22 @@ function ModulesInner() {
   // An update that asks for more goes through the plan, where the operator sees
   // what they are accepting.
   const requestUpdate = (id: string) => {
-    if (updates.some((m) => m.id === id && m.widensPermissions)) void requestInstall(id);
-    else runUpdate([id]);
+    if (updates.some((m) => m.id === id && m.widensPermissions)) {
+      void requestInstall(id);
+    } else {
+      runUpdate([id]);
+    }
   };
 
   const onPick = (file: File | undefined) => {
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     void upload.run(async () => {
       const bundle = await webRuntime.moduleApi.inspectBundle(file);
-      if (!(await UploadConsentModal.call({ bundle }))) return;
+      if (!(await UploadConsentModal.call({ bundle }))) {
+        return;
+      }
       await webRuntime.moduleApi.installBundle(file);
       await refreshAll();
     }, message);
@@ -120,7 +131,9 @@ function ModulesInner() {
             icon="world"
             onPress={() =>
               void RegistriesDrawer.call({}).then((c) => {
-                if (c) void refreshAll();
+                if (c) {
+                  void refreshAll();
+                }
               })
             }
           />

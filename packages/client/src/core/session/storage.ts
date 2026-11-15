@@ -15,7 +15,9 @@ export interface SessionStorage {
  * Exported so other per-device state (language, keyboard layout, recent
  * searches) can share it instead of hard-coding `localStorage`. */
 export function deviceStorage(provided?: SessionStorage | null): SessionStorage | null {
-  if (provided !== undefined) return provided;
+  if (provided !== undefined) {
+    return provided;
+  }
   try {
     return typeof localStorage !== 'undefined' ? localStorage : null;
   } catch {
@@ -33,14 +35,19 @@ export function readRaw(key: string, storage?: SessionStorage | null): string | 
 
 export function writeRaw(key: string, value: string | null, storage?: SessionStorage | null): void {
   try {
-    if (value === null) deviceStorage(storage)?.removeItem(key);
-    else deviceStorage(storage)?.setItem(key, value);
+    if (value === null) {
+      deviceStorage(storage)?.removeItem(key);
+    } else {
+      deviceStorage(storage)?.setItem(key, value);
+    }
   } catch {}
 }
 
 function parseJson(key: string, storage?: SessionStorage | null): unknown {
   const raw = readRaw(key, storage);
-  if (!raw) return undefined;
+  if (!raw) {
+    return undefined;
+  }
   try {
     return JSON.parse(raw);
   } catch {
@@ -66,7 +73,9 @@ export function readStoredList<S extends z.ZodType>(
   storage?: SessionStorage | null,
 ): z.output<S>[] {
   const value = parseJson(key, storage);
-  if (!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) {
+    return [];
+  }
   return value.flatMap((entry) => {
     const parsed = z.safeParse(schema, entry);
     return parsed.success ? [parsed.data] : [];

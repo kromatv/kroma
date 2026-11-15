@@ -15,8 +15,11 @@ export const TYPES_FILE = 'messages.d.ts';
 function walk(dir: string, prefix: string, found: string[]): void {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = `${prefix}/${entry.name}`;
-    if (entry.isDirectory()) walk(join(dir, entry.name), path, found);
-    else found.push(path);
+    if (entry.isDirectory()) {
+      walk(join(dir, entry.name), path, found);
+    } else {
+      found.push(path);
+    }
   }
 }
 
@@ -26,12 +29,16 @@ function walk(dir: string, prefix: string, found: string[]): void {
 export function scanCatalogs(dir: string): CatalogPath[] {
   const files: CatalogPath[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory()) {
+      continue;
+    }
     const found: string[] = [];
     walk(join(dir, entry.name), entry.name, found);
     for (const path of found.sort((x, y) => (x < y ? -1 : 1))) {
       const at = parseCatalogPath(path);
-      if (at) files.push(at);
+      if (at) {
+        files.push(at);
+      }
     }
   }
   return files;
@@ -41,7 +48,9 @@ export function scanCatalogs(dir: string): CatalogPath[] {
  *  `<locale>.json` each. A directory that holds no folder is flat, one that
  *  does not exist yet included. */
 export function catalogLayout(dir: string): 'folder' | 'flat' {
-  if (!existsSync(dir)) return 'flat';
+  if (!existsSync(dir)) {
+    return 'flat';
+  }
   const entries = readdirSync(dir, { withFileTypes: true });
   return entries.some((entry) => entry.isDirectory()) ? 'folder' : 'flat';
 }
@@ -69,7 +78,9 @@ export function keysByFile(
 ): Map<string, string[]> {
   const keys = new Map<string, string[]>();
   for (const file of files) {
-    if (file.locale === locale) keys.set(file.file, keysOf(dir, file));
+    if (file.locale === locale) {
+      keys.set(file.file, keysOf(dir, file));
+    }
   }
   return keys;
 }
@@ -82,7 +93,9 @@ export function readLocale(
 ): Catalog {
   const merged: Record<string, string> = {};
   for (const file of files) {
-    if (file.locale === locale) Object.assign(merged, readCatalog(dir, file));
+    if (file.locale === locale) {
+      Object.assign(merged, readCatalog(dir, file));
+    }
   }
   return merged;
 }
@@ -100,7 +113,9 @@ export function writeCatalogTypes(
   }
   const next = renderCatalogTypes({ locales, source: readLocale(dir, source, files) });
   const current = existsSync(path) ? readFileSync(path, 'utf8') : null;
-  if (current === next) return { path, changed: false };
+  if (current === next) {
+    return { path, changed: false };
+  }
   writeFileSync(path, next);
   return { path, changed: true };
 }
@@ -111,11 +126,17 @@ export function writeCatalogTypes(
  *  itself yet goes by its code. */
 export function localeNames(root: string, files: readonly CatalogPath[]): Record<string, string> {
   const names: Record<string, string> = {};
-  for (const locale of new Set(files.map((file) => file.locale))) names[locale] = locale;
+  for (const locale of new Set(files.map((file) => file.locale))) {
+    names[locale] = locale;
+  }
   for (const file of files) {
-    if (file.file !== LABEL_NAMESPACE) continue;
+    if (file.file !== LABEL_NAMESPACE) {
+      continue;
+    }
     const own = readCatalog(root, file)[labelKey(file.locale)];
-    if (own) names[file.locale] = own;
+    if (own) {
+      names[file.locale] = own;
+    }
   }
   return names;
 }
@@ -130,11 +151,15 @@ export function completeLocales(
 ): string[] {
   const own = files.filter((candidate) => candidate.file === file);
   const reference = own.find((candidate) => candidate.locale === source);
-  if (!reference) return [];
+  if (!reference) {
+    return [];
+  }
   const messages = [...baseKeys(readCatalog(root, reference))];
   return own
     .filter((candidate) => {
-      if (candidate.locale === source) return true;
+      if (candidate.locale === source) {
+        return true;
+      }
       const keys = new Set(keysOf(root, candidate));
       return messages.every((key) => keys.has(key));
     })

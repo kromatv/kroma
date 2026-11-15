@@ -55,8 +55,12 @@ async function runPlay(at: RunPlay): Promise<PlayTranscript> {
   const claimed = new WeakSet<object>();
   const claim = (error: unknown) => {
     const key = typeof error === 'object' && error !== null ? error : null;
-    if (key && claimed.has(key)) return undefined;
-    if (key) claimed.add(key);
+    if (key && claimed.has(key)) {
+      return undefined;
+    }
+    if (key) {
+      claimed.add(key);
+    }
     return messageOf(error);
   };
   const snapshot = (status: PlayTranscript['status'], error?: string): PlayTranscript => ({
@@ -110,14 +114,18 @@ function usePlay(play: PlayFunction | undefined, timeout?: number): PlayRunner {
   const [outcome, setOutcome] = useState<Outcome | null>(null);
 
   useEffect(() => {
-    if (!play || !node) return;
+    if (!play || !node) {
+      return;
+    }
     let live = true;
     void runPlay({
       play,
       stage: node,
       timeout,
       onProgress: (next) => {
-        if (live) setOutcome({ play, node, timeout, take, transcript: next });
+        if (live) {
+          setOutcome({ play, node, timeout, take, transcript: next });
+        }
       },
     });
     return () => {

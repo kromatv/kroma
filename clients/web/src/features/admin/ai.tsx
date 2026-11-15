@@ -69,8 +69,12 @@ export function AiPage() {
       .catch(() => undefined);
   }, [client]);
 
-  if (!canManage) return <Denied />;
-  if (!config) return null;
+  if (!canManage) {
+    return <Denied />;
+  }
+  if (!config) {
+    return null;
+  }
   const cfg = config;
 
   const update = (patch: Partial<Config>) => {

@@ -30,10 +30,14 @@ export function createEnginePref(storage?: SessionStorage | null): ReactivePref<
   const store: ReactivePref<EnginePref> = {
     get: () => chosen ?? stored.get(),
     set(value: EnginePref) {
-      if (value === (chosen ?? stored.get())) return;
+      if (value === (chosen ?? stored.get())) {
+        return;
+      }
       chosen = value;
       stored.set(value);
-      for (const listener of listeners) listener();
+      for (const listener of listeners) {
+        listener();
+      }
     },
     subscribe(listener: () => void) {
       listeners.add(listener);
@@ -50,7 +54,9 @@ export function useEnginePref(): ReactivePref<EnginePref> {
   const provided = useContext(Context);
   const [owned] = useState(() => (provided ? null : createEnginePref(storage)));
   const store = provided ?? owned;
-  if (!store) throw new Error('Engine preference requires its owning root');
+  if (!store) {
+    throw new Error('Engine preference requires its owning root');
+  }
   return store;
 }
 

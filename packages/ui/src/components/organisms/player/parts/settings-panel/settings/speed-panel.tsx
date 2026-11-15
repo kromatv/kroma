@@ -19,7 +19,9 @@ export function SpeedPanel({ rate, onSelect, onBack }: Readonly<SpeedPanelProps>
   const t = useT();
   const pick = (i: number) => {
     const r = RATES[i];
-    if (r != null) onSelect(r);
+    if (r != null) {
+      onSelect(r);
+    }
     onBack();
   };
 

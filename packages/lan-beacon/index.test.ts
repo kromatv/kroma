@@ -34,14 +34,18 @@ vi.mock('expo', () => ({
     env.hasNative
       ? {
           publish: (name: string, txt: Record<string, string>) => {
-            if (env.nativeThrows) throw new Error('no link');
+            if (env.nativeThrows) {
+              throw new Error('no link');
+            }
             native.published.push({ name, txt });
           },
           unpublish: () => {
             native.unpublished += 1;
           },
           startBrowse: (epoch: number) => {
-            if (env.nativeThrows) throw new Error('no link');
+            if (env.nativeThrows) {
+              throw new Error('no link');
+            }
             native.started.push(epoch);
           },
           stopBrowse: () => {

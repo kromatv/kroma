@@ -50,7 +50,9 @@ function DepChips({ entry, all }: Readonly<{ entry: StoreModule; all: AdminModul
     ...depEntries(entry.dependencies).map((d) => ({ ...d, optional: false })),
     ...depEntries(entry.optionalDependencies).map((d) => ({ ...d, optional: true })),
   ];
-  if (deps.length === 0) return null;
+  if (deps.length === 0) {
+    return null;
+  }
   return (
     <Box>
       <Label>{t('admin.modulesDependsOn')}</Label>
@@ -79,7 +81,9 @@ function pointLabel(c: { point: string; id?: string | null }): string {
 // install dialog does the real satisfaction math.
 function PointChips({ entry }: Readonly<{ entry: StoreModule }>) {
   const t = useT();
-  if (entry.contributes.length === 0 && entry.consumes.length === 0) return null;
+  if (entry.contributes.length === 0 && entry.consumes.length === 0) {
+    return null;
+  }
   return (
     <Box gap={12}>
       {entry.contributes.length > 0 && (
@@ -119,7 +123,9 @@ export function DepsSection({
   entry: StoreModule | undefined;
   all: AdminModule[];
 }>) {
-  if (installed) return <ModuleDeps module={installed} all={all} />;
+  if (installed) {
+    return <ModuleDeps module={installed} all={all} />;
+  }
   if (entry) {
     return (
       <>
@@ -141,7 +147,9 @@ export function Addons({
   const addons = (catalog?.modules ?? []).filter(
     (m) => m.id !== id && Object.hasOwn(m.dependencies, id),
   );
-  if (addons.length === 0) return null;
+  if (addons.length === 0) {
+    return null;
+  }
   return (
     <Box>
       <Label>{t('admin.modulesAddons')}</Label>
@@ -166,7 +174,9 @@ export function ModuleSettings({
   const t = useT();
   const { host, panels } = useModuleSettingsPanels(module.id);
   const fields = module.config ?? [];
-  if (panels.length === 0 && fields.length === 0) return null;
+  if (panels.length === 0 && fields.length === 0) {
+    return null;
+  }
   return (
     <Box>
       <Label>{t('admin.modulesSettings')}</Label>

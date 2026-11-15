@@ -16,7 +16,9 @@ export function rewriteMarkdownLinks(source: string, rewrite: (url: string) => s
     .map((line) => {
       const marker = FENCE.exec(line)?.[1];
       if (fence) {
-        if (marker?.startsWith(fence)) fence = undefined;
+        if (marker?.startsWith(fence)) {
+          fence = undefined;
+        }
         return line;
       }
       if (marker) {
@@ -58,7 +60,9 @@ export function docSummary(source: string): { title: string; description: string
   const title = headingAt === -1 ? '' : plain(lines[headingAt]?.slice(2) ?? '');
   const body = lines.slice(headingAt + 1);
   const start = body.findIndex((line) => line.trim() !== '' && !BLOCK_START.test(line));
-  if (start === -1) return { title, description: '' };
+  if (start === -1) {
+    return { title, description: '' };
+  }
   const end = body.findIndex((line, at) => at > start && line.trim() === '');
   return { title, description: plain(body.slice(start, end === -1 ? undefined : end).join(' ')) };
 }
@@ -88,7 +92,9 @@ export function agentDocs(input: Readonly<AgentDocsInput>): Map<string, string> 
     const rewrite = (url: string) => {
       const target = rewriteDocUrl(url, repoUrl);
       const guide = /^(\/docs(?:\/([\w-]+))?)(#.*)?$/.exec(target);
-      if (!guide) return target;
+      if (!guide) {
+        return target;
+      }
       const [, path = '', slug = 'index', hash = ''] = guide;
       const page = urlOf(slug as DocSlug) ?? siteUrl + path;
       return `${page}${hash}`;
@@ -104,7 +110,9 @@ export function agentDocs(input: Readonly<AgentDocsInput>): Map<string, string> 
       const entries = section.slugs.flatMap((slug) => {
         const locale = localeOf(slug);
         const source = locale && sources[locale]?.[slug];
-        if (!source) return [];
+        if (!source) {
+          return [];
+        }
         const { title, description } = docSummary(source);
         const link = `- [${title || slug}](${urlOf(slug)})`;
         return [description ? `${link}: ${description}` : link];

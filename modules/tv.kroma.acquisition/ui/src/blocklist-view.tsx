@@ -46,7 +46,9 @@ export function BlocklistView() {
       (e) => apiErrorText(e, t('requests.actionFailed')),
     );
 
-  if (blocked.loading) return <TableSkeleton rows={5} />;
+  if (blocked.loading) {
+    return <TableSkeleton rows={5} />;
+  }
 
   return (
     <Box gap={14}>

@@ -90,7 +90,9 @@ export type Radius = number | `var(${string})` | `calc(${string})`;
  *  goes negative is a length the browser drops, which is the square corner the
  *  clamp gives a number. */
 export function nestedRadius(outer: Radius, inset: number): Radius {
-  if (typeof outer === 'number') return Math.max(0, outer - inset);
+  if (typeof outer === 'number') {
+    return Math.max(0, outer - inset);
+  }
   return `calc(${outer} - ${inset}px)`;
 }
 

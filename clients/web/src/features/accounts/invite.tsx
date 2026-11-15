@@ -60,7 +60,9 @@ export function InvitePage() {
   const [pending, setPending] = useState<Invite[] | null>(null);
 
   const refresh = useCallback(() => {
-    if (!allowed) return;
+    if (!allowed) {
+      return;
+    }
     client.accounts
       .invites()
       .then(setPending)
@@ -239,7 +241,9 @@ function PendingInviteRow({ inv, onChange }: Readonly<{ inv: Invite; onChange: (
       cancelLabel: t('common.cancel'),
       destructive: true,
     });
-    if (!ok) return;
+    if (!ok) {
+      return;
+    }
     setRevoking(true);
     try {
       await client.accounts.revokeInvite(inv.token);

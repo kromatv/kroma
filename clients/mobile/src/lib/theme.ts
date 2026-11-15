@@ -125,7 +125,10 @@ export const TAB_BAR_CLEARANCE = 108;
 /** Poster card sizing: phones get ~3 columns, tablets scale up. */
 export function posterWidth(windowWidth: number): number {
   let cols = 3;
-  if (windowWidth >= 900) cols = 6;
-  else if (windowWidth >= 600) cols = 4;
+  if (windowWidth >= 900) {
+    cols = 6;
+  } else if (windowWidth >= 600) {
+    cols = 4;
+  }
   return Math.floor((windowWidth - 16 * 2 - 12 * (cols - 1)) / cols);
 }

@@ -5,7 +5,9 @@ const cache = new WeakMap<Element, CSSStyleDeclaration>();
  * jsdom that call is the whole cost of the audit. */
 function styleOf(el: Element): CSSStyleDeclaration {
   const known = cache.get(el);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   const style = getComputedStyle(el);
   cache.set(el, style);
   return style;

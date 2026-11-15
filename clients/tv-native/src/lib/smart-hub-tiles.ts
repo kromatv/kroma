@@ -6,7 +6,7 @@ const MAX_CONTINUE_TILES = 20;
 
 const continueSchema = z.array(
   z.object({
-    id: z.string().min(1),
+    id: z.string().nonempty(),
     title: z.string(),
     subtitle: z.string().optional(),
     imageUrl: z.string().optional(),
@@ -20,7 +20,7 @@ const channelsSchema = z.array(
     title: z.string(),
     items: z.array(
       z.object({
-        id: z.string().min(1),
+        id: z.string().nonempty(),
         title: z.string(),
         subtitle: z.string().optional(),
         imageUrl: z.string().optional(),
@@ -47,7 +47,9 @@ function tile(
   url: string,
   playable: boolean,
 ): PreviewTile | null {
-  if (!item.imageUrl || !/^https?:\/\//.test(item.imageUrl)) return null;
+  if (!item.imageUrl || !/^https?:\/\//.test(item.imageUrl)) {
+    return null;
+  }
   return {
     ...(item.title ? { title: item.title } : {}),
     ...(item.subtitle ? { subtitle: item.subtitle } : {}),
@@ -68,7 +70,9 @@ export function smartHubSections(
 ): PreviewSection[] {
   const seen = new Set<string>();
   const unique = (candidate: PreviewTile | null, limit: number): candidate is PreviewTile => {
-    if (candidate === null || seen.has(candidate.url) || seen.size >= limit) return false;
+    if (candidate === null || seen.has(candidate.url) || seen.size >= limit) {
+      return false;
+    }
     seen.add(candidate.url);
     return true;
   };

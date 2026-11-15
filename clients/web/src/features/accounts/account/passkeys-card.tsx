@@ -22,7 +22,9 @@ function isCancel(e: unknown): boolean {
 // WebAuthn failures are DOMExceptions whose `name` (e.g. SecurityError for an
 // invalid RP id like an IP address) is the actionable part.
 function ceremonyError(e: unknown, fallback: string): string {
-  if (e instanceof DOMException) return `${fallback} (${e.name})`;
+  if (e instanceof DOMException) {
+    return `${fallback} (${e.name})`;
+  }
   return apiErrorText(e, fallback);
 }
 
@@ -151,7 +153,11 @@ function noteOf(
   keys: PasskeyInfo[] | undefined,
   t: ReturnType<typeof useT>,
 ): string | null {
-  if (!supported) return t('account.passkeysInsecure');
-  if (!keys || keys.length === 0) return t('account.passkeysEmpty');
+  if (!supported) {
+    return t('account.passkeysInsecure');
+  }
+  if (!keys || keys.length === 0) {
+    return t('account.passkeysEmpty');
+  }
   return null;
 }

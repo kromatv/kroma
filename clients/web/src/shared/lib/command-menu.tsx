@@ -93,7 +93,9 @@ function createCommandStore() {
   let query = '';
 
   const emit = () => {
-    for (const listener of listeners) listener();
+    for (const listener of listeners) {
+      listener();
+    }
   };
 
   const collect = () => {
@@ -133,8 +135,12 @@ const CommandStore = createContext<ReturnType<typeof createCommandStore> | null>
 
 function coveredByAnotherSurface(): boolean {
   const document = webDocument();
-  if (!document) return false;
-  if (document.fullscreenElement) return true;
+  if (!document) {
+    return false;
+  }
+  if (document.fullscreenElement) {
+    return true;
+  }
   return document.querySelector('[role="dialog"][aria-modal="true"]') !== null;
 }
 
@@ -161,17 +167,23 @@ export function CommandMenuProvider({
   });
 
   useCommandKey(() => {
-    if (!store.isOpen() && !coveredByAnotherSurface()) store.setOpen(true);
+    if (!store.isOpen() && !coveredByAnotherSurface()) {
+      store.setOpen(true);
+    }
   }, signedIn);
 
   useEffect(() => {
-    if (!signedIn) return;
+    if (!signedIn) {
+      return;
+    }
     const timer = setTimeout(warm, WARM_DELAY_MS);
     return () => clearTimeout(timer);
   }, [signedIn, warm]);
 
   useEffect(() => {
-    if (open && !Menu) warm();
+    if (open && !Menu) {
+      warm();
+    }
   }, [open, Menu, warm]);
 
   return (

@@ -51,8 +51,10 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
   const progress = useQuery({ ...client.query.playback.progress(), staleTime: 30_000 });
   const watched = useQuery({ ...client.query.playback.watched(), staleTime: 60_000 });
 
-  if (detail.isPending) return <Loading label={t('common.loading')} />;
-  if (detail.isError)
+  if (detail.isPending) {
+    return <Loading label={t('common.loading')} />;
+  }
+  if (detail.isError) {
     return (
       <ErrorView
         message={t('error.serverBody')}
@@ -60,6 +62,7 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
         onRetry={() => detail.refetch()}
       />
     );
+  }
 
   const { show, seasons } = detail.data;
   const season = seasons[Math.min(seasonIdx, seasons.length - 1)];

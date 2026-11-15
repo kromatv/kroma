@@ -20,7 +20,9 @@ export function bindEngine(): () => void {
     // What a mark stands for is remembered beside it, and only for as long as
     // marks are being drawn: forgetting when the panel unmounts would take the
     // keys off text a refresh had just marked.
-    if (!inspector) forgetMarks();
+    if (!inspector) {
+      forgetMarks();
+    }
     engine().inspect(inspector);
     engine().overrideLocale(locale);
   };

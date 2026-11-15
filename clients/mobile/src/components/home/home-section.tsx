@@ -20,9 +20,15 @@ function PosterRail({ row }: Readonly<{ row: HomeRow }>) {
 
 function SectionBody({ row }: Readonly<{ row: HomeRow }>) {
   const [lead] = row.entries;
-  if (row.layout === 'wide') return <WideRail entries={row.entries} />;
-  if (row.layout === 'ranked') return <RankedRail entries={row.entries} />;
-  if (row.layout === 'spotlight') return lead ? <SpotlightCard row={lead} /> : null;
+  if (row.layout === 'wide') {
+    return <WideRail entries={row.entries} />;
+  }
+  if (row.layout === 'ranked') {
+    return <RankedRail entries={row.entries} />;
+  }
+  if (row.layout === 'spotlight') {
+    return lead ? <SpotlightCard row={lead} /> : null;
+  }
   return <PosterRail row={row} />;
 }
 
@@ -34,8 +40,9 @@ export function HomeSection({
   row,
   resumable,
 }: Readonly<{ row: HomeRow; resumable: readonly ContinueItem[] }>) {
-  if (row.layout === 'hero')
+  if (row.layout === 'hero') {
     return <HeroCarousel key={pagedTitles(row)} row={row} resumable={resumable} />;
+  }
   return (
     <Box>
       <SectionTitle reason={row.reason}>{row.title}</SectionTitle>

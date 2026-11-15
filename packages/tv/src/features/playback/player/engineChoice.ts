@@ -12,21 +12,35 @@ export type Engine = 'mpv' | 'avplay' | 'video-direct' | 'video-remux';
 // The backend the user explicitly asked for, or null when the pref is `auto`
 // or names an engine this platform can't run. Both fall through to automatic.
 function manualEngine(pref: EnginePref, tizenNative: boolean): Engine | null {
-  if (pref === 'avplay' && tizenNative) return 'avplay';
-  if (pref === 'webview') return 'video-direct';
-  if (pref === 'remux') return 'video-remux';
+  if (pref === 'avplay' && tizenNative) {
+    return 'avplay';
+  }
+  if (pref === 'webview') {
+    return 'video-direct';
+  }
+  if (pref === 'remux') {
+    return 'video-remux';
+  }
   // Forces the master even for a direct-play-able file, like the web client's
   // `shaka` preference; which MSE library plays it is the plan's `masterShaka`.
-  if (pref === 'shaka') return 'video-remux';
-  if (pref === 'mpv' && mpvAvailable()) return 'mpv';
+  if (pref === 'shaka') {
+    return 'video-remux';
+  }
+  if (pref === 'mpv' && mpvAvailable()) {
+    return 'mpv';
+  }
   return null;
 }
 
 // Native planes where they exist (AVPlay on Tizen for hardware surround, mpv
 // on the desktop shell), else `<video>` direct-play or the server remux.
 function autoEngine(env: PlayEnv, tizenNative: boolean, autoDirect: boolean): Engine {
-  if (tizenNative) return 'avplay';
-  if (env.platform === 'desktop' && mpvAvailable()) return 'mpv';
+  if (tizenNative) {
+    return 'avplay';
+  }
+  if (env.platform === 'desktop' && mpvAvailable()) {
+    return 'mpv';
+  }
   return autoDirect ? 'video-direct' : 'video-remux';
 }
 
@@ -41,26 +55,40 @@ export function resolveEngine(pref: EnginePref, env: PlayEnv, autoDirect: boolea
 /** A plain, single-audio MP4 a bare TV `<video>` direct-plays natively. */
 export function tvDirectPlay(item: MediaItem): boolean {
   const container = (item.container ?? '').toLowerCase();
-  if (container !== 'mp4' && container !== 'mov' && container !== 'm4v') return false;
-  if (!canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay) return false;
+  if (container !== 'mp4' && container !== 'mov' && container !== 'm4v') {
+    return false;
+  }
+  if (!canDirectPlay(item, NATIVE_TV_CAPS).canDirectPlay) {
+    return false;
+  }
   return audioTracksOf(item).length <= 1;
 }
 
 // Browser targets have to sniff the user agent, because Tizen / webOS / a
 // desktop shell are all "a Chromium".
 export function deviceLabelFor(useMpv: boolean): string {
-  if (useMpv) return 'Desktop';
+  if (useMpv) {
+    return 'Desktop';
+  }
   const ua = typeof navigator === 'undefined' ? '' : navigator.userAgent || '';
-  if (/Tizen/i.test(ua)) return 'Samsung TV';
-  if (/web0?s|LG/i.test(ua)) return 'LG TV';
+  if (/Tizen/i.test(ua)) {
+    return 'Samsung TV';
+  }
+  if (/web0?s|LG/i.test(ua)) {
+    return 'LG TV';
+  }
   return 'TV';
 }
 
 /** mpv / AVPlay render to their own plane behind the transparent UI, so neither
  * uses an in-page media element. */
 export function surfaceFor(useMpv: boolean, useAvplay: boolean): Surface {
-  if (useMpv) return 'mpv';
-  if (useAvplay) return 'avplay';
+  if (useMpv) {
+    return 'mpv';
+  }
+  if (useAvplay) {
+    return 'avplay';
+  }
   return 'video';
 }
 
@@ -75,8 +103,14 @@ export function playbackModeFor(flags: {
   aacMaster: boolean;
 }): 'direct' | 'remux' | 'transcode' {
   const { useMpv, useAvplay, avplayDirect, direct, aacMaster } = flags;
-  if (useMpv) return 'direct'; // mpv opens the original file (master only on fallback)
-  if (useAvplay) return avplayDirect ? 'direct' : 'remux';
-  if (!direct) return aacMaster ? 'transcode' : 'remux';
+  if (useMpv) {
+    return 'direct';
+  } // mpv opens the original file (master only on fallback)
+  if (useAvplay) {
+    return avplayDirect ? 'direct' : 'remux';
+  }
+  if (!direct) {
+    return aacMaster ? 'transcode' : 'remux';
+  }
   return 'direct';
 }

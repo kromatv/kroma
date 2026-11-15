@@ -210,6 +210,7 @@
   "naming.previewFailed": "L'aperçu a échoué",
   "naming.renameHelp": "Renomme tous les fichiers qui ne respectent pas les modèles ci-dessus. Les états « vu » et la progression sont conservés (les identifiants sont basés sur le titre, pas le chemin).",
   "naming.renameTitle": "Renommer la bibliothèque",
+  "naming.saveFailed": "L'enregistrement des modèles a échoué",
   "naming.seasonFolder": "Dossier des saisons",
   "naming.sepDash": "Tiret (-)",
   "naming.sepPeriod": "Point (.)",

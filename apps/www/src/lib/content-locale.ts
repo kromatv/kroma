@@ -28,7 +28,9 @@ export function parseContentPath(path: string): { name: string; lang: Lang } {
   const file = path.slice(path.lastIndexOf('/') + 1).replace(/\.mdx?$/, '');
   const parts = file.split('.');
   const last = parts.length > 1 ? parts.at(-1) : undefined;
-  if (last && isLang(last)) return { name: parts.slice(0, -1).join('.'), lang: last };
+  if (last && isLang(last)) {
+    return { name: parts.slice(0, -1).join('.'), lang: last };
+  }
   return { name: file, lang: CONTENT_FALLBACK_LANG };
 }
 

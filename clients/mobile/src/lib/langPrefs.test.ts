@@ -34,7 +34,9 @@ import { useLangPrefs } from './langPrefs';
 
 function host(): Host {
   renderHook(() => useLangPrefs());
-  if (!shared.host) throw new Error('the shared hook was never called');
+  if (!shared.host) {
+    throw new Error('the shared hook was never called');
+  }
   return shared.host;
 }
 

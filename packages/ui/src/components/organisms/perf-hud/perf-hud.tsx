@@ -25,7 +25,9 @@ function PerfHud({
   const [report, setReport] = useState<PerfReport | null>(null);
 
   useEffect(() => {
-    if (!enabled || !perf) return;
+    if (!enabled || !perf) {
+      return;
+    }
     perf.startPerf();
     const timer = setInterval(() => setReport(perf.perfReport()), REFRESH_MS);
     return () => {
@@ -34,7 +36,9 @@ function PerfHud({
     };
   }, [enabled, perf]);
 
-  if (!enabled || !report) return null;
+  if (!enabled || !report) {
+    return null;
+  }
   return (
     <Box absolute style={s.panel}>
       <Row label="FPS" value={String(report.fps)} bad={report.fps < 45} />
@@ -57,7 +61,9 @@ function PerfHud({
 /** Nothing rather than a zero: an engine that reports no heap has not told us
  *  it is using none. */
 function heapText(report: PerfReport): string {
-  if (!report.heapMb) return '-';
+  if (!report.heapMb) {
+    return '-';
+  }
   return report.heapLimitMb ? `${report.heapMb} / ${report.heapLimitMb} MB` : `${report.heapMb} MB`;
 }
 

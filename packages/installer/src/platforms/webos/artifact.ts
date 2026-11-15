@@ -63,7 +63,9 @@ async function buildWebosNative(log: LogLine): Promise<string> {
     timeoutMs: NATIVE_BUILD_TIMEOUT_MS,
   });
   const built = localArtifact(WEBOS_NATIVE_PACKAGE);
-  if (!built) throw new Error('rn-tv webos package produced no .ipk');
+  if (!built) {
+    throw new Error('rn-tv webos package produced no .ipk');
+  }
   return built;
 }
 
@@ -78,6 +80,8 @@ async function buildWebos(log: LogLine): Promise<string> {
   });
 
   const [built] = matchingPaths(out, '*.ipk');
-  if (!built) throw new Error('ares-package produced no .ipk');
+  if (!built) {
+    throw new Error('ares-package produced no .ipk');
+  }
   return built;
 }

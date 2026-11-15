@@ -82,7 +82,9 @@ describe('rememberCommand', () => {
   });
 
   it('keeps only the last five', () => {
-    for (const to of ['/1', '/2', '/3', '/4', '/5', '/6']) rememberCommand(VIEWER, to, page(to));
+    for (const to of ['/1', '/2', '/3', '/4', '/5', '/6']) {
+      rememberCommand(VIEWER, to, page(to));
+    }
 
     expect(remembered()).toEqual(['/6', '/5', '/4', '/3', '/2']);
   });

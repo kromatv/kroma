@@ -11,7 +11,9 @@ async function main(argv: string[]): Promise<void> {
   }
   const context = githubContext(repo);
   const links = await Promise.all(files.map((file) => attach(file, context)));
-  for (const [i, file] of files.entries()) console.log(imageMarkdown(file, links[i] ?? ''));
+  for (const [i, file] of files.entries()) {
+    console.log(imageMarkdown(file, links[i] ?? ''));
+  }
 }
 
 try {
