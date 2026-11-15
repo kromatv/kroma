@@ -4,6 +4,8 @@ import {
   FlowsView,
   InboundSummary,
   ListenersView,
+  type MiddlewareOrder,
+  MiddlewareView,
   NetworksView,
   NetworkSummary,
   RulesView,
@@ -36,6 +38,13 @@ export default function networkApi(ctx: RequestContext) {
     listeners: () => ctx.get('/admin/network/listeners', ListenersView),
 
     networks: () => ctx.get('/admin/network/networks', NetworksView),
+
+    /** The modules a decision is put to before it is applied, in order. */
+    middleware: () => ctx.get('/admin/network/middleware', MiddlewareView),
+
+    /** Replaces the order, and which middlewares are required. */
+    saveMiddleware: (order: MiddlewareOrder) =>
+      ctx.put('/admin/network/middleware', { body: order }),
   };
 }
 

@@ -78,9 +78,9 @@
 - **ACCT-69** (SHIPPED) - A module tells people through this same inbox rather than inventing <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-70** (SHIPPED) - A module addresses the audiences the core addresses and no others: one <sub>[notifications.md](accounts/notifications.md)</sub>
 - **ACCT-71** (SHIPPED) - A module declares the kinds of notification it sends and ships their <sub>[notifications.md](accounts/notifications.md)</sub>
-- **ACCT-72** (AGREED) - The device list shows the app version each device last used <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-73** (AGREED) - A device whose app is older than the oldest version its server serves <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-74** (AGREED) - A device that never sent its app version shows "version unknown", never <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-72** (SHIPPED) - The device list shows the app version each device last used <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-73** (SHIPPED) - A device whose app is older than the oldest version its server serves <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-74** (SHIPPED) - A device that never sent its app version shows "version unknown", never <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-75** (SHIPPED) - An admin may add sign-in providers that speak OpenID Connect. Each one <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-76** (SHIPPED) - A provider's button appears only after an admin's test sign-in passed <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-77** (SHIPPED) - A provider sign-in ends in an ordinary session (ACCT-6), like a <sub>[README.md](accounts/README.md)</sub>

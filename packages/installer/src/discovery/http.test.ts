@@ -3,7 +3,7 @@ import { createServer, type Server } from 'node:https';
 import type { AddressInfo } from 'node:net';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { selfSignedCertificate, toPem } from '../platforms/tizen/certificate/x509';
+import { selfSignedCertificate, toPem } from '../shared/x509';
 import { fetchJson, fetchText } from './http';
 
 const System = z.object({ name: z.string() });

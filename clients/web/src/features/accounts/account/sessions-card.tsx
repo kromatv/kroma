@@ -20,6 +20,9 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
   const qc = useQueryClient();
   const [revoking, setRevoking] = useState(false);
   const { label, kind } = deviceInfo(session.userAgent, t('account.unknownDevice'));
+  const version = session.app
+    ? t('account.appVersion', { version: session.app.version })
+    : t('account.appVersionUnknown');
 
   const revoke = async () => {
     setRevoking(true);
@@ -41,8 +44,9 @@ function SessionRow({ session }: Readonly<{ session: SessionInfo }>) {
       <Row gap={10}>
         <ListRow.Label>{label}</ListRow.Label>
         {session.current ? <Badge tone="success">{t('account.thisDevice')}</Badge> : null}
+        {session.outdated ? <Badge tone="warning">{t('account.appOutdated')}</Badge> : null}
       </Row>
-      <ListRow.Hint>{fmt.elapsed(session.lastSeen)}</ListRow.Hint>
+      <ListRow.Hint>{`${version} · ${fmt.elapsed(session.lastSeen)}`}</ListRow.Hint>
       <ListRow.Trailing>
         {session.current ? (
           <Text variant="meta" color="textDim">

@@ -1,4 +1,7 @@
 {
+  "account.appOutdated": "Outdated",
+  "account.appVersion": "Version {version}",
+  "account.appVersionUnknown": "Version unknown",
   "account.audioDesc": "Chosen automatically when a title offers it.",
   "account.audioLanguage": "Preferred audio language",
   "account.avatarFailed": "Image upload failed",

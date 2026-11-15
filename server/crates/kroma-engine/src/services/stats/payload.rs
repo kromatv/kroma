@@ -121,6 +121,7 @@ mod tests {
                 &kroma_db::DeviceHints {
                     user_agent: Some("Mozilla/5.0".to_string()),
                     language: Some((*language).to_string()),
+                    app: None,
                 },
             )
             .unwrap();

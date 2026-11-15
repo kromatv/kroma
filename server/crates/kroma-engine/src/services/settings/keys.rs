@@ -94,6 +94,7 @@ fn declared() -> Declared {
     m.minted("update.status");
     m.minted("update.operation");
     m.minted(crate::services::network::SETTING_KEY);
+    m.minted(crate::services::network::MIDDLEWARE_SETTING);
     m.module_declared("showRecentHome", json!(true));
     // Security: exposes the account roster on the login screen. Off by default so
     // knowing the server URL does not reveal who has an account; when off,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  browsedServices,
   detailPorts,
   findPlatform,
   platformArgs,
@@ -56,9 +57,21 @@ describe('searchTargets', () => {
   });
 });
 
+describe('browsedServices', () => {
+  it('lists the services an Android TV advertises, each once', () => {
+    expect(browsedServices()).toEqual(['_adb-tls-connect._tcp', '_googlecast._tcp']);
+  });
+});
+
 describe('platformArgs', () => {
   it('merges the flags every module adds to the install command', () => {
-    expect(Object.keys(platformArgs())).toEqual(['profile', 'native', 'web', 'passphrase']);
+    expect(Object.keys(platformArgs())).toEqual([
+      'profile',
+      'native',
+      'web',
+      'passphrase',
+      'pairing-code',
+    ]);
   });
 });
 

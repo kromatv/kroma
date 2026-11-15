@@ -714,7 +714,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 72,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The device list shows the app version each device last used",
     "file": "docs/spec/accounts/README.md",
     "line": 145
@@ -724,7 +724,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 73,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A device whose app is older than the oldest version its server serves",
     "file": "docs/spec/accounts/README.md",
     "line": 148
@@ -734,7 +734,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 74,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A device that never sent its app version shows \"version unknown\", never",
     "file": "docs/spec/accounts/README.md",
     "line": 151

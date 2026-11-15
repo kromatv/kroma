@@ -7,8 +7,7 @@ modules reached over points, like everything else (see
 [modules/README.md](../modules/README.md#calling-another-module)). How routing
 works is in [networking](networking.md).
 
-`network` is on `main` (#491). `network-policy` is planned (#493), and this
-page is the contract it is being built to.
+Both are on `main`: `network` (#491) and `network-policy` (#493).
 
 ## Providing a network
 
@@ -63,9 +62,9 @@ rule for the Tor module's own traffic (`caller: "tv.kroma.tor"`, `action:
 
 ## Network middleware
 
-Middleware sees every decision before it is applied. It is how a module adds
-behaviour the core does not have: a tracker blocklist, routing by the
-destination's country, an alert on a new destination.
+Middleware sees every connection the guards and the rules allowed, before it
+leaves. It is how a module adds behaviour the core does not have: a tracker
+blocklist, routing by the destination's country, an alert on a new destination.
 
 ```json
 "contributes": [{ "point": "network-policy" }]
@@ -76,8 +75,11 @@ something, it declares it like any other module.
 
 ### `network-policy/decide`
 
-Called for each connection, after the guards and the operator's rules, in the
-order the operator set in Admin → Réseau.
+Called for each connection that is still allowed after the guards and the
+operator's rules, in the order the operator set under Admin → Réseau →
+Middleware. A middleware the operator has not placed is asked after the ones
+placed. A connection already blocked is not put to anyone, and a middleware is
+never asked about its own connections.
 
 ```json
 {
@@ -89,8 +91,10 @@ order the operator set in Admin → Réseau.
 }
 ```
 
-`decision.action` is the route the guards and rules chose, spelled as a rule's
-action: `direct`, a network's name, or `block`. The middleware answers one of:
+`decision.action` is the route chosen so far, spelled as a rule's action:
+`direct` or a network's name. `decision.rule` is the id of the rule that chose
+it, absent for the default, or `middleware:<module id>` when an earlier
+middleware moved it. The middleware answers one of:
 
 ```json
 { "verdict": "keep" }
@@ -105,18 +109,53 @@ The rules a middleware lives by:
   network. It cannot unblock what a guard or a rule blocked, and it cannot send a
   connection direct that a rule sent through a network.
 - **It is on the hot path**, so it has 200 ms. A middleware that does not answer
-  in time is skipped and the skip is recorded. A middleware the operator marked as
-  required blocks the connection instead, which is what a blocklist should do.
+  in time, or answers something that is not one of the three verdicts, is
+  skipped and the skip is recorded: the Middleware tab counts them and the
+  server logs each. A middleware the operator marked as required blocks the
+  connection instead, which is what a blocklist should do. The journal then
+  shows the connection as blocked by `middleware:<module id>`.
+- **A network it names must be one a provider offers.** A name nobody offers, or
+  a network that is down, refuses the connection. Nothing falls back to direct.
+  A destination on the local network stays direct, since a tunnel cannot reach
+  it.
 - **It sees caller, purpose, host and port**, plus the decision it may tighten.
   Never a URL path, a query string, a credential or the account behind the call.
-- **Its answers are cached** for the same caller, purpose, host and port for a few
-  seconds, so a burst of connections is one question.
+- **Its answers are cached** for five seconds for the same caller, purpose,
+  host, port and decision, so a burst of connections is one question. A missed
+  deadline is cached the same way, so a middleware that is down costs one wait
+  per destination and not one per connection.
 
 ### `network-policy/observe`
 
 Optional. A middleware that answers it receives the journal's rows in batches
 once connections close, to build its own statistics or alerts. It cannot change
-anything from there.
+anything from there, and its answer is not read. A batch leaves when fifty rows
+have waited or every thirty seconds, whichever comes first:
+
+```json
+{
+  "flows": [
+    {
+      "at": 1763200000000,
+      "caller": "tv.kroma.indexer",
+      "purpose": "indexer",
+      "method": "GET",
+      "host": "tracker.example.org",
+      "port": 443,
+      "route": "vpn",
+      "status": 200,
+      "bytesIn": 5120,
+      "bytesOut": 310,
+      "durationMs": 84,
+      "error": null,
+      "rule": "indexers"
+    }
+  ]
+}
+```
+
+The Rust shapes of the ask and the verdict are `PolicyAsk` and `PolicyVerdict`
+in `kroma-module-wire`, which the SDK re-exports.
 
 ## Checklist for a network or middleware module
 

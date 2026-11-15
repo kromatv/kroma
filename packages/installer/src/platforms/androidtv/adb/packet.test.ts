@@ -17,8 +17,8 @@ describe('PacketReader', () => {
   it('reads back what was written, even split across several chunks', () => {
     const reader = new PacketReader();
 
-    const first = reader.push(message.subarray(0, 10));
-    const rest = reader.push(Buffer.concat([message.subarray(10), message]));
+    const first = [...reader.push(message.subarray(0, 10))];
+    const rest = [...reader.push(Buffer.concat([message.subarray(10), message]))];
 
     expect(first).toEqual([]);
     expect(rest).toHaveLength(2);
@@ -28,15 +28,26 @@ describe('PacketReader', () => {
   it('waits for a payload that has not all arrived', () => {
     const reader = new PacketReader();
 
-    expect(reader.push(message.subarray(0, 26))).toEqual([]);
-    expect(reader.push(message.subarray(26))).toHaveLength(1);
+    expect([...reader.push(message.subarray(0, 26))]).toEqual([]);
+    expect([...reader.push(message.subarray(26))]).toHaveLength(1);
+  });
+
+  it('hands over the bytes after a message to whoever stops reading there', () => {
+    const reader = new PacketReader();
+    const tls = Buffer.from([0x16, 0x03, 0x01]);
+
+    const { value } = reader.push(Buffer.concat([message, tls])).next();
+
+    expect(value?.command).toBe(A_WRTE);
+    expect(reader.rest()).toEqual(tls);
+    expect(reader.rest()).toHaveLength(0);
   });
 
   it('refuses a header whose magic does not match its command', () => {
     const broken = Buffer.from(message);
     broken.writeUInt32LE(0, 20);
 
-    expect(() => new PacketReader().push(broken)).toThrow('not an adb message');
+    expect(() => [...new PacketReader().push(broken)]).toThrow('not an adb message');
   });
 
   it('refuses a command adb does not have', () => {
@@ -44,13 +55,13 @@ describe('PacketReader', () => {
     unknown.writeUInt32LE(0x12345678, 0);
     unknown.writeUInt32LE((0x12345678 ^ 0xffffffff) >>> 0, 20);
 
-    expect(() => new PacketReader().push(unknown)).toThrow('not an adb message');
+    expect(() => [...new PacketReader().push(unknown)]).toThrow('not an adb message');
   });
 
   it('refuses a payload larger than adb ever sends', () => {
     const huge = encodePacket({ command: A_CNXN, arg0: 0, arg1: 0, payload: Buffer.alloc(0) });
     huge.writeUInt32LE(2 * 1024 * 1024, 12);
 
-    expect(() => new PacketReader().push(huge)).toThrow('far too large');
+    expect(() => [...new PacketReader().push(huge)]).toThrow('far too large');
   });
 });

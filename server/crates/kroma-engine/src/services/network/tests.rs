@@ -4,6 +4,7 @@ use super::*;
 use crate::db::testing::{temp_pool, TempPool};
 
 mod journal;
+mod middleware;
 mod module_asks;
 mod offers;
 mod ruling;

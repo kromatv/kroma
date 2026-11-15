@@ -1,4 +1,5 @@
 import type { ArgsDef, SubCommandsDef } from 'citty';
+import type { MdnsService } from '../discovery/mdns';
 import type { UpnpDevice } from '../discovery/upnp';
 import type { ArtifactRequest, Source } from '../install/artifact';
 import type { LogLine } from '../shared/run';
@@ -30,6 +31,7 @@ export interface Platform {
   guide?: string;
   ports?: PlatformPorts;
   searchTargets?: readonly string[];
+  services?: readonly string[];
   flags?: ArgsDef;
   remembers?: readonly string[];
   commands?: SubCommandsDef;
@@ -37,6 +39,7 @@ export interface Platform {
     host: string,
     openPorts: ReadonlySet<number>,
     upnp?: UpnpDevice,
+    advertised?: readonly MdnsService[],
   ): Promise<Television | null>;
   discover?(): Promise<Television[]>;
   prompt?(sets: readonly Television[]): Promise<Map<string, PlatformOptions> | null>;

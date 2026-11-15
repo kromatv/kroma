@@ -1,21 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { identify } from '../platforms/identify';
 import type { Platform } from '../platforms/platform';
-import { detailPorts, platforms, searchTargets, sweepPorts } from '../platforms/registry';
+import {
+  browsedServices,
+  detailPorts,
+  platforms,
+  searchTargets,
+  sweepPorts,
+} from '../platforms/registry';
 import type { Television } from '../shared/television';
 import { arpHosts } from './arp';
 import { localSubnets } from './lan';
+import { mdnsBrowse } from './mdns';
 import { scan, sweepTargets, watch } from './scan';
 import { ssdpSearch } from './ssdp';
 import { tcpOpen } from './tcp';
 import { fetchDeviceDescription } from './upnp';
 
 vi.mock('./arp', () => ({ arpHosts: vi.fn() }));
+vi.mock('./mdns', () => ({ mdnsBrowse: vi.fn() }));
 vi.mock('./ssdp', () => ({ ssdpSearch: vi.fn() }));
 vi.mock('./tcp', () => ({ tcpOpen: vi.fn() }));
 vi.mock('./upnp', () => ({ fetchDeviceDescription: vi.fn() }));
 vi.mock('../platforms/identify', () => ({ identify: vi.fn() }));
 vi.mock('../platforms/registry', () => ({
+  browsedServices: vi.fn(),
   detailPorts: vi.fn(),
   platforms: vi.fn(),
   searchTargets: vi.fn(),
@@ -68,6 +77,8 @@ beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(arpHosts).mockResolvedValue([]);
   vi.mocked(ssdpSearch).mockResolvedValue([]);
+  vi.mocked(mdnsBrowse).mockResolvedValue([]);
+  vi.mocked(browsedServices).mockReturnValue([]);
   vi.mocked(tcpOpen).mockResolvedValue(false);
   vi.mocked(identify).mockResolvedValue(null);
   vi.mocked(fetchDeviceDescription).mockResolvedValue(null);
@@ -204,6 +215,25 @@ describe('scan', () => {
     expect(vi.mocked(identify).mock.calls[0]?.[2]).toEqual(device);
   });
 
+  it('identifies a set that advertises a service but answered no probe', async () => {
+    const chromecast = { ...television('10.0.0.9', 'Chromecast'), platform: 'androidtv' };
+    const adb = { host: '10.0.0.9', type: '_adb-tls-connect._tcp', instance: 'adb-1', port: 37001 };
+    vi.mocked(mdnsBrowse).mockResolvedValue([adb]);
+    vi.mocked(identify).mockResolvedValue(chromecast);
+
+    expect(await scan({ hosts: ['10.0.0.5'] })).toEqual([chromecast]);
+    expect(identify).toHaveBeenLastCalledWith('10.0.0.9', new Set(), undefined, [adb]);
+  });
+
+  it('asks every host it probes for the services the platforms browse', async () => {
+    vi.mocked(browsedServices).mockReturnValue(['_adb-tls-connect._tcp']);
+
+    await scan({ hosts: ['10.0.0.5'] });
+
+    expect(vi.mocked(mdnsBrowse).mock.calls[0]?.[0]).toEqual(['_adb-tls-connect._tcp']);
+    expect(vi.mocked(mdnsBrowse).mock.calls[0]?.[1].hosts).toEqual(['10.0.0.5']);
+  });
+
   it('leaves out a host whose description says nothing any module recognises', async () => {
     vi.mocked(ssdpSearch).mockResolvedValue([reply('10.0.0.7')]);
     vi.mocked(fetchDeviceDescription).mockResolvedValue(device);
@@ -229,7 +259,7 @@ describe('scan', () => {
 
     const sets = await scan({ hosts: ['10.0.0.7'] });
 
-    expect(identify).toHaveBeenLastCalledWith('10.0.0.7', expect.anything(), device);
+    expect(identify).toHaveBeenLastCalledWith('10.0.0.7', expect.anything(), device, undefined);
     expect(sets).toHaveLength(1);
     expect(sets[0]?.name).toBe('[LG] OLED55C1');
   });

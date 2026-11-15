@@ -29,7 +29,9 @@ pub struct SessionResult {
 
 /// One signed-in device in `GET /auth/me/sessions`. `id` is a non-secret handle
 /// (a short hash of the device's access token) used to revoke it; `current`
-/// marks the device making the request.
+/// marks the device making the request. `app` is the build the device last
+/// named itself by, absent when it never did, and `outdated` says that build is
+/// older than the oldest this server serves.
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionInfo {
@@ -37,6 +39,8 @@ pub struct SessionInfo {
     pub user_agent: Option<String>,
     pub created_at: String,
     pub last_seen: Option<String>,
+    pub app: Option<crate::model::AppVersion>,
+    pub outdated: bool,
     pub current: bool,
 }
 

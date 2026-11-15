@@ -16,7 +16,9 @@ import {
   HOST_MAX_PAYLOAD,
   type Packet,
   PacketReader,
+  STLS_VERSION,
 } from './packet';
+import { secure } from './secure';
 import { AdbStream } from './stream';
 
 const CONNECT_TIMEOUT_MS = 10_000;
@@ -36,6 +38,11 @@ export interface HandshakeOptions {
 
 /** The TV did not let this computer in: no key it trusts, and no one accepted the prompt. */
 export class AdbUnauthorized extends Error {}
+
+/** The TV speaks Wireless debugging, and was never paired with a key this computer holds. */
+export class AdbUnpaired extends Error {}
+
+class TlsKeyRefused extends Error {}
 
 /** What a TV says about itself when it lets a computer in. */
 export function parseBanner(payload: Buffer): Banner {
@@ -81,30 +88,29 @@ export class AdbConnection {
   private connected = false;
   private nextLocal = 1;
 
-  private constructor(private readonly socket: Socket) {
-    const reader = new PacketReader();
-    socket.on('data', (chunk: Buffer) => {
-      try {
-        for (const packet of reader.push(chunk)) this.receive(packet);
-      } catch (error) {
-        this.fail(error instanceof Error ? error : new Error(String(error)));
-        socket.destroy();
-      }
-    });
-    socket.on('error', (error) => this.fail(error));
-    socket.on('close', () => this.fail(new Error('the TV closed the adb connection')));
+  private constructor(private socket: Socket) {
+    this.attach(socket);
   }
 
-  /** Connects and lets the TV check this computer's keys, asking it to trust one when allowed. */
+  /**
+   * Connects and lets the TV check this computer's keys, asking it to trust
+   * one when allowed. A TV on Wireless debugging is spoken to over TLS, with
+   * each key in turn, and trusts only one it was paired with.
+   */
   static async open(host: string, port: number, options: HandshakeOptions): Promise<AdbConnection> {
-    const socket = await dial(host, port, options.timeoutMs ?? CONNECT_TIMEOUT_MS);
-    const connection = new AdbConnection(socket);
-    try {
-      await connection.handshake(options);
-      return connection;
-    } catch (error) {
-      connection.close();
-      throw error;
+    for (let attempt = 0; ; attempt += 1) {
+      const socket = await dial(host, port, options.timeoutMs ?? CONNECT_TIMEOUT_MS);
+      const connection = new AdbConnection(socket);
+      try {
+        await connection.handshake(options, attempt);
+        return connection;
+      } catch (error) {
+        connection.close();
+        if (!(error instanceof TlsKeyRefused)) throw error;
+        if (attempt + 1 >= options.keys.length) {
+          throw new AdbUnpaired('the TV has not been paired with this computer');
+        }
+      }
     }
   }
 
@@ -129,17 +135,49 @@ export class AdbConnection {
     this.socket.destroy();
   }
 
-  private async handshake(options: HandshakeOptions): Promise<void> {
+  private attach(socket: Socket): void {
+    const reader = new PacketReader();
+    this.socket = socket;
+    socket.on('data', (chunk: Buffer) => {
+      try {
+        for (const packet of reader.push(chunk)) this.receive(packet);
+      } catch (error) {
+        this.fail(error instanceof Error ? error : new Error(String(error)));
+        socket.destroy();
+      }
+    });
+    socket.on('error', (error) => this.fail(error));
+    socket.on('close', () => this.fail(new Error('the TV closed the adb connection')));
+  }
+
+  private async overTls(key: AdbKey | undefined, timeoutMs: number): Promise<void> {
+    if (!key) throw new TlsKeyRefused();
+    this.send(A_STLS, STLS_VERSION, 0);
+    const plain = this.socket;
+    for (const event of ['data', 'error', 'close']) plain.removeAllListeners(event);
+    plain.on('error', () => undefined);
+    try {
+      this.attach(await secure({ socket: plain }, key.privateKey, timeoutMs));
+    } catch {
+      plain.destroy();
+      throw new TlsKeyRefused();
+    }
+  }
+
+  private async handshake(options: HandshakeOptions, attempt: number): Promise<void> {
     const { keys, onPrompt } = options;
     const timeoutMs = options.timeoutMs ?? CONNECT_TIMEOUT_MS;
     this.send(A_CNXN, ADB_VERSION, HOST_MAX_PAYLOAD, Buffer.from('host::\0'));
     let tried = 0;
     let prompted = false;
+    let secured = false;
     for (;;) {
       const packet = await this.next(
         prompted ? (options.promptTimeoutMs ?? PROMPT_TIMEOUT_MS) : timeoutMs,
         prompted,
-      );
+      ).catch((error: unknown) => {
+        throw secured && this.failure ? new TlsKeyRefused() : error;
+      });
       if (packet.command === A_CNXN) {
         this.banner = parseBanner(packet.payload);
         this.maxPayload = Math.min(packet.arg1, HOST_MAX_PAYLOAD);
@@ -147,9 +185,9 @@ export class AdbConnection {
         return;
       }
       if (packet.command === A_STLS) {
-        throw new Error(
-          'the TV asks for Wireless debugging with a pairing code, which this tool does not speak',
-        );
+        await this.overTls(keys[attempt], timeoutMs);
+        secured = true;
+        continue;
       }
       if (packet.command !== A_AUTH || packet.arg0 !== AUTH_TOKEN) continue;
 

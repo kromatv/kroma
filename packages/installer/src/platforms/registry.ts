@@ -33,6 +33,10 @@ export function searchTargets(): string[] {
   return REGISTRY.flatMap((module) => [...(module.searchTargets ?? [])]);
 }
 
+export function browsedServices(): string[] {
+  return [...new Set(REGISTRY.flatMap((module) => [...(module.services ?? [])]))];
+}
+
 export function platformArgs(): ArgsDef {
   const args: ArgsDef = {};
   for (const module of REGISTRY) Object.assign(args, module.flags);

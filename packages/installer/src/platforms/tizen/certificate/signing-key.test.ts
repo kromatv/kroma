@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { readPkcs12 } from './pkcs12';
 import { pemCertificates, readSigningKey } from './signing-key';
-import { selfSignedCertificate, toPem } from './x509';
+import { selfSignedCertificate, toPem } from '../../../shared/x509';
 
 vi.mock('./pkcs12', () => ({ readPkcs12: vi.fn() }));
 
