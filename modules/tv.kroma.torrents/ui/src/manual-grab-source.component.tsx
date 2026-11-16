@@ -185,18 +185,7 @@ function LinkDoor({
   return (
     <Box gap={10}>
       {protocols.length > 1 ? (
-        <SegmentGroup.Root
-          value={protocol}
-          onValueChange={setPicked}
-          label={t('manual.protocol')}
-          size="sm"
-        >
-          {protocols.map((one) => (
-            <SegmentGroup.Item key={one} value={one}>
-              <SegmentGroup.Label>{protocolLabel(t, one)}</SegmentGroup.Label>
-            </SegmentGroup.Item>
-          ))}
-        </SegmentGroup.Root>
+        <ProtocolPicker protocols={protocols} value={protocol} onValueChange={setPicked} />
       ) : null}
       <LinkField protocol={protocol} value={link} onValueChange={setLink} />
       <Button
@@ -207,6 +196,32 @@ function LinkDoor({
         onPress={() => onPicked({ ...BARE_SOURCE, magnet: link.trim(), protocol })}
       />
     </Box>
+  );
+}
+
+function ProtocolPicker({
+  protocols,
+  value,
+  onValueChange,
+}: Readonly<{
+  protocols: readonly string[];
+  value: string;
+  onValueChange: (next: string) => void;
+}>) {
+  const t = useT();
+  return (
+    <SegmentGroup.Root
+      value={value}
+      onValueChange={onValueChange}
+      label={t('manual.protocol')}
+      size="sm"
+    >
+      {protocols.map((one) => (
+        <SegmentGroup.Item key={one} value={one}>
+          <SegmentGroup.Label>{protocolLabel(t, one)}</SegmentGroup.Label>
+        </SegmentGroup.Item>
+      ))}
+    </SegmentGroup.Root>
   );
 }
 

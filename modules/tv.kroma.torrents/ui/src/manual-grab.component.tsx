@@ -1,14 +1,14 @@
 import { useAcquisitionApi } from '@kromatv/module-acquisition/api';
-import type { TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
+import type { ManualAddBody, TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
-import { Box, Button, Callout, Dialog, Row, Stepper, Text, useStepper } from '@kromatv/ui/kit';
-import { type ComponentProps, useState } from 'react';
+import { Button, Callout, Dialog, Row, Stepper, useStepper } from '@kromatv/ui/kit';
+import { useState } from 'react';
 import { detect } from './manual-grab-content';
+import { FilesPanel } from './manual-grab-files.component';
 import { useIndexerSearch } from './manual-grab-search';
 import { type ReleaseSource, SourceStep } from './manual-grab-source.component';
 import { type GrabTarget, type Kind, TargetStep } from './manual-grab-target.component';
 import { joinsSwarm } from './protocol';
-import { TorrentContents } from './torrent-contents.component';
 import { useClientProtocols } from './use-client-protocols.hook';
 import { useEpisodeNames } from './use-episode-names.hook';
 
@@ -35,6 +35,29 @@ function targetFrom(source: ReleaseSource): GrabTarget {
     year: source.year ? String(source.year) : '',
     season: source.season ? String(source.season) : '',
     episode: source.episodes?.[0] ? String(source.episodes[0]) : '',
+  };
+}
+
+function numberOf(text: string): number | null {
+  return text ? Number.parseInt(text, 10) : null;
+}
+
+function addBody(
+  source: ReleaseSource,
+  target: GrabTarget,
+  onlyFiles: number[] | null,
+): ManualAddBody {
+  return {
+    magnetOrUrl: source.magnet,
+    protocol: source.protocol,
+    kind: target.kind,
+    title: target.title.trim() || null,
+    year: numberOf(target.year),
+    season: target.kind === 'movie' ? null : numberOf(target.season),
+    episode: target.kind === 'episode' ? numberOf(target.episode) : null,
+    tmdbId: target.tmdbId,
+    onlyFiles,
+    detailsUrl: source.detailsUrl,
   };
 }
 
@@ -115,22 +138,7 @@ export function ManualGrabModal({
           analysis && selected.size > 0 && selected.size < videoFiles.length
             ? [...selected].sort((a, b) => a - b)
             : null;
-        await acquisition.add({
-          magnetOrUrl: source.magnet,
-          protocol: source.protocol,
-          kind: target.kind,
-          title: target.title.trim() || null,
-          year: target.year ? Number.parseInt(target.year, 10) : null,
-          season:
-            target.kind !== 'movie' && target.season ? Number.parseInt(target.season, 10) : null,
-          episode:
-            target.kind === 'episode' && target.episode
-              ? Number.parseInt(target.episode, 10)
-              : null,
-          tmdbId: target.tmdbId,
-          onlyFiles,
-          detailsUrl: source.detailsUrl,
-        });
+        await acquisition.add(addBody(source, target, onlyFiles));
         onAdded();
         onClose();
       },
@@ -181,9 +189,7 @@ export function ManualGrabModal({
           <Stepper.Panel value="files">
             {source ? (
               <FilesPanel
-                analysis={analysis}
-                analyzing={analyzing}
-                analyzeErr={analyzeErr}
+                state={{ analysis, analyzing, analyzeErr }}
                 onRetry={() => analyze(source.magnet)}
                 episodes={episodeNames}
                 selection={{ selected, onSelectedChange: setSelected }}
@@ -201,52 +207,6 @@ export function ManualGrabModal({
         <Footer busy={busy} onCancel={onClose} onAdd={add} />
       </Stepper.Root>
     </Dialog.Root>
-  );
-}
-
-type ContentsProps = ComponentProps<typeof TorrentContents>;
-
-function FilesPanel({
-  analysis,
-  analyzing,
-  analyzeErr,
-  onRetry,
-  episodes,
-  selection,
-}: Readonly<{
-  analysis: TorrentAnalysis | null;
-  analyzing: boolean;
-  analyzeErr: string | null;
-  onRetry: () => void;
-  episodes: ContentsProps['episodes'];
-  selection: ContentsProps['selection'];
-}>) {
-  const t = useT();
-  return (
-    <Box gap={12}>
-      {analyzeErr ? (
-        <Callout.Root size="sm" tone="danger" icon="alert-triangle">
-          <Callout.Title>{analyzeErr}</Callout.Title>
-          <Callout.Actions>
-            <Button
-              variant="glass"
-              size="sm"
-              label={t('manual.analyze')}
-              onPress={onRetry}
-              loading={analyzing}
-            />
-          </Callout.Actions>
-        </Callout.Root>
-      ) : null}
-      {analyzing ? (
-        <Text variant="meta" color="text/45">
-          {t('manual.analyzing')}
-        </Text>
-      ) : null}
-      {analysis ? (
-        <TorrentContents analysis={analysis} episodes={episodes} selection={selection} />
-      ) : null}
-    </Box>
   );
 }
 
