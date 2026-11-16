@@ -1,2 +1,2 @@
-export type { NearbyTvListProps } from './nearby-tv-list';
-export { NearbyTvList } from './nearby-tv-list';
+export type { NearbyTvListProps } from './nearby-tv-list.component';
+export { NearbyTvList } from './nearby-tv-list.component';

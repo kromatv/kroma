@@ -18,14 +18,14 @@ import {
 // themselves are the kit's - <List>, <Table>, <CodeBlock> - and what lives here
 // is what a DOCUMENT adds to them: the measure it is read at and the space
 // between one block and the next. The inline half - the marks, and the rule that
-// decides what a line is - lives in `mdx-marks.tsx`, and `mdx.tsx` is the map
+// decides what a line is - lives in `mdx-marks.tsx`, and `mdx.component.tsx` is the map
 // that names both.
 
 import { space } from '@kromatv/ui/tokens';
 import { Children, createContext, isValidElement, type ReactNode, useContext } from 'react';
 import { BODY, Prose, runs, TaskBox } from './mdx-marks';
 import { useSection } from './outline';
-import { SectionAnchor } from './section-anchor';
+import { SectionAnchor } from './section-anchor.component';
 
 /**
  * The two widths a document is written across.

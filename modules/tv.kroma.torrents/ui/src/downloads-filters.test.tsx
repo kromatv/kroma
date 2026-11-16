@@ -4,14 +4,14 @@ import { AdminHostProvider, ModuleScope } from '@kromatv/module-sdk';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DownloadFilters } from './downloads-filters';
+import { DownloadFilters } from './downloads-filters.component';
 import type { DownloadQuery, DownloadStatsView } from './schemas';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
 });
 
 const STATS: DownloadStatsView = {
@@ -27,7 +27,7 @@ const STATS: DownloadStatsView = {
 
 function bar(query: DownloadQuery): DownloadQuery[] {
   const asked: DownloadQuery[] = [];
-  render(
+  inputHost.render(
     onScreen(
       <AdminHostProvider value={{ client: {}, user: null, apiBase: '' } as never}>
         <ModuleScope id="tv.kroma.torrents">
@@ -43,13 +43,13 @@ function bar(query: DownloadQuery): DownloadQuery[] {
       </AdminHostProvider>,
     ),
   );
-  clearPressGuard();
+  inputHost.clearPressGuard();
   return asked;
 }
 
 function openStatus(): void {
   fireEvent.click(screen.getAllByRole('combobox')[0] as HTMLElement);
-  clearPressGuard();
+  inputHost.clearPressGuard();
 }
 
 describe('the downloads filter bar', () => {

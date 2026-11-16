@@ -21,7 +21,7 @@ const useVideoPlayer = vi.hoisted(() =>
 
 vi.mock('expo-video', () => ({ useVideoPlayer, VideoView: () => null }));
 
-import { NativeFilm } from './native-film';
+import { NativeFilm } from './native-film.component';
 
 const PORTRAIT = 'portrait.mp4';
 

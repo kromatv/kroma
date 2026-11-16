@@ -45,6 +45,26 @@ function grid(start: { row: number; col: number }) {
   };
 }
 
+// A box the platform will not measure - a node that has just unmounted, a view
+// with no layout yet - leaves the walk unable to tell one line from the next.
+// Guessing there is how a Tab lands somewhere the eye is not, so it stops.
+//
+// Both sides matter: the box is read BEFORE the rewind and again after it, and
+// either read can come back empty.
+function refusesAlong() {
+  let seq = 0;
+  const sent: Direction[] = [];
+  // The line has ended (RIGHT refused), so the walk drops to the next one and
+  // starts rewinding: every other direction moves.
+  const send = (d: Direction) => {
+    sent.push(d);
+    if (d !== Directions.RIGHT) {
+      seq += 1;
+    }
+  };
+  return { sent, send, seq: () => seq };
+}
+
 describe('walkTab', () => {
   it('steps along the line while the line lasts', () => {
     const g = grid({ row: 0, col: 0 });
@@ -126,26 +146,6 @@ describe('walkTab', () => {
     expect(at).toBe('last');
     expect(sends).toBeLessThan(6);
   });
-
-  // A box the platform will not measure - a node that has just unmounted, a view
-  // with no layout yet - leaves the walk unable to tell one line from the next.
-  // Guessing there is how a Tab lands somewhere the eye is not, so it stops.
-  //
-  // Both sides matter: the box is read BEFORE the rewind and again after it, and
-  // either read can come back empty.
-  function refusesAlong() {
-    let seq = 0;
-    const sent: Direction[] = [];
-    // The line has ended (RIGHT refused), so the walk drops to the next one and
-    // starts rewinding: every other direction moves.
-    const send = (d: Direction) => {
-      sent.push(d);
-      if (d !== Directions.RIGHT) {
-        seq += 1;
-      }
-    };
-    return { sent, send, seq: () => seq };
-  }
 
   const WALKED = [Directions.RIGHT, Directions.DOWN, Directions.LEFT];
 

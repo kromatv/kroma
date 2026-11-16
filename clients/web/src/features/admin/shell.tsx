@@ -5,17 +5,17 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useEffect, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { usePoll } from '#web/features/admin/hooks';
-import { AdminModalHosts } from '#web/features/admin/modal-hosts';
+import { AdminModalHosts } from '#web/features/admin/modal-hosts.component';
 import { StoreOpsProvider } from '#web/features/admin/module-ops';
 import { AdminContext } from '#web/features/admin/shell-context';
-import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar';
+import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar.component';
 import { ADMIN_SCROLLER, ADMIN_SCROLLER_CONTENT } from '#web/features/admin/web-style';
-import { useModuleRegistry } from '#web/modules/ModuleHostProvider';
+import { useModuleRegistry } from '#web/modules/module-host-provider.component';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
 import { useKromaClient } from '#web/shared/lib/web-runtime';
 import { PageFrame } from '#web/shared/ui';
-import { MediaInfoModal } from '#web/shared/ui/media-info-modal';
+import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
 export { PageHeader } from '@kromatv/ui/kit';
 export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/features/admin/hooks';
@@ -76,7 +76,7 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
       }
       ev.close();
     };
-  }, [queryClient, eventClient.sessionToken, eventClient.refreshSession]);
+  }, [queryClient, eventClient.sessionToken, eventClient]);
 
   const adminValue = useMemo(() => ({ serverInfo }), [serverInfo]);
 

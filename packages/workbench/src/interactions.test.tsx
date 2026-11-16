@@ -6,7 +6,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { describe, expect, it, vi } from 'vitest';
-import { Interactions } from './interactions';
+import { Interactions } from './interactions.component';
 import { usePlay } from './play';
 import type { PlayFunction, PlayStep } from './play-types';
 
@@ -98,26 +98,35 @@ function Menu() {
 }
 
 function Harness({ play }: Readonly<{ play?: PlayFunction }>) {
-  const { stage, steps, status, error, replay } = usePlay(play, 120);
+  const { stage, steps, status, error, replay: rerun } = usePlay(play, 120);
   return (
     <Box gap={12}>
       <View ref={stage}>
         <Menu />
       </View>
-      <Interactions steps={steps} status={status} error={error} onReplay={replay} />
+      <Interactions steps={steps} status={status} error={error} onReplay={rerun} />
     </Box>
   );
 }
 
+const quick: PlayFunction = ({ step: group, press }) =>
+  group('opens the menu', () => press('Options'));
+
+let release = () => {};
+
+const findsArchive: PlayFunction = ({ step: group, expect: want }) =>
+  group('finds the archive entry', () => want('Archive').toBeVisible());
+
+const opensTheMenu: PlayFunction = async ({ press, expect: want, step: group }) => {
+  await group('opens the menu', async () => {
+    await press('Options');
+    await want('Rename').toBeVisible();
+  });
+};
+
 describe('the panel over a live story', () => {
   it('runs the play on mount and shows every step passing', async () => {
-    const script: PlayFunction = async ({ press, expect: want, step: group }) => {
-      await group('opens the menu', async () => {
-        await press('Options');
-        await want('Rename').toBeVisible();
-      });
-    };
-    render(onScreen(<Harness play={script} />));
+    render(onScreen(<Harness play={opensTheMenu} />));
 
     expect(await screen.findByText('Passed')).toBeTruthy();
     expect(screen.getByText('opens the menu')).toBeTruthy();
@@ -125,9 +134,7 @@ describe('the panel over a live story', () => {
   });
 
   it('shows the failure of a play that misses', async () => {
-    const script: PlayFunction = ({ step: group, expect: want }) =>
-      group('finds the archive entry', () => want('Archive').toBeVisible());
-    render(onScreen(<Harness play={script} />));
+    render(onScreen(<Harness play={findsArchive} />));
 
     expect(await screen.findByText('Failed')).toBeTruthy();
     expect(screen.getByText(/"Archive" is not on the stage/)).toBeTruthy();
@@ -150,13 +157,10 @@ describe('the panel over a live story', () => {
   });
 
   it('stops reporting a play the reader has already moved on from', async () => {
-    let release = () => {};
     const held = new Promise<void>((resolve) => {
       release = resolve;
     });
     const slow: PlayFunction = ({ step: group }) => group('waits for the archive', () => held);
-    const quick: PlayFunction = ({ step: group, press }) =>
-      group('opens the menu', () => press('Options'));
     const { rerender } = render(onScreen(<Harness play={slow} />));
     expect(await screen.findByText('waits for the archive')).toBeTruthy();
 

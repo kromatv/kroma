@@ -1,1 +1,1 @@
-export * from './resume-prompt';
+export * from './resume-prompt.component';

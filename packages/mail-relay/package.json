@@ -12,7 +12,7 @@
     "directory": "packages/mail-relay"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "deploy": "wrangler deploy"
   },
   "dependencies": {

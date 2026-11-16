@@ -195,40 +195,40 @@ describe('formatElapsed', () => {
   });
 });
 
+function refuses(): never {
+  throw new TypeError('unsupported');
+}
+
+const withBroken = async (
+  name: 'RelativeTimeFormat' | 'DateTimeFormat',
+  use: (intl: typeof import('./intl')) => void,
+) => {
+  vi.resetModules();
+  const had = Intl[name];
+  Reflect.set(Intl, name, refuses);
+  try {
+    use(await import('./intl'));
+  } finally {
+    Reflect.set(Intl, name, had);
+  }
+};
+
 // The legacy television tier floors at Chromium 53, where the Intl constructors
 // this file reaches for either do not exist or refuse the options it asks for.
 // Each one falls back rather than taking the app down. The formatters are built
 // on first use and cached per locale, so the constructor has to stay broken
 // across the call, not just across the import.
 describe('an engine without the Intl constructors', () => {
-  function refuses(): never {
-    throw new TypeError('unsupported');
-  }
-
-  const withBroken = async (
-    name: 'RelativeTimeFormat' | 'DateTimeFormat',
-    use: (intl: typeof import('./intl')) => void,
-  ) => {
-    vi.resetModules();
-    const had = Intl[name];
-    Reflect.set(Intl, name, refuses);
-    try {
-      use(await import('./intl'));
-    } finally {
-      Reflect.set(Intl, name, had);
-    }
-  };
-
   it('gives the absolute date when there is no relative formatter', async () => {
-    await withBroken('RelativeTimeFormat', ({ formatElapsed }) => {
-      expect(formatElapsed(fr, 'fr', '2024-06-15T11:55:00Z', NOW)).toBe('15/06/2024');
+    await withBroken('RelativeTimeFormat', ({ formatElapsed: elapsed }) => {
+      expect(elapsed(fr, 'fr', '2024-06-15T11:55:00Z', NOW)).toBe('15/06/2024');
     });
   });
 
   it('falls back to plain ISO when no date formatter builds', async () => {
-    await withBroken('DateTimeFormat', ({ formatElapsed, formatStamp }) => {
-      expect(formatElapsed(fr, 'fr', '2024-05-06T12:00:00Z', NOW)).toBe('2024-05-06');
-      expect(formatStamp('fr', '2024-05-06T12:00:00Z')).toBe('2024-05-06 12:00');
+    await withBroken('DateTimeFormat', ({ formatElapsed: elapsed, formatStamp: stamp }) => {
+      expect(elapsed(fr, 'fr', '2024-05-06T12:00:00Z', NOW)).toBe('2024-05-06');
+      expect(stamp('fr', '2024-05-06T12:00:00Z')).toBe('2024-05-06 12:00');
     });
   });
 

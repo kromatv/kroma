@@ -3,10 +3,10 @@ import { PageMain } from '@kromatv/ui/kit';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import { createFileRoute } from '@tanstack/react-router';
-import { InstallCard } from '#site/components/install-card';
-import { ReleaseHeadline } from '#site/components/release-headline';
-import { ReleaseList } from '#site/components/release-list';
-import { SiteFooter } from '#site/components/site-footer';
+import { InstallCard } from '#site/components/install-card.component';
+import { ReleaseHeadline } from '#site/components/release-headline.component';
+import { ReleaseList } from '#site/components/release-list.component';
+import { SiteFooter } from '#site/components/site-footer.component';
 import { getCatalog } from '#site/lib/get-catalog';
 
 export const Route = createFileRoute('/browse')({

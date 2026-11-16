@@ -43,7 +43,7 @@ vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ client: H.client, user: H.user }),
 }));
 
-const { useVideoPlayback } = await import('#web/features/playback/use-video-playback');
+const { useVideoPlayback } = await import('#web/features/playback/use-video-playback.hook');
 const { attachMediaSource } = await import('#web/features/playback/video-engine');
 const { bindMediaEvents } = await import('#web/features/playback/media-events');
 
@@ -63,6 +63,20 @@ function render(item = movie()) {
   const v = fakeVideo();
   view.result.current.videoRef.current = v as unknown as HTMLVideoElement;
   return { ...view, v };
+}
+
+const lastBind = () => vi.mocked(bindMediaEvents).mock.calls.at(-1);
+const boundAutoplay = () => lastBind()?.[5];
+
+async function attached() {
+  H.decision = { kind: 'direct', aacMaster: false };
+  const { result } = render();
+  await settle();
+  const v = fakeVideo({ currentTime: 30 });
+  result.current.videoRef.current = v as unknown as HTMLVideoElement;
+  act(() => result.current.setEnginePref('direct'));
+  await settle();
+  return { result, v };
 }
 
 describe('useVideoPlayback preferred audio', () => {
@@ -251,20 +265,6 @@ describe('useVideoPlayback on Safari', () => {
 });
 
 describe('useVideoPlayback stall recovery', () => {
-  const lastBind = () => vi.mocked(bindMediaEvents).mock.calls.at(-1);
-  const boundAutoplay = () => lastBind()?.[5];
-
-  async function attached() {
-    H.decision = { kind: 'direct', aacMaster: false };
-    const { result } = render();
-    await settle();
-    const v = fakeVideo({ currentTime: 30 });
-    result.current.videoRef.current = v as unknown as HTMLVideoElement;
-    act(() => result.current.setEnginePref('direct'));
-    await settle();
-    return { result, v };
-  }
-
   it('re-anchors where the engine gave up, at the position the picture froze at', async () => {
     const { result, v } = await attached();
     expect(result.current.anchor).toBe(30);

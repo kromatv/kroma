@@ -78,11 +78,11 @@ export async function moduleResponse(id: string, env: Env, waitUntil: WaitUntil)
   // Only the full record carries history: the catalog names the current version
   // of each module, the releases hold every version ever cut, and the version
   // history says what each of them needs.
-  const [listed, described] = await Promise.all([
+  const [listed, descriptions] = await Promise.all([
     releaseHistory(env, waitUntil),
     describedVersions(env, waitUntil, id),
   ]);
-  const known = withDescriptions(listed[id], described);
+  const known = withDescriptions(listed[id], descriptions);
   return jsonResponse(JSON.stringify(buildModuleRecord(entry, known)), DOCUMENT_TTL);
 }
 

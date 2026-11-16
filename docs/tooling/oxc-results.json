@@ -156,7 +156,7 @@
           "apps/www/wrangler.jsonc",
           "apps/www/wrangler.preview.jsonc",
           "clients/desktop/vite.config.ts",
-          "clients/mobile/src/components/LangPickerSheet.tsx",
+          "clients/mobile/src/components/lang-picker-sheet.component.tsx",
           "clients/mobile/src/components/ui/index.tsx",
           "clients/mobile/src/lib/notifications/push.test.ts",
           "clients/tizen/scripts/simulator.ts"

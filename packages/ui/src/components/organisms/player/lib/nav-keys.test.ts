@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { PlayerNavActions } from '#ui/components/organisms/player/hooks/use-player-nav';
+import type { PlayerNavActions } from '#ui/components/organisms/player/hooks/use-player-nav.hook';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { handleMediaKey, TRANSPORT_KEYS } from './nav-keys';
 

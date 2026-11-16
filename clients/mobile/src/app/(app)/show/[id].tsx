@@ -10,15 +10,15 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, type View } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { CastRail, DetailHero, GenreChips, MetaBadge } from '#mobile/components/detail';
-import { type PopoverAnchor, PopoverMenu } from '#mobile/components/PopoverMenu';
-import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/showEpisodes';
-import { TrailerButton } from '#mobile/components/TrailerButton';
+import { CastRail, DetailHero, GenreChips, MetaBadge } from '#mobile/components/detail.component';
+import { type PopoverAnchor, PopoverMenu } from '#mobile/components/popover-menu.component';
+import { EpisodeRow, SeasonDownload, UpNextCard } from '#mobile/components/show-episodes.component';
+import { TrailerButton } from '#mobile/components/trailer-button.component';
 import { ErrorView, ExpandableText, Loading, SectionTitle } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
 import { routeParam } from '#mobile/lib/nav';
-import { usePlay } from '#mobile/lib/play';
+import { usePlay } from '#mobile/lib/play.hook';
 import { useClient } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
 
@@ -159,8 +159,8 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
                 label={t('content.season', { number: season?.number ?? 1 })}
                 onPress={() =>
                   seasonButtonRef.current?.measureInWindow(
-                    (x: number, y: number, width: number, height: number) =>
-                      setSeasonAnchor({ x, y, width, height }),
+                    (x: number, y: number, w: number, h: number) =>
+                      setSeasonAnchor({ x, y, width: w, height: h }),
                   )
                 }
               />
@@ -204,10 +204,10 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
         visible={seasonAnchor !== null}
         anchor={seasonAnchor}
         onClose={() => setSeasonAnchor(null)}
-        items={seasons.map((s, i) => ({
-          key: String(s.number),
-          label: t('content.season', { number: s.number }),
-          detail: t('content.episodeCount', { count: s.episodes.length }),
+        items={seasons.map((entry, i) => ({
+          key: String(entry.number),
+          label: t('content.season', { number: entry.number }),
+          detail: t('content.episodeCount', { count: entry.episodes.length }),
           active: i === seasonIdx,
           onPress: () => setSeasonIdx(i),
         }))}

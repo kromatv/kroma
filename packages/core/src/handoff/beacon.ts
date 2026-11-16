@@ -52,12 +52,12 @@ const refusedForGood = (cause: unknown) =>
 export interface HandoffBeaconHandle {
   /** Take it down, rather than leave it on every nearby phone until its TTL:
    * the TV signed in, or the screen went away. */
-  stop(): void;
+  stop: () => void;
   /** Say it under another name. The platform is often slower than the first
    * announce - webOS and Tizen both answer through a bus callback - so the
    * beacon that went up under "webOS" has to become the one under "Salon"
    * without a phone ever holding both. */
-  rename(next: string): void;
+  rename: (next: string) => void;
 }
 
 /** Start announcing this TV and watching for a grant. */

@@ -3,12 +3,12 @@ import { cleanup, fireEvent, render } from '@testing-library/react';
 import { createRef } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cloneHost, mergeSlotProps, Slot } from './slot';
+import { cloneHost, mergeSlotProps, Slot } from './slot.component';
 
 afterEach(cleanup);
 
 function Spreading({ style, ...rest }: Readonly<Record<string, unknown>>) {
-  return <View {...(rest as object)} testID="host" style={{ ...(style as object) }} />;
+  return <View {...rest} testID="host" style={{ ...(style as object) }} />;
 }
 
 describe('mergeSlotProps', () => {

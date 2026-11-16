@@ -2,7 +2,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { PlayerKeysParams } from '#ui/components/organisms/player/lib/player-keys';
-import { usePlayerKeys } from './use-player-keys';
+import { usePlayerKeys } from './use-player-keys.hook';
 
 function player(active: boolean) {
   const togglePlay = vi.fn();

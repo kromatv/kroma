@@ -5,7 +5,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PinDialog, type PinTask } from './pin-dialog';
+import { PinDialog, type PinTask } from './pin-dialog.component';
 
 const auth = vi.hoisted(() => ({
   setPin: vi.fn(),
@@ -35,16 +35,16 @@ function Providers({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 const onClose = vi.fn();
 
 function press(name: string) {
-  clearPressGuard();
+  inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name }));
 }
 
 function open(task: PinTask) {
-  render(<PinDialog task={task} onClose={onClose} />, { wrapper: Providers });
+  inputHost.render(<PinDialog task={task} onClose={onClose} />, { wrapper: Providers });
 }
 
 function enter(code: string) {

@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { declared, layout } from '#ui/testing';
-import { NavPill, type NavPillRootProps } from './nav-pill';
+import { NavPill, type NavPillRootProps } from './nav-pill.component';
 
 afterEach(cleanup);
 
@@ -88,6 +88,17 @@ describe('NavPill label policy', () => {
   });
 });
 
+const capsuleFill = (node: HTMLElement) => getComputedStyle(node).backgroundColor;
+
+const item = (name: string) => screen.getByLabelText(name);
+
+const lensFill = (props: Partial<NavPillRootProps>) => {
+  const { container } = render(bar(props));
+  layout(within(container).getByLabelText('Search'), { x: 8, y: 4, width: 96, height: 44 });
+  const lens = container.firstElementChild?.firstElementChild as HTMLElement;
+  return getComputedStyle(lens).backgroundColor;
+};
+
 describe('NavPill items', () => {
   it('presses the item that was tapped', () => {
     const onHome = vi.fn();
@@ -132,7 +143,6 @@ describe('NavPill items', () => {
   });
 
   it('thins the capsule fill only when it wears a backdrop', () => {
-    const fill = (node: HTMLElement) => getComputedStyle(node).backgroundColor;
     const plain = render(bar({ size: 'sm' })).container.firstElementChild as HTMLElement;
     const frosted = render(
       <NavPill.Root size="sm">
@@ -140,7 +150,7 @@ describe('NavPill items', () => {
         <NavPill.Item icon="home" label="Home" active onPress={vi.fn()} />
       </NavPill.Root>,
     ).container.firstElementChild as HTMLElement;
-    expect(fill(frosted)).not.toBe(fill(plain));
+    expect(capsuleFill(frosted)).not.toBe(capsuleFill(plain));
   });
 
   it('still renders a disabled item, it just cannot be pressed', () => {
@@ -163,7 +173,6 @@ describe('NavPill items', () => {
       </NavPill.Root>,
     );
     const capsule = container.firstElementChild as HTMLElement;
-    const item = (name: string) => screen.getByLabelText(name);
     expect(capsule.children).toHaveLength(2);
 
     layout(item('Home'), { x: 8, y: 4, width: 96, height: 44 });
@@ -177,14 +186,7 @@ describe('NavPill items', () => {
   });
 
   it('paints the lens in the tone the capsule was given', () => {
-    const fill = (props: Partial<NavPillRootProps>) => {
-      const { container } = render(bar(props));
-      layout(within(container).getByLabelText('Search'), { x: 8, y: 4, width: 96, height: 44 });
-      const lens = container.firstElementChild?.firstElementChild as HTMLElement;
-      return getComputedStyle(lens).backgroundColor;
-    };
-
-    expect(fill({ tone: 'neutral' })).not.toBe(fill({}));
+    expect(lensFill({ tone: 'neutral' })).not.toBe(lensFill({}));
   });
 
   it('survives having no active item at all', () => {

@@ -1,0 +1,125 @@
+// Directional seeking on the scrub bar: a TAP moves exactly TAP_STEP, a HELD
+// press ramps into a continuous scrub, and only one real seek fires once presses
+// stop: each seek re-anchors the HLS master, so coalescing them matters.
+
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import type { PlayerController } from '#ui/components/organisms/player/types';
+
+const TAP_STEP = 10;
+// Sized so the first repeat of a hold covers about as much ground as a tap;
+// any less and holding would be slower than tapping repeatedly.
+const HOLD_BASE = 120;
+const HOLD_GROWTH = 4;
+// So even a long hold on a long film stays steerable.
+const HOLD_MAX = 1800;
+// Well above a remote's repeat interval (~100 ms) and well below the pace of
+// deliberate presses, which must stay exactly TAP_STEP apiece.
+const REPEAT_MS = 300;
+// Longer than REPEAT_MS, so a run of deliberate taps still lands as ONE seek.
+const COMMIT_MS = 500;
+// Clamp on the gap between two repeats, so a stalled frame cannot jump.
+const MAX_TICK_S = 0.25;
+
+interface Burst {
+  origin: number;
+  target: number;
+  startedAt: number;
+  lastAt: number;
+  dir: -1 | 1;
+}
+
+/** The seek in progress, for the stage to show: how far the presses so far have
+ *  moved the cursor from where the film was, signed against it. */
+export interface SeekBurst {
+  dir: -1 | 1;
+  deltaSec: number;
+  /** How many times the hold's starting pace it is moving at now: 1 for taps,
+   *  climbing for as long as the key is held. */
+  rate: number;
+}
+
+/**
+ * `tap` is exactly one step whatever came before it. `hold` is a press from
+ * something that auto-repeats, so a run of them close together becomes a scrub.
+ */
+export type SeekPress = 'tap' | 'hold';
+
+export interface SeekNudge {
+  /** The `seekNudge(dir, press)` the nav machine calls for ◀ / ▶ on the progress
+   *  bar, the rewind / forward transport buttons and the keyboard's arrows. */
+  nudge: (dir: -1 | 1, press: SeekPress) => void;
+  /** Live from the first press until the coalesced seek fires, null after. */
+  burst: SeekBurst | null;
+}
+
+/**
+ * A directional seek that ramps while a key is held: a tap moves exactly 10 s,
+ * a run of taps adds up, and one real seek fires once the presses stop.
+ */
+export function useSeekNudge(controller: PlayerController): SeekNudge {
+  const burst = useRef<Burst | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [shown, setShown] = useState<SeekBurst | null>(null);
+
+  // A burst interrupted by unmount must not leave a timer holding the player.
+  useEffect(
+    () => () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    },
+    [],
+  );
+
+  // Reads the controller when the timer FIRES, not when the last nudge armed it:
+  // the shell rebuilds the controller per render, and a 500 ms-old scrubCommit
+  // would commit through stale playback state.
+  const commit = useEffectEvent(() => {
+    timer.current = null;
+    burst.current = null;
+    setShown(null);
+    controller.scrubCommit();
+  });
+
+  const nudge = useEffectEvent((dir: -1 | 1, press: SeekPress) => {
+    const c = controller;
+    const now = Date.now();
+    const prev = burst.current;
+    // A gap, or a change of direction, is a new gesture: the ramp restarts so
+    // reversing out of a fast scrub is immediately precise again.
+    const holding = press === 'hold' && prev?.dir === dir && now - prev.lastAt <= REPEAT_MS;
+
+    let target: number;
+    let rate = 1;
+    if (holding) {
+      const heldS = (now - prev.startedAt) / 1000;
+      const speed = Math.min(HOLD_MAX, HOLD_BASE * HOLD_GROWTH ** heldS);
+      const tickS = Math.min(MAX_TICK_S, (now - prev.lastAt) / 1000);
+      target = prev.target + dir * speed * tickS;
+      rate = Math.max(1, Math.floor(speed / HOLD_BASE));
+    } else {
+      // Continue from the cursor if one is already showing, else the playhead.
+      target = (prev?.target ?? c.cur) + dir * TAP_STEP;
+    }
+
+    const ceiling = c.dur > 0 ? c.dur - 1 : Number.POSITIVE_INFINITY;
+    target = Math.max(0, Math.min(ceiling, target));
+    const origin = prev?.origin ?? c.cur;
+    burst.current = {
+      origin,
+      target,
+      startedAt: holding ? prev.startedAt : now,
+      lastAt: now,
+      dir,
+    };
+    c.scrubPreview(target);
+    setShown({ dir, deltaSec: target - origin, rate });
+
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+    timer.current = setTimeout(commit, COMMIT_MS);
+  });
+
+  return { nudge, burst: shown };
+}

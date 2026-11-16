@@ -17,13 +17,12 @@ members = ["naming", "weights"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 license = "AGPL-3.0-or-later"
 
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-anyhow = "1"
 
 [profile.dev]
 # No debug info. On macOS any level keeps every codegen unit's object file in

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MessageTarget } from '../overlay/message-target';
 import { type CatalogMessage, openChannel } from '../server/host';
 import { testChannel } from '../testing';
-import { MessageEditor } from './message-editor';
+import { MessageEditor } from './message-editor.component';
 
 const HOME: MessageTarget = { scope: null, locale: 'en', key: 'nav.home' };
 

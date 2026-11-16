@@ -2,7 +2,7 @@
 name = "kroma-wasm-test-runner"
 version = "0.1.0"
 edition.workspace = true
-rust-version = "1.97"
+rust-version.workspace = true
 description = "Cargo's runner for wasm32-wasip2: runs a module's test binary as a component on the host every module runs on, with the folders, imports and limits production gives one."
 license.workspace = true
 

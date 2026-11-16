@@ -9,6 +9,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
+use kroma_media::ffmpeg_gate::Footprint;
 use kroma_media::input;
 
 pub const WIDTH: usize = 160;
@@ -124,23 +125,23 @@ fn snap_to_fade(frames: &[FrameStats], start: usize) -> usize {
 
 /// Scan the final stretch of `path` and return where the credits start, in ms
 /// from the beginning of the file. `duration_ms` bounds the window.
-pub fn credits_start_ms(path: &Path, duration_ms: u64) -> Result<Option<u64>> {
+pub fn credits_start_ms(path: &Path, duration_ms: u64, need: Footprint) -> Result<Option<u64>> {
     let duration_s = duration_ms as f64 / 1000.0;
     let window_s = (duration_s * WINDOW_FRACTION)
         .clamp(MIN_WINDOW_S, MAX_WINDOW_S)
         .min(duration_s);
     let window_start_s = duration_s - window_s;
-    let frames = scan_tail(path, window_start_s)?;
+    let frames = scan_tail(path, window_start_s, need)?;
     Ok(credits_start(&frames).map(|i| ((window_start_s + i as f64) * 1000.0) as u64))
 }
 
-fn scan_tail(path: &Path, window_start_s: f64) -> Result<Vec<FrameStats>> {
+fn scan_tail(path: &Path, window_start_s: f64, need: Footprint) -> Result<Vec<FrameStats>> {
     let mut cmd = Command::new("ffmpeg");
     cmd.args(decode_args(path, window_start_s))
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
     let out = {
-        let _permit = kroma_media::ffmpeg_gate::acquire();
+        let _permit = kroma_media::ffmpeg_gate::acquire(need);
         cmd.output().context("spawn ffmpeg for the credits scan")?
     };
     if !out.status.success() {
@@ -280,7 +281,7 @@ mod tests {
         let dir = kroma_testing::temp_dir("credits-scan");
         let clip = credits_clip(dir.path(), 70);
 
-        let start = credits_start_ms(&clip, 70_000).unwrap();
+        let start = credits_start_ms(&clip, 70_000, Footprint::LIGHT).unwrap();
 
         assert_eq!(start, Some(0));
     }
@@ -290,7 +291,7 @@ mod tests {
         let dir = kroma_testing::temp_dir("credits-scene");
         let clip = scene_clip(dir.path(), 70);
 
-        let start = credits_start_ms(&clip, 70_000).unwrap();
+        let start = credits_start_ms(&clip, 70_000, Footprint::LIGHT).unwrap();
 
         assert_eq!(start, None);
     }
@@ -300,14 +301,14 @@ mod tests {
         let dir = kroma_testing::temp_dir("credits-window");
         let clip = scene_clip(dir.path(), 5);
 
-        let refused = credits_start_ms(&clip, 3_600_000);
+        let refused = credits_start_ms(&clip, 3_600_000, Footprint::LIGHT);
 
         assert!(refused.is_err());
     }
 
     #[test]
     fn a_film_nothing_can_open_fails_the_scan_rather_than_reporting_no_credits() {
-        let refused = credits_start_ms(Path::new("/nowhere/absent.mkv"), 70_000);
+        let refused = credits_start_ms(Path::new("/nowhere/absent.mkv"), 70_000, Footprint::LIGHT);
 
         assert!(refused.is_err());
     }

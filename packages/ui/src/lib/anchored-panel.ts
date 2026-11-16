@@ -11,7 +11,7 @@ import {
   type AnchorViewport,
   placeUnder,
 } from '#ui/lib/anchor';
-import type { PanelKeyEvent } from '#ui/lib/anchored-keys';
+import type { PanelKeyEvent } from '#ui/lib/anchored-keys.hook';
 import { webWindow } from '#ui/lib/dom';
 import { OVERLAY_Z } from '#ui/lib/overlay-z';
 import { WEB } from '#ui/lib/platform';
@@ -159,7 +159,7 @@ export function useTriggerKeys(
   useEffect(() => {
     const trigger = webTrigger(anchor);
     if (!trigger) {
-      return;
+      return undefined;
     }
     const onKey = (event: KeyboardEvent) => {
       onKeyDown({
@@ -185,7 +185,7 @@ export function useActiveDescendant(anchor: RefObject<unknown>, rowId: string): 
   useEffect(() => {
     const trigger = webTrigger(anchor);
     if (!trigger) {
-      return;
+      return undefined;
     }
     trigger.setAttribute('aria-activedescendant', rowId);
     return () => trigger.removeAttribute('aria-activedescendant');

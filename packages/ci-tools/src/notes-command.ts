@@ -29,12 +29,12 @@ function usable(note: string | undefined, lang: Lang): string | null {
   return problem ? null : `${note.trimEnd()}\n`;
 }
 
+const list = (items: readonly string[]) => (items.length ? items.map((i) => `- ${i}`) : ['- none']);
+
 function reviewNote(drafted: { leftOut: string[]; blockers: string[] } | null): string {
   if (!drafted) {
     return 'Drafted from the commit subjects: no model answered.\n';
   }
-  const list = (items: readonly string[]) =>
-    items.length ? items.map((i) => `- ${i}`) : ['- none'];
   return [
     '### Left out',
     '',

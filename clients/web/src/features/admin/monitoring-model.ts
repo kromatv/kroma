@@ -3,7 +3,7 @@ import type { TitleRef } from '@kromatv/client/monitoring';
 import type { LedgerEpisode, LedgerSeason, RequestKind } from '@kromatv/client/requests';
 import { codecLabel } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
-import type { FollowState } from '#web/features/admin/monitoring-follow-toggle';
+import type { FollowState } from '#web/features/admin/monitoring-follow-toggle.component';
 
 const SPECIALS_SEASON = 0;
 

@@ -6,7 +6,7 @@
 import { Box, type TextProps } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { blocks, segments } from './markdown';
-import { MDX_COMPONENTS } from './mdx';
+import { MDX_COMPONENTS } from './mdx.component';
 import { Prose } from './mdx-marks';
 import type { Story } from './story';
 

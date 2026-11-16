@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { useConditionText } from './condition-text';
+import { useConditionText } from './condition-text.hook';
 import type { Condition } from './rules-schemas';
 
+const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
+
 vi.mock('@kromatv/module-sdk', () => {
-  const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
   return { useT: () => t };
 });
 

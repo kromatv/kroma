@@ -7,10 +7,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { activeTheme } from '#ui/core';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { createInputTestHost } from '#ui/testing-input';
 
-import { Menu } from './menu';
+import { Menu } from './menu.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 
@@ -260,7 +260,7 @@ function Anchor({ to, onNavigate, onClick, ...host }: Readonly<Record<string, un
     event.preventDefault();
     (onNavigate as (() => void) | undefined)?.();
   };
-  return <View {...(host as object)} {...({ href: to, onClick: click } as object)} />;
+  return <View {...host} {...({ href: to, onClick: click } as object)} />;
 }
 
 describe('a Menu.Item that delegates its host to a link', () => {

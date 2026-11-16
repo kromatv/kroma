@@ -2,7 +2,7 @@
 import { recordingClient } from '@kromatv/client/test';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { useDirectConnection } from './direct-connection';
+import { useDirectConnection } from './direct-connection.hook';
 
 const LAN = 'http://192.168.1.2:4040';
 const OFFER = { instanceId: 'srv-1', routes: [LAN], nonce: 'n1', answer: 'a1', sameNetwork: true };
@@ -38,6 +38,8 @@ function serverAt(network: { up: boolean }) {
   return recordingClient(() => ({ json: OFFER }), { baseUrl: 'https://kroma.example' }).client;
 }
 
+const IDLE = () => {};
+
 describe('useDirectConnection', () => {
   it('takes the direct route once signed in and reports it', async () => {
     const client = serverAt({ up: true });
@@ -61,7 +63,7 @@ describe('useDirectConnection', () => {
   it('asks again when the shell says the network changed', async () => {
     const network = { up: false };
     const client = serverAt(network);
-    let changed = () => {};
+    let changed = IDLE;
     const onNetworkChange = (listener: () => void) => {
       changed = listener;
       return () => {};

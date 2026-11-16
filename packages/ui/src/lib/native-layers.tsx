@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
 import { Animated, View } from 'react-native';
 import { absoluteFill } from '#ui/core/tokens';
-import type { ImageBackend } from '#ui/lib/image-backend';
+import type { ImageBackend } from '#ui/lib/image-backend.hook';
 import { isImageReady, markImageReady } from '#ui/lib/image-ready';
 
 interface Size {

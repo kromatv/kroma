@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { validateDiscoverSearch } from '#web/features/requests/discover-search';
-import { SearchPage } from '#web/features/requests/search';
+import { SearchPage } from '#web/features/requests/search.component';
 
 export const Route = createFileRoute('/_app/search')({
   validateSearch: validateDiscoverSearch,

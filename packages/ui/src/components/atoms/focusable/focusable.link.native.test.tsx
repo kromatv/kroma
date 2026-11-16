@@ -2,12 +2,12 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Focusable } from './focusable';
+import { Focusable } from './focusable.component';
 
 afterEach(cleanup);
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
-  return <View {...(host as object)} {...({ href: to } as object)} />;
+  return <View {...host} {...({ href: to } as object)} />;
 }
 
 const host = (label: string) => screen.getByLabelText(label);

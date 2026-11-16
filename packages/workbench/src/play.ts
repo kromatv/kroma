@@ -52,7 +52,7 @@ async function runPlay(at: RunPlay): Promise<PlayTranscript> {
   const steps: PlayStep[] = [];
   // A failure is described once, by the innermost step that saw it; the ones it
   // unwinds through are failed without repeating the message.
-  const claimed = new WeakSet<object>();
+  const claimed = new WeakSet();
   const claim = (error: unknown) => {
     const key = typeof error === 'object' && error !== null ? error : null;
     if (key && claimed.has(key)) {
@@ -115,7 +115,7 @@ function usePlay(play: PlayFunction | undefined, timeout?: number): PlayRunner {
 
   useEffect(() => {
     if (!play || !node) {
-      return;
+      return undefined;
     }
     let live = true;
     void runPlay({
@@ -143,7 +143,7 @@ function usePlay(play: PlayFunction | undefined, timeout?: number): PlayRunner {
     transcript = current ? outcome.transcript : RUNNING;
   }
 
-  const stage = useCallback((next: unknown) => setNode((next ?? null) as object | null), []);
+  const stage = useCallback((next: unknown) => setNode(next ?? null), []);
   const replay = useCallback(() => setTake((count) => count + 1), []);
 
   return { ...transcript, stage, replay, playable: Boolean(play) };

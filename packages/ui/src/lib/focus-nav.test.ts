@@ -5,7 +5,7 @@
 
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useFocusNav } from './focus-nav.web';
+import { useFocusNav } from './focus-nav.hook.web';
 
 // jsdom returns a zero rect for every element and has no scrollIntoView, so both
 // are stubbed.
@@ -20,7 +20,7 @@ function rect(left: number, top: number, w: number, h: number): DOMRect {
     x: left,
     y: top,
     toJSON: () => ({}),
-  } as DOMRect;
+  };
 }
 
 function focusable(id: string, r: DOMRect): HTMLButtonElement {
@@ -94,11 +94,12 @@ describe('useFocusNav handlers', () => {
   });
 });
 
+const consume = (e: Event) => e.preventDefault();
+
 describe('useFocusNav and a key another listener already consumed', () => {
   it('leaves a Back the typing bridge turned into a delete alone', () => {
     grid2x2();
     const onBack = vi.fn();
-    const consume = (e: Event) => e.preventDefault();
     window.addEventListener('keydown', consume);
     try {
       renderHook(() => useFocusNav({ onBack }));

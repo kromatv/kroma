@@ -6,11 +6,11 @@ import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { RegistriesDrawer } from '#web/features/admin/module-registries';
+import { RegistriesDrawer } from '#web/features/admin/module-registries.component';
 import { createWebRuntime, type WebRuntime } from '#web/shared/lib/api';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 
-const { clearPressGuard, render } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 afterEach(cleanup);
 
@@ -40,7 +40,7 @@ function runtimeListing(registries: StoreRegistry[]): WebRuntime {
 }
 
 async function openDrawer(runtime: WebRuntime): Promise<HTMLElement> {
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <QueryClientProvider client={runtime.queryClient}>
         <WebRuntimeProvider value={runtime}>
@@ -53,7 +53,7 @@ async function openDrawer(runtime: WebRuntime): Promise<HTMLElement> {
     void RegistriesDrawer.call({});
   });
   const remove = await screen.findByRole('button', { name: 'Remove' });
-  clearPressGuard();
+  inputHost.clearPressGuard();
   return remove;
 }
 

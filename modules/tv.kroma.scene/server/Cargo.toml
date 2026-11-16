@@ -7,7 +7,7 @@
 name = "kroma-scene"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "Release-name parsing and the acquisition decision engine (pure, zero I/O)"
 license = "AGPL-3.0-or-later"
 

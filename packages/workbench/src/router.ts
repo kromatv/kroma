@@ -74,7 +74,7 @@ function pathRouter({ base = '/' }: { base?: string } = {}): WorkbenchRouter {
     useEffect(() => {
       const win = webWindow();
       if (!win) {
-        return;
+        return undefined;
       }
       const onPop = () => setAt(readPath(prefix));
       win.addEventListener('popstate', onPop);

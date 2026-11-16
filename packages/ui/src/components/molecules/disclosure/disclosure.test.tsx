@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Disclosure } from './disclosure';
+import { Disclosure } from './disclosure.component';
 
 const { clearPressGuard, render: renderRaw } = createInputTestHost();
 

@@ -4,12 +4,14 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setEngine } from '../engine/engine';
 import { testEngine } from '../testing';
-import { LocalePicker } from './locale-picker';
+import { LocalePicker } from './locale-picker.component';
 
 afterEach(() => {
   cleanup();
   setEngine(null);
 });
+
+let announce = () => {};
 
 describe('the locale picker', () => {
   it('explains why language switching is unavailable instead of offering an empty selector', () => {
@@ -21,7 +23,6 @@ describe('the locale picker', () => {
 
   it('shows the active language when a provider registers after the panel opens', () => {
     let codes: readonly string[] = [];
-    let announce = () => {};
     setEngine(
       testEngine({
         locales: () => codes,

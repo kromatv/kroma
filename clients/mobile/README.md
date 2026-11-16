@@ -26,7 +26,7 @@ Babel 8 (web client) while the React Native toolchain requires 7.
 ## Playback engine
 
 `src/player/engine/` ports the TV clients' base-engine model (see
-`packages/tv/src/features/playback/player/baseEngine.ts`) onto expo-video
+`packages/tv/src/features/playback/player/base-engine.ts`) onto expo-video
 (AVPlayer on iOS, ExoPlayer on Android). `types.ts` holds the vocabulary and the
 mutable core, `index.ts` owns loading + the player events, `controls.ts` the
 commands the chrome issues (transport, track, filter, rate, shutdown):
@@ -50,8 +50,12 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
 
 ## Features beyond browsing
 
-- Netflix-style Home (billboard hero, continue watching, My List, server rails),
-  genre explorer (`/genres`), sort + genre filters on the Films/Series tabs.
+- Home laid out by the server: each section names its layout (a paging hero,
+  backdrop rails, a numbered top ten, one spotlight card, poster rails) and
+  `src/components/home/` draws it; continue watching sits under the hero.
+  Genre explorer (`/genres`), sort + genre filters on the Films/Series tabs.
+- Search answers people as well as titles: a strip of portraits above the
+  library results, each opening that person's credits.
 - Quick Connect (`/connect-device`): scan the TV's QR code (the code is read
   from the authorize URL's query params) or type the 4-digit code to sign that
   device into the account, like the web client.
@@ -95,7 +99,7 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
   connect screen lists what answered on the LAN via `discoverServers` from
   `@kromatv/core`, which collapses one server reached through several origins on
   the `instanceId` it reports.
-- Profile lock (`src/lib/biometricGate.ts`): a profile with a server PIN is
+- Profile lock (`src/lib/biometric-gate.ts`): a profile with a server PIN is
   gated by the server itself; a profile without one can opt into a standalone
   Face ID / Touch ID lock on THIS device, enforced both at the profile gate and
   on cold start. Both fail closed: an unreadable keychain reads as locked.

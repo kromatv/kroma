@@ -40,12 +40,12 @@ function browser(env: Env = {}) {
     hasPush = true,
     permission = 'default',
     standalone = false,
-    registration,
+    registration: browserRegistration,
   } = env;
 
   const requestPermission = vi.fn().mockResolvedValue(permission);
   const register = vi.fn();
-  const getRegistration = vi.fn().mockResolvedValue(registration);
+  const getRegistration = vi.fn().mockResolvedValue(browserRegistration);
 
   const serviceWorker = { getRegistration, register };
   const nav: Record<string, unknown> = { userAgent: ua, standalone };

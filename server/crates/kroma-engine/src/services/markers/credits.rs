@@ -8,6 +8,7 @@
 use std::path::Path;
 
 use anyhow::Result;
+use kroma_media::ffmpeg_gate::Footprint;
 
 use super::video;
 use crate::db;
@@ -41,7 +42,8 @@ pub fn detect_movie(ctx: &JobContext, item: &MediaItem) -> Result<bool> {
         .map(|(_, start, end)| (start, end))
         .or_else(|| credits_from_last_chapter(&probe.chapters, duration_ms));
     let picture = if mode == "fingerprint" && !ctx.cancelled() {
-        match video::credits_start_ms(path, duration_ms) {
+        let need = Footprint::decoding(item.video.as_ref());
+        match video::credits_start_ms(path, duration_ms, need) {
             Ok(start) => start.map(|s| (s, duration_ms)),
             Err(e) => {
                 ctx.warn(format!("  {}: picture scan failed: {e:#}", item.title));

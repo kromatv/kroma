@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { PosterCard } from './poster-card';
+import { PosterCard } from './poster-card.component';
 import { TINT } from './poster-card.fixtures';
 
 afterEach(cleanup);

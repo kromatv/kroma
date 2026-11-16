@@ -2,13 +2,12 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { OtpField } from './otp-field';
+import { OtpField } from './otp-field.component';
 
 afterEach(cleanup);
 
 const row = (container: HTMLElement) => container.firstElementChild as HTMLElement;
-const entry = (container: HTMLElement) =>
-  container.querySelector('input') as HTMLInputElement | null;
+const entry = (container: HTMLElement) => container.querySelector('input');
 
 function type(container: HTMLElement, text: string) {
   const input = entry(container);

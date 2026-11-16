@@ -2,12 +2,12 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { View } from 'react-native';
 import { afterEach, describe, expect, it } from 'vitest';
-import { Table } from './table';
+import { Table } from './table.component';
 
 afterEach(cleanup);
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
-  return <View {...(host as object)} {...({ href: to } as object)} />;
+  return <View {...host} {...({ href: to } as object)} />;
 }
 
 function Log() {
@@ -35,7 +35,7 @@ function Log() {
   );
 }
 
-const rows = () => screen.getAllByRole('row') as HTMLElement[];
+const rows = () => screen.getAllByRole('row');
 
 const row = (at: number) => rows()[at] as HTMLElement;
 

@@ -7,7 +7,7 @@
 name = "kroma-mdns"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "mDNS / DNS-SD advertising so LAN clients can auto-discover the server"
 license = "AGPL-3.0-or-later"
 

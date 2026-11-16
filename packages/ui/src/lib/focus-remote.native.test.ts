@@ -92,7 +92,7 @@ function navigator(): { moves: string[]; stop: () => void } {
 
 function press(eventType: string, eventKeyAction = 0) {
   act(() => {
-    rn.remote?.({ eventType, eventKeyAction } as HWEvent);
+    rn.remote?.({ eventType, eventKeyAction });
   });
 }
 

@@ -1,1 +1,1 @@
-export * from './ground';
+export * from './ground.component';

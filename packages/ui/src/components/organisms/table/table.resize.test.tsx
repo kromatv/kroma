@@ -5,7 +5,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { ResizableStorage } from '#ui/components/organisms/resizable';
 import { onScreen } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Table, type TableColumn, type TableRootProps } from './table';
+import { Table, type TableColumn, type TableRootProps } from './table.component';
 
 const { clearPressGuard, render } = createInputTestHost();
 
@@ -22,7 +22,7 @@ beforeAll(() => {
     }
     unobserve() {}
     disconnect() {}
-  } as unknown as typeof ResizeObserver;
+  };
 });
 
 afterEach(() => {

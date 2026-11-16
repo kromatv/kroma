@@ -4,7 +4,7 @@ import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { onScreen as baseOnScreen, declared, wearsRing } from '#ui/testing';
-import { ResumePrompt } from './resume-prompt';
+import { ResumePrompt } from './resume-prompt.component';
 
 const onScreen = (ui: Parameters<typeof baseOnScreen>[0]) => baseOnScreen(ui, { remote: true });
 

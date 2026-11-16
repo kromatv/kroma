@@ -399,15 +399,15 @@ describe('loadCatalog', () => {
         ],
       }),
     ]);
-    const [entry] = (await loadCatalog({}, () => undefined)).entries;
-    expect(entry?.spkName).toBe('kroma-0.1.36.300-x86_64.spk');
+    const [first] = (await loadCatalog({}, () => undefined)).entries;
+    expect(first?.spkName).toBe('kroma-0.1.36.300-x86_64.spk');
   });
 
   it('names an unnamed release by its tag and tolerates a missing publish date', async () => {
     ghServing([release({ name: null, published_at: null })]);
-    const [entry] = (await loadCatalog({}, () => undefined)).entries;
-    expect(entry?.releaseName).toBe('v1.0.0');
-    expect(entry?.publishedAt).toBe('');
+    const [first] = (await loadCatalog({}, () => undefined)).entries;
+    expect(first?.releaseName).toBe('v1.0.0');
+    expect(first?.publishedAt).toBe('');
   });
 
   it('attaches the .info.json sidecar beside the .spk', async () => {
@@ -423,8 +423,8 @@ describe('loadCatalog', () => {
       ],
       { 'https://dl/info.json': sidecar },
     );
-    const [entry] = (await loadCatalog({}, () => undefined)).entries;
-    expect(entry?.info?.md5).toBe('sidecar-md5');
+    const [first] = (await loadCatalog({}, () => undefined)).entries;
+    expect(first?.info?.md5).toBe('sidecar-md5');
   });
 
   it('keeps the entry when the sidecar 404s or the fetch throws', async () => {
@@ -441,9 +441,9 @@ describe('loadCatalog', () => {
         ],
         sidecars,
       );
-      const [entry] = (await loadCatalog({}, () => undefined)).entries;
-      expect(entry?.spkName).toBe('kroma-1.0.0-1-x86_64.spk');
-      expect(entry?.info).toBeNull();
+      const [first] = (await loadCatalog({}, () => undefined)).entries;
+      expect(first?.spkName).toBe('kroma-1.0.0-1-x86_64.spk');
+      expect(first?.info).toBeNull();
     }
   });
 

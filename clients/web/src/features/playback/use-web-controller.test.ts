@@ -7,10 +7,10 @@ import { H, installHarness, item, makePb } from '#web/features/playback/use-web-
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 
-vi.mock('#web/features/playback/use-video-playback', () => ({
+vi.mock('#web/features/playback/use-video-playback.hook', () => ({
   useVideoPlayback: () => H.pb,
 }));
-vi.mock('#web/features/playback/use-web-subtitles', () => ({
+vi.mock('#web/features/playback/use-web-subtitles.hook', () => ({
   useWebSubtitles: () => H.subs,
 }));
 vi.mock('#web/features/playback/web-stats', () => ({
@@ -30,11 +30,11 @@ vi.mock('@kromatv/core', async (importOriginal) => ({
   audioTrackLabel: () => 'English 5.1',
   pictureBadge: () => H.badge,
 }));
-vi.mock('#web/shared/lib/lang-pref', () => ({
+vi.mock('#web/shared/lib/lang-pref.hook', () => ({
   useLangPrefs: () => ({ setAudio: H.rememberAudio }),
 }));
 
-const { useWebController } = await import('#web/features/playback/use-web-controller');
+const { useWebController } = await import('#web/features/playback/use-web-controller.hook');
 
 installHarness();
 

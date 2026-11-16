@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { radioVariants } from '#ui/components/atoms/radio';
-import { checkboxVariants } from './checkbox';
+import { checkboxVariants } from './checkbox.component';
 
 describe('the toggle fills under a cursor', () => {
   it('hovers a checked box up the amber ladder, never back to the wash', () => {

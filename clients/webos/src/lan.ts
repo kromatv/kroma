@@ -8,7 +8,7 @@
 // televisions finds all three the same way (docs/tv-pairing.md).
 //
 // Reached through `PalmServiceBridge` rather than `webOS.service.request`, for
-// the same reason `deviceName.ts` does: this shell is a Vite build with no
+// the same reason `device-name.ts` does: this shell is a Vite build with no
 // vendor script, so the `webOS` global that `webOSTV.js` defines is not there,
 // while the bus underneath it always is.
 

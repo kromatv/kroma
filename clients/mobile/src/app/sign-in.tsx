@@ -7,12 +7,16 @@ import { sizedImageUrl } from '@kromatv/core';
 import type { SplashCover } from '@kromatv/ui/kit';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { CredentialsPhase, PinPhase } from '#mobile/components/authPhases';
-import { OnboardingScreen } from '#mobile/components/OnboardingScreen';
-import { type GateTile, ProfileGate } from '#mobile/components/ProfileGate';
-import { ServerPicker } from '#mobile/components/ServerPicker';
-import { type EnterSavedDeps, enterSavedAccount, type Phase } from '#mobile/components/signInFlow';
-import { useProviderGate } from '#mobile/components/signInProviders';
+import { CredentialsPhase, PinPhase } from '#mobile/components/auth-phases.component';
+import { OnboardingScreen } from '#mobile/components/onboarding-screen.component';
+import { type GateTile, ProfileGate } from '#mobile/components/profile-gate.component';
+import { ServerPicker } from '#mobile/components/server-picker.component';
+import {
+  type EnterSavedDeps,
+  enterSavedAccount,
+  type Phase,
+} from '#mobile/components/sign-in-flow';
+import { useProviderGate } from '#mobile/components/sign-in-providers.hook';
 import {
   hostOf,
   keyOf,
@@ -20,11 +24,11 @@ import {
   useClientCache,
   useDiscoveryLoop,
   useServerRoster,
-} from '#mobile/components/signInHooks';
+} from '#mobile/components/sign-in-hooks';
 import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';
 import type { MobileAccount } from '#mobile/lib/storage';
-import { useServerProbes } from '#mobile/lib/useServerProbes';
+import { useServerProbes } from '#mobile/lib/use-server-probes.hook';
 
 export default function SignIn() {
   const t = useT();
@@ -83,7 +87,7 @@ export default function SignIn() {
   const [covers, setCovers] = useState<SplashCover[]>([]);
   useEffect(() => {
     if (!serverUrl) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     clientFor(serverUrl)

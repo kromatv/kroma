@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useSearchNow } from './use-search-now';
+import { useSearchNow } from './use-search-now.hook';
 
 const toast = vi.fn();
 
@@ -9,8 +9,9 @@ vi.mock('@kromatv/ui/kit', () => ({ toast: (...args: unknown[]) => toast(...args
 vi.mock('@kromatv/client', () => ({
   apiErrorText: (error: Error, fallback: string) => error.message || fallback,
 }));
+const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
+
 vi.mock('@kromatv/module-sdk', () => {
-  const t = (key: string, params?: object) => (params ? `${key} ${JSON.stringify(params)}` : key);
   return { useT: () => t };
 });
 

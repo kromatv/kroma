@@ -11,6 +11,7 @@ fn inputs() -> Inputs {
             plays: (0, None),
             taste: None,
             vectors: None,
+            listed: (0, None),
         },
         day: 0,
         part_of_day: PartOfDay::Morning,

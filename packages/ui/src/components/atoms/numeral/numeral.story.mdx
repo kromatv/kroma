@@ -1,0 +1,40 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Numeral } from './numeral.component';
+
+export const story = defineStory({
+  group: 'Media',
+  component: Numeral,
+  args: { value: 7, height: 160, thickness: 3 },
+  controls: {
+    value: { min: 0, max: 99, step: 1 },
+    height: { min: 40, max: 320, step: 10 },
+    thickness: { min: 1, max: 8, step: 1 },
+  },
+});
+
+A number drawn as outlines, in the display face. It is the rank beside a poster in a top ten: a shape more than text, far larger than any type role. React Native cannot stroke text and no two browsers stroke it alike, so the ten digits are lifted out of the font once (`packages/ui/scripts/numeral-glyphs.ts`) and drawn as paths, the same on every target.
+
+<Scene name="One to ten">
+  Each digit stands on the same line, and "10" keeps its two digits close enough to read as one number.
+
+  {story.take(({ height, thickness }) => (
+    <Box row align="flex-end" gap={24} wrap>
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rank) => (
+        <Numeral key={rank} value={rank} height={height} thickness={thickness} />
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Scene name="Lit and filled">
+  The outline takes any colour token. The fill defaults to the page ground, which is what makes the numeral read as hollow; any other fill turns it solid.
+
+  {story.take(({ value, height, thickness }) => (
+    <Box row align="flex-end" gap={24}>
+      <Numeral value={value} height={height} thickness={thickness} />
+      <Numeral value={value} height={height} thickness={thickness} color="accent" />
+      <Numeral value={value} height={height} thickness={thickness} color="accent" fill="accent/20" />
+    </Box>
+  ))}
+</Scene>

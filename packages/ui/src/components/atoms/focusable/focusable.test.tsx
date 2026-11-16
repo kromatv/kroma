@@ -15,10 +15,10 @@ import { act, createRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme } from '#ui/core';
 
-import { FocusRegion, FocusScope } from '#ui/lib/focus-scope';
+import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
 import { declared, wearsRing } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
-import { Focusable, type FocusHandle } from './focusable';
+import { Focusable, type FocusHandle } from './focusable.component';
 
 const { armPressGuard, clearPressGuard, render } = createInputTestHost();
 
@@ -47,6 +47,8 @@ function press(key: string) {
 function screenWith(children: React.ReactNode) {
   return render(<FocusScope>{children}</FocusScope>);
 }
+
+const wash = () => declared(painted('Nu'), 'backgroundColor');
 
 describe('Focusable on react-native-web', () => {
   it('renders an accessible host for every control', () => {
@@ -250,7 +252,6 @@ describe('Focusable on react-native-web', () => {
     // clients/web. Nothing can focus it and no finger will press it, so the
     // hover is the ONLY answer a cursor gets there.
     render(<Focusable label="Nu" states={{ hover: { bg: 'accentSoft' } }} />);
-    const wash = () => declared(painted('Nu'), 'backgroundColor');
     expect(wash()).toBe('rgba(0, 0, 0, 0)');
 
     // A Pressable listens for the hover itself (react-native-web's useHover),

@@ -28,7 +28,7 @@ const ORIGIN = 'https://kroma.tv';
 /** The locale a pathname belongs to: `/fr/blog` → `fr`, `/blog` → the base locale. */
 export function langFromPath(pathname: string): Lang {
   const seg = pathname.split('/')[1] ?? '';
-  return (locales as readonly string[]).includes(seg) ? (seg as Lang) : (baseLocale as Lang);
+  return (locales as readonly string[]).includes(seg) ? (seg as Lang) : baseLocale;
 }
 
 /** Strip the locale prefix to the canonical path: `/fr/blog` → `/blog`. */

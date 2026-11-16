@@ -70,7 +70,7 @@ export function styles<const S extends Record<string, StyleDecl>>(
     }
     const resolved: Record<string, AnyStyle> = {};
     for (const [name, decl] of Object.entries(decls)) {
-      resolved[name] = stabilise(normalize(decl, index, activeTheme(scope.theme))) as AnyStyle;
+      resolved[name] = stabilise(normalize(decl, index, activeTheme(scope.theme)));
     }
     const built = resolved as Styles<S>;
     owners.set(scope, { at, step, built });
@@ -124,9 +124,9 @@ const rebuilt = themedCache<AnyStyle>(4096);
  * so the browser paints every property of it inline. Keyed on the content,
  * every link carrying the same paint shares one entry and one set of classes.
  */
-export function registered(style: StyleProp<AnyStyle>): AnyStyle {
-  const flat = StyleSheet.flatten(style) ?? {};
-  return rebuilt(JSON.stringify(flat), () => stabilise(flat) as AnyStyle);
+export function registered(given: StyleProp<AnyStyle>): AnyStyle {
+  const flat = StyleSheet.flatten(given) ?? {};
+  return rebuilt(JSON.stringify(flat), () => stabilise(flat));
 }
 
 /**

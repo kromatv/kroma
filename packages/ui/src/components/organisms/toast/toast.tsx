@@ -12,7 +12,7 @@ import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { IconName } from '#ui/components/atoms/icon';
 import { styles } from '#ui/core';
-import { ToastCard } from './toast-card';
+import { ToastCard } from './toast-card.component';
 
 const DEFAULT_MS = 4500;
 // Never stack more than this per corner: a column of notices is a wall, not a

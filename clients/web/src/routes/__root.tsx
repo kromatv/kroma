@@ -15,20 +15,20 @@ import { type QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Scripts } from '@tanstack/react-router';
 import { lazy, type ReactNode, Suspense } from 'react';
 import { preload } from 'react-dom';
-import { NotificationBell } from '#web/features/notifications/panel';
-import { ModuleHostProvider } from '#web/modules/ModuleHostProvider';
+import { NotificationBell } from '#web/features/notifications/panel.component';
+import { ModuleHostProvider } from '#web/modules/module-host-provider.component';
 import type { WebRuntime } from '#web/shared/lib/api';
 import { AuthProvider } from '#web/shared/lib/auth';
 import { BlurPreferenceProvider } from '#web/shared/lib/blur-pref';
 import { CommandMenuProvider } from '#web/shared/lib/command-menu';
 import { DirectConnectionProvider } from '#web/shared/lib/direct-connection';
-import { LocaleProvider } from '#web/shared/lib/locale';
+import { LocaleProvider } from '#web/shared/lib/locale.component';
 import { MyListProvider } from '#web/shared/lib/mylist';
 import { WatchedProvider } from '#web/shared/lib/watched';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
-import { BOOT_SCREEN_CSS, BootScreen } from '#web/shared/ui/boot-screen';
-import { CompatGate } from '#web/shared/ui/compat-gate';
-import { CommandMenuButton } from '#web/shared/ui/command-menu-button';
+import { BOOT_SCREEN_CSS, BootScreen } from '#web/shared/ui/boot-screen.component';
+import { CompatGate } from '#web/shared/ui/compat-gate.component';
+import { CommandMenuButton } from '#web/shared/ui/command-menu-button.component';
 import { NavActionsProvider } from '#web/shared/ui/nav-actions';
 
 // Dev-only: lazy so the devtools bundle never ships in the packaged SPA.
@@ -45,7 +45,8 @@ const NAV_ACTIONS = (
   </Row>
 );
 
-const loadCommandMenu = () => import('#web/command-menu').then((menu) => menu.CommandMenu);
+const loadCommandMenu = () =>
+  import('#web/command-menu.component').then((menu) => menu.CommandMenu);
 
 const BROWSER_KIT = { formFactor: 'browser', ground: 'dark' } as const;
 

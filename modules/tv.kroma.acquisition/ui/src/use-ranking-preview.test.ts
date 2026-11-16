@@ -2,11 +2,11 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QualityProfile } from './rules-schemas';
-import { useRankingPreview } from './use-ranking-preview';
+import { useRankingPreview } from './use-ranking-preview.hook';
 
 const acquisition = { testRules: vi.fn() };
 
-vi.mock('./api', () => ({ useAcquisitionApi: () => acquisition }));
+vi.mock('./api.hook', () => ({ useAcquisitionApi: () => acquisition }));
 
 const PROFILE = {
   id: 'p',

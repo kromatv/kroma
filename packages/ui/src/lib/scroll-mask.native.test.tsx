@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 afterEach(() => {
   cleanup();
   vi.doUnmock('#ui/lib/gpu-masks');
-  vi.doUnmock('#ui/lib/stable-masked-view');
+  vi.doUnmock('#ui/lib/stable-masked-view.component');
   vi.doUnmock('react-native-svg');
 });
 
@@ -24,12 +24,12 @@ async function page(masks: { GPU_MASKS: boolean; PAGE_MASKS: boolean }, ground: 
     Rect: Nothing,
     Stop: Nothing,
   }));
-  vi.doMock('#ui/lib/stable-masked-view', () => ({
+  vi.doMock('#ui/lib/stable-masked-view.component', () => ({
     StableMaskedView: ({ children }: { children: React.ReactNode }) => (
       <Text testID="masked">{children}</Text>
     ),
   }));
-  const { ScrollMask } = await import('./scroll-mask');
+  const { ScrollMask } = await import('./scroll-mask.component');
   const { ScrollPositionContext } = await import('./scroll-position');
   const position = { offset: new Animated.Value(0), content: createRef<View>() };
   render(

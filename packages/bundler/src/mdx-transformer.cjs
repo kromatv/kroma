@@ -29,7 +29,7 @@ const UPSTREAM = 'KROMA_METRO_BABEL_TRANSFORMER';
 
 const { createHash } = require('node:crypto');
 const { readFileSync } = require('node:fs');
-const { join } = require('node:path');
+const path = require('node:path');
 const { inlinePlatformConst } = require('./inline-platform.cjs');
 
 let loading;
@@ -71,8 +71,8 @@ function getCacheKey() {
   const inherited = typeof parent.getCacheKey === 'function' ? parent.getCacheKey() : '';
   const own = createHash('sha256')
     .update(readFileSync(__filename))
-    .update(readFileSync(join(__dirname, 'mdx.mjs')))
-    .update(readFileSync(join(__dirname, 'story-scenes.mjs')))
+    .update(readFileSync(path.join(__dirname, 'mdx.mjs')))
+    .update(readFileSync(path.join(__dirname, 'story-scenes.mjs')))
     .digest('hex');
   return `${inherited}$${own}`;
 }

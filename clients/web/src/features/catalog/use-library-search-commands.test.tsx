@@ -4,7 +4,7 @@ import { cleanup, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fixture';
-import { useLibrarySearchCommands } from './use-library-search-commands';
+import { useLibrarySearchCommands } from './use-library-search-commands.hook';
 
 const mocks = vi.hoisted(() => ({
   query: '',
@@ -85,6 +85,8 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
+
+const actionLabels = () => titles()[0]?.actions?.map((one) => one && one.label);
 
 describe('useLibrarySearchCommands', () => {
   it('offers nothing before anything is typed', () => {
@@ -232,8 +234,6 @@ describe('useLibrarySearchCommands', () => {
 
     expect(titles()[1]?.always).toBe(false);
   });
-
-  const actionLabels = () => titles()[0]?.actions?.map((one) => one && one.label);
 
   it('lets a movie be played, listed and marked as watched', async () => {
     await typing('dune', MOVIE);

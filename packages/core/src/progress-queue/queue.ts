@@ -51,6 +51,9 @@ function usable(stored: unknown): PendingProgress[] {
   });
 }
 
+const without = (entries: PendingProgress[], key: string): PendingProgress[] =>
+  entries.filter((entry) => progressKey(entry) !== key);
+
 export function createProgressQueue(store: PendingProgressStore): ProgressQueue {
   let settled: Promise<unknown> = Promise.resolve();
 
@@ -67,9 +70,6 @@ export function createProgressQueue(store: PendingProgressStore): ProgressQueue 
   ): Promise<void> => {
     await store.write(change(await load()));
   };
-
-  const without = (entries: PendingProgress[], key: string): PendingProgress[] =>
-    entries.filter((entry) => progressKey(entry) !== key);
 
   return {
     remember: (position) =>

@@ -16,7 +16,7 @@
     ".": "./index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "peerDependencies": {
     "expo": "^58.0.16",

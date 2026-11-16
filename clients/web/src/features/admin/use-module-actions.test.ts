@@ -3,7 +3,7 @@ import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { type AdminModule, UninstallConflictError } from '#web/features/admin/module-api';
 import type { CommandActionDef } from '#web/shared/lib/command-menu';
-import { useModuleActions } from './use-module-actions';
+import { useModuleActions } from './use-module-actions.hook';
 
 const mocks = vi.hoisted(() => ({
   toast: vi.fn(),
@@ -29,7 +29,9 @@ vi.mock('@tanstack/react-query', async (original) => ({
   ...(await original<typeof import('@tanstack/react-query')>()),
   useQuery: () => ({ data: [] }),
 }));
-vi.mock('#web/modules/ModuleHostProvider', () => ({ useRefreshModules: () => mocks.refresh }));
+vi.mock('#web/modules/module-host-provider.component', () => ({
+  useRefreshModules: () => mocks.refresh,
+}));
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ user: { permissions: ['settings.manage'] } }),
 }));

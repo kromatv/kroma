@@ -10,7 +10,7 @@ import {
   type TablePage,
   type TableQuery,
   useSortedTable,
-} from './use-sorted-table';
+} from './use-sorted-table.hook';
 
 interface Grab {
   id: string;

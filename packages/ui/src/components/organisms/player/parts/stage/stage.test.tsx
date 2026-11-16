@@ -1,13 +1,13 @@
 // @vitest-environment jsdom
 
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { Animated } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import { DEFAULT_SUB_APPEARANCE } from '../../lib/subtitle-appearance';
 import { fakeController } from '../../player.fixture';
 import type { PlayerController } from '../../types';
-import { Stage } from './stage';
+import { Stage } from './stage.component';
 
 function stage(settingsShrink: boolean, controller: PlayerController = fakeController()) {
   const timing = vi.spyOn(Animated, 'timing');
@@ -68,5 +68,37 @@ describe('a subtitle track that fails to load', () => {
     stage(false, controller);
 
     await waitFor(() => expect(markSubtitleFailed).toHaveBeenCalledWith(3));
+  });
+});
+
+describe('a subtitle over a picture that is buffering', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('stays on the line the picture stopped on', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'performance'] });
+    const cues =
+      'WEBVTT\n\n00:00:10.000 --> 00:00:11.000\nten\n\n00:00:11.000 --> 00:00:12.000\neleven\n';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(cues, { status: 200 })),
+    );
+    const controller = fakeController({
+      subtitles: [{ index: 0, language: 'eng', codec: 'webvtt', url: '/0.vtt', selectable: true }],
+      subtitleIndex: 0,
+      cur: 10.2,
+      playing: true,
+      waiting: true,
+    });
+
+    const { node } = stage(false, controller);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900);
+    });
+
+    expect(node.textContent).toContain('ten');
+    expect(node.textContent).not.toContain('eleven');
   });
 });

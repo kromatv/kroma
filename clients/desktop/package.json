@@ -16,7 +16,7 @@
     "build": "tsc --noEmit && vite build",
     "build:fast": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build --bundles appimage",

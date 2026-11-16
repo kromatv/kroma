@@ -19,9 +19,9 @@ vi.mock('#web/shared/lib/api', () => ({
 vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
   const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
-  const { QueryClient } =
+  const { QueryClient: ActualQueryClient } =
     await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
-  const queryCache = new QueryClient();
+  const queryCache = new ActualQueryClient();
   const runtime = createWebTestRuntime(
     {
       releases: { markSeen: api.markSeen },
@@ -32,7 +32,7 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
-import { useMarkReleaseSeen } from './use-mark-release-seen';
+import { useMarkReleaseSeen } from './use-mark-release-seen.hook';
 
 const { userQueries } = createQueries(
   createWebTestClient({ query: { releases: { list: () => api.list } } }),

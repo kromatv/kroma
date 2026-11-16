@@ -8,8 +8,8 @@ import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo } from 'react';
 import { useT } from '#mobile/lib/i18n';
-import { useDownloadPrompt } from '#mobile/lib/notifications/useDownloadPrompt';
-import { useTransferQueue } from './queue';
+import { useDownloadPrompt } from '#mobile/lib/notifications/use-download-prompt.hook';
+import { useTransferQueue } from './queue.hook';
 import type { DownloadEntry, DownloadState } from './store';
 
 export type { DownloadEntry, DownloadState, OfflineSub } from './store';
@@ -19,13 +19,13 @@ interface DownloadsApi {
   downloading: { item: MediaItem; progress: number }[];
   paused: { item: MediaItem; progress: number }[];
   queuedItems: MediaItem[];
-  stateFor(itemId: string): DownloadState;
-  canDownload(item: MediaItem): boolean;
-  start(item: MediaItem): void;
-  pause(itemId: string): void;
-  resume(itemId: string): void;
-  cancel(itemId: string): void;
-  remove(itemId: string): Promise<void>;
+  stateFor: (itemId: string) => DownloadState;
+  canDownload: (item: MediaItem) => boolean;
+  start: (item: MediaItem) => void;
+  pause: (itemId: string) => void;
+  resume: (itemId: string) => void;
+  cancel: (itemId: string) => void;
+  remove: (itemId: string) => Promise<void>;
   totalBytes: number;
 }
 

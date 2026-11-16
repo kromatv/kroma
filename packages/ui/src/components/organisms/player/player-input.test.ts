@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { usePlayerNav } from './hooks/use-player-nav';
+import type { usePlayerNav } from './hooks/use-player-nav.hook';
 import { playerInputHandlers } from './player-input';
 import { type PlayerController, type PlayerFlags, WEB_FLAGS } from './types';
 
-describe('the pointer and press handlers over the video', () => {
-  const build = (flags: Partial<PlayerFlags>, locked = false) => {
-    const nav = { poke: vi.fn() } as unknown as ReturnType<typeof usePlayerNav>;
-    const controller = {
-      togglePlay: vi.fn(),
-      toggleFullscreen: vi.fn(),
-    } as unknown as PlayerController;
-    const handlers = playerInputHandlers(nav, controller, { ...WEB_FLAGS, ...flags }, locked);
-    return { nav, controller, handlers };
-  };
+const build = (flags: Partial<PlayerFlags>, locked = false) => {
+  const nav = { poke: vi.fn() } as unknown as ReturnType<typeof usePlayerNav>;
+  const controller = {
+    togglePlay: vi.fn(),
+    toggleFullscreen: vi.fn(),
+  } as unknown as PlayerController;
+  const handlers = playerInputHandlers(nav, controller, { ...WEB_FLAGS, ...flags }, locked);
+  return { nav, controller, handlers };
+};
 
+describe('the pointer and press handlers over the video', () => {
   it('wakes the chrome when a real mouse moves', () => {
     const { nav, handlers } = build({});
 

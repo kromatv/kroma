@@ -39,6 +39,8 @@ describe('the source walk', () => {
   });
 });
 
+const tried = () => babelAt([join(process.cwd(), 'no/such/package.json')]);
+
 describe('reaching the React Compiler', () => {
   it('resolves it from a package that depends on it', () => {
     const at = babelAt([join(process.cwd(), 'packages/bundler/package.json')]);
@@ -60,8 +62,6 @@ describe('reaching the React Compiler', () => {
   });
 
   it('says which paths it tried when none of them has the compiler', () => {
-    const tried = () => babelAt([join(process.cwd(), 'no/such/package.json')]);
-
     expect(tried).toThrow(NoCompiler);
     expect(tried).toThrow(/no\/such\/package\.json/);
   });

@@ -1,0 +1,727 @@
+// @vitest-environment jsdom
+
+import type { HlsMasterDeclaration, MediaItem } from '@kromatv/client/media';
+import { fakeClient } from '@kromatv/client/test';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AvplayEngine } from './avplay-engine';
+import type { EngineOptions } from './base-engine';
+import type { AvplayApi, AvplayListeners, AvplayTrack, EngineListeners } from './engine';
+
+const noop = () => undefined;
+
+// The Samsung AVPlay backend, driven against a fake `webapis.avplay` that
+// records every native call, so none of this needs a TV.
+
+interface FakeAvplay {
+  api: AvplayApi;
+  calls(): Array<{ m: string; args: unknown[] }>;
+  listener(): AvplayListeners;
+  prepareOk(): void;
+  prepareErr(): void;
+  setTracks(t: AvplayTrack[]): void;
+  setDuration(ms: number): void;
+  setTime(ms: number): void;
+  seekLanded(): void;
+}
+
+function fakeAvplay(refuses: string[] = []): FakeAvplay {
+  const calls: Array<{ m: string; args: unknown[] }> = [];
+  let listener: AvplayListeners = {};
+  let ok: () => void = noop;
+  let err: () => void = noop;
+  let tracks: AvplayTrack[] = [];
+  let duration = 0;
+  let time = 0;
+  let answer: (() => void) | null = null;
+  let playing = false;
+  // `<call>:ready` is refused only until playback starts, which is how Tizen
+  // answers a track change made in the READY state.
+  const rec =
+    (m: string) =>
+    (...args: unknown[]) => {
+      calls.push({ m, args });
+      if (refuses.includes(m) || (!playing && refuses.includes(`${m}:ready`))) {
+        throw new Error(m);
+      }
+    };
+  const api = {
+    open: rec('open'),
+    close: rec('close'),
+    stop: rec('stop'),
+    play: (...args: unknown[]) => {
+      playing = true;
+      rec('play')(...args);
+    },
+    pause: rec('pause'),
+    seekTo: (ms: number, onOk?: () => void) => {
+      calls.push({ m: 'seekTo', args: [ms] });
+      if (refuses.includes('seekTo')) {
+        throw new Error('seekTo');
+      }
+      time = ms;
+      answer = onOk ?? null;
+    },
+    setDisplayRect: rec('setDisplayRect'),
+    setStreamingProperty: rec('setStreamingProperty'),
+    setSilentSubtitle: rec('setSilentSubtitle'),
+    setSelectTrack: rec('setSelectTrack'),
+    suspend: rec('suspend'),
+    restore: rec('restore'),
+    getCurrentTime: () => time,
+    getState: () => 'PLAYING',
+    getDuration: () => duration,
+    getTotalTrackInfo: () => {
+      if (refuses.includes('getTotalTrackInfo')) {
+        throw new Error('getTotalTrackInfo');
+      }
+      return tracks;
+    },
+    setListener: (l: AvplayListeners) => {
+      listener = l;
+      calls.push({ m: 'setListener', args: [] });
+    },
+    prepareAsync: (onOk: () => void, onErr: () => void) => {
+      ok = onOk;
+      err = onErr;
+      calls.push({ m: 'prepareAsync', args: [] });
+    },
+  } as unknown as AvplayApi;
+  return {
+    api,
+    calls: () => calls,
+    listener: () => listener,
+    prepareOk: () => ok(),
+    prepareErr: () => err(),
+    setTracks: (t) => {
+      tracks = t;
+    },
+    setDuration: (ms) => {
+      duration = ms;
+    },
+    setTime: (ms) => {
+      time = ms;
+    },
+    seekLanded: () => {
+      const done = answer;
+      answer = null;
+      done?.();
+    },
+  };
+}
+
+function mkListeners(): EngineListeners {
+  return {
+    onTime: vi.fn(),
+    onDuration: vi.fn(),
+    onBuffered: vi.fn(),
+    onPlay: vi.fn(),
+    onPause: vi.fn(),
+    onWaiting: vi.fn(),
+    onPlaying: vi.fn(),
+    onEnded: vi.fn(),
+    onError: vi.fn(),
+    onReady: vi.fn(),
+  };
+}
+
+const declared: HlsMasterDeclaration[] = [];
+const client = fakeClient({
+  media: {
+    streamUrl: (id: string) => `stream:${id}`,
+    hlsMasterUrl: (
+      id: string,
+      aac = false,
+      startSec = 0,
+      audio = 0,
+      decl: HlsMasterDeclaration = {},
+    ) => {
+      declared.push(decl);
+      const filterSuffix = decl.filter ? `:${decl.filter}` : '';
+      return `master:${id}:${aac}:${startSec}:${audio}${filterSuffix}`;
+    },
+  },
+});
+const item = { id: 'sm1' } as unknown as MediaItem;
+const tick = () => new Promise<void>((r) => setTimeout(r, 0));
+
+function masterArrivedTo(arrivedSec: number) {
+  return vi.fn((url: string) => {
+    const anchor = Number(String(url).split(':')[3]);
+    if (anchor > arrivedSec) {
+      return Promise.resolve({ status: 503, headers: { get: () => null } });
+    }
+    return Promise.resolve({
+      status: 200,
+      headers: { get: (k: string) => (k === 'X-Hls-Start' ? String(anchor - 2) : null) },
+    });
+  });
+}
+
+const track = (index: number, type: string): AvplayTrack => ({ index, type });
+
+function opts(over: Partial<EngineOptions> = {}): EngineOptions {
+  return {
+    client,
+    item,
+    durationSec: 100,
+    initialRendition: 0,
+    startSec: 0,
+    direct: true,
+    listeners: mkListeners(),
+    ...over,
+  };
+}
+
+function make(over: Partial<EngineOptions> = {}, refuses: string[] = []) {
+  const a = fakeAvplay(refuses);
+  vi.stubGlobal('webapis', { avplay: a.api });
+  const listeners = over.listeners ?? mkListeners();
+  const e = new AvplayEngine(opts({ ...over, listeners }));
+  const names = () => a.calls().map((c) => c.m);
+  const lastArgs = (m: string) => [...a.calls()].reverse().find((c) => c.m === m)?.args;
+  return { e, a, listeners, names, lastArgs };
+}
+
+beforeEach(() => {
+  declared.length = 0;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() =>
+      Promise.resolve({ headers: { get: (k: string) => (k === 'X-Hls-Start' ? '8' : null) } }),
+    ),
+  );
+});
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+describe('AvplayEngine construction', () => {
+  it('throws when AVPlay is unavailable', () => {
+    expect(() => new AvplayEngine(opts())).toThrow(/AVPlay unavailable/);
+  });
+
+  it('direct mode opens the original file and sets the display rect', () => {
+    const { a, lastArgs } = make({ direct: true });
+    expect(lastArgs('open')).toEqual(['stream:sm1']);
+    expect(lastArgs('setDisplayRect')).toEqual([0, 0, 1920, 1080]);
+    expect(a.calls().map((c) => c.m)).toContain('prepareAsync');
+  });
+
+  it('setRect shrinks the plane into the card (fractions -> 1920x1080 px); null restores', () => {
+    const { e, lastArgs } = make({ direct: true });
+    e.setRect({ x: 0.03, y: 0.25, w: 0.5, h: 0.5 });
+    expect(lastArgs('setDisplayRect')).toEqual([58, 270, 960, 540]);
+    e.setRect(null);
+    expect(lastArgs('setDisplayRect')).toEqual([0, 0, 1920, 1080]);
+  });
+
+  it('master mode opens the anchored HLS master (no anchor -> immediate)', () => {
+    const { lastArgs } = make({ direct: false, startSec: 0 });
+    expect(lastArgs('open')).toEqual(['master:sm1:false:0:0']);
+  });
+
+  it('an anchored master resolves its real keyframe start before opening', async () => {
+    const { e, lastArgs } = make({ direct: false, startSec: 30 });
+    await tick(); // the stubbed fetch reports X-Hls-Start 8
+    expect(lastArgs('open')).toEqual(['master:sm1:false:30:0']);
+    expect(e.position()).toBe(8);
+  });
+});
+
+describe('AvplayEngine audio declaration', () => {
+  it('asks the server to copy only the audio its HLS path plays', () => {
+    make({ direct: false, startSec: 0 });
+
+    expect(declared.at(-1)?.copyCodecs).toEqual(['aac', 'ac3', 'eac3', 'mp3']);
+  });
+
+  it('declares the picture the same silicon draws from a file', () => {
+    make({ direct: false, startSec: 0 });
+
+    expect(declared.at(-1)?.videoCodecs).toEqual(['hevc', 'h264', 'vp9']);
+  });
+});
+
+describe('AvplayEngine joining a master that is still being written', () => {
+  it('starts at the top when AVPlay opened the playlist at its live edge', () => {
+    const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(122774);
+
+    expect(lastArgs('seekTo')).toEqual([0]);
+    expect(e.position()).toBe(0);
+  });
+
+  it('waits for the first time report, because Tizen refuses a seek at READY', () => {
+    const { a, names } = make({ direct: false, startSec: 0 });
+    a.setTime(122774);
+
+    a.prepareOk();
+
+    expect(names()).not.toContain('seekTo');
+  });
+
+  it('keeps the clock on the anchor plus AVPlay time once it has landed', async () => {
+    const { e, a, listeners } = make({ direct: false, startSec: 30 });
+    await tick();
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(122774);
+    a.seekLanded();
+    a.listener().oncurrentplaytime?.(4000);
+
+    expect(e.position()).toBe(12);
+    expect(listeners.onTime).toHaveBeenLastCalledWith(12);
+  });
+
+  it('leaves a playlist that opened at its own start alone', () => {
+    const { a, names } = make({ direct: false, startSec: 0 });
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(400);
+    a.listener().oncurrentplaytime?.(122774);
+
+    expect(names()).not.toContain('seekTo');
+  });
+
+  it('gives up after three tries on a firmware that will not go back', () => {
+    const { a, names } = make({ direct: false, startSec: 0 }, ['seekTo']);
+
+    a.prepareOk();
+    for (const ms of [91000, 92000, 93000, 94000]) {
+      a.listener().oncurrentplaytime?.(ms);
+    }
+
+    expect(names().filter((n) => n === 'seekTo')).toHaveLength(3);
+  });
+
+  it('keeps one seek in flight while the reports repeat the stale position', () => {
+    const { a, names } = make({ direct: false, startSec: 0 });
+
+    a.prepareOk();
+    for (const ms of [156015, 156015, 156015]) {
+      a.listener().oncurrentplaytime?.(ms);
+    }
+
+    expect(names().filter((n) => n === 'seekTo')).toHaveLength(1);
+  });
+
+  it('lands at the top of the new anchor after an audio switch', async () => {
+    const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
+    a.listener().oncurrentplaytime?.(25000);
+
+    e.setAudioRendition(1);
+    await tick();
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(60000);
+
+    expect(lastArgs('seekTo')).toEqual([0]);
+    expect(e.position()).toBe(8);
+  });
+
+  it('never drags a direct file back to its start', () => {
+    const { a, names } = make({ direct: true, startSec: 0 });
+    a.setTime(122774);
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(122774);
+
+    expect(names()).not.toContain('seekTo');
+  });
+});
+
+describe('AvplayEngine prepared (resume + audio mapping)', () => {
+  it('applies the resume seek and maps the rendition to the AVPlay track index', () => {
+    const { a, lastArgs, listeners } = make({ direct: true, startSec: 30, initialRendition: 1 });
+    a.setDuration(60000);
+    a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
+    a.prepareOk();
+    expect(listeners.onDuration).toHaveBeenCalledWith(60);
+    expect(lastArgs('seekTo')).toEqual([30000]);
+    // rendition 1 is the SECOND audio track, whose native index is 2
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 2]);
+    expect(listeners.onReady).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps asking for the wanted soundtrack until one call is accepted', () => {
+    const { e, a, names, lastArgs } = make({ direct: true, initialRendition: 1 }, [
+      'setSelectTrack:ready',
+    ]);
+    a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
+
+    a.prepareOk();
+    a.listener().oncurrentplaytime?.(500);
+    e.play();
+    a.listener().oncurrentplaytime?.(1000);
+    a.listener().oncurrentplaytime?.(1500);
+
+    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(3);
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 2]);
+  });
+
+  it('gives up on the wanted soundtrack after a few refusals instead of asking forever', () => {
+    const { e, a, names } = make({ direct: true, initialRendition: 1 }, ['setSelectTrack']);
+    a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
+
+    a.prepareOk();
+    e.play();
+    for (const ms of [500, 1000, 1500, 2000, 2500]) {
+      a.listener().oncurrentplaytime?.(ms);
+    }
+
+    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(4);
+  });
+
+  it('leaves a manual pick alone rather than restoring the soundtrack it opened with', () => {
+    const { e, a, lastArgs } = make({ direct: true, initialRendition: 0 }, [
+      'setSelectTrack:ready',
+    ]);
+    a.setTracks([track(0, 'VIDEO'), track(1, 'AUDIO'), track(2, 'AUDIO')]);
+    a.prepareOk();
+    e.play();
+
+    e.setAudioRendition(1);
+    a.listener().oncurrentplaytime?.(500);
+
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 2]);
+  });
+
+  it('master prepared just announces duration + ready (no seek/track)', () => {
+    const { a, names, listeners } = make({ direct: false, startSec: 0 });
+    a.prepareOk();
+    expect(names()).not.toContain('seekTo');
+    expect(names()).not.toContain('setSelectTrack');
+    expect(listeners.onReady).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the runtime it was given rather than the seconds the remux has written', () => {
+    const { e, a, listeners } = make({ direct: false, startSec: 0, durationSec: 888 });
+    a.setDuration(2000);
+
+    a.prepareOk();
+
+    expect(e.duration()).toBe(888);
+    expect(listeners.onDuration).toHaveBeenCalledWith(888);
+  });
+});
+
+describe('AvplayEngine native listener events', () => {
+  it('current-play-time moves the clock without calling the playhead a buffer', () => {
+    const { e, a, listeners } = make({ direct: true, startSec: 0 });
+
+    a.listener().oncurrentplaytime?.(5000);
+
+    expect(e.position()).toBe(5);
+    expect(listeners.onTime).toHaveBeenCalledWith(5);
+    expect(listeners.onBuffered).not.toHaveBeenCalled();
+    expect(e.bufferedEnd()).toBeNull();
+  });
+
+  it('buffering + stream-completed + error map to the right callbacks', () => {
+    const { a, listeners } = make({ direct: true, startSec: 0 });
+    a.listener().onbufferingstart?.();
+    a.listener().onbufferingcomplete?.();
+    a.listener().onstreamcompleted?.();
+    expect(listeners.onWaiting).toHaveBeenCalledTimes(1);
+    expect(listeners.onPlaying).toHaveBeenCalledTimes(1);
+    expect(listeners.onEnded).toHaveBeenCalledTimes(1);
+    // onerror in direct mode triggers the direct->master fallback
+    a.listener().onerror?.(new Error('x'));
+    expect(listeners.onWaiting).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('AvplayEngine transport', () => {
+  it('play / pause call the native API + emit optimistic state', () => {
+    const { e, names, listeners } = make();
+    e.play();
+    expect(names()).toContain('play');
+    expect(e.isPaused()).toBe(false);
+    expect(listeners.onPlay).toHaveBeenCalled();
+    e.pause();
+    expect(names()).toContain('pause');
+    expect(e.isPaused()).toBe(true);
+    expect(listeners.onPause).toHaveBeenCalled();
+  });
+
+  it('direct seek is a native absolute seek in ms (floored at 0)', () => {
+    const { e, lastArgs } = make({ direct: true });
+    e.seekTo(50);
+    expect(lastArgs('seekTo')).toEqual([50000]);
+    e.seekTo(-5);
+    expect(lastArgs('seekTo')).toEqual([0]);
+  });
+
+  it('master seek within the ahead window is a relative native seek', () => {
+    const { e, lastArgs } = make({ direct: false, startSec: 0 });
+    e.seekTo(40);
+    expect(lastArgs('seekTo')).toEqual([40000]);
+    expect(e.position()).toBe(40);
+  });
+
+  it('a far master seek re-anchors: stop, close, reopen at the new anchor', async () => {
+    const { e, names, lastArgs } = make({ direct: false, startSec: 0 });
+    e.seekTo(600);
+    await tick();
+    expect(names()).toContain('stop');
+    expect(names()).toContain('close');
+    expect(lastArgs('open')).toEqual(['master:sm1:false:600:0']);
+  });
+});
+
+describe('AvplayEngine seeking past the film that has arrived', () => {
+  it('holds the target second while the master it asked for is not written yet', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', masterArrivedTo(1200));
+    const { e, a } = make({ direct: false, startSec: 0 });
+    a.prepareOk();
+
+    e.seekTo(2400);
+    await vi.runAllTimersAsync();
+    a.prepareErr();
+
+    expect(e.position()).toBe(2400);
+  });
+
+  it('plays from the target second once the film has arrived under it', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('fetch', masterArrivedTo(1200));
+    const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
+    a.prepareOk();
+    e.seekTo(2400);
+    await vi.runAllTimersAsync();
+    a.prepareErr();
+
+    vi.stubGlobal('fetch', masterArrivedTo(5400));
+
+    e.restart(2400);
+    await vi.runAllTimersAsync();
+    a.prepareOk();
+
+    expect(lastArgs('open')).toEqual(['master:sm1:false:2400:0']);
+    expect(e.position()).toBe(2398);
+  });
+
+  it('holds the target second when the master names no start of its own', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ status: 200, headers: { get: () => null } })),
+    );
+    const { e, a } = make({ direct: false, startSec: 0 });
+
+    e.seekTo(2400);
+    await vi.runAllTimersAsync();
+    a.prepareOk();
+
+    expect(e.position()).toBe(2400);
+  });
+});
+
+describe('AvplayEngine audio switching', () => {
+  it('a direct in-place switch selects the mapped track (no reopen)', () => {
+    const { e, a, names, lastArgs } = make({ direct: true, initialRendition: 0 });
+    a.setTracks([track(1, 'AUDIO'), track(4, 'AUDIO')]);
+    e.setAudioRendition(1);
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 4]);
+    expect(names()).not.toContain('stop');
+  });
+
+  it('falls back to a re-anchor when the track cannot be selected', async () => {
+    const { e, names } = make({ direct: true, initialRendition: 0 });
+    // no tracks, so the native selection fails
+    e.setAudioRendition(1);
+    await tick();
+    expect(names()).toContain('stop');
+    expect(names()).toContain('close');
+  });
+
+  it('a master switch re-anchors at the current position with the new track', async () => {
+    const { e, a, lastArgs } = make({ direct: false, startSec: 0 });
+    a.listener().oncurrentplaytime?.(25000);
+    e.setAudioRendition(1);
+    await tick();
+    expect(lastArgs('open')).toEqual(['master:sm1:false:25:1']);
+  });
+
+  it('re-asserts the soundtrack already shown when the viewer picks it again', () => {
+    const { e, a, names, lastArgs } = make({ direct: true, initialRendition: 1 });
+    a.setTracks([track(1, 'AUDIO'), track(4, 'AUDIO')]);
+    const before = names().filter((n) => n === 'setSelectTrack').length;
+
+    e.setAudioRendition(1);
+
+    expect(names().filter((n) => n === 'setSelectTrack')).toHaveLength(before + 1);
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 4]);
+  });
+
+  it('re-picking the running rendition on a master touches nothing', () => {
+    const { e, names } = make({ direct: false, startSec: 0, initialRendition: 1 });
+    const before = names().length;
+
+    e.setAudioRendition(1);
+
+    expect(names()).toHaveLength(before);
+  });
+
+  it('a re-pick the set refuses leaves the stream where it is', async () => {
+    const { e, names } = make({ direct: true, initialRendition: 1 });
+
+    e.setAudioRendition(1);
+    await tick();
+
+    expect(names()).not.toContain('stop');
+  });
+});
+
+describe('AvplayEngine visibility + destroy', () => {
+  it('suspends when hidden and restores when visible again', () => {
+    const { names, lastArgs } = make({ direct: true, startSec: 0 });
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(names()).toContain('suspend');
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(names()).toContain('restore');
+    expect(lastArgs('restore')?.[2]).toBe('PLAYING');
+  });
+
+  it('comes back paused where the viewer had paused it', () => {
+    const { e, names, lastArgs } = make({ direct: true, startSec: 0 });
+    e.pause();
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    expect(names()).toContain('restore');
+    expect(lastArgs('restore')?.[2]).toBe('PAUSED');
+  });
+
+  it('destroy stops + closes the singleton and detaches the visibility listener', () => {
+    const { e, names } = make();
+    e.destroy();
+    expect(names()).toContain('stop');
+    expect(names()).toContain('close');
+    const before = names().length;
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(names()).toHaveLength(before);
+  });
+});
+
+describe('AvplayEngine audio filter (server-side remux)', () => {
+  it('a persisted filter opens the FILTERED master even for a direct-playable file', () => {
+    const { lastArgs } = make({ direct: true, startSec: 0, audioFilter: 'night' });
+    expect(lastArgs('open')).toEqual(['master:sm1:false:0:0:night']);
+  });
+
+  it('enabling the filter mid-play moves a direct source onto the filtered master', async () => {
+    const { e, a, lastArgs, listeners } = make({ direct: true, startSec: 0 });
+    a.listener().oncurrentplaytime?.(30000);
+    e.setAudioFilter('standard');
+    await tick();
+    expect(listeners.onWaiting).toHaveBeenCalled();
+    expect(lastArgs('open')).toEqual(['master:sm1:false:30:0:standard']);
+  });
+
+  it('turning the filter off drops a filter-forced master back to the direct file', () => {
+    const { e, a, lastArgs } = make({ direct: true, startSec: 0, audioFilter: 'night' });
+    a.listener().oncurrentplaytime?.(10000);
+    e.setAudioFilter('off');
+    expect(lastArgs('open')).toEqual(['stream:sm1']);
+    a.prepareOk();
+    expect(lastArgs('seekTo')).toEqual([10000]);
+  });
+
+  it('a filter change on a real master reloads it with the new mode', () => {
+    const { e, lastArgs } = make({ direct: false, startSec: 0 });
+    e.setAudioFilter('night');
+    expect(lastArgs('open')).toEqual(['master:sm1:false:0:0:night']);
+  });
+});
+
+describe('AvplayEngine when the firmware refuses', () => {
+  it('a failed prepare falls back to the master', async () => {
+    const { a, listeners, lastArgs } = make({ direct: true, startSec: 0 });
+    a.prepareErr();
+    await tick();
+    expect(listeners.onWaiting).toHaveBeenCalledTimes(1);
+    expect(lastArgs('open')).toEqual(['master:sm1:false:0:0']);
+  });
+
+  it('an open the firmware rejects on the master is a playback failure', () => {
+    const { listeners } = make({ direct: false, startSec: 0 }, ['open']);
+    expect(listeners.onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('a native seek it refuses re-anchors the master instead', async () => {
+    const { e, names, lastArgs } = make({ direct: false, startSec: 0 }, ['seekTo']);
+    e.seekTo(40);
+    await tick();
+    expect(names()).toContain('stop');
+    expect(lastArgs('open')).toEqual(['master:sm1:false:40:0']);
+  });
+
+  it('re-anchors when the track list cannot be read at all', async () => {
+    const { e, names } = make({ direct: true, initialRendition: 0 }, ['getTotalTrackInfo']);
+    e.setAudioRendition(1);
+    await tick();
+    expect(names()).toContain('stop');
+  });
+
+  it('ignores a prepare that lands after the engine was destroyed', () => {
+    const { e, a, listeners } = make({ direct: true, startSec: 30 });
+    e.destroy();
+    a.prepareOk();
+    expect(listeners.onReady).not.toHaveBeenCalled();
+  });
+
+  it('runs on a shell with no document to watch for visibility', () => {
+    vi.stubGlobal('document', undefined);
+    const { e, names } = make({ direct: true });
+    expect(names()).toContain('open');
+    expect(() => e.destroy()).not.toThrow();
+  });
+});
+
+describe('AvplayEngine no-ops', () => {
+  it('re-selecting the running filter touches nothing', () => {
+    const { e, names } = make({ direct: true, initialRendition: 1, audioFilter: 'off' });
+    const before = names().length;
+    e.setAudioFilter('off');
+    expect(names()).toHaveLength(before);
+  });
+
+  it('a resize to the rect already on screen does not hit the compositor', () => {
+    const { e, names } = make({ direct: true });
+    const before = names().filter((n) => n === 'setDisplayRect').length;
+    e.setRect(null);
+    expect(names().filter((n) => n === 'setDisplayRect')).toHaveLength(before);
+  });
+
+  it('reports no buffered range, because AVPlay never gives one', () => {
+    const { e, a } = make({ direct: false, startSec: 0 });
+    a.listener().oncurrentplaytime?.(25000);
+    // Handing back the position instead would draw a zero-length buffer on the
+    // seek bar as though it had been measured.
+    expect(e.position()).toBe(25);
+    expect(e.bufferedEnd()).toBeNull();
+  });
+
+  it('a direct source with nothing to resume prepares without seeking', () => {
+    const { a, names } = make({ direct: true, startSec: 0 });
+    a.prepareOk();
+    expect(names()).not.toContain('seekTo');
+  });
+
+  it('drops a master anchor resolved after the source was replaced', async () => {
+    const { e, a, lastArgs } = make({ direct: false, startSec: 30 });
+    e.setAudioFilter('night');
+    await tick();
+    expect(lastArgs('open')).toEqual(['master:sm1:false:30:0:night']);
+    expect(a.calls().filter((c) => c.m === 'open')).toHaveLength(1);
+  });
+});

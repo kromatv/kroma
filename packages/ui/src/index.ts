@@ -12,17 +12,17 @@ export {
   resolveRemoteKey,
 } from './lib/remote-keys';
 export { mediaFollowsDirectRoute, withLocalAddressSpace } from './lib/lan-reach';
-export { useForeground } from './lib/use-foreground';
-export { useAccountStorage } from './services/account-storage';
-export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/aiSuggest';
-export { useAiSuggest, useEstimatedProgress } from './services/aiSuggest';
-export type { ActivateResult, AuthSession } from './services/auth';
-export { useAuthSession } from './services/auth';
+export { useForeground } from './lib/use-foreground.hook';
+export { useAccountStorage } from './services/account-storage.hook';
+export type { UseAiSuggestOptions, UseAiSuggestResult } from './services/ai-suggest.hook';
+export { useAiSuggest, useEstimatedProgress } from './services/ai-suggest.hook';
+export type { ActivateResult, AuthSession } from './services/auth.hook';
+export { useAuthSession } from './services/auth.hook';
 export type { Cast, CastFailure, CastProviderProps } from './services/cast';
 export { CastProvider, useCast } from './services/cast';
-export type { DirectConnectionView, DirectPlatform } from './services/direct-connection';
-export { useDirectConnection } from './services/direct-connection';
-export { type Format, useFormat } from './services/format';
+export type { DirectConnectionView, DirectPlatform } from './services/direct-connection.hook';
+export { useDirectConnection } from './services/direct-connection.hook';
+export { type Format, useFormat } from './services/format.hook';
 export type { I18nProviderProps } from './services/i18n';
 export {
   I18nProvider,
@@ -33,17 +33,17 @@ export {
   useSetLocale,
   useT,
 } from './services/i18n';
-export type { LocaleProviderProps } from './services/locale';
-export { LocaleProvider } from './services/locale';
-export type { PlaybackHeartbeatParams } from './services/playback';
-export { usePlaybackHeartbeat } from './services/playback';
-export type { Storyboard, StoryboardTile } from './services/storyboard';
-export { useStoryboard } from './services/storyboard';
+export type { LocaleProviderProps } from './services/locale.component';
+export { LocaleProvider } from './services/locale.component';
+export type { PlaybackHeartbeatParams } from './services/playback.hook';
+export { usePlaybackHeartbeat } from './services/playback.hook';
+export type { Storyboard, StoryboardTile } from './services/storyboard.hook';
+export { useStoryboard } from './services/storyboard.hook';
 export type {
   SubtitleGenerationsOptions,
   SubtitleGenerationsResult,
-} from './services/subtitleGenerations';
-export { useSubtitleGenerations } from './services/subtitleGenerations';
-export type { ThemeAudio } from './services/themeAudio';
-export { useThemeAudio } from './services/themeAudio';
-export { type UpNext, useUpNext } from './services/up-next';
+} from './services/subtitle-generations.hook';
+export { useSubtitleGenerations } from './services/subtitle-generations.hook';
+export type { ThemeAudio } from './services/theme-audio.hook';
+export { useThemeAudio } from './services/theme-audio.hook';
+export { type UpNext, useUpNext } from './services/up-next.hook';

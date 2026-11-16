@@ -23,7 +23,7 @@ vi.mock('#web/features/admin/hooks', () => ({
   },
 }));
 
-vi.mock('#web/modules/ModuleHostProvider', () => ({
+vi.mock('#web/modules/module-host-provider.component', () => ({
   useRefreshModules: () => async () => {
     H.order.push('host');
   },
@@ -39,8 +39,9 @@ vi.mock('#web/shared/lib/web-runtime', () => {
   return { useWebRuntime: () => runtime };
 });
 const { fetchAdminModules, fetchStoreCatalog } = H;
-const { useModuleData, useModuleToggle } = await import('#web/features/admin/module-data');
+const { useModuleData, useModuleToggle } = await import('#web/features/admin/module-data.hook');
 
+const unsettled = (): void => undefined;
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
 beforeEach(() => {
@@ -123,7 +124,7 @@ describe('useModuleToggle', () => {
   });
 
   it('is busy while the request is in flight', async () => {
-    let settle: (r: unknown) => void = () => undefined;
+    let settle: (r: unknown) => void = unsettled;
     H.setModuleEnabled.mockReturnValue(
       new Promise((resolve) => {
         settle = resolve;

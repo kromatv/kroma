@@ -27,7 +27,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useLanCast } from '#ui/services/cast-lan';
+import { useLanCast } from '#ui/services/cast-lan.hook';
 import { type Cast, CastCtx, type CastFailure } from './cast-context';
 import { applyCastEvent } from './cast-events';
 import { livePosition, type PositionBase } from './cast-position';
@@ -121,7 +121,7 @@ export function CastProvider({
   // Roster: fetched once, then kept live off the bus.
   useEffect(() => {
     if (!enabled || !client) {
-      return;
+      return undefined;
     }
     refresh();
     const events = new KromaEvents(client.baseUrl, {
@@ -174,7 +174,7 @@ export function CastProvider({
   const playing = active?.nowPlaying?.state === 'playing';
   useEffect(() => {
     if (!playing) {
-      return;
+      return undefined;
     }
     const iv = setInterval(rerender, TICK_MS);
     return () => clearInterval(iv);
@@ -208,14 +208,14 @@ export function CastProvider({
   );
 
   const playOn = useCallback(
-    async (receiverId: DeviceId, itemId: ItemId, positionMs = 0) => {
-      const failure = await sendTo(receiverId, { type: 'play', itemId, positionMs });
+    async (receiverId: DeviceId, itemId: ItemId, startMs = 0) => {
+      const failure = await sendTo(receiverId, { type: 'play', itemId, positionMs: startMs });
       if (!failure) {
         setActiveId(receiverId);
         socket.current?.send({ type: 'cast.control', receiverId, name: name.current });
         // Optimistic: the TV's own heartbeat corrects this within a beat, but the
         // remote should not sit at 0:00 while it starts.
-        setBase({ id: receiverId, positionMs, playing: true, at: Date.now() });
+        setBase({ id: receiverId, positionMs: startMs, playing: true, at: Date.now() });
       }
       return failure;
     },

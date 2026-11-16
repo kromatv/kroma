@@ -3,10 +3,10 @@ import type { FrostBackdropProps } from '#ui/components/atoms/frost';
 import type { DeviceStore } from './device-store';
 import type { ControlSize } from './field-shell';
 import type { FrostHost } from './gl-frost/host';
-import type { ImageBackend } from './image-backend';
+import type { ImageBackend } from './image-backend.hook';
 import type { createMenuKeys } from './menu-keys';
 import type { createScrollLock } from './scroll-lock';
-import type { SurfacePresentation } from './surface-presentation';
+import type { SurfacePresentation } from './surface-presentation.hook';
 
 interface KitSettings {
   deviceStore: DeviceStore | null | undefined;

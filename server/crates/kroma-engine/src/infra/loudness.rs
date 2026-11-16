@@ -9,6 +9,7 @@ use std::process::{Command, Stdio};
 
 use anyhow::{bail, Context, Result};
 use kroma_domain::{AudioAnalysis, AudioVerdict};
+use kroma_media::ffmpeg_gate::Footprint;
 use kroma_media::input;
 
 // LRA above this (LU) = the "quiet dialogue, loud explosions" mix.
@@ -62,7 +63,7 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
     cmd.stdout(Stdio::null()).stderr(Stdio::piped());
 
     let out = {
-        let _permit = kroma_media::ffmpeg_gate::acquire();
+        let _permit = kroma_media::ffmpeg_gate::acquire(Footprint::LIGHT);
         cmd.output()
             .context("spawn ffmpeg for loudness measurement")?
     };

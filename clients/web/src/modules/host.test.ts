@@ -38,9 +38,11 @@ vi.mock('#web/modules/registry', () => ({
 vi.mock('#web/shared/lib/api', () => ({ apiBase: () => 'https://kroma.test' }));
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => auth }));
 
-import { useModuleHost } from './host';
+import { useModuleHost } from './host.hook';
 
 installHarness();
+
+const noop = (): void => undefined;
 
 describe('before there is a session', () => {
   it('wires nothing', async () => {
@@ -91,7 +93,7 @@ describe('starting the modules', () => {
   });
 
   it('reads which modules are switched off while the remotes load, not after them', async () => {
-    let release = () => {};
+    let release = noop;
     loadRuntimeRemotes.mockImplementationOnce(
       () =>
         new Promise((resolve) => {

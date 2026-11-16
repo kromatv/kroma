@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
-import { OtpField } from './otp-field';
+import { OtpField } from './otp-field.component';
 
 type Status = 'idle' | 'checking' | 'wrong' | 'done';
 

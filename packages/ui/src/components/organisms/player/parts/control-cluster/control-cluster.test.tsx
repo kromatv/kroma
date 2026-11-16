@@ -6,7 +6,7 @@ import { chromeMetrics } from '#ui/components/organisms/player/lib/metrics';
 import { controlOrder } from '#ui/components/organisms/player/lib/nav';
 import { TV_FLAGS, WEB_FLAGS } from '#ui/components/organisms/player/types';
 import { I18nProvider } from '#ui/services/i18n';
-import { ControlCluster } from './control-cluster';
+import { ControlCluster } from './control-cluster.component';
 
 afterEach(cleanup);
 

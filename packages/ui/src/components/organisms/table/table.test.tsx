@@ -7,7 +7,7 @@ import { Badge } from '#ui/components/atoms/badge';
 import { createInputTestHost } from '#ui/testing-input';
 import { createStyleTestHost } from '#ui/testing-style';
 
-import { type SortColumn, Table, type TableColumn } from './table';
+import { type SortColumn, Table, type TableColumn } from './table.component';
 
 const styleHost = createStyleTestHost();
 const { pinDesignWidth } = styleHost;
@@ -355,7 +355,7 @@ function Declared() {
 }
 
 const boxOf = (node: Element) => {
-  const style = getComputedStyle(node as HTMLElement);
+  const style = getComputedStyle(node);
   return { width: style.width, grow: style.flexGrow, min: style.minWidth };
 };
 

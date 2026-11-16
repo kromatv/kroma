@@ -1,1 +1,1 @@
-export * from './choice-list';
+export * from './choice-list.component';

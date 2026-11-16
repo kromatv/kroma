@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { contentRoot, layout, onScreen } from '#ui/testing';
-import { VirtualGrid } from './virtual-grid';
+import { VirtualGrid } from './virtual-grid.component';
 
 const TILES = Array.from({ length: 60 }, (_, at) => ({ id: at }));
 
@@ -48,7 +48,7 @@ describe('VirtualGrid', () => {
 
   it('re-fills into the box it measures, and hands each tile its cell', () => {
     const { container } = draw(grid(1920));
-    const viewport = contentRoot(container) as HTMLElement;
+    const viewport = contentRoot(container);
 
     layout(viewport, { width: 1400 });
     // 1272 of content: 5 columns of 235, not 8 columns off the right edge.
@@ -76,7 +76,7 @@ describe('VirtualGrid', () => {
         />,
       ),
     );
-    const viewport = contentRoot(container) as HTMLElement;
+    const viewport = contentRoot(container);
     layout(viewport, { width: 1400 });
     // (1400 - 3 x 24) / 4, still four across.
     expect(tileWidth(container)).toBe('332px');

@@ -1,6 +1,6 @@
 import type { DeclaredPurpose, Rule, RulesUpdate } from '@kromatv/client/network';
 import type { MessageKey } from '@kromatv/i18n';
-import { CORE_CALLER } from '#web/features/admin/network-callers';
+import { CORE_CALLER } from '#web/features/admin/network-callers.hook';
 import { distinctSorted } from '#web/features/admin/network-flows';
 import { DEFAULT_NETWORK } from '#web/features/admin/network-rules';
 

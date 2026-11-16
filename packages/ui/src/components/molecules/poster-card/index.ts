@@ -1,1 +1,1 @@
-export * from './poster-card';
+export * from './poster-card.component';

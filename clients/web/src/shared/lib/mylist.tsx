@@ -44,7 +44,7 @@ export function MyListProvider({ children }: Readonly<{ children: ReactNode }>) 
 
   useEffect(() => {
     if (!authReady || !user) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.playback

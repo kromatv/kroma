@@ -18,7 +18,7 @@
     "prebuild": "EXPO_TV=1 expo prebuild --clean",
     "pod": "cd ios && REACT_NATIVE_NODE_MODULES_DIR=\"$PWD/../node_modules\" pod install",
     "bundle:check": "bun ../expo-build/bundle-check.ts . EXPO_TV=1 --max 10",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "focus:probe": "bun ./scripts/focus-probe.ts",
     "perf:androidtv": "bun ./scripts/perf-androidtv.ts"
   },
@@ -29,7 +29,7 @@
     "@kromatv/core": "workspace:*",
     "@kromatv/lan-beacon": "workspace:*",
     "@kromatv/media3-ffmpeg": "workspace:*",
-    "@kromatv/react-native-tv": "0.1.0-alpha.2",
+    "@kromatv/react-native-tv": "canary",
     "@kromatv/tv": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "@react-native-masked-view/masked-view": "0.3.2",

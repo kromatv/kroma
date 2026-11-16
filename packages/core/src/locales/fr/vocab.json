@@ -1,0 +1,13 @@
+{
+  "vocab.abbreviations": "M, Mme, Mlle, Dr, Pr, St, Ste, Me",
+  "vocab.articles": "le, la, les, l, un, une, des",
+  "vocab.episode": "épisode, ep",
+  "vocab.movie": "film, films",
+  "vocab.numbers": "deux, trois, quatre, cinq, six, sept, huit, neuf, dix",
+  "vocab.season": "saison",
+  "vocab.show": "série, séries",
+  "vocab.theme.christmas": "noël, père noël",
+  "vocab.theme.heist": "braquage, casse du siècle, cambriolage, hold-up",
+  "vocab.theme.summer": "été, vacances, plage",
+  "vocab.theme.trueStory": "histoire vraie, faits réels, biopic"
+}

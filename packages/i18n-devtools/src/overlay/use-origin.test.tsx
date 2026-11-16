@@ -4,7 +4,7 @@ import { renderHook } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { Origin } from './origin';
-import { useOrigin } from './use-origin';
+import { useOrigin } from './use-origin.hook';
 
 const AT: Origin = {
   url: 'http://localhost:3000/@fs/kroma/clients/web/src/app.tsx',
@@ -13,6 +13,10 @@ const AT: Origin = {
   column: 7,
   source: false,
 };
+
+function Where() {
+  return useOrigin(AT)?.label ?? '';
+}
 
 describe('where a string is written, as the panel reads it', () => {
   it('says nothing for a string it was given no origin for', () => {
@@ -27,10 +31,6 @@ describe('where a string is written, as the panel reads it', () => {
   });
 
   it('takes the served origin on a server, having nothing traced to read', () => {
-    function Where() {
-      return useOrigin(AT)?.label ?? '';
-    }
-
     expect(renderToString(<Where />)).toBe('app.tsx:42');
   });
 });

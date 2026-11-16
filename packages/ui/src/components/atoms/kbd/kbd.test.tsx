@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { Kbd } from './kbd';
+import { Kbd } from './kbd.component';
 
 const glyphs = (container: Element) => container.querySelectorAll('svg').length;
 

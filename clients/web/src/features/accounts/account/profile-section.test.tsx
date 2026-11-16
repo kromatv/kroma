@@ -5,7 +5,7 @@ import { onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ProfileSection } from './profile-section';
+import { ProfileSection } from './profile-section.component';
 
 const auth = vi.hoisted(() => ({
   update: vi.fn(),

@@ -49,6 +49,8 @@ export type { NumberFieldProps } from './number-field';
 export { NumberField } from './number-field';
 export type { ProgressProps } from './progress';
 export { clamp01, Progress } from './progress';
+export type { NumeralProps } from './numeral';
+export { Numeral, numeralColumn, numeralWidth } from './numeral';
 export type { ProgressRingProps } from './progress-ring';
 export { ProgressRing } from './progress-ring';
 export type { RadioFaceProps, RadioProps, RadioSize } from './radio';

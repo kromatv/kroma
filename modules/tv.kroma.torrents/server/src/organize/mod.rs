@@ -77,7 +77,7 @@ pub fn plan<S: HostStorage>(state: &S) -> Result<OrganizePlan> {
             };
             total += 1;
             let expected_abs = root.join(&expected_rel);
-            let current_rel = abs.strip_prefix(&root).unwrap_or(&abs);
+            let current_rel = abs.trim_prefix(&root);
             if expected_abs == abs {
                 matching += 1;
             } else {

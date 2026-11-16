@@ -11,6 +11,11 @@ none of them. The entry hands `config-tv` the `tvos` block for Apple TV and
 Android TV, gives each TV platform the shared props and its own block (`tizen`,
 `webos`), and teaches Metro their platforms, so `metro.config.ts` names no TV.
 
+That dependency is the `canary` dist-tag: every push to the react-native-tv
+repository's `main` publishes one, so a fix there reaches KROMA without waiting
+for a release. `bun.lock` holds the canary it last resolved; from this
+directory, `bun update @kromatv/react-native-tv` takes the newest.
+
 What only one platform has is imported under its name, as in
 `@kromatv/react-native-tv/tizen/preview`, and a platform's own command line is
 `rn-tv <platform>`: `bunx rn-tv tizen doctor`.
@@ -41,7 +46,7 @@ declared in its `expo-module.config.json`; `server-discovery` is one.
 
 Voice search on Tizen is `expo-speech-recognition`, which react-native-tizen
 implements on the TV's speech engine, with the Smart Remote's mic button held
-through `MicButton` (`src/lib/voice-search.tizen.tsx`). Hold the button
+through `MicButton` (`src/lib/voice-search.hook.tizen.tsx`). Hold the button
 anywhere in the app: search opens listening, and letting go searches what was
 heard. The package is left out of autolinking on Android and Apple, where the
 local `voice-search` module and Siri do the same job.

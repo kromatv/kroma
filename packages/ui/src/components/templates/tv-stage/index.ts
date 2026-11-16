@@ -1,1 +1,1 @@
-export * from './tv-stage';
+export * from './tv-stage.component';

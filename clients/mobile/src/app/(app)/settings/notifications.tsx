@@ -33,7 +33,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
-import { PageHeader } from '#mobile/components/PageHeader';
+import { PageHeader } from '#mobile/components/page-header.component';
 import { Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
@@ -156,21 +156,23 @@ export default function NotificationSettings() {
                     />
                   </Box>
                 </Box>
-                {types.map((type) => (
-                  <Box key={type.type} style={s.row}>
+                {types.map((entry) => (
+                  <Box key={entry.type} style={s.row}>
                     <Box style={s.rowText}>
-                      <Text style={s.typeLabel}>{type.label}</Text>
+                      <Text style={s.typeLabel}>{entry.label}</Text>
                     </Box>
                     <Box style={s.cell}>
                       <Switch
-                        checked={type.inApp}
-                        onCheckedChange={(inApp) => savePrefs.mutate(typeSwitched(type, { inApp }))}
+                        checked={entry.inApp}
+                        onCheckedChange={(inApp) =>
+                          savePrefs.mutate(typeSwitched(entry, { inApp }))
+                        }
                       />
                     </Box>
                     <Box style={s.cell}>
                       <Switch
-                        checked={type.push}
-                        onCheckedChange={(push) => savePrefs.mutate(typeSwitched(type, { push }))}
+                        checked={entry.push}
+                        onCheckedChange={(push) => savePrefs.mutate(typeSwitched(entry, { push }))}
                       />
                     </Box>
                   </Box>

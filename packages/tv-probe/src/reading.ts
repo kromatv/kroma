@@ -10,7 +10,7 @@ export interface Reading {
 /** What the screen looks like right now, counted inside `#root` so a dev-only
  * overlay appended to `<body>` is never mistaken for the app. Runs in the page,
  * so it closes over nothing: `page.evaluate` ships its source, not its scope.
- * A ring is a computed outline, which is what `focusable.tsx` draws, through
+ * A ring is a computed outline, which is what `focusable.component.tsx` draws, through
  * an inline style or a compiled atomic class alike.
  *
  * Buried rather than merely overlapping: a rect on its own ignores the clip an

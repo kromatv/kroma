@@ -6,7 +6,7 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Menu } from './menu';
+import { Menu } from './menu.component';
 
 export const noop = () => {};
 

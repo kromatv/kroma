@@ -29,11 +29,11 @@ export function sameAccount(
 export interface AccountStore {
   accounts: MobileAccount[];
   ref: React.RefObject<MobileAccount[]>;
-  persist(next: MobileAccount[]): void;
+  persist: (next: MobileAccount[]) => void;
   // Seeds from device storage at boot; deliberately does not write it back.
-  hydrate(stored: MobileAccount[]): void;
+  hydrate: (stored: MobileAccount[]) => void;
   // Only drops the list entry; keychain secrets are the caller's job.
-  forget(serverUrl: string, userId: string): void;
+  forget: (serverUrl: string, userId: string) => void;
 }
 
 export function useAccountStore(): AccountStore {
@@ -64,11 +64,11 @@ export function useAccountStore(): AccountStore {
 export interface ServerStore {
   servers: ServerEntry[];
   ref: React.RefObject<ServerEntry[]>;
-  persist(next: ServerEntry[]): void;
-  hydrate(stored: ServerEntry[]): void;
-  touch(url: string, name?: string): void;
-  rename(url: string, name: string): void;
-  remove(url: string): void;
+  persist: (next: ServerEntry[]) => void;
+  hydrate: (stored: ServerEntry[]) => void;
+  touch: (url: string, name?: string) => void;
+  rename: (url: string, name: string) => void;
+  remove: (url: string) => void;
 }
 
 export function useServerStore(): ServerStore {

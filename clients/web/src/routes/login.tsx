@@ -3,7 +3,7 @@
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
-import { LoginGate } from '#web/features/accounts/auth-gate';
+import { LoginGate } from '#web/features/accounts/auth-gate.component';
 import { useAuth } from '#web/shared/lib/auth';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
 

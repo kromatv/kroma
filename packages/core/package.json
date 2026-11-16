@@ -19,7 +19,7 @@
     "./test": "./src/fake-video.fixture.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "build": "tsc --noEmit"
   },
   "dependencies": {

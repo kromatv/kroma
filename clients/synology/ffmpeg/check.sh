@@ -21,7 +21,7 @@ cd /tmp
 run demo-mkv $F/ffmpeg -y -hide_banner -f lavfi -i testsrc2=s=1280x720:d=6 -f lavfi -i sine=d=6 -f srt -i /dev/null -c:v libx264 -preset ultrafast -g 25 -c:a aac -map 0 -map 1 demo.mkv
 printf '1\n00:00:00,500 --> 00:00:02,000\nHello\n' > s.srt
 run demo-subs $F/ffmpeg -y -hide_banner -i demo.mkv -i s.srt -map 0 -map 1 -c copy -c:s srt demo2.mkv
-run hls $F/ffmpeg -y -hide_banner -readrate 4 -readrate_initial_burst 2 -noaccurate_seek -ss 1 -i demo2.mkv -copyts -map 0:v:0 -map 0:a:0 -c:v libx264 -preset veryfast -crf 21 -force_key_frames "expr:gte(t,n_forced*2)" -c:a aac -ac 2 -b:a 192k -af "acompressor=threshold=0.04:ratio=8:attack=4:release=250:knee=5,volume=0.9" -progress p.txt -stats_period 1 -f hls -hls_segment_type fmp4 -hls_flags independent_segments+temp_file -hls_time 2 out.m3u8
+run hls $F/ffmpeg -y -hide_banner -readrate 4 -readrate_initial_burst 2 -noaccurate_seek -ss 1 -i demo2.mkv -copyts -start_at_zero -map 0:v:0 -map 0:a:0 -c:v libx264 -preset veryfast -crf 21 -force_key_frames "expr:gte(t,n_forced*2)" -c:a aac -ac 2 -b:a 192k -af "acompressor=threshold=0.04:ratio=8:attack=4:release=250:knee=5,volume=0.9" -progress p.txt -stats_period 1 -f hls -hls_segment_type fmp4 -hls_flags independent_segments+temp_file -hls_time 2 out.m3u8
 run hls-copy $F/ffmpeg -y -hide_banner -i demo2.mkv -map 0:v:0 -c:v copy -map 0:a:0 -c:a copy -f hls -hls_segment_type fmp4 c.m3u8
 run burst-flag sh -c "$F/ffmpeg -hide_banner -h full | grep -q readrate_initial_burst"
 run download sh -c "$F/ffmpeg -hide_banner -i demo2.mkv -map 0:v:0 -map 0:a:0 -c:v copy -c:a aac -movflags frag_keyframe+default_base_moof -f mp4 pipe:1 > d.mp4"
@@ -30,7 +30,8 @@ run webvtt sh -c "$F/ffmpeg -hide_banner -i demo2.mkv -map 0:s:0 -f webvtt - | g
 run webvtt-ext sh -c "$F/ffmpeg -hide_banner -i s.srt -f webvtt - | grep -q Hello"
 run probe-json sh -c "$F/ffprobe -v error -show_format -show_streams -show_chapters -of json demo2.mkv | grep -q codec_name"
 run probe-dur sh -c "$F/ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 demo2.mkv | grep -q '[0-9]'"
-run probe-kf sh -c "$F/ffprobe -v error -select_streams v:0 -skip_frame nokey -read_intervals 2%+#1 -show_entries frame=pts_time -of csv=p=0 demo2.mkv | grep -q '[0-9]'"
+run probe-kf sh -c "$F/ffprobe -v error -select_streams v:0 -skip_frame nokey -read_intervals +2%+#1 -show_entries format=start_time:frame=pts_time -of csv=p=1 demo2.mkv | grep -q '^frame,[0-9]'"
+run probe-first-frame sh -c "$F/ffprobe -v error -live_start_index 0 -select_streams v:0 -show_entries packet=pts_time -read_intervals %+#1 -of csv=p=0 -protocol_whitelist file -i c.m3u8 | grep -q '[0-9]'"
 run tile $F/ffmpeg -y -hide_banner -skip_frame nokey -i demo2.mkv -vf "fps=1,scale=160:90:force_original_aspect_ratio=increase,crop=160:90" -pix_fmt rgb24 t%04d.png
 run gap $F/ffmpeg -y -hide_banner -f lavfi -i color=c=black:s=160x90 -frames:v 1 gap.png
 run sheet $F/ffmpeg -y -hide_banner -i t%04d.png -vf tile=3x2 -frames:v 1 sheet.png

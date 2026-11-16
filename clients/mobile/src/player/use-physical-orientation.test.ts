@@ -21,7 +21,7 @@ vi.mock('expo-sensors', () => ({
   },
 }));
 
-import { usePhysicalOrientation } from './use-physical-orientation';
+import { usePhysicalOrientation } from './use-physical-orientation.hook';
 
 function sample(x: number, y: number, z = 0, count = 1) {
   act(() => {

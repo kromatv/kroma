@@ -4,7 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { CONTROL } from '#ui/lib/field-shell';
-import { Callout, type CalloutTone } from './callout';
+import { Callout, type CalloutTone } from './callout.component';
 
 afterEach(cleanup);
 
@@ -97,19 +97,19 @@ describe('<Callout>', () => {
   });
 });
 
+const claim = (tone: CalloutTone) => {
+  const { container } = render(
+    <Callout.Root tone={tone}>
+      <Callout.Title>x</Callout.Title>
+    </Callout.Root>,
+  );
+  const role = block(container).getAttribute('role');
+  cleanup();
+  return role;
+};
+
 describe('what a callout tells a reader when it appears', () => {
   it('interrupts for a failure and waits for a pause after a result', () => {
-    const claim = (tone: CalloutTone) => {
-      const { container } = render(
-        <Callout.Root tone={tone}>
-          <Callout.Title>x</Callout.Title>
-        </Callout.Root>,
-      );
-      const role = block(container).getAttribute('role');
-      cleanup();
-      return role;
-    };
-
     expect(claim('danger')).toBe('alert');
     expect(claim('success')).toBe('status');
     expect(claim('neutral')).toBeNull();

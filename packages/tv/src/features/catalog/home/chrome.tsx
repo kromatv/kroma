@@ -5,7 +5,7 @@
 
 import type { TvChrome } from '#tv/app/router';
 import { useNav } from '#tv/app/router';
-import { type NavKey, TvTopNav } from '#tv/features/catalog/home/TopNav';
+import { type NavKey, TvTopNav } from '#tv/features/catalog/home/top-nav.component';
 
 // These routes also share one focus scope, so keep this to screens that
 // genuinely wear the same chrome.

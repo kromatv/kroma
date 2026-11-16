@@ -1,1 +1,1 @@
-export * from './veil';
+export * from './veil.component';

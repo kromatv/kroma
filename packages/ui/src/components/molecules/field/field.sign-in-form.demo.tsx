@@ -4,7 +4,7 @@ import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
 import { msg, useForm } from '#ui/lib/form';
 import { useT } from '#ui/services/i18n';
-import { Field } from './field';
+import { Field } from './field.component';
 
 const Credentials = z.object({
   email: z

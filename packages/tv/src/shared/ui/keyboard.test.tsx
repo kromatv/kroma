@@ -10,7 +10,7 @@ const preferences = createDevicePreferences();
 const setKeyboardLayoutPref = preferences.keyboard.set;
 
 import { EnvProvider } from '#tv/app/providers/env';
-import { SearchKeyboard, UrlKeyboard } from '#tv/shared/ui/keyboard';
+import { SearchKeyboard, UrlKeyboard } from '#tv/shared/ui/keyboard.component';
 
 afterEach(() => {
   cleanup();

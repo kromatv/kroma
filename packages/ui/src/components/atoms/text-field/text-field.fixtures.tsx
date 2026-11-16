@@ -1,6 +1,6 @@
 import type { ControlSize } from '#ui/lib/field-shell';
 
-import type { TextFieldType } from './text-field';
+import type { TextFieldType } from './text-field.component';
 
 export const TYPES: TextFieldType[] = ['text', 'email', 'password', 'url', 'search', 'number'];
 

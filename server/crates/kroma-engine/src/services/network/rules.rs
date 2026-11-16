@@ -219,7 +219,7 @@ fn is_token(value: &str, max_chars: usize, allowed: impl Fn(char) -> bool) -> bo
 }
 
 fn is_host_pattern(host: &str) -> bool {
-    let name = host.strip_prefix("*.").unwrap_or(host);
+    let name = host.trim_prefix("*.");
     is_token(name, MAX_HOST_CHARS, |c| {
         c.is_ascii_lowercase() || c.is_ascii_digit() || matches!(c, '.' | '-' | ':')
     }) && !name.starts_with('.')

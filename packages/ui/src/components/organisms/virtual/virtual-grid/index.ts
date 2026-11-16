@@ -1,1 +1,1 @@
-export * from './virtual-grid';
+export * from './virtual-grid.component';

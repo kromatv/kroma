@@ -3,7 +3,7 @@
 import type { Locale } from '@kromatv/i18n';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { useFormat } from './format';
+import { useFormat } from './format.hook';
 import { I18nProvider } from './i18n';
 
 function read(locale: Locale, pick: (f: ReturnType<typeof useFormat>) => string): string {
@@ -15,6 +15,11 @@ function read(locale: Locale, pick: (f: ReturnType<typeof useFormat>) => string)
       <Probe />
     </I18nProvider>,
   ).container.textContent;
+}
+
+function FormatProbe() {
+  const f = useFormat();
+  return <>{`${f.bytes(1024 ** 3)} ${f.elapsed(null)}`}</>;
 }
 
 describe('useFormat', () => {
@@ -41,12 +46,7 @@ describe('useFormat', () => {
   });
 
   it('answers in the default locale above a provider instead of throwing', () => {
-    function Probe() {
-      const f = useFormat();
-      return <>{`${f.bytes(1024 ** 3)} ${f.elapsed(null)}`}</>;
-    }
-
-    expect(render(<Probe />).container.textContent).toBe('1,0 Go jamais');
+    expect(render(<FormatProbe />).container.textContent).toBe('1,0 Go jamais');
   });
 
   it('keeps one identity while the locale holds still', () => {

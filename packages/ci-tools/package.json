@@ -15,7 +15,7 @@
     ".": "./src/cli.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.137.0",

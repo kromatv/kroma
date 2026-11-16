@@ -24,7 +24,7 @@ import {
   saveActive,
   setBiometricLockEnabled,
 } from '#mobile/lib/storage';
-import { useBootRestore } from './boot';
+import { useBootRestore } from './boot.hook';
 import { findServer } from './find-server';
 import { sameAccount, useAccountStore, useServerStore } from './stores';
 
@@ -35,24 +35,24 @@ export interface AuthSession {
   user: User | null;
   servers: ServerEntry[];
   accounts: MobileAccount[];
-  connect(url: string): Promise<void>;
-  selectServer(url: string): void;
-  renameServer(url: string, name: string): void;
-  login(identifier: string, password: string): Promise<void>;
+  connect: (url: string) => Promise<void>;
+  selectServer: (url: string) => void;
+  renameServer: (url: string, name: string) => void;
+  login: (identifier: string, password: string) => Promise<void>;
   /** Opens the session a sign-in made another way returned. */
-  adopt(serverUrl: string, result: AuthResult): void;
+  adopt: (serverUrl: string, result: AuthResult) => void;
   // PIN-locked profiles need `pin` (401 body `pinRequired: true` otherwise).
-  switchAccount(account: MobileAccount, pin?: string): Promise<void>;
+  switchAccount: (account: MobileAccount, pin?: string) => Promise<void>;
   /** Clear the PIN-verified flag the server keeps on a stored credential, so
    *  the next exchange re-prompts. */
-  relockAccount(account: MobileAccount): Promise<void>;
-  switchProfile(): void;
-  signOut(): void;
-  forgetAccount(account: MobileAccount): void;
-  forgetServer(url: string): void;
-  setUser(user: User): void;
-  setRequestLocale(locale: string): void;
-  requestLocale(): string;
+  relockAccount: (account: MobileAccount) => Promise<void>;
+  switchProfile: () => void;
+  signOut: () => void;
+  forgetAccount: (account: MobileAccount) => void;
+  forgetServer: (url: string) => void;
+  setUser: (user: User) => void;
+  setRequestLocale: (locale: string) => void;
+  requestLocale: () => string;
 }
 
 const Ctx = createContext<AuthSession | null>(null);

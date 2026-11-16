@@ -45,9 +45,9 @@ describe('the instance the kit translates through', () => {
   );
 });
 
-describe('the instance the published package translates through', () => {
-  const loadPublished = () => import('./i18n-instance.published');
+const loadPublished = () => import('./i18n-instance.published');
 
+describe('the instance the published package translates through', () => {
   it('renders every key as itself without an instance', async () => {
     const { fallbackLocale, providerI18n, translatorFor } = await loadPublished();
 

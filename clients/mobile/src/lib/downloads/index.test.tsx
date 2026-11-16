@@ -44,7 +44,7 @@ const translate = vi.hoisted(() => (key: string) => key);
 vi.mock('#mobile/lib/i18n', () => ({ useT: () => translate }));
 
 const prompt = vi.hoisted(() => vi.fn((then: () => void) => then()));
-vi.mock('#mobile/lib/notifications/useDownloadPrompt', () => ({
+vi.mock('#mobile/lib/notifications/use-download-prompt.hook', () => ({
   useDownloadPrompt: () => prompt,
 }));
 
@@ -89,6 +89,8 @@ interface Pending {
 }
 
 const pending = new Map<string, Pending>();
+
+const noop = (): void => undefined;
 
 const park = (id: string, hooks: TransferHooks) =>
   new Promise<DownloadEntry>((settle, fail) => {
@@ -169,7 +171,7 @@ afterEach(() => {
 describe('the notification prompt', () => {
   it('holds a title back until the prompt has its answer', async () => {
     const view = await mounted();
-    let answer = () => {};
+    let answer: () => void = noop;
 
     prompt.mockImplementationOnce((then) => {
       answer = then;

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useSettledValue } from './use-settled-value';
+import { useSettledValue } from './use-settled-value.hook';
 
 const walk = (delayMs = 400) =>
   renderHook(({ value }) => useSettledValue(value, delayMs), { initialProps: { value: 'a' } });

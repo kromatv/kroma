@@ -6,7 +6,7 @@ import { Button } from '#ui/components/atoms/button';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Resizable } from './resizable';
+import { Resizable } from './resizable.component';
 
 import { useResizablePanel } from './resizable-panel';
 

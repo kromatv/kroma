@@ -5,7 +5,7 @@ import { fakeVideo } from '@kromatv/core/test';
 import {
   type StallRecoveryOptions,
   useStallRecovery,
-} from '#web/features/playback/use-stall-recovery';
+} from '#web/features/playback/use-stall-recovery.hook';
 import type { HlsInstance, ShakaPlayerLike } from '#web/features/playback/video-engine';
 
 const POLL_MS = 500;
@@ -16,8 +16,10 @@ const BASE_SEC = 1000;
 function harness(over: Partial<StallRecoveryOptions> = {}) {
   const fv = fakeVideo({ currentTime: 100, paused: false, readyState: 4 });
   fv.setBuffered([[90, 160]]);
-  const shaka = { retryStreaming: vi.fn(() => true) } as unknown as ShakaPlayerLike;
-  const hls = { recoverMediaError: vi.fn() } as unknown as HlsInstance;
+  const retryStreaming = vi.fn(() => true);
+  const recoverMediaError = vi.fn();
+  const shaka = { retryStreaming } as unknown as ShakaPlayerLike;
+  const hls = { recoverMediaError } as unknown as HlsInstance;
   const onRestart = vi.fn();
   const opts: StallRecoveryOptions = {
     videoRef: { current: fv.el },
@@ -28,7 +30,7 @@ function harness(over: Partial<StallRecoveryOptions> = {}) {
     onRestart,
     ...over,
   };
-  return { fv, shaka, hls, onRestart, opts };
+  return { fv, retryStreaming, recoverMediaError, onRestart, opts };
 }
 
 describe('useStallRecovery', () => {
@@ -52,28 +54,28 @@ describe('useStallRecovery', () => {
   });
 
   it('climbs to Shaka retrying the stream, then to a fresh source', () => {
-    const { shaka, hls, onRestart, opts } = harness();
+    const { retryStreaming, recoverMediaError, onRestart, opts } = harness();
 
     renderHook(() => useStallRecovery(opts));
     act(() => {
       vi.advanceTimersByTime(WHOLE_LADDER_MS);
     });
 
-    expect(shaka.retryStreaming).toHaveBeenCalledTimes(1);
-    expect(hls.recoverMediaError).not.toHaveBeenCalled();
+    expect(retryStreaming).toHaveBeenCalledTimes(1);
+    expect(recoverMediaError).not.toHaveBeenCalled();
     expect(onRestart).toHaveBeenCalledTimes(1);
     expect(onRestart.mock.calls[0]?.[0]).toBeCloseTo(BASE_SEC + 100.2, 5);
   });
 
   it('recovers through hls.js where Shaka is not the engine', () => {
-    const { hls, opts } = harness({ shakaRef: { current: null } });
+    const { recoverMediaError, opts } = harness({ shakaRef: { current: null } });
 
     renderHook(() => useStallRecovery(opts));
     act(() => {
       vi.advanceTimersByTime(WHOLE_LADDER_MS);
     });
 
-    expect(hls.recoverMediaError).toHaveBeenCalledTimes(1);
+    expect(recoverMediaError).toHaveBeenCalledTimes(1);
   });
 
   it('survives a direct-play element with neither engine attached', () => {

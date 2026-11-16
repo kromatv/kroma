@@ -3,7 +3,7 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
-import { VirtualRail } from './virtual-rail';
+import { VirtualRail } from './virtual-rail.component';
 
 beforeEach(() => {
   vi.useFakeTimers();

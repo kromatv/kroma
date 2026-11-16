@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { OtpField } from './otp-field';
+import { OtpField } from './otp-field.component';
 
 function run(size: number, side: string) {
   return (

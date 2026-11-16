@@ -12,7 +12,7 @@
     "directory": "packages/push-relay"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "deploy": "wrangler deploy --config worker/wrangler.jsonc"
   },
   "dependencies": {

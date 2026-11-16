@@ -11,12 +11,12 @@ import { useT } from '@kromatv/ui';
 import { Box, Button, classes, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields';
-import { Spinner } from '#web/features/accounts/auth-gate';
-import { ProviderButton } from '#web/shared/ui/provider-button';
-import { PublicScreen } from '#web/features/accounts/public-screen';
+import { RegisterFields, type RegisterValues } from '#web/features/accounts/auth-fields.component';
+import { Spinner } from '#web/features/accounts/auth-gate.component';
+import { ProviderButton } from '#web/shared/ui/provider-button.component';
+import { PublicScreen } from '#web/features/accounts/public-screen.component';
 import { useAuth } from '#web/shared/lib/auth';
-import { useAuthFlows } from '#web/shared/lib/use-auth-flows';
+import { useAuthFlows } from '#web/shared/lib/use-auth-flows.hook';
 
 // Public invitation acceptance page. An admin (with `users.manage`) shares
 // `/join?invite=TOKEN`; the invitee creates their account here. The global
@@ -79,7 +79,7 @@ function JoinPage() {
 
   useEffect(() => {
     if (!invite) {
-      return;
+      return undefined;
     }
     let cancelled = false;
     client.accounts

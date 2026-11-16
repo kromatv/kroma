@@ -6,11 +6,11 @@ import { Button } from '#ui/components/atoms/button';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { DomOnly } from '#ui/lib/dom-only';
+import { DomOnly } from '#ui/lib/dom-only.component';
 
-import { Portal } from '#ui/lib/portal';
+import { Portal } from '#ui/lib/portal.component';
 
-import { KromaIntro } from './kroma-intro';
+import { KromaIntro } from './kroma-intro.component';
 
 export // A source no decoder will take, so the story reaches the CSS fallback through
 // the real error path rather than past the component's own API.

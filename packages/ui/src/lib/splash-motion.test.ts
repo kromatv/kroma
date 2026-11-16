@@ -13,8 +13,8 @@
 import { renderHook } from '@testing-library/react';
 import { StyleSheet } from 'react-native';
 import { describe, expect, it } from 'vitest';
-import { GRADE, useDrift } from './splash-motion';
-import type { CssDrift } from './splash-motion.web';
+import { GRADE, useDrift } from './splash-motion.hook';
+import type { CssDrift } from './splash-motion.hook.web';
 
 const SPEC = { x: 0.04, y: 0.03, zoom: 1.12, ms: 12_000, width: 1920, height: 1080 };
 
@@ -30,7 +30,7 @@ function flat(spec = SPEC) {
 type Keyframes = Record<string, { transform?: string }>;
 
 function keyframes(spec = SPEC): Keyframes {
-  const rules = flat(spec).animationKeyframes as Keyframes[] | undefined;
+  const rules = flat(spec).animationKeyframes;
   const first = rules?.[0];
   if (!first) {
     throw new Error('the drift style carries no @keyframes rule');

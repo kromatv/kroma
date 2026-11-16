@@ -11,9 +11,9 @@ const nav = vi.hoisted(() => ({
 }));
 const dock = vi.hoisted(() => ({ docked: null, dock: vi.fn(), undock: vi.fn() }));
 vi.mock('#tv/app/router', () => ({ useNav: () => nav }));
-vi.mock('#tv/app/playerDock', () => ({ usePlayerDock: () => dock }));
+vi.mock('#tv/app/player-dock', () => ({ usePlayerDock: () => dock }));
 
-import { useDockedPlayer } from './use-docked-player';
+import { useDockedPlayer } from './use-docked-player.hook';
 
 const film = (id: string) => ({ id }) as MediaItem;
 

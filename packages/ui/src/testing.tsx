@@ -17,7 +17,7 @@ import { KitProvider } from './configure';
 import { act, type ReactElement } from 'react';
 import type { LayoutChangeEvent, LayoutRectangle } from 'react-native';
 import { webDocument } from './lib/dom';
-import { FocusScope } from './lib/focus-scope';
+import { FocusScope } from './lib/focus-scope.component';
 import { I18nProvider } from './services/i18n';
 
 /** Whether this screen already has a focus owner, and how a test says one has

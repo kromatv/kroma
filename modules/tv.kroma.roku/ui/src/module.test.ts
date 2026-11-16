@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { useRokuApi } from './api';
+import { useRokuApi } from './api.hook';
 import rokuModule from './module';
 
 describe('rokuModule', () => {

@@ -1,0 +1,38 @@
+import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Button } from '@kromatv/ui/kit/atoms/button';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { ChannelBadge } from '#site/components/channel-badge.component';
+import { NotesAction } from '#site/components/notes-action.component';
+import type { Release } from '#site/lib/release';
+
+export interface ReleaseHeadlineProps {
+  label: string;
+  release: Release;
+}
+
+export function ReleaseHeadline({ label, release }: Readonly<ReleaseHeadlineProps>) {
+  return (
+    <Box bg="surface1" p={20} radius="xl" grow={1} basis={280}>
+      <Column gap={10}>
+        <Row gap={8} between>
+          <Box shrink={1} minW={0}>
+            <Text variant="overline" color="textDim" lines={1}>
+              {label}
+            </Text>
+          </Box>
+          <ChannelBadge channel={release.channel} />
+        </Row>
+        <Text variant="h2" font="mono" lines={1}>
+          {release.version}
+        </Text>
+        <Text color="textMuted" variant="meta">
+          {release.day} · {release.size}
+        </Text>
+        <Row gap={8} mt={4} wrap>
+          <Button variant="primary" size="sm" icon="download" href={release.spk} label="Download" />
+          <NotesAction release={release} />
+        </Row>
+      </Column>
+    </Box>
+  );
+}

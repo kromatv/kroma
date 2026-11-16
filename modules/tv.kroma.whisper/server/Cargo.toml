@@ -7,7 +7,7 @@
 name = "kroma-whisper"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "In-process Whisper subtitle transcription (candle, no external whisper.cpp)"
 license = "AGPL-3.0-or-later"
 

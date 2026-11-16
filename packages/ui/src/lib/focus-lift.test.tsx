@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { FocusLiftHost, FocusLiftView, LIFTED } from '#ui/lib/focus-lift';
 
-import { FocusScope } from '#ui/lib/focus-scope';
+import { FocusScope } from '#ui/lib/focus-scope.component';
 import { declared } from '#ui/testing';
 
 afterEach(cleanup);
@@ -55,22 +55,22 @@ describe('the focus lift chain', () => {
   });
 });
 
+const holder = (label: string) => screen.getByLabelText(label).parentElement as HTMLElement;
+
+function pair() {
+  render(
+    <FocusScope>
+      <FocusLiftView>
+        <Focusable label="Tile" autoFocus />
+      </FocusLiftView>
+      <FocusLiftView>
+        <Focusable label="Elsewhere" />
+      </FocusLiftView>
+    </FocusScope>,
+  );
+}
+
 describe('a lifting container', () => {
-  const holder = (label: string) => screen.getByLabelText(label).parentElement as HTMLElement;
-
-  function pair() {
-    render(
-      <FocusScope>
-        <FocusLiftView>
-          <Focusable label="Tile" autoFocus />
-        </FocusLiftView>
-        <FocusLiftView>
-          <Focusable label="Elsewhere" />
-        </FocusLiftView>
-      </FocusScope>,
-    );
-  }
-
   it('rises above the container beside it while it holds the focus', () => {
     pair();
     expect(declared(holder('Tile'), 'zIndex')).toBe('1');
@@ -83,25 +83,25 @@ describe('a lifting container', () => {
   });
 });
 
+function nested() {
+  render(
+    <StrictMode>
+      <FocusScope>
+        <FocusLiftView>
+          <FocusLiftView>
+            <Focusable label="Tile" autoFocus />
+          </FocusLiftView>
+        </FocusLiftView>
+      </FocusScope>
+    </StrictMode>,
+  );
+}
+
 // The app mounts under <StrictMode> (mount.web.tsx), which double-invokes
 // renders and effects. A lift chain that reports from inside its `setHeld`
 // updater is counted twice there and warns that it updated one component while
 // another rendered - which is what left the ring on every tile it had passed.
 describe('a lift chain under StrictMode', () => {
-  function nested() {
-    render(
-      <StrictMode>
-        <FocusScope>
-          <FocusLiftView>
-            <FocusLiftView>
-              <Focusable label="Tile" autoFocus />
-            </FocusLiftView>
-          </FocusLiftView>
-        </FocusScope>
-      </StrictMode>,
-    );
-  }
-
   it('never updates one container while another is rendering', () => {
     const said: string[] = [];
     const spy = vi.spyOn(console, 'error').mockImplementation((...a) => said.push(String(a[0])));

@@ -4,7 +4,7 @@ import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ServerRestartDialog } from './server-restart-dialog';
+import { ServerRestartDialog } from './server-restart-dialog.component';
 
 const mocks = vi.hoisted(() => ({
   health: vi.fn(),
@@ -21,16 +21,16 @@ vi.mock('#web/shared/lib/auth', () => ({
   }),
 }));
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   mocks.restartServer.mockResolvedValue(undefined);
 });
 
 function show() {
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <ServerRestartDialog onClose={mocks.onClose} onRestarted={mocks.onRestarted} />
     </I18nProvider>,
@@ -38,7 +38,7 @@ function show() {
 }
 
 function press(name: string) {
-  clearPressGuard();
+  inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name }));
 }
 

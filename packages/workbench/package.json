@@ -17,7 +17,7 @@
     "./tanstack": "./src/tanstack.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "build": "tsc --noEmit"
   },
   "dependencies": {

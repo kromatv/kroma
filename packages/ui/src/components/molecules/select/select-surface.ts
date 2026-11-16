@@ -3,7 +3,7 @@
 
 import type { ReactElement, RefObject } from 'react';
 import type { View } from 'react-native';
-import type { SurfacePresentation } from '#ui/lib/surface-presentation';
+import type { SurfacePresentation } from '#ui/lib/surface-presentation.hook';
 import type { SelectDismissReason, SelectOption } from './select-context';
 
 export type SelectPresentation = SurfacePresentation;

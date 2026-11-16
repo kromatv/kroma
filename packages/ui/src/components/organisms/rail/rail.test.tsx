@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Chip } from '#ui/components/atoms/chip';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { Rail } from './rail';
+import { Rail } from './rail.component';
 
 afterEach(cleanup);
 
@@ -12,6 +12,13 @@ afterEach(cleanup);
 const CHIPS = Array.from({ length: 14 }, (_, at) => `Chip ${at + 1}`).map((label) => (
   <Text key={label}>{label}</Text>
 ));
+
+const size = (text: string) => {
+  const nodes = Array.from(document.querySelectorAll('div')).filter(
+    (el) => el.textContent === text,
+  );
+  return getComputedStyle(nodes.at(-1) as HTMLElement).fontSize;
+};
 
 describe('<Rail> parts', () => {
   it('is a namespace of parts, not a component', () => {
@@ -42,12 +49,6 @@ describe('<Rail> parts', () => {
   });
 
   it('lets the title carry its own type instead of being styled through the Root', () => {
-    const size = (text: string) => {
-      const nodes = Array.from(document.querySelectorAll('div')).filter(
-        (el) => el.textContent === text,
-      );
-      return getComputedStyle(nodes.at(-1) as HTMLElement).fontSize;
-    };
     render(
       onScreen(
         <Rail.Root>

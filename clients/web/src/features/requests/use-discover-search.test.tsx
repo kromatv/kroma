@@ -11,16 +11,16 @@ vi.mock('#web/shared/lib/api', () => ({ kromaClient: () => ({ discovery: { trend
 vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
   const { createWebTestRuntime } = await import('#web/shared/lib/web-runtime.fixture');
-  const { QueryClient } =
+  const { QueryClient: ActualQueryClient } =
     await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
-  const queryCache = new QueryClient();
+  const queryCache = new ActualQueryClient();
   const runtime = createWebTestRuntime({ discovery: { trending } }, () => queryCache);
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ user: null }) }));
 
-const { useTrending } = await import('#web/features/requests/use-discover-search');
+const { useTrending } = await import('#web/features/requests/use-discover-search.hook');
 
 const ENTRY = { tmdbId: 603, title: 'The Matrix' } as DiscoverEntry;
 

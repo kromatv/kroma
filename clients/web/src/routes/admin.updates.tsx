@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
-import { ServerUpdatesPage } from '#web/features/admin/server-updates';
+import { ServerUpdatesPage } from '#web/features/admin/server-updates.component';
 
 const Search = z.object({
   restart: z.boolean().optional().catch(undefined),

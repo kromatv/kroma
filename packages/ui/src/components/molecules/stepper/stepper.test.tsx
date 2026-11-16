@@ -5,7 +5,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { Stepper, type StepperRootProps } from './stepper';
+import { Stepper, type StepperRootProps } from './stepper.component';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
@@ -201,9 +201,9 @@ function OwnPanels() {
 function MappedSteps({ steps }: Readonly<{ steps: readonly string[] }>) {
   return (
     <Stepper.List>
-      {steps.map((step) => (
-        <Stepper.Item key={step} value={step}>
-          <Stepper.Label>{step}</Stepper.Label>
+      {steps.map((name) => (
+        <Stepper.Item key={name} value={name}>
+          <Stepper.Label>{name}</Stepper.Label>
         </Stepper.Item>
       ))}
     </Stepper.List>

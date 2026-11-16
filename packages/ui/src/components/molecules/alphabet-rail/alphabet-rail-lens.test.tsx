@@ -3,7 +3,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { declared } from '#ui/testing';
-import { AlphabetRail } from './alphabet-rail';
+import { AlphabetRail } from './alphabet-rail.component';
 import { PAD, ROW_W } from './alphabet-rail-context';
 import { Bubble, Lens, lensFor } from './alphabet-rail-lens';
 
@@ -77,11 +77,12 @@ describe('the lens on the web', () => {
   });
 });
 
+const px = (value: string) => Number.parseFloat(value);
+
 describe('the bubble', () => {
   it('sits centred on the row it names and clear of the rail', () => {
     const { container } = render(<Bubble letter="B" y={120} />);
     const node = container.firstElementChild as HTMLElement;
-    const px = (value: string) => Number.parseFloat(value);
     expect(node.style.top).toBe(`${120 - px(declared(node, 'height') ?? '') / 2}px`);
     expect(px(declared(node, 'right') ?? '')).toBeGreaterThan(ROW_W + PAD * 2);
   });

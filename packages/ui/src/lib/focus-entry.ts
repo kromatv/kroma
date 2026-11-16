@@ -13,10 +13,10 @@ export function createFocusEntry() {
   let settled = false;
   return {
     focusSettled: () => settled,
-    markFocusSettled() {
+    markFocusSettled: () => {
       settled = true;
     },
-    resetFocusEntry() {
+    resetFocusEntry: () => {
       settled = false;
     },
   };

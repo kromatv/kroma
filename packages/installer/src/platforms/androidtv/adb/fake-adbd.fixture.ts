@@ -121,7 +121,8 @@ class Session {
     secured.once('secure', () => {
       const { trusted } = this.options;
       if (trusted && !presented(secured, trusted)) {
-        return secured.destroy();
+        secured.destroy();
+        return;
       }
       this.socket = secured;
       listen(secured, this);

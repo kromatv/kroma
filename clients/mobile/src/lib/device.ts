@@ -8,7 +8,7 @@ import { createQueryClient, type QueryClient } from '@kromatv/client/query';
 import { deviceLocale } from '@kromatv/core';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { buildInfo } from '#mobile/lib/buildInfo';
+import { buildInfo } from '#mobile/lib/build-info';
 
 /** A human label for this device: the name its owner gave it when that says more
  * than the model does (iOS only hands over the real one to an entitled app, and

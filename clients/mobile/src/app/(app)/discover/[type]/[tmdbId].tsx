@@ -7,9 +7,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
-import { DiscoverEpisodes } from '#mobile/components/DiscoverEpisodes';
-import { TrailerButton } from '#mobile/components/TrailerButton';
-import { CastRail, DetailHero } from '#mobile/components/detail';
+import { DiscoverEpisodes } from '#mobile/components/discover-episodes.component';
+import { TrailerButton } from '#mobile/components/trailer-button.component';
+import { CastRail, DetailHero } from '#mobile/components/detail.component';
 import {
   ErrorBanner,
   ErrorView,
@@ -84,7 +84,7 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
   const detail = fiche.data;
   if (detail.localId) {
     const owned = detail.kind === 'show' ? `/show/${detail.localId}` : `/item/${detail.localId}`;
-    return <Redirect href={owned as never} />;
+    return <Redirect href={owned} />;
   }
 
   const span = detail.seasons.length

@@ -5,18 +5,18 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CategoryRows, SubjectRow } from '#tv/features/reports/parts';
+import { CategoryRows, SubjectRow } from '#tv/features/reports/parts.component';
 
-const { clearPressGuard, render: renderRaw } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 // Every kit control is a node of the spatial navigator, and a node needs a
 // navigator scope.
 const show = (ui: ReactElement) =>
-  renderRaw(onScreen(<I18nProvider locale="en">{ui}</I18nProvider>));
+  inputHost.render(onScreen(<I18nProvider locale="en">{ui}</I18nProvider>));
 
 afterEach(() => {
   cleanup();
-  clearPressGuard();
+  inputHost.clearPressGuard();
 });
 
 describe('CategoryRows', () => {

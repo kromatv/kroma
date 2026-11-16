@@ -4,7 +4,7 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { controlOrder } from '#ui/components/organisms/player/lib/nav';
 import { TV_FLAGS, WEB_FLAGS } from '#ui/components/organisms/player/types';
-import { usePlayerNav } from './use-player-nav';
+import { usePlayerNav } from './use-player-nav.hook';
 import { makeActions, nav } from './use-player-nav.fixture';
 
 beforeEach(() => vi.useFakeTimers());

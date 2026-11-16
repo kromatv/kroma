@@ -3,11 +3,11 @@ import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { validateShowSearch } from '#web/shared/lib/show-search';
-import { TitleDetail } from '#web/features/catalog/title-detail';
+import { TitleDetail } from '#web/features/catalog/title-detail.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { buildTitleView } from '#web/shared/lib/titleView';
-import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh';
+import { buildTitleView } from '#web/shared/lib/title-view';
+import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';
 

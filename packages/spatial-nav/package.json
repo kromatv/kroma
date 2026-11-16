@@ -17,7 +17,7 @@
     "./react": "./src/react.tsx"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "peerDependencies": {
     "react": ">=18",

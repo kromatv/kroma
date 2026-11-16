@@ -1,0 +1,238 @@
+import type { KromaClient } from '@kromatv/client';
+import type { AuthResult, QuickConnectInit } from '@kromatv/client/accounts';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import {
+  Box,
+  radius as cornerRadius,
+  Spinner,
+  SvgXml,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useFocusNav,
+  useStyles,
+} from '@kromatv/ui/kit';
+// Static import on purpose: Metro has no code splitting, and a dynamic `import()`
+// throws "Expected HMRClient.setup() call at startup" without the dev server.
+import qrcode from 'qrcode-generator';
+import { useEffect, useState } from 'react';
+import { useAuth } from '#tv/app/providers/auth';
+import { useConnection } from '#tv/app/providers/connection';
+import { useNav } from '#tv/app/router';
+import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
+
+const EXPIRY_MARGIN_SEC = 5;
+
+/**
+ * Quick Connect (route `quick`): shows a code + QR that an already-signed-in user
+ * approves from the web/mobile app, pairing the profile on the next poll.
+ */
+export function TvQuickConnect() {
+  const s = useStyles(sDefinition);
+
+  const nav = useNav();
+  const t = useT();
+  const { client, activeServerUrl, activeServerName } = useConnection();
+  const { login } = useAuth();
+  const [info, setInfo] = useState<QuickConnectInit | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
+  const [error, setError] = useState<MessageKey | ''>('');
+  useFocusNav({ onBack: nav.back });
+
+  useEffect(() => {
+    if (!client || !activeServerUrl) {
+      return undefined;
+    }
+    let cancelled = false;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+    let expireTimer: ReturnType<typeof setTimeout> | undefined;
+    let secret = '';
+
+    const clearTimers = () => {
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+      }
+      if (expireTimer) {
+        clearTimeout(expireTimer);
+      }
+      pollTimer = undefined;
+      expireTimer = undefined;
+    };
+
+    const onAuthenticated = (res: AuthResult) => login(res, activeServerUrl);
+
+    const poll = async () => {
+      if (cancelled) {
+        return;
+      }
+      try {
+        const res = await client.accounts.quickConnect.poll(secret);
+        if (cancelled) {
+          return;
+        }
+        if (res.status === 'authorized') {
+          clearTimers();
+          onAuthenticated({
+            token: res.token,
+            accessToken: res.accessToken,
+            mediaTicket: res.mediaTicket,
+            user: res.user,
+          });
+          return;
+        }
+        if (res.status === 'expired') {
+          void begin();
+          return;
+        }
+      } catch {
+        /* transient keep polling */
+      }
+      pollTimer = setTimeout(() => {
+        void poll();
+      }, 2500);
+    };
+
+    const begin = async () => {
+      clearTimers();
+      try {
+        // Passing the outgoing secret has the server revoke it instead of leaving
+        // it approvable until its own TTL lapses.
+        const init = await client.accounts.quickConnect.initiate(secret || undefined);
+        if (cancelled) {
+          return;
+        }
+        secret = init.secret;
+        setInfo(init);
+        setQr(null);
+        const url = connectUrl(client, init.code, init.authorizeUrl);
+        if (url) {
+          try {
+            const qrc = qrcode(0, 'M');
+            qrc.addData(url);
+            qrc.make();
+            setQr(qrc.createSvgTag({ cellSize: 6, margin: 1, scalable: true }));
+          } catch (cause) {
+            // The code on screen still pairs without a QR, so this must not take
+            // the screen down, but it must not be silent either.
+            console.warn('[kroma] QR code unavailable:', cause);
+          }
+        }
+        // Mint a fresh code just before the server TTL lapses; the poll loop only
+        // learns of expiry after the server has already reaped it.
+        const marginSec = Math.min(EXPIRY_MARGIN_SEC, Math.floor(init.expiresInSec / 2));
+        const renewMs = Math.max(1000, (init.expiresInSec - marginSec) * 1000);
+        expireTimer = setTimeout(() => void begin(), renewMs);
+        pollTimer = setTimeout(() => {
+          void poll();
+        }, 2500);
+      } catch {
+        if (!cancelled) {
+          setError('connect.quickConnectUnavailable');
+        }
+      }
+    };
+
+    void begin();
+    return () => {
+      cancelled = true;
+      clearTimers();
+    };
+  }, [client, activeServerUrl, login]);
+
+  return (
+    <AuthScreen>
+      <Box mb={36}>
+        <KromaMark size={GATE_MARK} />
+      </Box>
+      <Text variant="titleTv" mb={16}>
+        {t('connect.quickConnect')}
+      </Text>
+      <Box
+        row
+        align="center"
+        gap={10}
+        mb={28}
+        px={16}
+        py={9}
+        radius="pill"
+        border="border"
+        bg="white/5"
+      >
+        <Box w={8} h={8} radius="pill" bg="accent" />
+        <Text variant="label" color="text/88">
+          {activeServerName ?? 'KROMA'}
+        </Text>
+      </Box>
+
+      {error ? <Text color="danger">{t(error)}</Text> : null}
+
+      {!error && info ? (
+        <>
+          {qr ? (
+            <Box w={280} h={280} center radius={cornerRadius.mobileHero} bg="white" p={20}>
+              <SvgXml xml={qr} width="100%" height="100%" />
+            </Box>
+          ) : null}
+          <Text variant="leadTv" mt={20} color="textDim">
+            {t('connect.scanQrConnected')}
+          </Text>
+          <Text variant="leadTv" mt={24} textAlign="center" color="textMuted">
+            {t('connect.orInAppPrefix')}
+            <Text variant="strongTv">{t('nav.connectDevice')}</Text>
+            {t('connect.orInAppSuffix')}
+          </Text>
+          <Text style={s.code} color="accentText">
+            {info.code}
+          </Text>
+          <Box
+            row
+            align="center"
+            gap={10}
+            mt={28}
+            px={18}
+            py={10}
+            radius="pill"
+            border="success/25"
+            bg="success/10"
+          >
+            <Box w={9} h={9} radius="pill" bg="success" />
+            <Text variant="label" color="success">
+              {t('connect.waitingApproval')}
+            </Text>
+          </Box>
+        </>
+      ) : null}
+      {!error && !info ? <Spinner size={40} thickness={3} /> : null}
+
+      <Text variant="meta" mt={24} color="textDim">
+        {t('connect.backToProfiles')}
+      </Text>
+    </AuthScreen>
+  );
+}
+
+function connectUrl(client: KromaClient, code: string, serverUrl?: string | null): string {
+  if (serverUrl) {
+    return serverUrl;
+  }
+  try {
+    const u = new URL(client.baseUrl);
+    u.pathname = '/connect';
+    u.search = `?code=${code}`;
+    return u.toString();
+  } catch {
+    return '';
+  }
+}
+
+const sDefinition = styles({
+  code: {
+    fontSize: textRoles.codeTv.size,
+    lineHeight: 96,
+    fontWeight: '700',
+    letterSpacing: 8,
+    mt: 20,
+    fontVariant: ['tabular-nums'],
+  },
+});

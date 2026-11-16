@@ -136,15 +136,16 @@ function attachTiers(stories: readonly Story[], paths: readonly string[]): Story
   return stories.map((entry, at) => ({ ...entry, tier: tierFor(paths[at] ?? '') }));
 }
 
+const rankOf = (order: readonly string[], value: string) => {
+  const at = order.indexOf(value);
+  return at === -1 ? order.length : at;
+};
+
 /** Sorts the registry for display: by functional group, then name. The atomic
  * level stays attached (search matches it, the palette shows it) but never
  * drives the order a reader scans. Takes the two fields it reads rather than a
  * `Story`, so an INDEX of stories is ordered by the same arithmetic. */
 function orderStories<T extends { group: string; name: string }>(stories: readonly T[]): T[] {
-  const rankOf = (order: readonly string[], value: string) => {
-    const at = order.indexOf(value);
-    return at === -1 ? order.length : at;
-  };
   return [...stories].sort(
     (a, b) =>
       rankOf(GROUP_ORDER, a.group) - rankOf(GROUP_ORDER, b.group) ||

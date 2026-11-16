@@ -1,0 +1,259 @@
+import {
+  collectGenres,
+  genreLabel,
+  genreOfSegment,
+  hasGenre,
+  type LetterMark,
+  letterMarks,
+  type Sortable,
+  type SortMode,
+  sortTitles,
+  titleLetter,
+} from '@kromatv/core';
+import type { MessageKey } from '@kromatv/i18n';
+import { useT } from '@kromatv/ui';
+import { Box, EmptyState, type IconName } from '@kromatv/ui/kit';
+import {
+  type ReactElement,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { AlphabetRail, type LetterRange } from '#web/features/catalog/alphabet-rail.component';
+import { BrowseBar } from '#web/features/catalog/browse-bar.component';
+import { BrowseHero } from '#web/features/catalog/browse-hero.component';
+import { gridGeometry } from '#web/features/catalog/virtual-tile-grid.component';
+import { rowBounds } from '#web/shared/lib/tile-layout';
+import { PageFrame } from '#web/shared/ui';
+
+// Below this the whole grid fits a couple of screens and the rail is noise.
+const RAIL_MIN_ITEMS = 24;
+
+// The rail's footprint plus breathing room on the right, whatever the fluid
+// gutter currently is. Nothing to reserve where the rail does not render.
+const RAIL_RESERVE = { base: 0, md: 48, lg: 32, tv: 24 } as const;
+
+// Docked bar bottom edge + breathing room = where a jumped-to row should land.
+const jumpOffset = (bar: RefObject<HTMLDivElement | null>): number => {
+  const el = bar.current;
+  if (!el) {
+    return 72;
+  }
+  const top = Number.parseFloat(getComputedStyle(el).top) || 0;
+  return top + el.getBoundingClientRect().height + 8;
+};
+
+/** The stretch of buckets whose grid sections intersect the viewport (a tall
+ * screen shows several letters at once), so the rail's capsule can cover
+ * exactly what is on screen. */
+function useVisibleLetters(
+  enabled: boolean,
+  marks: readonly LetterMark[],
+  gridWrap: RefObject<HTMLDivElement | null>,
+  bar: RefObject<HTMLDivElement | null>,
+): LetterRange | undefined {
+  const [range, setRange] = useState<LetterRange | undefined>();
+  useEffect(() => {
+    if (!enabled || marks.length === 0) {
+      return undefined;
+    }
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const geometry = gridGeometry(gridWrap.current);
+      if (!geometry) {
+        return;
+      }
+      const line = jumpOffset(bar) + 4;
+      const viewBottom = window.innerHeight;
+      const visible: string[] = [];
+      marks.forEach((mark, i) => {
+        const next = marks[i + 1];
+        // The section ends at the BOTTOM of its last row: a bucket sharing its
+        // final row with the next one still owns that row.
+        const sectionBottom =
+          next === undefined ? geometry.bottom : rowBounds(geometry, next.index - 1).bottom;
+        const sectionTop = rowBounds(geometry, mark.index).top;
+        if (sectionTop < viewBottom && sectionBottom > line) {
+          visible.push(mark.letter);
+        }
+      });
+      const first = visible[0];
+      const last = visible.at(-1);
+      setRange((prev) => {
+        if (first === undefined || last === undefined) {
+          return undefined;
+        }
+        return prev?.first === first && prev?.last === last ? prev : { first, last };
+      });
+    };
+    const onScroll = () => {
+      if (raf === 0) {
+        raf = requestAnimationFrame(measure);
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    measure();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf !== 0) {
+        cancelAnimationFrame(raf);
+      }
+    };
+  }, [enabled, marks, gridWrap, bar]);
+  return enabled && marks.length > 0 ? range : undefined;
+}
+
+export interface BrowseScreenProps<T extends Sortable & { backdrop: string | null }> {
+  heading: string;
+  items: readonly T[];
+  /** Plural count line under the heading ('browse.count.movies' or '.series'). */
+  countKey: MessageKey;
+  emptyIcon: IconName;
+  emptyTitle: string;
+  sort: SortMode;
+  genre?: string;
+  /** `resetScroll: false` marks a rail jump: the screen lands on the letter
+   *  itself, so the router must not scroll back to the top. */
+  onSort: (mode: SortMode, opts?: { resetScroll?: boolean }) => void;
+  onGenre: (genre: string | undefined) => void;
+  renderGrid: (view: T[]) => ReactElement;
+}
+
+/** A whole catalogue browse page: the artwork hero, the pinned filter bar,
+ * the grid, and the A-Z fast-scroll rail. Films and Series render the same
+ * screen over a different view model; sort/genre live in the caller's URL
+ * search. */
+export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
+  heading,
+  items,
+  countKey,
+  emptyIcon,
+  emptyTitle,
+  sort,
+  genre,
+  onSort,
+  onGenre,
+  renderGrid,
+}: Readonly<BrowseScreenProps<T>>) {
+  const t = useT();
+  const gridWrap = useRef<HTMLDivElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  const pending = useRef<string | null>(null);
+
+  const genres = useMemo(() => collectGenres(items), [items]);
+  const filtered = useMemo(
+    () => (genre ? items.filter((item) => hasGenre(item, genreOfSegment(genre))) : [...items]),
+    [items, genre],
+  );
+  const view = useMemo(() => sortTitles(filtered, sort), [filtered, sort]);
+  const marks = useMemo(() => (sort === 'title' ? letterMarks(view) : []), [view, sort]);
+  const letters = useMemo(() => new Set(filtered.map((f) => titleLetter(f.title))), [filtered]);
+
+  // The hero's artwork rotates through the current view's best-rated titles,
+  // so picking a genre visibly repaints the page and a long stay keeps it alive.
+  const featuredPool = useMemo(
+    () =>
+      filtered
+        .filter((item) => item.backdrop)
+        .sort((a, b) => (b.metadata?.rating ?? -1) - (a.metadata?.rating ?? -1))
+        .slice(0, 6),
+    [filtered],
+  );
+  const [slide, setSlide] = useState(0);
+  const [slidePool, setSlidePool] = useState(featuredPool);
+  if (slidePool !== featuredPool) {
+    setSlidePool(featuredPool);
+    setSlide(0);
+  }
+  useEffect(() => {
+    if (featuredPool.length < 2) {
+      return undefined;
+    }
+    const timer = setInterval(() => setSlide((s) => s + 1), 8000);
+    return () => clearInterval(timer);
+  }, [featuredPool]);
+  const featured = featuredPool[slide % Math.max(featuredPool.length, 1)];
+
+  const scrollToLetter = useCallback(
+    (letter: string) => {
+      const mark = marks.find((m) => m.letter === letter);
+      const geometry = gridGeometry(gridWrap.current);
+      if (mark === undefined || !geometry) {
+        return;
+      }
+      const top = rowBounds(geometry, mark.index).top + window.scrollY - jumpOffset(bar);
+      window.scrollTo({ top: Math.max(top, 0) });
+    },
+    [marks],
+  );
+
+  // A jump from another sort first flips to title order, then lands once the
+  // re-sorted grid is in the DOM.
+  const jump = useCallback(
+    (letter: string) => {
+      if (sort === 'title') {
+        scrollToLetter(letter);
+      } else {
+        pending.current = letter;
+        onSort('title', { resetScroll: false });
+      }
+    },
+    [sort, scrollToLetter, onSort],
+  );
+
+  useLayoutEffect(() => {
+    if (pending.current === null || sort !== 'title') {
+      return;
+    }
+    scrollToLetter(pending.current);
+    pending.current = null;
+  }, [sort, scrollToLetter]);
+
+  const visibleLetters = useVisibleLetters(sort === 'title', marks, gridWrap, bar);
+  const showRail = filtered.length >= RAIL_MIN_ITEMS && letters.size > 1;
+
+  return (
+    <PageFrame>
+      <BrowseHero
+        heading={heading}
+        eyebrow={genre ? genreLabel(t, genreOfSegment(genre)) : t('browse.library')}
+        countText={items.length > 0 ? t(countKey, { count: view.length }) : undefined}
+        backdrop={featured?.backdrop}
+        creditTitle={featured?.title}
+      />
+      {items.length === 0 ? (
+        <EmptyState.Root icon={emptyIcon}>
+          <EmptyState.Title>{emptyTitle}</EmptyState.Title>
+        </EmptyState.Root>
+      ) : (
+        <>
+          <BrowseBar
+            innerRef={bar}
+            sort={sort}
+            onSort={onSort}
+            genres={genres}
+            genre={genre}
+            onGenre={onGenre}
+          />
+          {view.length === 0 ? (
+            <EmptyState.Root icon={emptyIcon}>
+              <EmptyState.Title>{t('search.noResults')}</EmptyState.Title>
+            </EmptyState.Root>
+          ) : (
+            <Box pr={showRail ? RAIL_RESERVE : undefined}>
+              <div ref={gridWrap}>{renderGrid(view)}</div>
+            </Box>
+          )}
+          {showRail ? (
+            <AlphabetRail available={letters} range={visibleLetters} onJump={jump} />
+          ) : null}
+        </>
+      )}
+    </PageFrame>
+  );
+}

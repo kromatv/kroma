@@ -1,0 +1,48 @@
+name: Snyk Code
+
+# Snyk Code over main once a day, to the Snyk dashboard and code scanning.
+# Once a day rather than per push: Snyk counts this repository's scans as
+# private, its free plan allows 100 Snyk Code tests a month, and CI runs
+# over a thousand times a month. docs/ci.md has the rest.
+on:
+  schedule:
+    - cron: '30 5 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: snyk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  code:
+    name: Snyk Code
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: snyk
+      deployment: false
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+        with:
+          snyk-version: v1.1305.0
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - run: bun run ci snyk code --publish
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_CFG_ORG: kromatv
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        if: ${{ !cancelled() && hashFiles('.sarif/snyk-code.sarif') != '' }}
+        with:
+          sarif_file: .sarif/snyk-code.sarif

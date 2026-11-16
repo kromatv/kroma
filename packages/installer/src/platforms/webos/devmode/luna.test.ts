@@ -11,9 +11,11 @@ interface Scripted {
   exit(code: number): void;
 }
 
+const unset = () => undefined;
+
 const scripted = (): Scripted => {
-  let onData: (chunk: Buffer) => void = () => undefined;
-  let finish: (code: number) => void = () => undefined;
+  let onData: (chunk: Buffer) => void = unset;
+  let finish: (code: number) => void = unset;
   const close = vi.fn();
   const running: RunningCommand = {
     exited: new Promise((resolve) => {
@@ -59,6 +61,8 @@ describe('lunaCommand', () => {
     );
   });
 });
+
+let start: (running: RunningCommand) => void = () => undefined;
 
 describe('lunaCall', () => {
   it('settles on the first reply that decides, and stops luna-send', async () => {
@@ -148,7 +152,6 @@ describe('lunaCall', () => {
 
   it('stops luna-send that only started once the call was over', async () => {
     const close = vi.fn();
-    let start: (running: RunningCommand) => void = () => undefined;
     const session = {
       stream: vi.fn(() => new Promise<RunningCommand>((resolve) => (start = resolve))),
     } as unknown as DevModeSession;

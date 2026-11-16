@@ -17,6 +17,8 @@ bun run ci canary publish [--rename] ...  files onto the rolling `canary` prerel
 bun run ci cache prune --prefix X         retire older Actions cache entries under a key prefix
 bun run ci tools ffmpeg | tauri-deps      apt installs with retries
 bun run ci sonar prepare                  the tree as the scanner wants it
+bun run ci advisories                     bun audit of bun.lock, as SARIF for code scanning
+bun run ci snyk code [--publish]          Snyk Code, as SARIF; --publish adds the Snyk dashboard
 ```
 
 ## ci.yml: the gate
@@ -170,6 +172,41 @@ Gradle dependency sets (about 3.5 GB), and a separate instrumented Rust tree
 for Sonar (1.75 GB) beside the plain one (1.4 GB). Now the Apple jobs retire
 their previous DerivedData entry (`ci cache prune`), the CI Android job reads
 the Gradle home without writing a copy, and there is one Rust tree.
+
+## codeql.yml and snyk.yml: the security scans
+
+`codeql.yml` runs on every push and pull request that is not prose, and each
+Monday for advisories published against unchanged code. CodeQL reads the JS/TS
+and the workflows, `cargo audit` every shipped `Cargo.lock`, and `bun audit`
+the `bun.lock`.
+
+The two audits fail on different things. `cargo audit` fails on any advisory
+its known list does not name. `bun run ci advisories` fails only when `bun
+audit` did not run: it writes the advisories as SARIF, a result per advisory
+and package placed on that package's entry in `bun.lock`, and the job uploads
+it to code scanning as `bun-audit`. A pull request's code scanning check then
+lists the alerts the change adds against main's last analysis, the way Sonar's
+gate scores new code, and a finding accepted as it is gets dismissed there.
+`bun audit` reads the lockfile alone, so the job installs ci-tools and nothing
+else.
+
+`snyk.yml` runs Snyk Code over main once a day (05:30 UTC), or by hand. `bun
+run ci snyk code --publish` puts the results on the Snyk dashboard
+(`kromatv/kroma`) and the SARIF in code scanning as `Snyk/Code`, the category
+Snyk's file names itself. Once a day and not per push, because of Snyk's free
+plan: it counts this public repository's CLI scans as private, allows 100
+Snyk Code tests a month, and CI runs over a thousand times a month. Snyk Open
+Source costs one test per workspace manifest, 52 a run, against an allowance
+of a few hundred a month, which is why the dependencies go through `bun audit`.
+Snyk's Secure Developer Program lifts the limits for open source projects;
+with it, both Snyk scans could run per pull request.
+
+Snyk's GitHub integration (the `security/snyk` check on pull requests) imports
+the Dockerfiles, the Gradle modules and the dmg's `requirements.txt`, and draws
+on the same monthly allowance: once it is spent, that check errors with "You
+have used your limit of private tests" until it resets. It is not a required
+check. Snyk Code is switched on per organization (Settings, Snyk Code); off,
+`snyk code test` answers 403 (`SNYK-CODE-0005`).
 
 ## release.yml: candidates and the canary channel
 
@@ -352,6 +389,7 @@ environment secrets, and both environments allow one branch, `main`:
 | `release` | the Apple certificates, profiles and App Store Connect key, the Android keystore, the desktop update key, the Play service account | the build and TestFlight jobs of `release.yml` and `deploy.yml`, `desktop-autoupdate.yml`, `apple-signing-doctor.yml` |
 | `sites` | `CLOUDFLARE_API_TOKEN` | `kit.yml`, `site.yml`, `tv-web.yml`, `repo-worker.yml` |
 | `production` | nothing: it is the approval before a Release | `deploy.yml`'s `publish` |
+| `snyk` | `SNYK_TOKEN` | `snyk.yml` |
 
 A job that needs one declares it the same way everywhere:
 

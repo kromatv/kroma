@@ -3,9 +3,29 @@
 //! generically it doesn't know what each section *means*, just how to draw a
 //! titled row of cards. Adding/retuning sections is therefore a server-only change.
 
+use std::collections::HashMap;
+
 use serde::Serialize;
 
 use crate::media::{show_card, MediaCard, MediaItem, Show};
+
+/// How a section asks to be drawn. A client that draws only rails says so, and
+/// is served rails (see `GET /api/home`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Layout {
+    /// A row of posters.
+    #[default]
+    Rail,
+    /// A row of landscape cards, each with room for a line under its title.
+    Wide,
+    /// A row whose order is the point: the entries are numbered.
+    Ranked,
+    /// One title, given the width of the page.
+    Spotlight,
+    /// The few titles the page opens on, one at a time.
+    Hero,
+}
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Section {
@@ -18,6 +38,9 @@ pub struct Section {
     // Optional secondary line, e.g. "Parce que vous avez regardé Mad Max".
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
+    pub layout: Layout,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub notes: HashMap<String, String>,
     // The rail's entries — movies *or* shows — already capped and de-duplicated
     // against earlier rows. A `type`-tagged union so the client switches on it
     // (mirrors `SearchHit`): a movie carries a `MediaItem`, a show a `Show`.
@@ -31,6 +54,20 @@ pub struct Section {
 pub enum SectionItem {
     Movie { item: Box<MediaItem> },
     Show { show: Box<Show> },
+}
+
+impl Section {
+    /// A plain row of posters with nothing said about its entries.
+    pub fn rail(id: &str, title: String, reason: Option<String>, items: Vec<SectionItem>) -> Self {
+        Self {
+            id: id.to_string(),
+            title,
+            reason,
+            layout: Layout::Rail,
+            notes: HashMap::new(),
+            items,
+        }
+    }
 }
 
 impl SectionItem {
@@ -51,6 +88,9 @@ pub struct CardSection {
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
+    pub layout: Layout,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    pub notes: HashMap<String, String>,
     pub items: Vec<SectionCard>,
 }
 
@@ -66,10 +106,10 @@ impl From<SectionItem> for SectionCard {
     fn from(entry: SectionItem) -> Self {
         match entry {
             SectionItem::Movie { item } => Self::Movie {
-                item: Box::new(MediaCard::from(*item)),
+                item: Box::map(item, MediaCard::from),
             },
             SectionItem::Show { show } => Self::Show {
-                show: Box::new(show_card(*show)),
+                show: Box::map(show, show_card),
             },
         }
     }
@@ -81,6 +121,8 @@ impl From<Section> for CardSection {
             id: section.id,
             title: section.title,
             reason: section.reason,
+            layout: section.layout,
+            notes: section.notes,
             items: section.items.into_iter().map(SectionCard::from).collect(),
         }
     }
@@ -116,6 +158,8 @@ mod tests {
             id: "for-you".into(),
             title: "Pour vous".into(),
             reason: None,
+            layout: Layout::Wide,
+            notes: HashMap::from([("s1".to_string(), "3 nouveaux épisodes".to_string())]),
             items: vec![
                 SectionItem::Movie {
                     item: Box::new(movie),
@@ -137,6 +181,26 @@ mod tests {
         assert_eq!(cards["items"][0]["item"]["metadata"]["posterUrl"], json!("/p.webp"));
         assert_eq!(cards["items"][1]["show"]["seasonCount"], json!(5));
         assert_eq!(cards["items"][1]["show"]["metadata"]["genres"], json!(["Crime"]));
+    }
+
+    #[test]
+    fn a_card_rail_keeps_how_it_is_drawn_and_what_is_said_of_its_entries() {
+        let section = rail();
+
+        let cards = serde_json::to_value(CardSection::from(section)).unwrap();
+
+        assert_eq!(cards["layout"], json!("wide"));
+        assert_eq!(cards["notes"]["s1"], json!("3 nouveaux épisodes"));
+    }
+
+    #[test]
+    fn a_plain_rail_says_it_is_one_and_carries_no_empty_notes() {
+        let plain = Section::rail("recent", "Récents".into(), None, Vec::new());
+
+        let wire = serde_json::to_value(plain).unwrap();
+
+        assert_eq!(wire["layout"], json!("rail"));
+        assert_eq!(wire.get("notes"), None);
     }
 
     #[test]

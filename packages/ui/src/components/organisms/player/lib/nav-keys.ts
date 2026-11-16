@@ -1,4 +1,4 @@
-import type { PlayerNavActions } from '#ui/components/organisms/player/hooks/use-player-nav';
+import type { PlayerNavActions } from '#ui/components/organisms/player/hooks/use-player-nav.hook';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 
 /** The keys {@link handleMediaKey} answers: a transport press drives the film

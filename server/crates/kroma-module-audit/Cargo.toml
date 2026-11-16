@@ -2,7 +2,7 @@
 name = "kroma-module-audit"
 version = "0.1.0"
 edition.workspace = true
-rust-version = "1.97"
+rust-version.workspace = true
 description = "Starts one module alone, behind a network that records every connection and lets none out, and reports what it attempted beside what it declares."
 license.workspace = true
 

@@ -240,7 +240,7 @@ Samsung's [key policy](https://developer.samsung.com/smarttv/develop/guides/fund
 is checked by hand, and 0.1.39 was rejected on it. Return goes back one screen at
 every depth; on the **first** screen it raises an exit confirmation the app draws
 itself, and only the confirming button closes the app
-([`useRootBack.ts`](../../packages/tv/src/app/useRootBack.ts)). A silent
+([`use-root-back.ts`](../../packages/tv/src/app/use-root-back.hook.ts)). A silent
 `exit()` fails the same test, and so would a `window.confirm`: the popup has to
 be the app's own element. Long-pressing Return force-quits and is the platform's
 to handle, so nothing binds it.

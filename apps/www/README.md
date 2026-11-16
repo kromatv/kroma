@@ -171,7 +171,7 @@ a reader gets the page rather than a 404. See the
 ## Social cards
 
 `ogPlugin()` renders `public/og.png` and `public/og.fr.png` during the build, from
-a TSX component ([`vite/og-card.tsx`](./vite/og-card.tsx)) with
+a TSX component ([`vite/og-card.component.tsx`](./vite/og-card.component.tsx)) with
 [Takumi](https://github.com/kane50613/takumi) (`takumi-js`), a Rust renderer that
 goes JSX → PNG in one step. No
 browser and no network: the brand faces are read from `@kromatv/ui`'s own font files,

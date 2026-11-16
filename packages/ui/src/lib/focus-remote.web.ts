@@ -6,7 +6,7 @@ import { type Direction, Directions } from '@kromatv/spatial-nav';
 import { useEffect } from 'react';
 import { holdsCaret, webDocument } from './dom';
 import { walkTab } from './focus-tab';
-import { usePerfSampler } from './perf-provider';
+import { usePerfSampler } from './perf-provider.component';
 
 // Tizen and webOS name the four directions without the `Arrow` prefix.
 const KEYS: Record<string, Direction> = {
@@ -136,7 +136,7 @@ export function useRemoteBridge(on = true): void {
   useEffect(() => {
     const document = webDocument();
     if (!on || !perf || !document) {
-      return;
+      return undefined;
     }
     const pressed = (event: KeyboardEvent) => {
       if (

@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, type Mock, vi } from 'vitest';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { PlayerController } from '#ui/components/organisms/player/types';
 import { WEB_FLAGS } from '#ui/components/organisms/player/types';
-import { usePlayerKeys } from './use-player-keys';
-import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
-import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
+import { usePlayerKeys } from './use-player-keys.hook';
+import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav.hook';
+import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge.hook';
 
 function makeController(): PlayerController {
   return {
@@ -83,6 +83,16 @@ interface Params {
 
 const TV_BROWSER_FLAGS = { ...WEB_FLAGS, pointer: false, arrowSeek: false };
 
+const pressKey = (init: KeyboardEventInit) => {
+  let notPrevented = true;
+  act(() => {
+    notPrevented = window.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }),
+    );
+  });
+  return notPrevented;
+};
+
 function setup(over: Partial<Params> = {}) {
   const params: Params = {
     nav: makeNav(),
@@ -95,16 +105,7 @@ function setup(over: Partial<Params> = {}) {
     ...over,
   };
   const view = renderHook(() => usePlayerKeys(params));
-  const press = (init: KeyboardEventInit) => {
-    let notPrevented = true;
-    act(() => {
-      notPrevented = window.dispatchEvent(
-        new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }),
-      );
-    });
-    return notPrevented;
-  };
-  return { ...view, params, press };
+  return { ...view, params, press: pressKey };
 }
 
 const undo: (() => void)[] = [];

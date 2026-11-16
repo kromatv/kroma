@@ -3,7 +3,7 @@ import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
 import { colors } from '#ui/core/tokens';
 import { stillArt } from '#ui/lib/sample-art';
-import { Veil } from './veil';
+import { Veil } from './veil.component';
 
 /** The detail screen's veil: dark to the left, where the title stands, and up
  *  from the bottom, where the rows begin. */

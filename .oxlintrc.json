@@ -189,7 +189,14 @@
           ["packages/tv/src/shared", "packages/tv/src/features"]
         ]
       }
-    ]
+    ],
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+      }
+    ],
+    "kroma/file-role": "error"
   },
   "ignorePatterns": [
     ".claude/worktrees",
@@ -282,14 +289,14 @@
         "packages/**/*.test.tsx",
         "packages/ui/src/components/organisms/kroma-intro/**",
         "packages/tv/src/shared/preview/**",
-        "packages/tv/src/features/playback/player/avplayEngine.ts",
-        "packages/tv/src/features/playback/player/htmlEngine.ts",
-        "packages/tv/src/features/playback/player/useNowPlaying.ts",
+        "packages/tv/src/features/playback/player/avplay-engine.ts",
+        "packages/tv/src/features/playback/player/html-engine.ts",
+        "packages/tv/src/features/playback/player/use-now-playing.hook.ts",
         "**/*.test.ts",
         "**/*.test.tsx",
         "**/preview/**",
         "packages/ui/src/lib/dom.ts",
-        "packages/ui/src/services/themeAudio.ts",
+        "packages/ui/src/services/theme-audio.hook.ts",
         "packages/tv/src/shared/preview/cards.test.ts",
         "packages/tv/src/shared/preview/deeplink.test.ts"
       ],
@@ -621,6 +628,25 @@
       ],
       "rules": {
         "kroma/import-boundaries": "off"
+      }
+    },
+    {
+      "files": ["clients/mobile/src/app/**", "packages/cli/templates/**", "**/src/routes/**"],
+      "rules": {
+        "unicorn/filename-case": "off",
+        "kroma/file-role": "off"
+      }
+    },
+    {
+      "files": [
+        "**/src/main.tsx",
+        "**/src/main.ts",
+        "**/src/main.*.ts",
+        "packages/bundler/src/polyfills-legacy.ts",
+        "**/*.d.ts"
+      ],
+      "rules": {
+        "import/no-unassigned-import": "off"
       }
     }
   ]

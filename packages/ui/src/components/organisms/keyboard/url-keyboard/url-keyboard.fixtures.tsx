@@ -4,11 +4,11 @@ import { Box } from '#ui/components/atoms/box';
 
 import { Text } from '#ui/components/atoms/text';
 
-import type { KeyboardSize } from '../key';
+import type { KeyboardSize } from '../key.component';
 
 import type { KEYBOARD_LAYOUTS } from '../keyboard-layouts';
 
-import { UrlKeyboard } from './url-keyboard';
+import { UrlKeyboard } from './url-keyboard.component';
 
 export // A component, not a `render` body: the value is state, and a hook in a
 // render callback is a hook outside a component.

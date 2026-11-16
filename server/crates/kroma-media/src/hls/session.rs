@@ -21,10 +21,11 @@ use tracing::{info, warn};
 use super::admission::{max_live_transcodes, Refusal};
 use super::Asked;
 use super::covered::Serving;
-use super::ffmpeg::{detect_burst, keyframe_before, spawn_stream};
+use super::ffmpeg::{detect_burst, spawn_stream};
 use super::hwaccel::Pipeline;
 use super::live::Plan;
 use super::naming::{contains, content_type, is_safe_name, seg_index, session_dir};
+use super::start::{keyframe_before, seeks, Start};
 use super::window::Window;
 use super::{StreamMode, VideoMode};
 use crate::ffmpeg_gate;
@@ -39,9 +40,7 @@ pub(super) struct Session {
     // How this session was started, so the admin can be told what the box is
     // spending its cycles on without re-deriving it from the key.
     pub(super) plan: Plan,
-    // Real stream start (s): the keyframe at-or-before the requested anchor,
-    // which the client uses as `baseSec`.
-    pub(super) start: f64,
+    pub(super) start: Start,
     pub(super) opener: Option<String>,
     pub(super) superseded: AtomicBool,
     // Held only where the picture is re-encoded on the CPU, and dropped with the
@@ -129,20 +128,19 @@ impl Sessions {
         }
         self.serving.forget(key).await;
         let session = self.ensure(key, asked).await?;
-        let start = session.start;
         let path = session.dir.join("index.m3u8");
         let deadline = Instant::now() + FILE_WAIT;
         loop {
             if let Ok(bytes) = tokio::fs::read(&path).await {
                 // A media playlist is only valid once it carries a target duration.
                 if contains(&bytes, b"#EXT-X-TARGETDURATION") {
-                    return Ok((bytes, start));
+                    return Ok((bytes, session.start.settle(key, &session.dir).await));
                 }
             }
             if Instant::now() >= deadline {
                 return tokio::fs::read(&path)
                     .await
-                    .map(|b| (b, start))
+                    .map(|b| (b, session.start.secs()))
                     .map_err(|_| Refusal::Unavailable);
             }
             sleep(Duration::from_millis(80)).await;
@@ -240,7 +238,11 @@ impl Sessions {
             child: Mutex::new(child),
             last_access: Mutex::new(Instant::now()),
             window: Window::new(),
-            start,
+            start: if seeks(start_secs) {
+                Start::probed(start)
+            } else {
+                Start::settled(start)
+            },
             opener: asked.opener.map(str::to_owned),
             superseded: AtomicBool::new(false),
             _cpu: on_the_cpu.then(ffmpeg_gate::reserve),

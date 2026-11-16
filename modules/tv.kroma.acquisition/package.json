@@ -13,11 +13,11 @@
   },
   "exports": {
     ".": "./ui/src/module.ts",
-    "./api": "./ui/src/api.ts",
+    "./api": "./ui/src/api.hook.ts",
     "./schemas": "./ui/src/schemas.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun check"
   },
   "dependencies": {
     "@kromatv/client": "workspace:*",

@@ -14,7 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar } from '#mobile/components/Avatar';
+import { Avatar } from '#mobile/components/avatar.component';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
@@ -72,7 +72,7 @@ export default function Profile() {
       contentContainerStyle={[s.body, { paddingTop: insets.top + spacing.xl }]}
     >
       <Pressable
-        onPress={() => router.push('/edit-profile' as never)}
+        onPress={() => router.push('/edit-profile')}
         style={({ pressed }) => [s.identity, pressed && { opacity: 0.85 }]}
       >
         <Box>
@@ -94,23 +94,23 @@ export default function Profile() {
         <Row
           icon={<Icon name="lock" size={19} thickness={2.2} color="accentText" />}
           label={t('account.profileLock')}
-          onPress={() => router.push('/profile-pin' as never)}
+          onPress={() => router.push('/profile-pin')}
         />
         <Row
           icon={<Icon name="download" size={19} thickness={2} color="accentText" />}
           label={t('offline.downloads')}
           value={downloads.entries.length > 0 ? fmt.bytes(downloads.totalBytes) : undefined}
-          onPress={() => router.push('/downloads' as never)}
+          onPress={() => router.push('/downloads')}
         />
         <Row
           icon={<Icon name="device-tv" size={19} thickness={1.8} color="accentText" />}
           label={t('connect.title')}
-          onPress={() => router.push('/connect-device' as never)}
+          onPress={() => router.push('/connect-device')}
         />
         <Row
           icon={<Icon name="settings" size={19} thickness={1.8} color="accentText" />}
           label={t('nav.settings')}
-          onPress={() => router.push('/settings' as never)}
+          onPress={() => router.push('/settings')}
         />
       </Box>
 

@@ -6,7 +6,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import type { PanelHandle } from '#ui/components/organisms/player/lib/nav';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import { onScreen, wearsRing } from '#ui/testing';
-import { UpNextSheet } from './up-next-sheet';
+import { UpNextSheet } from './up-next-sheet.component';
 import { DATA } from './up-next-sheet.fixtures';
 
 vi.hoisted(() => {

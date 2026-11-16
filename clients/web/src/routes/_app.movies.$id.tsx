@@ -2,11 +2,11 @@ import { type MediaCard, type MediaItem, ItemId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { TitleDetail } from '#web/features/catalog/title-detail';
+import { TitleDetail } from '#web/features/catalog/title-detail.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { buildTitleView, movieSimilarTargets } from '#web/shared/lib/titleView';
-import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh';
+import { buildTitleView, movieSimilarTargets } from '#web/shared/lib/title-view';
+import { useCatalogLiveRefresh } from '#web/shared/lib/use-live-refresh.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';
 

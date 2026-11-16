@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { IconChevronDown, IconServer } from '@tabler/icons-react';
-import { Container } from '#site/components/container';
+import { Container } from '#site/components/container.component';
 import { DownloadChannelProvider } from '#site/components/download/channel';
-import { Closing } from '#site/components/download/closing';
-import { DownloadHero } from '#site/components/download/hero';
-import { ServerOptions } from '#site/components/download/server-options';
+import { Closing } from '#site/components/download/closing.component';
+import { DownloadHero } from '#site/components/download/hero.component';
+import { ServerOptions } from '#site/components/download/server-options.component';
 import { getLocale } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';

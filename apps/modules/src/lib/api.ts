@@ -92,7 +92,7 @@ export async function machineResponse(
   ctx: ExecCtx,
 ): Promise<Response | null> {
   // `vite dev` calls the server entry with no bindings at all.
-  const resolved = env ?? ((await workerContext()).env as Env);
+  const resolved = env ?? (await workerContext()).env;
   const res = await app.fetch(withoutTrailingSlash(request), { env: resolved, ctx });
   return res.headers.has(FALL_THROUGH) ? null : res;
 }

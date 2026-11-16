@@ -186,18 +186,18 @@ describe('the query string', () => {
   });
 });
 
-describe('a 401 and the silent refresh', () => {
-  const unauthorized = (failFirst: string) => {
-    let hits = 0;
-    return (url: string): Reply => {
-      if (!url.includes(failFirst)) {
-        return { text: '{}' };
-      }
-      hits += 1;
-      return hits === 1 ? { ok: false, status: 401, text: '{}' } : { text: '{"id":"i1"}' };
-    };
+const unauthorized = (failFirst: string) => {
+  let hits = 0;
+  return (url: string): Reply => {
+    if (!url.includes(failFirst)) {
+      return { text: '{}' };
+    }
+    hits += 1;
+    return hits === 1 ? { ok: false, status: 401, text: '{}' } : { text: '{"id":"i1"}' };
   };
+};
 
+describe('a 401 and the silent refresh', () => {
   it('refreshes once on a bearer endpoint and retries with the new token', async () => {
     const refresh = vi.fn(async () => 'fresh');
     let token = 'stale';
@@ -263,10 +263,10 @@ describe('an abort signal', () => {
     let seen: AbortSignal | null | undefined;
     const ctx = createRequestContext({
       route: createRoute('http://kroma.test'),
-      fetchFn: (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      fetchFn: async (_input: RequestInfo | URL, init?: RequestInit) => {
         seen = init?.signal;
         return { ok: true, status: 200, text: async () => '{"id":"i1"}', body: null } as Response;
-      }) as typeof globalThis.fetch,
+      },
       token: () => undefined,
       locale: () => undefined,
       refresh: async () => undefined,
@@ -280,30 +280,30 @@ describe('an abort signal', () => {
   });
 });
 
-describe('concurrency policy', () => {
-  function counting(delayed?: () => Promise<void>) {
-    let calls = 0;
-    const aborted: (AbortSignal | null | undefined)[] = [];
-    const ctx = createRequestContext({
-      route: createRoute('http://kroma.test'),
-      fetchFn: (async (_input: RequestInfo | URL, init?: RequestInit) => {
-        calls += 1;
-        aborted.push(init?.signal);
-        await delayed?.();
-        if (init?.signal?.aborted) {
-          throw new DOMException('Aborted', 'AbortError');
-        }
-        return { ok: true, status: 200, text: async () => '{"id":"i1"}', body: null } as Response;
-      }) as typeof globalThis.fetch,
-      token: () => undefined,
-      locale: () => undefined,
-      refresh: async () => undefined,
-      mediaTicket: () => undefined,
-      setMediaTicket: () => undefined,
-    });
-    return { ctx, aborted, calls: () => calls };
-  }
+function counting(delayed?: () => Promise<void>) {
+  let calls = 0;
+  const aborted: (AbortSignal | null | undefined)[] = [];
+  const ctx = createRequestContext({
+    route: createRoute('http://kroma.test'),
+    fetchFn: async (_input: RequestInfo | URL, init?: RequestInit) => {
+      calls += 1;
+      aborted.push(init?.signal);
+      await delayed?.();
+      if (init?.signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+      return { ok: true, status: 200, text: async () => '{"id":"i1"}', body: null } as Response;
+    },
+    token: () => undefined,
+    locale: () => undefined,
+    refresh: async () => undefined,
+    mediaTicket: () => undefined,
+    setMediaTicket: () => undefined,
+  });
+  return { ctx, aborted, calls: () => calls };
+}
 
+describe('concurrency policy', () => {
   it('shares one fetch between two identical in-flight reads', async () => {
     const { ctx, calls } = counting(() => new Promise((r) => setTimeout(r, 5)));
 

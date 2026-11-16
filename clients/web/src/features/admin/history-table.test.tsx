@@ -16,10 +16,9 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HISTORY_COLUMNS } from '#web/features/admin/history-columns';
 import { historySort } from '#web/features/admin/history-query';
-import { HistoryTable } from '#web/features/admin/history-table';
+import { HistoryTable } from '#web/features/admin/history-table.component';
 
 const styleHost = createStyleTestHost();
-const { pinDesignWidth, render } = styleHost;
 
 const play = (fields: Partial<PlayEntry>): PlayEntry => ({
   id: 'p1',
@@ -35,11 +34,11 @@ const play = (fields: Partial<PlayEntry>): PlayEntry => ({
 
 afterEach(() => {
   cleanup();
-  pinDesignWidth();
+  styleHost.pinDesignWidth();
 });
 
 async function mount(plays: readonly PlayEntry[], onSortChange = vi.fn()) {
-  pinDesignWidth(1200);
+  styleHost.pinDesignWidth(1200);
   const root = createRootRoute({
     component: () => (
       <I18nProvider locale="en">
@@ -61,7 +60,7 @@ async function mount(plays: readonly PlayEntry[], onSortChange = vi.fn()) {
     history: createMemoryHistory({ initialEntries: ['/'] }),
   });
   await router.load();
-  render(<RouterProvider router={router} />);
+  styleHost.render(<RouterProvider router={router} />);
   return onSortChange;
 }
 

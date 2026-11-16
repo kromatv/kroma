@@ -80,24 +80,24 @@ describe('isPage', () => {
   });
 });
 
-describe('the palette the workbench mounts', () => {
-  function show() {
-    const onSelect = vi.fn();
-    const onClose = vi.fn();
-    render(
-      onScreen(
-        <CommandPalette
-          stories={STORIES}
-          pages={PAGES}
-          selected="colors"
-          onSelect={onSelect}
-          onClose={onClose}
-        />,
-      ),
-    );
-    return { onSelect, onClose };
-  }
+function show() {
+  const onSelect = vi.fn();
+  const onClose = vi.fn();
+  render(
+    onScreen(
+      <CommandPalette
+        stories={STORIES}
+        pages={PAGES}
+        selected="colors"
+        onSelect={onSelect}
+        onClose={onClose}
+      />,
+    ),
+  );
+  return { onSelect, onClose };
+}
 
+describe('the palette the workbench mounts', () => {
   it('opens a story by id, saying it is not an article', () => {
     const { onSelect, onClose } = show();
     fireEvent.click(screen.getByRole('button', { name: 'Chip' }));

@@ -287,22 +287,22 @@ interface ControlsRole {
   reset: boolean;
 }
 
-function viewIsLive(story: Story, view: View): boolean {
+function viewIsLive(declared: Story, view: View): boolean {
   if (view === 'docs' || view.startsWith('demo:')) {
     return false;
   }
   if (!view.startsWith('scene:')) {
-    return story.live;
+    return declared.live;
   }
-  return story.scenes[viewIndex(view)]?.live ?? false;
+  return declared.scenes[viewIndex(view)]?.live ?? false;
 }
 
 /** What the panel's controls can do on the view being shown. A scene that
  * ignores the args, and every demo, is a fixed picture: the controls are hidden
  * rather than left there moving nothing, and Reset with them. */
-function controlsRole(story: Story, view: View): ControlsRole {
-  const show = viewIsLive(story, view);
-  return { show, reset: show && story.controls.length > 0 };
+function controlsRole(declared: Story, view: View): ControlsRole {
+  const show = viewIsLive(declared, view);
+  return { show, reset: show && declared.controls.length > 0 };
 }
 
 export type {

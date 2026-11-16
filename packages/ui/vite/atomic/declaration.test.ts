@@ -47,9 +47,11 @@ describe('compileDeclaration', () => {
     const leaf = compileDeclaration({ radius: 'lg', borderTopLeftRadius: 0 });
 
     const groups = Object.fromEntries(leaf.rules.map((rule) => [rule.css, rule.group]));
-    const radius = Object.keys(groups).find((css) => css.includes('border-bottom-left-radius'));
+    const radius = Object.keys(groups).find((selector) =>
+      selector.includes('border-bottom-left-radius'),
+    );
     const corner = Object.keys(groups).find(
-      (css) => /^\.[a-d]/.test(css) && css.includes('{border-top-left-radius:0px;}'),
+      (selector) => /^\.[a-d]/.test(selector) && selector.includes('{border-top-left-radius:0px;}'),
     );
     expect(groups[radius as string]).toBeLessThan(groups[corner as string] as number);
   });
@@ -137,16 +139,16 @@ describe('compileDeclaration', () => {
   });
 
   it('refuses a step on a property the vocabulary does not cascade, rather than a bag', () => {
-    expect(() => compileDeclaration({ display: { base: 'flex', md: 'none' } } as never)).toThrow(
+    expect(() => compileDeclaration({ display: { base: 'flex', md: 'none' } })).toThrow(
       /a display stated per breakpoint/,
     );
     expect(() =>
-      compileDeclaration({ transform: { base: [{ scale: 1 }], md: [{ scale: 2 }] } } as never),
+      compileDeclaration({ transform: { base: [{ scale: 1 }], md: [{ scale: 2 }] } }),
     ).toThrow(/a transform stated per breakpoint/);
   });
 
   it('keeps what the browser cannot paint in the values, with no rule for it', () => {
-    const leaf = compileDeclaration({ resizeMode: 'cover', tintColor: 'accent' } as never);
+    const leaf = compileDeclaration({ resizeMode: 'cover', tintColor: 'accent' });
 
     expect(leaf.rules).toEqual([]);
     expect(leaf.values).toEqual({ resizeMode: 'cover', tintColor: 'var(--kroma-accent)' });

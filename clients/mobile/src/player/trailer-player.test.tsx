@@ -36,25 +36,27 @@ vi.mock('#mobile/lib/session', () => ({
   }),
 }));
 vi.mock('@kromatv/core/react', () => ({ useTrailerPreparation: () => state.preparation }));
-vi.mock('#mobile/player/clip/use-clip-engine', () => ({
+vi.mock('#mobile/player/clip/use-clip-engine.hook', () => ({
   useClipEngine: (uri: string | null) => {
     state.uri = uri;
     return state.clip;
   },
 }));
-vi.mock('#mobile/player/use-player-presentation', () => ({
+vi.mock('#mobile/player/use-player-presentation.hook', () => ({
   usePlayerPresentation: () => ({ fullscreen: false, collapse: vi.fn(), toggle: vi.fn() }),
 }));
-vi.mock('#mobile/player/video-surface', () => ({
-  VideoSurface: ({ children }: { children(pip: unknown): ReactNode }) =>
+vi.mock('#mobile/player/video-surface.component', () => ({
+  VideoSurface: ({ children }: { children: (pip: unknown) => ReactNode }) =>
     children({ inPip: false, startPip: () => undefined }),
 }));
-vi.mock('#mobile/player/clip/clip-chrome', () => ({
+vi.mock('#mobile/player/clip/clip-chrome.component', () => ({
   ClipChrome: ({ notice }: { notice?: string | null }) => <span>{notice ?? 'Chrome'}</span>,
 }));
-vi.mock('#mobile/player/portrait-playback-strip', () => ({ PortraitPlaybackStrip: () => null }));
+vi.mock('#mobile/player/portrait-playback-strip.component', () => ({
+  PortraitPlaybackStrip: () => null,
+}));
 
-const { TrailerPlayer } = await import('./trailer-player');
+const { TrailerPlayer } = await import('./trailer-player.component');
 
 const TRAILER: Trailer = {
   video: 'Ox8ZLF6cGM0',

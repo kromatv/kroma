@@ -5,7 +5,7 @@ import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AvatarDialog } from './avatar-dialog';
+import { AvatarDialog } from './avatar-dialog.component';
 
 const auth = vi.hoisted(() => ({ uploadAvatar: vi.fn(), updateUser: vi.fn() }));
 
@@ -24,18 +24,18 @@ function Providers({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 const onClose = vi.fn();
 const PICKED = new File(['original'], 'me.jpg', { type: 'image/jpeg' });
 const PHOTO_URL = 'blob:http://localhost/picked';
 
 function press(name: string) {
-  clearPressGuard();
+  inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name }));
 }
 
 function open() {
-  return render(<AvatarDialog file={PICKED} src={PHOTO_URL} onClose={onClose} />, {
+  return inputHost.render(<AvatarDialog file={PICKED} src={PHOTO_URL} onClose={onClose} />, {
     wrapper: Providers,
   });
 }

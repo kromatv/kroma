@@ -2,7 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { type SortColumn, Table } from './table';
+import { type SortColumn, Table } from './table.component';
 
 function head(children: ReactNode, sorting?: Partial<Parameters<typeof Table.Root>[0]>) {
   return render(

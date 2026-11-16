@@ -1,1 +1,1 @@
-export * from './selection-bar';
+export * from './selection-bar.component';

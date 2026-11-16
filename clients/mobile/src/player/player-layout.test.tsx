@@ -8,32 +8,33 @@ vi.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 44, right: 0, bottom: 34, left: 0 }),
 }));
 
-import { PlayerLayout } from './player-layout';
+import { PlayerLayout } from './player-layout.component';
 
 afterEach(cleanup);
 
+const mounted = vi.fn();
+const released = vi.fn();
+function Video() {
+  const [position, setPosition] = useState(0);
+  useEffect(() => {
+    mounted();
+    return released;
+  }, []);
+  return <button onClick={() => setPosition((value) => value + 10)}>Video at {position}</button>;
+}
+const layout = (fullscreen: boolean) => (
+  <PlayerLayout
+    fullscreen={fullscreen}
+    video={<Video />}
+    header={<span>Player header</span>}
+    transport={<span>Playback strip</span>}
+    details={<span>Title and tracks</span>}
+  >
+    <span>Panels</span>
+  </PlayerLayout>
+);
+
 it('keeps the same video instance and playback state through fullscreen transitions', () => {
-  const mounted = vi.fn();
-  const released = vi.fn();
-  function Video() {
-    const [position, setPosition] = useState(0);
-    useEffect(() => {
-      mounted();
-      return released;
-    }, []);
-    return <button onClick={() => setPosition((value) => value + 10)}>Video at {position}</button>;
-  }
-  const layout = (fullscreen: boolean) => (
-    <PlayerLayout
-      fullscreen={fullscreen}
-      video={<Video />}
-      header={<span>Player header</span>}
-      transport={<span>Playback strip</span>}
-      details={<span>Title and tracks</span>}
-    >
-      <span>Panels</span>
-    </PlayerLayout>
-  );
   const { rerender, unmount } = render(layout(false));
   fireEvent.click(screen.getByRole('button', { name: 'Video at 0' }));
   rerender(layout(true));

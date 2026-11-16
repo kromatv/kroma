@@ -4,7 +4,7 @@ import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { ServerUpdatesPage } from './server-updates';
+import { ServerUpdatesPage } from './server-updates.component';
 
 const mocks = vi.hoisted(() => ({
   data: null as UpdateStatus | null,
@@ -36,21 +36,21 @@ vi.mock('#web/features/admin/shell', async () => {
     usePoll: () => ({ data: mocks.data, failed: mocks.failed, reload: mocks.reload }),
   };
 });
-vi.mock('#web/features/admin/server-restart-dialog', () => ({
+vi.mock('#web/features/admin/server-restart-dialog.component', () => ({
   ServerRestartDialog: ({ onClose }: { onClose: () => void }) => (
     <button type="button" onClick={onClose}>
       Restart dialog
     </button>
   ),
 }));
-vi.mock('#web/shared/ui/route-link', () => ({
+vi.mock('#web/shared/ui/route-link.component', () => ({
   RouteLink: () => <a href="/admin/backup">Backup</a>,
 }));
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 afterEach(cleanup);
 beforeEach(() => {
   vi.clearAllMocks();
-  clearPressGuard();
+  inputHost.clearPressGuard();
   mocks.allowed = true;
   mocks.failed = false;
   mocks.data = {
@@ -79,7 +79,7 @@ function patchData(patch: Partial<UpdateStatus>) {
 }
 
 function show(props: Parameters<typeof ServerUpdatesPage>[0] = {}) {
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <ServerUpdatesPage {...props} />
     </I18nProvider>,
@@ -92,7 +92,7 @@ it('requires a restart confirmation before requesting the exact reviewed build',
   expect(mocks.install).not.toHaveBeenCalled();
   const dialog = await screen.findByRole('dialog');
   expect(dialog.textContent).toContain('every active stream will be interrupted');
-  clearPressGuard();
+  inputHost.clearPressGuard();
   const buttons = screen.getAllByRole('button', { name: 'Update server' });
   const confirm = buttons.at(-1);
   if (!confirm) {

@@ -102,9 +102,7 @@ export function splitBoxLayers(
   }
   sized ||= pinnedOpen(flat);
   return {
-    box: box as ViewStyle,
-    face: sized
-      ? [face as ViewStyle, resolveStyles(sDefinition, scope).faceFill]
-      : (face as ViewStyle),
+    box: box,
+    face: sized ? [face, resolveStyles(sDefinition, scope).faceFill] : face,
   };
 }

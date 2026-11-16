@@ -59,13 +59,13 @@ vi.mock('#ui/lib/focus-remote', () => ({
   },
 }));
 
-import { usePlayerKeys } from './use-player-keys';
+import { usePlayerKeys } from './use-player-keys.hook';
 
 const params = (tag: string) => ({ tag }) as never;
 
 function press(eventType: string, eventKeyAction = 0) {
   act(() => {
-    rn.remote?.({ eventType, eventKeyAction } as HWEvent);
+    rn.remote?.({ eventType, eventKeyAction });
   });
 }
 
@@ -184,7 +184,7 @@ describe('the Android key host', () => {
     // this hook can read. A build where both fire routes one press twice, and
     // the player's focus then steps two controls for one press of the d-pad.
     act(() => {
-      rn.remote?.({ eventType: 'right', eventKeyAction: 0 } as HWEvent);
+      rn.remote?.({ eventType: 'right', eventKeyAction: 0 });
       host.onKey?.('Right');
     });
     expect(routed()).toEqual(['Right']);
@@ -343,7 +343,7 @@ describe('on mainline React Native, where the remote surface does not exist', ()
       useTVEventHandler: undefined,
     }));
 
-    const { usePlayerKeys: usePhoneKeys } = await import('./use-player-keys');
+    const { usePlayerKeys: usePhoneKeys } = await import('./use-player-keys.hook');
     // The phone player renders the same component tree; the hook count must not
     // change between builds, and the missing menu switch must not throw.
     const { unmount } = renderHook(() => usePhoneKeys(params('phone')));

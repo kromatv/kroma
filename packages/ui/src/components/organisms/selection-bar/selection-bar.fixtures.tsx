@@ -6,7 +6,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Text } from '#ui/components/atoms/text';
 import { styles, useStyles } from '#ui/core';
 import type { ControlSize } from '#ui/lib/field-shell';
-import { SelectionBar, type SelectionBarPlacement } from './selection-bar';
+import { SelectionBar, type SelectionBarPlacement } from './selection-bar.component';
 
 const TITLES = [
   'Dune : Deuxième partie',

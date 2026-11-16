@@ -2,8 +2,8 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EXIT_MS } from './constants';
-import { useIntroExit } from './use-intro-exit';
-import { useIntroKeys } from './use-intro-keys';
+import { useIntroExit } from './use-intro-exit.hook';
+import { useIntroKeys } from './use-intro-keys.hook';
 
 // The hooks own document/window listeners, so a hook left mounted by one test would
 // keep eating the next one's keys.
@@ -84,15 +84,17 @@ describe('useIntroExit', () => {
   });
 });
 
-describe('useIntroKeys', () => {
-  const keys = () => {
-    const exit = vi.fn();
-    const replay = vi.fn();
-    const unblock = vi.fn();
-    const view = renderHook(() => useIntroKeys({ exit, replay, unblock }));
-    return { exit, replay, unblock, ...view };
-  };
+const keys = () => {
+  const exit = vi.fn();
+  const replay = vi.fn();
+  const unblock = vi.fn();
+  const view = renderHook(() => useIntroKeys({ exit, replay, unblock }));
+  return { exit, replay, unblock, ...view };
+};
 
+const noop = () => undefined;
+
+describe('useIntroKeys', () => {
   it.each(['Enter', ' ', 'Spacebar', 'Escape', 'GoBack', 'BrowserBack'])(
     'skips on %j without also unblocking',
     (key) => {
@@ -135,7 +137,6 @@ describe('useIntroKeys', () => {
   it('calls the latest closures without re-registering', () => {
     const exit = vi.fn();
     const later = vi.fn();
-    const noop = () => undefined;
     const { rerender } = renderHook(
       (p: { exit: () => void }) => useIntroKeys({ ...p, replay: noop, unblock: noop }),
       { initialProps: { exit } },

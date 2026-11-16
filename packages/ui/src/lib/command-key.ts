@@ -57,7 +57,7 @@ function useCommandKey(onPress: () => void, enabled = true): void {
   useEffect(() => {
     const document = webDocument();
     if (!document || !enabled) {
-      return;
+      return undefined;
     }
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);

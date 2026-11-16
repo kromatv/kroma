@@ -126,6 +126,8 @@ describe('installVideoHole', () => {
     }
   });
 
+  const shapes = () => calls.filter(([cmd]) => cmd === 'video_hole_set').map(([, a]) => a);
+
   it('drops a faded layer, follows the picture, and hides the plane when the player leaves', async () => {
     const root = div(document.body, PLAYER_ROOT_ID);
     const stage = div(root, PLAYER_STAGE_ID);
@@ -139,7 +141,6 @@ describe('installVideoHole', () => {
 
     installVideoHole();
     await settle();
-    const shapes = () => calls.filter(([cmd]) => cmd === 'video_hole_set').map(([, a]) => a);
     expect(shapes().at(-1)).toEqual({ rect: { x: 0, y: 0, w: 1, h: 1 }, covers: [] });
 
     chrome.style.opacity = '1';

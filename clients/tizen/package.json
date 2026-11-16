@@ -21,7 +21,7 @@
     "store": "bun scripts/store.ts",
     "package:all": "bun scripts/package-all.ts",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check",
     "doctor": "make doctor",
     "package": "make package",
     "deploy": "make deploy",

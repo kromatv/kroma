@@ -8,7 +8,7 @@ import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type CardModel, movieCard, showCard } from '#mobile/components/cards';
-import { gridMetrics, PosterGrid } from '#mobile/components/PosterGrid';
+import { gridMetrics, PosterGrid } from '#mobile/components/poster-grid.component';
 import { EmptyState, ErrorView, Loading } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
@@ -31,7 +31,7 @@ export default function MyList() {
 
   const cards: CardModel[] = useMemo(() => {
     const movieById = new Map<string, MediaCard>((movies.data ?? []).map((m) => [m.id, m]));
-    const showById = new Map<string, Show>((shows.data ?? []).map((s) => [s.id, s]));
+    const showById = new Map<string, Show>((shows.data ?? []).map((show) => [show.id, show]));
     const out: CardModel[] = [];
     for (const id of ids.data ?? []) {
       const movie = movieById.get(id);

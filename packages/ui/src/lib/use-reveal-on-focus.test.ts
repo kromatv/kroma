@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { createElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { type Anchor, PageScrollContext, RailScrollContext, RowContext } from './reveal-contexts';
-import { useRevealOnFocusBy, useRevealWhenFocused } from './use-reveal-on-focus';
+import { useRevealOnFocusBy, useRevealWhenFocused } from './use-reveal-on-focus.hook';
 
 function setup() {
   const page = vi.fn();

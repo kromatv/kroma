@@ -17,6 +17,8 @@ interface LunaMessage {
   respond: (response: Record<string, unknown>) => void;
 }
 
+const message = (name: string): LunaMessage => ({ payload: { name }, respond: () => {} });
+
 vi.mock('webos-service', () => ({
   default: class {
     constructor(id: string) {
@@ -125,7 +127,6 @@ it('keeps independent service registrations from stopping each other', () => {
       b.set(method, handler);
     },
   });
-  const message = (name: string): LunaMessage => ({ payload: { name }, respond: () => {} });
   a.get('publish')?.(message('A'));
   b.get('publish')?.(message('B'));
   stopA();

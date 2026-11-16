@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::mem::DropGuard;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -13,7 +14,7 @@ use crate::services::activity::{self, Shared as Activity};
 use crate::services::search::SearchEngine;
 use crate::state::SharedState;
 
-use super::engine::{engine_for, Counters, Engine, FinishGuard};
+use super::engine::{engine_for, Counters, Engine};
 use super::jobs::{art_intact, build_jobs, load_pins, pin_for, Job};
 use super::process::process_job;
 
@@ -181,7 +182,12 @@ pub(super) fn enrich_worker(
     cancel: &AtomicBool,
     total: usize,
 ) {
-    let _done = FinishGuard(counters);
+    // Counts this worker done on every exit path, including an unwinding panic
+    // in `process_job`: `run_tracked` polls for `finished == worker_count`, so a
+    // bare `fetch_add` after the loop would hang the (uncancellable) job forever.
+    let _done = DropGuard::new(counters, |counters| {
+        counters.finished.fetch_add(1, Ordering::Relaxed);
+    });
     loop {
         if cancel.load(Ordering::Relaxed) {
             break;

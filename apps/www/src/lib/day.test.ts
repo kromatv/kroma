@@ -77,9 +77,9 @@ describe('formatMonth', () => {
   });
 });
 
-describe('groupByMonth', () => {
-  const at = (item: { at: string | null }) => item.at;
+const at = (item: { at: string | null }) => item.at;
 
+describe('groupByMonth', () => {
   it('keeps the order it was given and opens a group per month', () => {
     const items = [
       { at: '2026-08-21T10:00:00Z' },

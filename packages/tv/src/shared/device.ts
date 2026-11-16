@@ -7,7 +7,7 @@
 // Must be unique; `DeviceId` carries the shape rule the server enforces.
 
 import { DeviceId, type SessionStorage } from '@kromatv/client';
-import { readDeviceValue, writeDeviceValue } from '#tv/app/devicePref';
+import { readDeviceValue, writeDeviceValue } from '#tv/app/device-pref';
 
 // Named for the cast roster, which is where a device id was first needed. Kept
 // as-is so an installed TV keeps the identity it already announced.

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { NavPill, type NavPillRootProps } from './nav-pill';
+import { NavPill, type NavPillRootProps } from './nav-pill.component';
 
 export const SECTIONS = [
   { key: 'home', label: 'Home', icon: 'home' },

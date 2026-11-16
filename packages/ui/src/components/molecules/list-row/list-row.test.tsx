@@ -6,16 +6,28 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
 import { CONTROL } from '#ui/lib/field-shell';
 import { declared, onScreen } from '#ui/testing';
-import { ListRow } from './list-row';
+import { ListRow } from './list-row.component';
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
-  return <View {...(host as object)} {...({ href: to } as object)} />;
+  return <View {...host} {...({ href: to } as object)} />;
 }
 
 afterEach(cleanup);
 
 const rowOf = (container: HTMLElement, name: string) =>
   container.querySelector(`[aria-label="${name}"]`) as HTMLElement;
+
+const tail = (node: HTMLElement, value: string): CSSStyleDeclaration => {
+  // Innermost first: the outermost match is the tail box itself, whose own
+  // parent is the row.
+  const text = Array.from(node.querySelectorAll('div'))
+    .reverse()
+    .find((el) => el.textContent === value);
+  if (!text?.parentElement) {
+    throw new Error(`no tail holding ${value}`);
+  }
+  return getComputedStyle(text.parentElement);
+};
 
 describe('ListRow', () => {
   it('is a namespace of parts, not a component', () => {
@@ -256,18 +268,6 @@ describe('ListRow', () => {
   });
 
   it('lets a long tail truncate only when the tail says it may', () => {
-    const tail = (node: HTMLElement, value: string): CSSStyleDeclaration => {
-      // Innermost first: the outermost match is the tail box itself, whose own
-      // parent is the row.
-      const text = Array.from(node.querySelectorAll('div'))
-        .reverse()
-        .find((el) => el.textContent === value);
-      if (!text?.parentElement) {
-        throw new Error(`no tail holding ${value}`);
-      }
-      return getComputedStyle(text.parentElement);
-    };
-
     const fixed = render(
       <ListRow.Root>
         <ListRow.Label>Fixe</ListRow.Label>

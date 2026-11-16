@@ -1,9 +1,9 @@
 import type { SessionStorage } from '@kromatv/client';
 import { useDeviceStore } from '@kromatv/ui/device-store';
 import { createContext, useContext, useState } from 'react';
-import { createCastReceiverPref } from '#tv/features/cast/castPref';
-import { createCrashReportingPref } from './crashReportingPref';
-import { createKeyboardLayoutPref } from './keyboardLayoutPref';
+import { createCastReceiverPref } from '#tv/features/cast/cast-pref';
+import { createCrashReportingPref } from './crash-reporting-pref';
+import { createKeyboardLayoutPref } from './keyboard-layout-pref';
 import { createPerfHudPref } from './settings/store';
 
 /** All reactive device choices share their root's hydrated backend. */

@@ -17,7 +17,7 @@ vi.mock('@kromatv/ui', () => ({
   useStoryboard: shared,
   withLocalAddressSpace: (fetchFn: typeof fetch) => fetchFn,
 }));
-const { useStoryboard } = await import('./use-storyboard');
+const { useStoryboard } = await import('./use-storyboard.hook');
 
 function root() {
   const runtime = createWebTestRuntime({});

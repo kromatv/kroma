@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
-import { type SortedColumn, type TableOrder, useSortedTable } from './use-sorted-table';
+import { type SortedColumn, type TableOrder, useSortedTable } from './use-sorted-table.hook';
 
 interface Grab {
   id: string;

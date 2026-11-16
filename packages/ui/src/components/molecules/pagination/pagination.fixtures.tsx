@@ -6,7 +6,7 @@ import { Text } from '#ui/components/atoms/text';
 
 import type { ControlSize } from '#ui/lib/field-shell';
 
-import { Pagination } from './pagination';
+import { Pagination } from './pagination.component';
 
 export interface DemoProps {
   pageCount?: number;

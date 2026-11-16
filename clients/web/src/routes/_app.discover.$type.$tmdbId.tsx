@@ -1,10 +1,10 @@
 import { useT } from '@kromatv/ui';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { TitleDetail } from '#web/features/catalog/title-detail';
+import { TitleDetail } from '#web/features/catalog/title-detail.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { buildTitleView } from '#web/shared/lib/titleView';
+import { buildTitleView } from '#web/shared/lib/title-view';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DetailSkeleton } from '#web/shared/ui';
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_app/discover/$type/$tmdbId')({
     if (params.type !== 'tv' && params.type !== 'movie') {
       throw redirect({ to: '/search', search: { q: '', type: 'all' } });
     }
-    const kind = params.type as 'movie' | 'tv';
+    const kind = params.type;
     const detail = await queryClient.ensureQueryData(
       webRuntime.queries.discoverQueries.detail(kind, Number(params.tmdbId)),
     );

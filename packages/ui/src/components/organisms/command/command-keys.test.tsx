@@ -3,7 +3,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { onScreen } from '#ui/testing';
-import { CommandKeys } from './command-keys';
+import { CommandKeys } from './command-keys.component';
 
 function on(userAgent: string) {
   vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue(userAgent);

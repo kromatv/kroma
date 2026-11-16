@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme, sv } from '#ui/core';
 import { declared } from '#ui/testing';
-import { Focusable } from './focusable';
+import { Focusable } from './focusable.component';
 
 afterEach(cleanup);
 
@@ -20,7 +20,7 @@ function Anchor({ to, onNavigate, ...host }: Readonly<Record<string, unknown>>) 
     event.preventDefault();
     (onNavigate as (() => void) | undefined)?.();
   };
-  return <View {...(host as object)} {...({ href: to, onClick: click } as object)} />;
+  return <View {...host} {...({ href: to, onClick: click } as object)} />;
 }
 
 interface RouterClick {

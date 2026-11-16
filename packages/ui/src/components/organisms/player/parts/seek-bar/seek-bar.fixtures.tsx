@@ -7,7 +7,7 @@ import { formatTimecode } from '#ui/lib/intl';
 
 import { stillArt } from '#ui/lib/sample-art';
 
-import { SeekBar } from './seek-bar';
+import { SeekBar } from './seek-bar.component';
 
 export interface ScrubbableProps {
   cur: number;

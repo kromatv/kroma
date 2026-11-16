@@ -84,6 +84,33 @@ impl VectorCache {
         self.nearest(&seed, n, &exclude)
     }
 
+    /// For every title but the seeds themselves, its cosine to the nearest of
+    /// `seeds`. Empty when no seed has a stored vector: one centroid of
+    /// everything somebody liked sits between their tastes and resembles none.
+    pub fn nearest_to_any(&self, seeds: &[String]) -> std::collections::HashMap<String, f32> {
+        let snap = self.snapshot();
+        let wanted: HashSet<&str> = seeds.iter().map(String::as_str).collect();
+        let anchors: Vec<&Vec<f32>> = snap
+            .iter()
+            .filter(|(id, _)| wanted.contains(id.as_str()))
+            .map(|(_, v)| v)
+            .collect();
+        if anchors.is_empty() {
+            return std::collections::HashMap::new();
+        }
+        snap.iter()
+            .filter(|(id, _)| !wanted.contains(id.as_str()))
+            .filter_map(|(id, v)| {
+                anchors
+                    .iter()
+                    .filter(|anchor| anchor.len() == v.len())
+                    .map(|anchor| dot(anchor, v))
+                    .reduce(f32::max)
+                    .map(|cosine| (id.clone(), cosine))
+            })
+            .collect()
+    }
+
     /// Taste centroid of `watched`, then the nearest `n` *unwatched* `(id, score)`.
     pub fn for_you(&self, watched: &[String], n: usize) -> Vec<(String, f32)> {
         let snap = self.snapshot();
@@ -184,6 +211,18 @@ mod tests {
         assert_eq!(ids, vec!["c", "b"]);
         // Unknown seed -> empty.
         assert!(c.similar("zzz", 5).is_empty());
+    }
+
+    #[test]
+    fn nearest_to_any_scores_against_the_closest_seed_and_skips_the_seeds() {
+        let c = cache_with(vecs());
+
+        let near = c.nearest_to_any(&["a".into(), "b".into()]);
+
+        assert!((near["c"] - 0.8).abs() < 1e-6, "c is nearer to b than to a");
+        assert!(!near.contains_key("a") && !near.contains_key("b"));
+        assert!(!near.contains_key("bad"), "another width is not comparable");
+        assert!(c.nearest_to_any(&["ghost".into()]).is_empty());
     }
 
     #[test]

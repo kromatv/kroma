@@ -133,7 +133,7 @@ pub(crate) fn device_hints(headers: &HeaderMap) -> db::DeviceHints {
 pub(crate) struct ThisDevice(pub db::DeviceHints);
 
 impl axum::extract::FromRequestParts<SharedState> for ThisDevice {
-    type Rejection = std::convert::Infallible;
+    type Rejection = !;
 
     async fn from_request_parts(
         parts: &mut axum::http::request::Parts,

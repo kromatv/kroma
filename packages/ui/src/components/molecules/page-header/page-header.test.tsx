@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { PageHeader } from './page-header';
+import { PageHeader } from './page-header.component';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 
@@ -127,7 +127,7 @@ describe('PageHeader.Actions', () => {
 });
 
 function Anchor({ to, ...host }: Readonly<Record<string, unknown>>) {
-  return <View {...(host as object)} {...({ href: to } as object)} />;
+  return <View {...host} {...({ href: to } as object)} />;
 }
 
 describe('a PageHeader.Back that delegates its host to a link', () => {

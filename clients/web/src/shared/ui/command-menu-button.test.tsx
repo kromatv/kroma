@@ -5,23 +5,25 @@ import { cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CommandMenuProvider } from '#web/shared/lib/command-menu';
-import { CommandMenuButton } from './command-menu-button';
+import { CommandMenuButton } from './command-menu-button.component';
 
 vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ user: { id: 'viewer' } }) }));
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const menu = () => Promise.resolve(() => <div>the menu</div>);
 
 function show(children: ReactNode) {
-  render(
+  inputHost.render(
     <I18nProvider locale="en">
       <CommandMenuProvider load={menu}>{children}</CommandMenuProvider>
     </I18nProvider>,
   );
 }
 
-beforeEach(clearPressGuard);
+beforeEach(() => {
+  inputHost.clearPressGuard();
+});
 
 afterEach(cleanup);
 

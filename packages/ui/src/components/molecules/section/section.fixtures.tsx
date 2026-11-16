@@ -2,7 +2,7 @@ import { Chip } from '#ui/components/atoms/chip';
 
 import { Text } from '#ui/components/atoms/text';
 
-import { Section } from './section';
+import { Section } from './section.component';
 
 export function Parts() {
   return (

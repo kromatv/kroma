@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import * as themePage from './fixtures/02-making-a-theme.page.mdx';
 import { layoutFor } from './layout';
 import { pageAt } from './page';
-import { PageView } from './page-view';
+import { PageView } from './page-view.component';
 
 const styleHost = createStyleTestHost();
 const { render } = styleHost;

@@ -8,7 +8,7 @@ import { PEEK_HEIGHT, type UpNextItem } from '../parts/up-next-sheet';
 import { fakeController } from '../player.fixture';
 import { Credits, Resume, UpNext } from '../player-parts';
 import { type PlayerController, WEB_FLAGS } from '../types';
-import { usePlayerRoot } from './use-player-root';
+import { usePlayerRoot } from './use-player-root.hook';
 
 const layout = (width: number, height: number) =>
   ({ nativeEvent: { layout: { width, height } } }) as LayoutChangeEvent;

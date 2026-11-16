@@ -5,7 +5,7 @@ import { cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CommandDef } from '#web/shared/lib/command-menu';
 import { NAV_GROUPS } from './admin-nav';
-import { useAdminCommands } from './use-admin-commands';
+import { useAdminCommands } from './use-admin-commands.hook';
 
 const mocks = vi.hoisted(() => ({
   commands: [] as readonly CommandDef[],
@@ -38,7 +38,7 @@ vi.mock('@tanstack/react-query', async (original) => ({
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({ user: mocks.user, client: mocks.client }),
 }));
-vi.mock('#web/modules/ModuleHostProvider', () => ({
+vi.mock('#web/modules/module-host-provider.component', () => ({
   useModuleNavAll: () => mocks.moduleNav,
   useRefreshModules: () => vi.fn(),
 }));
@@ -150,6 +150,9 @@ describe('the console in the command menu', () => {
   });
 });
 
+const moduleRows = (commands: readonly CommandDef[]) =>
+  commands.filter((command) => command.id?.startsWith('module:'));
+
 describe('an installed module in the command menu', () => {
   const WHISPER = {
     id: 'tv.kroma.whisper',
@@ -161,9 +164,6 @@ describe('an installed module in the command menu', () => {
     hasSidecar: true,
     removable: true,
   };
-
-  const moduleRows = (commands: readonly CommandDef[]) =>
-    commands.filter((command) => command.id?.startsWith('module:'));
 
   it('is not listed before anything is typed, so it does not bury the pages', () => {
     mocks.installed = [WHISPER];

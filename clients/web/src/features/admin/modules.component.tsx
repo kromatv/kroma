@@ -1,0 +1,221 @@
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
+// Admin "Modules" page: an app-store view over /api/admin/modules and
+// /api/admin/store. Discover / Installed / Updates tabs with live per-module
+// install progress off the `module.op.*` stream, a detail page per module,
+// and registry management in its own drawer.
+
+import { useT } from '@kromatv/ui';
+import {
+  Box,
+  Button,
+  classes,
+  Field,
+  Row,
+  SegmentGroup,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
+import { useNavigate } from '@tanstack/react-router';
+import { useMemo, useRef, useState } from 'react';
+
+// The file input is a handle for the upload button, never a control a reader
+// sees; `display: none` has no React Native spelling.
+const sDefinition = styles({ hidden: { display: 'none' } });
+
+import { canUpdate, message } from '#web/features/admin/module-api';
+import { useModuleData } from '#web/features/admin/module-data.hook';
+import { InstallModal } from '#web/features/admin/module-install.component';
+import { UploadConsentModal } from '#web/features/admin/module-upload-consent.component';
+import { InstalledList } from '#web/features/admin/module-installed.component';
+import { useStoreOps } from '#web/features/admin/module-ops';
+import { PointsList } from '#web/features/admin/module-points-list.component';
+import { RegistriesDrawer } from '#web/features/admin/module-registries.component';
+import { StoreGrid } from '#web/features/admin/module-store.component';
+import { UpdatesList } from '#web/features/admin/module-updates.component';
+import { Denied, PageHeader, useAsyncAction, useCap } from '#web/features/admin/shell';
+
+type Tab = 'discover' | 'installed' | 'points' | 'updates';
+
+export function ModulesAdminPage() {
+  if (!useCap('settings.manage')) {
+    return <Denied />;
+  }
+  return <ModulesInner />;
+}
+
+function ModulesInner() {
+  const webRuntime = useWebRuntime();
+
+  const s = useStyles(sDefinition);
+
+  const t = useT();
+  const navigate = useNavigate();
+  const { modules, catalog, refreshAll } = useModuleData();
+  const { activeByModule } = useStoreOps();
+  const [tab, setTab] = useState<Tab>('discover');
+  const [query, setQuery] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const upload = useAsyncAction();
+  const updating = useAsyncAction();
+
+  const installed = modules ?? [];
+  const updates = useMemo(() => (catalog?.modules ?? []).filter(canUpdate), [catalog]);
+
+  const openDetail = (id: string) => void navigate({ to: '/admin/modules/$id', params: { id } });
+
+  const requestInstall = async (id: string) => {
+    if (await InstallModal.call({ id })) {
+      void refreshAll();
+    }
+  };
+
+  const runUpdate = (ids?: string[]) =>
+    void updating.run(async () => {
+      const result = await webRuntime.moduleApi.updateModules(ids);
+      await refreshAll();
+      if (result.failed.length > 0) {
+        throw new Error(result.failed.map((f) => `${f.id}: ${f.error}`).join(' · '));
+      }
+      if (result.needsConsent.length > 0) {
+        throw new Error(t('admin.modulesNeedsConsent', { list: result.needsConsent.join(', ') }));
+      }
+    }, message);
+
+  // An update that asks for more goes through the plan, where the operator sees
+  // what they are accepting.
+  const requestUpdate = (id: string) => {
+    if (updates.some((m) => m.id === id && m.widensPermissions)) {
+      void requestInstall(id);
+    } else {
+      runUpdate([id]);
+    }
+  };
+
+  const onPick = (file: File | undefined) => {
+    if (!file) {
+      return;
+    }
+    void upload.run(async () => {
+      const bundle = await webRuntime.moduleApi.inspectBundle(file);
+      if (!(await UploadConsentModal.call({ bundle }))) {
+        return;
+      }
+      await webRuntime.moduleApi.installBundle(file);
+      await refreshAll();
+    }, message);
+  };
+
+  const tabs: { value: Tab; label: string }[] = [
+    { value: 'discover', label: t('admin.modulesTabDiscover') },
+    { value: 'installed', label: `${t('admin.modulesTabInstalled')} · ${installed.length}` },
+    { value: 'points', label: t('admin.modulesTabPoints') },
+    {
+      value: 'updates',
+      label:
+        updates.length > 0
+          ? `${t('admin.modulesTabUpdates')} · ${updates.length}`
+          : t('admin.modulesTabUpdates'),
+    },
+  ];
+
+  return (
+    <>
+      <PageHeader.Root>
+        <PageHeader.Title>{t('admin.modulesTitle')}</PageHeader.Title>
+        <PageHeader.Subtitle>{t('admin.modulesSub')}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <Button
+            variant="glass"
+            label={t('admin.modulesRegistries')}
+            icon="world"
+            onPress={() =>
+              void RegistriesDrawer.call({}).then((c) => {
+                if (c) {
+                  void refreshAll();
+                }
+              })
+            }
+          />
+          <Button
+            variant="glass"
+            label={t('admin.modulesUpload')}
+            icon="upload"
+            onPress={() => fileRef.current?.click()}
+            loading={upload.busy}
+          />
+        </PageHeader.Actions>
+      </PageHeader.Root>
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".kmod,.tar"
+        className={classes(s.hidden)}
+        onChange={(e) => {
+          onPick(e.target.files?.[0]);
+          e.target.value = '';
+        }}
+      />
+      {upload.error && (
+        <Text variant="meta" color="danger" mt={12}>
+          {upload.error}
+        </Text>
+      )}
+
+      <Row wrap between gap={12} mt={24}>
+        <SegmentGroup.Root value={tab} onValueChange={setTab}>
+          {tabs.map((entry) => (
+            <SegmentGroup.Item key={entry.value} value={entry.value}>
+              <SegmentGroup.Label>{entry.label}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
+        {tab !== 'updates' && (
+          <Field.Root w={256} label={t('admin.modulesSearch')} hideLabel>
+            <Field.Input
+              type="search"
+              icon="search"
+              placeholder={t('admin.modulesSearch')}
+              value={query}
+              onValueChange={setQuery}
+            />
+          </Field.Root>
+        )}
+      </Row>
+
+      <Box mt={20}>
+        {tab === 'discover' && (
+          <StoreGrid
+            catalog={catalog}
+            query={query}
+            active={activeByModule}
+            onOpen={openDetail}
+            onInstall={(id) => void requestInstall(id)}
+            onUpdate={requestUpdate}
+          />
+        )}
+        {tab === 'installed' && (
+          <InstalledList
+            modules={modules}
+            catalog={catalog}
+            query={query}
+            onOpen={openDetail}
+            onChanged={() => void refreshAll()}
+          />
+        )}
+        {tab === 'points' && <PointsList modules={modules} query={query} />}
+        {tab === 'updates' && (
+          <UpdatesList
+            updates={updates}
+            active={activeByModule}
+            busy={updating.busy}
+            error={updating.error}
+            onUpdateAll={() => runUpdate()}
+            onUpdate={requestUpdate}
+            onOpen={openDetail}
+          />
+        )}
+      </Box>
+    </>
+  );
+}

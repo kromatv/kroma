@@ -3,7 +3,7 @@
 // items it keeps beyond the ones on screen.
 //
 // Both were declared - with the same value and near-identical reasoning - in
-// `virtual.tsx` and `virtual-rail.tsx`, which is how the two would eventually
+// `virtual.tsx` and `virtual-rail.component.tsx`, which is how the two would eventually
 // have drifted: a tile's focus treatment is one design decision, so the bleed
 // that has to clear it is one number.
 

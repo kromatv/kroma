@@ -8,17 +8,17 @@ import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import { Pressable, ScrollView } from 'react-native';
-import { CastSheet } from '#mobile/components/cast/CastSheet';
-import { RemoteActions } from '#mobile/components/cast/RemoteActions';
-import { RemoteArtwork } from '#mobile/components/cast/RemoteArtwork';
-import { RemoteHeader } from '#mobile/components/cast/RemoteHeader';
-import { RemoteTransport } from '#mobile/components/cast/RemoteTransport';
-import { TrackPickerSheet } from '#mobile/components/cast/TrackPickerSheet';
+import { CastSheet } from '#mobile/components/cast/cast-sheet.component';
+import { RemoteActions } from '#mobile/components/cast/remote-actions.component';
+import { RemoteArtwork } from '#mobile/components/cast/remote-artwork.component';
+import { RemoteHeader } from '#mobile/components/cast/remote-header.component';
+import { RemoteTransport } from '#mobile/components/cast/remote-transport.component';
+import { TrackPickerSheet } from '#mobile/components/cast/track-picker-sheet.component';
 import { EmptyState, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { spacing, type } from '#mobile/lib/theme';
-import { ScrubBar } from '#mobile/player/ScrubBar';
+import { ScrubBar } from '#mobile/player/scrub-bar.component';
 
 export default function CastRemoteScreen() {
   const s = useStyles(sDefinition);

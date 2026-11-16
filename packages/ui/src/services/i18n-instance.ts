@@ -15,7 +15,7 @@ export type KitI18n = I18n<Locale, Messages>;
 
 /** The standalone translator uses this repo's catalogs unless an instance is supplied. */
 export function translatorFor(locale: Locale, instance: KitI18n = i18n): Translate {
-  return instance.translator(locale) as Translate;
+  return instance.translator(locale);
 }
 
 export function fallbackLocale(): Locale {

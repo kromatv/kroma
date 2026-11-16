@@ -32,6 +32,7 @@ same folder. Learn the vocabulary once, use it everywhere.
 | [`discovery/`](discovery/) | Finding a server on the network, pairing a television | `area/tv` |
 | [`modules/`](modules/) | `.kmod` bundles, the Store, modules as WebAssembly components | `area/modules` |
 | [`admin/`](admin/) | Running a server: settings, users, jobs, diagnostics | `area/server` |
+| [`browse/`](browse/) | The home, recommendations, search, a person's page | `area/server` and all client areas |
 | [`surfaces/`](surfaces/) | What each client must do, and what it is allowed not to do | all client areas |
 
 ## Status vocabulary

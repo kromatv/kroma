@@ -5,7 +5,7 @@ import { matches, type Story, slug } from '@kromatv/workbench';
 import { cleanup, fireEvent, render as renderRaw, screen, waitFor } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { Kit } from './config';
+import { Kit } from './config.component';
 import { STORIES } from './stories';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
@@ -323,9 +323,9 @@ describe('the canvas', () => {
   });
 });
 
-describe('a phone-sized window', () => {
-  const closers = () => screen.getAllByRole('button', { name: 'Close component list' });
+const closers = () => screen.getAllByRole('button', { name: 'Close component list' });
 
+describe('a phone-sized window', () => {
   it('moves the component list into a drawer, shut from either side of it', () => {
     render(<Kit />);
     windowIs(500, 800);
@@ -403,9 +403,9 @@ describe('routing', () => {
   });
 });
 
-describe('story matching', () => {
-  const story = (name: string, group: string) => ({ name, group, id: slug(name) }) as Story;
+const story = (name: string, group: string) => ({ name, group, id: slug(name) }) as Story;
 
+describe('story matching', () => {
   it('matches on the name or the section', () => {
     expect(matches(story('Button', 'Actions'), 'but')).toBe(true);
     expect(matches(story('Button', 'Actions'), 'act')).toBe(true);

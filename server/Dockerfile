@@ -36,7 +36,7 @@
 # TanStack Start prerender spawns a `node` render server, both absent from
 # oven/bun. bun does the workspace install + runs the scripts.
 FROM node:22-bookworm-slim AS web
-RUN npm install -g bun@1.4.0
+RUN npm install -g bun@1.4.4
 WORKDIR /app
 COPY . .
 # TanStack Start's SPA prerender spawns a render server on `localhost`; in a
@@ -52,7 +52,7 @@ RUN NODE_OPTIONS=--dns-result-order=ipv4first bun run build:web
 # → /app/clients/web/dist/client
 
 # ---- 2) Rust server --------------------------------------------------------
-FROM rust:1.98-bookworm AS builder
+FROM rust:1.100-bookworm AS builder
 WORKDIR /src
 # Warm the dependency cache before copying sources so a code-only change reuses it.
 # The repo-root cargo config, BEFORE the warm-up build: it carries the

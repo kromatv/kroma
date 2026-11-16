@@ -7,7 +7,7 @@ import { Text } from '../components/atoms/text';
 import { KitProvider } from '../configure';
 import { styles, useStyles } from './styles';
 import { createTheme, type ThemeRuntime } from './theme';
-import { useThemeControls } from './use-theme';
+import { useThemeControls } from './use-theme.hook';
 
 const PAINT = styles({ panel: { bg: 'accent', px: { base: 8, lg: 32 } } });
 function Probe({ capture }: Readonly<{ capture: (controls: ThemeRuntime) => void }>) {

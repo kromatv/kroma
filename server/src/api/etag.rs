@@ -65,7 +65,7 @@ fn names(held: &HeaderValue, tag: &HeaderValue) -> bool {
 }
 
 fn opaque(tag: &str) -> &str {
-    tag.strip_prefix("W/").unwrap_or(tag)
+    tag.trim_prefix("W/")
 }
 
 fn is_json(headers: &HeaderMap) -> bool {

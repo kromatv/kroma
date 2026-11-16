@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { NotFound } from '#site/components/not-found';
+import { NotFound } from '#site/components/not-found.component';
 import { getLocale } from '#site/lib/i18n';
 import { seo } from '#site/lib/seo';
 import { m } from '#site/paraglide/messages';

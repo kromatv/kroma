@@ -58,7 +58,7 @@ for (let round = 0; round < 5; round++) {
     times[mode].push((performance.now() - started) / 1000);
   }
 }
-const median = (a) => [...a].sort((a, b) => a - b)[2];
+const median = (values) => [...values].sort((a, b) => a - b)[2];
 const corpusHash = createHash('sha256');
 for (const input of corpus) {
   corpusHash.update(input.file.slice(root.length)).update(input.source);

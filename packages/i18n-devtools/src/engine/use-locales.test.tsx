@@ -5,11 +5,17 @@ import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it } from 'vitest';
 import { testEngine } from '../testing';
 import { setEngine } from './engine';
-import { useLocales } from './use-locales';
+import { useLocales } from './use-locales.hook';
 
 afterEach(() => {
   setEngine(null);
 });
+
+function Offered() {
+  return useLocales().join(',');
+}
+
+let announce = () => {};
 
 describe('the locales the panel offers', () => {
   it('is empty while no engine is installed', () => {
@@ -38,7 +44,6 @@ describe('the locales the panel offers', () => {
   });
 
   it('follows an engine that settles its answer after the panel mounts', () => {
-    let announce = () => {};
     let codes: readonly string[] = [];
     setEngine(
       testEngine({
@@ -70,9 +75,6 @@ describe('the locales the panel offers', () => {
 
   it('offers none on a server, where the engine has rendered nothing yet', () => {
     setEngine(testEngine());
-    function Offered() {
-      return useLocales().join(',');
-    }
 
     expect(renderToString(<Offered />)).toBe('');
   });

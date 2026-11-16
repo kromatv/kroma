@@ -3,7 +3,7 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PlayerController } from '#ui/components/organisms/player/types';
-import { useSeekNudge } from './use-seek-nudge';
+import { useSeekNudge } from './use-seek-nudge.hook';
 
 const TAP_STEP = 10;
 
@@ -210,19 +210,19 @@ describe('useSeekNudge hold', () => {
 
 describe('useSeekNudge bounds', () => {
   it('never runs past the end or before the start', () => {
-    const c = makeController({ cur: 7195, dur: 7200 } as Partial<PlayerController>);
+    const c = makeController({ cur: 7195, dur: 7200 });
     const { result } = renderHook(() => useSeekNudge(c));
     act(() => result.current.nudge(1, 'hold'));
     expect(lastTarget(c)).toBe(7199);
 
-    const start = makeController({ cur: 3 } as Partial<PlayerController>);
+    const start = makeController({ cur: 3 });
     const back = renderHook(() => useSeekNudge(start));
     act(() => back.result.current.nudge(-1, 'hold'));
     expect(lastTarget(start)).toBe(0);
   });
 
   it('an unknown duration still seeks forward', () => {
-    const c = makeController({ cur: 10, dur: 0 } as Partial<PlayerController>);
+    const c = makeController({ cur: 10, dur: 0 });
     const { result } = renderHook(() => useSeekNudge(c));
     act(() => result.current.nudge(1, 'hold'));
     expect(lastTarget(c)).toBe(20);

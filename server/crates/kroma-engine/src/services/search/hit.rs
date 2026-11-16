@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum HitKind {
     Movie,
     Show,
@@ -8,6 +8,7 @@ pub enum HitKind {
 }
 
 /// Hits come back sorted by descending relevance, so the position is the rank.
+#[derive(Debug, Clone, PartialEq)]
 pub struct Hit {
     pub id: String,
     pub kind: HitKind,
@@ -36,22 +37,29 @@ pub(super) fn kind_weight(kind: HitKind) -> f32 {
     }
 }
 
+/// A ranked hit on its way out. `located` marks the episode a query asked for
+/// by number, which stays even when its show matched too.
+pub(super) struct Ranked {
+    pub hit: Hit,
+    pub located: bool,
+}
+
 /// Drops every episode whose show is itself a hit, caps what is left at
 /// [`MAX_EPISODES_PER_SHOW`] per show, and truncates to `limit`. Relevance order
 /// is preserved, so a show keeps the rank its own document earned.
-pub(super) fn collapse_episodes(hits: Vec<Hit>, limit: usize) -> Vec<Hit> {
+pub(super) fn collapse_episodes(hits: Vec<Ranked>, limit: usize) -> Vec<Hit> {
     let shows: HashSet<String> = hits
         .iter()
-        .filter(|h| h.kind == HitKind::Show)
-        .map(|h| h.id.clone())
+        .filter(|r| r.hit.kind == HitKind::Show)
+        .map(|r| r.hit.id.clone())
         .collect();
     let mut kept_per_show: HashMap<String, usize> = HashMap::new();
     let mut out = Vec::with_capacity(limit);
-    for hit in hits {
+    for Ranked { hit, located } in hits {
         if out.len() == limit {
             break;
         }
-        if let Some(show_id) = hit.show_id.as_deref() {
+        if let (Some(show_id), false) = (hit.show_id.as_deref(), located) {
             if shows.contains(show_id) {
                 continue;
             }

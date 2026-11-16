@@ -14,7 +14,7 @@ import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 
 import { CONTROL } from '#ui/lib/field-shell';
-import { cloneHost } from '#ui/lib/slot';
+import { cloneHost } from '#ui/lib/slot.component';
 import { type MenuRowState, useMenuRow } from './menu-context';
 
 const menuItemVariants = sv({

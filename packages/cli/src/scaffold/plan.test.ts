@@ -97,7 +97,14 @@ describe('versions', () => {
 
     expect(v.sdk).toBe('0.0.0');
     expect(v.server).toBe('0.0.0');
-    expect(v.rustChannel).toBe('1.98.0');
+  });
+
+  it('pins outside the repository the toolchain the repository itself pins', () => {
+    const here = versions(import.meta.dirname);
+
+    const outside = versions(plain());
+
+    expect(outside.rustChannel).toBe(here.rustChannel);
   });
 });
 
@@ -112,10 +119,10 @@ describe('sdkSpec', () => {
   });
 });
 
+const names = (kind: Answers['kind']) => treesFor(kind).map((t) => basename(t));
+
 describe('treesFor', () => {
   it('renders a kind from the trees that kind has', () => {
-    const names = (kind: Answers['kind']) => treesFor(kind).map((t) => basename(t));
-
     expect(names('full')).toEqual(['base', 'ui', 'server']);
     expect(names('server')).toEqual(['base', 'server']);
     expect(names('ui')).toEqual(['base', 'ui']);

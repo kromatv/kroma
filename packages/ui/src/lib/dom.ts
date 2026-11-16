@@ -26,7 +26,7 @@ export function webWindow(): Window | null {
     return null;
   }
   const w = window as Partial<Window>;
-  return typeof w.addEventListener === 'function' ? (window as Window) : null;
+  return typeof w.addEventListener === 'function' ? window : null;
 }
 
 /** Whether `element` is a form field or an editable region: where the keys

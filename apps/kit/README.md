@@ -33,7 +33,7 @@ regenerated both native projects first.
 
 `EXPO_TV=1` is what makes it a television build. `@react-native-tvos/config-tv`
 reads it (the plugin is configured without `isTV`, so the env var decides), and
-`Platform.isTV` then tells `src/App.tsx` whether to put the workbench on
+`Platform.isTV` then tells `src/app.component.tsx` whether to put the workbench on
 `<TvStage>`, the fixed 1920x1080 canvas every 10-foot screen is authored against.
 
 ## What differs per bundler
@@ -43,9 +43,9 @@ Discovery and routing are the only things that differ, and they differ because t
 
 | | web | native |
 |---|---|---|
-| entry | `index.html` → `src/main.tsx` | `index.ts` → `src/App.tsx` |
+| entry | `index.html` → `src/main.tsx` | `index.ts` → `src/app.component.tsx` |
 | stories | `src/stories.web.ts` (`import.meta.glob`) | `src/stories.ts` (`require.context`) |
-| config | `src/config.web.tsx` (path routing) | `src/config.tsx` (`memoryRouter`) |
+| config | `src/config.component.web.tsx` (path routing) | `src/config.component.tsx` (`memoryRouter`) |
 
 Vite prefers `.web.*`, Metro never sees it: the kit's usual platform split.
 Everything KROMA-shaped, the title, the mark and the locale lens, is

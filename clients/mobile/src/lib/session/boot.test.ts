@@ -17,9 +17,9 @@ const loadActive = vi.hoisted(() =>
 vi.mock('#mobile/lib/storage', () => ({ loadServers, loadAccounts, loadActive }));
 
 const passBootBiometricGate = vi.hoisted(() => vi.fn(async () => true));
-vi.mock('#mobile/lib/biometricGate', () => ({ passBootBiometricGate }));
+vi.mock('#mobile/lib/biometric-gate', () => ({ passBootBiometricGate }));
 
-import { useBootRestore } from './boot';
+import { useBootRestore } from './boot.hook';
 
 interface Account {
   serverUrl: string;

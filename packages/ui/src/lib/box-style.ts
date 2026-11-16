@@ -42,6 +42,6 @@ export function sharedBoxStyle(
     () =>
       StyleSheet.create({
         box: boxStyle(p, breakpointIndex(scope.breakpoints), activeTheme(scope.theme)),
-      }).box as ViewStyle,
+      }).box,
   );
 }

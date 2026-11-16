@@ -2,7 +2,7 @@ import { ItemId } from '@kromatv/client/media';
 import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
-import { Player } from '#web/features/playback/player';
+import { Player } from '#web/features/playback/player.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
@@ -39,7 +39,7 @@ function WatchPage() {
       next={next}
       following={following}
       onPlayNext={next ? () => navigate({ to: '/watch/$id', params: { id: next.id } }) : undefined}
-      onPlayItem={(id) => navigate({ to: '/watch/$id', params: { id } })}
+      onPlayItem={(itemId) => navigate({ to: '/watch/$id', params: { id: itemId } })}
       onGoHome={() => navigate({ to: '/', replace: true })}
       // Back returns to the detail page of what was playing: the series page for an
       // episode, otherwise the movie page (mirrors the catalog cards' deep-link rule).

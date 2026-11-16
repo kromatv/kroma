@@ -2,8 +2,8 @@
 // who gets it. Both platform hooks differ only in where the key comes from.
 
 import type { RefObject } from 'react';
-import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav';
-import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge';
+import type { PlayerNav } from '#ui/components/organisms/player/hooks/use-player-nav.hook';
+import type { SeekPress } from '#ui/components/organisms/player/hooks/use-seek-nudge.hook';
 import type { PlayerController, PlayerFlags } from '#ui/components/organisms/player/types';
 import type { RemoteKey } from '#ui/lib/remote-keys';
 import type { PanelHandle } from './nav';

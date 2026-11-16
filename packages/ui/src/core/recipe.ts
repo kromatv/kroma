@@ -2,7 +2,7 @@ import { declaredBreakpoints } from './shorthand-resolve';
 import { useStyleScope } from './style-context';
 import { DEFAULT_STYLE_SCOPE, type StyleScope } from './style-scope';
 import type { AnySv } from './types';
-import { useBreakpointStep } from './use-breakpoint';
+import { useBreakpointStep } from './use-breakpoint.hook';
 // `sv`, the recipe compiler: a props-to-style lookup for React Native, which has
 // no className for cva/tailwind-variants to drive. Panda's `cva` shape, with
 // interaction states nested under a `_` prefix inside the style they change.

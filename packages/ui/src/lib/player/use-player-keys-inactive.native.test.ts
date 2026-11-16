@@ -49,7 +49,7 @@ vi.mock('#ui/lib/focus-remote', () => ({
   },
 }));
 
-import { usePlayerKeys } from './use-player-keys';
+import { usePlayerKeys } from './use-player-keys.hook';
 
 const params = (active: boolean) => ({ active }) as PlayerKeysParams;
 
@@ -66,7 +66,7 @@ describe('an inactive player on a television', () => {
     const { unmount } = renderHook(() => usePlayerKeys(params(false)));
 
     act(() => {
-      rn.remote?.({ eventType: 'select', eventKeyAction: 0 } as HWEvent);
+      rn.remote?.({ eventType: 'select', eventKeyAction: 0 });
       host.onKey?.('Right');
     });
 
@@ -96,7 +96,7 @@ describe('an inactive player on a television', () => {
     });
 
     rerender({ active: true });
-    act(() => rn.remote?.({ eventType: 'select', eventKeyAction: 0 } as HWEvent));
+    act(() => rn.remote?.({ eventType: 'select', eventKeyAction: 0 }));
 
     expect(rn.enableTVMenuKey).toHaveBeenCalledOnce();
     expect(routeRemoteKey).toHaveBeenCalledWith({ active: true }, 'Enter');

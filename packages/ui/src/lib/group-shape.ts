@@ -101,7 +101,7 @@ function shapeOf(slot: GroupSlot, focused: boolean, scope: StyleScope): ViewStyl
       ...(focused ? RAISED : null),
     },
     scope,
-  ) as ViewStyle;
+  );
 }
 
 /** What the surrounding <ButtonGroup> published for this child, or null outside

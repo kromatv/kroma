@@ -7,7 +7,7 @@ const fetchStats = vi.hoisted(() => vi.fn<(signal?: AbortSignal) => Promise<Stat
 
 vi.mock('#site/lib/stats', () => ({ fetchStats }));
 
-import { useStats } from './use-stats';
+import { useStats } from './use-stats.hook';
 
 const STATS: Stats = {
   instances: 12,
@@ -29,6 +29,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+const noop = (): void => undefined;
 
 describe('useStats', () => {
   it('starts out loading, so the page never shows a number it has not got', () => {
@@ -55,7 +57,7 @@ describe('useStats', () => {
   });
 
   it('abandons the read when the page leaves rather than reporting a failure', async () => {
-    let refuse: (why: Error) => void = () => {};
+    let refuse: (why: Error) => void = noop;
     fetchStats.mockReturnValue(
       new Promise((_, reject) => {
         refuse = reject;

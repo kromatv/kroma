@@ -1,7 +1,7 @@
 # KROMA lint rules
 
 Oxc enforces concrete requirements from `CONVENTIONS.md` and `CODE_STYLE.md`.
-The root `lint` command runs Oxlint; `check` runs it and then `oxfmt --check`.
+The root `lint` command runs Oxlint; `check` runs it and then `bun fmt --check`.
 CI runs the rule tests and `check`.
 
 ## Commands
@@ -20,7 +20,7 @@ package and use:
 | `bun run compare [--rounds 5] [--output /tmp/results.json]` | Run the comparison |
 
 Use `bun run lint --format agent` at the repository root for agent diagnostics.
-Oxfmt remains available with `bunx oxfmt --check .` for evaluation.
+Formatting is `bun fmt`, which reads `.oxfmtrc.json`.
 
 ## Use the rules
 
@@ -170,6 +170,16 @@ the kit's tokens, atoms, molecules, organisms, templates). Relative paths and th
 `no-restricted-imports` holds the order of the packages (client, core, ui, tv,
 then the shells and the sites). A kit component's fixtures, demos and tests are
 not judged: a demo may show an atom inside a molecule.
+
+### file-role
+
+A file that exports a component is `<name>.component.tsx`, one that exports a
+hook is `<name>.hook.ts`, and a file that claims a role exports it. The role is
+read from the exported functions: the export named after the file decides, and
+when none is, the exports decide if they all agree. A mix (a provider and its
+hook) takes no role. Entry files, tests, fixtures, stories, demos and generated
+files are not judged, and the folders a router names are switched off in
+`.oxlintrc.json`.
 
 For every rule above, run `bun run --cwd packages/lint-rules rules <rule-name>` for the full scope,
 exceptions, examples, and verification steps.

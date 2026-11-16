@@ -161,19 +161,19 @@ describe('readBundles', () => {
   });
 });
 
+const base = () => 'https://modules.kroma.tv/';
+
+const bundle = (id: string, icon?: string): Bundle => ({
+  manifest: { ...MANIFEST, id },
+  file: `${id}.kmod`,
+  path: `/dist/${id}.kmod`,
+  size: 10,
+  sha256: `sha-${id}`,
+  contentHash: `tar-${id}`,
+  icon,
+});
+
 describe('toEntries', () => {
-  const bundle = (id: string, icon?: string): Bundle => ({
-    manifest: { ...MANIFEST, id },
-    file: `${id}.kmod`,
-    path: `/dist/${id}.kmod`,
-    size: 10,
-    sha256: `sha-${id}`,
-    contentHash: `tar-${id}`,
-    icon,
-  });
-
-  const base = () => 'https://modules.kroma.tv/';
-
   it('gives a module one entry holding its one bundle', () => {
     const entries = toEntries([bundle('tv.kroma.notes')], base);
 

@@ -4,11 +4,11 @@ import { Text } from '@kromatv/ui/kit/atoms/text';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
 import { Pagination } from '@kromatv/ui/kit/molecules/pagination';
 import { createFileRoute } from '@tanstack/react-router';
-import { ModuleCard } from '#site/components/module-card';
-import { ModuleSearch } from '#site/components/module-search';
-import { RegistryUrl } from '#site/components/registry-url';
-import { SiteFooter } from '#site/components/site-footer';
-import { SiteHeader } from '#site/components/site-header';
+import { ModuleCard } from '#site/components/module-card.component';
+import { ModuleSearch } from '#site/components/module-search.component';
+import { RegistryUrl } from '#site/components/registry-url.component';
+import { SiteFooter } from '#site/components/site-footer.component';
+import { SiteHeader } from '#site/components/site-header.component';
 import { sliceLabel, useModuleBrowse } from '#site/lib/browse';
 import { getCatalog } from '#site/lib/get-catalog';
 

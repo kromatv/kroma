@@ -7,10 +7,10 @@ import { H, installHarness, item, makePb } from '#web/features/playback/use-web-
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 
-vi.mock('#web/features/playback/use-video-playback', () => ({
+vi.mock('#web/features/playback/use-video-playback.hook', () => ({
   useVideoPlayback: () => H.pb,
 }));
-vi.mock('#web/features/playback/use-web-subtitles', () => ({
+vi.mock('#web/features/playback/use-web-subtitles.hook', () => ({
   useWebSubtitles: () => H.subs,
 }));
 vi.mock('#web/features/playback/web-stats', () => ({
@@ -30,11 +30,11 @@ vi.mock('@kromatv/core', async (importOriginal) => ({
   audioTrackLabel: () => 'English 5.1',
   pictureBadge: () => H.badge,
 }));
-vi.mock('#web/shared/lib/lang-pref', () => ({
+vi.mock('#web/shared/lib/lang-pref.hook', () => ({
   useLangPrefs: () => ({ setAudio: H.rememberAudio }),
 }));
 
-const { useWebController } = await import('#web/features/playback/use-web-controller');
+const { useWebController } = await import('#web/features/playback/use-web-controller.hook');
 
 installHarness();
 
@@ -46,10 +46,12 @@ function render() {
   });
 }
 
-describe('useWebController picture-in-picture', () => {
-  const setDoc = (key: string, value: unknown) =>
-    Object.defineProperty(document, key, { value, configurable: true });
+const refuse = () => Promise.reject(new Error('user gesture required'));
 
+const setDoc = (key: string, value: unknown) =>
+  Object.defineProperty(document, key, { value, configurable: true });
+
+describe('useWebController picture-in-picture', () => {
   afterEach(() => {
     setDoc('pictureInPictureEnabled', false);
     setDoc('pictureInPictureElement', null);
@@ -88,7 +90,6 @@ describe('useWebController picture-in-picture', () => {
 
   it('swallows a request or an exit the browser refuses', async () => {
     setDoc('pictureInPictureEnabled', true);
-    const refuse = () => Promise.reject(new Error('user gesture required'));
     H.pb = makePb();
     const v = H.pb.videoRef as { current: { requestPictureInPicture: () => Promise<void> } };
     v.current.requestPictureInPicture = vi.fn(refuse);
@@ -109,17 +110,17 @@ describe('useWebController picture-in-picture', () => {
   });
 });
 
-describe('useWebController stream size probe', () => {
-  const headers = (map: Record<string, string>) => ({
-    headers: { get: (k: string) => map[k] ?? null },
+async function settle() {
+  await act(async () => {
+    await new Promise<void>((r) => setTimeout(r, 0));
   });
+}
 
-  async function settle() {
-    await act(async () => {
-      await new Promise<void>((r) => setTimeout(r, 0));
-    });
-  }
+const headers = (map: Record<string, string>) => ({
+  headers: { get: (k: string) => map[k] ?? null },
+});
 
+describe('useWebController stream size probe', () => {
   it('takes the total from a Content-Range and feeds it to the stats snapshot', async () => {
     vi.stubGlobal(
       'fetch',

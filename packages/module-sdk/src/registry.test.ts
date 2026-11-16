@@ -15,7 +15,7 @@ const baseHost: HostBase = {
   i18n: { t: (k: string) => k, locale: 'en' },
   nav: { navigate: () => undefined },
   bus: { emit: () => undefined, on: () => () => undefined },
-} as unknown as HostBase;
+};
 
 describe('depEntries', () => {
   it('returns [] for undefined', () => {
@@ -180,7 +180,7 @@ describe('ModuleRegistry route/nav/panel collection', () => {
       mod('b', {
         dependencies: { a: '*' },
         navItems: [{ to: '/b', label: 'B' }],
-        settingsPanels: [{ id: 'bp', label: 'B', component: comp as never }],
+        settingsPanels: [{ id: 'bp', label: 'B', component: comp }],
       }),
     );
     r.register(mod('a', { navItems: [{ to: '/a', label: 'A' }] }));
@@ -197,7 +197,7 @@ describe('ModuleRegistry route/nav/panel collection', () => {
     r.register(
       mod('loud', {
         navItems: [{ to: '/loud', label: 'Loud' }],
-        routes: [{ path: 'loud', component: comp as never }],
+        routes: [{ path: 'loud', component: comp }],
       }),
     );
     expect(r.navItems()).toEqual([{ to: '/loud', label: 'Loud', moduleId: 'loud' }]);
@@ -207,8 +207,8 @@ describe('ModuleRegistry route/nav/panel collection', () => {
   it('routes keeps the first registrant and warns on a colliding path', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const r = new ModuleRegistry();
-    r.register(mod('a', { routes: [{ path: 'dup', component: comp as never }] }));
-    r.register(mod('b', { routes: [{ path: 'dup', component: comp as never }] }));
+    r.register(mod('a', { routes: [{ path: 'dup', component: comp }] }));
+    r.register(mod('b', { routes: [{ path: 'dup', component: comp }] }));
     const routes = r.routes();
     expect(routes).toHaveLength(1);
     expect(routes[0]?.moduleId).toBe('a');

@@ -3,17 +3,17 @@ import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { BlocklistView } from './blocklist-view';
+import { BlocklistView } from './blocklist-view.component';
 import type { BlockedRelease } from './judgement-schemas';
 
 const mocks = vi.hoisted(() => ({ entries: [] as BlockedRelease[] }));
 
-vi.mock('./api', () => ({ useAcquisitionApi: () => ({ unblock: vi.fn() }) }));
-vi.mock('./use-rules', () => ({
+vi.mock('./api.hook', () => ({ useAcquisitionApi: () => ({ unblock: vi.fn() }) }));
+vi.mock('./use-rules.hook', () => ({
   useBlocklist: () => ({ data: mocks.entries, loading: false, reload: vi.fn() }),
 }));
 
-const { render, clearPressGuard } = createInputTestHost();
+const inputHost = createInputTestHost();
 
 const blocked = (count: number): BlockedRelease[] =>
   Array.from({ length: count }, (_, at) => ({
@@ -31,7 +31,9 @@ const view = () => (
   </I18nProvider>
 );
 
-beforeEach(clearPressGuard);
+beforeEach(() => {
+  inputHost.clearPressGuard();
+});
 
 afterEach(cleanup);
 
@@ -39,7 +41,7 @@ describe('BlocklistView', () => {
   it('shows one page of a long list', () => {
     mocks.entries = blocked(30);
 
-    render(view());
+    inputHost.render(view());
 
     expect(screen.getByText('Release.24')).toBeTruthy();
     expect(screen.queryByText('Release.25')).toBeNull();
@@ -47,7 +49,7 @@ describe('BlocklistView', () => {
 
   it('reaches the rest of the list through the pager', () => {
     mocks.entries = blocked(30);
-    render(view());
+    inputHost.render(view());
 
     fireEvent.click(screen.getByRole('button', { name: 'Page 2' }));
 
@@ -58,14 +60,14 @@ describe('BlocklistView', () => {
   it('draws no pager for a list that fits on one page', () => {
     mocks.entries = blocked(25);
 
-    render(view());
+    inputHost.render(view());
 
     expect(screen.queryByRole('navigation')).toBeNull();
   });
 
   it('falls back to the last page once its own entries are gone', () => {
     mocks.entries = blocked(26);
-    const { rerender } = render(view());
+    const { rerender } = inputHost.render(view());
     fireEvent.click(screen.getByRole('button', { name: 'Page 2' }));
 
     mocks.entries = blocked(25);

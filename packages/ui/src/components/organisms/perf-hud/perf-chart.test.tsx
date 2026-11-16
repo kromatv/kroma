@@ -2,7 +2,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { colors } from '#ui/core';
-import { PerfChart } from './perf-chart';
+import { PerfChart } from './perf-chart.component';
 
 afterEach(cleanup);
 

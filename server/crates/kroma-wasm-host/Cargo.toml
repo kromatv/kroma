@@ -2,7 +2,7 @@
 name = "kroma-wasm-host"
 version = "0.1.0"
 edition.workspace = true
-rust-version = "1.97"
+rust-version.workspace = true
 description = "Runs a module as a WebAssembly component: wasmtime, a small WIT world, an empty WASI context, and a memory ceiling and CPU budget per instance."
 license.workspace = true
 

@@ -29,5 +29,5 @@ export function run(
     const detail = stderr ? `\n${stderr}` : '';
     throw new Error(`${command} ${args.join(' ')} exited ${result.status}${detail}`);
   }
-  return as === 'buffer' ? (result.stdout as Buffer) : String(result.stdout ?? '');
+  return as === 'buffer' ? result.stdout : String(result.stdout ?? '');
 }

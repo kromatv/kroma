@@ -7,7 +7,12 @@ import type {
   ScrollView,
 } from 'react-native';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { type ListKeysAt, type PanelKeyEvent, useListKeys, useRowInView } from './anchored-keys';
+import {
+  type ListKeysAt,
+  type PanelKeyEvent,
+  useListKeys,
+  useRowInView,
+} from './anchored-keys.hook';
 
 function keyEvent(key: string) {
   const preventDefault = vi.fn();
@@ -228,47 +233,47 @@ function scrolling(measured = true) {
 
 describe('keeping the active row in sight', () => {
   it('brings a row below the fold up to the bottom edge', () => {
-    const panel = scrolling();
+    const viewport = scrolling();
 
-    panel.walkTo(ROWS_IN_PANEL - 1);
+    viewport.walkTo(ROWS_IN_PANEL - 1);
 
-    expect(panel.scrollTo).toHaveBeenCalledWith({
+    expect(viewport.scrollTo).toHaveBeenCalledWith({
       y: ROWS_IN_PANEL * ROW_HEIGHT - FOLD,
       animated: false,
     });
   });
 
   it('brings a row above the fold back down to the top edge', () => {
-    const panel = scrolling();
-    panel.walkTo(ROWS_IN_PANEL - 1);
+    const viewport = scrolling();
+    viewport.walkTo(ROWS_IN_PANEL - 1);
 
-    panel.walkTo(0);
+    viewport.walkTo(0);
 
-    expect(panel.scrollTo).toHaveBeenLastCalledWith({ y: 0, animated: false });
+    expect(viewport.scrollTo).toHaveBeenLastCalledWith({ y: 0, animated: false });
   });
 
   it('leaves a row already in sight alone', () => {
-    const panel = scrolling();
+    const viewport = scrolling();
 
-    panel.walkTo(1);
+    viewport.walkTo(1);
 
-    expect(panel.scrollTo).not.toHaveBeenCalled();
+    expect(viewport.scrollTo).not.toHaveBeenCalled();
   });
 
   it('measures against where the viewer scrolled, not where it last scrolled itself', () => {
-    const panel = scrolling();
+    const viewport = scrolling();
 
-    panel.scrollBy(3 * ROW_HEIGHT);
-    panel.walkTo(1);
+    viewport.scrollBy(3 * ROW_HEIGHT);
+    viewport.walkTo(1);
 
-    expect(panel.scrollTo).toHaveBeenCalledWith({ y: ROW_HEIGHT, animated: false });
+    expect(viewport.scrollTo).toHaveBeenCalledWith({ y: ROW_HEIGHT, animated: false });
   });
 
   it('stands down until the scroller has reported its own box', () => {
-    const panel = scrolling(false);
+    const viewport = scrolling(false);
 
-    panel.walkTo(ROWS_IN_PANEL - 1);
+    viewport.walkTo(ROWS_IN_PANEL - 1);
 
-    expect(panel.scrollTo).not.toHaveBeenCalled();
+    expect(viewport.scrollTo).not.toHaveBeenCalled();
   });
 });

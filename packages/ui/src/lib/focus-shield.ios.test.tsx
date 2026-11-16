@@ -18,7 +18,7 @@ afterEach(cleanup);
 
 describe('iOS focus shield', () => {
   it('renders its plain fallback when the TV native module is absent on iPhone', async () => {
-    const { FocusShield } = await import('./focus-shield.ios');
+    const { FocusShield } = await import('./focus-shield.component.ios');
     expect(FocusShield).toBeTypeOf('function');
     render(
       <FocusShield shielded>
@@ -31,7 +31,7 @@ describe('iOS focus shield', () => {
 
   it('uses the native shield on builds that include the TV module', async () => {
     native.available = true;
-    const { FocusShield } = await import('./focus-shield.ios');
+    const { FocusShield } = await import('./focus-shield.component.ios');
     expect(FocusShield).toBe('native-focus-shield');
     expect(native.view).toHaveBeenCalledWith('FocusShield');
   });

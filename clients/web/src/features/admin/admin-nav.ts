@@ -2,7 +2,7 @@ import type { Permission } from '@kromatv/client/accounts';
 import type { MessageKey } from '@kromatv/i18n';
 import type { ModuleNav } from '@kromatv/module-sdk';
 import type { IconName } from '@kromatv/ui/kit';
-import type { RoutePath } from '#web/shared/ui/route-link';
+import type { RoutePath } from '#web/shared/ui/route-link.component';
 
 /** One console page. `cap: null` is visible to any admin (the read-only
  *  dashboard panels); otherwise the page needs that capability, or any one of

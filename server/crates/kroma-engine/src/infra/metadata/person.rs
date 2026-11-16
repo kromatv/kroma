@@ -147,6 +147,9 @@ fn resolve_credits(
         if c.media_type != "movie" && c.media_type != "tv" {
             continue;
         }
+        if role == "cast" && c.media_type == "tv" && is_appearance(c.character.as_deref()) {
+            continue;
+        }
         if !seen.insert((c.id, c.media_type.as_str())) {
             continue;
         }
@@ -154,6 +157,15 @@ fn resolve_credits(
     }
     credits.sort_by_key(|c| Reverse(c.year));
     credits
+}
+
+fn is_appearance(character: Option<&str>) -> bool {
+    let character = character.unwrap_or_default().trim().to_lowercase();
+    let first = character
+        .split(|c: char| !c.is_alphabetic())
+        .next()
+        .unwrap_or_default();
+    matches!(first, "" | "self" | "himself" | "herself" | "themselves")
 }
 
 fn credit_from(c: &RawCredit, role: &str) -> TmdbCredit {
@@ -330,6 +342,17 @@ struct RawCredit {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_guest_spot_is_an_appearance_and_a_part_is_not() {
+        assert!(is_appearance(None));
+        assert!(is_appearance(Some("")));
+        assert!(is_appearance(Some("Self")));
+        assert!(is_appearance(Some("Self - Guest")));
+        assert!(is_appearance(Some("Herself")));
+        assert!(!is_appearance(Some("Galadriel")));
+        assert!(!is_appearance(Some("Selfridge")));
+    }
 
     #[test]
     fn blank_provider_fields_become_none() {

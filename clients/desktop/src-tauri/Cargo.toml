@@ -7,8 +7,9 @@ name = "kroma-desktop"
 version = "0.1.39"
 description = "KROMA Steam Deck client (Tauri shell over @kromatv/tv, native mpv playback)"
 edition = "2021"
-# Tauri v2's dependency graph (darling / time / serde_with) needs >= 1.88.
-rust-version = "1.88"
+# The repo's pinned toolchain is the floor. Tauri v2's own dependency graph
+# (darling / time / serde_with) needs >= 1.88.
+rust-version = "1.100"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

@@ -172,9 +172,9 @@ describe('migrateStorage', () => {
   });
 });
 
-describe('malformed storage', () => {
-  const store = () => (globalThis as { localStorage: Storage }).localStorage;
+const store = () => (globalThis as { localStorage: Storage }).localStorage;
 
+describe('malformed storage', () => {
   it('falls back gracefully on unparseable JSON', () => {
     store().setItem('kroma.session', '{not json');
     expect(loadSession()).toBeNull();

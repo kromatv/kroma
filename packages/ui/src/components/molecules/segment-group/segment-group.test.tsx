@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Badge } from '#ui/components/atoms/badge';
 import { Text } from '#ui/components/atoms/text';
 import { onScreen } from '#ui/testing';
-import { SegmentGroup } from './segment-group';
+import { SegmentGroup } from './segment-group.component';
 
 const render = (ui: ReactElement) => renderRaw(onScreen(ui));
 

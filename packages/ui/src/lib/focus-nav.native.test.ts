@@ -64,7 +64,7 @@ vi.mock('react-native', () => ({
 }));
 
 import { createFocusEntry, FocusEntryProvider } from './focus-entry';
-import { useFocusNav } from './focus-nav';
+import { useFocusNav } from './focus-nav.hook';
 
 const { clearInputHolds, clearPressGuard, holdInput, pressGuardActive, renderHook } =
   createInputTestHost();
@@ -79,7 +79,7 @@ function pressBack(): boolean {
 
 function remote(eventType: string, eventKeyAction = 1) {
   act(() => {
-    rn.remote?.({ eventType, eventKeyAction } as HWEvent);
+    rn.remote?.({ eventType, eventKeyAction });
   });
 }
 
@@ -205,7 +205,7 @@ describe('Back on tvOS, where BackHandler is the Menu event wearing a hat', () =
   it('routes Menu through the remote stream exactly once', () => {
     const onBack = vi.fn();
     renderHook(() => useFocusNav({ onBack }));
-    act(() => rn.remote?.({ eventType: 'menu' } as HWEvent));
+    act(() => rn.remote?.({ eventType: 'menu' }));
     expect(onBack).toHaveBeenCalledOnce();
   });
 });
@@ -373,7 +373,7 @@ describe('on a phone, where the TV remote surface does not exist', () => {
       useTVEventHandler: undefined,
     }));
 
-    const { useFocusNav: usePhoneNav } = await import('./focus-nav');
+    const { useFocusNav: usePhoneNav } = await import('./focus-nav.hook');
     const onBack = vi.fn();
     // The same screens compile and run here: no crash from the missing hook, no
     // crash from the missing menu-key switch.

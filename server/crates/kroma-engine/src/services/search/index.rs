@@ -1,11 +1,12 @@
 use anyhow::Result;
 use std::collections::HashMap;
-use tantivy::schema::Field;
 use tantivy::schema::Schema;
-use tantivy::schema::Value;
-use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy, TantivyDocument};
+use tantivy::{Index, IndexReader, IndexWriter, ReloadPolicy};
 
-use super::document::{add_item, add_show};
+use super::document::Indexer;
+use super::entry::Entry;
+use super::hit::HitKind;
+use super::people::Person;
 use super::schema::{self, Fields, ANALYZER};
 use crate::db::translations::TransData;
 use crate::model::{MediaItem, Show};
@@ -14,30 +15,36 @@ pub(super) struct Active {
     pub(super) reader: IndexReader,
     // Held so the in-RAM directory and its registered tokenizer outlive `reader`.
     pub(super) _index: Index,
+    pub(super) entries: Vec<Entry>,
+    pub(super) people: Vec<Person>,
+    pub(super) libraries: Vec<String>,
 }
 
-#[allow(clippy::too_many_arguments)]
-pub(super) fn build_active(
-    schema: Schema,
-    fields: &Fields,
-    movies: &[MediaItem],
-    shows: &[Show],
-    episodes: &[MediaItem],
-    tr_movies: &HashMap<String, Vec<TransData>>,
-    tr_eps: &HashMap<String, Vec<TransData>>,
-    tr_shows: &HashMap<String, Vec<TransData>>,
-) -> Result<Active> {
+pub(super) struct Catalog<'a> {
+    pub movies: &'a [MediaItem],
+    pub shows: &'a [Show],
+    pub episodes: &'a [MediaItem],
+    pub tr_movies: &'a HashMap<String, Vec<TransData>>,
+    pub tr_episodes: &'a HashMap<String, Vec<TransData>>,
+    pub tr_shows: &'a HashMap<String, Vec<TransData>>,
+}
+
+pub(super) fn build_active(schema: Schema, fields: &Fields, catalog: &Catalog) -> Result<Active> {
     let index = schema::new_index(schema);
     let mut writer: IndexWriter = index.writer_with_num_threads(1, 15_000_000)?;
-    for m in movies {
-        add_item(&mut writer, fields, m, "movie", tr_movies.get(&m.id));
+    let mut indexer = Indexer::new(&mut writer, fields, schema::analyzer());
+    for movie in catalog.movies {
+        indexer.add_item(movie, HitKind::Movie, catalog.tr_movies.get(&movie.id));
     }
-    for e in episodes {
-        add_item(&mut writer, fields, e, "episode", tr_eps.get(&e.id));
+    for episode in catalog.episodes {
+        indexer.add_item(episode, HitKind::Episode, catalog.tr_episodes.get(&episode.id));
     }
-    for s in shows {
-        add_show(&mut writer, fields, s, tr_shows.get(&s.id));
+    for show in catalog.shows {
+        indexer.add_show(show, catalog.tr_shows.get(&show.id));
     }
+    let (entries, people) = indexer.finish();
+    let libraries: std::collections::BTreeSet<String> =
+        entries.iter().map(|entry| entry.library.clone()).collect();
     writer.commit()?;
     let reader = index
         .reader_builder()
@@ -47,6 +54,9 @@ pub(super) fn build_active(
     Ok(Active {
         reader,
         _index: index,
+        entries,
+        people,
+        libraries: libraries.into_iter().collect(),
     })
 }
 
@@ -55,17 +65,5 @@ pub(super) fn normalize(index: &Index, raw: &str) -> Vec<String> {
     let Some(mut analyzer) = index.tokenizers().get(ANALYZER) else {
         return raw.split_whitespace().map(str::to_lowercase).collect();
     };
-    let mut stream = analyzer.token_stream(raw);
-    let mut tokens = Vec::new();
-    while stream.advance() {
-        tokens.push(stream.token().text.clone());
-    }
-    tokens
-}
-
-pub(super) fn field_str(doc: &TantivyDocument, field: Field) -> String {
-    doc.get_first(field)
-        .and_then(|v| v.as_str())
-        .unwrap_or_default()
-        .to_string()
+    super::entry::tokens(&mut analyzer, raw)
 }

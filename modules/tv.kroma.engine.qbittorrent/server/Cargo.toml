@@ -7,7 +7,7 @@
 name = "kroma-qbittorrent"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.88"
+rust-version = "1.100"
 description = "KROMA qBittorrent download engine: a module answering the download-client point over the qBittorrent WebUI."
 license = "AGPL-3.0-or-later"
 

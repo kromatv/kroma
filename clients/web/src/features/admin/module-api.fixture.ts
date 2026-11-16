@@ -5,7 +5,7 @@ export const client = createKromaClient({
   fetch: (...args) => globalThis.fetch(...args),
 });
 export const moduleApi = createAdminApi(client);
-export const setSessionToken = client.setAuthToken;
+export const setSessionToken = (token?: string): void => client.setAuthToken(token);
 export const sessionToken = () => client.sessionToken;
 
 import { afterEach, beforeEach, vi } from 'vitest';

@@ -5,7 +5,7 @@ import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { I18nProvider } from '#ui/services/i18n';
 import type { PlayerAudioTrack } from '../../../media-types';
-import { AudioPanel } from './audio-panel';
+import { AudioPanel } from './audio-panel.component';
 
 afterEach(cleanup);
 

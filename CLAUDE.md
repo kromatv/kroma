@@ -47,9 +47,9 @@ These are the CI hard gates (`.github/workflows/ci.yml`, see
 [`docs/ci.md`](docs/ci.md)):
 
 ```bash
-bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool)
+bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool of `bun check`)
 bun run test             # vitest (two projects: web + native)
-bun run check            # oxlint with types + the Sonar mirror + the lint debt list + oxfmt  (check:fix to write)
+bun run check            # oxlint with types + the Sonar mirror + the lint debt list + `bun fmt --check`  (check:fix to write)
 bun run ci rust clippy   # server workspace + every module workspace
 bun run ci rust test     # the same, under coverage (cargo llvm-cov)
 bun run modules:test:wasm  # every module's tests again, each one a component
@@ -74,9 +74,10 @@ into any workflow today. Run them by hand after touching a module.
 `bun run quality:mutate <package>` are a report, never a gate: see
 [`docs/quality.md`](docs/quality.md).
 
-Rust is pinned by `rust-toolchain.toml` (1.98.0, with clippy + rustfmt); the
-workspace `rust-version` floor is 1.88. `cargo fmt --check` is non-blocking: the
-codebase uses a custom import grouping, so do not reformat files wholesale.
+Rust is pinned by `rust-toolchain.toml` (1.100.0, with clippy + rustfmt), and
+every manifest's `rust-version` floor is that same 1.100. `cargo fmt --check` is
+non-blocking: the codebase uses a custom import grouping, so do not reformat
+files wholesale.
 
 ## Running things
 

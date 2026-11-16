@@ -56,7 +56,7 @@ function useCaptureKey(match: (event: KeyboardEvent) => boolean, onKey: () => vo
   useEffect(() => {
     const document = webDocument();
     if (!document) {
-      return;
+      return undefined;
     }
     const listener = (event: KeyboardEvent) => {
       if (!match(event)) {
