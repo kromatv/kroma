@@ -2265,7 +2265,6 @@
         "packages/installer/src/install/artifact.ts",
         "packages/installer/src/platforms/androidtv/adb/connection.ts",
         "packages/installer/src/platforms/androidtv/identify.ts",
-        "packages/installer/src/platforms/tizen/identify.ts",
         "packages/installer/src/platforms/tizen/native.test.ts",
         "packages/installer/src/platforms/tizen/signing.test.ts",
         "packages/installer/src/platforms/webos/identify.ts",

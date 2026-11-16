@@ -1,6 +1,7 @@
 import { rm } from 'node:fs/promises';
 import { basename, dirname } from 'node:path';
 import { run, runOk } from '../../shared/run';
+import type { Television } from '../../shared/television';
 import { requireTool } from '../../toolchain/detect';
 import {
   booleanOption,
@@ -12,6 +13,7 @@ import { eitherAuthor } from './either-author';
 import { installFailure, refusedChain } from './install-failure';
 import { installOverSdb } from './native';
 import { readProfile, type SigningProfile } from './profiles';
+import { reach } from './reach';
 import { SDB_PORT } from './sdb';
 import { profileFor, readDuid, resign, type Signed } from './signing';
 import { SDB, TIZEN_CLI } from './tools';
@@ -34,9 +36,20 @@ export function parseSdbSerial(devices: string, host: string): string | null {
 }
 
 export async function installTizen(context: InstallContext): Promise<PlatformOptions> {
+  await refusedAsScanned(context.tv);
   const named = stringOption(context.options, 'profile');
   const chosen = named ? await namedProfile(named) : await profileFor(context.tv.host, context.log);
   return eitherAuthor(context, chosen, (profile) => installAs(context, profile));
+}
+
+async function refusedAsScanned(tv: Television): Promise<void> {
+  if (!tv.nextStep) {
+    return;
+  }
+  const device = await reach(tv.host).catch((error: unknown) => {
+    throw new Error(tv.note, { cause: error });
+  });
+  device.close();
 }
 
 async function installAs(context: InstallContext, profile: SigningProfile): Promise<void> {
