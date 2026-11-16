@@ -11,11 +11,9 @@ it. It is the native app: it runs on the TV itself, with no browser.
 ## Before you begin
 
 - An LG TV from 2018 or later.
-- A Mac or a Linux computer on the same network as the TV, with
+- A Mac, a Windows PC or a Linux computer on the same network as the TV, with
   [Node.js](https://nodejs.org) 22 or later. `node --version` prints the
-  version. On Windows, follow
-  [Optional: install with webOS Dev Manager](#optional-install-with-webos-dev-manager)
-  instead.
+  version.
 - A free LG developer account. Create it on
   [webostv.developer.lge.com](https://webostv.developer.lge.com) with
   **Sign In** > **Create Account**.

@@ -55,7 +55,7 @@ const manifest = {
   bin: { [COMMAND]: 'cli.js' },
   files: ['cli.js'],
   engines: { node: '>=22.12.0' },
-  os: ['darwin', 'linux'],
+  os: ['darwin', 'linux', 'win32'],
   publishConfig: { access: 'public' },
 };
 await writeFile(join(out, 'package.json'), `${JSON.stringify(manifest, null, 2)}\n`);

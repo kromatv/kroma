@@ -113,6 +113,17 @@ describe('localSubnets', () => {
     expect(localSubnets().map((subnet) => subnet.iface)).toEqual(['en0']);
   });
 
+  it('leaves out the Hyper-V, VirtualBox and VMware adapters of a Windows machine', () => {
+    vi.mocked(networkInterfaces).mockReturnValue({
+      'vEthernet (WSL (Hyper-V firewall))': [ipv4('172.24.80.1')],
+      'VirtualBox Host-Only Network': [ipv4('192.168.56.1')],
+      'VMware Network Adapter VMnet8': [ipv4('192.168.200.1')],
+      'Wi-Fi': [ipv4('192.168.1.10')],
+    });
+
+    expect(localSubnets().map((subnet) => subnet.iface)).toEqual(['Wi-Fi']);
+  });
+
   it('names a network once even when two interfaces sit on it', () => {
     vi.mocked(networkInterfaces).mockReturnValue({
       en0: [ipv4('192.168.1.10')],

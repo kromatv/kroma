@@ -17,15 +17,13 @@ can run:
 ## Before you begin
 
 - A Samsung smart TV from 2017 or later.
-- A Mac or a Linux computer on the same network as the TV, with
+- A Mac, a Windows PC or a Linux computer on the same network as the TV, with
   [Node.js](https://nodejs.org) 22 or later. `node --version` prints the
-  version. On Windows, follow
-  [Optional: install with Tizen Studio](#optional-install-with-tizen-studio)
-  instead.
+  version.
 - A Samsung account, the same kind you use on the TV. It is free.
 - The address of your computer on the network, such as `192.168.1.20`. On a
-  Mac, it is in **System Settings** > **Wi-Fi** > **Details**. On Linux, run
-  `hostname -I`. The installer also shows it.
+  Mac, it is in **System Settings** > **Wi-Fi** > **Details**. On Windows, run
+  `ipconfig`. On Linux, run `hostname -I`. The installer also shows it.
 
 ## Turn on developer mode on the TV
 

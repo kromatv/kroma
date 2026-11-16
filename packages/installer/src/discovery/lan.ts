@@ -2,7 +2,8 @@ import { networkInterfaces } from 'node:os';
 
 // A television sits on the network the router hands out, and sweeping the
 // virtual bridges beside it triples how long a scan takes for nothing.
-const VIRTUAL = /^(bridge|utun|awdl|llw|anpi|ap\d|docker|virbr|br-|tun|tap|veth|zt|wg)/;
+const VIRTUAL =
+  /^(bridge|utun|awdl|llw|anpi|ap\d|docker|virbr|br-|tun|tap|veth|zt|wg|vEthernet|VirtualBox|VMware)/;
 
 export interface Subnet {
   iface: string;

@@ -1,7 +1,7 @@
 # @kromatv/installer
 
-Install [KROMA](https://kroma.tv) on the TVs on your network, from a Mac or a
-Linux computer:
+Install [KROMA](https://kroma.tv) on the TVs on your network, from a Mac, a
+Windows PC or a Linux computer:
 
 ```bash
 npx @kromatv/installer
@@ -37,7 +37,7 @@ native app, use `--no-web` the same way.
 
 ## Before you begin
 
-- [Node.js](https://nodejs.org) 22 or later, on macOS or Linux.
+- [Node.js](https://nodejs.org) 22 or later, on macOS, Windows or Linux.
 - The computer and the TV on the same network.
 - One step on the TV itself. It is done once, and no tool can do it over the
   network:
