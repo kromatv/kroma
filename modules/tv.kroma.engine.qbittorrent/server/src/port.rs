@@ -10,6 +10,7 @@
 //! two qBittorrent instances, and the credentials belong to the row, not here.
 
 use axum::extract::State;
+use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
@@ -130,18 +131,15 @@ async fn add<S: HostCtx + Clone + Send + Sync + 'static>(
 async fn status<S: HostCtx + Clone + Send + Sync + 'static>(
     State(host): State<S>,
     Json(call): Json<Call>,
-) -> Json<Option<Status>> {
-    let found = kroma_module_sdk::host::run_blocking(move || {
-        engine(&host, &call.client)
-            .status(&call.args.client_ref)
-            .ok()
-            .flatten()
-            .map(wire)
+) -> Result<Json<Option<Status>>, (StatusCode, String)> {
+    let polled = kroma_module_sdk::host::run_blocking(move || {
+        engine(&host, &call.client).status(&call.args.client_ref)
     })
     .await
-    .ok()
-    .flatten();
-    Json(found)
+    .map_err(|e| (StatusCode::BAD_GATEWAY, e.to_string()))?;
+    polled
+        .map(|found| Json(found.map(wire)))
+        .map_err(|e| (StatusCode::BAD_GATEWAY, format!("{e:#}")))
 }
 
 fn wire(s: crate::TorrentStatus) -> Status {
@@ -257,15 +255,14 @@ mod tests {
     // forgotten is a normal state the consumer reconciles, and an unreachable
     // daemon reads the same way rather than failing the monitor tick.
     #[tokio::test]
-    async fn status_answers_null_rather_than_an_envelope() {
-        let (status, answer) = call(
+    async fn a_daemon_that_cannot_be_reached_is_a_failed_poll_not_a_forgotten_torrent() {
+        let (status, _) = call(
             "/_port/tv.kroma.torrents/client/status",
             json!({ "client": unreachable_client(), "args": { "client_ref": "abc" } }),
         )
         .await;
 
-        assert_eq!(status, StatusCode::OK);
-        assert!(answer.is_null(), "{answer}");
+        assert_eq!(status, StatusCode::BAD_GATEWAY);
     }
 
     #[tokio::test]

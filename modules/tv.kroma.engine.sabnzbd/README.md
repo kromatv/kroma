@@ -12,5 +12,11 @@ Its completed folder has to be one KROMA can read: add it under Admin >
 Acquisition > Download folders, at the same path SABnzbd reports. When SABnzbd
 runs in another container, mount the folder at the same path in both.
 
+`tests/real_sabnzbd.rs` drives the engine against a running SABnzbd and is
+ignored by default. It needs `KROMA_TEST_SABNZBD_URL`, `KROMA_TEST_SABNZBD_KEY`,
+and `KROMA_TEST_NZB_BASE`: a URL serving `good.nzb`, whose article the news
+server holds, and `missing.nzb`, whose article it does not. Run it with `cargo
+test --test real_sabnzbd -- --ignored`.
+
 Layout: `server/` (backend crate) + `module.json` (manifest). See
 `modules/README.md` for the guide.

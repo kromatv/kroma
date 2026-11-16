@@ -111,7 +111,7 @@ pub fn from_queue(queue: &Queue, id: &str) -> Option<JobStatus> {
 pub fn from_history(history: &History, id: &str) -> Option<JobStatus> {
     let slot = history.slots.iter().find(|s| s.nzo_id == id)?;
     let (state, progress, error) = match slot.status.as_str() {
-        "Completed" => (JobState::Completed, 1.0, None),
+        "Completed" if !slot.storage.is_empty() => (JobState::Completed, 1.0, None),
         "Failed" => {
             let reason = match slot.fail_message.trim() {
                 "" => "SABnzbd failed the job",
@@ -162,11 +162,19 @@ mod tests {
     }
 
     fn history(slot_status: &str, fail_message: &str) -> History {
+        history_with(slot_status, fail_message, "/complete/A.Film")
+    }
+
+    fn history_at(slot_status: &str, storage: &str) -> History {
+        history_with(slot_status, "", storage)
+    }
+
+    fn history_with(slot_status: &str, fail_message: &str, storage: &str) -> History {
         let reply: HistoryReply = serde_json::from_value(json!({
             "history": {
                 "slots": [{
                     "nzo_id": "nzo_a", "status": slot_status, "name": "A.Film",
-                    "storage": "/complete/A.Film", "fail_message": fail_message,
+                    "storage": storage, "fail_message": fail_message,
                     "bytes": 2048, "downloaded": 4096,
                 }],
             }
@@ -227,6 +235,14 @@ mod tests {
         assert_eq!(job.progress, 1.0);
         assert_eq!(job.save_path.as_deref(), Some("/complete/A.Film"));
         assert_eq!(job.downloaded_bytes, 4096);
+    }
+
+    #[test]
+    fn a_completed_slot_that_has_not_named_its_folder_yet_is_still_processing() {
+        let job = from_history(&history_at("Completed", ""), "nzo_a").unwrap();
+
+        assert_eq!(job.state, JobState::Processing);
+        assert_eq!(job.save_path, None);
     }
 
     #[test]
