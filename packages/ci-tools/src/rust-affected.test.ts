@@ -53,9 +53,11 @@ describe('affected', () => {
 });
 
 describe('shards', () => {
-  it('gives the server its own job and groups the modules', () => {
+  it('gives the server its lint, its tests and its component tests apart, and groups the modules', () => {
     expect(shards(['server', 'a', 'b', 'c'], 2)).toEqual([
-      { name: 'server', workspaces: ['server'] },
+      { name: 'server', workspaces: ['server'], part: 'core' },
+      { name: 'module host', workspaces: ['server'], part: 'host' },
+      { name: 'server clippy', workspaces: ['server'], part: 'clippy' },
       { name: 'modules 1', workspaces: ['a', 'b'] },
       { name: 'modules 2', workspaces: ['c'] },
     ]);

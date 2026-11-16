@@ -60,6 +60,10 @@ export const LANES = {
     ],
     except: PROSE,
   },
+  wasmhost: {
+    paths: ['server/crates/kroma-wasm-host/**', 'server/Cargo.lock', 'rust-toolchain.toml'],
+    except: PROSE,
+  },
   sdk: {
     paths: [
       'packages/{cli,client,core,i18n,module-sdk,registry,spatial-nav,ui}/**',

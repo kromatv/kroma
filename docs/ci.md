@@ -9,7 +9,8 @@ TypeScript with tests rather than YAML and shell.
 bun run ci lanes [--json] [--lane rust]   which jobs a change can reach
 bun run ci typecheck [--jobs N]           every workspace's typecheck, N at a time (the root `typecheck` script)
 bun run ci test --shard 2/4 | --merge     vitest shards (blob + coverage), then one report
-bun run ci rust clippy | test             every cargo workspace; `test` runs under cargo llvm-cov
+bun run ci rust clippy | test [--part P]  every cargo workspace; `test` runs under cargo llvm-cov
+bun run ci lcov merge <out> <report...>   one lcov from several, a file two reports carry counted once
 bun run ci build <target> [--slice]       a fleet build, with its dist path as a step output
 bun run ci version                        version, triplet, channel, build number, canary name
 bun run ci canary publish [--rename] ...  files onto the rolling `canary` prerelease, with retention
@@ -23,17 +24,17 @@ bun run ci snyk code [--publish]          Snyk Code, as SARIF; --publish adds th
 ## ci.yml: the gate
 
 ```
-lanes ─┬─ checks (typecheck + lint)                     code
+lanes ─┬─ checks (typecheck + lint + kit audit)         code
        ├─ test 1..4 ──── test-report (merge → lcov)     code
        ├─ spec (the requirement index is in step)       spec
        ├─ build {web, site, tizen, webos, tv-native}    fleet
        ├─ android (Kotlin compile)                      android
        ├─ desktop (cargo check, Linux mpv path)         desktop
-       ├─ rust (server) ┐                               rust
-       ├─ rust (modules n) ┴─ rust (one lcov)           rust
+       ├─ rust (server, module host, server clippy) ┐   rust
+       ├─ rust (modules n) ─────────────────────────┴─ rust (one lcov)
        ├─ rust (modules as components)                  rust
        ├─ module audit                                  rust
-       ├─ wasm host {ubuntu, macos, windows}            rust
+       ├─ wasm host {macos, windows}                    wasmhost
        ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
        └─ required ◄── lanes + every job above but wasm host and sonar
 ```
@@ -93,18 +94,33 @@ workspaces a change can reach. `lanes` reads the path dependencies between the
 server workspace and each module's from their `Cargo.toml` files: a module
 change runs that module and whatever links it, a server change runs every
 workspace, since every module links the server's crates. The workspaces then
-split into parallel `Rust (...)` jobs, the server on its own and the modules in
-groups of five, each with its own cache entry saved from `main` only
-(`CARGO_PROFILE_DEV_DEBUG=0` keeps each near 1.7 GB). `bun run ci rust test
---only <id,id>` runs the same on a laptop. The required **Rust** check waits for
-every job and joins their coverage into `server/lcov.info`.
+split into parallel `Rust (...)` jobs: the modules in groups of five, each with
+its own cache entry saved from `main` only (`CARGO_PROFILE_DEV_DEBUG=0` keeps
+each near 1.7 GB), and the server in three. `Rust (server clippy)` lints it,
+`Rust (server)` runs its tests (`--part core`), and `Rust (module host)` runs
+the tests of the four crates that build and run WebAssembly components
+(`--part host`): the supervisor, the wasm host, the audit host and the test
+runner. Those were two thirds of the server's test time, one binary after
+another behind the rest. The two test jobs read the `rust-server` cache, and
+the core one writes it. `bun run ci rust test --only <id,id>` runs the same on a
+laptop, the whole server when no `--part` is given. The required **Rust** check
+waits for every job and merges their coverage into `server/lcov.info` (`bun run
+ci lcov merge`): both server jobs measure the crates they share, and a file two
+reports carry is counted once, with the hits of both.
 
-`Wasm host` runs `cargo test -p kroma-wasm-host` on Ubuntu, macOS and Windows,
-because that crate's claim (RFC 480) is that a WebAssembly component is
-isolated the same way on each. Its tests build a guest component for
-`wasm32-wasip2`, so the job and the server's Rust shard both install that
-target. The job runs on the rust lane and keeps no cache, since three more
-entries would push the 10 GB budget below over. It is not part of `required`.
+The dev profile builds Cranelift and the wasmtime runtime optimised
+(`[profile.dev.package.*]` in `server/Cargo.toml`). A debug Cranelift took up
+to a minute to compile one component, and the supervisor's tests, the module
+audit and a dev server each compile dozens.
+
+`Wasm host` runs `cargo test -p kroma-wasm-host` on macOS and Windows, because
+that crate's claim (RFC 480) is that a WebAssembly component is isolated the
+same way on each system; `Rust (module host)` runs the same suite on Linux.
+Its tests build a guest component for `wasm32-wasip2`, so the job and the
+server's two test jobs install that target. Only what can move that claim
+opens its lane, **wasmhost**: the crate itself, `server/Cargo.lock` (wasmtime)
+and the toolchain. It keeps no cache, since two more entries would push the
+10 GB budget below over, and it is not part of `required`.
 Locally, run `rustup target add wasm32-wasip2` once before `cargo test
 --workspace` in `server/`.
 

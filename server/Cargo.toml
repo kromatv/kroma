@@ -317,16 +317,19 @@ debug = false
 opt-level = 3
 
 [profile.dev.package]
+cranelift-assembler-x64.opt-level = 3
 cranelift-bforest.opt-level = 3
 cranelift-bitset.opt-level = 3
 cranelift-codegen.opt-level = 3
 cranelift-control.opt-level = 3
 cranelift-entity.opt-level = 3
 cranelift-frontend.opt-level = 3
+cranelift-native.opt-level = 3
 gimli.opt-level = 3
 object.opt-level = 3
 regalloc2.opt-level = 3
 wasmparser.opt-level = 3
 wasmtime.opt-level = 3
 wasmtime-environ.opt-level = 3
+wasmtime-internal-core.opt-level = 3
 wasmtime-internal-cranelift.opt-level = 3

@@ -44,6 +44,7 @@ jobs:
       rust_modules: ${{ steps.lanes.outputs.rust_modules }}
       sdk: ${{ steps.lanes.outputs.sdk }}
       spec: ${{ steps.lanes.outputs.spec }}
+      wasmhost: ${{ steps.lanes.outputs.wasmhost }}
       sonar: ${{ steps.sonar.outputs.run }}
       sccache: ${{ steps.sccache.outputs.on }}
     steps:
@@ -117,6 +118,7 @@ jobs:
       - run: bun run typecheck
       - run: bun run check
       - run: bun run ci embeds
+      - run: bun run ci test --audit
 
   test:
     name: Unit tests ${{ matrix.shard }}/4
@@ -162,23 +164,6 @@ jobs:
           include-hidden-files: true
           retention-days: 1
           if-no-files-found: error
-
-  audit:
-    name: Kit audit
-    needs: lanes
-    if: needs.lanes.outputs.code == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-          no-cache: true
-      - run: bun install --frozen-lockfile
-      - run: bun run ci test --audit
 
   # The index is generated and committed, so a chapter edited without
   # regenerating it is the one way a prose change can be wrong. The script
@@ -385,9 +370,13 @@ jobs:
 
   # clippy, then every test under coverage, for the workspaces this change can
   # reach (lanes works them out from the path dependencies between the server
-  # and each module's workspace), split into parallel jobs: the server on its
-  # own, the modules in groups. Each job keeps its own cache, saved from main
-  # only (a copy per pull request is what used to evict every Rust cache).
+  # and each module's workspace), split into parallel jobs: the modules in
+  # groups, and the server in three, since it is the longest. Its clippy, its
+  # tests, and the tests of the crates that run WebAssembly components each
+  # run on their own runner, so none waits for another. The server's two test
+  # jobs read one cache, written by the core one; each module group keeps its
+  # own. Caches save from main only (a copy per pull request is what used to
+  # evict every Rust cache).
   rust-shard:
     name: Rust (${{ matrix.shard.name }})
     needs: lanes
@@ -410,29 +399,38 @@ jobs:
         with:
           components: clippy, rustfmt, llvm-tools-preview
       - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2
+        if: matrix.shard.part != 'clippy'
         with:
           tool: cargo-llvm-cov
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
-        if: needs.lanes.outputs.sccache == 'true'
+        if: needs.lanes.outputs.sccache == 'true' && matrix.shard.part != 'clippy'
+      # The server's clippy builds nothing the test jobs' cache holds, so it
+      # restores none.
       - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2
+        if: matrix.shard.part != 'clippy'
         with:
           workspaces: server
           cache-directories: ${{ github.workspace }}/target/kmod
-          shared-key: rust-${{ matrix.shard.name }}
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+          shared-key: rust-${{ matrix.shard.part && 'server' || matrix.shard.name }}
+          save-if: ${{ github.ref == 'refs/heads/main' && matrix.shard.part != 'host' }}
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       # Non-blocking: the codebase uses a custom import grouping, not rustfmt's.
       - run: cargo fmt --check
-        if: matrix.shard.name == 'server'
+        if: matrix.shard.part == 'clippy'
         working-directory: server
         continue-on-error: true
       - run: bun run ci tools ffmpeg
+        if: matrix.shard.part != 'clippy'
       - run: bun run ci rust clippy --only "${{ join(matrix.shard.workspaces, ',') }}"
+        if: matrix.shard.part == 'clippy' || !matrix.shard.part
       # kroma-wasm-host's tests build their guest component for this target.
       - run: rustup target add wasm32-wasip2
-        if: matrix.shard.name == 'server'
+        if: matrix.shard.part == 'core' || matrix.shard.part == 'host'
       # The credentials reach this step alone, not the install before it.
-      - run: bun run ci rust test --only "${{ join(matrix.shard.workspaces, ',') }}"
+      - run: >-
+          bun run ci rust test --only "${{ join(matrix.shard.workspaces, ',') }}"
+          ${{ matrix.shard.part && format('--part {0}', matrix.shard.part) || '' }}
+        if: matrix.shard.part != 'clippy'
         env:
           RUSTC_WRAPPER: ${{ needs.lanes.outputs.sccache == 'true' && 'sccache' || '' }}
           SCCACHE_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
@@ -441,21 +439,24 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCCACHE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SCCACHE_R2_SECRET_ACCESS_KEY }}
       - run: sccache --show-stats
-        if: needs.lanes.outputs.sccache == 'true'
+        if: needs.lanes.outputs.sccache == 'true' && matrix.shard.part != 'clippy'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.shard.part != 'clippy'
         with:
           name: coverage-rust-${{ strategy.job-index }}
           path: server/lcov.info
           retention-days: 1
           if-no-files-found: error
 
-  # The wasm host's suite on all three desktop systems, since its claim is that
-  # a component is isolated the same on each. Not required, and no cache: a
-  # spike's three cold builds should not cost the 10 GB budget or block main.
+  # The wasm host's suite on macOS and Windows, since its claim is that a
+  # component is isolated the same on each system; Linux runs it in the
+  # module host job above. Only a change to the host, the lockfile or the
+  # toolchain can move that. Not required, and no cache: two cold builds
+  # should not cost the 10 GB budget or block main.
   wasm-host:
     name: Wasm host (${{ matrix.os }})
     needs: lanes
-    if: needs.lanes.outputs.rust == 'true'
+    if: needs.lanes.outputs.wasmhost == 'true'
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -463,7 +464,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [macos-latest, windows-latest]
     defaults:
       run:
         shell: bash
@@ -562,15 +563,20 @@ jobs:
           RESULT: ${{ needs.rust-shard.result }}
         run: |
           [[ "$RESULT" == success ]] || { echo "::error::a Rust job ended $RESULT"; exit 1; }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: coverage-rust-*
           path: parts
+      # The server's two test jobs both measure the crates they share, so a
+      # file can come twice; merging adds its hits instead of listing it twice.
       - name: One coverage report
-        run: |
-          mkdir -p server
-          find parts -name lcov.info -exec cat {} + > server/lcov.info
-          echo "$(grep -c '^SF:' server/lcov.info) files measured"
+        run: bun run ci lcov merge server/lcov.info parts/*/lcov.info
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-rust
@@ -585,7 +591,7 @@ jobs:
   # changes.
   required:
     name: Required
-    needs: [lanes, checks, test-report, audit, spec, build, tv-native, sdk, desktop, rust, rust-components, module-audit]
+    needs: [lanes, checks, test-report, spec, build, tv-native, sdk, desktop, rust, rust-components, module-audit]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -602,8 +608,7 @@ jobs:
         env:
           NEEDS: ${{ toJSON(needs) }}
           LANE_OF: >-
-            {"checks": "code", "test-report": "code", "audit": "code",
-            "spec": "spec", "build": "fleet", "tv-native": "android",
+            {"checks": "code", "test-report": "code", "spec": "spec", "build": "fleet", "tv-native": "android",
             "sdk": "sdk", "desktop": "desktop", "rust": "rust",
             "rust-components": "rust", "module-audit": "rust"}
 
