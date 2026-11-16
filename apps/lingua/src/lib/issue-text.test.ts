@@ -29,4 +29,14 @@ describe('issueText', () => {
   it('gives the length limit of a message that is too long', () => {
     expect(issueText({ level: 'error', code: 'too-long' })).toBe('Longer than 4,000 characters');
   });
+
+  it('says what is wrong with each issue when the server sends no detail', () => {
+    const codes = ['missing-token', 'unknown-ref', 'control-character'] as const;
+
+    expect(codes.map((code) => issueText({ level: 'error', code }))).toEqual([
+      'A placeholder from the source is missing',
+      'A `$t()` names no message of this project',
+      'Contains an invisible control character',
+    ]);
+  });
 });

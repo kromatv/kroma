@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { answerSend, type PendingSend, type SendAnswer } from './authorizations';
+import { answerSend, type PendingSend, pendingCookie, readPending, type SendAnswer } from './authorizations';
 import type { ProposalResult } from './proposals';
 import { ada } from './test-support';
 
@@ -80,5 +80,40 @@ describe('answerSend', () => {
     );
 
     expect(to).toBe('/o/r/fr?send=forking');
+  });
+});
+
+describe('answerSend when GitHub’s answer cannot be used', () => {
+  it('returns a send as expired once the browser came back signed out', async () => {
+    expect(await answerSend(answer({ viewer: null }))).toBe('/o/r/fr?send=expired');
+  });
+
+  it('returns a send as failed when GitHub would not trade the code', async () => {
+    const fetchFn: typeof fetch = async () => Response.json({ error: 'bad_verification_code' });
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    expect(await answerSend(answer({ fetchFn }))).toBe('/o/r/fr?send=failed');
+  });
+
+  it('returns a send that found nothing left to carry', async () => {
+    const send = async (): Promise<ProposalResult> => ({ status: 200, body: { kind: 'nothing' } });
+
+    const to = await answerSend(answer({ fetchFn: gitHubGranting({ scope: 'repo', id: 42 }), send }));
+
+    expect(to).toBe('/o/r/fr?send=nothing');
+  });
+});
+
+describe('readPending', () => {
+  it('reads back the send its cookie remembers', () => {
+    const header = `other=1; ${pendingCookie(pending).split(';')[0]}`;
+
+    expect(readPending(header)).toEqual(pending);
+  });
+
+  it('reads no send from a cookie that is missing, not JSON, or not a send', () => {
+    const cookies = [undefined, 'lingua_send=%7B', `lingua_send=${encodeURIComponent('{"state":""}')}`];
+
+    expect(cookies.map((header) => readPending(header))).toEqual([null, null, null]);
   });
 });

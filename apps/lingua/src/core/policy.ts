@@ -53,9 +53,6 @@ function inline(value: unknown): string {
 }
 
 function block(entries: readonly (readonly [string, string])[], indent: string): string {
-  if (entries.length === 0) {
-    return '{}';
-  }
   const lines = entries.map(([key, value]) => `${indent}  ${JSON.stringify(key)}: ${value}`);
   return `{\n${lines.join(',\n')}\n${indent}}`;
 }

@@ -1,4 +1,6 @@
+import { generateKeyPairSync } from 'node:crypto';
 import { z } from 'zod';
+import type { AppCredentials } from './app';
 import { type GitHub, GitHubError } from './client';
 
 /** One request a fake GitHub received. */
@@ -117,6 +119,58 @@ function pathAliases(fake: FakeRepository, query: string): [string, unknown][] {
   );
 }
 
+function repositoryOf(fake: FakeRepository, query: string): Record<string, unknown> {
+  return Object.fromEntries([...blobAliases(fake, query), ...pathAliases(fake, query)]);
+}
+
+const GraphQLBody = z.object({ query: z.string() });
+
+function respond(fake: FakeRepository, call: Call): Response {
+  if (call.path === '/graphql') {
+    const { query } = GraphQLBody.parse(call.body);
+    return Response.json({ data: { repository: repositoryOf(fake, query) } });
+  }
+  try {
+    return Response.json(answer(fake, call));
+  } catch (error) {
+    if (!(error instanceof GitHubError)) {
+      throw error;
+    }
+    return Response.json({ message: error.message }, { status: error.status });
+  }
+}
+
+function urlOf(input: RequestInfo | URL): URL {
+  return new URL(input instanceof Request ? input.url : input);
+}
+
+/**
+ * GitHub over HTTP, as `fetch` reaches it: REST routes from `fake` by
+ * `METHOD /path?query` on any GitHub host, GraphQL blob reads from its blobs,
+ * a 404 with GitHub's message for anything else. Records every call.
+ */
+export function gitHubFetch(fake: FakeRepository): typeof fetch & { calls: Call[] } {
+  const calls: Call[] = [];
+  const fetchFn = async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = urlOf(input);
+    const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
+    const call = { method: init?.method ?? 'GET', path: `${url.pathname}${url.search}`, body };
+    calls.push(call);
+    return respond(fake, call);
+  };
+  return Object.assign(fetchFn, { calls });
+}
+
+/** A GitHub App with a freshly minted RSA key, as its `wrangler secret`s hold it. */
+export function testApp(): AppCredentials {
+  const { privateKey } = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+  });
+  return { appId: '1', privateKey, webhookSecret: 'whsec' };
+}
+
 /** A GitHub answering from `fake`, 404 for any route it does not hold, recording every call. */
 export function fakeGitHub(fake: FakeRepository): GitHub & { calls: Call[] } {
   const calls: Call[] = [];
@@ -132,9 +186,7 @@ export function fakeGitHub(fake: FakeRepository): GitHub & { calls: Call[] } {
       schema.parse(record({ method: write.method, path: write.path, body: write.body })),
     async graphql(query, schema) {
       calls.push({ method: 'GRAPHQL', path: query, body: undefined });
-      return schema.parse({
-        repository: Object.fromEntries([...blobAliases(fake, query), ...pathAliases(fake, query)]),
-      });
+      return schema.parse({ repository: repositoryOf(fake, query) });
     },
   };
 }

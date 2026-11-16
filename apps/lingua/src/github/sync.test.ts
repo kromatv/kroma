@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { memoryStore } from '#site/store/memory-store';
 import type { Store } from '#site/store/store';
-import { discoverInstallation, syncProject } from './sync';
+import { GitHubError } from './client';
+import { discoverInstallation, installations, syncProject } from './sync';
 import { fakeGitHub, sha } from './test-support';
 
 const CONFIG = JSON.stringify({ projects: [{ path: 'loc' }] });
@@ -9,8 +10,8 @@ const CONFIG = JSON.stringify({ projects: [{ path: 'loc' }] });
 const BRANCH = 'GET /repos/o/r/branches/main';
 const TREE = `GET /repos/o/r/git/trees/${sha('0e')}?recursive=1`;
 
-function repository(head: string, files: Record<string, string>) {
-  const blobs: Record<string, string> = { [sha('c')]: CONFIG };
+function repository(head: string, files: Record<string, string>, config = CONFIG) {
+  const blobs: Record<string, string> = { [sha('c')]: config };
   const tree = [
     { path: 'lingua.json', type: 'blob', sha: sha('c') },
     { path: 'README.md', type: 'blob', sha: sha('d') },
@@ -114,6 +115,31 @@ describe('syncProject', () => {
 
     expect((await store.project('o/r'))?.configError).toBe('lingua.json is missing');
   });
+
+  it('records why a tree too large to read in one request cannot be read', async () => {
+    const store = await seeded();
+    const gh = fakeGitHub({
+      routes: {
+        [BRANCH]: () => ({ commit: { sha: sha('a'), commit: { tree: { sha: sha('0e') } } } }),
+        [TREE]: () => ({ truncated: true, tree: [] }),
+      },
+    });
+
+    await sync(store, gh, 100);
+
+    expect((await store.project('o/r'))?.configError).toBe(
+      'the repository tree is too large to read in one request',
+    );
+  });
+
+  it('records why a lingua.json that does not parse cannot be read', async () => {
+    const store = await seeded();
+    const gh = repository(sha('a'), {}, '{}');
+
+    await sync(store, gh, 100);
+
+    expect((await store.project('o/r'))?.configError).toMatch(/^lingua\.json/);
+  });
 });
 
 describe('discoverInstallation', () => {
@@ -131,5 +157,51 @@ describe('discoverInstallation', () => {
     await discoverInstallation({ gh, store, branches: new Map([['o/r', 'next']]) }, 7);
 
     expect(await store.project('o/r')).toMatchObject({ installationId: 7, branch: 'next' });
+  });
+});
+
+describe('discoverInstallation', () => {
+  it('forgets a repository whose lingua.json is gone, and skips an archived one', async () => {
+    const store = memoryStore();
+    await store.upsertProject('o/old', 7, 'main');
+    const gh = fakeGitHub({
+      routes: {
+        'GET /installation/repositories?per_page=100': () => ({
+          repositories: [
+            { full_name: 'o/old', default_branch: 'main' },
+            { full_name: 'o/archived', default_branch: 'main', archived: true },
+          ],
+        }),
+      },
+    });
+
+    await discoverInstallation({ gh, store }, 7);
+
+    expect(await store.projects()).toEqual([]);
+  });
+
+  it('passes on a failure other than a missing lingua.json', async () => {
+    const gh = fakeGitHub({
+      routes: {
+        'GET /installation/repositories?per_page=100': () => ({
+          repositories: [{ full_name: 'o/r', default_branch: 'main' }],
+        }),
+        'GET /repos/o/r/contents/lingua.json?ref=main': () => {
+          throw new GitHubError(500, 'down');
+        },
+      },
+    });
+
+    await expect(discoverInstallation({ gh, store: memoryStore() }, 7)).rejects.toThrow('down');
+  });
+});
+
+describe('installations', () => {
+  it('lists every installation of the App by id', async () => {
+    const gh = fakeGitHub({
+      routes: { 'GET /app/installations?per_page=100': () => [{ id: 3 }, { id: 5 }] },
+    });
+
+    expect(await installations(gh)).toEqual([3, 5]);
   });
 });

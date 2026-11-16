@@ -11,7 +11,7 @@ import {
 } from '@kromatv/i18n-tools';
 import { describe, expect, it } from 'vitest';
 import { placeOf } from './config';
-import { digest, digests, inspect, parseLock, renderLock } from './lock';
+import { confirmed, digest, digests, inspect, parseLock, renderLock } from './lock';
 import { parsePolicy } from './policy';
 import { localeFiles, localesOn, lockOn, type Shelf, shelfOf } from './shelf';
 import { merged, sourceOf } from './source';
@@ -91,5 +91,30 @@ describe("this repository's catalogs", { timeout: 60_000 }, () => {
         return [status.missing, status.outdated, status.unreviewed];
       }),
     );
+  });
+});
+
+describe('parseLock', () => {
+  it('reads a missing or unreadable lock as empty, as i18n-tools does', () => {
+    const texts = [undefined, '{', '{ "version": 1, "messages": { "a": "nope" } }'];
+
+    expect(texts.map((text) => parseLock(text).size)).toEqual([0, 0, 0]);
+  });
+});
+
+describe('confirmed', () => {
+  it('marks reviewed only the keys both the lock and the source hold', () => {
+    const against = { source: sourceOf('en', new Map()), digests: new Map([['a', '11111111']]) };
+    const lock = new Map([
+      ['a', { source: '00000000', translation: '22222222', machine: true }],
+      ['b', { source: '00000000', translation: '33333333' }],
+    ]);
+
+    const out = confirmed(against, lock, ['a', 'b', 'c']);
+
+    expect([...out]).toEqual([
+      ['a', { source: '11111111', translation: '22222222' }],
+      ['b', { source: '00000000', translation: '33333333' }],
+    ]);
   });
 });

@@ -79,16 +79,15 @@ export function parseLock(text: string | undefined): Lock {
   }
 }
 
+function entryText(entry: LockEntry): string {
+  const flag = entry.machine ? ` ${MACHINE}` : '';
+  return `${entry.source} ${entry.translation}${flag}`;
+}
+
 /** The lock file text, byte for byte as i18n-tools renders it. */
 export function renderLock(lock: Lock): string {
-  const messages: Record<string, string> = {};
-  for (const key of [...lock.keys()].sort((a, b) => (a < b ? -1 : 1))) {
-    const entry = lock.get(key);
-    if (entry) {
-      const flag = entry.machine ? ` ${MACHINE}` : '';
-      messages[key] = `${entry.source} ${entry.translation}${flag}`;
-    }
-  }
+  const sorted = [...lock].sort(([a], [b]) => (a < b ? -1 : 1));
+  const messages = Object.fromEntries(sorted.map(([key, entry]) => [key, entryText(entry)]));
   return `${JSON.stringify({ version: VERSION, messages }, null, 2)}\n`;
 }
 
