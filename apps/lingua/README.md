@@ -155,6 +155,12 @@ Then connect GitHub:
 `/setup` lists what is still missing, and answers 404 once both apps' secrets
 are set.
 
+To try a repository whose `lingua.json` is not on its default branch yet, pin
+the branch Lingua tracks with the `LINGUA_BRANCHES` variable, `owner/repo=branch`
+comma separated: `bunx wrangler deploy --var LINGUA_BRANCHES:kromatv/kroma=feat/lingua`.
+Lingua then reads that branch, syncs on pushes to it, and opens pull requests
+against it. The next deploy without `--var` drops it.
+
 ## Running it locally
 
 ```bash

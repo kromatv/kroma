@@ -63,6 +63,7 @@ export interface Handling {
   connect: (installationId: number) => Promise<GitHub>;
   store: Store;
   now: number;
+  branches?: ReadonlyMap<string, string>;
 }
 
 /** Find every repository an installation reaches with a `lingua.json`, then sync each one. */
@@ -72,12 +73,14 @@ export async function syncInstallation(syncing: Syncing, installationId: number,
   await Promise.all(projects.map((project) => syncProject(syncing, project, now)));
 }
 
-async function onPush({ connect, store, now }: Handling, payload: unknown): Promise<void> {
+async function onPush({ connect, store, now, branches }: Handling, payload: unknown): Promise<void> {
   const push = Push.safeParse(payload);
-  if (!push.success || push.data.ref !== `refs/heads/${push.data.repository.default_branch}`) {
+  const repository = push.data?.repository;
+  const tracked = repository ? (branches?.get(repository.full_name) ?? repository.default_branch) : '';
+  if (!push.success || push.data.ref !== `refs/heads/${tracked}`) {
     return;
   }
-  const syncing = { gh: await connect(push.data.installation.id), store };
+  const syncing = { gh: await connect(push.data.installation.id), store, branches };
   const known = await store.project(push.data.repository.full_name);
   const touchedConfig = push.data.commits.some((c) => [...c.added, ...c.modified].includes(CONFIG_PATH));
   if (!known || touchedConfig) {
@@ -117,7 +120,7 @@ async function onPullClosed({ connect, store }: Handling, payload: unknown): Pro
   }
 }
 
-async function onInstallation({ connect, store, now }: Handling, payload: unknown): Promise<void> {
+async function onInstallation({ connect, store, now, branches }: Handling, payload: unknown): Promise<void> {
   const parsed = InstallationEvent.safeParse(payload);
   if (!parsed.success) {
     return;
@@ -127,7 +130,7 @@ async function onInstallation({ connect, store, now }: Handling, payload: unknow
     await store.dropProjects(installation.id, []);
     return;
   }
-  await syncInstallation({ gh: await connect(installation.id), store }, installation.id, now);
+  await syncInstallation({ gh: await connect(installation.id), store, branches }, installation.id, now);
 }
 
 /**

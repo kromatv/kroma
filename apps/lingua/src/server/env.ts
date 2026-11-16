@@ -18,6 +18,7 @@ export interface Env {
   GITHUB_OAUTH_CLIENT_ID?: string;
   GITHUB_OAUTH_CLIENT_SECRET?: string;
   LINGUA_DEV_LOGIN?: string;
+  LINGUA_BRANCHES?: string;
 }
 
 const STRINGS = [
@@ -28,6 +29,7 @@ const STRINGS = [
   'GITHUB_OAUTH_CLIENT_ID',
   'GITHUB_OAUTH_CLIENT_SECRET',
   'LINGUA_DEV_LOGIN',
+  'LINGUA_BRANCHES',
 ] as const;
 
 function isD1(value: unknown): value is D1Database {
@@ -81,4 +83,20 @@ export async function storeFor(env: Env): Promise<Store> {
   }
   local ??= import('./dev-store').then(({ devStore }) => devStore());
   return local;
+}
+
+const REPO = /^[\w.-]+\/[\w.-]+$/;
+const BRANCH = /^[\w./-]+$/;
+
+/**
+ * Branches an operator pinned in `LINGUA_BRANCHES` (`owner/repo=branch`, comma
+ * separated), tracked instead of each repository's default branch. Lets a
+ * deployment follow a branch that is not merged yet.
+ */
+export function trackedBranches(env: Env): ReadonlyMap<string, string> {
+  const pairs = (env.LINGUA_BRANCHES ?? '').split(',').flatMap((entry): [string, string][] => {
+    const [repo = '', branch = ''] = entry.trim().split('=');
+    return REPO.test(repo) && BRANCH.test(branch) ? [[repo, branch]] : [];
+  });
+  return new Map(pairs);
 }

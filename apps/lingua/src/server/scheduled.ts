@@ -1,6 +1,6 @@
 import { asApp, asInstallation } from '#site/github/app';
 import { installations } from '#site/github/sync';
-import { appCredentials, type Env, storeFor } from './env';
+import { appCredentials, type Env, storeFor, trackedBranches } from './env';
 import { syncInstallation } from './webhook';
 
 /** The cron's pass: find every repository the App reaches that has a `lingua.json`, then sync each one. */
@@ -13,7 +13,11 @@ export async function refreshAll(env: Env, now: number): Promise<void> {
   const ids = await installations(await asApp(app));
   const passes = ids.map(async (id) => {
     try {
-      await syncInstallation({ gh: await asInstallation(app, id), store }, id, now);
+      await syncInstallation(
+        { gh: await asInstallation(app, id), store, branches: trackedBranches(env) },
+        id,
+        now,
+      );
     } catch (error) {
       console.error(`lingua: installation ${id} did not sync`, error);
     }

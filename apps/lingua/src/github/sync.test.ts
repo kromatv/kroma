@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { memoryStore } from '#site/store/memory-store';
 import type { Store } from '#site/store/store';
-import { syncProject } from './sync';
+import { discoverInstallation, syncProject } from './sync';
 import { fakeGitHub, sha } from './test-support';
 
 const CONFIG = JSON.stringify({ projects: [{ path: 'loc' }] });
@@ -113,5 +113,23 @@ describe('syncProject', () => {
     await sync(store, gh, 100);
 
     expect((await store.project('o/r'))?.configError).toBe('lingua.json is missing');
+  });
+});
+
+describe('discoverInstallation', () => {
+  it('tracks the branch an operator pinned instead of the default one', async () => {
+    const store = memoryStore();
+    const gh = fakeGitHub({
+      routes: {
+        'GET /installation/repositories?per_page=100': () => ({
+          repositories: [{ full_name: 'o/r', default_branch: 'main' }],
+        }),
+        'GET /repos/o/r/contents/lingua.json?ref=next': () => ({}),
+      },
+    });
+
+    await discoverInstallation({ gh, store, branches: new Map([['o/r', 'next']]) }, 7);
+
+    expect(await store.project('o/r')).toMatchObject({ installationId: 7, branch: 'next' });
   });
 });

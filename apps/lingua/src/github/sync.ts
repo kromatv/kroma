@@ -36,6 +36,8 @@ const BATCH = 60;
 export interface Syncing {
   gh: GitHub;
   store: Store;
+  /** A branch to track instead of a repository's default one, by `owner/repo`. */
+  branches?: ReadonlyMap<string, string>;
 }
 
 /** The head of a branch: its commit and the tree under it. */
@@ -180,17 +182,19 @@ async function hasConfig(gh: GitHub, repo: string, branch: string): Promise<bool
 
 /** Record every repository an installation reaches that carries a `lingua.json`, and forget the rest. */
 export async function discoverInstallation(
-  { gh, store }: Syncing,
+  { gh, store, branches }: Syncing,
   installationId: number,
 ): Promise<void> {
   const { repositories } = await gh.get('/installation/repositories?per_page=100', Repositories);
   const live = repositories.filter((repo) => !repo.archived);
+  const tracked = (repo: (typeof live)[number]) =>
+    branches?.get(repo.full_name) ?? repo.default_branch;
   const configured = await Promise.all(
-    live.map((repo) => hasConfig(gh, repo.full_name, repo.default_branch)),
+    live.map((repo) => hasConfig(gh, repo.full_name, tracked(repo))),
   );
   const kept = live.filter((_, i) => configured[i]);
   await Promise.all(
-    kept.map((repo) => store.upsertProject(repo.full_name, installationId, repo.default_branch)),
+    kept.map((repo) => store.upsertProject(repo.full_name, installationId, tracked(repo))),
   );
   await store.dropProjects(
     installationId,

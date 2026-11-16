@@ -7,7 +7,7 @@ import type { Store, User } from '#site/store/store';
 import { answerSend, askToSend, forgetPending, type PendingSend, pendingCookie, readPending } from './authorizations';
 import { ConfirmInput, saveConfirms } from './confirms';
 import { EditInput, saveEdit } from './edits';
-import { appCredentials, type Env, oauthCredentials, storeFor } from './env';
+import { appCredentials, type Env, oauthCredentials, storeFor, trackedBranches } from './env';
 import { messagePage } from './go';
 import { LocaleInput, startLanguage } from './locales';
 import { sendProposal, SendInput } from './proposals';
@@ -201,7 +201,15 @@ app.post('/webhook', async (c) => {
   const store = await storeFor(c.env.env);
   const delivery = { event: c.req.header('x-github-event') ?? '', payload };
   c.env.ctx.waitUntil(
-    handleDelivery({ connect: (id) => asInstallation(github, id), store, now: now() }, delivery).catch((error: unknown) =>
+    handleDelivery(
+      {
+        connect: (id) => asInstallation(github, id),
+        store,
+        now: now(),
+        branches: trackedBranches(c.env.env),
+      },
+      delivery,
+    ).catch((error: unknown) =>
       console.error('lingua: webhook failed', error),
     ),
   );
