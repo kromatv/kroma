@@ -6,7 +6,8 @@ import { type Env, listedProjects, oauthCredentials, storeFor } from './env';
 
 const REQUESTS_PER_RUN = 45;
 
-async function syncingFor(env: Env, fetchFn: typeof fetch): Promise<Syncing | null> {
+/** Who a run talks to and where it keeps what it read, with a fresh budget of GitHub requests, or null without a database. */
+export async function syncingFor(env: Env, fetchFn: typeof fetch): Promise<Syncing | null> {
   if (!env.LINGUA_DB) return null;
   const allowance = { oauth: oauthCredentials(env), requests: REQUESTS_PER_RUN };
   return { reader: reader(allowance, fetchFn), store: await storeFor(env) };
@@ -43,5 +44,9 @@ export async function refreshAll(env: Env, now: number, fetchFn: typeof fetch = 
 /** A page's run: pass over project `id` when its last pass ended more than two minutes ago. */
 export async function refreshStale(env: Env, id: string, now: number, fetchFn: typeof fetch = fetch): Promise<void> {
   const syncing = await syncingFor(env, fetchFn);
-  if (syncing) logFailure(id, await passIfStale(syncing, id, now));
+  if (!syncing) {
+    return;
+  }
+  await trackProjects(syncing, listedProjects(env));
+  logFailure(id, await passIfStale(syncing, id, now));
 }

@@ -93,3 +93,27 @@ export function sendProposal(target: {
 export function signInUrl(returnTo: string): string {
   return `/auth/login?to=${encodeURIComponent(returnTo)}`;
 }
+
+const RepositorySchema = z.object({
+  id: z.string(),
+  branch: z.string().nullable(),
+  checkedAt: z.number().nullable(),
+  sync: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('waiting') }),
+    z.object({
+      kind: z.literal('reading'),
+      progress: z.object({ done: z.number(), total: z.number() }).nullable(),
+    }),
+    z.object({ kind: z.literal('current') }),
+    z.object({ kind: z.literal('failed'), error: z.string() }),
+  ]),
+  configError: z.string().nullable(),
+});
+
+/** Where a repository's sync stands, as a sync by hand answers it. */
+export type Repository = z.infer<typeof RepositorySchema>;
+
+/** Read repository `project` now: one pass, as far as one request may go. Call again while it is still `reading`. */
+export function syncRepository(project: string): Promise<Repository> {
+  return call({ method: 'POST', path: '/api/sync', body: { project }, schema: RepositorySchema });
+}

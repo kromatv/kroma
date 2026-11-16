@@ -10,7 +10,8 @@ function syncOf(project: Project): SyncState {
   return project.headSha === null ? { kind: 'waiting' } : { kind: 'current' };
 }
 
-function statusOf(listed: ListedProject, project: Project | undefined): RepositoryStatus {
+/** Where the sync of a listed repository stands, from its project, or waiting when it has none yet. */
+export function statusOf(listed: ListedProject, project: Project | undefined): RepositoryStatus {
   if (!project) return { id: listed.id, branch: listed.branch, checkedAt: null, sync: { kind: 'waiting' }, configError: null };
   return { id: listed.id, branch: project.branch, checkedAt: project.checkedAt, sync: syncOf(project), configError: project.configError };
 }

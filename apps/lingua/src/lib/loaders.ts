@@ -76,8 +76,13 @@ export const getSite = createServerFn().handler(async (): Promise<SiteView> => {
 
 /** `/setup`. */
 export const getSetup = createServerFn().handler(async (): Promise<SetupView> => {
-  const { requestContext, servedRequest } = await import('#site/server/request');
+  const { refreshAfterServing, requestContext, servedRequest } =
+    await import('#site/server/request');
   const { setupView } = await import('#site/server/setup');
   const { origin } = await servedRequest();
-  return setupView(await requestContext(), origin);
+  const view = await setupView(await requestContext(), origin);
+  await Promise.all(
+    view.repositories.filter((r) => r.checkedAt === null).map((r) => refreshAfterServing(r.id)),
+  );
+  return view;
 });

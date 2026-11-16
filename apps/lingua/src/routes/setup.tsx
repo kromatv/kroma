@@ -17,7 +17,8 @@ export const Route = createFileRoute('/setup')({
   component: SetupPage,
 });
 
-const translating = (view: SetupView) => view.repositories.length > 0;
+const translating = (view: SetupView) =>
+  view.repositories.length > 0 && view.repositories.every((r) => r.sync.kind === 'current');
 
 function AllDone({ repositories }: Readonly<{ repositories: number }>) {
   return (
@@ -97,7 +98,7 @@ function RepositoriesStep({ view }: Readonly<{ view: SetupView }>) {
       done={translating(view)}
     >
       {view.repositories.map((repository) => (
-        <RepositoryRow key={repository.id} repository={repository} />
+        <RepositoryRow key={repository.id} repository={repository} canSync={view.viewer !== null} />
       ))}
       <AddRepository />
     </SetupStep>

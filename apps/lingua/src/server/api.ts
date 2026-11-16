@@ -13,6 +13,7 @@ import { messagePage } from './go';
 import { LocaleInput, startLanguage } from './locales';
 import { sendProposal, SendInput } from './proposals';
 import { resolveViewer } from './request';
+import { SyncInput, syncNow } from './sync-now';
 import { closeSession, cookie, openSession, randomToken, readCookie } from './session';
 
 type Ctx = { Bindings: { env: Env } };
@@ -147,6 +148,15 @@ app.post('/api/confirm', async (c) => {
   if (!input) return c.json({ error: 'Malformed request' }, 400);
   const result = await saveConfirms(signedIn.store, signedIn.viewer, input, now());
   return result.status === 200 ? c.json({ confirmed: result.confirmed }) : c.json({ error: result.error }, result.status);
+});
+
+app.post('/api/sync', async (c) => {
+  const signedIn = await contributor(c, 'Sign in with GitHub to sync a repository');
+  if (signedIn instanceof Response) return signedIn;
+  const input = await jsonInput(c, SyncInput);
+  if (!input) return c.json({ error: 'Malformed request' }, 400);
+  const result = await syncNow(c.env.env, input, now());
+  return result.status === 200 ? c.json(result.repository) : c.json({ error: result.error }, result.status);
 });
 
 app.post('/api/locales', async (c) => {
