@@ -3,6 +3,7 @@
 //! best-effort `notify` watcher, both feeding one debounced worker thread.
 
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
 
@@ -120,18 +121,18 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
     }
 }
 
-/// File count + Σsize + Σmtime across all files.
+/// A digest of every file's path, size and mtime, in no particular order: a
+/// file added, removed, moved, renamed, resized or touched changes it.
 pub fn signature(items: &[MediaItem], mtimes: &HashMap<String, Option<i64>>) -> u64 {
-    let mut count: u64 = 0;
-    let mut acc: u64 = 0;
-    for item in items {
-        for f in &item.files {
-            count = count.wrapping_add(1);
-            acc = acc.wrapping_add(f.size.unwrap_or(0));
-            if let Some(Some(m)) = mtimes.get(&f.id) {
-                acc = acc.wrapping_add(*m as u64);
-            }
-        }
-    }
-    count.wrapping_mul(1_000_003).wrapping_add(acc)
+    items
+        .iter()
+        .flat_map(|item| &item.files)
+        .fold(0u64, |acc, f| {
+            let mut h = DefaultHasher::new();
+            (&f.id, f.size, mtimes.get(&f.id).copied().flatten()).hash(&mut h);
+            acc.wrapping_add(h.finish())
+        })
 }
+
+#[cfg(test)]
+mod tests;
