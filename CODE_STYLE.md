@@ -121,8 +121,8 @@ export function formatDuration(ms: number): string
 - **Apologies and hedging.** `// hacky but works`, `// not sure why this is
   needed`. Either find out and write the reason, or delete the comment.
 - **Comments in a language other than English.** Code, comments, identifiers and
-  commit messages are English. (User-facing copy is French. That is content, not
-  code.)
+  commit messages are English. (User-facing copy is written in English first
+  and kept complete in French. That is content, not code.)
 
 ## When a comment is worth it
 

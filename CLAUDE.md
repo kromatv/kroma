@@ -370,7 +370,8 @@ the build on anything a legacy engine cannot parse.
   [`packages/shots/README.md`](packages/shots/README.md#attaching-any-image)).
   Never commit an image, push a branch or create a release to host one.
 - **English for code, comments, identifiers and commit messages.** User-facing copy
-  is French. That is content, not code. No emoji in the product.
+  is written in English, the source language, and kept complete in French.
+  That is content, not code. No emoji in the product.
 - Every user-visible string is a translation key. The core catalogs are one
   folder per language under `packages/core/src/locales/`, a file per namespace
   or a folder of files where one is split, and `i18n.json` beside them is the

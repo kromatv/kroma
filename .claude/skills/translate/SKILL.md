@@ -1,6 +1,6 @@
 ---
 name: translate
-description: Translate KROMA's interface into a language, or bring one up to date, with the project's own tooling. Takes what a language is missing or has outdated from `bun run i18n todo`, translates it, writes it back with `bun run i18n fill --machine` so it is tracked as unreviewed, and checks the result. Use when adding a language, filling the gaps of one, or after the French source changed. Triggers - "translate into German", "add Spanish", "fill the missing translations", "bring de up to date", "/translate de", "traduis en italien".
+description: Translate KROMA's interface into a language, or bring one up to date, with the project's own tooling. Takes what a language is missing or has outdated from `bun run i18n todo`, translates it, writes it back with `bun run i18n fill --machine` so it is tracked as unreviewed, and checks the result. Use when adding a language, filling the gaps of one, or after the English source changed. Triggers - "translate into German", "add Spanish", "fill the missing translations", "bring de up to date", "/translate de", "traduis en italien".
 ---
 
 # Translate
@@ -21,9 +21,7 @@ bun run i18n todo <locale> --limit 150 --out <scratch>/todo.json
 
 Read the file. For each message you get:
 
-- `source`: the French text. It is the source of truth.
-- `reference`: the English text, to help you understand the French. Translate
-  the French, not the English.
+- `source`: the English text. It is the source of truth.
 - `current`: what the language says today, for a message whose source changed.
   Keep what still holds.
 - `note`: what the project tells translators. Follow it.
