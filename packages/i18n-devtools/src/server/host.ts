@@ -28,6 +28,13 @@ export interface TranslationStatus {
   readonly sets: readonly Pending[];
 }
 
+/** Where the repository translates: the Lingua site, and the `<owner>/<repo>`
+ *  it files the repository under. */
+export interface Lingua {
+  readonly url: string;
+  readonly project: string;
+}
+
 /** What the panel asks the dev server, over the channel Vite already keeps
  *  open to every module it serves. */
 export interface Asks {
@@ -38,6 +45,7 @@ export interface Asks {
   'kroma:i18n:edit': { written: string[]; refused: string | null };
   'kroma:i18n:status': { status: TranslationStatus | null; refused: string | null };
   'kroma:i18n:confirm': { settled: string[]; refused: string | null };
+  'kroma:i18n:lingua': { lingua: Lingua | null };
 }
 
 /** The dev server's end of that channel: `import.meta.hot`, narrowed to what
@@ -58,6 +66,7 @@ const EVENTS = [
   'kroma:i18n:edit',
   'kroma:i18n:status',
   'kroma:i18n:confirm',
+  'kroma:i18n:lingua',
 ] as const satisfies ReadonlyArray<keyof Asks>;
 const TIMEOUT_MS = 3000;
 

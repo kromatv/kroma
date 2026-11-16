@@ -39,6 +39,10 @@ async function pointAtMessage(): Promise<void> {
   });
 }
 
+function statusAsks(server: ReturnType<typeof testChannel>) {
+  return server.sent.filter(({ event }) => event === 'kroma:i18n:status');
+}
+
 function press(code: string): void {
   act(() => {
     window.dispatchEvent(new KeyboardEvent('keydown', { code, ctrlKey: true, altKey: true }));
@@ -166,13 +170,28 @@ describe('editing the message under the pointer', () => {
     expect(screen.queryByText('edit')).toBeNull();
     expect(screen.queryByText('Edit message')).toBeNull();
   });
+
+  it('opens it in Lingua, in a new tab, on its own chord', async () => {
+    const server = inspecting(true);
+    await act(async () => {
+      server.answer('kroma:i18n:lingua', { lingua: { url: 'https://l.test', project: 'o/r' } });
+      await Promise.resolve();
+    });
+    await pointAtMessage();
+
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+
+    press('KeyL');
+
+    expect(open).toHaveBeenCalledWith('https://l.test/go/o/r/en/nav.home', '_blank', 'noopener');
+  });
 });
 
 describe('how the rendered locale stands', () => {
   it('is asked of the dev server once the page is being inspected', () => {
     const server = inspecting(true);
 
-    expect(server.sent).toEqual([
+    expect(statusAsks(server)).toEqual([
       { event: 'kroma:i18n:status', data: { locale: 'en', at: expect.any(Number) } },
     ]);
   });
@@ -182,7 +201,7 @@ describe('how the rendered locale stands', () => {
 
     act(() => setLive({ locale: 'fr' }));
 
-    expect(server.sent.map(({ data }) => data.locale)).toEqual(['en', 'fr']);
+    expect(statusAsks(server).map(({ data }) => data.locale)).toEqual(['en', 'fr']);
   });
 
   it('is asked again each time a catalog file is saved, whoever saved it', () => {
@@ -190,10 +209,7 @@ describe('how the rendered locale stands', () => {
 
     act(() => server.emit('kroma:catalog', { file: 'nav', locale: 'fr', catalog: {} }));
 
-    expect(server.sent.map(({ event }) => event)).toEqual([
-      'kroma:i18n:status',
-      'kroma:i18n:status',
-    ]);
+    expect(statusAsks(server)).toHaveLength(2);
   });
 
   it('stops listening for saves once nothing is inspected', () => {
@@ -202,7 +218,7 @@ describe('how the rendered locale stands', () => {
 
     act(() => server.emit('kroma:catalog'));
 
-    expect(server.sent).toHaveLength(1);
+    expect(statusAsks(server)).toHaveLength(1);
   });
 
   it('is never asked for an engine that does not write catalogs', async () => {
@@ -269,7 +285,10 @@ describe('confirming the translation under the pointer', () => {
     press('KeyC');
 
     expect(screen.queryByText('confirm')).toBeNull();
-    expect(server.sent.map(({ event }) => event)).toEqual(['kroma:i18n:status']);
+    expect(server.sent.map(({ event }) => event)).toEqual([
+      'kroma:i18n:lingua',
+      'kroma:i18n:status',
+    ]);
   });
 
   it('takes the grade off the card once the dev server has settled it', async () => {

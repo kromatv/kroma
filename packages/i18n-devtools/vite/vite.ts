@@ -11,6 +11,7 @@ import {
 import launchEditor from 'launch-editor';
 import type { Plugin, ViteDevServer } from 'vite';
 import { installedEditors, launcherOf, resolveFile, within } from './editors.ts';
+import { serveLingua } from './lingua.ts';
 import { serveCatalogs } from './serve-catalogs.ts';
 import { forgetMaps, type Served, sourceOf } from './where.ts';
 
@@ -251,6 +252,7 @@ export function kromaI18nDevtools({ ignore = OVERLAYS, adapter }: DevtoolsOption
       });
       if (catalogs) {
         serveCatalogs(server);
+        serveLingua(server);
       }
       server.watcher.on('change', forgetMaps);
     },
