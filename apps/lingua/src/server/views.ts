@@ -4,6 +4,7 @@ import { notesFor } from '#site/core/notes';
 import { stableLocales } from '#site/core/policy';
 import { localeFiles } from '#site/core/shelf';
 import { baseOf, fileOf, merged, type Source } from '#site/core/source';
+import { languageOf } from '#site/lib/language';
 import type {
   HomeView,
   Language,
@@ -11,14 +12,15 @@ import type {
   NamespaceView,
   ProjectSummary,
   ProjectView,
-  ProposalView,
   RowView,
   SiteView,
   Viewer,
 } from '#site/lib/views';
-import type { Confirm, Edit, Store, Start, User } from '#site/store/store';
+import type { Store, User } from '#site/store/store';
 import { type Env, oauthCredentials } from './env';
 import { localeSummary, rowsByFile, type Stood, tally } from './standing';
+import { syncOf } from './sync-state';
+import { pendingOf, type Work, viewerWork } from './work';
 import { type Opened, openProject, readLocales, type Workspace } from './workspace';
 
 /** What every page is computed from: the store, the bindings, and who is asking. */
@@ -28,21 +30,6 @@ export interface Context {
   viewer: User | null;
 }
 
-const english = new Intl.DisplayNames(['en'], { type: 'language' });
-
-/** A language tag named in English and in itself, falling back to the tag. */
-export function languageOf(tag: string): Language {
-  try {
-    return {
-      tag,
-      name: english.of(tag) ?? tag,
-      nativeName: new Intl.DisplayNames([tag], { type: 'language' }).of(tag) ?? tag,
-    };
-  } catch {
-    return { tag, name: tag, nativeName: tag };
-  }
-}
-
 /** The signed-in contributor as the header shows them. */
 export const asViewer = (user: User | null): Viewer | null =>
   user ? { login: user.login, name: user.name, avatarUrl: user.avatarUrl } : null;
@@ -50,35 +37,13 @@ export const asViewer = (user: User | null): Viewer | null =>
 function summaryOf({ project, workspace, error }: Opened): ProjectSummary {
   return {
     id: project.id,
+    branch: project.branch,
     source: workspace ? languageOf(workspace.policy.source) : null,
     locales: workspace?.locales.length ?? 0,
     syncedAt: project.syncedAt,
     error,
+    sync: syncOf(project),
   };
-}
-
-interface Work {
-  edits: Edit[];
-  confirms: Confirm[];
-  start: Start | null;
-  proposal: ProposalView | null;
-}
-
-async function viewerWork(store: Store, project: string, viewer: User | null, locale: string): Promise<Work> {
-  if (!viewer) return { edits: [], confirms: [], start: null, proposal: null };
-  const [edits, confirms, starts, proposal] = await Promise.all([
-    store.edits(project, viewer.id, locale),
-    store.confirms(project, viewer.id, locale),
-    store.starts(project, viewer.id),
-    store.proposal(project, viewer.id, locale),
-  ]);
-  const start = starts.find((s) => s.locale === locale) ?? null;
-  return { edits, confirms, start, proposal: proposal ? { number: proposal.prNumber, url: proposal.prUrl } : null };
-}
-
-function pendingOf(work: Work): { drafts: number; proposed: number } {
-  const all = [...work.edits, ...work.confirms, ...(work.start ? [work.start] : [])];
-  return { drafts: all.filter((w) => !w.proposed).length, proposed: all.filter((w) => w.proposed).length };
 }
 
 function draftsIn(work: Work, source: Source, file: string): number {
@@ -182,7 +147,7 @@ export async function namespaceView({ store, viewer }: Context, id: string, at: 
   };
 }
 
-/** What every page's chrome shows: where this deployment answers, and whether anyone can sign in. */
-export function siteView(env: Env, origin: string): SiteView {
-  return { origin, signIn: oauthCredentials(env) !== null };
+/** What every page's chrome shows: where this deployment answers, whether anyone can sign in, and who is looking. */
+export function siteView({ env, viewer }: Context, origin: string): SiteView {
+  return { origin, signIn: oauthCredentials(env) !== null, viewer: asViewer(viewer) };
 }

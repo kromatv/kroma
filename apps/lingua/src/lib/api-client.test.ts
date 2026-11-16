@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Issue } from '#site/core/checks';
-import { ApiError, saveEdit, sendProposal, signInUrl } from './api-client';
+import {
+  ApiError,
+  confirmMessages,
+  saveEdit,
+  sendProposal,
+  signInUrl,
+  startLanguage,
+} from './api-client';
 
 const EDIT = { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Lire {title}' };
 
@@ -70,6 +77,45 @@ describe('sendProposal', () => {
     expect(await sendProposal({ project: 'o/r', locale: 'fr', to: '/o/r/fr' })).toEqual({
       kind: 'authorize',
       url,
+    });
+  });
+});
+
+describe('confirmMessages', () => {
+  it('posts the keys to confirm and reads the base keys the server kept', async () => {
+    const fetchFn = serverAnswering(Response.json({ confirmed: ['p.n'] }));
+    const target = { project: 'o/r', locale: 'fr', keys: ['p.n_one'] };
+
+    expect(await confirmMessages(target)).toEqual(['p.n']);
+    expect(fetchFn).toHaveBeenCalledWith(
+      '/api/confirm',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify(target) }),
+    );
+  });
+});
+
+describe('startLanguage', () => {
+  it('posts the language to start and reads its name', async () => {
+    const fetchFn = serverAnswering(Response.json({ locale: 'de', name: 'Deutsch' }));
+
+    expect(await startLanguage({ project: 'o/r', locale: 'de' })).toEqual({
+      locale: 'de',
+      name: 'Deutsch',
+    });
+    expect(fetchFn).toHaveBeenCalledWith(
+      '/api/locales',
+      expect.objectContaining({ method: 'POST', body: '{"project":"o/r","locale":"de"}' }),
+    );
+  });
+
+  it('throws the refusal for a language the project has', async () => {
+    serverAnswering(
+      Response.json({ error: 'The project has that language already' }, { status: 409 }),
+    );
+
+    await expect(startLanguage({ project: 'o/r', locale: 'fr' })).rejects.toMatchObject({
+      status: 409,
+      message: 'The project has that language already',
     });
   });
 });

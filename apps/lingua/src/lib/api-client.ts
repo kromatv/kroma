@@ -17,6 +17,10 @@ const ProposedSchema = z.union([
   }),
 ]);
 
+const ConfirmedSchema = z.object({ confirmed: z.array(z.string()) });
+
+const StartedSchema = z.object({ locale: z.string(), name: z.string() });
+
 const FailureSchema = z.object({ error: z.string(), issues: z.array(IssueSchema).optional() });
 
 /** What the server answered a save with: the draft it now holds (null when the edit was dropped) and what it found. */
@@ -87,6 +91,29 @@ export function sendProposal(target: {
   to: string;
 }): Promise<Proposed> {
   return call({ method: 'POST', path: '/api/proposals', body: target, schema: ProposedSchema });
+}
+
+/** Keep the viewer's word that these messages of a language read right as they are; their next send records it. Answers the base keys kept. */
+export async function confirmMessages(target: {
+  project: string;
+  locale: string;
+  keys: string[];
+}): Promise<string[]> {
+  const answer = await call({
+    method: 'POST',
+    path: '/api/confirm',
+    body: target,
+    schema: ConfirmedSchema,
+  });
+  return answer.confirmed;
+}
+
+/** Start translating a project into a language the viewer alone sees until they send it. */
+export function startLanguage(target: {
+  project: string;
+  locale: string;
+}): Promise<z.infer<typeof StartedSchema>> {
+  return call({ method: 'POST', path: '/api/locales', body: target, schema: StartedSchema });
 }
 
 /** Where to send the browser to sign in with GitHub and come back to `returnTo`. */

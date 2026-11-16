@@ -1,7 +1,10 @@
 import { createServerFn } from '@tanstack/react-start';
 import type {
+  ContributionsView,
   HomeView,
+  IndexedProject,
   LocaleView,
+  MessageHit,
   NamespaceView,
   ProjectView,
   SetupView,
@@ -66,12 +69,53 @@ export const getNamespace = createServerFn()
     return namespaceView(await requestContext(), data.id, { locale: data.locale, file: data.file });
   });
 
+/** `/contributions`. */
+export const getContributions = createServerFn().handler(async (): Promise<ContributionsView> => {
+  const { requestContext } = await import('#site/server/request');
+  const { contributionsView } = await import('#site/server/contributions');
+  return contributionsView(await requestContext());
+});
+
+/** Every project and its languages, for the command menu. */
+export const getProjectIndex = createServerFn().handler(async (): Promise<IndexedProject[]> => {
+  const { requestContext } = await import('#site/server/request');
+  const { projectIndex } = await import('#site/server/search');
+  return projectIndex(await requestContext());
+});
+
+/** A search's input: the language to look in and what was typed, at most 200 characters. */
+export const searchInput = ({
+  id,
+  locale,
+  query,
+}: {
+  id: string;
+  locale: string;
+  query: string;
+}) => ({
+  id,
+  locale,
+  query: query.slice(0, 200),
+});
+
+/** The messages of a language that mention a query, for the command menu. */
+export const findMessages = createServerFn()
+  .validator(searchInput)
+  .handler(async ({ data }): Promise<MessageHit[]> => {
+    const { requestContext } = await import('#site/server/request');
+    const { messageSearch } = await import('#site/server/search');
+    return messageSearch(await requestContext(), data.id, {
+      locale: data.locale,
+      query: data.query,
+    });
+  });
+
 /** Every page's chrome, from the root route. */
 export const getSite = createServerFn().handler(async (): Promise<SiteView> => {
-  const { servedRequest } = await import('#site/server/request');
+  const { requestContext, servedRequest } = await import('#site/server/request');
   const { siteView } = await import('#site/server/views');
-  const { env, origin } = await servedRequest();
-  return siteView(env, origin);
+  const { origin } = await servedRequest();
+  return siteView(await requestContext(), origin);
 });
 
 /** `/setup`. */

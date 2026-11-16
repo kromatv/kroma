@@ -31,13 +31,19 @@ export interface Language {
   nativeName: string;
 }
 
-/** A repository Lingua translates. `error` is why its `lingua.json` could not be read; `syncedAt` is in seconds. */
+/**
+ * A repository Lingua translates, on the branch it tracks. `error` is why its
+ * `lingua.json` could not be read; `syncedAt` is in seconds; `sync` is where
+ * reading its branch stands.
+ */
 export interface ProjectSummary {
   id: string;
+  branch: string;
   source: Language | null;
   locales: number;
   syncedAt: number | null;
   error: string | null;
+  sync: SyncState;
 }
 
 /** `/`: every project, and who is looking. */
@@ -128,10 +134,51 @@ export interface NamespaceView {
   proposal: ProposalView | null;
 }
 
-/** What every page's chrome needs: the address this deployment answers on, and whether anyone can sign in. */
+/** One unsent catalog file of a contribution, and how many of the viewer's edits wait there. */
+export interface ContributedFile {
+  file: string;
+  drafts: number;
+}
+
+/**
+ * One language of one project the viewer has work in: changes not sent yet
+ * (`drafts`, with the files their edits are in), or changes waiting in their
+ * open pull request (`proposed`).
+ */
+export interface Contribution {
+  project: string;
+  language: Language;
+  drafts: number;
+  proposed: number;
+  proposal: ProposalView | null;
+  files: ContributedFile[];
+}
+
+/** `/contributions`: the signed-in viewer's work in every project and language, none for a visitor. */
+export interface ContributionsView {
+  viewer: Viewer | null;
+  contributions: Contribution[];
+}
+
+/** What every page's chrome needs: the address this deployment answers on, whether anyone can sign in, and who did. */
 export interface SiteView {
   origin: string;
   signIn: boolean;
+  viewer: Viewer | null;
+}
+
+/** A project as the command menu offers it: where it is, and the languages the viewer can open in it. */
+export interface IndexedProject {
+  id: string;
+  languages: Language[];
+}
+
+/** One message a search across a language found: where it lives, what the source says and what the language says. */
+export interface MessageHit {
+  key: string;
+  file: string;
+  source: string;
+  text: string | null;
 }
 
 /**

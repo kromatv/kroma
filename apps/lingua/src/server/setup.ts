@@ -1,14 +1,9 @@
 import type { ListedProject } from '#site/github/pass';
-import type { RepositoryStatus, SetupView, SyncState } from '#site/lib/views';
+import type { RepositoryStatus, SetupView } from '#site/lib/views';
 import type { Project } from '#site/store/store';
 import { listedProjects, oauthCredentials } from './env';
+import { syncOf } from './sync-state';
 import { asViewer, type Context } from './views';
-
-function syncOf(project: Project): SyncState {
-  if (project.syncError !== null) return { kind: 'failed', error: project.syncError };
-  if (project.branchSha !== null && project.branchSha !== project.headSha) return { kind: 'reading', progress: project.progress };
-  return project.headSha === null ? { kind: 'waiting' } : { kind: 'current' };
-}
 
 /** Where the sync of a listed repository stands, from its project, or waiting when it has none yet. */
 export function statusOf(listed: ListedProject, project: Project | undefined): RepositoryStatus {

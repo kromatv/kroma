@@ -4,7 +4,8 @@ import { saveConfirms } from './confirms';
 import { saveEdit } from './edits';
 import { startLanguage } from './locales';
 import { ada, pageContext, seededStore } from './test-support';
-import { homeView, languageOf, localeView, namespaceView, projectView } from './views';
+import { languageOf } from '#site/lib/language';
+import { homeView, localeView, namespaceView, projectView, siteView } from './views';
 
 async function storeWithWork(): Promise<Store> {
   const store = await seededStore();
@@ -103,8 +104,17 @@ describe('homeView', () => {
 
     expect(view).toEqual({
       viewer: { login: 'ada', name: null, avatarUrl: null },
-      projects: [{ id: 'o/r', source: languageOf('en'), locales: 3, syncedAt: 1, error: null }],
+      projects: [{ id: 'o/r', branch: 'main', source: languageOf('en'), locales: 3, syncedAt: 1, error: null, sync: { kind: 'current' } }],
     });
+  });
+
+  it('says how far a sync of the branch has read', async () => {
+    const store = await seededStore();
+    await store.setBranchHead('o/r', { sha: 'moved', etag: null, progress: { done: 2, total: 5 } });
+
+    const view = await homeView(pageContext(store, null));
+
+    expect(view.projects[0]?.sync).toEqual({ kind: 'reading', progress: { done: 2, total: 5 } });
   });
 
   it('says why a project cannot be translated', async () => {
@@ -185,8 +195,16 @@ describe('namespaceView for a contributor', () => {
   });
 });
 
-describe('languageOf', () => {
-  it('names a tag it cannot read by the tag itself', () => {
-    expect(languageOf('not a tag')).toEqual({ tag: 'not a tag', name: 'not a tag', nativeName: 'not a tag' });
+describe('siteView', () => {
+  it('says whether sign-in is set and who is signed in', async () => {
+    const store = await seededStore();
+    const env = { GITHUB_OAUTH_CLIENT_ID: 'id', GITHUB_OAUTH_CLIENT_SECRET: 'secret' };
+
+    expect(siteView({ env, store, viewer: ada }, 'https://l.test')).toEqual({
+      origin: 'https://l.test',
+      signIn: true,
+      viewer: { login: 'ada', name: null, avatarUrl: null },
+    });
+    expect(siteView(pageContext(store, null), 'https://l.test')).toEqual({ origin: 'https://l.test', signIn: false, viewer: null });
   });
 });
