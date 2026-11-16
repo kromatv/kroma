@@ -1,3 +1,4 @@
+import { workerContext } from '@kromatv/site-kit/worker-env';
 import { type Context, Hono } from 'hono';
 import type { z } from 'zod';
 import { authorizeUrl, type OAuthCredentials, userFromCode } from '#site/github/oauth';
@@ -12,7 +13,9 @@ import { type Env, listedProjects, oauthCredentials, storeFor } from './env';
 import { messagePage } from './go';
 import { LocaleInput, startLanguage } from './locales';
 import { sendProposal, SendInput } from './proposals';
+import { ChainInput, CHAIN_HEADER, chainProven } from './chain';
 import { resolveViewer } from './request';
+import { refreshChained } from './scheduled';
 import { SyncInput, syncNow } from './sync-now';
 import { closeSession, cookie, openSession, randomToken, readCookie } from './session';
 
@@ -148,6 +151,20 @@ app.post('/api/confirm', async (c) => {
   if (!input) return c.json({ error: 'Malformed request' }, 400);
   const result = await saveConfirms(signedIn.store, signedIn.viewer, input, now());
   return result.status === 200 ? c.json({ confirmed: result.confirmed }) : c.json({ error: result.error }, result.status);
+});
+
+app.post('/internal/sync', async (c) => {
+  const input = await jsonInput(c, ChainInput);
+  if (!input || !(await chainProven(c.env.env, input.project, c.req.header(CHAIN_HEADER) ?? null))) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
+  const { waitUntil } = await workerContext();
+  waitUntil(
+    refreshChained(c.env.env, { id: input.project, hop: input.hop }, now()).catch((error: unknown) =>
+      console.error(`lingua: ${input.project} chained pass failed`, error),
+    ),
+  );
+  return c.json({ accepted: true }, 202);
 });
 
 app.post('/api/sync', async (c) => {

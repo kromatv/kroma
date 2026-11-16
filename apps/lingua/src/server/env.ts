@@ -9,8 +9,14 @@ import type { Store } from '#site/store/store';
  * they sign people in, and authenticate every read of a repository.
  * `LINGUA_PROJECTS` is a variable naming the repositories to translate.
  */
+/** The Worker itself, through a service binding: a call starts a new invocation with its own request budget. */
+export interface SelfBinding {
+  fetch(input: string, init?: RequestInit): Promise<Response>;
+}
+
 export interface Env {
   LINGUA_DB?: D1Database;
+  SELF?: SelfBinding;
   GITHUB_OAUTH_CLIENT_ID?: string;
   GITHUB_OAUTH_CLIENT_SECRET?: string;
   LINGUA_DEV_LOGIN?: string;
@@ -24,6 +30,10 @@ const STRINGS = [
   'LINGUA_PROJECTS',
 ] as const;
 
+function isSelf(value: unknown): value is SelfBinding {
+  return typeof value === 'object' && value !== null && 'fetch' in value && typeof value.fetch === 'function';
+}
+
 function isD1(value: unknown): value is D1Database {
   return typeof value === 'object' && value !== null && 'prepare' in value && 'batch' in value;
 }
@@ -32,6 +42,7 @@ function isD1(value: unknown): value is D1Database {
 export function readEnv(raw: Readonly<Record<string, unknown>>): Env {
   const env: Env = {};
   if (isD1(raw.LINGUA_DB)) env.LINGUA_DB = raw.LINGUA_DB;
+  if (isSelf(raw.SELF)) env.SELF = raw.SELF;
   for (const name of STRINGS) {
     const value = raw[name];
     if (typeof value === 'string' && value.trim() !== '') env[name] = value;

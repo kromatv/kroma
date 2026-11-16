@@ -2,6 +2,7 @@ import { type Pass, passIfStale, passOver, trackProjects } from '#site/github/pa
 import { reader } from '#site/github/reader';
 import type { Syncing } from '#site/github/sync';
 import type { Project } from '#site/store/store';
+import { chainOn } from './chain';
 import { type Env, listedProjects, oauthCredentials, storeFor } from './env';
 
 const REQUESTS_PER_RUN = 45;
@@ -39,6 +40,7 @@ export async function refreshAll(env: Env, now: number, fetchFn: typeof fetch = 
   }
   const projects = (await syncing.store.projects()).sort(oldestCheckFirst);
   await passesInTurn(syncing, projects.map((p) => p.id), now);
+  await Promise.all(projects.map((p) => chainOn(env, syncing.store, { id: p.id, hop: 1 })));
 }
 
 /** A page's run: pass over project `id` when its last pass ended more than two minutes ago. */
@@ -48,5 +50,22 @@ export async function refreshStale(env: Env, id: string, now: number, fetchFn: t
     return;
   }
   await trackProjects(syncing, listedProjects(env));
-  logFailure(id, await passIfStale(syncing, id, now));
+  const pass = await passIfStale(syncing, id, now);
+  logFailure(id, pass);
+  if (pass.kind === 'synced') {
+    await chainOn(env, syncing.store, { id, hop: 1 });
+  }
+}
+
+/** A chained run: one more pass over project `id`, then the next link while files are left to read. */
+export async function refreshChained(env: Env, at: { id: string; hop: number }, now: number, fetchFn: typeof fetch = fetch): Promise<void> {
+  const syncing = await syncingFor(env, fetchFn);
+  if (!syncing) {
+    return;
+  }
+  const pass = await passOver(syncing, at.id, now);
+  logFailure(at.id, pass);
+  if (pass.kind === 'synced') {
+    await chainOn(env, syncing.store, at);
+  }
 }

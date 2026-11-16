@@ -18,6 +18,7 @@
     },
   ],
   "vars": { "LINGUA_PROJECTS": "kromatv/kroma" },
+  "services": [{ "binding": "SELF", "service": "kroma-lingua" }],
   "triggers": { "crons": ["*/5 * * * *"] },
   "routes": [{ "pattern": "lingua.kroma.tv", "custom_domain": true }],
 }
