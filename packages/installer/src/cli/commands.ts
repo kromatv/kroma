@@ -8,7 +8,7 @@ import { askForLocalNetwork } from '../discovery/local-network';
 import type { PlatformOptions } from '../platforms/platform';
 import { platformFor } from '../platforms/registry';
 import { root } from '../shared/root';
-import { runtimeLabel, type Television } from '../shared/television';
+import { isReady, runtimeLabel, type Television } from '../shared/television';
 import { style } from '../tui/ansi';
 import { injectUsage, renderUsage, type UsageCommand } from './usage';
 
@@ -89,7 +89,7 @@ const NAME_WIDTH = 26;
 
 function describe(tv: Television): string {
   const platform = `${tv.vendor} ${platformFor(tv.platform).package}`;
-  const state = tv.developerMode === 'on' ? style.green('ready') : style.yellow(tv.note);
+  const state = isReady(tv) ? style.green('ready') : style.yellow(tv.note);
   const runs = runtimeLabel(tv.runtime);
   const head = [
     style.bold(cell(tv.host, HOST_WIDTH)),

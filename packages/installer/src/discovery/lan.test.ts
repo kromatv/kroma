@@ -1,6 +1,6 @@
 import { networkInterfaces } from 'node:os';
 import { describe, expect, it, vi } from 'vitest';
-import { compareHosts, localSubnets, prefixOf, subnetHosts } from './lan';
+import { compareHosts, localAddresses, localSubnets, prefixOf, subnetHosts } from './lan';
 
 vi.mock('node:os', () => ({ networkInterfaces: vi.fn() }));
 
@@ -122,6 +122,17 @@ describe('localSubnets', () => {
     });
 
     expect(localSubnets().map((subnet) => subnet.iface)).toEqual(['Wi-Fi']);
+  });
+
+  it('lists every address this machine holds, two on one network included, loopback and IPv6 aside', () => {
+    vi.mocked(networkInterfaces).mockReturnValue({
+      en0: [ipv4('192.168.1.10'), ipv6('fe80::1c2b:4aff:fe6d:1a30')],
+      en1: [ipv4('192.168.1.11')],
+      lo0: [ipv4('127.0.0.1', true)],
+      bridge100: [ipv4('192.168.64.1')],
+    });
+
+    expect(localAddresses()).toEqual(['192.168.1.10', '192.168.1.11', '192.168.64.1']);
   });
 
   it('names a network once even when two interfaces sit on it', () => {

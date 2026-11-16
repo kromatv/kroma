@@ -1,5 +1,7 @@
 import { fetchJson } from '../../discovery/http';
+import { localAddresses } from '../../discovery/lan';
 import type { Television } from '../../shared/television';
+import { type SamsungDeveloperMode, samsungReadiness } from './readiness';
 import { tizenRuntime } from './runtime';
 import { SamsungInfo } from './schemas';
 import { SDB_PORT } from './sdb';
@@ -24,23 +26,27 @@ export async function identifyTizen(
     return null;
   }
 
-  const sdb = openPorts.has(SDB_PORT);
-  const declared = info.device.developerMode === '1';
-  const runtime = tizenRuntime(info.device.model);
-  const seen =
-    declared || sdb
-      ? samsungNote(sdb, info.device.developerIP)
-      : 'Developer mode off: on the TV open Apps and type 1 2 3 4 5, switch it on, set this computer as host PC, reboot';
+  const mode = developerModeOf(info, openPorts);
+  const { note, nextStep } = samsungReadiness(mode, host, localAddresses());
   return {
     host,
     platform: 'tizen',
     vendor: 'Samsung',
     name: unescapeName(info.device.name) || 'Samsung TV',
     model: info.device.modelName ?? '',
-    developerMode: declared || sdb ? 'on' : 'off',
+    developerMode: mode.declared || mode.sdb ? 'on' : 'off',
     sideloadable: true,
-    note: seen,
-    runtime,
+    note,
+    ...(nextStep ? { nextStep } : {}),
+    runtime: tizenRuntime(info.device.model),
+  };
+}
+
+function developerModeOf(info: SamsungInfo, openPorts: ReadonlySet<number>): SamsungDeveloperMode {
+  return {
+    declared: info.device.developerMode === '1',
+    sdb: openPorts.has(SDB_PORT),
+    trusts: info.device.developerIP,
   };
 }
 
@@ -65,9 +71,4 @@ function unescapeName(name: string | undefined): string {
     /&(?:quot|apos|#39|lt|gt|amp);/g,
     (entity) => entities[entity] ?? entity,
   );
-}
-
-function samsungNote(sdb: boolean, trusts: string | undefined): string {
-  const host = trusts ? `host PC ${trusts}` : 'no host PC set';
-  return sdb ? `sdb open, ${host}` : `developer mode on, ${host}, sdb closed until the TV reboots`;
 }

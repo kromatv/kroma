@@ -21,6 +21,7 @@ const {
   readProfile,
   rm,
   eitherAuthor,
+  reach,
 } = vi.hoisted(() => ({
   run: vi.fn(async (_command: readonly string[], _options?: unknown) => ({ code: 0, output: '' })),
   runOk: vi.fn(async (_command: readonly string[], _options?: unknown) => ''),
@@ -38,6 +39,7 @@ const {
   readDuid: vi.fn(async (_sdb: string, _log: unknown): Promise<string | null> => null),
   readProfile: vi.fn(async (_name?: string): Promise<SigningProfile | null> => null),
   rm: vi.fn(async (_path: string, _options?: unknown) => {}),
+  reach: vi.fn(async (_host: string) => ({ close: () => {} })),
   eitherAuthor: vi.fn(
     async (
       _context: unknown,
@@ -59,6 +61,7 @@ vi.mock('./native', () => ({ installOverSdb }));
 vi.mock('./signing', () => ({ profileFor, resign, readDuid }));
 vi.mock('./profiles', () => ({ readProfile }));
 vi.mock('./either-author', () => ({ eitherAuthor }));
+vi.mock('./reach', () => ({ reach }));
 vi.mock('node:fs/promises', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   rm,
@@ -115,6 +118,7 @@ beforeEach(() => {
   readDuid.mockReset();
   readProfile.mockReset();
   rm.mockReset();
+  reach.mockClear();
   locate.mockReturnValue(SDB);
   requireTool.mockImplementation((tool) => ((tool as Tool).id === 'sdb' ? SDB : TIZEN));
   runOk.mockImplementation(async (command) => (command.includes('devices') ? devices : ''));
@@ -144,6 +148,33 @@ describe('parseSdbSerial', () => {
 });
 
 describe('installTizen', () => {
+  it('stops before signing, with what to do on the TV, when a set the scan found waiting still refuses', async () => {
+    const waiting = {
+      ...salon,
+      nextStep: 'restart it: unplug the TV for 30 seconds',
+      note: 'Developer mode on, host PC 192.168.1.85, but sdb stays closed until the TV restarts: unplug the TV for 30 seconds',
+    };
+    reach.mockRejectedValueOnce(new Error('sdb: could not reach 192.168.1.31:26101'));
+
+    await expect(installTizen(context({ tv: waiting }))).rejects.toThrow(waiting.note);
+    expect(profileFor).not.toHaveBeenCalled();
+  });
+
+  it('goes ahead with a set the scan found waiting once it answers', async () => {
+    const waiting = { ...salon, nextStep: 'restart it: unplug the TV for 30 seconds' };
+
+    await installTizen(context({ tv: waiting }));
+
+    expect(reach).toHaveBeenCalledWith('192.168.1.31');
+    expect(installOverSdb).toHaveBeenCalled();
+  });
+
+  it('asks a ready set nothing before it signs', async () => {
+    await installTizen(context());
+
+    expect(reach).not.toHaveBeenCalled();
+  });
+
   it('signs the package with this machine before anything is pushed', async () => {
     await installTizen(context());
 

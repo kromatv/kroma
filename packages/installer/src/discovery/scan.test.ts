@@ -315,6 +315,27 @@ describe('watch', () => {
     expect(seen).toEqual(['Salon', 'Cuisine']);
     expect(await watching).toEqual([renamed]);
   });
+
+  it('reports a set again once the step it was waiting on is done', async () => {
+    vi.useFakeTimers();
+    const controller = new AbortController();
+    const waiting = { ...television('10.0.0.5'), nextStep: 'restart it' };
+    const ready = television('10.0.0.5');
+    const seen: (string | undefined)[] = [];
+    vi.mocked(tcpOpen).mockResolvedValue(true);
+    vi.mocked(identify).mockResolvedValueOnce(waiting).mockResolvedValueOnce(ready);
+
+    const watching = watch({
+      hosts: ['10.0.0.5'],
+      signal: controller.signal,
+      onFound: (tv) => seen.push(tv.nextStep),
+    });
+    await vi.advanceTimersByTimeAsync(1500);
+    controller.abort();
+    await watching;
+
+    expect(seen).toEqual(['restart it', undefined]);
+  });
 });
 
 describe('sweepTargets', () => {

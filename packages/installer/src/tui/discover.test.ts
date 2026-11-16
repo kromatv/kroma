@@ -104,6 +104,21 @@ describe('discover', () => {
     );
   });
 
+  it('leaves a set unticked and names the one thing left to do on it', async () => {
+    const waiting = { ...salon, nextStep: 'restart it: unplug the TV for 30 seconds' };
+    scanReports(({ onFound }) => onFound?.(waiting));
+    picker.reply([]);
+
+    await within(discover());
+
+    expect(picker.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        hint: expect.stringContaining('restart it: unplug the TV for 30 seconds'),
+        ticked: false,
+      }),
+    );
+  });
+
   it('greys out a set no app can be sideloaded onto', async () => {
     scanReports(({ onFound }) => onFound?.(chromecast));
     picker.reply([]);

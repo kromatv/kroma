@@ -29,6 +29,15 @@ export function localSubnets(): Subnet[] {
   return out;
 }
 
+/** Every IPv4 address this machine holds, loopback aside, virtual interfaces included. */
+export function localAddresses(): string[] {
+  return Object.values(networkInterfaces()).flatMap((entries) =>
+    (entries ?? [])
+      .filter((entry) => entry.family === 'IPv4' && !entry.internal)
+      .map((entry) => entry.address),
+  );
+}
+
 /** `192.168.1.42` -> `192.168.1`, or null for anything that is not dotted-quad IPv4. */
 export function prefixOf(address: string): string | null {
   const octets = address.split('.');
