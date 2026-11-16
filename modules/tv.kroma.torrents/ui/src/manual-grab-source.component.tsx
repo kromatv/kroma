@@ -1,4 +1,4 @@
-// Step one of a manual add: where the torrent comes from.
+// Step one of a manual add: where the release comes from.
 
 import type { ManualReleaseView } from '@kromatv/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
@@ -7,6 +7,7 @@ import { Box, Button, Callout, Dropzone, Field, SegmentGroup } from '@kromatv/ui
 import { useState } from 'react';
 import { useTorrentsApi } from './api.hook';
 import { SearchPanel } from './manual-grab-search';
+import { protocolLabel, TORRENT } from './protocol';
 
 // The server refuses anything larger before it parses it; saying so here saves
 // the round trip.
@@ -14,6 +15,7 @@ const MAX_TORRENT_BYTES = 1024 * 1024;
 
 const BARE_SOURCE = {
   magnet: '',
+  protocol: TORRENT,
   releaseTitle: '',
   detailsUrl: null,
   kind: 'movie',
@@ -21,7 +23,7 @@ const BARE_SOURCE = {
   year: null,
   season: null,
   episodes: null,
-} satisfies TorrentSource;
+} satisfies ReleaseSource;
 
 function kindOf(season: number | null, episode: number | null): string {
   if (season === null) {
@@ -36,8 +38,9 @@ type Door = 'search' | 'magnet' | 'file';
  *  title step searches the metadata provider with them, and a raw release name
  *  ("Stargate Atlantis iNTEGRALE MULTi") matches nothing. Every door fills them
  *  from the SAME parser the acquisition stack scores releases with. */
-export interface TorrentSource {
+export interface ReleaseSource {
   magnet: string;
+  protocol: string;
   releaseTitle: string;
   detailsUrl: string | null;
   /** `movie` | `season` | `episode`, read off the release name. */
@@ -57,15 +60,15 @@ interface SourceStepProps {
     results: ManualReleaseView[] | null;
     onSearch: () => void;
   };
-  onPicked: (source: TorrentSource) => void;
+  protocols: readonly string[];
+  onPicked: (source: ReleaseSource) => void;
 }
 
-export function SourceStep({ search, onPicked }: Readonly<SourceStepProps>) {
+export function SourceStep({ search, protocols, onPicked }: Readonly<SourceStepProps>) {
   const t = useT();
   const torrents = useTorrentsApi();
   const { busy, error, run } = useAsyncAction();
   const [door, setDoor] = useState<Door>('search');
-  const [magnet, setMagnet] = useState('');
   const [refused, setRefused] = useState<DropzoneRejection | null>(null);
 
   const takeFile = (file: File | undefined) => {
@@ -78,6 +81,7 @@ export function SourceStep({ search, onPicked }: Readonly<SourceStepProps>) {
         const inspected = await torrents.inspectTorrent(file);
         onPicked({
           magnet: inspected.magnet,
+          protocol: TORRENT,
           releaseTitle: inspected.releaseTitle,
           detailsUrl: null,
           kind: inspected.kind,
@@ -121,6 +125,7 @@ export function SourceStep({ search, onPicked }: Readonly<SourceStepProps>) {
           onPick={(release: ManualReleaseView) =>
             onPicked({
               magnet: release.downloadUrl ?? '',
+              protocol: release.protocol,
               releaseTitle: release.title,
               detailsUrl: release.detailsUrl ?? null,
               kind: kindOf(release.season, release.episode),
@@ -133,21 +138,7 @@ export function SourceStep({ search, onPicked }: Readonly<SourceStepProps>) {
         />
       ) : null}
 
-      {door === 'magnet' ? (
-        <Box gap={10}>
-          <Field.Root label={t('manual.magnet')} value={magnet} onValueChange={setMagnet}>
-            <Field.Input placeholder="magnet:?xt=urn:btih:..." />
-            <Field.Hint>{t('manual.magnetHint')}</Field.Hint>
-          </Field.Root>
-          <Button
-            variant="primary"
-            icon="arrow-right"
-            label={t('manual.next')}
-            disabled={!magnet.trim()}
-            onPress={() => onPicked({ ...BARE_SOURCE, magnet: magnet.trim() })}
-          />
-        </Box>
-      ) : null}
+      {door === 'magnet' ? <LinkDoor protocols={protocols} onPicked={onPicked} /> : null}
 
       {door === 'file' ? (
         <Dropzone.Root
@@ -180,5 +171,60 @@ export function SourceStep({ search, onPicked }: Readonly<SourceStepProps>) {
         </Callout.Root>
       ) : null}
     </Box>
+  );
+}
+
+function LinkDoor({
+  protocols,
+  onPicked,
+}: Readonly<{ protocols: readonly string[]; onPicked: (source: ReleaseSource) => void }>) {
+  const t = useT();
+  const [link, setLink] = useState('');
+  const [picked, setPicked] = useState(TORRENT);
+  const protocol = protocols.includes(picked) ? picked : (protocols[0] ?? TORRENT);
+  return (
+    <Box gap={10}>
+      {protocols.length > 1 ? (
+        <SegmentGroup.Root
+          value={protocol}
+          onValueChange={setPicked}
+          label={t('manual.protocol')}
+          size="sm"
+        >
+          {protocols.map((one) => (
+            <SegmentGroup.Item key={one} value={one}>
+              <SegmentGroup.Label>{protocolLabel(t, one)}</SegmentGroup.Label>
+            </SegmentGroup.Item>
+          ))}
+        </SegmentGroup.Root>
+      ) : null}
+      <LinkField protocol={protocol} value={link} onValueChange={setLink} />
+      <Button
+        variant="primary"
+        icon="arrow-right"
+        label={t('manual.next')}
+        disabled={!link.trim()}
+        onPress={() => onPicked({ ...BARE_SOURCE, magnet: link.trim(), protocol })}
+      />
+    </Box>
+  );
+}
+
+function LinkField({
+  protocol,
+  value,
+  onValueChange,
+}: Readonly<{ protocol: string; value: string; onValueChange: (next: string) => void }>) {
+  const t = useT();
+  const torrent = protocol === TORRENT;
+  return (
+    <Field.Root
+      label={torrent ? t('manual.magnet') : t('manual.link')}
+      value={value}
+      onValueChange={onValueChange}
+    >
+      <Field.Input placeholder={torrent ? 'magnet:?xt=urn:btih:...' : 'https://...'} />
+      <Field.Hint>{torrent ? t('manual.magnetHint') : t('manual.linkHint')}</Field.Hint>
+    </Field.Root>
   );
 }

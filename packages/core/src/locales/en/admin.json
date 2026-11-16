@@ -377,7 +377,7 @@
   "admin.volumes": "Volumes",
   "admin.vpnCheckUrl": "IP check URL",
   "admin.vpnKillSwitch": "Kill switch",
-  "admin.vpnKillSwitchHint": "Pauses downloads when the proxy is unreachable or not diverting traffic.",
+  "admin.vpnKillSwitchHint": "Pauses torrents when the proxy is unreachable or not diverting traffic. Usenet downloads go on.",
   "admin.vpnProxyUrl": "SOCKS5 proxy",
   "admin.vpnProxyUrlHint": "socks5://user:password@host:port. Empty = no VPN.",
   "admin.vpnRouteIndexers": "Route indexer searches through the VPN",

@@ -87,6 +87,7 @@ fn search_title_now<S: HostStorage>(
         return Ok(());
     }
     let book = crate::rules::load(state)?;
+    let held = crate::peers::downloads::held_protocols(state);
     let pass = Pass {
         state,
         indexers: &indexers,
@@ -94,6 +95,7 @@ fn search_title_now<S: HostStorage>(
         log,
         cancelled: &|| false,
         searching: &|| slot.renew(),
+        held: &held,
     };
     search_title(&pass, (kind, tmdb_id), &open, summary, &mut HashSet::new())?;
     log(format!(
@@ -113,6 +115,7 @@ fn search_cutoff_now<S: HostStorage>(
         return Ok(());
     };
     let book = crate::rules::load(state)?;
+    let held = crate::peers::downloads::held_protocols(state);
     let pass = Pass {
         state,
         indexers: &indexers,
@@ -120,6 +123,7 @@ fn search_cutoff_now<S: HostStorage>(
         log,
         cancelled: &|| false,
         searching: &|| slot.renew(),
+        held: &held,
     };
     upgrade_pass(&pass, summary, Sweep::now())?;
     log(format!(

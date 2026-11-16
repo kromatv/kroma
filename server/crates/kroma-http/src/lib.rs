@@ -16,6 +16,7 @@
 //! and a Unix socket for a URL built by [`loopback::unix_url`].
 
 pub mod address;
+mod basic;
 mod builder;
 #[cfg_attr(target_family = "wasm", allow(dead_code))]
 mod config;

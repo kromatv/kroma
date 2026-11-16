@@ -1,4 +1,4 @@
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
 
@@ -73,6 +73,18 @@ fn read_headers(reader: &mut impl BufRead) -> Option<Headers> {
     }
 }
 
+fn read_call(reader: &mut impl BufRead) -> Option<Call> {
+    let headers = read_headers(reader)?;
+    let mut body = vec![0u8; headers.len];
+    reader.read_exact(&mut body).ok()?;
+    let sent: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
+    Some(Call {
+        method: sent["method"].as_str().unwrap_or_default().to_string(),
+        params: sent["params"].clone(),
+        auth: headers.auth,
+    })
+}
+
 fn write_reply(stream: &mut impl Write, reply: Reply) {
     let reason = if reply.status == 200 { "OK" } else { "ERR" };
     let resp = format!(
@@ -95,23 +107,11 @@ impl FakeNzbGet {
         std::thread::spawn(move || {
             for stream in listener.incoming() {
                 let Ok(mut stream) = stream else { break };
-                let mut reader = BufReader::new(stream.try_clone().unwrap());
-                let Some(headers) = read_headers(&mut reader) else {
+                let Some(call) = read_call(&mut BufReader::new(stream.try_clone().unwrap())) else {
                     continue;
                 };
-                let mut body = vec![0u8; headers.len];
-                if headers.len > 0 {
-                    let _ = reader.read_exact(&mut body);
-                }
-                let sent: Value = serde_json::from_slice(&body).unwrap_or(Value::Null);
-                let method = sent["method"].as_str().unwrap_or_default().to_string();
-                let params = sent["params"].clone();
-                let reply = route(&method, &params);
-                log.lock().unwrap().push(Call {
-                    method,
-                    params,
-                    auth: headers.auth,
-                });
+                let reply = route(&call.method, &call.params);
+                log.lock().unwrap().push(call);
                 write_reply(&mut stream, reply);
             }
         });

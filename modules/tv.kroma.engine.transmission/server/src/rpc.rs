@@ -1,7 +1,6 @@
 use anyhow::{anyhow, bail, Result};
 use serde_json::{json, Value};
 
-use crate::base64::base64;
 use crate::Transmission;
 
 pub(crate) const SESSION_HEADER: &str = "X-Transmission-Session-Id";
@@ -16,8 +15,7 @@ impl Transmission {
             f = f.header(SESSION_HEADER, sid);
         }
         if !self.username.is_empty() {
-            let credentials = base64(format!("{}:{}", self.username, self.password).as_bytes());
-            f = f.header("authorization", format!("Basic {credentials}"));
+            f = f.basic_auth(&self.username, &self.password);
         }
         f
     }

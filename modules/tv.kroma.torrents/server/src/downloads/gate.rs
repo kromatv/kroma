@@ -17,6 +17,22 @@ impl DownloadManager {
         self.gate_open.load(Ordering::Relaxed)
     }
 
+    /// The protocols the kill switch holds right now. It guards the swarm, so a
+    /// closed gate holds torrents and nothing else.
+    pub fn held_protocols(&self) -> Vec<String> {
+        if self.gate_open() {
+            Vec::new()
+        } else {
+            vec![crate::engine::TORRENT.to_string()]
+        }
+    }
+
+    /// Whether `protocol` may be grabbed right now.
+    pub fn holds(&self, protocol: &str) -> bool {
+        let protocol = crate::engine::protocol_or_torrent(protocol);
+        self.held_protocols().iter().any(|held| held == protocol)
+    }
+
     pub fn vpn_status(&self) -> Option<VpnStatusView> {
         self.vpn_status.lock().unwrap().clone()
     }

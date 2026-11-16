@@ -3,7 +3,7 @@
 
 # Requirement index
 
-625 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+628 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -530,6 +530,9 @@
 - **MOD-97** (AGREED) - A grab goes to the enabled download client ranked first among those that <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-98** (AGREED) - A download whose client is still verifying, repairing or unpacking it is <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-99** (AGREED) - A download its client gave up on fails at once (MOD-72), without waiting <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-100** (AGREED) - A profile can name a preferred protocol. Between two releases of the same <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-101** (AGREED) - The VPN kill switch holds torrent grabs only. While it is closed, a release <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-102** (AGREED) - A manual add says which protocol its link is when the enabled download <sub>[acquisition.md](modules/acquisition.md)</sub>
 
 ## PLAY - [playback](playback/)
 

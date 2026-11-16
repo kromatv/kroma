@@ -2,7 +2,6 @@ use anyhow::{anyhow, bail, Result};
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 
-use crate::base64::base64;
 use crate::NzbGet;
 
 impl NzbGet {
@@ -11,8 +10,7 @@ impl NzbGet {
             .purpose("download-client")
             .max_time(60);
         if !self.username.is_empty() || !self.password.is_empty() {
-            let credentials = base64(format!("{}:{}", self.username, self.password).as_bytes());
-            f = f.header("authorization", format!("Basic {credentials}"));
+            f = f.basic_auth(&self.username, &self.password);
         }
         f
     }

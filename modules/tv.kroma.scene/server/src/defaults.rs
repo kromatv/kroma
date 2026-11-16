@@ -233,6 +233,7 @@ impl QualityProfile {
             must_not_contain: legacy.forbidden_keywords.clone(),
             min_seeders: legacy.min_seeders,
             add_beside: false,
+            preferred_protocol: String::new(),
         }
     }
 }

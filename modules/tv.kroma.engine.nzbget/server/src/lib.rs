@@ -9,7 +9,6 @@ pub mod types;
 
 pub use types::{AddReq, ClientDef, JobState, JobStatus};
 
-mod base64;
 mod jobs;
 mod rpc;
 

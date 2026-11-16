@@ -377,7 +377,7 @@
   "admin.volumes": "Volumes",
   "admin.vpnCheckUrl": "URL de vérification d'IP",
   "admin.vpnKillSwitch": "Coupe-circuit",
-  "admin.vpnKillSwitchHint": "Met les téléchargements en pause si le proxy est injoignable ou ne détourne pas le trafic.",
+  "admin.vpnKillSwitchHint": "Met les torrents en pause si le proxy est injoignable ou ne détourne pas le trafic. Les téléchargements Usenet continuent.",
   "admin.vpnProxyUrl": "Proxy SOCKS5",
   "admin.vpnProxyUrlHint": "socks5://utilisateur:motdepasse@hote:port. Vide = pas de VPN.",
   "admin.vpnRouteIndexers": "Router les recherches d'indexeurs via le VPN",

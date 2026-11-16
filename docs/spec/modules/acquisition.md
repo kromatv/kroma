@@ -174,6 +174,16 @@ not imported until the client reports it done.
 **MOD-99** (AGREED) - A download its client gave up on fails at once (MOD-72), without waiting
 for the stall limit.
 
+**MOD-100** (AGREED) - A profile can name a preferred protocol. Between two releases of the same
+quality, format score and revision, the one of the preferred protocol ranks first (MOD-64).
+
+**MOD-101** (AGREED) - The VPN kill switch holds torrent grabs only. While it is closed, a release
+of another protocol is still grabbed, and an automatic search skips the torrents it would have
+grabbed.
+
+**MOD-102** (AGREED) - A manual add says which protocol its link is when the enabled download
+clients take more than one. Only a torrent offers its files to choose from.
+
 ## Not in scope
 
 Status: **AGREED**
@@ -182,4 +192,3 @@ Status: **AGREED**
   best picture and the wanted dub, is not decided.
 - **Importing community formats** written for other tools as they are is not promised.
 - **Waiting before a grab** in case a better release follows is not decided.
-- **Preferring one protocol** over another when two releases rank the same is not decided.

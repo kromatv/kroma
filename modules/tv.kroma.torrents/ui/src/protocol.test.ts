@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { joinsSwarm, protocolLabel } from './protocol';
+import { joinsSwarm, protocolLabel, protocolsOf } from './protocol';
 
 const catalog: Record<string, string> = { 'protocol.usenet': 'Usenet' };
 const t = (key: string) => catalog[key] ?? key;
@@ -18,5 +18,21 @@ describe('joinsSwarm', () => {
   it('is true of a torrent only', () => {
     expect(joinsSwarm({ protocol: 'torrent' })).toBe(true);
     expect(joinsSwarm({ protocol: 'usenet' })).toBe(false);
+  });
+});
+
+describe('protocolsOf', () => {
+  it('lists what the enabled clients take, a torrent first', () => {
+    const clients = [
+      { enabled: true, protocols: ['usenet'] },
+      { enabled: true, protocols: ['torrent'] },
+      { enabled: false, protocols: ['ed2k'] },
+    ];
+
+    expect(protocolsOf(clients)).toEqual(['torrent', 'usenet']);
+  });
+
+  it('offers a torrent when no client has said what it takes', () => {
+    expect(protocolsOf([])).toEqual(['torrent']);
   });
 });

@@ -140,6 +140,7 @@ export const QualityProfile = z.object({
   mustNotContain: z.array(z.string()).default([]),
   minSeeders: z.number().default(0),
   addBeside: z.boolean().default(false),
+  preferredProtocol: z.string().default(''),
 });
 export type QualityProfile = z.infer<typeof QualityProfile>;
 

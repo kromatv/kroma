@@ -28,6 +28,12 @@ macro_rules! request_builder {
                 self.max_time_secs = secs;
                 self
             }
+
+            /// Sends `user` and `password` as HTTP Basic credentials.
+            pub fn basic_auth(self, user: &str, password: &str) -> Self {
+                let credentials = crate::basic::encode(format!("{user}:{password}").as_bytes());
+                self.header("authorization", format!("Basic {credentials}"))
+            }
         }
     };
 }

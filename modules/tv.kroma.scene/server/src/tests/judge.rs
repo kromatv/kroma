@@ -275,8 +275,7 @@ fn a_release_with_no_reported_size_is_still_judged() {
     let f = fixture();
     let sizeless = Candidate {
         size_bytes: None,
-        seeders: Some(10),
-        indexer_priority: 0,
+        ..cand(0, 10)
     };
 
     let judged = f

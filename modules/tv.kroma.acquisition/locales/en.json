@@ -296,5 +296,8 @@
   "acq.openOnIndexer": "Open on {indexer}",
   "acq.seasonNumber": "Season {season}",
   "protocol.torrent": "Torrent",
-  "protocol.usenet": "Usenet"
+  "protocol.usenet": "Usenet",
+  "acq.preferredProtocol": "Preferred protocol",
+  "acq.preferredProtocolHint": "Between two releases of the same quality and score, this one wins.",
+  "acq.protocolAny": "Either"
 }

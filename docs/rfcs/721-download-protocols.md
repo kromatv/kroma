@@ -2,7 +2,7 @@
 
 - Status: **DRAFT**
 - PR: #721 (the issue)
-- Affects: `docs/spec/modules/acquisition.md` (MOD-95 to MOD-99, which qualify MOD-64,
+- Affects: `docs/spec/modules/acquisition.md` (MOD-95 to MOD-102, which qualify MOD-64,
   MOD-72, MOD-77 and MOD-78), `docs/spec/modules/README.md` (MOD-47), the core `downloads`
   ledger, the modules
   `tv.kroma.torznab`, `tv.kroma.indexer`, `tv.kroma.scene`, `tv.kroma.acquisition`,
@@ -154,13 +154,18 @@ unpacking to the client, so the importer finds plain video files, as it does for
 - **Do nothing.** Usenet users run Sonarr and Radarr instead, and KROMA's acquisition stays
   for torrent users only.
 
+## Settled in review
+
+- **A preferred protocol.** A profile can name one, and it wins a tie on quality, format score
+  and revision, where Sonarr places it. Waiting for a preferred protocol, the other half of
+  Sonarr's delay profiles, stays out of scope with every other wait before a grab.
+- **The VPN kill switch** holds torrent grabs only: it exists for the swarm, which only
+  BitTorrent joins. The grab point gains `held`, the protocols held right now, and `gate-open`
+  answers whether any grab can still go out. An automatic search asks once per pass and skips
+  the releases of a held protocol, so a Usenet release still goes through.
+- **Manual add** asks which protocol a pasted link is, from the protocols the enabled clients
+  take, and only offers file selection for a torrent.
+
 ## Unresolved
 
-- **A preferred protocol.** Sonarr's delay profiles let a profile prefer one protocol, or wait
-  for it. Here a tie between a torrent and a Usenet release falls to size. A profile rule can
-  be added later without touching any point.
-- **The VPN kill switch** still holds every grab. It exists for the swarm, which only
-  BitTorrent joins, so a Usenet grab could go through while it is closed. That needs the
-  acquisition passes to check per grab instead of per pass.
-- **Manual add** takes a magnet or a `.torrent` link. An `.nzb` link needs the form to ask
-  which protocol it is.
+Nothing at the time of writing.

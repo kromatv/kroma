@@ -115,10 +115,11 @@ pub struct Reject {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Candidate {
+pub struct Candidate<'a> {
     pub size_bytes: Option<u64>,
     pub seeders: Option<u32>,
     pub indexer_priority: i32,
+    pub protocol: &'a str,
 }
 
 mod air_date;

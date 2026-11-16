@@ -121,7 +121,7 @@
   "downloads.uploadFailed": "This file was refused: it is not a valid .torrent.",
   "downloads.uploadTorrent": "Upload a .torrent",
   "downloads.viewOnTracker": "View on the tracker",
-  "downloads.vpnBlocked": "Kill switch engaged: downloads held, VPN unreachable",
+  "downloads.vpnBlocked": "Kill switch engaged: torrents held, VPN unreachable",
   "downloads.vpnDown": "VPN unreachable",
   "downloads.vpnOk": "VPN active · exit IP {ip}",
   "downloads.vpnSealedDay": "{total} through the tunnel over the last 24 hours.",
@@ -164,8 +164,8 @@
   "manual.selectedCount": "{n}/{total} files selected",
   "manual.shapeLabel": "This torrent is",
   "manual.sourceFile": ".torrent",
-  "manual.sourceLabel": "Where is the torrent?",
-  "manual.sourceMagnet": "Magnet",
+  "manual.sourceLabel": "Where is the release?",
+  "manual.sourceMagnet": "Link",
   "manual.sourceSearch": "Search",
   "manual.step.files": "Files",
   "manual.step.source": "Source",
@@ -221,5 +221,8 @@
   "notifications.completed.label": "Finished downloads",
   "notifications.completed.title": "Download finished",
   "protocol.torrent": "Torrent",
-  "protocol.usenet": "Usenet"
+  "protocol.usenet": "Usenet",
+  "manual.protocol": "Protocol",
+  "manual.link": "Download link",
+  "manual.linkHint": "Paste the link the indexer gives for this release."
 }

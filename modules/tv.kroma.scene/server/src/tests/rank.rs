@@ -193,3 +193,39 @@ fn a_season_pack_outranks_the_same_quality_one_episode_at_a_time() {
 
     assert_eq!(order, Ordering::Greater);
 }
+
+fn usenet(size_gb: u64) -> Candidate<'static> {
+    Candidate {
+        seeders: None,
+        protocol: "usenet",
+        ..cand(size_gb, 0)
+    }
+}
+
+#[test]
+fn the_preferred_protocol_wins_a_tie_on_quality_and_formats() {
+    let mut f = fixture();
+    f.profile.preferred_protocol = "usenet".into();
+
+    let order = better(
+        &f,
+        ("Movie.2020.1080p.WEB-DL.x265", usenet(6)),
+        ("Movie.2020.1080p.WEB-DL.x265", cand(6, 300)),
+    );
+
+    assert_eq!(order, Ordering::Greater);
+}
+
+#[test]
+fn a_better_quality_beats_the_preferred_protocol() {
+    let mut f = fixture();
+    f.profile.preferred_protocol = "usenet".into();
+
+    let order = better(
+        &f,
+        ("Movie.2020.720p.WEB-DL.x265", usenet(3)),
+        ("Movie.2020.1080p.WEB-DL.x265", cand(6, 300)),
+    );
+
+    assert_eq!(order, Ordering::Less);
+}

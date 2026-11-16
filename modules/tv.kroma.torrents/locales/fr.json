@@ -121,7 +121,7 @@
   "downloads.uploadFailed": "Fichier refusé : ce n'est pas un .torrent valide.",
   "downloads.uploadTorrent": "Importer un .torrent",
   "downloads.viewOnTracker": "Voir sur le tracker",
-  "downloads.vpnBlocked": "Coupe-circuit actif : téléchargements bloqués, VPN injoignable",
+  "downloads.vpnBlocked": "Coupe-circuit actif : torrents bloqués, VPN injoignable",
   "downloads.vpnDown": "VPN injoignable",
   "downloads.vpnOk": "VPN actif · IP de sortie {ip}",
   "downloads.vpnSealedDay": "{total} sont passés par le tunnel ces dernières 24 heures.",
@@ -164,8 +164,8 @@
   "manual.selectedCount": "{n}/{total} fichiers sélectionnés",
   "manual.shapeLabel": "Ce torrent est",
   "manual.sourceFile": ".torrent",
-  "manual.sourceLabel": "D'où vient le torrent ?",
-  "manual.sourceMagnet": "Magnet",
+  "manual.sourceLabel": "D'où vient la version ?",
+  "manual.sourceMagnet": "Lien",
   "manual.sourceSearch": "Rechercher",
   "manual.step.files": "Fichiers",
   "manual.step.source": "Source",
@@ -221,5 +221,8 @@
   "notifications.completed.label": "Téléchargements terminés",
   "notifications.completed.title": "Téléchargement terminé",
   "protocol.torrent": "Torrent",
-  "protocol.usenet": "Usenet"
+  "protocol.usenet": "Usenet",
+  "manual.protocol": "Protocole",
+  "manual.link": "Lien de téléchargement",
+  "manual.linkHint": "Collez le lien que l'indexeur donne pour cette version."
 }

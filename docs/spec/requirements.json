@@ -5050,6 +5050,36 @@
     "line": 174
   },
   {
+    "id": "MOD-100",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 100,
+    "status": "AGREED",
+    "text": "A profile can name a preferred protocol. Between two releases of the same",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 177
+  },
+  {
+    "id": "MOD-101",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 101,
+    "status": "AGREED",
+    "text": "The VPN kill switch holds torrent grabs only. While it is closed, a release",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 180
+  },
+  {
+    "id": "MOD-102",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 102,
+    "status": "AGREED",
+    "text": "A manual add says which protocol its link is when the enabled download",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 184
+  },
+  {
     "id": "PLAY-1",
     "domain": "PLAY",
     "space": "playback",

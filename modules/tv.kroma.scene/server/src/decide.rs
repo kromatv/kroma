@@ -52,6 +52,7 @@ pub struct Evaluation {
 #[serde(rename_all = "camelCase")]
 pub struct Judged {
     pub evaluation: Evaluation,
+    pub preferred_protocol: bool,
     pub seeders: Option<u32>,
     pub indexer_priority: i32,
     pub episode_count: u32,
@@ -127,8 +128,11 @@ pub fn judge(
     let episode_count = query.target.episode_count();
     let preferred_bytes = check_size(candidate.size_bytes, evaluation.quality, query, rules)?;
     let breakdown = breakdown(&evaluation, episode_count);
+    let preferred_protocol =
+        !profile.preferred_protocol.is_empty() && candidate.protocol == profile.preferred_protocol;
     Ok(Judged {
         evaluation,
+        preferred_protocol,
         seeders,
         indexer_priority: candidate.indexer_priority,
         episode_count,
@@ -239,15 +243,17 @@ fn breakdown(evaluation: &Evaluation, episode_count: u32) -> Vec<ScoreLine> {
 }
 
 /// Orders two releases, `Greater` meaning `a` is the better one: quality, then
-/// format score, revision, how many episodes one grab covers, the indexer's
-/// priority, seeders, and how close the size is to the preferred one. Seeders
-/// only decide between two releases that both report them.
+/// format score, revision, the profile's preferred protocol, how many episodes
+/// one grab covers, the indexer's priority, seeders, and how close the size is
+/// to the preferred one. Seeders only decide between two releases that both
+/// report them.
 pub fn rank(a: &Judged, b: &Judged) -> Ordering {
     let (ea, eb) = (&a.evaluation, &b.evaluation);
     ea.quality_rank
         .cmp(&eb.quality_rank)
         .then(ea.format_score.cmp(&eb.format_score))
         .then(ea.revision.cmp(&eb.revision))
+        .then(a.preferred_protocol.cmp(&b.preferred_protocol))
         .then(a.episode_count.cmp(&b.episode_count))
         .then(a.indexer_priority.cmp(&b.indexer_priority))
         .then(by_swarm(a.seeders, b.seeders, seeder_bucket))

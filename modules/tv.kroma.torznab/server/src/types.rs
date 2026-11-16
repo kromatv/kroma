@@ -61,20 +61,20 @@ pub enum Query {
 pub struct Release {
     pub title: String,
     pub guid: String,
-    pub protocol: String,
     pub link: Option<String>,
     pub magnet: Option<String>,
     pub info_hash: Option<String>,
     pub size_bytes: Option<u64>,
     pub seeders: Option<u32>,
     pub leechers: Option<u32>,
-    pub grabs: Option<u32>,
     pub tmdb_id: Option<u64>,
     pub imdb_id: Option<String>,
     pub published_at: Option<String>,
     pub details_url: Option<String>,
     pub download_volume_factor: Option<f64>,
     pub upload_volume_factor: Option<f64>,
+    pub protocol: String,
+    pub grabs: Option<u32>,
 }
 
 /// What an indexer advertises via `t=caps`: which query parameters its backing

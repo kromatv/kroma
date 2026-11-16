@@ -12,7 +12,6 @@ pub mod types;
 
 pub use types::{AddTorrentReq, ClientDef, TorrentState, TorrentStatus};
 
-mod base64;
 mod rpc;
 
 #[cfg(test)]

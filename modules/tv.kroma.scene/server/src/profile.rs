@@ -41,6 +41,10 @@ pub struct QualityProfile {
     pub min_seeders: u32,
     #[serde(default)]
     pub add_beside: bool,
+    /// The protocol that wins a tie on quality, format score and revision.
+    /// Empty prefers none.
+    #[serde(default)]
+    pub preferred_protocol: String,
 }
 
 fn one() -> i32 {

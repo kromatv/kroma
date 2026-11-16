@@ -76,11 +76,7 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
         .map(|profile| {
             let rules = book.rules(profile);
             // A name says nothing about seeders or size, so neither refuses.
-            let candidate = Candidate {
-                size_bytes: None,
-                seeders: Some(profile.min_seeders),
-                indexer_priority: 0,
-            };
+            let candidate = Candidate::default();
             ProfileVerdict {
                 profile_id: profile.id.clone(),
                 profile_name: profile.name.clone(),

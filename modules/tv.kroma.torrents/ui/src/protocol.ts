@@ -7,6 +7,18 @@ export function joinsSwarm(dl: Readonly<{ protocol: string }>): boolean {
   return dl.protocol === TORRENT;
 }
 
+/** The protocols the enabled clients take, a torrent first, or a torrent alone
+ * when none has said. */
+export function protocolsOf(
+  clients: readonly Readonly<{ enabled: boolean; protocols: readonly string[] }>[],
+): string[] {
+  const taken = [...new Set(clients.filter((c) => c.enabled).flatMap((c) => c.protocols))];
+  if (taken.length === 0) {
+    return [TORRENT];
+  }
+  return taken.sort((a, b) => Number(b === TORRENT) - Number(a === TORRENT) || a.localeCompare(b));
+}
+
 type ProtocolKey = 'protocol.torrent' | 'protocol.usenet';
 
 const LABELS = new Map<string, ProtocolKey>([

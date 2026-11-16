@@ -43,6 +43,7 @@ pub(crate) struct Pass<'a, S: HostStorage> {
     pub(crate) log: &'a dyn Fn(String),
     pub(crate) cancelled: &'a dyn Fn() -> bool,
     pub(crate) searching: &'a dyn Fn(),
+    pub(crate) held: &'a [String],
 }
 
 pub fn auto_search_pass<S: HostStorage>(
@@ -65,6 +66,7 @@ pub fn auto_search_pass<S: HostStorage>(
         return Ok(summary);
     }
     let book = crate::rules::load(state)?;
+    let held = crate::peers::downloads::held_protocols(state);
     let pass = Pass {
         state,
         indexers: &indexers,
@@ -72,6 +74,7 @@ pub fn auto_search_pass<S: HostStorage>(
         log,
         cancelled,
         searching: &|| {},
+        held: &held,
     };
     fill_missing(&pass, &mut summary)?;
     if summary.targets < MAX_TARGETS && !cancelled() {
@@ -226,6 +229,7 @@ pub(crate) fn search_title<S: HostStorage>(
             files: &files,
             blocked: &blocked,
             accept: fills,
+            held: pass.held,
         };
         let outcome = best_release(state, pass.indexers, &aim, &mut summary.errors);
         let title = wanted.first().map(|w| w.title.as_str()).unwrap_or_default();

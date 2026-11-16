@@ -15,8 +15,9 @@ impl DownloadManager {
     /// Does NO torrent network I/O: the row lands `queued` and the caller runs
     /// [`Self::activate`] in the background to hand it to the engine.
     pub fn grab(&self, host: &dyn HostCtx, spec: GrabSpec) -> Result<DownloadRow> {
-        if !self.gate_open() {
-            bail!("downloads are held by the VPN kill switch");
+        let protocol = crate::engine::protocol_or_torrent(&spec.protocol).to_string();
+        if self.holds(&protocol) {
+            bail!("{protocol} downloads are held by the VPN kill switch");
         }
         if spec.magnet_or_url.trim().is_empty() {
             bail!("no magnet or download link");
@@ -30,7 +31,6 @@ impl DownloadManager {
             );
         }
         drop(conn);
-        let protocol = crate::engine::protocol_or_torrent(&spec.protocol).to_string();
         let client = self.client_for(&protocol)?;
 
         let id = kroma_module_sdk::primitives::short_hash(&format!(
@@ -255,8 +255,8 @@ impl DownloadManager {
     /// Resets the row to `queued`; the caller re-runs [`Self::activate`].
     pub fn retry(&self, id: &str) -> Result<DownloadRow> {
         let (row, client) = self.row_and_client(id)?;
-        if !self.gate_open() {
-            bail!("downloads are held by the VPN kill switch");
+        if self.holds(&row.protocol) {
+            bail!("{} downloads are held by the VPN kill switch", row.protocol);
         }
         if !row.client_ref.is_empty() {
             if let Ok(engine) = self.engine_for(&client) {

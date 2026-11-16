@@ -94,3 +94,48 @@ fn the_embedded_engine_downloads_torrents_before_it_has_started() {
 
     assert_eq!(manager.protocols_of(&embedded), vec!["torrent".to_string()]);
 }
+
+#[tokio::test]
+#[cfg_attr(target_family = "wasm", ignore = "binds a test server, and a component holds no socket")]
+async fn the_kill_switch_holds_a_torrent_grab_and_lets_a_usenet_one_through() {
+    let (base, token) = usenet_engine().await;
+    let host = host_over("held-usenet", &[]).with_point(DOWNLOAD_CLIENT, Some("sabnzbd"), &base, &token);
+    with_sabnzbd(&host);
+    let manager = restarted(&host);
+    manager.gate_open.store(false, std::sync::atomic::Ordering::Relaxed);
+    let magnet = GrabSpec {
+        magnet_or_url: "magnet:?xt=urn:btih:192202572932341be69b679e0c4997fb28aea0d7".into(),
+        protocol: "torrent".into(),
+        ..nzb_grab()
+    };
+
+    let (held, usenet, takes) = kroma_module_sdk::testing::blocking(move || {
+        let held = manager.grab(&host, magnet).unwrap_err().to_string();
+        let usenet = manager.grab(&host, nzb_grab()).map(|row| row.protocol);
+        (held, usenet, manager.takes_grabs())
+    })
+    .await;
+
+    assert!(held.contains("kill switch"), "{held}");
+    assert_eq!(usenet.unwrap(), "usenet");
+    assert!(takes, "a usenet client still takes grabs");
+}
+
+#[test]
+fn a_closed_gate_with_only_torrent_clients_takes_no_grab() {
+    let host = host_over("held-torrent-only", &[]);
+    let manager = restarted(&host);
+    manager.gate_open.store(false, std::sync::atomic::Ordering::Relaxed);
+
+    assert_eq!(manager.held_protocols(), vec!["torrent".to_string()]);
+    assert!(!manager.takes_grabs());
+}
+
+#[test]
+fn an_open_gate_holds_nothing() {
+    let host = host_over("held-none", &[]);
+    let manager = restarted(&host);
+
+    assert!(manager.held_protocols().is_empty());
+    assert!(manager.takes_grabs());
+}

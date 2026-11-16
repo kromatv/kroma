@@ -53,6 +53,7 @@ impl<'a> Judge<'a> {
             size_bytes: release.size_bytes,
             seeders: release.seeders,
             indexer_priority: indexer.priority,
+            protocol: &release.protocol,
         };
         let query = Query {
             target: st.target,

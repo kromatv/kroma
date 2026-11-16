@@ -89,8 +89,23 @@ pub fn list_files(
     )
 }
 
-/// Whether the kill switch currently allows new grabs. A missing engine reads as
-/// closed, because a grab that cannot be handed anywhere is not a grab.
+/// The protocols the kill switch holds right now. A release of one is skipped
+/// until it opens; nothing held reads as an empty list.
+pub fn held_protocols(host: &dyn HostCtx) -> Vec<String> {
+    let Ok(resolve) = grabber(host) else {
+        return Vec::new();
+    };
+    call_raw(
+        &resolve,
+        &format!("{DOWNLOAD_GRAB}/held"),
+        &serde_json::json!({}),
+    )
+    .unwrap_or_default()
+}
+
+/// Whether any grab can go out right now, the kill switch holding only the
+/// protocols it guards. A missing engine reads as closed, because a grab that
+/// cannot be handed anywhere is not a grab.
 pub fn gate_open(host: &dyn HostCtx) -> bool {
     let Ok(resolve) = grabber(host) else {
         return false;

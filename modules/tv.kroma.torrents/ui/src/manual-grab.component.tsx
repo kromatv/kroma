@@ -2,12 +2,14 @@ import { useAcquisitionApi } from '@kromatv/module-acquisition/api';
 import type { TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
 import { Box, Button, Callout, Dialog, Row, Stepper, Text, useStepper } from '@kromatv/ui/kit';
-import { useState } from 'react';
+import { type ComponentProps, useState } from 'react';
 import { detect } from './manual-grab-content';
 import { useIndexerSearch } from './manual-grab-search';
-import { SourceStep, type TorrentSource } from './manual-grab-source.component';
+import { type ReleaseSource, SourceStep } from './manual-grab-source.component';
 import { type GrabTarget, type Kind, TargetStep } from './manual-grab-target.component';
+import { joinsSwarm } from './protocol';
 import { TorrentContents } from './torrent-contents.component';
+import { useClientProtocols } from './use-client-protocols.hook';
 import { useEpisodeNames } from './use-episode-names.hook';
 
 const FLOW = { gap: 22 } as const;
@@ -25,7 +27,7 @@ const EMPTY_TARGET: GrabTarget = {
   episode: '',
 };
 
-function targetFrom(source: TorrentSource): GrabTarget {
+function targetFrom(source: ReleaseSource): GrabTarget {
   return {
     kind: (source.kind as Kind) || 'movie',
     tmdbId: null,
@@ -45,7 +47,7 @@ export function ManualGrabModal({
   const { busy, error, run } = useAsyncAction();
 
   const [step, setStep] = useState<Step>('source');
-  const [source, setSource] = useState<TorrentSource | null>(null);
+  const [source, setSource] = useState<ReleaseSource | null>(null);
   const [target, setTarget] = useState<GrabTarget>(EMPTY_TARGET);
 
   const [analyzing, setAnalyzing] = useState(false);
@@ -53,20 +55,26 @@ export function ManualGrabModal({
   const [analyzeErr, setAnalyzeErr] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
+  const protocols = useClientProtocols();
+  const hasFiles = source === null || joinsSwarm(source);
   const search = useIndexerSearch(target.kind, target.season, target.episode);
   const episodeNames = useEpisodeNames(
     target.tmdbId,
     target.season ? Number.parseInt(target.season, 10) : null,
   );
 
-  const takeSource = (picked: TorrentSource) => {
+  const takeSource = (picked: ReleaseSource) => {
     setSource(picked);
     setTarget((current) => {
       const seeded = targetFrom(picked);
       return current.tmdbId ? { ...seeded, ...current } : seeded;
     });
     setStep('target');
-    analyze(picked.magnet);
+    setAnalysis(null);
+    setAnalyzeErr(null);
+    if (joinsSwarm(picked)) {
+      analyze(picked.magnet);
+    }
   };
 
   const analyze = (magnet: string) => {
@@ -109,6 +117,7 @@ export function ManualGrabModal({
             : null;
         await acquisition.add({
           magnetOrUrl: source.magnet,
+          protocol: source.protocol,
           kind: target.kind,
           title: target.title.trim() || null,
           year: target.year ? Number.parseInt(target.year, 10) : null,
@@ -143,13 +152,15 @@ export function ManualGrabModal({
           <Stepper.Item value="target" icon="movie" disabled={source === null}>
             <Stepper.Label>{t('manual.step.target')}</Stepper.Label>
           </Stepper.Item>
-          <Stepper.Item value="files" icon="file-text" disabled={source === null}>
-            <Stepper.Label>{t('manual.step.files')}</Stepper.Label>
-          </Stepper.Item>
+          {hasFiles ? (
+            <Stepper.Item value="files" icon="file-text" disabled={source === null}>
+              <Stepper.Label>{t('manual.step.files')}</Stepper.Label>
+            </Stepper.Item>
+          ) : null}
         </Stepper.List>
 
         <Stepper.Panel value="source">
-          <SourceStep search={search} onPicked={takeSource} />
+          <SourceStep search={search} protocols={protocols} onPicked={takeSource} />
         </Stepper.Panel>
 
         <Stepper.Panel value="target">
@@ -166,38 +177,20 @@ export function ManualGrabModal({
           ) : null}
         </Stepper.Panel>
 
-        <Stepper.Panel value="files">
-          {source ? (
-            <Box gap={12}>
-              {analyzeErr ? (
-                <Callout.Root size="sm" tone="danger" icon="alert-triangle">
-                  <Callout.Title>{analyzeErr}</Callout.Title>
-                  <Callout.Actions>
-                    <Button
-                      variant="glass"
-                      size="sm"
-                      label={t('manual.analyze')}
-                      onPress={() => analyze(source.magnet)}
-                      loading={analyzing}
-                    />
-                  </Callout.Actions>
-                </Callout.Root>
-              ) : null}
-              {analyzing ? (
-                <Text variant="meta" color="text/45">
-                  {t('manual.analyzing')}
-                </Text>
-              ) : null}
-              {analysis ? (
-                <TorrentContents
-                  analysis={analysis}
-                  episodes={episodeNames}
-                  selection={{ selected, onSelectedChange: setSelected }}
-                />
-              ) : null}
-            </Box>
-          ) : null}
-        </Stepper.Panel>
+        {hasFiles ? (
+          <Stepper.Panel value="files">
+            {source ? (
+              <FilesPanel
+                analysis={analysis}
+                analyzing={analyzing}
+                analyzeErr={analyzeErr}
+                onRetry={() => analyze(source.magnet)}
+                episodes={episodeNames}
+                selection={{ selected, onSelectedChange: setSelected }}
+              />
+            ) : null}
+          </Stepper.Panel>
+        ) : null}
 
         {error ? (
           <Callout.Root size="sm" tone="danger" icon="alert-triangle">
@@ -208,6 +201,52 @@ export function ManualGrabModal({
         <Footer busy={busy} onCancel={onClose} onAdd={add} />
       </Stepper.Root>
     </Dialog.Root>
+  );
+}
+
+type ContentsProps = ComponentProps<typeof TorrentContents>;
+
+function FilesPanel({
+  analysis,
+  analyzing,
+  analyzeErr,
+  onRetry,
+  episodes,
+  selection,
+}: Readonly<{
+  analysis: TorrentAnalysis | null;
+  analyzing: boolean;
+  analyzeErr: string | null;
+  onRetry: () => void;
+  episodes: ContentsProps['episodes'];
+  selection: ContentsProps['selection'];
+}>) {
+  const t = useT();
+  return (
+    <Box gap={12}>
+      {analyzeErr ? (
+        <Callout.Root size="sm" tone="danger" icon="alert-triangle">
+          <Callout.Title>{analyzeErr}</Callout.Title>
+          <Callout.Actions>
+            <Button
+              variant="glass"
+              size="sm"
+              label={t('manual.analyze')}
+              onPress={onRetry}
+              loading={analyzing}
+            />
+          </Callout.Actions>
+        </Callout.Root>
+      ) : null}
+      {analyzing ? (
+        <Text variant="meta" color="text/45">
+          {t('manual.analyzing')}
+        </Text>
+      ) : null}
+      {analysis ? (
+        <TorrentContents analysis={analysis} episodes={episodes} selection={selection} />
+      ) : null}
+    </Box>
   );
 }
 

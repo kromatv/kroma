@@ -1,9 +1,11 @@
 import { useT } from '@kromatv/module-sdk';
-import { Box, Field, ListRow, NumberField, Row, Switch, Text } from '@kromatv/ui/kit';
+import { Box, Field, ListRow, NumberField, Row, SegmentGroup, Switch, Text } from '@kromatv/ui/kit';
 import { termsOf, termsText } from './profile-draft';
+import { KNOWN_PROTOCOLS, protocolLabel } from './protocol-label';
 import type { QualityProfile } from './rules-schemas';
 
 const NUMBER_W = 128;
+const ANY_PROTOCOL = 'any';
 
 export function ProfileRules({
   profile,
@@ -31,6 +33,29 @@ export function ProfileRules({
           value={profile.minSeeders}
           onPick={(minSeeders) => onChange({ ...profile, minSeeders })}
         />
+        <ListRow.Root size="sm" ground="surface" chevron={false}>
+          <ListRow.Label>{t('acq.preferredProtocol')}</ListRow.Label>
+          <ListRow.Hint>{t('acq.preferredProtocolHint')}</ListRow.Hint>
+          <ListRow.Trailing>
+            <SegmentGroup.Root
+              value={profile.preferredProtocol || ANY_PROTOCOL}
+              onValueChange={(next: string) =>
+                onChange({ ...profile, preferredProtocol: next === ANY_PROTOCOL ? '' : next })
+              }
+              label={t('acq.preferredProtocol')}
+              size="sm"
+            >
+              <SegmentGroup.Item value={ANY_PROTOCOL}>
+                <SegmentGroup.Label>{t('acq.protocolAny')}</SegmentGroup.Label>
+              </SegmentGroup.Item>
+              {KNOWN_PROTOCOLS.map((protocol) => (
+                <SegmentGroup.Item key={protocol} value={protocol}>
+                  <SegmentGroup.Label>{protocolLabel(t, protocol)}</SegmentGroup.Label>
+                </SegmentGroup.Item>
+              ))}
+            </SegmentGroup.Root>
+          </ListRow.Trailing>
+        </ListRow.Root>
         <ListRow.Root size="sm" ground="surface" chevron={false}>
           <ListRow.Label>{t('acq.addBeside')}</ListRow.Label>
           <ListRow.Hint>{t('acq.addBesideHint')}</ListRow.Hint>

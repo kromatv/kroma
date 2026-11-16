@@ -31,6 +31,26 @@ impl DownloadManager {
             .ok_or_else(|| anyhow!("no enabled download client takes {protocol} downloads"))
     }
 
+    /// Whether a grab can go out at all right now: the kill switch holds only
+    /// what it guards, so a client of any other protocol still takes one.
+    pub fn takes_grabs(&self) -> bool {
+        let held = self.held_protocols();
+        if held.is_empty() {
+            return true;
+        }
+        let Ok(clients) = self
+            .store()
+            .get()
+            .and_then(|conn| Ok(db::enabled_download_clients(&conn)?))
+        else {
+            return false;
+        };
+        clients
+            .iter()
+            .flat_map(|row| self.protocols_of(row))
+            .any(|protocol| !held.contains(&protocol))
+    }
+
     /// Whether this client's engine is merely not up YET, rather than absent.
     /// Only the embedded engine warms up in the background; an external one is
     /// a daemon that is either reachable or not.
