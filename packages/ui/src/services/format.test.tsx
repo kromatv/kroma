@@ -46,7 +46,7 @@ describe('useFormat', () => {
   });
 
   it('answers in the default locale above a provider instead of throwing', () => {
-    expect(render(<FormatProbe />).container.textContent).toBe('1,0 Go jamais');
+    expect(render(<FormatProbe />).container.textContent).toBe('1.0 GB never');
   });
 
   it('keeps one identity while the locale holds still', () => {

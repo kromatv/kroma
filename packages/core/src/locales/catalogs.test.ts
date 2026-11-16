@@ -42,7 +42,7 @@ describe('the discovered catalogs', () => {
     expect(catalogs).toEqual({});
     expect(Object.keys(names ?? {}).sort()).toEqual(locales);
     expect(names?.[i18n.defaultLocale]).toBe(
-      fileOf(LABEL_NAMESPACE, i18n.defaultLocale)['lang.fr'],
+      fileOf(LABEL_NAMESPACE, i18n.defaultLocale)[`lang.${i18n.defaultLocale}`],
     );
     expect(Object.keys(lazy).sort()).toEqual([...new Set(files.map((file) => file.file))].sort());
   });
