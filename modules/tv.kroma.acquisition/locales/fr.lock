@@ -124,7 +124,7 @@
     "acq.minFormatScore": "05d31d23 c2f8f373",
     "acq.minFormatScoreHint": "edc99b9a 2e4ee3dd",
     "acq.minSeeders": "2c1ad589 596425fd",
-    "acq.minSeedersHint": "e1ff1414 85345634",
+    "acq.minSeedersHint": "9f180a54 af8726bd",
     "acq.minUpgradeIncrement": "34ee5fa9 8c99181d",
     "acq.minUpgradeIncrementHint": "47cce817 d2c35fe8",
     "acq.modeExcluded": "454963cf 859fac4e",
@@ -283,6 +283,8 @@
     "acq.verdict.reached": "0b50f1ab 4ac7d398",
     "acq.verdict.upgrade": "85e660e3 e14c10c8",
     "downloads.viewOnTracker": "d806b270 eb8843d4",
-    "nav.acquisition": "acbccfa7 acbccfa7"
+    "nav.acquisition": "acbccfa7 acbccfa7",
+    "protocol.torrent": "19d75f68 19d75f68",
+    "protocol.usenet": "db918956 db918956"
   }
 }

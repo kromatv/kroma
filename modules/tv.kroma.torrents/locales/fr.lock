@@ -20,8 +20,7 @@
     "dlclients.kind": "31a53c78 31a53c78",
     "dlclients.name": "84d376d4 cdecd0ec",
     "dlclients.notTested": "b1fdd531 6768be65",
-    "dlclients.password": "114d2fc6 1f7335da",
-    "dlclients.passwordKept": "f56d7851 79289d26",
+    "dlclients.secretsKept": "7c93c2f7 a8816b7e",
     "dlclients.sectionTitle": "08839f72 9b894792",
     "dlclients.state.ready": "57dd619b c88164e8",
     "dlclients.state.starting": "4112fce3 33921b7e",
@@ -31,9 +30,6 @@
     "dlclients.test": "acbfa844 5be8bc55",
     "dlclients.testFailed": "7ba232de 15a9ca55",
     "dlclients.testing": "9a0e41c2 b630af84",
-    "dlclients.url": "a4a67e07 a4a67e07",
-    "dlclients.urlHint": "dd828d21 48e269f8",
-    "dlclients.username": "99a634e6 ab06a74a",
     "downloads.askPeers": "da155b15 b5b6dd41",
     "downloads.chartThroughput": "c36bbe9a 21fcd3be",
     "downloads.clearFilters": "23641ac9 dcbf1a85",
@@ -221,6 +217,8 @@
     "nav.downloads": "751deb4a a0800b83",
     "notifications.completed.body": "9cb4d7e8 23e1b639",
     "notifications.completed.label": "1320f7ac 50d89cce",
-    "notifications.completed.title": "0dd620cf 32603fef"
+    "notifications.completed.title": "0dd620cf 32603fef",
+    "protocol.torrent": "19d75f68 19d75f68",
+    "protocol.usenet": "db918956 db918956"
   }
 }
