@@ -23,10 +23,13 @@ export const MAX_MESSAGE = 4000;
 
 const REF = /\$t\(\s*([\w.-]+)\s*\)/g;
 
+function isControl(char: string): boolean {
+  return (char < ' ' && char !== '\t' && char !== '\n') || char === '\u007f';
+}
+
 function hasControl(value: string): boolean {
-  for (let i = 0; i < value.length; i++) {
-    const code = value.charCodeAt(i);
-    if ((code < 0x20 && code !== 0x09 && code !== 0x0a) || code === 0x7f) {
+  for (const char of value) {
+    if (isControl(char)) {
       return true;
     }
   }

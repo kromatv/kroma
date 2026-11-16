@@ -64,12 +64,12 @@ jobs:
       - name: Create the database the first time
         if: steps.guard.outputs.has_token == 'true'
         working-directory: apps/lingua
-        run: bunx wrangler d1 info kroma-lingua > /dev/null 2>&1 || bunx wrangler d1 create kroma-lingua --location weur
+        run: bun run wrangler d1 info kroma-lingua > /dev/null 2>&1 || bun run wrangler d1 create kroma-lingua --location weur
 
       - name: Apply migrations
         if: steps.guard.outputs.has_token == 'true'
         working-directory: apps/lingua
-        run: bunx wrangler d1 migrations apply kroma-lingua --remote
+        run: bun run migrate
 
       - name: Deploy (lingua.kroma.tv)
         if: steps.guard.outputs.has_token == 'true'
@@ -93,4 +93,4 @@ jobs:
           fi
           jq -n --arg id "$OAUTH_CLIENT_ID" --arg secret "$OAUTH_CLIENT_SECRET" \
             '{GITHUB_OAUTH_CLIENT_ID: $id, GITHUB_OAUTH_CLIENT_SECRET: $secret}' \
-            | bunx wrangler secret bulk
+            | bun run wrangler secret bulk

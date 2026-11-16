@@ -20,7 +20,7 @@ export function cookie(name: string, value: string, maxAge: number): string {
 /** 32 random bytes, URL-safe. */
 export function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes)).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return btoa(String.fromCodePoint(...bytes)).replaceAll('=', '').replaceAll('+', '-').replaceAll('/', '_');
 }
 
 async function hashOf(token: string): Promise<string> {

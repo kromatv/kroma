@@ -21,18 +21,22 @@ async function repositoryRoot(from: string): Promise<string | null> {
 export async function devStore(): Promise<Store> {
   const store = memoryStore();
   const root = await repositoryRoot(process.cwd());
-  if (!root) return store;
+  if (root) await seedFrom(store, root);
+  return store;
+}
+
+async function seedFrom(store: Store, root: string): Promise<void> {
   const text = await readFile(join(root, CONFIG_PATH), 'utf8');
   const parsed = parseConfig(text);
   await store.upsertProject(DEV_PROJECT, 0, 'main');
   if (!parsed.ok) {
     await store.setSynced(DEV_PROJECT, { headSha: 'dev', treeSha: 'dev', config: null, configError: parsed.error, at: 0 });
-    return store;
+    return;
   }
   const projectRoot = rootOf(parsed.config);
   const entries = await readdir(join(root, projectRoot), { recursive: true }).catch((): string[] => []);
   const placed = entries.flatMap((entry) => {
-    const path = `${projectRoot}/${entry.split('\\').join('/')}`;
+    const path = `${projectRoot}/${entry.replaceAll('\\', '/')}`;
     const place = placeOf(projectRoot, path);
     return place ? [{ ...place, path }] : [];
   });
@@ -41,5 +45,4 @@ export async function devStore(): Promise<Store> {
   );
   await store.replaceFiles(DEV_PROJECT, files, []);
   await store.setSynced(DEV_PROJECT, { headSha: 'dev', treeSha: 'dev', config: text, configError: null, at: Math.floor(Date.now() / 1000) });
-  return store;
 }

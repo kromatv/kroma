@@ -3,7 +3,7 @@ import { createLink } from '@tanstack/react-router';
 import { View, type ViewProps } from 'react-native';
 
 type RouteAnchorProps = Readonly<
-  Omit<ViewProps, 'style'> & { style?: Parameters<typeof registered>[0] }
+  Omit<ViewProps, 'style'> & { style?: NonNullable<Parameters<typeof registered>[0]> }
 >;
 
 /** The element a kit control's `asChild` renders as, so a route is a real `<a href>` the router navigates. */

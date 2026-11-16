@@ -55,7 +55,7 @@ export function appCredentials(env: Env): AppCredentials | null {
   }
   return {
     appId: GITHUB_APP_ID,
-    privateKey: GITHUB_APP_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    privateKey: GITHUB_APP_PRIVATE_KEY.replaceAll(String.raw`\n`, '\n'),
     webhookSecret: GITHUB_WEBHOOK_SECRET,
   };
 }

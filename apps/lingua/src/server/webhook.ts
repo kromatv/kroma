@@ -5,9 +5,12 @@ import { forkHead } from '#site/github/lane';
 import { discoverInstallation, type Syncing, syncProject } from '#site/github/sync';
 import type { Store } from '#site/store/store';
 
+const SIGNATURE = /^sha256=([0-9a-f]{64})$/;
+
 /** Whether `signature` (`X-Hub-Signature-256`) is GitHub's HMAC of `body` under the webhook secret. */
 export async function verifySignature(secret: string, body: string, signature: string | null): Promise<boolean> {
-  if (!signature?.startsWith('sha256=')) {
+  const hex = SIGNATURE.exec(signature ?? '')?.[1];
+  if (!hex) {
     return false;
   }
   const key = await crypto.subtle.importKey(
@@ -15,16 +18,10 @@ export async function verifySignature(secret: string, body: string, signature: s
     new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign'],
+    ['verify'],
   );
-  const mac = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body)));
-  const expected = [...mac].map((b) => b.toString(16).padStart(2, '0')).join('');
-  const given = signature.slice('sha256='.length);
-  let diff = given.length ^ expected.length;
-  for (let i = 0; i < expected.length; i++) {
-    diff |= expected.charCodeAt(i) ^ given.charCodeAt(i);
-  }
-  return diff === 0;
+  const mac = Uint8Array.from({ length: hex.length / 2 }, (_, i) => Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16));
+  return crypto.subtle.verify('HMAC', key, mac, new TextEncoder().encode(body));
 }
 
 const Installation = z.object({ id: z.number() });

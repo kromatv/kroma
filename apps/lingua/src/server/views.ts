@@ -116,7 +116,7 @@ export async function projectView({ store, viewer }: Context, id: string): Promi
 /** `/$owner/$repo/$locale`. */
 export async function localeView({ store, viewer }: Context, id: string, locale: string): Promise<LocaleView | null> {
   const found = await offered(store, id, viewer);
-  if (!found || !found.workspace.locales.includes(locale)) return null;
+  if (!found?.workspace.locales.includes(locale)) return null;
   const { opened, workspace } = found;
   const reading = await readLocales(store, { id, workspace }, [locale]);
   const byFile = await rowsByFile(reading, locale);
@@ -163,7 +163,7 @@ function rowView({ row, current, state }: Stood, around: Around): RowView {
 /** `/$owner/$repo/$locale/$file`. */
 export async function namespaceView({ store, viewer }: Context, id: string, at: { locale: string; file: string }): Promise<NamespaceView | null> {
   const found = await offered(store, id, viewer);
-  if (!found || !found.workspace.locales.includes(at.locale)) return null;
+  if (!found?.workspace.locales.includes(at.locale)) return null;
   const { opened, workspace } = found;
   const references = stableLocales(workspace.policy).filter((tag) => tag !== at.locale);
   const reading = await readLocales(store, { id, workspace }, [at.locale, ...references]);

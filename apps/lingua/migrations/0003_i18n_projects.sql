@@ -13,7 +13,7 @@ CREATE TABLE files (
 
 CREATE INDEX files_by_locale ON files(project, locale);
 
-UPDATE projects SET head_sha = NULL, tree_sha = NULL;
+UPDATE projects SET head_sha = NULL, tree_sha = NULL WHERE head_sha IS NOT NULL OR tree_sha IS NOT NULL;
 
 ALTER TABLE edits RENAME COLUMN namespace TO file;
 

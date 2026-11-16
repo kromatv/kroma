@@ -15,7 +15,7 @@ function derLength(length: number): number[] {
 }
 
 function base64Bytes(text: string): Uint8Array<ArrayBuffer> {
-  return Uint8Array.from(atob(text.replace(/\s+/g, '')), (c) => c.charCodeAt(0));
+  return Uint8Array.from(atob(text.replace(/\s+/g, '')), (c) => c.codePointAt(0) ?? 0);
 }
 
 function pkcs8From(pkcs1: Uint8Array): Uint8Array<ArrayBuffer> {
@@ -48,7 +48,7 @@ function base64Url(data: Uint8Array | string): string {
   const bytes = typeof data === 'string' ? new TextEncoder().encode(data) : data;
   let binary = '';
   for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+    binary += String.fromCodePoint(byte);
   }
   return btoa(binary).replaceAll('=', '').replaceAll('+', '-').replaceAll('/', '_');
 }

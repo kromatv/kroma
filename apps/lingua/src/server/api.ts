@@ -83,16 +83,18 @@ app.get('/setup/done', async (c) => {
 app.get('/auth/login', (c) => {
   const oauth = oauthCredentials(c.env.env);
   if (!oauth) return c.text('Sign-in is not configured on this deployment yet.', 503);
-  const state = randomToken();
-  c.header('Set-Cookie', cookie(OAUTH, `${state} ${safeReturn(c.req.query('to'))}`, 600));
+  const token = randomToken();
+  c.header('Set-Cookie', cookie(OAUTH, token, 600));
+  const state = `${token}.${safeReturn(c.req.query('to'))}`;
   return c.redirect(authorizeUrl(oauth, { redirectUri: callbackUri(c), state }));
 });
 
 async function signIn(c: Context<Ctx>): Promise<Response> {
   const oauth = oauthCredentials(c.env.env);
-  const [state, to] = (readCookie(c.req.header('cookie'), OAUTH) ?? '').split(' ');
+  const token = readCookie(c.req.header('cookie'), OAUTH);
+  const [given, ...to] = (c.req.query('state') ?? '').split('.');
   const code = c.req.query('code');
-  if (!oauth || !code || !state || c.req.query('state') !== state) return c.text('This sign-in link expired. Try again.', 400);
+  if (!oauth || !code || !token || given !== token) return c.text('This sign-in link expired. Try again.', 400);
   const store = await storeFor(c.env.env);
   const user = await userFromCode(oauth, { code, redirectUri: callbackUri(c) }).catch((error: unknown) => {
     console.error('lingua: sign-in failed', error);
@@ -101,7 +103,7 @@ async function signIn(c: Context<Ctx>): Promise<Response> {
   if (!user) return c.text('GitHub did not confirm the sign-in. Try again.', 400);
   c.header('Set-Cookie', await openSession(store, user, now()), { append: true });
   c.header('Set-Cookie', cookie(OAUTH, '', 0), { append: true });
-  return c.redirect(safeReturn(to));
+  return c.redirect(safeReturn(to.join('.')));
 }
 
 async function returnFromSend(c: Context<Ctx>, pending: PendingSend): Promise<Response> {

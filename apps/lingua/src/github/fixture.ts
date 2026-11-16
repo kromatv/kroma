@@ -61,7 +61,7 @@ export function markMachine(set: CatalogSet, locale: string, keys: readonly stri
 /** Every file of the project on disk, as a sync leaves them in the store. */
 export function rowsOf(set: CatalogSet): FileRow[] {
   return readdirSync(set.dir, { recursive: true, encoding: 'utf8' }).flatMap((entry) => {
-    const path = `${ROOT}/${entry.split('\\').join('/')}`;
+    const path = `${ROOT}/${entry.replaceAll('\\', '/')}`;
     const place = placeOf(ROOT, path);
     if (!place) {
       return [];
