@@ -2,7 +2,7 @@
   "admin.acqAutoApprove": "Approuver automatiquement toutes les demandes",
   "admin.acqAutoApproveHint": "Sinon, seuls les comptes requests.auto passent sans approbation.",
   "admin.acqDeleteAfterImport": "Supprimer après import",
-  "admin.acqDeleteAfterImportHint": "Retire le torrent et arrête le partage. La copie en bibliothèque reste.",
+  "admin.acqDeleteAfterImportHint": "Retire le téléchargement de son client et supprime ses fichiers, ce qui arrête aussi le partage d'un torrent. La copie en bibliothèque reste.",
   "admin.acqEnabled": "Acquisition en arrière-plan",
   "admin.acqEnabledHint": "Cherche seule ce qui manque, puis de meilleures versions.",
   "admin.acqEngine": "Moteur intégré",
