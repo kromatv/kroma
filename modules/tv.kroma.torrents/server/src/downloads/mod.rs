@@ -3,7 +3,7 @@
 
 pub mod monitor;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
@@ -20,6 +20,7 @@ use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::primitives::now_ms;
 
 mod bandwidth;
+mod claim;
 mod clients;
 mod drops;
 mod engine;
@@ -59,6 +60,7 @@ pub struct DownloadManager {
     start_failures: AtomicU32,
     start_deferred: AtomicBool,
     announced: Mutex<HashMap<String, Instant>>,
+    adding: Mutex<HashSet<String>>,
     helper: String,
     state_dir: PathBuf,
     downloads_dir: PathBuf,
@@ -101,6 +103,7 @@ impl DownloadManager {
             start_failures: AtomicU32::new(0),
             start_deferred: AtomicBool::new(false),
             announced: Mutex::new(HashMap::new()),
+            adding: Mutex::new(HashSet::new()),
             helper,
             downloads_dir: state_dir.join("downloads"),
             state_dir,

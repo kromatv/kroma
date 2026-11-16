@@ -92,8 +92,14 @@ impl DownloadManager {
 
     /// Background phase of a grab: safe to run detached from the request that
     /// queued it, and again on every monitor tick while a magnet is being added, in
-    /// which case the row stays `queued` until the add lands.
+    /// which case the row stays `queued` until the add lands. It reads the row
+    /// afresh and hands it to its engine at most once: a row already handed
+    /// over, or being handed over by another call, is left alone.
     pub fn activate(&self, host: &dyn HostCtx, row: &DownloadRow) {
+        let Some((_claim, row)) = self.claim_add(&row.id) else {
+            return;
+        };
+        let row = &row;
         if !self.slot_available(host) {
             tracing::info!(
                 release = %row.release_title,
