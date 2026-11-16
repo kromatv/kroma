@@ -3,7 +3,7 @@
 
 # Requirement index
 
-620 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+625 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -525,6 +525,11 @@
 - **MOD-92** (SHIPPED) - A module is checked against the module interface the server implements, <sub>[README.md](modules/README.md)</sub>
 - **MOD-93** (SHIPPED) - `minServer` is the floor for a server capability the module needs. It is <sub>[README.md](modules/README.md)</sub>
 - **MOD-94** (SHIPPED) - The release process refuses to publish a module whose `minServer` <sub>[README.md](modules/README.md)</sub>
+- **MOD-95** (AGREED) - A release names the protocol that downloads it. A release that names <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-96** (AGREED) - The minimum number of seeders, and seeders as a tie-break, apply only to <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-97** (AGREED) - A grab goes to the enabled download client ranked first among those that <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-98** (AGREED) - A download whose client is still verifying, repairing or unpacking it is <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-99** (AGREED) - A download its client gave up on fails at once (MOD-72), without waiting <sub>[acquisition.md](modules/acquisition.md)</sub>
 
 ## PLAY - [playback](playback/)
 

@@ -9,8 +9,8 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Instant;
 
-use crate::{ClientDef, DownloadClient, RqbitEngine};
-use anyhow::{anyhow, Result};
+use crate::RqbitEngine;
+use anyhow::Result;
 
 use crate::db::{self, DownloadClientRow, DownloadRow};
 
@@ -20,6 +20,7 @@ use kroma_module_sdk::host::HostCtx;
 use kroma_module_sdk::primitives::now_ms;
 
 mod bandwidth;
+mod clients;
 mod drops;
 mod engine;
 mod fetch;
@@ -131,6 +132,7 @@ impl DownloadManager {
                 url: String::new(),
                 username: String::new(),
                 password: String::new(),
+                settings: Default::default(),
                 enabled: true,
                 priority: 100,
                 created_at: now_ms(),
@@ -152,10 +154,7 @@ impl DownloadManager {
         host: &dyn HostCtx,
         magnet_or_url: &str,
     ) -> Result<Vec<crate::TorrentFileEntry>> {
-        let conn = self.store().get()?;
-        let client = db::preferred_download_client(&conn)?
-            .ok_or_else(|| anyhow!("no enabled download client"))?;
-        drop(conn);
+        let client = self.client_for(crate::engine::TORRENT)?;
         let cached = self.cached_metadata(magnet_or_url);
         let fetched: Option<Vec<u8>> = match cached {
             Some(_) => None,
@@ -177,33 +176,6 @@ impl DownloadManager {
                 .ok()
                 .filter(|bytes| !bytes.is_empty())
         })
-    }
-
-    /// Whether this client's engine is merely not up YET, rather than absent.
-    /// Only the embedded engine warms up in the background; an external one is
-    /// a daemon that is either reachable or not.
-    pub fn engine_pending(&self, row: &DownloadClientRow) -> bool {
-        row.kind == crate::engine::EMBEDDED_KIND && self.rqbit().is_none()
-    }
-
-    /// The engine for one configured client. The embedded one is the helper this
-    /// module started; every other kind is a module answering the `download-client` point under
-    /// that kind, so a client this module has never heard of works as soon as
-    /// something is installed to answer for it.
-    pub fn engine_for(&self, row: &DownloadClientRow) -> Result<Box<dyn DownloadClient>> {
-        let def = ClientDef {
-            kind: row.kind.clone(),
-            url: row.url.clone(),
-            username: row.username.clone(),
-            password: row.password.clone(),
-        };
-        if def.kind == crate::engine::EMBEDDED_KIND {
-            let engine = self.rqbit().ok_or_else(|| anyhow!("embedded engine not started"))?;
-            return Ok(engine.client());
-        }
-        crate::engine::remote::RemoteEngine::new(&*self.host, def)
-            .map(|e| Box::new(e) as Box<dyn DownloadClient>)
-            .ok_or_else(|| anyhow!("no module provides the {:?} download client", row.kind))
     }
 }
 
@@ -228,6 +200,7 @@ fn state_dir_under(data_dir: &std::path::Path) -> PathBuf {
 #[serde(default)]
 pub struct GrabSpec {
     pub magnet_or_url: String,
+    pub protocol: String,
     pub kind: String,
     #[serde(with = "crate::zero_as_none")]
     pub tmdb_id: Option<u64>,

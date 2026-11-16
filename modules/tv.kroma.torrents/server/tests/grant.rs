@@ -49,6 +49,7 @@ fn row(id: &str, request_id: Option<&str>) -> kroma_torrent::db::DownloadRow {
         lifetime_downloaded_bytes: 0,
         lifetime_uploaded_bytes: 0,
         match_source: None,
+        protocol: "torrent".into(),
     }
 }
 
@@ -151,10 +152,13 @@ fn the_client_configs_are_read_from_this_modules_own_database() {
     // is what this asserts, from the manager down.
     let core = db::testing::temp_pool("torrents-clients");
     let store = core.store();
-    {
-        let conn = store.get().unwrap();
-        db::apply_migrations(&conn, kroma_torrent::db::MIGRATIONS).unwrap();
-    }
+    db::migrate_store(
+        &store,
+        "tv.kroma.torrents",
+        kroma_torrent::db::MIGRATIONS,
+        kroma_torrent::db::STEPS,
+    )
+    .unwrap();
     let dir = kroma_module_sdk::testing::temp_dir("torrents-clients-dir");
     // No engine is resolved in this test: the host answers nothing, which is a
     // server with no download-engine module installed.

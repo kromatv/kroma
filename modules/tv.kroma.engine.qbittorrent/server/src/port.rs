@@ -22,6 +22,7 @@ use crate::{cookie_jar_path, QBittorrent, KIND};
 /// resolves it under.
 pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
+        .route("/_port/tv.kroma.torrents/client/caps", post(caps))
         .route("/_port/tv.kroma.torrents/client/test", post(test::<S>))
         .route("/_port/tv.kroma.torrents/client/add", post(add::<S>))
         .route("/_port/tv.kroma.torrents/client/status", post(status::<S>))
@@ -94,6 +95,10 @@ fn engine<S: HostCtx>(host: &S, client: &Client) -> QBittorrent {
     std::fs::create_dir_all(&state_dir).ok();
     let jar = cookie_jar_path(&state_dir, &def);
     QBittorrent::new(&def, jar)
+}
+
+async fn caps() -> Json<Result<serde_json::Value, String>> {
+    Json(Ok(serde_json::json!({ "protocols": ["torrent"] })))
 }
 
 async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
@@ -276,6 +281,14 @@ mod tests {
 
         assert_eq!(status, StatusCode::OK);
         assert!(answer["Err"].is_string(), "{answer}");
+    }
+
+    #[tokio::test]
+    async fn caps_name_the_torrent_protocol() {
+        let (status, answer) = call("/_port/tv.kroma.torrents/client/caps", json!({})).await;
+
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(answer["Ok"]["protocols"], json!(["torrent"]));
     }
 
     #[tokio::test]

@@ -357,7 +357,8 @@ a curated library has no need to carry any of it.
 
 - **Downloads and acquisition** (`tv.kroma.torrents`, `tv.kroma.acquisition`,
   `tv.kroma.indexer`, `tv.kroma.torznab`, `tv.kroma.vpn`, and the download engines
-  `tv.kroma.engine.qbittorrent` / `tv.kroma.engine.transmission`). Getting bytes onto disk
+  `tv.kroma.engine.qbittorrent` / `tv.kroma.engine.transmission` for BitTorrent and
+  `tv.kroma.engine.sabnzbd` / `tv.kroma.engine.nzbget` for Usenet). Getting bytes onto disk
   is out of scope for the library, which only *observes* what appears, [`library/`](../library/).
   This stack carries the heaviest and most legally sensitive native code in the product; it
   is exactly what should be optional, isolated and removable.

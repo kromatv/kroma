@@ -150,6 +150,30 @@ beside the file and both are kept. Only a file of the same edition is ever repla
 **MOD-79** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is
 cleared after a number of days, 30 by default. With no bin it is deleted at once.
 
+## Protocols
+
+Status: **AGREED**
+
+A release reaches disk through a protocol: BitTorrent, Usenet, or one added later. The rules
+above judge what a release is; this section is how its protocol changes what happens to it.
+
+**MOD-95** (AGREED) - A release names the protocol that downloads it. A release that names
+none is a torrent.
+
+**MOD-96** (AGREED) - The minimum number of seeders, and seeders as a tie-break, apply only to
+a release that reports seeders. A release from a protocol with no swarm, such as Usenet, is
+judged on everything else.
+
+**MOD-97** (AGREED) - A grab goes to the enabled download client ranked first among those that
+take its release's protocol. When no enabled client takes it, the grab fails and names the
+protocol.
+
+**MOD-98** (AGREED) - A download whose client is still verifying, repairing or unpacking it is
+not imported until the client reports it done.
+
+**MOD-99** (AGREED) - A download its client gave up on fails at once (MOD-72), without waiting
+for the stall limit.
+
 ## Not in scope
 
 Status: **AGREED**
@@ -158,3 +182,4 @@ Status: **AGREED**
   best picture and the wanted dub, is not decided.
 - **Importing community formats** written for other tools as they are is not promised.
 - **Waiting before a grab** in case a better release follows is not decided.
+- **Preferring one protocol** over another when two releases rank the same is not decided.

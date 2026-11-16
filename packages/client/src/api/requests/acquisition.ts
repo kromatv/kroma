@@ -160,6 +160,7 @@ export type FormatScore = z.infer<typeof FormatScore>;
 export const ScoredReleaseView = z.object({
   title: z.string(),
   guid: z.string(),
+  protocol: z.string().catch('torrent'),
   indexerId: IndexerId,
   indexerName: z.string(),
   sizeBytes: z.number().nullable(),

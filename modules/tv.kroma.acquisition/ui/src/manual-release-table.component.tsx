@@ -103,7 +103,7 @@ function ManualRow({
           ) : null}
         </Row>
       </Table.Cell>
-      <IndexerCell indexerName={r.indexerName} detailsUrl={r.detailsUrl} />
+      <IndexerCell indexerName={r.indexerName} protocol={r.protocol} detailsUrl={r.detailsUrl} />
       <SizeCell sizeBytes={r.sizeBytes} />
       <SeedersCell seeders={r.seeders} />
       <Table.Cell>

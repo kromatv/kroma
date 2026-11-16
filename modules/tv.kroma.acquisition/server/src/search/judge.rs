@@ -99,6 +99,7 @@ fn view_of(
     ScoredReleaseView {
         title: release.title.clone(),
         guid: release.guid.clone(),
+        protocol: release.protocol.clone(),
         indexer_id: indexer.id.clone(),
         indexer_name: indexer.name.clone(),
         size_bytes: release.size_bytes,

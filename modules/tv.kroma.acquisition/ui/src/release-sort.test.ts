@@ -6,6 +6,7 @@ function release(over: Partial<ScoredReleaseView>): ScoredReleaseView {
   return {
     title: 'R',
     guid: 'g',
+    protocol: 'torrent',
     indexerId: 'i' as ScoredReleaseView['indexerId'],
     indexerName: 'Indexer',
     sizeBytes: null,

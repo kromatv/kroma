@@ -6,6 +6,7 @@ use kroma_module_sdk::host::testing::StubHost;
 fn a_spec_crosses_under_the_keys_the_provider_parses() {
     let spec = GrabSpec {
         magnet_or_url: "magnet:?xt=urn:btih:AB".into(),
+        protocol: "torrent".into(),
         kind: "movie".into(),
         tmdb_id: 603,
         release_title: "The.Matrix.1999.1080p".into(),
@@ -17,6 +18,7 @@ fn a_spec_crosses_under_the_keys_the_provider_parses() {
     let json = serde_json::to_value(&spec).unwrap();
 
     assert_eq!(json["magnet_or_url"], "magnet:?xt=urn:btih:AB");
+    assert_eq!(json["protocol"], "torrent");
     assert_eq!(json["tmdb_id"], 603);
     assert_eq!(json["release_title"], "The.Matrix.1999.1080p");
     assert_eq!(json["wanted_ids"][0], "w1");

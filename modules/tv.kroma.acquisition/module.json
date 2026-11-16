@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.4.32",
+  "version": "0.5.0",
   "component": {
     "instances": 4,
     "cpuSeconds": 300
@@ -42,7 +42,7 @@
     "module": "./remoteEntry.js"
   },
   "dependencies": {
-    "tv.kroma.torrents": ">=0.6.10"
+    "tv.kroma.torrents": ">=0.7.0"
   },
   "contributes": [
     {

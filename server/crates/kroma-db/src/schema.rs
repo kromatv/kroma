@@ -311,6 +311,33 @@ mod tests {
     }
 
     #[test]
+    fn a_download_recorded_before_protocols_reads_as_a_torrent() {
+        let dir = kroma_testing::temp_dir("schema-protocol");
+        let path = dir.path().join("kroma.db");
+        let old = legacy_database(&path);
+        old.get()
+            .unwrap()
+            .execute_batch(
+                "INSERT INTO downloads (id, client_id, client_ref, kind, tmdb_id, release_title, \
+                     magnet_or_url, grabbed_at) \
+                 VALUES ('d1', 'embedded', '', 'movie', 603, 'R', 'm', 0);",
+            )
+            .unwrap();
+        drop(old);
+
+        let pool = init(&path).unwrap();
+
+        let protocol: String = pool
+            .get()
+            .unwrap()
+            .query_row("SELECT protocol FROM downloads WHERE id = 'd1'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(protocol, "torrent");
+    }
+
+    #[test]
     fn a_title_taken_off_monitoring_stays_off_after_a_restart() {
         let dir = kroma_testing::temp_dir("schema-unmonitor");
         let path = dir.path().join("kroma.db");

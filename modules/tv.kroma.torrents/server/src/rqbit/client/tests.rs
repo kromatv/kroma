@@ -33,6 +33,8 @@ fn status_when(stats: &str) -> TorrentStatus {
 fn request<'a>(bytes: Option<&'a [u8]>) -> AddTorrentReq<'a> {
     AddTorrentReq {
         magnet_or_url: MAGNET,
+        protocol: crate::engine::TORRENT,
+        name: "",
         download_dir: Some("/downloads/one"),
         label: "kroma",
         only_files: Some(&[0, 2]),

@@ -17,7 +17,7 @@ pub(crate) fn manager_over(tag: &str, rows: &[DownloadRow]) -> (StubHost, Arc<Do
 pub(crate) fn host_over(tag: &str, rows: &[DownloadRow]) -> StubHost {
     let host = StubHost::with_core(kroma_module_sdk::db::testing::temp_pool(tag));
     let store = host.store();
-    db::apply_migrations(&store.get().unwrap(), db::MIGRATIONS).unwrap();
+    db::test_support::own_schema(&store.get().unwrap());
     db::insert_download_client(
         store,
         &db::test_support::client(db::EMBEDDED_CLIENT_ID, 100, true, 1),

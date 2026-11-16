@@ -27,6 +27,7 @@ export type TorrentAnalysis = z.infer<typeof TorrentAnalysis>;
 /** `POST /add` body. `tmdbId` is a foreign numeric id. */
 export const ManualAddBody = z.object({
   magnetOrUrl: z.string(),
+  protocol: z.string().nullish(),
   kind: z.string(),
   title: z.string().nullable(),
   year: z.number().nullable(),
@@ -48,6 +49,7 @@ export type ManualAddResult = z.infer<typeof ManualAddResult>;
 export const ManualReleaseView = z.object({
   title: z.string(),
   guid: z.string(),
+  protocol: z.string().catch('torrent'),
   indexerId: z.string(),
   indexerName: z.string(),
   downloadUrl: z.string().nullable(),

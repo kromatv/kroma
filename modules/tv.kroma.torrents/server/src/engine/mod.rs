@@ -1,20 +1,41 @@
-//! What this module needs of a torrent engine, and how it reaches one.
+//! What this module needs of a download client, and how it reaches one.
 
 pub mod remote;
 
+use std::collections::BTreeMap;
+
 pub const EMBEDDED_KIND: &str = "rqbit";
+
+/// The protocol of a download a magnet or a `.torrent` starts, and of any grab
+/// that names none.
+pub const TORRENT: &str = "torrent";
+
+/// `protocol` with the empty name read as [`TORRENT`], the only one there was
+/// before grabs named theirs.
+pub fn protocol_or_torrent(protocol: &str) -> &str {
+    match protocol.trim() {
+        "" => TORRENT,
+        named => named,
+    }
+}
 
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub struct AddTorrentReq<'a> {
     pub magnet_or_url: &'a str,
+    pub protocol: &'a str,
+    pub name: &'a str,
     pub download_dir: Option<&'a str>,
     pub label: &'a str,
     pub only_files: Option<&'a [usize]>,
     pub torrent_bytes: Option<&'a [u8]>,
 }
 
+/// What a download is doing. `Processing` is a transfer that is over while the
+/// client still verifies, repairs, unpacks or moves it: nothing is imported yet.
+/// `Failed` is a client that gave up and will not retry; `Error` may recover, and
+/// is also what a state this module has not heard of reads as.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TorrentState {
@@ -22,7 +43,10 @@ pub enum TorrentState {
     Downloading,
     Seeding,
     Paused,
+    Processing,
     Completed,
+    Failed,
+    #[serde(other)]
     Error,
 }
 
@@ -81,6 +105,9 @@ pub trait DownloadClient: Send + Sync {
     ) -> anyhow::Result<Vec<TorrentFileEntry>> {
         anyhow::bail!("this download client cannot list a torrent's files before adding it")
     }
+    fn protocols(&self) -> Vec<String> {
+        vec![TORRENT.to_string()]
+    }
     // `Ok(None)` = the engine no longer knows this torrent.
     fn status(&self, client_ref: &str) -> anyhow::Result<Option<TorrentStatus>>;
     fn pause(&self, client_ref: &str) -> anyhow::Result<()>;
@@ -93,6 +120,9 @@ pub trait DownloadClient: Send + Sync {
     fn remove(&self, client_ref: &str, delete_data: bool) -> anyhow::Result<()>;
 }
 
+/// One configured client, as an engine is sent it with every call. `settings`
+/// holds the add-form fields its engine declares beyond the URL and the
+/// credentials, by key.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ClientDef {
@@ -100,6 +130,7 @@ pub struct ClientDef {
     pub url: String,
     pub username: String,
     pub password: String,
+    pub settings: BTreeMap<String, String>,
 }
 
 pub fn magnet_info_hash(uri: &str) -> Option<String> {

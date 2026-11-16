@@ -122,6 +122,8 @@ impl World {
         client
             .add(&AddTorrentReq {
                 magnet_or_url: "",
+                protocol: kroma_torrent::engine::TORRENT,
+                name: "",
                 download_dir: Some(self.folder.to_str().unwrap()),
                 label: "kroma",
                 only_files: None,

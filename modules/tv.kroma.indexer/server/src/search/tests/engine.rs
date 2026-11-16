@@ -120,3 +120,47 @@ async fn a_torznab_search_goes_out_through_the_resolved_provider() {
     );
     assert_eq!(stored.last_error, None);
 }
+
+fn fake_usenet_engine() -> axum::Router<()> {
+    use axum::routing::post;
+    use axum::Json;
+    use serde_json::{json, Value};
+
+    async fn caps(Json(_): Json<Value>) -> Json<Result<Value, String>> {
+        Json(Ok(json!({})))
+    }
+
+    async fn search(Json(_): Json<Value>) -> Json<Result<Vec<Value>, String>> {
+        Json(Ok(vec![json!({
+            "title": "The.Matrix.1999.1080p.BluRay.x264-GRP",
+            "guid": "nzb-42",
+            "protocol": "usenet",
+            "link": "https://indexer.example/42.nzb",
+        })]))
+    }
+
+    axum::Router::new()
+        .route("/_port/tv.kroma.indexer/engine/caps", post(caps))
+        .route("/_port/tv.kroma.indexer/engine/search", post(search))
+}
+
+#[tokio::test]
+async fn a_release_keeps_the_protocol_its_engine_named() {
+    let pool = db_pool();
+    let mut row = seed_row("nz-1", "torznab", true, 100);
+    row.url = "http://indexer.example/api".into();
+    db::insert_indexer(&pool, &row).unwrap();
+    let resolve = kroma_module_sdk::testing::serve(fake_usenet_engine(), ()).await;
+    let (base, token) = resolve().expect("the fake engine is up");
+    let host =
+        DbHost::with_store(pool.clone()).with_point(peers::ENGINE, Some("torznab"), &base, &token);
+
+    let outcome = kroma_module_sdk::testing::blocking(move || {
+        search::run(&host, &row, &port_query(), &[2000])
+    })
+    .await
+    .unwrap();
+
+    assert_eq!(outcome.releases[0].protocol, "usenet");
+    assert_eq!(outcome.releases[0].seeders, None);
+}

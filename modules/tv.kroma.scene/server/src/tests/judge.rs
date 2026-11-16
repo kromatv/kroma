@@ -23,6 +23,21 @@ fn too_few_seeders_refuse_the_release() {
 }
 
 #[test]
+fn a_release_that_reports_no_swarm_is_not_held_to_the_minimum_seeders() {
+    let f = fixture();
+    let swarmless = Candidate {
+        seeders: None,
+        ..cand(2, 0)
+    };
+
+    let judged = f
+        .judge_with("Movie.2020.1080p.WEB-DL.x265", swarmless, movie())
+        .unwrap();
+
+    assert_eq!(judged.seeders, None);
+}
+
+#[test]
 fn a_film_over_its_size_limit_is_refused() {
     let f = fixture();
 

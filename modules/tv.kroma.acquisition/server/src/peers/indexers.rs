@@ -18,6 +18,7 @@ use kroma_module_sdk::http::{Loopback, Response};
 pub struct Release {
     pub title: String,
     pub guid: String,
+    pub protocol: String,
     pub link: Option<String>,
     pub magnet: Option<String>,
     pub info_hash: Option<String>,

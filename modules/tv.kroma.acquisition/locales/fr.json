@@ -117,7 +117,7 @@
   "acq.minFormatScore": "Score minimum",
   "acq.minFormatScoreHint": "Une version qui score moins est refusée.",
   "acq.minSeeders": "Seeders minimum",
-  "acq.minSeedersHint": "Une version avec moins de seeders est refusée.",
+  "acq.minSeedersHint": "Un torrent avec moins de seeders est refusé. Une version Usenet n'en a pas et n'y est pas soumise.",
   "acq.minUpgradeIncrement": "Gain minimum",
   "acq.minUpgradeIncrementHint": "De combien une version doit mieux scorer pour remplacer un fichier de même qualité.",
   "acq.modeExcluded": "Ne doit pas",
@@ -294,5 +294,7 @@
   "acq.noneAccepted": "Aucune version ne passe les règles du profil.",
   "acq.noneRefused": "Le profil n'a refusé aucune version.",
   "acq.openOnIndexer": "Ouvrir sur {indexer}",
-  "acq.seasonNumber": "Saison {season}"
+  "acq.seasonNumber": "Saison {season}",
+  "protocol.torrent": "Torrent",
+  "protocol.usenet": "Usenet"
 }

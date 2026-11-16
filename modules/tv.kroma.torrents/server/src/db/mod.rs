@@ -69,4 +69,11 @@ pub const MIGRATIONS: &str = "
     );
 ";
 
+/// Every change to this module's database since [`MIGRATIONS`], oldest first.
+pub const STEPS: &[Step] = &[Step {
+    name: "a client keeps every field its engine declares",
+    run: Run::Sql("ALTER TABLE download_clients ADD COLUMN settings TEXT NOT NULL DEFAULT '{}';"),
+    rebuilds: false,
+}];
+
 pub const EMBEDDED_CLIENT_ID: &str = "embedded";

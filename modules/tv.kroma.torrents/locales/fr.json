@@ -22,8 +22,7 @@
   "dlclients.kind": "Type",
   "dlclients.name": "Nom",
   "dlclients.notTested": "Non testé",
-  "dlclients.password": "Mot de passe",
-  "dlclients.passwordKept": "Un mot de passe est enregistré. Laisser vide pour le conserver.",
+  "dlclients.secretsKept": "Laissez un secret vide pour garder celui qui est enregistré.",
   "dlclients.sectionTitle": "Clients de téléchargement",
   "dlclients.state.ready": "En marche",
   "dlclients.state.starting": "Démarrage…",
@@ -33,9 +32,6 @@
   "dlclients.test": "Tester",
   "dlclients.testFailed": "Le test a échoué",
   "dlclients.testing": "Test en cours...",
-  "dlclients.url": "URL",
-  "dlclients.urlHint": "Adresse du client (Transmission : http://hote:9091, qBittorrent : http://hote:8080).",
-  "dlclients.username": "Utilisateur",
   "downloads.askPeers": "Chercher des pairs",
   "downloads.chartThroughput": "Débit dans le temps, {down} en réception et {up} en envoi",
   "downloads.clearFilters": "Effacer",
@@ -223,5 +219,7 @@
   "nav.downloads": "Téléchargements",
   "notifications.completed.body": "{title} a fini de télécharger.",
   "notifications.completed.label": "Téléchargements terminés",
-  "notifications.completed.title": "Téléchargement terminé"
+  "notifications.completed.title": "Téléchargement terminé",
+  "protocol.torrent": "Torrent",
+  "protocol.usenet": "Usenet"
 }

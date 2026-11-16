@@ -53,6 +53,8 @@ pub struct DownloadRow {
     pub lifetime_uploaded_bytes: u64,
     #[serde(default)]
     pub match_source: Option<MatchSource>,
+    #[serde(default)]
+    pub protocol: String,
 }
 
 impl DownloadRow {
@@ -65,7 +67,7 @@ const DL_COLS: &str = "id, client_id, client_ref, request_id, kind, tmdb_id, tit
     season, episodes, release_title, indexer_id, info_hash, magnet_or_url, size_bytes, score, \
     score_breakdown, status, progress, save_path, imported_paths, error, grabbed_at, \
     completed_at, imported_at, details_url, only_files, upgrade, downloaded_bytes, \
-    uploaded_bytes, match_source";
+    uploaded_bytes, match_source, protocol";
 
 fn row_to_download(r: &Row) -> rusqlite::Result<DownloadRow> {
     let episodes: Option<String> = r.get(9)?;
@@ -107,5 +109,6 @@ fn row_to_download(r: &Row) -> rusqlite::Result<DownloadRow> {
             .get::<_, Option<String>>(30)?
             .as_deref()
             .and_then(MatchSource::parse),
+        protocol: r.get(31)?,
     })
 }

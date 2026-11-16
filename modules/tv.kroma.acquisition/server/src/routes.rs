@@ -150,6 +150,7 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
     let only_files = body.only_files.filter(|f| !f.is_empty());
     let spec = crate::peers::downloads::GrabSpec {
         magnet_or_url: magnet,
+        protocol: body.protocol.unwrap_or_default(),
         kind: body.kind,
         tmdb_id: body.tmdb_id.unwrap_or(0),
         title,

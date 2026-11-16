@@ -117,7 +117,7 @@
   "acq.minFormatScore": "Minimum score",
   "acq.minFormatScoreHint": "A release scoring under this is refused.",
   "acq.minSeeders": "Minimum seeders",
-  "acq.minSeedersHint": "A release with fewer seeders is refused.",
+  "acq.minSeedersHint": "A torrent with fewer seeders is refused. A Usenet release has none and is not held to it.",
   "acq.minUpgradeIncrement": "Minimum gain",
   "acq.minUpgradeIncrementHint": "How much better a release must score to replace a file of the same quality.",
   "acq.modeExcluded": "Must not",
@@ -294,5 +294,7 @@
   "acq.noneAccepted": "No release passes the profile's rules.",
   "acq.noneRefused": "The profile refused no release.",
   "acq.openOnIndexer": "Open on {indexer}",
-  "acq.seasonNumber": "Season {season}"
+  "acq.seasonNumber": "Season {season}",
+  "protocol.torrent": "Torrent",
+  "protocol.usenet": "Usenet"
 }

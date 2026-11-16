@@ -134,6 +134,23 @@ fn many_seeders_outrank_a_few() {
 }
 
 #[test]
+fn seeders_do_not_rank_a_release_that_reports_none_against_one_that_does() {
+    let f = fixture();
+    let swarmless = Candidate {
+        seeders: None,
+        ..cand(6, 0)
+    };
+
+    let order = better(
+        &f,
+        ("Movie.2020.1080p.WEB-DL.x265", swarmless),
+        ("Movie.2020.1080p.WEB-DL.x265", cand(6, 300)),
+    );
+
+    assert_eq!(order, Ordering::Equal);
+}
+
+#[test]
 fn a_size_near_the_preferred_one_outranks_an_outlier() {
     let f = fixture();
 

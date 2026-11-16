@@ -122,6 +122,7 @@ describe('download clients', () => {
       url: null,
       username: null,
       password: null,
+      settings: null,
       enabled: null,
       priority: null,
     });

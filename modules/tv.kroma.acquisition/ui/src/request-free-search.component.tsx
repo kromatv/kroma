@@ -194,6 +194,7 @@ function bodyFor(r: ManualReleaseView) {
   const kind = kindOf(r);
   return {
     magnetOrUrl: r.downloadUrl ?? r.detailsUrl ?? '',
+    protocol: r.protocol,
     kind,
     title: r.parsedTitle || null,
     year: r.year,

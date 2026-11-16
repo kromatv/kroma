@@ -14,6 +14,12 @@ use serde::{Deserialize, Serialize};
 pub const CAT_MOVIES: u32 = 2000;
 pub const CAT_TV: u32 = 5000;
 
+/// The protocol of a release a magnet or a `.torrent` downloads.
+pub const TORRENT: &str = "torrent";
+
+/// The protocol of a release an `.nzb` downloads.
+pub const USENET: &str = "usenet";
+
 /// A configured Torznab endpoint, as a consumer sends it with each call.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -47,18 +53,22 @@ pub enum Query {
     },
 }
 
-/// A normalized Torznab result item.
+/// A normalized Torznab or Newznab result item. `protocol` is [`TORRENT`] or
+/// [`USENET`], read off the item; a torrent always reports `seeders`, 0 when the
+/// tracker does not say, and a Usenet release never does.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Release {
     pub title: String,
     pub guid: String,
+    pub protocol: String,
     pub link: Option<String>,
     pub magnet: Option<String>,
     pub info_hash: Option<String>,
     pub size_bytes: Option<u64>,
     pub seeders: Option<u32>,
     pub leechers: Option<u32>,
+    pub grabs: Option<u32>,
     pub tmdb_id: Option<u64>,
     pub imdb_id: Option<String>,
     pub published_at: Option<String>,

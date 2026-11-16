@@ -25,11 +25,7 @@ impl DownloadManager {
         row: &db::DownloadRow,
         status: &crate::TorrentStatus,
     ) -> bool {
-        let finished = status.progress >= 1.0
-            || matches!(
-                status.state,
-                crate::TorrentState::Completed | crate::TorrentState::Seeding
-            );
+        let finished = is_finished(&row.protocol, status);
         let new_status = ledger_status(status, finished);
         let moved = progress_moved(row, status, new_status);
         if moved || finished {
@@ -101,6 +97,15 @@ impl DownloadManager {
     }
 }
 
+fn is_finished(protocol: &str, status: &crate::TorrentStatus) -> bool {
+    use crate::TorrentState::{Completed, Failed, Processing, Seeding};
+    match status.state {
+        Completed | Seeding => true,
+        Processing | Failed => false,
+        _ => crate::engine::protocol_or_torrent(protocol) == crate::engine::TORRENT && status.progress >= 1.0,
+    }
+}
+
 fn ledger_status(status: &crate::TorrentStatus, finished: bool) -> &'static str {
     if finished {
         return "completed";
@@ -108,6 +113,7 @@ fn ledger_status(status: &crate::TorrentStatus, finished: bool) -> &'static str 
     match status.state {
         crate::TorrentState::Paused => "paused",
         crate::TorrentState::Queued => "queued",
+        crate::TorrentState::Failed => "failed",
         // Error included: transient tracker/disk errors recover, so keep
         // polling with the error visible.
         _ => "downloading",

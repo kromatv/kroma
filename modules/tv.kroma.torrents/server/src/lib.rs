@@ -51,6 +51,10 @@ impl<S: kroma_module_sdk::host::HostStorage + Clone + Send + Sync + 'static>
         db::MIGRATIONS
     }
 
+    fn steps(&self) -> &'static [kroma_module_sdk::db::Step] {
+        db::STEPS
+    }
+
     fn admin_routes(&self, _host: &S) -> Option<axum::Router<S>> {
         Some(routes::routes::<S>())
     }

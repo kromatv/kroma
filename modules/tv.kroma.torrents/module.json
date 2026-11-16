@@ -2,9 +2,9 @@
   "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
   "schemaVersion": 3,
   "id": "tv.kroma.torrents",
-  "name": "Torrent downloads",
-  "version": "0.6.44",
-  "description": "The rqbit download engine, run as a pinned helper, + the downloads queue. Transmission and qBittorrent are their own engine sub-modules that plug into this one.",
+  "name": "Downloads",
+  "version": "0.7.0",
+  "description": "The downloads queue and the rqbit torrent engine, run as a pinned helper. Every other download client (Transmission, qBittorrent, SABnzbd, NZBGet) is its own engine module that plugs into this one, and each grab goes to a client that takes its protocol.",
   "engines": {
     "server": ">=0.1.39"
   },
@@ -44,7 +44,7 @@
   "definesPoints": [
     {
       "name": "client",
-      "methods": ["test", "add", "status", "pause", "resume", "reannounce", "remove"]
+      "methods": ["caps", "test", "add", "status", "pause", "resume", "reannounce", "remove"]
     },
     {
       "name": "grab",

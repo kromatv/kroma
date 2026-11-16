@@ -9,7 +9,7 @@
 
 pub mod port;
 pub mod types;
-pub use types::{Caps, IndexerEndpoint, Query, Release, CAT_MOVIES, CAT_TV};
+pub use types::{Caps, IndexerEndpoint, Query, Release, CAT_MOVIES, CAT_TV, TORRENT, USENET};
 
 mod xml;
 

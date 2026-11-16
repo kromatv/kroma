@@ -90,6 +90,7 @@ pub fn to_view(conn: &Connection, ctx: &RowContext, row: DownloadRow) -> Downloa
         match_source: row.match_source,
         lifetime_downloaded_bytes: row.lifetime_downloaded_bytes,
         lifetime_uploaded_bytes: row.lifetime_uploaded_bytes,
+        protocol: row.protocol,
     }
 }
 
@@ -139,6 +140,7 @@ mod tests {
             lifetime_downloaded_bytes: 0,
             lifetime_uploaded_bytes: 0,
             match_source: None,
+            protocol: "torrent".into(),
         }
     }
 

@@ -17,6 +17,7 @@ function release(): ScoredReleaseView {
   return {
     title: 'Show.S02E05.MULTi.VFF.1080p.WEB-DL-GRP',
     guid: 'g1',
+    protocol: 'torrent',
     indexerId: IndexerId.parse('i1'),
     indexerName: 'T',
     sizeBytes: null,

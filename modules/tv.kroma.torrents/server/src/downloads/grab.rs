@@ -30,10 +30,8 @@ impl DownloadManager {
             );
         }
         drop(conn);
-        let clients = self.store().get()?;
-        let client = db::preferred_download_client(&clients)?
-            .ok_or_else(|| anyhow!("no enabled download client"))?;
-        drop(clients);
+        let protocol = crate::engine::protocol_or_torrent(&spec.protocol).to_string();
+        let client = self.client_for(&protocol)?;
 
         let id = kroma_module_sdk::primitives::short_hash(&format!(
             "download|{}|{}",
@@ -76,6 +74,7 @@ impl DownloadManager {
             lifetime_downloaded_bytes: 0,
             lifetime_uploaded_bytes: 0,
             match_source: spec.tmdb_id.map(|_| crate::MatchSource::Pinned),
+            protocol,
         };
         db::insert_download(self.core(), &row)?;
         db::set_wanted_status(self.core(), &spec.wanted_ids, "grabbed", now_ms())?;
@@ -143,6 +142,8 @@ impl DownloadManager {
         };
         let added = engine.add(&AddTorrentReq {
             magnet_or_url: &row.magnet_or_url,
+            protocol: &row.protocol,
+            name: &row.release_title,
             download_dir: row.save_path.as_deref(),
             label: LABEL,
             only_files: row.only_files.as_deref(),

@@ -110,6 +110,8 @@ fn an_engine_answers_the_whole_client_contract() {
     assert_eq!(engine.test().unwrap(), "v1");
     let req = AddTorrentReq {
         magnet_or_url: "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567",
+        protocol: TORRENT,
+        name: "",
         download_dir: Some("/downloads"),
         label: "kroma",
         only_files: Some(&[0, 2]),

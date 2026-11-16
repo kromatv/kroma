@@ -26,6 +26,7 @@ function release(): ScoredReleaseView {
   return {
     title: 'Show.S01E01',
     guid: 'g1',
+    protocol: 'torrent',
     indexerId: IndexerId.parse('i1'),
     indexerName: 'T',
     sizeBytes: null,

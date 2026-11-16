@@ -43,6 +43,7 @@ pub fn grab_spec_from_release(
 ) -> crate::peers::downloads::GrabSpec {
     crate::peers::downloads::GrabSpec {
         magnet_or_url: magnet_or_url.to_string(),
+        protocol: release.protocol.clone(),
         kind: release.target.clone(),
         tmdb_id,
         title,
@@ -76,6 +77,7 @@ mod tests {
         ScoredReleaseView {
             title: "Show.S01E01.1080p".into(),
             guid: "g1".into(),
+            protocol: "usenet".into(),
             indexer_id: "i1".into(),
             indexer_name: "T".into(),
             size_bytes: Some(1024),
@@ -136,6 +138,7 @@ mod tests {
             true,
         );
         assert_eq!(spec.magnet_or_url, "magnet:?xt=1");
+        assert_eq!(spec.protocol, "usenet", "the client is picked by it");
         assert_eq!(
             spec.kind, "episode",
             "the target the row was scored against"

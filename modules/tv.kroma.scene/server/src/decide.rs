@@ -52,7 +52,7 @@ pub struct Evaluation {
 #[serde(rename_all = "camelCase")]
 pub struct Judged {
     pub evaluation: Evaluation,
-    pub seeders: u32,
+    pub seeders: Option<u32>,
     pub indexer_priority: i32,
     pub episode_count: u32,
     pub size_bytes: Option<u64>,
@@ -116,15 +116,12 @@ pub fn judge(
             ],
         ));
     }
-    let seeders = candidate.seeders.unwrap_or(0);
-    if seeders < profile.min_seeders {
+    let seeders = candidate.seeders;
+    if let Some(have) = seeders.filter(|have| *have < profile.min_seeders) {
         return Err(reject(
             "seeders",
-            format!("{seeders} < {}", profile.min_seeders),
-            [
-                ("have", json!(seeders)),
-                ("need", json!(profile.min_seeders)),
-            ],
+            format!("{have} < {}", profile.min_seeders),
+            [("have", json!(have)), ("need", json!(profile.min_seeders))],
         ));
     }
     let episode_count = query.target.episode_count();
@@ -243,7 +240,8 @@ fn breakdown(evaluation: &Evaluation, episode_count: u32) -> Vec<ScoreLine> {
 
 /// Orders two releases, `Greater` meaning `a` is the better one: quality, then
 /// format score, revision, how many episodes one grab covers, the indexer's
-/// priority, seeders, and how close the size is to the preferred one.
+/// priority, seeders, and how close the size is to the preferred one. Seeders
+/// only decide between two releases that both report them.
 pub fn rank(a: &Judged, b: &Judged) -> Ordering {
     let (ea, eb) = (&a.evaluation, &b.evaluation);
     ea.quality_rank
@@ -252,9 +250,16 @@ pub fn rank(a: &Judged, b: &Judged) -> Ordering {
         .then(ea.revision.cmp(&eb.revision))
         .then(a.episode_count.cmp(&b.episode_count))
         .then(a.indexer_priority.cmp(&b.indexer_priority))
-        .then(seeder_bucket(a.seeders).cmp(&seeder_bucket(b.seeders)))
+        .then(by_swarm(a.seeders, b.seeders, seeder_bucket))
         .then(size_distance(b).cmp(&size_distance(a)))
-        .then(a.seeders.cmp(&b.seeders))
+        .then(by_swarm(a.seeders, b.seeders, |n| n))
+}
+
+fn by_swarm<K: Ord>(a: Option<u32>, b: Option<u32>, key: impl Fn(u32) -> K) -> Ordering {
+    match (a, b) {
+        (Some(a), Some(b)) => key(a).cmp(&key(b)),
+        _ => Ordering::Equal,
+    }
 }
 
 fn seeder_bucket(seeders: u32) -> u8 {

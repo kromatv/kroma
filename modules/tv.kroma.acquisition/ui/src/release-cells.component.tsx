@@ -7,15 +7,18 @@
 
 import { TABULAR, Table, useFormat, useT } from '@kromatv/module-sdk';
 import { Icon, Row, Text } from '@kromatv/ui/kit';
+import { protocolLabel } from './protocol-label';
 
 /** What a numeric cell shows when the indexer gave no number. */
 export const BLANK = '-';
 
 export function IndexerCell({
   indexerName,
+  protocol,
   detailsUrl,
 }: Readonly<{
   indexerName: string;
+  protocol: string;
   /** The tracker's own page for this release, when it has one. */
   detailsUrl: string | null;
 }>) {
@@ -24,7 +27,7 @@ export function IndexerCell({
     <Table.Cell>
       <Row gap={4}>
         <Text variant="meta" color="textDim" lines={1}>
-          {indexerName}
+          {`${indexerName} · ${protocolLabel(t, protocol)}`}
         </Text>
         {detailsUrl ? (
           <a

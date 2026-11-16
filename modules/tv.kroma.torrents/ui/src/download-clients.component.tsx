@@ -1,6 +1,6 @@
 // The "Clients de téléchargement" section of the downloads page: one card per
-// engine (embedded / Transmission / qBittorrent) with enable toggle, live
-// connection test and the add/edit modal.
+// configured client with enable toggle, live connection test and the add/edit
+// modal, whatever engine module answers for it.
 
 import { apiErrorText, useAddEngine, useEnabledEngines, usePoll, useT } from '@kromatv/module-sdk';
 import {
@@ -23,7 +23,9 @@ import {
 } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useTorrentsApi } from './api.hook';
+import { clientBody } from './client-fields';
 import { DownloadClientModal } from './download-client-modals.component';
+import { protocolLabel } from './protocol';
 import type { ClientTestResult, DownloadClientView } from './schemas';
 
 type TestState = { busy?: boolean; result?: ClientTestResult; error?: string };
@@ -48,15 +50,7 @@ export function DownloadClientsSection() {
       engines,
       title: t('dlclients.addTitle'),
       onSubmit: async (kind, v) => {
-        await torrents.createClient({
-          kind,
-          name: v.name ?? null,
-          url: v.url ?? null,
-          username: v.username ?? null,
-          password: v.password ?? null,
-          enabled: true,
-          priority: null,
-        });
+        await torrents.createClient({ kind, ...clientBody(v), enabled: true, priority: null });
       },
     });
     if (changed) {
@@ -77,6 +71,7 @@ export function DownloadClientsSection() {
         url: null,
         username: null,
         password: null,
+        settings: null,
         enabled,
         priority: null,
       })
@@ -143,6 +138,11 @@ export function DownloadClientsSection() {
                       {c.name}
                     </Text>
                     <Badge tone="info">{c.builtin ? t('dlclients.embedded') : c.kind}</Badge>
+                    {c.protocols.map((p) => (
+                      <Badge key={p} tone="neutral">
+                        {protocolLabel(t, p)}
+                      </Badge>
+                    ))}
                   </Row>
                   {/* A sentence wraps; an address does not, because a URL has
                       no spaces to wrap at and would push the row open again. */}

@@ -5000,6 +5000,56 @@
     "line": 94
   },
   {
+    "id": "MOD-95",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 95,
+    "status": "AGREED",
+    "text": "A release names the protocol that downloads it. A release that names",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 160
+  },
+  {
+    "id": "MOD-96",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 96,
+    "status": "AGREED",
+    "text": "The minimum number of seeders, and seeders as a tie-break, apply only to",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 163
+  },
+  {
+    "id": "MOD-97",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 97,
+    "status": "AGREED",
+    "text": "A grab goes to the enabled download client ranked first among those that",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 167
+  },
+  {
+    "id": "MOD-98",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 98,
+    "status": "AGREED",
+    "text": "A download whose client is still verifying, repairing or unpacking it is",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 171
+  },
+  {
+    "id": "MOD-99",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 99,
+    "status": "AGREED",
+    "text": "A download its client gave up on fails at once (MOD-72), without waiting",
+    "file": "docs/spec/modules/acquisition.md",
+    "line": 174
+  },
+  {
     "id": "PLAY-1",
     "domain": "PLAY",
     "space": "playback",

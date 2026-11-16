@@ -21,6 +21,7 @@ use crate::{Transmission, KIND};
 /// resolves it under.
 pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
+        .route("/_port/tv.kroma.torrents/client/caps", post(caps))
         .route("/_port/tv.kroma.torrents/client/test", post(test::<S>))
         .route("/_port/tv.kroma.torrents/client/add", post(add::<S>))
         .route("/_port/tv.kroma.torrents/client/status", post(status::<S>))
@@ -88,6 +89,10 @@ fn engine(client: &Client) -> Transmission {
         username: client.username.clone(),
         password: client.password.clone(),
     })
+}
+
+async fn caps() -> Json<Result<serde_json::Value, String>> {
+    Json(Ok(serde_json::json!({ "protocols": ["torrent"] })))
 }
 
 async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
@@ -268,6 +273,14 @@ mod tests {
 
         assert_eq!(status, StatusCode::OK);
         assert!(answer["Err"].is_string(), "{answer}");
+    }
+
+    #[tokio::test]
+    async fn caps_name_the_torrent_protocol() {
+        let (status, answer) = call("/_port/tv.kroma.torrents/client/caps", json!({})).await;
+
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(answer["Ok"]["protocols"], json!(["torrent"]));
     }
 
     #[tokio::test]

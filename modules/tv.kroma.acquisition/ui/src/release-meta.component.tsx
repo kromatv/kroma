@@ -2,13 +2,18 @@ import type { ScoredReleaseView } from '@kromatv/client/requests';
 import { useFormat, useT } from '@kromatv/module-sdk';
 import { Row, Text } from '@kromatv/ui/kit';
 import { FlagBadges } from './judgement-pills.component';
+import { protocolLabel } from './protocol-label';
 import { useRefusalText } from './refusal-text.hook';
 
 export function ReleaseMeta({ release }: Readonly<{ release: ScoredReleaseView }>) {
   const t = useT();
   const fmt = useFormat();
   const refusal = useRefusalText()(release.refusal, release.rejected);
-  const where = [release.indexerName, release.publishedAt ? fmt.elapsed(release.publishedAt) : null]
+  const where = [
+    release.indexerName,
+    protocolLabel(t, release.protocol),
+    release.publishedAt ? fmt.elapsed(release.publishedAt) : null,
+  ]
     .filter(Boolean)
     .join(' · ');
   return (
