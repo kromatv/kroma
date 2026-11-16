@@ -75,7 +75,7 @@ pub(in crate::hls) fn fake_session(
         last_access: Mutex::new(last),
         window: Window::new(),
         plan,
-        start: 0.0,
+        start: crate::hls::start::Start::settled(0.0),
         opener: opener.map(str::to_owned),
         superseded: std::sync::atomic::AtomicBool::new(false),
         _cpu: None,

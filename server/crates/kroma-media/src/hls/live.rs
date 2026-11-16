@@ -119,7 +119,7 @@ impl Sessions {
                     session.plan.clone(),
                     session.dir.clone(),
                     !session.finished().await,
-                    session.start,
+                    session.start.secs(),
                 ));
             }
         }

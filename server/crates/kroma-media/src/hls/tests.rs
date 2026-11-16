@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use super::*;
+use crate::input;
 
 const COPY: StreamMode = StreamMode::new(VideoMode::Copy, AudioMode::Copy);
 
@@ -180,4 +181,71 @@ async fn a_re_anchor_into_a_session_already_running_is_answered_out_of_it() {
     assert_eq!(session_dirs(dir.path()), 1, "no second ffmpeg was started");
     assert_eq!(start, 0.0, "the client is told where the stream it gets begins");
     assert!(playlist.contains("seg_00000.m4s"));
+}
+
+fn keyed_every_two_seconds(dir: &Path, name: &str, clock_starts_at: f64) -> PathBuf {
+    let at = dir.join(name);
+    let status = std::process::Command::new("ffmpeg")
+        .args(["-v", "error", "-nostdin", "-y"])
+        .args(input::generated("testsrc=size=64x48:rate=25:duration=20"))
+        .args(input::generated("sine=frequency=440:duration=20"))
+        .args(["-c:v", "libx264", "-g", "50"])
+        .args(["-keyint_min", "50", "-sc_threshold", "0"])
+        .args(["-c:a", "aac", "-shortest"])
+        .arg("-output_ts_offset")
+        .arg(clock_starts_at.to_string())
+        .arg(&at)
+        .status()
+        .expect("run ffmpeg");
+    assert!(status.success(), "ffmpeg could not write the fixture clip");
+    at
+}
+
+fn first_frame_on_disk(engine: &HlsEngine, anchor: u64) -> f64 {
+    let key = session_key("it1", COPY, anchor, 0);
+    let dir = engine.sessions.root.join(naming::session_dir(&key));
+    let first = dir.join("first.mp4");
+    let mut bytes = std::fs::read(dir.join("init.mp4")).expect("an init segment");
+    bytes.extend(std::fs::read(dir.join("seg_00000.m4s")).expect("a first segment"));
+    std::fs::write(&first, bytes).expect("write the first segment whole");
+    let out = std::process::Command::new("ffprobe")
+        .args(["-v", "error", "-select_streams", "v:0"])
+        .args(["-show_entries", "packet=pts_time"])
+        .args(["-read_intervals", "%+#1", "-of", "csv=p=0"])
+        .args(input::file(&first))
+        .output()
+        .expect("run ffprobe");
+    String::from_utf8_lossy(&out.stdout)
+        .trim()
+        .parse()
+        .expect("a first frame in the first segment")
+}
+
+#[tokio::test]
+async fn a_stream_asked_for_on_a_keyframe_is_placed_where_ffmpeg_began_it() {
+    let dir = kroma_testing::temp_dir("hls-start-on-keyframe");
+    let input = keyed_every_two_seconds(dir.path(), "clip.mkv", 0.0);
+    let engine = engine(dir.path());
+
+    let (_, start) = engine
+        .master(asked(&input, 10))
+        .await
+        .expect("a playlist out of a file ffmpeg can read");
+
+    assert_eq!(start, first_frame_on_disk(&engine, 10));
+}
+
+#[tokio::test]
+async fn a_file_whose_clock_starts_late_is_answered_on_the_film_s_own_clock() {
+    let dir = kroma_testing::temp_dir("hls-start-late-clock");
+    let input = keyed_every_two_seconds(dir.path(), "clip.mkv", 8.7);
+    let engine = engine(dir.path());
+
+    let (_, start) = engine
+        .master(asked(&input, 11))
+        .await
+        .expect("a playlist out of a file ffmpeg can read");
+
+    assert!((start - 10.0).abs() < 0.05, "{start}");
+    assert_eq!(start, first_frame_on_disk(&engine, 11));
 }

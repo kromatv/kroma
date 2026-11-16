@@ -73,12 +73,12 @@ impl Sessions {
         };
         let mut best: Option<Covered> = None;
         for (other, session) in siblings {
-            if session.start > anchor {
+            if session.start.secs() > anchor {
                 continue;
             }
             if best
                 .as_ref()
-                .is_some_and(|held| held.session.start >= session.start)
+                .is_some_and(|held| held.session.start.secs() >= session.start.secs())
             {
                 continue;
             }
@@ -93,7 +93,7 @@ impl Sessions {
 
 fn covered(key: String, session: Arc<Session>, cut: Cut) -> Covered {
     Covered {
-        start: session.start + cut.offset,
+        start: session.start.secs() + cut.offset,
         key,
         session,
         playlist: cut.playlist.into_bytes(),
@@ -104,7 +104,7 @@ async fn listed_cut(session: &Session, anchor: f64) -> Option<Cut> {
     let playlist = tokio::fs::read_to_string(session.dir.join("index.m3u8"))
         .await
         .ok()?;
-    from_the_second(&playlist, anchor - session.start)
+    from_the_second(&playlist, anchor - session.start.secs())
 }
 
 async fn whole_cut(session: &Session, anchor: f64) -> Option<Cut> {

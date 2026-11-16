@@ -1,11 +1,8 @@
-//! The remux process: what is spawned, and the one probe that decides where it
-//! starts. Everything here shells out; nothing here touches the session map.
+//! The remux process: what is spawned. Everything here shells out; nothing here
+//! touches the session map.
 
 use std::path::Path;
 use std::process::Stdio;
-
-#[cfg(test)]
-use std::path::PathBuf;
 
 use tokio::process::{Child, Command};
 
@@ -13,6 +10,7 @@ use crate::input;
 
 use super::hwaccel::Pipeline;
 use super::naming::contains;
+use super::start::seeks;
 use super::{StreamMode, VideoMode};
 
 const SEGMENT_SECONDS: u32 = 6;
@@ -61,45 +59,6 @@ pub fn detect_burst() -> bool {
     )
 }
 
-/// The keyframe at-or-before `anchor`, which is where the remux really starts
-/// and what the client uses as `baseSec`. Falls back to `anchor` itself where
-/// the container answers nothing.
-///
-/// Read as one frame FROM the anchor, not a scan of the window before it: the
-/// demuxer's seek is the seek `-ss` will make, so the first frame handed back is
-/// the answer, and a scan would demux every byte of that window instead.
-pub async fn keyframe_before(input: &Path, anchor: f64) -> f64 {
-    if anchor <= 0.5 {
-        return 0.0;
-    }
-    let out = Command::new("ffprobe")
-        .args([
-            "-v",
-            "error",
-            "-select_streams",
-            "v:0",
-            "-skip_frame",
-            "nokey",
-        ])
-        .arg("-read_intervals")
-        .arg(format!("{anchor:.3}%+#1"))
-        .args(["-show_entries", "frame=pts_time", "-of", "csv=p=0"])
-        .args(input::file(input))
-        .output()
-        .await;
-    let Ok(out) = out else {
-        return anchor;
-    };
-    String::from_utf8_lossy(&out.stdout)
-        .lines()
-        .filter_map(|l| l.trim().trim_end_matches(',').parse::<f64>().ok())
-        .filter(|t| *t <= anchor + 0.01)
-        .fold(None, |best: Option<f64>, t| {
-            Some(best.map_or(t, |b| b.max(t)))
-        })
-        .unwrap_or(anchor)
-}
-
 // The selected audio track is MUXED into one media playlist rather than exposed as
 // an alternate rendition: hls.js keeps playing rendition 0 regardless of selection.
 // A language switch is therefore a reload with a different `audio` (a new session).
@@ -112,7 +71,7 @@ pub fn spawn_stream(
     burst: bool,
     pipeline: Pipeline,
 ) -> std::io::Result<Child> {
-    let seeking = start_secs > 0.5;
+    let seeking = seeks(start_secs);
     let copying_video = matches!(mode.video, VideoMode::Copy);
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-v", "error", "-nostdin"]);
@@ -140,7 +99,7 @@ pub fn spawn_stream(
     }
     cmd.args(input::file(input));
     if seeking {
-        cmd.arg("-copyts"); // keep source timestamps so video + audio stay on one timeline
+        cmd.args(["-copyts", "-start_at_zero"]); // keep source timestamps so video + audio stay on one timeline
     }
     cmd.args(["-map", "0:v:0"])
         .arg("-map")
@@ -203,38 +162,6 @@ pub fn spawn_stream(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn clip(dir: &Path) -> Option<PathBuf> {
-        let path = dir.join("clip.mp4");
-        std::process::Command::new("ffmpeg")
-            .args(["-v", "error"])
-            .args(input::generated("testsrc=duration=20:size=64x48:rate=25"))
-            .args(["-c:v", "libx264", "-g", "50", "-y"])
-            .arg(&path)
-            .status()
-            .ok()?
-            .success()
-            .then_some(path)
-    }
-
-    #[tokio::test]
-    async fn a_seek_starts_on_the_keyframe_at_or_before_the_second_asked_for() {
-        let dir = kroma_testing::temp_dir("hls-keyframe");
-        let Some(path) = clip(dir.path()) else {
-            return;
-        };
-
-        let start = keyframe_before(&path, 11.0).await;
-
-        assert!((start - 10.0).abs() < 0.05, "{start}");
-    }
-
-    #[tokio::test]
-    async fn a_second_the_container_cannot_answer_for_keeps_the_anchor() {
-        let start = keyframe_before(Path::new("http://127.0.0.1:1/clip.mp4"), 42.0).await;
-
-        assert_eq!(start, 42.0);
-    }
 
     #[test]
     fn the_keyframe_cadence_is_measured_from_the_first_frame_out() {
