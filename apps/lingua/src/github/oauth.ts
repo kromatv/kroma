@@ -1,10 +1,15 @@
 import { z } from 'zod';
 import type { User } from '#site/store/store';
-import type { AppCredentials } from './app';
-import { gitHub } from './client';
+import { type GitHub, gitHub } from './client';
+
+/** The OAuth App people sign in through and grant a send to. Both values are `wrangler secret`s. */
+export interface OAuthCredentials {
+  clientId: string;
+  clientSecret: string;
+}
 
 const Exchanged = z.union([
-  z.object({ access_token: z.string() }),
+  z.object({ access_token: z.string(), scope: z.string().default('') }),
   z.object({ error: z.string(), error_description: z.string().optional() }),
 ]);
 
@@ -21,17 +26,39 @@ export interface Callback {
   redirectUri: string;
 }
 
-/** Where to send a browser so GitHub asks the person to sign in to the App. */
-export function authorizeUrl(app: AppCredentials, redirectUri: string, state: string): string {
-  const query = new URLSearchParams({ client_id: app.clientId, redirect_uri: redirectUri, state });
+/** What to ask GitHub for: where to return, the state tying the answer to this browser, and any scope beyond the public profile. */
+export interface Asking {
+  redirectUri: string;
+  state: string;
+  scope?: string;
+  login?: string;
+}
+
+/** An account that answered GitHub's prompt: who it is, the scopes it granted, and a client speaking as it. */
+export interface Granted {
+  user: User;
+  scopes: string[];
+  gh: GitHub;
+}
+
+/** Where to send a browser so GitHub asks the person to sign in, or to grant `scope` to the account `login`. */
+export function authorizeUrl(oauth: OAuthCredentials, asking: Asking): string {
+  const { redirectUri, state, scope, login } = asking;
+  const query = new URLSearchParams({
+    client_id: oauth.clientId,
+    redirect_uri: redirectUri,
+    state,
+    ...(scope ? { scope } : {}),
+    ...(login ? { login } : {}),
+  });
   return `https://github.com/login/oauth/authorize?${query}`;
 }
 
 async function exchange(
-  app: AppCredentials,
+  oauth: OAuthCredentials,
   callback: Callback,
   fetchFn: typeof fetch,
-): Promise<string> {
+): Promise<{ token: string; scopes: string[] }> {
   const response = await fetchFn('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: {
@@ -40,8 +67,8 @@ async function exchange(
       'User-Agent': 'kroma-lingua',
     },
     body: JSON.stringify({
-      client_id: app.clientId,
-      client_secret: app.clientSecret,
+      client_id: oauth.clientId,
+      client_secret: oauth.clientSecret,
       code: callback.code,
       redirect_uri: callback.redirectUri,
     }),
@@ -50,20 +77,37 @@ async function exchange(
   if ('error' in exchanged) {
     throw new Error(exchanged.error_description ?? exchanged.error);
   }
-  return exchanged.access_token;
+  const scopes = exchanged.scope.split(',').filter((scope) => scope !== '');
+  return { token: exchanged.access_token, scopes };
 }
 
 /**
- * Trade the code GitHub sent back for the account that signed in. The token
- * is used once, to read who it belongs to, and never kept: Lingua writes to
- * repositories as the App, never as the person.
+ * Trade the code GitHub sent back for the account that answered and a client
+ * speaking as it. The token lives in that client alone: whoever holds it
+ * drops it when the request ends, and Lingua never stores it.
  */
+export async function grantFromCode(
+  oauth: OAuthCredentials,
+  callback: Callback,
+  fetchFn: typeof fetch = fetch,
+): Promise<Granted> {
+  const { token, scopes } = await exchange(oauth, callback, fetchFn);
+  const gh = gitHub(`Bearer ${token}`, fetchFn);
+  const me = await gh.get('/user', GitHubUser);
+  const user = {
+    id: me.id,
+    login: me.login,
+    name: me.name ?? null,
+    avatarUrl: me.avatar_url ?? null,
+  };
+  return { user, scopes, gh };
+}
+
+/** Trade the code GitHub sent back for the account that signed in, reading who it is once. */
 export async function userFromCode(
-  app: AppCredentials,
+  oauth: OAuthCredentials,
   callback: Callback,
   fetchFn: typeof fetch = fetch,
 ): Promise<User> {
-  const token = await exchange(app, callback, fetchFn);
-  const me = await gitHub(`Bearer ${token}`, fetchFn).get('/user', GitHubUser);
-  return { id: me.id, login: me.login, name: me.name ?? null, avatarUrl: me.avatar_url ?? null };
+  return (await grantFromCode(oauth, callback, fetchFn)).user;
 }

@@ -66,7 +66,11 @@ export interface Start {
   createdAt: number;
 }
 
-/** The rolling pull request one contributor has open for one language. */
+/**
+ * The rolling pull request one contributor has open for one language. `branch`
+ * is its head as Lingua names it: a branch of the project, or
+ * `<owner>:<branch>` for a branch of the contributor's fork.
+ */
 export interface Proposal {
   project: string;
   userId: number;

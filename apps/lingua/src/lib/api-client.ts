@@ -11,6 +11,10 @@ const SavedSchema = z.object({ draft: z.string().nullable(), issues: z.array(Iss
 const ProposedSchema = z.union([
   z.object({ kind: z.literal('proposed'), number: z.number(), url: z.string() }),
   z.object({ kind: z.literal('nothing') }),
+  z.object({
+    kind: z.literal('authorize'),
+    url: z.string().startsWith('https://github.com/login/oauth/authorize?'),
+  }),
 ]);
 
 const FailureSchema = z.object({ error: z.string(), issues: z.array(IssueSchema).optional() });
@@ -18,7 +22,7 @@ const FailureSchema = z.object({ error: z.string(), issues: z.array(IssueSchema)
 /** What the server answered a save with: the draft it now holds (null when the edit was dropped) and what it found. */
 export type Saved = z.infer<typeof SavedSchema>;
 
-/** What sending a language's edits came to: the pull request carrying them, or nothing left to send. */
+/** What sending a language's edits came to: the pull request carrying them, nothing left to send, or GitHub's page asking the contributor to let Lingua send as them. */
 export type Proposed = z.infer<typeof ProposedSchema>;
 
 /** A refused request, with the one sentence saying why and, for a save, the issues that blocked it. */
@@ -72,8 +76,17 @@ export function saveEdit(edit: {
   return call({ method: 'PUT', path: '/api/edits', body: edit, schema: SavedSchema });
 }
 
-/** Send every edit the viewer holds for a language to its pull request, opening it the first time. */
-export function sendProposal(target: { project: string; locale: string }): Promise<Proposed> {
+/**
+ * Send every edit the viewer holds for a language to its pull request, opening
+ * it the first time: from their fork once GitHub has their permission, or with
+ * `via: 'lingua'` through Lingua's App. GitHub comes back to the page `to`.
+ */
+export function sendProposal(target: {
+  project: string;
+  locale: string;
+  via: 'fork' | 'lingua';
+  to: string;
+}): Promise<Proposed> {
   return call({ method: 'POST', path: '/api/proposals', body: target, schema: ProposedSchema });
 }
 

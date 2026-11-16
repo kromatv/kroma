@@ -1,13 +1,16 @@
 import { type Context, Hono } from 'hono';
 import type { z } from 'zod';
+import { asInstallation } from '#site/github/app';
 import { authorizeUrl, userFromCode } from '#site/github/oauth';
+import { returnAddress } from '#site/lib/send-return';
 import type { Store, User } from '#site/store/store';
+import { answerSend, askToSend, forgetPending, type PendingSend, pendingCookie, readPending } from './authorizations';
 import { ConfirmInput, saveConfirms } from './confirms';
 import { EditInput, saveEdit } from './edits';
-import { credentials, type Env, storeFor } from './env';
+import { appCredentials, type Env, oauthCredentials, storeFor } from './env';
 import { messagePage } from './go';
 import { LocaleInput, startLanguage } from './locales';
-import { ProposalInput, sendProposal } from './proposals';
+import { sendProposal, SendInput } from './proposals';
 import { resolveViewer } from './request';
 import { closeSession, cookie, openSession, randomToken, readCookie } from './session';
 import { SETUP_CODE, setupDonePage, setupPage } from './setup';
@@ -27,6 +30,7 @@ const MAX_WEBHOOK = 4 * 1024 * 1024;
 
 const now = () => Math.floor(Date.now() / 1000);
 const origin = (c: Context<Ctx>) => new URL(c.req.url).origin;
+const callbackUri = (c: Context<Ctx>) => `${origin(c)}/auth/callback`;
 
 function sameOrigin(c: Context<Ctx>): boolean {
   const from = c.req.header('origin');
@@ -63,31 +67,34 @@ async function contributor(c: Context<Ctx>, refusal: string): Promise<{ store: S
 
 const app = new Hono<Ctx>();
 
-app.get('/health', (c) => c.json({ ok: true, github: credentials(c.env.env) !== null }));
+app.get('/health', (c) => c.json({ ok: true, github: appCredentials(c.env.env) !== null, signIn: oauthCredentials(c.env.env) !== null }));
 
-app.get('/setup', (c) => (credentials(c.env.env) ? c.text('Lingua is already set up.', 404) : setupPage(origin(c))));
+app.get('/setup', (c) => {
+  const connected = { app: appCredentials(c.env.env) !== null, oauth: oauthCredentials(c.env.env) !== null };
+  return connected.app && connected.oauth ? c.text('Lingua is already set up.', 404) : setupPage(origin(c), connected);
+});
 app.get('/setup/done', async (c) => {
-  if (credentials(c.env.env)) return c.text('Lingua is already set up.', 404);
+  if (appCredentials(c.env.env)) return c.text('Lingua is already set up.', 404);
   const code = c.req.query('code') ?? null;
   if (code && SETUP_CODE.test(code)) await (await storeFor(c.env.env)).holdSetupCode(code, now());
-  return setupDonePage(code);
+  return setupDonePage(code, origin(c));
 });
 
 app.get('/auth/login', (c) => {
-  const github = credentials(c.env.env);
-  if (!github) return c.text('Sign-in is not configured on this deployment yet.', 503);
+  const oauth = oauthCredentials(c.env.env);
+  if (!oauth) return c.text('Sign-in is not configured on this deployment yet.', 503);
   const state = randomToken();
   c.header('Set-Cookie', cookie(OAUTH, `${state} ${safeReturn(c.req.query('to'))}`, 600));
-  return c.redirect(authorizeUrl(github, `${origin(c)}/auth/callback`, state));
+  return c.redirect(authorizeUrl(oauth, { redirectUri: callbackUri(c), state }));
 });
 
-app.get('/auth/callback', async (c) => {
-  const github = credentials(c.env.env);
+async function signIn(c: Context<Ctx>): Promise<Response> {
+  const oauth = oauthCredentials(c.env.env);
   const [state, to] = (readCookie(c.req.header('cookie'), OAUTH) ?? '').split(' ');
   const code = c.req.query('code');
-  if (!github || !code || !state || c.req.query('state') !== state) return c.text('This sign-in link expired. Try again.', 400);
+  if (!oauth || !code || !state || c.req.query('state') !== state) return c.text('This sign-in link expired. Try again.', 400);
   const store = await storeFor(c.env.env);
-  const user = await userFromCode(github, { code, redirectUri: `${origin(c)}/auth/callback` }).catch((error: unknown) => {
+  const user = await userFromCode(oauth, { code, redirectUri: callbackUri(c) }).catch((error: unknown) => {
     console.error('lingua: sign-in failed', error);
     return null;
   });
@@ -95,6 +102,28 @@ app.get('/auth/callback', async (c) => {
   c.header('Set-Cookie', await openSession(store, user, now()), { append: true });
   c.header('Set-Cookie', cookie(OAUTH, '', 0), { append: true });
   return c.redirect(safeReturn(to));
+}
+
+async function returnFromSend(c: Context<Ctx>, pending: PendingSend): Promise<Response> {
+  const env = c.env.env;
+  const [app, oauth] = [appCredentials(env), oauthCredentials(env)];
+  c.header('Set-Cookie', forgetPending());
+  if (!app || !oauth) return c.redirect(returnAddress(pending.to, { kind: 'failed', reason: 'failed' }));
+  const store = await storeFor(env);
+  const location = await answerSend({
+    oauth,
+    pending,
+    viewer: await resolveViewer(env, store, c.req.header('cookie'), now()),
+    query: { code: c.req.query('code'), error: c.req.query('error') },
+    redirectUri: callbackUri(c),
+    send: (as, user) => sendProposal(store, { app, user, input: pending, origin: origin(c), as }, now()),
+  });
+  return c.redirect(location);
+}
+
+app.get('/auth/callback', async (c) => {
+  const pending = readPending(c.req.header('cookie'));
+  return pending && c.req.query('state') === pending.state ? returnFromSend(c, pending) : signIn(c);
 });
 
 app.post('/auth/logout', async (c) => {
@@ -133,21 +162,30 @@ app.post('/api/locales', async (c) => {
   return result.status === 200 ? c.json({ locale: result.locale, name: result.name }) : c.json({ error: result.error }, result.status);
 });
 
+function authorizeSend(c: Context<Ctx>, viewer: User, input: z.infer<typeof SendInput>): Response {
+  const oauth = oauthCredentials(c.env.env);
+  if (!oauth) return c.json({ error: 'Sign-in is not configured on this deployment yet' }, 503);
+  const { project, locale } = input;
+  const pending = { state: randomToken(), project, locale, to: safeReturn(input.to ?? `/${project}/${locale}`) };
+  c.header('Set-Cookie', pendingCookie(pending));
+  return c.json({ kind: 'authorize', url: askToSend(oauth, pending, { redirectUri: callbackUri(c), login: viewer.login }) });
+}
+
 app.post('/api/proposals', async (c) => {
-  if (!sameOrigin(c)) return c.json({ error: 'Forbidden' }, 403);
-  const github = credentials(c.env.env);
+  const signedIn = await contributor(c, 'Sign in with GitHub to send changes');
+  if (signedIn instanceof Response) return signedIn;
+  const github = appCredentials(c.env.env);
   if (!github) return c.json({ error: 'This deployment is not connected to GitHub yet' }, 503);
-  const store = await storeFor(c.env.env);
-  const viewer = await resolveViewer(c.env.env, store, c.req.header('cookie'), now());
-  if (!viewer) return c.json({ error: 'Sign in with GitHub to send changes' }, 401);
-  const input = await jsonInput(c, ProposalInput);
+  const input = await jsonInput(c, SendInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
-  const result = await sendProposal(store, github, viewer, input, origin(c), now());
+  if (input.via === 'fork') return authorizeSend(c, signedIn.viewer, input);
+  const sending = { app: github, user: signedIn.viewer, input, origin: origin(c) };
+  const result = await sendProposal(signedIn.store, sending, now());
   return result.status === 200 ? c.json(result.body) : c.json({ error: result.error }, result.status);
 });
 
 app.post('/webhook', async (c) => {
-  const github = credentials(c.env.env);
+  const github = appCredentials(c.env.env);
   if (!github) return c.text('Not configured', 503);
   const body = await boundedBody(c, MAX_WEBHOOK);
   if (body === null) return c.text('Too large', 413);
@@ -163,7 +201,9 @@ app.post('/webhook', async (c) => {
   const store = await storeFor(c.env.env);
   const delivery = { event: c.req.header('x-github-event') ?? '', payload };
   c.env.ctx.waitUntil(
-    handleDelivery({ app: github, store, now: now() }, delivery).catch((error: unknown) => console.error('lingua: webhook failed', error)),
+    handleDelivery({ connect: (id) => asInstallation(github, id), store, now: now() }, delivery).catch((error: unknown) =>
+      console.error('lingua: webhook failed', error),
+    ),
   );
   return c.text('Accepted', 202);
 });

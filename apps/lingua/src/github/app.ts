@@ -2,12 +2,10 @@ import { z } from 'zod';
 import { appJwt } from './app-jwt';
 import { type GitHub, gitHub } from './client';
 
-/** The GitHub App a Lingua deployment acts as. Every value is a `wrangler secret`. */
+/** The GitHub App Lingua syncs repositories as, hears webhooks from, and sends as when a contributor sends through Lingua. Every value is a `wrangler secret`. */
 export interface AppCredentials {
   appId: string;
   privateKey: string;
-  clientId: string;
-  clientSecret: string;
   webhookSecret: string;
 }
 

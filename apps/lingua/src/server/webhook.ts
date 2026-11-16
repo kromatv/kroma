@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { CONFIG_PATH } from '#site/core/config';
-import { type AppCredentials, asInstallation } from '#site/github/app';
-import { GitHubError, type Write } from '#site/github/client';
+import { type GitHub, GitHubError, type Write } from '#site/github/client';
+import { forkHead } from '#site/github/lane';
 import { discoverInstallation, type Syncing, syncProject } from '#site/github/sync';
 import type { Store } from '#site/store/store';
 
@@ -42,7 +42,11 @@ const PullClosed = z.object({
   installation: Installation,
   repository: Repository,
   pull_request: z.object({
-    head: z.object({ ref: z.string(), repo: z.object({ full_name: z.string() }).nullable() }),
+    head: z.object({
+      ref: z.string(),
+      label: z.string(),
+      repo: z.object({ full_name: z.string() }).nullable(),
+    }),
   }),
 });
 
@@ -54,9 +58,9 @@ export interface Delivery {
   payload: unknown;
 }
 
-/** What a delivery is handled with. */
+/** What a delivery is handled with: the store, and a GitHub speaking as one installation of the App. */
 export interface Handling {
-  app: AppCredentials;
+  connect: (installationId: number) => Promise<GitHub>;
   store: Store;
   now: number;
 }
@@ -68,12 +72,12 @@ export async function syncInstallation(syncing: Syncing, installationId: number,
   await Promise.all(projects.map((project) => syncProject(syncing, project, now)));
 }
 
-async function onPush({ app, store, now }: Handling, payload: unknown): Promise<void> {
+async function onPush({ connect, store, now }: Handling, payload: unknown): Promise<void> {
   const push = Push.safeParse(payload);
   if (!push.success || push.data.ref !== `refs/heads/${push.data.repository.default_branch}`) {
     return;
   }
-  const syncing = { gh: await asInstallation(app, push.data.installation.id), store };
+  const syncing = { gh: await connect(push.data.installation.id), store };
   const known = await store.project(push.data.repository.full_name);
   const touchedConfig = push.data.commits.some((c) => [...c.added, ...c.modified].includes(CONFIG_PATH));
   if (!known || touchedConfig) {
@@ -85,20 +89,8 @@ async function onPush({ app, store, now }: Handling, payload: unknown): Promise<
   }
 }
 
-async function onPullClosed({ app, store }: Handling, payload: unknown): Promise<void> {
-  const closed = PullClosed.safeParse(payload);
-  const sameRepo = closed.data?.pull_request.head.repo?.full_name === closed.data?.repository.full_name;
-  if (!closed.success || !sameRepo) {
-    return;
-  }
-  const branch = closed.data.pull_request.head.ref;
-  const proposal = await store.proposalByBranch(closed.data.repository.full_name, branch);
-  if (!proposal) {
-    return;
-  }
-  await store.closeProposal(proposal);
-  const gh = await asInstallation(app, closed.data.installation.id);
-  const remove: Write = { method: 'DELETE', path: `/repos/${proposal.project}/git/refs/heads/${branch}` };
+async function deleteBranch(gh: GitHub, repo: string, branch: string): Promise<void> {
+  const remove: Write = { method: 'DELETE', path: `/repos/${repo}/git/refs/heads/${branch}` };
   await gh.send(remove, z.unknown()).catch((error: unknown) => {
     if (!(error instanceof GitHubError && (error.status === 404 || error.status === 422))) {
       throw error;
@@ -106,7 +98,26 @@ async function onPullClosed({ app, store }: Handling, payload: unknown): Promise
   });
 }
 
-async function onInstallation({ app, store, now }: Handling, payload: unknown): Promise<void> {
+async function onPullClosed({ connect, store }: Handling, payload: unknown): Promise<void> {
+  const closed = PullClosed.safeParse(payload);
+  if (!closed.success) {
+    return;
+  }
+  const { repository, installation, pull_request: pull } = closed.data;
+  const ours = pull.head.repo?.full_name === repository.full_name;
+  const owner = pull.head.label.split(':')[0] ?? '';
+  const head = ours ? pull.head.ref : forkHead(owner, pull.head.ref);
+  const proposal = await store.proposalByBranch(repository.full_name, head);
+  if (!proposal) {
+    return;
+  }
+  await store.closeProposal(proposal);
+  if (ours) {
+    await deleteBranch(await connect(installation.id), proposal.project, pull.head.ref);
+  }
+}
+
+async function onInstallation({ connect, store, now }: Handling, payload: unknown): Promise<void> {
   const parsed = InstallationEvent.safeParse(payload);
   if (!parsed.success) {
     return;
@@ -116,10 +127,14 @@ async function onInstallation({ app, store, now }: Handling, payload: unknown): 
     await store.dropProjects(installation.id, []);
     return;
   }
-  await syncInstallation({ gh: await asInstallation(app, installation.id), store }, installation.id, now);
+  await syncInstallation({ gh: await connect(installation.id), store }, installation.id, now);
 }
 
-/** Act on a delivery: re-sync on a push to the default branch, settle a closed proposal, re-discover an installation. */
+/**
+ * Act on a delivery: re-sync on a push to the default branch, re-discover an
+ * installation, and settle a closed proposal. The App deletes the branch of a
+ * proposal it pushed to the project; a branch on a contributor's fork is theirs.
+ */
 export async function handleDelivery(handling: Handling, delivery: Delivery): Promise<void> {
   if (delivery.event === 'push') {
     await onPush(handling, delivery.payload);

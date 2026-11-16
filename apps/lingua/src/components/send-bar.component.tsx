@@ -2,17 +2,10 @@ import { styles, useStyles } from '@kromatv/ui/kit';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { Text } from '@kromatv/ui/kit/atoms/text';
-import { useRouter } from '@tanstack/react-router';
-import { type ReactNode, useState } from 'react';
-import { ApiError, sendProposal } from '#site/lib/api-client';
+import type { ReactNode } from 'react';
 import { counted } from '#site/lib/counted';
+import { type Sending, type SendVia, useSending } from '#site/lib/use-sending.hook';
 import type { ProposalView } from '#site/lib/views';
-
-type Sending =
-  | { kind: 'idle' }
-  | { kind: 'sending' }
-  | { kind: 'sent'; number: number }
-  | { kind: 'failed'; message: string };
 
 const sDefinition = styles({
   dock: { position: 'sticky', bottom: 0, zIndex: 10, paddingBottom: 16 },
@@ -25,6 +18,12 @@ function statusOf(
   if (sending.kind === 'failed') {
     return { text: sending.message, tone: 'danger' };
   }
+  if (sending.kind === 'declined') {
+    return {
+      text: 'GitHub was not allowed to open the pull request under your name. Lingua can open it for you, with your commits.',
+      tone: 'text',
+    };
+  }
   if (drafts > 0) {
     return { text: `${counted(drafts, 'change')} not sent yet`, tone: 'text' };
   }
@@ -32,29 +31,6 @@ function statusOf(
     return { text: `Sent to pull request #${sending.number}`, tone: 'success' };
   }
   return { text: 'Edit a message, then send your changes from here', tone: 'textMuted' };
-}
-
-function useSending(target: Readonly<{ project: string; locale: string }>) {
-  const router = useRouter();
-  const [sending, setSending] = useState<Sending>({ kind: 'idle' });
-
-  const send = async () => {
-    setSending({ kind: 'sending' });
-    try {
-      const result = await sendProposal(target);
-      setSending(
-        result.kind === 'proposed' ? { kind: 'sent', number: result.number } : { kind: 'idle' },
-      );
-      await router.invalidate();
-    } catch (error: unknown) {
-      setSending({
-        kind: 'failed',
-        message: error instanceof ApiError ? error.message : 'Sending failed. Try again.',
-      });
-    }
-  };
-
-  return { sending, send };
 }
 
 function Summary({
@@ -98,6 +74,21 @@ function PullRequestLink({ proposal }: Readonly<{ proposal: ProposalView }>) {
   );
 }
 
+function SendThroughLingua({
+  disabled,
+  onSend,
+}: Readonly<{ disabled: boolean; onSend: (via: SendVia) => void }>) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      label="Send through Lingua instead"
+      disabled={disabled}
+      onPress={() => onSend('lingua')}
+    />
+  );
+}
+
 function Actions({
   sending,
   drafts,
@@ -107,18 +98,21 @@ function Actions({
   sending: Sending;
   drafts: number;
   proposal: ProposalView | null;
-  onSend: () => void;
+  onSend: (via: SendVia) => void;
 }>) {
   return (
     <Row gap={8} wrap>
       {proposal ? <PullRequestLink proposal={proposal} /> : null}
+      {sending.kind === 'declined' ? (
+        <SendThroughLingua disabled={drafts === 0} onSend={onSend} />
+      ) : null}
       <Button
         size="sm"
         icon="send"
         label={drafts > 0 ? `Send ${counted(drafts, 'change')}` : 'Send changes'}
         disabled={drafts === 0}
         loading={sending.kind === 'sending'}
-        onPress={onSend}
+        onPress={() => onSend('fork')}
       />
     </Row>
   );
@@ -163,7 +157,12 @@ export function SendBar({
   return (
     <Dock>
       <Summary sending={sending} drafts={drafts} proposed={proposed} proposal={proposal} />
-      <Actions sending={sending} drafts={drafts} proposal={proposal} onSend={() => void send()} />
+      <Actions
+        sending={sending}
+        drafts={drafts}
+        proposal={proposal}
+        onSend={(via) => void send(via)}
+      />
     </Dock>
   );
 }

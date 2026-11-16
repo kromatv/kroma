@@ -1,23 +1,24 @@
 import { addLocale, type CatalogSet, confirm, fill, syncSet } from '@kromatv/i18n-tools';
 import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { memoryStore } from '#site/store/memory-store';
-import type { FileRow, Store, User } from '#site/store/store';
+import type { Store } from '#site/store/store';
 import {
+  ada,
   changed,
   markMachine,
   projectOnDisk,
   removeProjects,
   ROOT,
   rowsOf,
+  sendAs,
+  storeHolding,
   write,
 } from './fixture';
-import { branchFor, noreplyEmail, propose } from './propose';
+import { branchFor } from './lane';
+import { noreplyEmail } from './propose';
 import { type FakeRepository, fakeGitHub, sha } from './test-support';
 
-const ada: User = { id: 42, login: 'Ada', name: 'Ada L.', avatarUrl: null };
 const BRANCH = 'lingua/ada/en';
-const CONFIG = JSON.stringify({ projects: [{ path: ROOT }] });
 
 const POLICY =
   '{\n  "source": "fr",\n  "fallback": "en",\n  "locales": {\n    "en": { "stage": "stable" },\n    "es": { "stage": "beta" }\n  }\n}\n';
@@ -47,51 +48,8 @@ function repository(): CatalogSet {
   return set;
 }
 
-interface Work {
-  locale?: string;
-  edits?: Record<string, string>;
-  confirms?: string[];
-  start?: boolean;
-}
-
-async function storeHolding(rows: readonly FileRow[], work: Work): Promise<Store> {
-  const store = memoryStore();
-  const mine = { project: 'o/r', userId: ada.id, locale: work.locale ?? 'en', proposed: false };
-  await store.upsertProject('o/r', 1, 'main');
-  await store.setSynced('o/r', {
-    headSha: sha('a'),
-    treeSha: sha('0e'),
-    config: CONFIG,
-    configError: null,
-    at: 1,
-  });
-  await store.replaceFiles('o/r', rows, []);
-  await Promise.all([
-    ...Object.entries(work.edits ?? {}).map(([key, value]) =>
-      store.putEdit({ ...mine, file: key.split('.')[0] ?? '', key, value, updatedAt: 1 }),
-    ),
-    ...(work.confirms ?? []).map((key) => store.putConfirm({ ...mine, key, updatedAt: 1 })),
-    ...(work.start ? [store.putStart({ ...mine, createdAt: 1 })] : []),
-  ]);
-  return store;
-}
-
-async function send(store: Store, gh: ReturnType<typeof fakeGitHub>, locale = 'en') {
-  const project = await store.project('o/r');
-  if (!project) {
-    throw new Error('the project was not seeded');
-  }
-  const files = await store.files('o/r');
-  return propose(gh, store, {
-    project,
-    root: ROOT,
-    files,
-    user: ada,
-    locale,
-    origin: 'https://lingua.test',
-    now: 1_800_000_000,
-  });
-}
+const send = (store: Store, gh: ReturnType<typeof fakeGitHub>, locale = 'en') =>
+  sendAs({ kind: 'app', gh }, store, locale);
 
 const pulls = (branch: string) =>
   `GET /repos/o/r/pulls?state=open&head=o:${encodeURIComponent(branch)}`;

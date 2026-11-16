@@ -6,7 +6,9 @@ name: Lingua
 # created at lingua.kroma.tv/setup, so connecting it needs no local wrangler.
 #
 # Needs CLOUDFLARE_API_TOKEN in the `sites` environment (Workers Scripts and
-# D1: Edit). Without it the job skips with a notice.
+# D1: Edit). Without it the job skips with a notice. When LINGUA_OAUTH_CLIENT_ID
+# and LINGUA_OAUTH_CLIENT_SECRET are both set there, every run stores them as
+# the Worker's GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET.
 on:
   push:
     branches: [main]
@@ -77,3 +79,18 @@ jobs:
         if: steps.guard.outputs.has_token == 'true' && inputs.connect
         working-directory: apps/lingua
         run: bun scripts/setup.ts --from-d1 --owner "${{ github.repository_owner }}"
+
+      - name: Store the OAuth App's client id and secret
+        if: steps.guard.outputs.has_token == 'true'
+        working-directory: apps/lingua
+        env:
+          OAUTH_CLIENT_ID: ${{ secrets.LINGUA_OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.LINGUA_OAUTH_CLIENT_SECRET }}
+        run: |
+          if [ -z "$OAUTH_CLIENT_ID" ] || [ -z "$OAUTH_CLIENT_SECRET" ]; then
+            echo "::notice::LINGUA_OAUTH_CLIENT_ID and LINGUA_OAUTH_CLIENT_SECRET are not both set; the Worker keeps the OAuth App it has."
+            exit 0
+          fi
+          jq -n --arg id "$OAUTH_CLIENT_ID" --arg secret "$OAUTH_CLIENT_SECRET" \
+            '{GITHUB_OAUTH_CLIENT_ID: $id, GITHUB_OAUTH_CLIENT_SECRET: $secret}' \
+            | bunx wrangler secret bulk

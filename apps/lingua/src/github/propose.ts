@@ -4,7 +4,8 @@ import { type Change, planSend, type Work } from '#site/core/plan';
 import { type Shelf, shelfOf } from '#site/core/shelf';
 import type { FileRow, Project, Proposal, Store, User } from '#site/store/store';
 import { type At, catchUp, type Head, refHead, textsAt } from './branch';
-import type { GitHub, Write } from './client';
+import type { Write } from './client';
+import { type Lane, laneFor, type Sender } from './lane';
 
 const Sha = z.string().regex(/^[0-9a-f]{40}$/);
 const Created = z.object({ sha: Sha });
@@ -28,14 +29,9 @@ export interface Proposing {
 }
 
 interface Starting {
-  existed: boolean;
+  from: 'new' | 'reset' | 'branch';
   base: Head;
   shelf: Shelf;
-}
-
-/** The branch one contributor's suggestions for one language ride on. */
-export function branchFor(login: string, locale: string): string {
-  return `lingua/${login.toLowerCase()}/${locale}`;
 }
 
 /** The address GitHub credits a commit to without publishing anybody's email. */
@@ -53,19 +49,19 @@ function pathsToRead(input: Proposing): string[] {
 }
 
 async function startingPoint(
-  at: At,
-  branch: string,
+  lane: Lane,
   plan: { head: Head; input: Proposing },
 ): Promise<Starting> {
   const { input } = plan;
-  const existing = await refHead(at, branch);
-  if (!existing) {
-    return { existed: false, base: plan.head, shelf: shelfOf(input.root, input.files) };
+  const existing = await refHead(lane.at, lane.branch);
+  if (!existing || lane.restart) {
+    const shelf = shelfOf(input.root, input.files);
+    return { from: existing ? 'reset' : 'new', base: plan.head, shelf };
   }
-  const base = await catchUp(at, branch, plan.head.sha);
+  const base = await catchUp(lane.at, lane.branch, plan.head.sha);
   const known = new Map(input.files.map((f) => [f.blobSha, f.body]));
-  const texts = await textsAt(at, base.sha, { paths: pathsToRead(input), known });
-  return { existed: true, base, shelf: { root: input.root, files: texts } };
+  const texts = await textsAt(lane.at, base.sha, { paths: pathsToRead(input), known });
+  return { from: 'branch', base, shelf: { root: input.root, files: texts } };
 }
 
 function treeOf(start: Starting, files: readonly Change[]) {
@@ -91,6 +87,7 @@ async function commitFiles(
     tree: tree.sha,
     parents: [start.base.sha],
     author: change.author,
+    committer: change.author,
   };
   return (
     await at.gh.send({ method: 'POST', path: `/repos/${at.repo}/git/commits`, body }, Created)
@@ -98,48 +95,52 @@ async function commitFiles(
 }
 
 async function moveBranch(
-  at: At,
-  branch: string,
-  move: { sha: string; existed: boolean },
+  lane: Lane,
+  move: { sha: string; from: Starting['from'] },
 ): Promise<void> {
+  const { at, branch } = lane;
   const update: Write = {
     method: 'PATCH',
     path: `/repos/${at.repo}/git/refs/heads/${branch}`,
-    body: { sha: move.sha, force: false },
+    body: { sha: move.sha, force: move.from === 'reset' },
   };
   const create: Write = {
     method: 'POST',
     path: `/repos/${at.repo}/git/refs`,
     body: { ref: `refs/heads/${branch}`, sha: move.sha },
   };
-  const write = move.existed ? update : create;
-  await at.gh.send(write, z.unknown());
+  await at.gh.send(move.from === 'new' ? create : update, z.unknown());
 }
 
-async function ensurePull(at: At, branch: string, input: Proposing): Promise<z.infer<typeof Pull>> {
+function pullFor(lane: Lane, input: Proposing) {
+  const { user, locale } = input;
+  const { upstream, at } = lane;
+  const body = [
+    `Suggested by @${user.login} on [Lingua](${input.origin}/${upstream.repo}/${locale}).`,
+    '',
+    `This pull request follows their edits: every change they send for \`${locale}\` lands here as a new commit authored by them.`,
+  ].join('\n');
+  const title = `i18n(${locale}): suggestions from @${user.login}`;
+  const fromFork = at.repo === upstream.repo ? {} : { maintainer_can_modify: true };
+  return { title, head: lane.head, base: input.project.branch, body, ...fromFork };
+}
+
+async function ensurePull(lane: Lane, input: Proposing): Promise<z.infer<typeof Pull>> {
+  const { upstream, at, branch } = lane;
   const owner = at.repo.split('/')[0] ?? '';
-  const open = await at.gh.get(
-    `/repos/${at.repo}/pulls?state=open&head=${owner}:${encodeURIComponent(branch)}`,
+  const open = await upstream.gh.get(
+    `/repos/${upstream.repo}/pulls?state=open&head=${owner}:${encodeURIComponent(branch)}`,
     z.array(Pull),
   );
   if (open[0]) {
     return open[0];
   }
-  const { user, locale } = input;
-  const body = [
-    `Suggested by @${user.login} on [Lingua](${input.origin}/${at.repo}/${locale}).`,
-    '',
-    `This pull request follows their edits: every change they send for \`${locale}\` lands here as a new commit authored by them.`,
-  ].join('\n');
-  const title = `i18n(${locale}): suggestions from @${user.login}`;
-  return at.gh.send(
-    {
-      method: 'POST',
-      path: `/repos/${at.repo}/pulls`,
-      body: { title, head: branch, base: input.project.branch, body },
-    },
-    Pull,
-  );
+  const write: Write = {
+    method: 'POST',
+    path: `/repos/${upstream.repo}/pulls`,
+    body: pullFor(lane, input),
+  };
+  return upstream.gh.send(write, Pull);
 }
 
 function counted(count: number, noun: string): string[] {
@@ -168,15 +169,14 @@ function changeFor(input: Proposing, work: Work, files: Change[]) {
 }
 
 async function publish(
-  at: At,
-  branch: string,
+  lane: Lane,
   step: { start: Starting; change: ReturnType<typeof changeFor> },
 ): Promise<string> {
   if (step.change.files.length === 0) {
     return step.start.base.sha;
   }
-  const sha = await commitFiles(at, step.start, step.change);
-  await moveBranch(at, branch, { sha, existed: step.start.existed });
+  const sha = await commitFiles(lane.at, step.start, step.change);
+  await moveBranch(lane, { sha, from: step.start.from });
   return sha;
 }
 
@@ -220,28 +220,29 @@ const idle = (work: Work) =>
 
 /**
  * Send a contributor's edits, confirms and started language to GitHub as one
- * commit authored by them, on their branch, which catches up with the
- * default branch first, and one rolling pull request opened by the App.
+ * commit authored and committed by them, on their branch, which catches up
+ * with the default branch first, and one rolling pull request. Through a fork,
+ * the branch and the pull request are the contributor's; through the App, the
+ * branch is on the project and the App opens the pull request.
  */
-export async function propose(gh: GitHub, store: Store, input: Proposing): Promise<Outcome> {
+export async function propose(sender: Sender, store: Store, input: Proposing): Promise<Outcome> {
   const { project, user, locale } = input;
   const work = await workOf(store, input);
   if (idle(work) || !project.headSha || !project.treeSha) {
     return { kind: 'nothing' };
   }
-  const at = { gh, repo: project.id };
-  const branch = branchFor(user.login, locale);
+  const lane = await laneFor(sender, input, await store.proposal(project.id, user.id, locale));
   const head = { sha: project.headSha, tree: project.treeSha };
-  const start = await startingPoint(at, branch, { head, input });
+  const start = await startingPoint(lane, { head, input });
   const plan = await planSend(start.shelf, work);
   if (plan.incomplete.length > 0) {
     return { kind: 'incomplete', keys: plan.incomplete };
   }
-  if (plan.changes.length === 0 && !start.existed) {
+  if (plan.changes.length === 0 && start.from !== 'branch') {
     await store.dropUnsent(project.id, user.id, locale);
     return { kind: 'nothing' };
   }
-  const sha = await publish(at, branch, { start, change: changeFor(input, work, plan.changes) });
-  const pull = await ensurePull(at, branch, input);
-  return settle(store, input, { branch, pull, head: sha });
+  const sha = await publish(lane, { start, change: changeFor(input, work, plan.changes) });
+  const pull = await ensurePull(lane, input);
+  return settle(store, input, { branch: lane.head, pull, head: sha });
 }

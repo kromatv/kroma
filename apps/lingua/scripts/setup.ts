@@ -7,8 +7,6 @@ const Conversion = z.object({
   slug: z.string(),
   html_url: z.string(),
   owner: z.object({ login: z.string() }),
-  client_id: z.string(),
-  client_secret: z.string(),
   webhook_secret: z.string(),
   pem: z.string(),
 });
@@ -96,8 +94,6 @@ await wrangler(
     GITHUB_APP_ID: String(app.id),
     GITHUB_APP_SLUG: app.slug,
     GITHUB_APP_PRIVATE_KEY: app.pem,
-    GITHUB_CLIENT_ID: app.client_id,
-    GITHUB_CLIENT_SECRET: app.client_secret,
     GITHUB_WEBHOOK_SECRET: app.webhook_secret,
   }),
 );

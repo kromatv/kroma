@@ -12,6 +12,18 @@ export class GitHubError extends Error {
   }
 }
 
+/** What `pending` resolves to, or null when GitHub answers that there is no such thing. */
+export async function unlessMissing<T>(pending: Promise<T>): Promise<T | null> {
+  try {
+    return await pending;
+  } catch (error) {
+    if (error instanceof GitHubError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 /** A write to GitHub's REST API. */
 export interface Write {
   method: 'POST' | 'PATCH' | 'PUT' | 'DELETE';

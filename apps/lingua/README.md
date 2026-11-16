@@ -2,10 +2,11 @@
 
 Translate a repository in the browser. A contributor signs in with GitHub, fixes
 or adds messages in their language, and presses **Send**: their edits land in the
-repository as a pull request, in commits authored by them.
+repository as a pull request they opened, in commits authored by them.
 
 It runs on Cloudflare (one Worker, one D1 database, a cron) and talks to GitHub
-through a GitHub App, so anyone can host their own. KROMA's runs at
+through two apps of its own: a GitHub App that keeps the repositories in sync,
+and an OAuth App that signs people in. Anyone can host their own. KROMA's runs at
 [lingua.kroma.tv](https://lingua.kroma.tv).
 
 ## How it works
@@ -20,18 +21,27 @@ through a GitHub App, so anyone can host their own. KROMA's runs at
   source: a `{placeholder}` the source does not have, or a `$t(key)` reference
   to a message outside its file, is refused, because it would print raw on
   screen. A dropped placeholder is a warning.
-- **Sending opens one rolling pull request per contributor per language**, on
-  `lingua/<login>/<locale>`. Each send is one commit authored by the contributor
-  (`<id>+<login>@users.noreply.github.com`, so it counts on their profile and
-  publishes no address). If the default branch moved, the branch merges it first.
-  The App opens the pull request: GitHub only lets an account open one from a
-  branch it can push to, and a contributor cannot push to the repository.
-- **Merged or closed**, the proposal and its edits are forgotten and the branch
-  is deleted.
+- **Sending opens one rolling pull request per contributor per language, from
+  their own fork.** GitHub only lets an account open a pull request from a
+  branch it can push to, so **Send** asks GitHub for `public_repo`. After the
+  first grant GitHub answers without a prompt. With that token Lingua forks the
+  repository into the contributor's account if they have no fork, brings the
+  fork's default branch level with the repository's, and pushes one commit to
+  `lingua/<locale>` on the fork. The contributor authors and commits it, as
+  `<id>+<login>@users.noreply.github.com`, so it counts on their profile and
+  publishes no address. If the default branch moved, the branch merges it
+  first. The pull request is theirs, and maintainers may push to it.
+- **A contributor who refuses `public_repo` can send through Lingua instead.**
+  The App pushes the same commit to `lingua/<login>/<locale>` on the repository
+  and opens the pull request itself.
+- **Merged or closed**, the proposal and its edits are forgotten. The App
+  deletes a branch it pushed to the repository; a branch on a fork stays with
+  its owner.
 
-Lingua never keeps a contributor's GitHub token. Signing in reads who they are
-once; every write is the App's, and only inside the project folder, for
-languages `i18n.json` lists or the contributor started, for keys the source has.
+Lingua never keeps a contributor's GitHub token. Signing in asks for no scope
+and reads who they are once. A send uses its `public_repo` token for that one
+send, then drops it. Every write stays inside the project folder, for languages
+`i18n.json` lists or the contributor started, for keys the source has.
 
 ## `lingua.json`
 
@@ -107,21 +117,43 @@ Then connect GitHub:
 
 1. Open `https://<your host>/setup` and press **Create the GitHub App** (fill
    in an organisation to create it there). GitHub registers the App with the
-   permissions it needs (contents and pull requests: write; metadata: read),
-   the webhook and the sign-in callback, then returns to `/setup/done`, which
-   keeps the one-hour code GitHub sent.
+   permissions it needs (contents and pull requests: write; metadata: read)
+   and the webhook, then returns to `/setup/done`, which keeps the one-hour
+   code GitHub sent.
 2. Trade the code for the App's secrets, within the hour. On KROMA's
    deployment, run the **Lingua** workflow with **connect** ticked. Anywhere
    else, run the command `/setup/done` shows:
    `bun run --filter @kromatv/lingua setup <code>`. Either way the script
-   stores the App's id, private key, client secret and webhook secret with
+   stores the App's id, slug, private key and webhook secret with
    `wrangler secret bulk` and prints none of them. With `--owner`, it only
    accepts an App that account owns, so an App a stranger made through your
    `/setup` page is never connected.
-3. Install the App on the repositories to translate. Each needs a
+3. Create the OAuth App people sign in through. GitHub has no one-click flow
+   for it: under **Settings → Developer settings → OAuth Apps → New OAuth
+   App** (an organisation's settings work too), fill in
+
+   | Field | Value |
+   | --- | --- |
+   | Application name | `Lingua <your host>` |
+   | Homepage URL | `https://<your host>` |
+   | Authorization callback URL | `https://<your host>/auth/callback` |
+
+   Generate a client secret, then store the pair in the Worker:
+
+   ```bash
+   bunx wrangler secret put GITHUB_OAUTH_CLIENT_ID
+   bunx wrangler secret put GITHUB_OAUTH_CLIENT_SECRET
+   ```
+
+   On KROMA's deployment, add them to the `sites` environment as
+   `LINGUA_OAUTH_CLIENT_ID` and `LINGUA_OAUTH_CLIENT_SECRET` instead (GitHub
+   reserves the `GITHUB_` prefix for its own): every run of the **Lingua**
+   workflow stores them in the Worker.
+4. Install the App on the repositories to translate. Each needs a
    `lingua.json`. The next push or the next ten-minute sync picks it up.
 
-`/setup` answers 404 once the secrets are set.
+`/setup` lists what is still missing, and answers 404 once both apps' secrets
+are set.
 
 ## Running it locally
 
@@ -138,13 +170,14 @@ runs in, and its project folder, from disk. Sending needs GitHub and is refused.
 | Folder | Holds |
 | --- | --- |
 | `src/core/` | The rules, with no I/O: `lingua.json`, `i18n.json`, catalog files, locks, notes, plural rows, checks, and the plan of a send. |
-| `src/github/` | The App's JWT, the API client, sync, and building a proposal. |
+| `src/github/` | The App's JWT, OAuth, the API client, sync, forks, and building a proposal. |
 | `src/store/` | Every read and write behind `Store`: D1, and an in-memory twin for tests and dev. |
 | `src/server/` | Routes (sign-in, edits, proposals, webhook, setup), sessions, the cron, and the page data. |
 | `src/routes/`, `src/components/` | The pages, built with `@kromatv/ui`. |
 
 `bun run test apps/lingua` runs the tests. GitHub is faked at the `GitHub`
 interface (`src/github/test-support.ts`), so a proposal's branch, commit, author
-and pull request are checked without a network. The files a send commits are
+and pull request, on the repository or on a contributor's fork, are checked
+without a network. The files a send commits are
 checked against what `@kromatv/i18n-tools` writes for the same work, on a
 fixture project and on this repository's own catalogs.

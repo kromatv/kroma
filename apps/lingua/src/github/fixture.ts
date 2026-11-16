@@ -5,7 +5,11 @@ import { dirname, join } from 'node:path';
 import { type CatalogSet, parseLock, renderLock, syncSet } from '@kromatv/i18n-tools';
 import { placeOf } from '#site/core/config';
 import { parsePolicy } from '#site/core/policy';
-import type { FileRow } from '#site/store/store';
+import { memoryStore } from '#site/store/memory-store';
+import type { FileRow, Store, User } from '#site/store/store';
+import type { Sender } from './lane';
+import { type Outcome, propose } from './propose';
+import { sha } from './test-support';
 
 /** The folder a fixture project sits in, inside its repository. */
 export const ROOT = 'loc';
@@ -88,4 +92,56 @@ export function removeProjects(): void {
   for (const dir of made.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
+}
+
+/** The contributor every proposal test sends as. */
+export const ada: User = { id: 42, login: 'Ada', name: 'Ada L.', avatarUrl: null };
+
+/** What a contributor holds for one language, English unless `locale` says otherwise. */
+export interface HeldWork {
+  locale?: string;
+  edits?: Record<string, string>;
+  confirms?: string[];
+  start?: boolean;
+}
+
+/** A store holding project `o/r`, synced at `sha('a')` with `rows`, and `ada`'s work. */
+export async function storeHolding(rows: readonly FileRow[], work: HeldWork): Promise<Store> {
+  const store = memoryStore();
+  const mine = { project: 'o/r', userId: ada.id, locale: work.locale ?? 'en', proposed: false };
+  await store.upsertProject('o/r', 1, 'main');
+  await store.setSynced('o/r', {
+    headSha: sha('a'),
+    treeSha: sha('0e'),
+    config: JSON.stringify({ projects: [{ path: ROOT }] }),
+    configError: null,
+    at: 1,
+  });
+  await store.replaceFiles('o/r', rows, []);
+  await Promise.all([
+    ...Object.entries(work.edits ?? {}).map(([key, value]) =>
+      store.putEdit({ ...mine, file: key.split('.')[0] ?? '', key, value, updatedAt: 1 }),
+    ),
+    ...(work.confirms ?? []).map((key) => store.putConfirm({ ...mine, key, updatedAt: 1 })),
+    ...(work.start ? [store.putStart({ ...mine, createdAt: 1 })] : []),
+  ]);
+  return store;
+}
+
+/** Send `ada`'s work for `locale` through `sender`, from the project the store holds. */
+export async function sendAs(sender: Sender, store: Store, locale = 'en'): Promise<Outcome> {
+  const project = await store.project('o/r');
+  if (!project) {
+    throw new Error('the project was not seeded');
+  }
+  const files = await store.files('o/r');
+  return propose(sender, store, {
+    project,
+    root: ROOT,
+    files,
+    user: ada,
+    locale,
+    origin: 'https://lingua.test',
+    now: 1_800_000_000,
+  });
 }

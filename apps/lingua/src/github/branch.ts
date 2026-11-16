@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { type GitHub, GitHubError } from './client';
+import { type GitHub, unlessMissing } from './client';
 import { blobTexts } from './sync';
 
 const Sha = z.string().regex(/^[0-9a-f]{40}$/);
@@ -23,14 +23,8 @@ export interface Head {
 
 /** The commit a branch points at, or null when there is no such branch. */
 export async function refHead(at: At, branch: string): Promise<string | null> {
-  try {
-    return (await at.gh.get(`/repos/${at.repo}/git/ref/heads/${branch}`, Ref)).object.sha;
-  } catch (error) {
-    if (error instanceof GitHubError && error.status === 404) {
-      return null;
-    }
-    throw error;
-  }
+  const ref = await unlessMissing(at.gh.get(`/repos/${at.repo}/git/ref/heads/${branch}`, Ref));
+  return ref?.object.sha ?? null;
 }
 
 /** Merge `head` into `branch`, and return where the branch then stands. */

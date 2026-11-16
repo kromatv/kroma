@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import { type GitHub, GitHubError } from './client';
 
 /** One request a fake GitHub received. */
@@ -20,6 +20,75 @@ export interface FakeRepository {
 /** The forty-hex id `seed` names, so a test reads `sha('a')` rather than a constant. */
 export function sha(seed: string): string {
   return seed.repeat(40).slice(0, 40);
+}
+
+/** Answer as GitHub does for a repository or a branch that does not exist. */
+export function missing(): never {
+  throw new GitHubError(404, 'Not Found');
+}
+
+/** One contributor's fork of a project: `repo` forked from `upstream`, its send branch, and how it stands before the first call. */
+export interface Fork {
+  upstream: string;
+  repo: string;
+  branch: string;
+  made?: boolean;
+  head?: string;
+}
+
+const Moved = z.object({ sha: z.string() });
+
+function forkGit(fork: Fork, state: { head: string | null; commits: number }) {
+  const at = `/repos/${fork.repo}`;
+  const moved = (body: unknown) => {
+    state.head = Moved.parse(body).sha;
+    return {};
+  };
+  const commits = ['1', '2', '3', '9'].map((seed) => [
+    `GET ${at}/git/commits/${sha(seed)}`,
+    () => ({ sha: sha(seed), tree: { sha: sha('0d') } }),
+  ]);
+  return {
+    ...Object.fromEntries(commits),
+    [`GET ${at}/git/ref/heads/${fork.branch}`]: () =>
+      state.head ? { object: { sha: state.head } } : missing(),
+    [`POST ${at}/merges`]: () => null,
+    [`POST ${at}/git/trees`]: () => ({ sha: sha('e') }),
+    [`POST ${at}/git/commits`]: () => ({ sha: sha(String(++state.commits)) }),
+    [`POST ${at}/git/refs`]: moved,
+    [`PATCH ${at}/git/refs/heads/${fork.branch}`]: moved,
+  };
+}
+
+/**
+ * GitHub as the owner of `fork` sees it: the fork missing until a POST to
+ * `/forks` makes it, its branch moved by every write, each commit `sha('1')`,
+ * `sha('2')`, …, and the pull requests opened from it listed by head.
+ */
+export function forkRoutes(fork: Fork): Record<string, Handler> {
+  const state = { made: fork.made ?? false, head: fork.head ?? null, commits: 0 };
+  const pulls: { number: number; html_url: string }[] = [];
+  const owner = fork.repo.split('/')[0] ?? '';
+  const shown = () =>
+    state.made
+      ? { full_name: fork.repo, fork: true, parent: { full_name: fork.upstream } }
+      : missing();
+  const open = () => {
+    pulls.push({ number: 9, html_url: `https://github.com/${fork.upstream}/pull/9` });
+    return pulls[0];
+  };
+  return {
+    ...forkGit(fork, state),
+    [`GET /repos/${fork.repo}`]: shown,
+    [`POST /repos/${fork.upstream}/forks`]: () => {
+      state.made = true;
+      return shown();
+    },
+    [`POST /repos/${fork.repo}/merge-upstream`]: () => ({ merge_type: 'fast-forward' }),
+    [`GET /repos/${fork.upstream}/pulls?state=open&head=${owner}:${encodeURIComponent(fork.branch)}`]:
+      () => pulls,
+    [`POST /repos/${fork.upstream}/pulls`]: open,
+  };
 }
 
 function answer(fake: FakeRepository, call: Call): unknown {
