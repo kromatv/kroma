@@ -14,12 +14,18 @@ export async function resolveViewer(env: Env, store: Store, cookieHeader: string
   return viewerOf(store, cookieHeader, now);
 }
 
+/** The request TanStack Start is serving: the Worker's bindings, the origin it came to, and its cookies. */
+export async function servedRequest(): Promise<{ env: Env; origin: string; cookies: string | null }> {
+  const { getRequest } = await import('@tanstack/react-start/server');
+  const { env } = await workerContext();
+  const request = getRequest();
+  return { env: readEnv(env), origin: new URL(request.url).origin, cookies: request.headers.get('cookie') };
+}
+
 /** The context a server function computes a page from, read off the request TanStack Start is serving. */
 export async function requestContext(): Promise<Context> {
-  const { getRequest } = await import('@tanstack/react-start/server');
-  const { env: raw } = await workerContext();
-  const env = readEnv(raw);
+  const { env, cookies } = await servedRequest();
   const store = await storeFor(env);
-  const viewer = await resolveViewer(env, store, getRequest().headers.get('cookie'), Math.floor(Date.now() / 1000));
+  const viewer = await resolveViewer(env, store, cookies, Math.floor(Date.now() / 1000));
   return { env, store, viewer };
 }

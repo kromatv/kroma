@@ -4,10 +4,11 @@ import { gitHubFetch, sha, testApp } from '#site/github/test-support';
 import { MemoryStore } from '#site/store/memory-store';
 import type { Store } from '#site/store/store';
 import { api } from './api';
+import { readOwners } from './app-owners';
 import { type PendingSend, pendingCookie, readPending } from './authorizations';
 import type { Env } from './env';
 import { openSession } from './session';
-import { ada, seededStore } from './test-support';
+import { ada, gitHubListing, membership, seededStore } from './test-support';
 
 const H = vi.hoisted(() => ({ store: null as Store | null }));
 
@@ -70,38 +71,42 @@ describe('api', () => {
 });
 
 describe('setup', () => {
-  it('shows what is left to set up until both apps are connected', async () => {
-    const [unset, set] = await Promise.all([get('/setup', {}, OAUTH), get('/setup')]);
+  it('leaves the setup page to the router, connected or not', async () => {
+    const pages = await Promise.all([get('/setup', {}, {}), get('/setup')]);
 
-    expect(await unset?.text()).toContain('<h2>The GitHub App</h2>');
-    expect(set?.status).toBe(404);
+    expect(pages).toEqual([null, null]);
   });
 
-  it('offers both apps to a deployment that has neither', async () => {
-    const page = await (await get('/setup', {}, {}))?.text();
+  it('explains a return from GitHub without a usable code', async () => {
+    const responses = await Promise.all(['/setup/done?code=<x>', '/setup/done'].map((path) => get(path, {}, {})));
 
-    expect(page).toContain('<h2>The GitHub App</h2>');
-    expect(page).toContain('<h2>The OAuth App</h2>');
+    expect(responses.map((response) => response?.headers.get('location'))).toEqual([
+      '/problem?reason=setup-code-missing',
+      '/problem?reason=setup-code-missing',
+    ]);
   });
 
-  it('sends a return from GitHub without a usable code back to the start', async () => {
-    const pages = await Promise.all(['/setup/done?code=<x>', '/setup/done'].map(async (path) => (await get(path, {}, {}))?.text()));
-
-    expect(pages.map((page) => page?.includes('GitHub did not send a code.'))).toEqual([true, true]);
-  });
-
-  it('holds the code GitHub returns from the manifest until the deploy pipeline trades it', async () => {
+  it('holds the code GitHub returns from the manifest and sends the browser to the setup page', async () => {
     const store = new MemoryStore();
     H.store = store;
 
     const response = await get('/setup/done?code=abcdef12', {}, {});
 
-    expect(response?.status).toBe(200);
+    expect(response?.status).toBe(303);
+    expect(response?.headers.get('location')).toBe('/setup?created=1&code=abcdef12');
     expect(store.setupCodes).toEqual(['abcdef12']);
   });
 
-  it('ignores a return from GitHub once the App is connected', async () => {
-    expect((await get('/setup/done?code=abcdef12'))?.status).toBe(404);
+  it('quotes a code the router would read as a number', async () => {
+    const response = await get('/setup/done?code=12345678', {}, {});
+
+    expect(response?.headers.get('location')).toBe('/setup?created=1&code=%2212345678%22');
+  });
+
+  it('explains a return from GitHub once the App is connected', async () => {
+    const response = await get('/setup/done?code=abcdef12');
+
+    expect(response?.headers.get('location')).toBe('/problem?reason=already-connected');
   });
 });
 
@@ -208,8 +213,10 @@ const stateOf = (response: Response | null) =>
   new URL(response?.headers.get('location') ?? '').searchParams.get('state') ?? '';
 
 describe('signing in', () => {
-  it('cannot start before the OAuth App is set', async () => {
-    expect((await get('/auth/login', {}, {}))?.status).toBe(503);
+  it('explains that it cannot start before the OAuth App is set', async () => {
+    const response = await get('/auth/login', {}, {});
+
+    expect(response?.headers.get('location')).toBe('/problem?reason=sign-in-unavailable');
   });
 
   it('sends the browser to GitHub with a state whose secret only this browser holds', async () => {
@@ -235,25 +242,35 @@ describe('signing in', () => {
     });
 
     expect(response?.headers.get('location')).toBe('/o/r/v1.2');
-    expect(cookiesOf(response).map((c) => c.split('=')[0])).toEqual(['lingua_session', 'lingua_oauth']);
+    expect(cookiesOf(response).map((c) => c.split('=')[0])).toEqual(['lingua_oauth', 'lingua_session']);
   });
 
-  it('refuses a callback whose state this browser did not ask for, or that carries none', async () => {
+  it('explains a callback whose state this browser did not ask for, or that carries none', async () => {
     const [other, none] = await Promise.all([
       get('/auth/callback?code=c&state=tok./', { headers: { cookie: 'lingua_oauth=other' } }),
       get('/auth/callback?code=c', { headers: { cookie: 'lingua_oauth=tok' } }),
     ]);
 
-    expect([other?.status, none?.status]).toEqual([400, 400]);
+    expect([other, none].map((response) => response?.headers.get('location'))).toEqual([
+      '/problem?reason=sign-in-expired',
+      '/problem?reason=sign-in-expired',
+    ]);
   });
 
-  it('refuses a sign-in GitHub does not confirm', async () => {
+  it('explains a sign-in GitHub does not confirm, or sends back without a code', async () => {
     vi.stubGlobal('fetch', gitHubSigningIn({ error: 'bad_verification_code' }));
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const headers = { cookie: 'lingua_oauth=tok' };
 
-    const response = await get('/auth/callback?code=c&state=tok./', { headers: { cookie: 'lingua_oauth=tok' } });
+    const [refused, cancelled] = await Promise.all([
+      get('/auth/callback?code=c&state=tok./', { headers }),
+      get('/auth/callback?error=access_denied&state=tok./', { headers }),
+    ]);
 
-    expect(response?.status).toBe(400);
+    expect([refused, cancelled].map((response) => response?.headers.get('location'))).toEqual([
+      '/problem?reason=sign-in-refused',
+      '/problem?reason=sign-in-refused',
+    ]);
   });
 
   it('signs out, after which the session opens nothing', async () => {
@@ -269,6 +286,36 @@ describe('signing in', () => {
     const response = await get('/auth/logout', { method: 'POST', headers: { origin: 'https://evil.test' } });
 
     expect(response?.status).toBe(403);
+  });
+});
+
+describe('choosing where to create the App', () => {
+  it('asks GitHub to read the organisations, under a state marked for it', async () => {
+    const response = await get('/auth/setup', {}, OAUTH);
+
+    const asked = new URL(response?.headers.get('location') ?? '');
+    expect(asked.searchParams.get('scope')).toBe('read:org');
+    expect(stateOf(response)).toMatch(/^[\w-]+\.owners$/);
+  });
+
+  it('hands the setup page the accounts the App may be created under', async () => {
+    vi.stubGlobal('fetch', gitHubListing([membership('kromatv', 'admin')]));
+
+    const response = await get('/auth/callback?code=c&state=tok.owners', { headers: { cookie: 'lingua_oauth=tok' } }, OAUTH);
+
+    const held = cookiesOf(response).find((line) => line.startsWith('lingua_owners=')) ?? '';
+    const owners = await readOwners(held.split(';')[0], 'csecret');
+    expect(response?.status).toBe(303);
+    expect(response?.headers.get('location')).toBe('/setup');
+    expect(owners.map((owner) => owner.login)).toEqual(['ada', 'kromatv']);
+  });
+
+  it('sends the operator back to setup when GitHub would not list them', async () => {
+    const headers = { cookie: 'lingua_oauth=tok' };
+
+    const response = await get('/auth/callback?error=access_denied&state=tok.owners', { headers }, OAUTH);
+
+    expect(response?.headers.get('location')).toBe('/problem?reason=owners-unlisted');
   });
 });
 

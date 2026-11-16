@@ -13,10 +13,14 @@ import type {
   ProjectView,
   ProposalView,
   RowView,
+  SetupView,
+  SiteView,
   Viewer,
 } from '#site/lib/views';
 import type { Confirm, Edit, Store, Start, User } from '#site/store/store';
-import { type Env, installUrl } from './env';
+import { readOwners } from './app-owners';
+import { appCredentials, type Env, installUrl, oauthCredentials } from './env';
+import { appManifest, SETUP_CODE } from './setup';
 import { localeSummary, rowsByFile, type Stood, tally } from './standing';
 import { type Opened, openProject, readLocales, type Workspace } from './workspace';
 
@@ -181,5 +185,37 @@ export async function namespaceView({ store, viewer }: Context, id: string, at: 
     rows: (byFile.get(at.file) ?? []).map((stood) => rowView(stood, around)),
     ...pendingOf(work),
     proposal: work.proposal,
+  };
+}
+
+/** What every page's chrome shows: where this deployment answers, and whether anyone can sign in. */
+export function siteView(env: Env, origin: string): SiteView {
+  return { origin, signIn: oauthCredentials(env) !== null };
+}
+
+interface SetupAsk {
+  origin: string;
+  code: string | null;
+  cookies: string | null;
+}
+
+/** `/setup`: what this deployment has connected, and the code GitHub returned with while it is still owed. */
+export async function setupView({ env, store, viewer }: Context, ask: SetupAsk): Promise<SetupView> {
+  const app = appCredentials(env) !== null;
+  const oauth = oauthCredentials(env);
+  const [projects, owners] = await Promise.all([
+    store.projects(),
+    oauth && !app ? readOwners(ask.cookies, oauth.clientSecret) : [],
+  ]);
+  return {
+    viewer: viewerOf(viewer),
+    origin: ask.origin,
+    app,
+    signIn: oauth !== null,
+    installUrl: installUrl(env),
+    repositories: projects.length,
+    manifest: JSON.stringify(appManifest(ask.origin)),
+    owners,
+    code: !app && ask.code !== null && SETUP_CODE.test(ask.code) ? ask.code : null,
   };
 }

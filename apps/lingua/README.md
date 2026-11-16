@@ -115,14 +115,19 @@ binding by name, so the same file deploys to any account.
 
 Then connect GitHub:
 
-1. Open `https://<your host>/setup` and press **Create the GitHub App** (fill
-   in an organisation to create it there). GitHub registers the App with the
-   permissions it needs (contents and pull requests: write; metadata: read)
-   and the webhook, then returns to `/setup/done`, which keeps the one-hour
-   code GitHub sent.
+1. Open `https://<your host>/setup` and pick where the App goes. Once sign-in
+   works (step 3), **Choose where to create the GitHub App** asks GitHub to
+   let Lingua read your organisations (`read:org`) and lists your account and
+   each organisation you administer. Lingua keeps that list in a signed cookie
+   for an hour and drops the token. Without sign-in, type the organisation, or
+   leave it empty for your own account. Then press **Create the GitHub App**.
+   GitHub registers the App with the permissions it needs (contents and pull
+   requests: write; metadata: read) and the webhook, then returns to
+   `/setup/done`, which keeps the one-hour code GitHub sent and sends you back
+   to `/setup`.
 2. Trade the code for the App's secrets, within the hour. On KROMA's
    deployment, run the **Lingua** workflow with **connect** ticked. Anywhere
-   else, run the command `/setup/done` shows:
+   else, run the command `/setup` shows:
    `bun run --filter @kromatv/lingua setup <code>`. Either way the script
    stores the App's id, slug, private key and webhook secret with
    `wrangler secret bulk` and prints none of them. With `--owner`, it only
@@ -152,8 +157,9 @@ Then connect GitHub:
 4. Install the App on the repositories to translate. Each needs a
    `lingua.json`. The next push or the next ten-minute sync picks it up.
 
-`/setup` lists what is still missing, and answers 404 once both apps' secrets
-are set.
+`/setup` marks each step done or to do, and stays up as a status page once
+everything is connected. A sign-in or a return from GitHub that cannot finish
+lands on `/problem`, which says why and links to the way forward.
 
 To try a repository whose `lingua.json` is not on its default branch yet, pin
 the branch Lingua tracks with the `LINGUA_BRANCHES` variable, `owner/repo=branch`

@@ -1,5 +1,6 @@
 import { placeOf } from '#site/core/config';
 import { digest } from '#site/core/lock';
+import { gitHubFetch } from '#site/github/test-support';
 import { memoryStore } from '#site/store/memory-store';
 import type { FileRow, Store, User } from '#site/store/store';
 import type { Context } from './views';
@@ -55,4 +56,20 @@ export async function seededStore(): Promise<Store> {
 /** The context a page is computed in, for `viewer`. */
 export function pageContext(store: Store, viewer: User | null): Context {
   return { env: {}, store, viewer };
+}
+
+/** One of `ada`'s organisations, as GitHub lists her memberships. */
+export function membership(login: string, role: 'admin' | 'member', state: 'active' | 'pending' = 'active') {
+  return { state, role, organization: { login, avatar_url: `https://avatars.githubusercontent.com/${login}` } };
+}
+
+/** GitHub, answering as it does when `ada` lets the OAuth App read her organisations, `memberships`. */
+export function gitHubListing(memberships: readonly unknown[]): typeof fetch {
+  return gitHubFetch({
+    routes: {
+      'POST /login/oauth/access_token': () => ({ access_token: 'token', scope: 'read:org' }),
+      'GET /user': () => ({ id: 42, login: 'ada', avatar_url: 'https://avatars.githubusercontent.com/ada' }),
+      'GET /user/memberships/orgs?state=active&per_page=100': () => memberships,
+    },
+  });
 }
