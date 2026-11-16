@@ -3,6 +3,7 @@ import { Avatar } from '@kromatv/ui/kit/atoms/avatar';
 import { Row } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { IconButton } from '@kromatv/ui/kit/atoms/icon-button';
+import { useBreakpoint } from '@kromatv/ui/kit';
 import { useLocation, useRouter } from '@tanstack/react-router';
 import { RouteLink } from '#site/components/route-link.component';
 import { signInUrl } from '#site/lib/api-client';
@@ -30,10 +31,29 @@ function SignedIn({ viewer }: Readonly<{ viewer: Viewer }>) {
   );
 }
 
+function CompactSignIn({ setup, href }: Readonly<{ setup: boolean; href: string }>) {
+  const router = useRouter();
+  const go = () => (setup ? void router.navigate({ to: '/setup' }) : window.location.assign(href));
+  return (
+    <IconButton
+      variant="ghost"
+      diameter={36}
+      glyph={18}
+      icon={setup ? 'settings' : 'brand-github'}
+      label={setup ? 'Set up sign-in' : 'Sign in'}
+      onPress={go}
+    />
+  );
+}
+
 function SignInAction() {
   const here = useLocation({ select: (location) => location.href });
   const site = useSite();
-  if (site?.signIn === false) {
+  const setup = site?.signIn === false;
+  if (useBreakpoint() === 'base') {
+    return <CompactSignIn setup={setup} href={signInUrl(here)} />;
+  }
+  if (setup) {
     return (
       <Button variant="ghost" size="sm" icon="settings" label="Set up sign-in" asChild>
         <RouteLink to="/setup" />

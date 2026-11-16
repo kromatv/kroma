@@ -12,7 +12,23 @@ const failingBare = async () => new Response('', { status: 502, statusText: 'Bad
 const answeringErrors = async () =>
   Response.json({ errors: [{ message: 'one' }, { message: 'two' }] });
 
+async function strictFetch(this: unknown): Promise<Response> {
+  if (this !== undefined) {
+    throw new TypeError('Illegal invocation');
+  }
+  return Response.json({ login: 'ada' });
+}
+
+const workerFetchUser = () =>
+  gitHub('Bearer t', strictFetch).get('/user', z.object({ login: z.string() }));
+
 describe('gitHub', () => {
+  it('calls fetch on its own, the way a Worker requires', async () => {
+    const me = await workerFetchUser();
+
+    expect(me.login).toBe('ada');
+  });
+
   it('sends a write as JSON and reads the answer through its schema', async () => {
     const fetchFn = gitHubFetch({ routes: { 'POST /repos/o/r/forks': () => ({ name: 'r' }) } });
 

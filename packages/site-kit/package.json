@@ -16,6 +16,7 @@
     "./site-document": "./src/site-document.component.tsx",
     "./site-header": "./src/site-header.component.tsx",
     "./site-footer": "./src/site-footer.component.tsx",
+    "./site-footer-bar": "./src/site-footer-bar.component.tsx",
     "./worker-env": "./src/worker-env.ts"
   },
   "scripts": {

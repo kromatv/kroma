@@ -59,7 +59,8 @@ async function request(
   write: Write | { method: 'GET'; path: string },
 ): Promise<unknown> {
   const body = 'body' in write ? write.body : undefined;
-  const response = await session.fetchFn(`${API}${write.path}`, {
+  const { fetchFn } = session;
+  const response = await fetchFn(`${API}${write.path}`, {
     method: write.method,
     headers: {
       Authorization: session.authorization,

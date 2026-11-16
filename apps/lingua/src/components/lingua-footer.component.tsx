@@ -1,17 +1,14 @@
-import { SiteFooter, footerColumns } from '@kromatv/site-kit/site-footer';
+import { SiteFooterBar } from '@kromatv/site-kit/site-footer-bar';
 import { site } from '@kromatv/site-meta';
 
-const BLURB =
-  'Translate a project in the browser: sign in with GitHub, fix or add a language, and your edits reach the repository as a pull request.';
+const LINKS = [
+  { label: 'Source code', href: site.repo },
+  { label: 'Running Lingua', href: `${site.repo}/blob/main/apps/lingua/README.md` },
+  { label: 'Privacy', href: site.links.privacy },
+  { label: 'KROMA', href: site.url },
+];
 
-const COLUMNS = footerColumns({
-  sibling: { label: 'Modules', href: site.modulesUrl },
-  guide: { label: 'Running Lingua', href: `${site.repo}/blob/main/apps/lingua/README.md` },
-});
-
-/** The site-wide footer. `origin` is the address this deployment answers on. */
-export function LinguaFooter({ origin }: Readonly<{ origin: string }>) {
-  return (
-    <SiteFooter blurb={BLURB} columns={COLUMNS} url={{ label: 'Lingua URL', value: origin }} />
-  );
+/** Lingua's footer: one line, as a tool's should be. */
+export function LinguaFooter() {
+  return <SiteFooterBar links={LINKS} />;
 }
