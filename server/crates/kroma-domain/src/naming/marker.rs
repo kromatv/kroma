@@ -129,7 +129,7 @@ fn read_digits(b: &[u8], start: usize) -> (usize, u32) {
 }
 
 /// "Season 01", "Saison 1", "Specials", "S01" → a season folder, not a show.
-pub(super) fn is_season_folder(name: &str) -> bool {
+pub fn is_season_folder(name: &str) -> bool {
     let l = name.trim().to_ascii_lowercase();
     l == "specials"
         || l.starts_with("season")
