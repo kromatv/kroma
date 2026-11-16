@@ -2,159 +2,213 @@ import { Badge } from '@kromatv/ui/kit/atoms/badge';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { Text } from '@kromatv/ui/kit/atoms/text';
+import { TextField } from '@kromatv/ui/kit/atoms/text-field';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
-import { SegmentGroup } from '@kromatv/ui/kit/molecules/segment-group';
+import { ListRow } from '@kromatv/ui/kit/molecules/list-row';
+import { PageHeader } from '@kromatv/ui/kit/molecules/page-header';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import { FilterChips } from '#site/components/filter-chips.component';
+import { LanguageBadges } from '#site/components/language-badges.component';
 import { LinguaPage } from '#site/components/lingua-page.component';
-import { ProgressList } from '#site/components/progress-list.component';
 import { ProgressMeter } from '#site/components/progress-meter.component';
 import { ProgressRow } from '#site/components/progress-row.component';
 import { RouteLink } from '#site/components/route-link.component';
 import { SendBar } from '#site/components/send-bar.component';
 import { SignInPrompt } from '#site/components/sign-in-prompt.component';
-import { completion } from '#site/lib/completion';
+import { Trail } from '#site/components/trail.component';
+import { workSummary } from '#site/lib/completion';
 import { counted } from '#site/lib/counted';
+import { sectionFilters } from '#site/lib/filter-choices';
 import { getLocale } from '#site/lib/loaders';
+import {
+  matchesNamespace,
+  type NamespaceFilter,
+  namespaceCounts,
+  nextNamespace,
+} from '#site/lib/namespace-filter';
 import { projectId } from '#site/lib/project-id';
-import type { LocaleSummary, LocaleView, NamespaceSummary } from '#site/lib/views';
-
-type NamespaceFilter = 'all' | 'incomplete';
+import { useLanguageCommands } from '#site/lib/use-language-commands.hook';
+import { useSending } from '#site/lib/use-sending.hook';
+import type { LocaleView, NamespaceSummary, Stage } from '#site/lib/views';
 
 export const Route = createFileRoute('/$owner/$repo/$locale/')({
   loader: ({ params }) => getLocale({ data: { id: projectId(params), locale: params.locale } }),
   component: LocalePage,
 });
 
-function NamespaceFilterChoice({
-  filter,
-  onFilterChange,
-}: Readonly<{ filter: NamespaceFilter; onFilterChange: (next: NamespaceFilter) => void }>) {
-  return (
-    <SegmentGroup.Root label="Namespaces" size="sm" value={filter} onValueChange={onFilterChange}>
-      <SegmentGroup.Item value="all">
-        <SegmentGroup.Label>All</SegmentGroup.Label>
-      </SegmentGroup.Item>
-      <SegmentGroup.Item value="incomplete">
-        <SegmentGroup.Label>Incomplete</SegmentGroup.Label>
-      </SegmentGroup.Item>
-    </SegmentGroup.Root>
-  );
-}
-
-function TranslateNamespace({ file }: Readonly<{ file: string }>) {
+function SectionRow({ namespace, stage }: Readonly<{ namespace: NamespaceSummary; stage: Stage }>) {
   const params = Route.useParams();
+  const { file, drafts } = namespace;
+  const badges =
+    drafts > 0 ? (
+      <Box>
+        <Badge tone="info">{`${drafts} not sent`}</Badge>
+      </Box>
+    ) : null;
+  const facts = {
+    title: file,
+    badges,
+    hint: workSummary(namespace.states) ?? 'All translated',
+    progress: namespace.progress,
+    stage,
+  };
   return (
-    <Button variant="ghost" size="sm" iconRight="chevron-right" label="Translate" asChild>
-      <RouteLink to="/$owner/$repo/$locale/$" params={{ ...params, _splat: file }} />
-    </Button>
-  );
-}
-
-function NamespaceList({ namespaces }: Readonly<{ namespaces: readonly NamespaceSummary[] }>) {
-  return (
-    <ProgressList>
-      {namespaces.map(({ file, progress, drafts }) => (
-        <ProgressRow
-          key={file}
-          title={file}
-          badges={
-            drafts > 0 ? <Badge tone="info">{`${counted(drafts, 'edit')} not sent`}</Badge> : null
-          }
-          progress={progress}
-          action={<TranslateNamespace file={file} />}
-        />
-      ))}
-    </ProgressList>
-  );
-}
-
-function Namespaces({ view }: Readonly<{ view: LocaleView }>) {
-  const [filter, setFilter] = useState<NamespaceFilter>('all');
-  const shown = view.namespaces.filter(
-    ({ progress }) => filter === 'all' || !completion(progress).complete,
-  );
-  return (
-    <Column gap={16}>
-      <Row gap={12} wrap between align="center">
-        <Text variant="overline" color="accentText">
-          {counted(view.namespaces.length, 'namespace')}
-        </Text>
-        <NamespaceFilterChoice filter={filter} onFilterChange={setFilter} />
-      </Row>
-      {shown.length === 0 ? (
-        <EmptyState.Root size="sm" icon="circle-check">
-          <EmptyState.Title>Every namespace is complete</EmptyState.Title>
-          <EmptyState.Hint>Show all of them to review what is already translated.</EmptyState.Hint>
-        </EmptyState.Root>
-      ) : (
-        <NamespaceList namespaces={shown} />
+    <ProgressRow facts={facts}>
+      {(parts) => (
+        <RouteLink to="/$owner/$repo/$locale/$" params={{ ...params, _splat: file }}>
+          {parts}
+        </RouteLink>
       )}
-    </Column>
+    </ProgressRow>
   );
 }
 
-function BackToProject() {
-  const { owner, repo } = Route.useParams();
-  return (
-    <Row>
-      <Button variant="ghost" size="sm" icon="chevron-left" label={`${owner}/${repo}`} asChild>
-        <RouteLink to="/$owner/$repo" params={{ owner, repo }} />
-      </Button>
-    </Row>
+function useSectionList(namespaces: readonly NamespaceSummary[]) {
+  const [filter, setFilter] = useState<NamespaceFilter>('all');
+  const [query, setQuery] = useState('');
+  const wanted = query.trim().toLocaleLowerCase();
+  const shown = namespaces.filter(
+    (namespace) =>
+      matchesNamespace(namespace, filter) && namespace.file.toLocaleLowerCase().includes(wanted),
   );
+  const reset = () => {
+    setFilter('all');
+    setQuery('');
+  };
+  return { filter, setFilter, query, setQuery, shown, searched: wanted !== '', reset };
 }
 
-function MissingLocale() {
+function SectionsHeading({
+  count,
+  list,
+}: Readonly<{ count: number; list: ReturnType<typeof useSectionList> }>) {
   return (
-    <LinguaPage viewer={null}>
-      <BackToProject />
-      <EmptyState.Root icon="language-off">
-        <EmptyState.Title>No such language</EmptyState.Title>
-        <EmptyState.Hint>This project does not offer this language.</EmptyState.Hint>
-      </EmptyState.Root>
-    </LinguaPage>
-  );
-}
-
-function LocaleHeading({ locale }: Readonly<{ locale: LocaleSummary }>) {
-  const { language, progress, isSource } = locale;
-  return (
-    <Row gap={20} wrap between align="flex-end">
-      <Column gap={6} grow={1} shrink={1} basis={280} minW={0}>
-        <Row gap={10} align="center" wrap>
-          <Text variant="h1">{language.name}</Text>
-          {isSource ? <Badge tone="info">Source</Badge> : null}
-        </Row>
-        <Text color="textMuted">{`${language.nativeName} · ${language.tag}`}</Text>
-      </Column>
-      <Box grow={1} shrink={1} basis={220} maxW={360}>
-        <ProgressMeter progress={progress} label={`${language.name} progress`} />
+    <Row gap={12} wrap align="center" between>
+      <Text variant="h2">{counted(count, 'section')}</Text>
+      <Box w={{ base: '100%', md: 280 }}>
+        <TextField
+          type="search"
+          icon="search"
+          size="sm"
+          label="Find a section"
+          placeholder="Find a section"
+          value={list.query}
+          onValueChange={list.setQuery}
+        />
       </Box>
     </Row>
   );
 }
 
-function LocalePage() {
-  const view = Route.useLoaderData();
-  if (!view) {
-    return <MissingLocale />;
-  }
+function NothingShown({ list }: Readonly<{ list: ReturnType<typeof useSectionList> }>) {
   return (
-    <LinguaPage viewer={view.viewer}>
-      <BackToProject />
-      <LocaleHeading locale={view.locale} />
-      {view.viewer ? null : <SignInPrompt />}
-      <Namespaces view={view} />
-      {view.viewer ? (
-        <SendBar
-          project={view.project.id}
-          locale={view.locale.language.tag}
-          drafts={view.drafts}
-          proposed={view.proposed}
-          proposal={view.proposal}
-        />
-      ) : null}
+    <EmptyState.Root size="sm" icon={list.searched ? 'search' : 'circle-check'}>
+      <EmptyState.Title>
+        {list.searched ? 'No section matches' : 'Nothing to do here'}
+      </EmptyState.Title>
+      <EmptyState.Actions>
+        <Button variant="ghost" size="sm" label="Show every section" onPress={list.reset} />
+      </EmptyState.Actions>
+    </EmptyState.Root>
+  );
+}
+
+function SectionList({ view }: Readonly<{ view: LocaleView }>) {
+  const list = useSectionList(view.namespaces);
+  return (
+    <Column gap={14}>
+      <SectionsHeading count={view.namespaces.length} list={list} />
+      <FilterChips
+        label="Show sections"
+        value={list.filter}
+        onValueChange={list.setFilter}
+        choices={sectionFilters(namespaceCounts(view.namespaces))}
+      />
+      {list.shown.length === 0 ? <NothingShown list={list} /> : null}
+      <ListRow.Group>
+        {list.shown.map((namespace) => (
+          <SectionRow key={namespace.file} namespace={namespace} stage={view.locale.stage} />
+        ))}
+      </ListRow.Group>
+    </Column>
+  );
+}
+
+function MissingLocale() {
+  const { owner, repo } = Route.useParams();
+  return (
+    <LinguaPage>
+      <Trail project={`${owner}/${repo}`} />
+      <EmptyState.Root icon="language-off">
+        <EmptyState.Title>No such language</EmptyState.Title>
+        <EmptyState.Hint>This project does not offer this language.</EmptyState.Hint>
+        <EmptyState.Actions>
+          <Button icon="language" label="See its languages" asChild>
+            <RouteLink to="/$owner/$repo" params={{ owner, repo }} />
+          </Button>
+        </EmptyState.Actions>
+      </EmptyState.Root>
     </LinguaPage>
   );
+}
+
+function Continue({ view }: Readonly<{ view: LocaleView }>) {
+  const params = Route.useParams();
+  const next = nextNamespace(view.namespaces);
+  if (!next || view.locale.isSource) {
+    return null;
+  }
+  return (
+    <Button size="sm" icon="player-play" label="Continue translating" asChild>
+      <RouteLink to="/$owner/$repo/$locale/$" params={{ ...params, _splat: next.file }} />
+    </Button>
+  );
+}
+
+function Heading({ view }: Readonly<{ view: LocaleView }>) {
+  const { language, states } = view.locale;
+  return (
+    <Column gap={12}>
+      <Trail project={view.project.id} language={language} />
+      <PageHeader.Root>
+        <PageHeader.Title>{language.name}</PageHeader.Title>
+        <PageHeader.Subtitle>{`${language.nativeName} · ${language.tag} · ${workSummary(states) ?? 'All translated'}`}</PageHeader.Subtitle>
+        <PageHeader.Actions>
+          <Continue view={view} />
+        </PageHeader.Actions>
+      </PageHeader.Root>
+      <Row gap={8} wrap align="center">
+        <LanguageBadges locale={view.locale} />
+      </Row>
+    </Column>
+  );
+}
+
+function Language({ view }: Readonly<{ view: LocaleView }>) {
+  const { language, progress, stage } = view.locale;
+  const sending = useSending({ project: view.project.id, locale: language.tag });
+  useLanguageCommands(view, sending);
+  const work = {
+    sending: sending.sending,
+    drafts: view.drafts,
+    proposed: view.proposed,
+    proposal: view.proposal,
+  };
+  return (
+    <LinguaPage>
+      <Heading view={view} />
+      <Box p={16} radius="xl" bg="surface1" border="border">
+        <ProgressMeter progress={progress} stage={stage} label={`${language.name} progress`} />
+      </Box>
+      {view.viewer ? null : <SignInPrompt />}
+      <SectionList view={view} />
+      {view.viewer ? <SendBar work={work} onSend={() => void sending.send()} /> : null}
+    </LinguaPage>
+  );
+}
+
+function LocalePage() {
+  const view = Route.useLoaderData();
+  return view ? <Language view={view} /> : <MissingLocale />;
 }

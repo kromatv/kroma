@@ -1,52 +1,62 @@
-import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
-import { Text } from '@kromatv/ui/kit/atoms/text';
-import type { ReactNode } from 'react';
+import { useBreakpoint } from '@kromatv/ui/kit';
+import { Box, Row } from '@kromatv/ui/kit/atoms/box';
+import { Icon } from '@kromatv/ui/kit/atoms/icon';
+import { ListRow } from '@kromatv/ui/kit/molecules/list-row';
+import type { ReactElement, ReactNode } from 'react';
 import { ProgressMeter } from '#site/components/progress-meter.component';
-import type { Progress } from '#site/lib/views';
+import type { Progress, Stage } from '#site/lib/views';
 
-function Heading({
-  title,
-  detail,
-  badges,
-}: Readonly<{ title: string; detail?: string; badges?: ReactNode }>) {
-  return (
-    <Column gap={2} grow={1} shrink={1} basis={220} minW={0}>
-      <Row gap={8} align="center" wrap>
-        <Text variant="label">{title}</Text>
-        {badges}
-      </Row>
-      {detail ? (
-        <Text variant="meta" color="textDim" lines={1}>
-          {detail}
-        </Text>
-      ) : null}
-    </Column>
-  );
+/** What one row of a list of languages or sections says. */
+export interface RowFacts {
+  title: string;
+  badges?: ReactNode;
+  hint: string;
+  progress: Progress;
+  stage?: Stage;
 }
 
-/** One line of a progress list: what it is, how far along it is, and the link that opens it. */
+function partsOf(facts: RowFacts, { wide }: { wide: boolean }): ReactNode[] {
+  const meter = (
+    <ProgressMeter
+      progress={facts.progress}
+      stage={facts.stage}
+      label={`${facts.title} progress`}
+    />
+  );
+  return [
+    <Row key="title" gap={8} align="center" wrap>
+      <ListRow.Label>{facts.title}</ListRow.Label>
+      {facts.badges}
+    </Row>,
+    <ListRow.Hint key="hint" lines={1}>
+      {facts.hint}
+    </ListRow.Hint>,
+    wide ? null : (
+      <Box key="meter" pt={6}>
+        {meter}
+      </Box>
+    ),
+    <ListRow.Trailing key="trailing">
+      {wide ? <Box w={220}>{meter}</Box> : null}
+      <Icon name="chevron-right" size={18} color="textDim" />
+    </ListRow.Trailing>,
+  ];
+}
+
+/**
+ * One row of a list of languages or sections: the whole row is the link
+ * `children` wraps around the parts it is handed, with its title, badges, the
+ * line under it, and how far it has come, beside the title on a wide screen
+ * and under it on a phone.
+ */
 export function ProgressRow({
-  title,
-  detail,
-  badges,
-  progress,
-  action,
-}: Readonly<{
-  title: string;
-  detail?: string;
-  badges?: ReactNode;
-  progress: Progress;
-  action: ReactNode;
-}>) {
+  facts,
+  children,
+}: Readonly<{ facts: RowFacts; children: (parts: ReactNode) => ReactElement }>) {
+  const wide = useBreakpoint() !== 'base';
   return (
-    <Row gap={16} wrap align="center" px={16} py={14}>
-      <Heading title={title} detail={detail} badges={badges} />
-      <Box grow={1} shrink={1} basis={200} minW={0}>
-        <ProgressMeter progress={progress} label={`${title} progress`} />
-      </Box>
-      <Box shrink={0} ml="auto">
-        {action}
-      </Box>
-    </Row>
+    <ListRow.Root label={facts.title} asChild>
+      {children(partsOf(facts, { wide }))}
+    </ListRow.Root>
   );
 }

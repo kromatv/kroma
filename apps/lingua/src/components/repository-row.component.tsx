@@ -1,105 +1,83 @@
-import { Badge } from '@kromatv/ui/kit/atoms/badge';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
-import { Progress } from '@kromatv/ui/kit/atoms/progress';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import { Callout } from '@kromatv/ui/kit/molecules/callout';
+import type { ReactNode } from 'react';
+import { SyncBadge, SyncProgress } from '#site/components/sync-status.component';
 import { SyncError } from '#site/components/sync-error.component';
 import { ago } from '#site/lib/ago';
+import { whileDriven } from '#site/lib/sync-facts';
 import { useSyncNow } from '#site/lib/use-sync-now.hook';
-import type { RepositoryStatus, SyncState } from '#site/lib/views';
+import type { RepositoryStatus } from '#site/lib/views';
 
 function factsOf({ branch, checkedAt }: RepositoryStatus): string {
   const tracked = branch === null ? 'Default branch' : `Branch ${branch}`;
-  const checked = checkedAt === null ? 'never read' : `checked ${ago(checkedAt)}`;
+  const checked = checkedAt === null ? 'never checked' : `checked ${ago(checkedAt)}`;
   return `${tracked} · ${checked}`;
 }
 
-function SyncBadge({ sync, running }: Readonly<{ sync: SyncState; running: boolean }>) {
-  if (running || sync.kind === 'reading') {
-    return <Badge tone="warning">Syncing</Badge>;
-  }
-  if (sync.kind === 'current') {
-    return <Badge tone="success">Up to date</Badge>;
-  }
-  if (sync.kind === 'failed') {
-    return <Badge tone="danger">Sync failed</Badge>;
-  }
-  return <Badge tone="neutral">Not read yet</Badge>;
-}
-
-function Reading({ sync }: Readonly<{ sync: SyncState }>) {
-  if (sync.kind !== 'reading' || sync.progress === null) {
+/** Why the last sync of a repository stopped, from this page's own sync or the last pass. */
+export function SyncStopped({ error }: Readonly<{ error: string | null }>) {
+  if (error === null) {
     return null;
   }
-  const { done, total } = sync.progress;
   return (
-    <Column gap={6}>
-      <Progress value={total === 0 ? 0 : done / total} thickness={6} label="Files read" />
-      <Text variant="meta" color="textDim">
-        {`Read ${done} of ${total} catalog files`}
-      </Text>
-    </Column>
+    <Callout.Root tone="danger" size="sm" icon="alert-triangle">
+      <Callout.Title>The last sync stopped</Callout.Title>
+      <Callout.Detail>{error}</Callout.Detail>
+    </Callout.Root>
   );
 }
 
-function Problems({
+function Heading({
   repository,
-  error,
-}: Readonly<{ repository: RepositoryStatus; error: string | null }>) {
-  const { sync } = repository;
+  children,
+}: Readonly<{ repository: RepositoryStatus; children: ReactNode }>) {
   return (
-    <>
-      {sync.kind === 'failed' || error ? (
-        <Callout.Root tone="danger" size="sm" icon="alert-triangle">
-          <Callout.Title>The last sync stopped</Callout.Title>
-          <Callout.Detail>{error ?? (sync.kind === 'failed' ? sync.error : '')}</Callout.Detail>
-        </Callout.Root>
-      ) : null}
-      {repository.configError ? <SyncError error={repository.configError} /> : null}
-    </>
-  );
-}
-
-function SyncButton({ running, onPress }: Readonly<{ running: boolean; onPress: () => void }>) {
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      icon="refresh"
-      label="Sync now"
-      loading={running}
-      onPress={onPress}
-    />
+    <Row gap={12} wrap between align="center">
+      <Column gap={2} shrink={1} minW={0}>
+        <Text variant="label">{repository.id}</Text>
+        <Text variant="meta" color="textDim">
+          {factsOf(repository)}
+        </Text>
+      </Column>
+      <Row gap={10} align="center" minH={40}>
+        {children}
+      </Row>
+    </Row>
   );
 }
 
 /**
- * One repository on `/setup`: the branch Lingua tracks, its last check, where
- * its sync stands, and, for a signed-in viewer, a way to sync it now.
+ * One repository on the status page: the branch Lingua tracks, its last
+ * check, where its sync stands, and, for a signed-in viewer while nothing
+ * reads it, a way to sync it now.
  */
 export function RepositoryRow({
   repository,
   canSync,
 }: Readonly<{ repository: RepositoryStatus; canSync: boolean }>) {
-  const sync = useSyncNow(repository.id);
-  const shown = sync.live ?? repository;
+  const syncing = useSyncNow(repository.id);
+  const shown = syncing.live ?? repository;
+  const sync = syncing.running ? whileDriven(shown.sync) : shown.sync;
+  const stopped = syncing.error ?? (sync.kind === 'failed' ? sync.error : null);
   return (
     <Box bg="bg" border="border" radius="lg" px={14} py={12} gap={12}>
-      <Row gap={12} wrap between align="center">
-        <Column gap={2} shrink={1} minW={0}>
-          <Text variant="label">{shown.id}</Text>
-          <Text variant="meta" color="textDim">
-            {factsOf(shown)}
-          </Text>
-        </Column>
-        <Row gap={10} align="center">
-          <SyncBadge sync={shown.sync} running={sync.running} />
-          {canSync ? <SyncButton running={sync.running} onPress={() => void sync.run()} /> : null}
-        </Row>
-      </Row>
-      <Reading sync={shown.sync} />
-      <Problems repository={shown} error={sync.error} />
+      <Heading repository={shown}>
+        <SyncBadge sync={sync} />
+        {canSync && sync.kind !== 'reading' ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="refresh"
+            label="Sync now"
+            onPress={() => void syncing.run()}
+          />
+        ) : null}
+      </Heading>
+      <SyncProgress sync={sync} />
+      <SyncStopped error={stopped} />
+      {shown.configError ? <SyncError error={shown.configError} /> : null}
     </Box>
   );
 }

@@ -1,6 +1,7 @@
+import { toast } from '@kromatv/ui/kit/organisms/toast';
 import { useLocation, useRouter } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { ApiError, sendProposal } from '#site/lib/api-client';
+import { ApiError, type Proposed, sendProposal } from '#site/lib/api-client';
 import { type Returned, returnedFrom, SEND_FAILURES } from '#site/lib/send-return';
 
 /** Where the viewer's send stands: on its way, in a pull request, declined at GitHub, or refused. */
@@ -34,6 +35,18 @@ function useReturnedSend(): Sending {
   return returned;
 }
 
+function announced(result: Exclude<Proposed, { kind: 'authorize' }>): Sending {
+  if (result.kind !== 'proposed') {
+    return { kind: 'idle' };
+  }
+  toast({
+    message: `Sent to pull request #${result.number}`,
+    tone: 'success',
+    icon: 'git-pull-request',
+  });
+  return { kind: 'sent', number: result.number };
+}
+
 /**
  * The viewer's send for one language. `send` asks GitHub's permission and
  * leaves for it; a send that comes back from GitHub starts the bar in the
@@ -53,13 +66,12 @@ export function useSending(target: Readonly<{ project: string; locale: string }>
         window.location.assign(result.url);
         return;
       }
-      setSending(
-        result.kind === 'proposed' ? { kind: 'sent', number: result.number } : { kind: 'idle' },
-      );
+      setSending(announced(result));
       await router.invalidate();
     } catch (error: unknown) {
       const message = error instanceof ApiError ? error.message : 'Sending failed. Try again.';
       setSending({ kind: 'failed', message });
+      toast({ message: 'Not sent', detail: message, icon: 'alert-triangle' });
     }
   };
 

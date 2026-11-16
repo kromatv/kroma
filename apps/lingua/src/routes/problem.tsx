@@ -80,7 +80,7 @@ function ProblemPage() {
   const { reason } = Route.useSearch();
   const { icon, title, hint, ways } = reason ? EXPLAINED[reason] : UNKNOWN;
   return (
-    <LinguaPage viewer={null}>
+    <LinguaPage>
       <EmptyState.Root icon={icon}>
         <EmptyState.Title>{title}</EmptyState.Title>
         <EmptyState.Hint>{hint}</EmptyState.Hint>

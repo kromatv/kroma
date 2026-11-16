@@ -1,20 +1,29 @@
-import { Column, Row } from '@kromatv/ui/kit/atoms/box';
+import { Column } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
-import { SegmentGroup } from '@kromatv/ui/kit/molecules/segment-group';
+import { PageHeader } from '@kromatv/ui/kit/molecules/page-header';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState, useSyncExternalStore } from 'react';
+import { useMemo, useState } from 'react';
+import { EditorToolbar } from '#site/components/editor-toolbar.component';
 import { LinguaPage } from '#site/components/lingua-page.component';
-import { MessageRow } from '#site/components/message-row.component';
+import { type CardContext, MessageCard, Notes } from '#site/components/message-card.component';
 import { RouteLink } from '#site/components/route-link.component';
 import { SendBar } from '#site/components/send-bar.component';
 import { SignInPrompt } from '#site/components/sign-in-prompt.component';
+import { Trail } from '#site/components/trail.component';
+import { completion } from '#site/lib/completion';
 import { counted } from '#site/lib/counted';
 import { getNamespace } from '#site/lib/loaders';
 import { projectId } from '#site/lib/project-id';
-import { isUntranslated, matchesRowFilter, type RowFilter } from '#site/lib/row-filter';
-import type { NamespaceView, RowView } from '#site/lib/views';
+import { groupRows, isUntranslated, type MessageGroup, sharedNotes } from '#site/lib/row-filter';
+import { useConfirmMessage } from '#site/lib/use-confirm-message.hook';
+import { EditorFields, type FieldActions, useEditorKeys } from '#site/lib/use-editor-keys.hook';
+import { useLanguageCommands } from '#site/lib/use-language-commands.hook';
+import { useLinkedKey } from '#site/lib/use-linked-key.hook';
+import { useMessageList } from '#site/lib/use-message-list.hook';
+import { useSending } from '#site/lib/use-sending.hook';
+import type { NamespaceView } from '#site/lib/views';
 
 export const Route = createFileRoute('/$owner/$repo/$locale/$')({
   loader: ({ params }) => {
@@ -26,162 +35,125 @@ export const Route = createFileRoute('/$owner/$repo/$locale/$')({
   component: NamespacePage,
 });
 
-const NOTHING_SHOWN: Record<Exclude<RowFilter, 'all'>, string> = {
-  missing: 'Nothing left to translate here',
-  mine: 'You have not edited a message here yet',
-};
-
-function useRowFilter(rows: readonly RowView[]) {
-  const [filter, setFilter] = useState<RowFilter>('all');
-  const [listed, setListed] = useState<ReadonlySet<string> | null>(null);
-  const choose = (next: RowFilter) => {
-    setFilter(next);
-    setListed(
-      next === 'all'
-        ? null
-        : new Set(rows.filter((row) => matchesRowFilter(row, next)).map((row) => row.key)),
-    );
-  };
-  const shown = listed ? rows.filter((row) => listed.has(row.key)) : rows;
-  return { filter, choose, shown };
-}
-
-function MessagesBar({
-  rows,
-  filter,
-  onFilterChange,
-}: Readonly<{
-  rows: readonly RowView[];
-  filter: RowFilter;
-  onFilterChange: (next: RowFilter) => void;
-}>) {
-  const missing = rows.filter(isUntranslated).length;
+function NothingShown({ searched, onReset }: Readonly<{ searched: boolean; onReset: () => void }>) {
   return (
-    <Row gap={12} wrap between align="center">
-      <Text variant="meta" color="textDim">
-        {`${counted(rows.length, 'message')} · ${missing} untranslated`}
-      </Text>
-      <SegmentGroup.Root label="Show" size="sm" value={filter} onValueChange={onFilterChange}>
-        <SegmentGroup.Item value="all">
-          <SegmentGroup.Label>All</SegmentGroup.Label>
-        </SegmentGroup.Item>
-        <SegmentGroup.Item value="missing">
-          <SegmentGroup.Label>Missing</SegmentGroup.Label>
-        </SegmentGroup.Item>
-        <SegmentGroup.Item value="mine">
-          <SegmentGroup.Label>My edits</SegmentGroup.Label>
-        </SegmentGroup.Item>
-      </SegmentGroup.Root>
-    </Row>
+    <EmptyState.Root size="sm" icon={searched ? 'search' : 'circle-check'}>
+      <EmptyState.Title>{searched ? 'No message matches' : 'Nothing left here'}</EmptyState.Title>
+      <EmptyState.Actions>
+        <Button variant="ghost" size="sm" label="Show every message" onPress={onReset} />
+      </EmptyState.Actions>
+    </EmptyState.Root>
   );
 }
 
-function onHashChange(change: () => void): () => void {
-  window.addEventListener('hashchange', change);
-  return () => window.removeEventListener('hashchange', change);
+function useCardContext(view: NamespaceView, shared: readonly string[]): CardContext {
+  const target = { project: view.project.id, locale: view.locale.language.tag, file: view.file };
+  const confirming = useConfirmMessage(target);
+  return {
+    target,
+    editable: view.viewer !== null,
+    linked: useLinkedKey(),
+    shared,
+    confirm: { busy: confirming.busy, run: (key) => void confirming.confirm(key) },
+  };
 }
 
-function keyOf(hash: string): string | null {
-  try {
-    return hash.length > 1 ? decodeURIComponent(hash.slice(1)) : null;
-  } catch {
-    return null;
-  }
-}
-
-function useLinkedKey(): string | null {
-  const hash = useSyncExternalStore(
-    onHashChange,
-    () => window.location.hash,
-    () => '',
-  );
-  return keyOf(hash);
+function Cards({
+  groups,
+  context,
+}: Readonly<{ groups: readonly MessageGroup[]; context: CardContext }>) {
+  return groups.map((group) => {
+    const linked = group.rows.some((row) => row.key === context.linked);
+    return (
+      <MessageCard
+        key={linked ? `${group.key}#${context.linked}` : group.key}
+        group={group}
+        context={context}
+      />
+    );
+  });
 }
 
 function Messages({ view }: Readonly<{ view: NamespaceView }>) {
-  const { filter, choose, shown } = useRowFilter(view.rows);
-  const linked = useLinkedKey();
-  const target = {
-    project: view.project.id,
-    locale: view.locale.language.tag,
-    file: view.file,
-  };
+  const groups = useMemo(() => groupRows(view.rows), [view.rows]);
+  const shared = useMemo(() => sharedNotes(groups), [groups]);
+  const [fields] = useState<FieldActions>(() => new Map());
+  const context = useCardContext(view, shared);
+  const { list, shown, narrowed, reset } = useMessageList(groups, context.linked);
+  useEditorKeys(fields);
   return (
-    <Column gap={16}>
-      <MessagesBar rows={view.rows} filter={filter} onFilterChange={choose} />
-      {filter !== 'all' && shown.length === 0 ? (
-        <EmptyState.Root size="sm" icon="circle-check">
-          <EmptyState.Title>{NOTHING_SHOWN[filter]}</EmptyState.Title>
-        </EmptyState.Root>
-      ) : null}
-      {shown.map((row) => (
-        <MessageRow
-          key={row.key === linked ? `${row.key}#linked` : row.key}
-          row={row}
-          linked={row.key === linked}
-          target={target}
-          sourceName={view.project.source?.name ?? 'Source'}
-          editable={view.viewer !== null}
-        />
-      ))}
-    </Column>
-  );
-}
-
-function BackToLocale({ name }: Readonly<{ name?: string }>) {
-  const { owner, repo, locale } = Route.useParams();
-  return (
-    <Row>
-      <Button variant="ghost" size="sm" icon="chevron-left" label={name ?? locale} asChild>
-        <RouteLink to="/$owner/$repo/$locale" params={{ owner, repo, locale }} />
-      </Button>
-    </Row>
+    <EditorFields.Provider value={fields}>
+      <Column gap={12}>
+        <Notes notes={shared} />
+        <EditorToolbar list={list} />
+        {narrowed ? (
+          <Text
+            variant="meta"
+            color="textDim"
+          >{`Showing ${shown.length} of ${counted(groups.length, 'message')}`}</Text>
+        ) : null}
+        {shown.length === 0 ? (
+          <NothingShown searched={list.query.trim() !== ''} onReset={reset} />
+        ) : null}
+        <Cards groups={shown} context={context} />
+      </Column>
+    </EditorFields.Provider>
   );
 }
 
 function MissingFile({ file }: Readonly<{ file: string }>) {
+  const { owner, repo, locale } = Route.useParams();
   return (
-    <LinguaPage viewer={null}>
-      <BackToLocale />
+    <LinguaPage>
       <EmptyState.Root icon="file-off">
-        <EmptyState.Title>No such file</EmptyState.Title>
-        <EmptyState.Hint>{`The source has no ${file} file.`}</EmptyState.Hint>
+        <EmptyState.Title>No such section</EmptyState.Title>
+        <EmptyState.Hint>{`The source has no ${file} section.`}</EmptyState.Hint>
+        <EmptyState.Actions>
+          <Button icon="list" label="See every section" asChild>
+            <RouteLink to="/$owner/$repo/$locale" params={{ owner, repo, locale }} />
+          </Button>
+        </EmptyState.Actions>
       </EmptyState.Root>
     </LinguaPage>
   );
 }
 
-function NamespaceHeading({ view }: Readonly<{ view: NamespaceView }>) {
+function Heading({ view }: Readonly<{ view: NamespaceView }>) {
   const { language } = view.locale;
+  const done = view.rows.filter((row) => !isUntranslated(row)).length;
+  const { percent } = completion({ done, total: view.rows.length });
   return (
-    <Column gap={6}>
-      <Text variant="h1">{view.file}</Text>
-      <Text color="textMuted">{`${view.project.id} · ${language.name} (${language.nativeName})`}</Text>
+    <Column gap={12}>
+      <Trail project={view.project.id} language={language} section={view.file} />
+      <PageHeader.Root>
+        <PageHeader.Title>{view.file}</PageHeader.Title>
+        <PageHeader.Subtitle>{`${language.name} · ${counted(view.rows.length, 'message')} · ${percent}% translated`}</PageHeader.Subtitle>
+      </PageHeader.Root>
     </Column>
+  );
+}
+
+function Editor({ view }: Readonly<{ view: NamespaceView }>) {
+  const sending = useSending({ project: view.project.id, locale: view.locale.language.tag });
+  useLanguageCommands(view, sending);
+  const work = {
+    sending: sending.sending,
+    drafts: view.drafts,
+    proposed: view.proposed,
+    proposal: view.proposal,
+  };
+  return (
+    <LinguaPage>
+      <Heading view={view} />
+      {view.viewer ? null : <SignInPrompt />}
+      <Messages key={`${view.locale.language.tag}/${view.file}`} view={view} />
+      {view.viewer ? <SendBar work={work} onSend={() => void sending.send()} /> : null}
+    </LinguaPage>
   );
 }
 
 function NamespacePage() {
   const view = Route.useLoaderData();
-  const { locale, _splat: file = '' } = Route.useParams();
-  if (!view) {
-    return <MissingFile file={file} />;
-  }
-  return (
-    <LinguaPage viewer={view.viewer}>
-      <BackToLocale name={view.locale.language.name} />
-      <NamespaceHeading view={view} />
-      {view.viewer ? null : <SignInPrompt />}
-      <Messages key={`${locale}/${file}`} view={view} />
-      {view.viewer ? (
-        <SendBar
-          project={view.project.id}
-          locale={view.locale.language.tag}
-          drafts={view.drafts}
-          proposed={view.proposed}
-          proposal={view.proposal}
-        />
-      ) : null}
-    </LinguaPage>
-  );
+  const { _splat: file = '' } = Route.useParams();
+  return view ? <Editor view={view} /> : <MissingFile file={file} />;
 }

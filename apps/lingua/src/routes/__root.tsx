@@ -2,14 +2,21 @@ import { SiteDocument, siteHead } from '@kromatv/site-kit/site-document';
 import appCss from '@kromatv/ui/css?url';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
-import { createRootRoute, type ErrorComponentProps, useRouter } from '@tanstack/react-router';
+import { Toaster } from '@kromatv/ui/kit/organisms/toast';
+import {
+  createRootRoute,
+  type ErrorComponentProps,
+  Outlet,
+  useRouter,
+} from '@tanstack/react-router';
+import { CommandMenuProvider } from '#site/components/command-menu.component';
 import { LinguaPage } from '#site/components/lingua-page.component';
 import { RouteLink } from '#site/components/route-link.component';
 import { getSite } from '#site/lib/loaders';
 
 function GoHome({ variant }: Readonly<{ variant?: 'primary' | 'ghost' }>) {
   return (
-    <Button variant={variant} icon="home" label="Go home" asChild>
+    <Button variant={variant} icon="home" label="Go to projects" asChild>
       <RouteLink to="/" />
     </Button>
   );
@@ -17,7 +24,7 @@ function GoHome({ variant }: Readonly<{ variant?: 'primary' | 'ghost' }>) {
 
 function NotFound() {
   return (
-    <LinguaPage viewer={null}>
+    <LinguaPage>
       <EmptyState.Root icon="error-404">
         <EmptyState.Title>Page not found</EmptyState.Title>
         <EmptyState.Hint>Lingua has no page at this address.</EmptyState.Hint>
@@ -36,7 +43,7 @@ function Failed({ reset }: Readonly<ErrorComponentProps>) {
     await router.invalidate();
   };
   return (
-    <LinguaPage viewer={null}>
+    <LinguaPage>
       <EmptyState.Root icon="alert-triangle">
         <EmptyState.Title>This page could not load</EmptyState.Title>
         <EmptyState.Hint>Something went wrong on the way. Try again in a moment.</EmptyState.Hint>
@@ -46,6 +53,15 @@ function Failed({ reset }: Readonly<ErrorComponentProps>) {
         </EmptyState.Actions>
       </EmptyState.Root>
     </LinguaPage>
+  );
+}
+
+function Shell() {
+  return (
+    <CommandMenuProvider>
+      <Outlet />
+      <Toaster position="bottom-right" />
+    </CommandMenuProvider>
   );
 }
 
@@ -60,6 +76,7 @@ export const Route = createRootRoute({
   loader: () => getSite(),
   staleTime: Number.POSITIVE_INFINITY,
   shellComponent: SiteDocument,
+  component: Shell,
   notFoundComponent: NotFound,
   errorComponent: Failed,
 });

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ContributionsRouteImport } from './routes/contributions'
 import { Route as ProblemRouteImport } from './routes/problem'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
@@ -19,6 +20,11 @@ import { Route as OwnerRepoLocaleSplatRouteImport } from './routes/$owner/$repo/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContributionsRoute = ContributionsRouteImport.update({
+  id: '/contributions',
+  path: '/contributions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProblemRoute = ProblemRouteImport.update({
@@ -49,6 +55,7 @@ const OwnerRepoLocaleSplatRoute = OwnerRepoLocaleSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/contributions': typeof ContributionsRoute
   '/problem': typeof ProblemRoute
   '/setup': typeof SetupRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contributions': typeof ContributionsRoute
   '/problem': typeof ProblemRoute
   '/setup': typeof SetupRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/contributions': typeof ContributionsRoute
   '/problem': typeof ProblemRoute
   '/setup': typeof SetupRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
@@ -76,6 +85,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/contributions'
     | '/problem'
     | '/setup'
     | '/$owner/$repo/'
@@ -84,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/contributions'
     | '/problem'
     | '/setup'
     | '/$owner/$repo'
@@ -92,6 +103,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/contributions'
     | '/problem'
     | '/setup'
     | '/$owner/$repo/'
@@ -101,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContributionsRoute: typeof ContributionsRoute
   ProblemRoute: typeof ProblemRoute
   SetupRoute: typeof SetupRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contributions': {
+      id: '/contributions'
+      path: '/contributions'
+      fullPath: '/contributions'
+      preLoaderRoute: typeof ContributionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/problem': {
@@ -157,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContributionsRoute: ContributionsRoute,
   ProblemRoute: ProblemRoute,
   SetupRoute: SetupRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,

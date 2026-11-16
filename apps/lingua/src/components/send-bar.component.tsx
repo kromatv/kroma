@@ -1,111 +1,15 @@
 import { styles, useStyles } from '@kromatv/ui/kit';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
+import { IconWell } from '@kromatv/ui/kit/atoms/icon-well';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import type { ReactNode } from 'react';
-import { counted } from '#site/lib/counted';
-import { type Sending, useSending } from '#site/lib/use-sending.hook';
-import type { ProposalView } from '#site/lib/views';
+import { OutsideLink } from '#site/components/outside-link.component';
+import { sendLabel, sendStatus, type Work, worthShowing } from '#site/lib/send-status';
 
 const sDefinition = styles({
-  dock: { position: 'sticky', bottom: 0, zIndex: 10, paddingBottom: 16 },
+  dock: { position: 'sticky', bottom: 0, zIndex: 10, paddingBottom: 12, paddingTop: 4 },
 });
-
-function statusOf(
-  sending: Sending,
-  drafts: number,
-): { text: string; tone: 'text' | 'textMuted' | 'danger' | 'success' } {
-  if (sending.kind === 'failed') {
-    return { text: sending.message, tone: 'danger' };
-  }
-  if (sending.kind === 'declined') {
-    return {
-      text: 'Lingua opens the pull request under your GitHub account, from your own fork, so it needs the public_repo permission. Try again and allow it on GitHub.',
-      tone: 'text',
-    };
-  }
-  if (drafts > 0) {
-    return { text: `${counted(drafts, 'change')} not sent yet`, tone: 'text' };
-  }
-  if (sending.kind === 'sent') {
-    return { text: `Sent to pull request #${sending.number}`, tone: 'success' };
-  }
-  return { text: 'Edit a message, then send your changes from here', tone: 'textMuted' };
-}
-
-function Summary({
-  sending,
-  drafts,
-  proposed,
-  proposal,
-}: Readonly<{
-  sending: Sending;
-  drafts: number;
-  proposed?: number;
-  proposal: ProposalView | null;
-}>) {
-  const status = statusOf(sending, drafts);
-  return (
-    <Column gap={2} grow={1} shrink={1} basis={200} minW={0}>
-      <Text variant="label" color={status.tone}>
-        {status.text}
-      </Text>
-      {proposal ? (
-        <Text variant="meta" color="textDim">
-          {proposed
-            ? `${counted(proposed, 'change')} in the pull request, waiting for a maintainer`
-            : 'Sent changes are in the pull request, waiting for a maintainer'}
-        </Text>
-      ) : null}
-    </Column>
-  );
-}
-
-function PullRequestLink({ proposal }: Readonly<{ proposal: ProposalView }>) {
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      icon="git-pull-request"
-      label={`Pull request #${proposal.number}`}
-      href={proposal.url}
-      role="link"
-    />
-  );
-}
-
-function sendLabel(sending: Sending, drafts: number): string {
-  if (sending.kind === 'declined') {
-    return 'Try again';
-  }
-  return drafts > 0 ? `Send ${counted(drafts, 'change')}` : 'Send changes';
-}
-
-function Actions({
-  sending,
-  drafts,
-  proposal,
-  onSend,
-}: Readonly<{
-  sending: Sending;
-  drafts: number;
-  proposal: ProposalView | null;
-  onSend: () => void;
-}>) {
-  return (
-    <Row gap={8} wrap>
-      {proposal ? <PullRequestLink proposal={proposal} /> : null}
-      <Button
-        size="sm"
-        icon="send"
-        label={sendLabel(sending, drafts)}
-        disabled={drafts === 0}
-        loading={sending.kind === 'sending'}
-        onPress={onSend}
-      />
-    </Row>
-  );
-}
 
 function Dock({ children }: Readonly<{ children: ReactNode }>) {
   const s = useStyles(sDefinition);
@@ -128,25 +32,58 @@ function Dock({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-/** The viewer's unsent edits for one language, the button that sends them as a pull request, and a link to it. */
-export function SendBar({
-  project,
-  locale,
-  drafts,
-  proposed,
-  proposal,
-}: Readonly<{
-  project: string;
-  locale: string;
-  drafts: number;
-  proposed?: number;
-  proposal: ProposalView | null;
-}>) {
-  const { sending, send } = useSending({ project, locale });
+function Status({ work }: Readonly<{ work: Work }>) {
+  const status = sendStatus(work);
+  return (
+    <Row gap={12} align="center" grow={1} shrink={1} basis={240} minW={0}>
+      <IconWell name="git-pull-request" size="sm" tone={work.drafts > 0 ? 'accent' : 'neutral'} />
+      <Column gap={2} shrink={1} minW={0} accessibilityLiveRegion="polite">
+        <Text variant="label" color={status.tone}>
+          {status.title}
+        </Text>
+        <Text variant="meta" color="textDim">
+          {status.detail}
+        </Text>
+      </Column>
+    </Row>
+  );
+}
+
+function Actions({ work, onSend }: Readonly<{ work: Work; onSend: () => void }>) {
+  return (
+    <Row gap={8} wrap ml="auto">
+      {work.proposal ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          icon="external-link"
+          label={`#${work.proposal.number}`}
+          asChild
+        >
+          <OutsideLink to={work.proposal.url} />
+        </Button>
+      ) : null}
+      <Button
+        size="sm"
+        icon="send"
+        label={sendLabel(work)}
+        disabled={work.drafts === 0}
+        loading={work.sending.kind === 'sending'}
+        onPress={onSend}
+      />
+    </Row>
+  );
+}
+
+/** The viewer's work in one language, pinned under the page once there is any: how much is unsent, the pull request it rides in, and the button that sends it. */
+export function SendBar({ work, onSend }: Readonly<{ work: Work; onSend: () => void }>) {
+  if (!worthShowing(work)) {
+    return null;
+  }
   return (
     <Dock>
-      <Summary sending={sending} drafts={drafts} proposed={proposed} proposal={proposal} />
-      <Actions sending={sending} drafts={drafts} proposal={proposal} onSend={() => void send()} />
+      <Status work={work} />
+      <Actions work={work} onSend={onSend} />
     </Dock>
   );
 }

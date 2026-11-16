@@ -11,11 +11,7 @@ export interface MessageTarget {
 }
 
 /** How the last save of a message went. */
-export type SaveStatus =
-  | { kind: 'idle' }
-  | { kind: 'saving' }
-  | { kind: 'saved' }
-  | { kind: 'failed'; message: string };
+export type SaveStatus = { kind: 'idle' } | { kind: 'saved' } | { kind: 'failed'; message: string };
 
 function failureOf(error: unknown): string {
   if (!(error instanceof ApiError)) {
@@ -27,35 +23,48 @@ function failureOf(error: unknown): string {
   return error.message;
 }
 
-/** One message's field: `commit` saves a changed value, and a dropped edit puts the branch's text back. */
+interface Saving {
+  kept: string;
+  issues: readonly Issue[];
+  status: SaveStatus;
+}
+
+function refusal(before: Saving, error: unknown): Saving {
+  const issues =
+    error instanceof ApiError && error.issues.length > 0 ? error.issues : before.issues;
+  return { ...before, issues, status: { kind: 'failed', message: failureOf(error) } };
+}
+
+/**
+ * One message's field. `commit` shows a changed value saved at once and saves
+ * it behind; a refusal keeps the text, says why, and lets the next commit try
+ * again. A dropped edit puts the branch's text back.
+ */
 export function useMessageSave(row: RowView, target: MessageTarget) {
   const router = useRouter();
   const [value, setValue] = useState(row.draft ?? row.current ?? '');
-  const [kept, setKept] = useState(value);
-  const [issues, setIssues] = useState<readonly Issue[]>(row.issues);
-  const [status, setStatus] = useState<SaveStatus>({ kind: 'idle' });
+  const [saving, setSaving] = useState<Saving>({
+    kept: value,
+    issues: row.issues,
+    status: { kind: 'idle' },
+  });
 
   const commit = async () => {
-    if (value === kept) {
+    if (value === saving.kept) {
       return;
     }
-    const sent = value;
-    setStatus({ kind: 'saving' });
+    const [sent, before] = [value, saving];
+    setSaving({ ...before, kept: sent, status: { kind: 'saved' } });
     try {
       const saved = await saveEdit({ ...target, key: row.key, value: sent });
       const shown = saved.draft ?? row.current ?? '';
-      setKept(shown);
+      setSaving({ kept: shown, issues: saved.issues, status: { kind: 'saved' } });
       setValue((typing) => (typing === sent ? shown : typing));
-      setIssues(saved.issues);
-      setStatus({ kind: 'saved' });
       await router.invalidate();
     } catch (error: unknown) {
-      if (error instanceof ApiError && error.issues.length > 0) {
-        setIssues(error.issues);
-      }
-      setStatus({ kind: 'failed', message: failureOf(error) });
+      setSaving(refusal(before, error));
     }
   };
 
-  return { value, setValue, commit, issues, status };
+  return { value, setValue, commit, issues: saving.issues, status: saving.status };
 }

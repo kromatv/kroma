@@ -1,83 +1,132 @@
-import { SiteHeader } from '@kromatv/site-kit/site-header';
-import { Avatar } from '@kromatv/ui/kit/atoms/avatar';
-import { Row } from '@kromatv/ui/kit/atoms/box';
-import { Button } from '@kromatv/ui/kit/atoms/button';
-import { IconButton } from '@kromatv/ui/kit/atoms/icon-button';
 import { useBreakpoint } from '@kromatv/ui/kit';
-import { useLocation, useRouter } from '@tanstack/react-router';
+import { Box, Row } from '@kromatv/ui/kit/atoms/box';
+import { Button } from '@kromatv/ui/kit/atoms/button';
+import { Divider } from '@kromatv/ui/kit/atoms/divider';
+import { Focusable } from '@kromatv/ui/kit/atoms/focusable';
+import { IconButton } from '@kromatv/ui/kit/atoms/icon-button';
+import { Logo } from '@kromatv/ui/kit/atoms/logo';
+import { Text } from '@kromatv/ui/kit/atoms/text';
+import { useLocation } from '@tanstack/react-router';
+import { AccountMenu } from '#site/components/account-menu.component';
+import { SearchButton } from '#site/components/search-button.component';
+import { NavItem } from '#site/components/nav-item.component';
 import { RouteLink } from '#site/components/route-link.component';
 import { signInUrl } from '#site/lib/api-client';
+import { sectionOf } from '#site/lib/sections';
 import { useSite } from '#site/lib/use-site.hook';
 import type { Viewer } from '#site/lib/views';
 
-function SignedIn({ viewer }: Readonly<{ viewer: Viewer }>) {
-  const router = useRouter();
-  const signOut = async () => {
-    await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin', redirect: 'manual' });
-    await router.invalidate();
-  };
+function Brand() {
   return (
-    <Row gap={8} align="center">
-      <Avatar name={viewer.name ?? viewer.login} src={viewer.avatarUrl} size={28} circle />
-      <IconButton
-        variant="ghost"
-        diameter={32}
-        glyph={18}
-        icon="logout"
-        label="Sign out"
-        onPress={() => void signOut()}
+    <Focusable ring asChild label="Lingua home">
+      <RouteLink to="/">
+        <Row gap={12} align="center">
+          <Logo size={24} />
+          <Box h={18} shrink={0}>
+            <Divider vertical />
+          </Box>
+          <Text variant="label" color="text">
+            Lingua
+          </Text>
+        </Row>
+      </RouteLink>
+    </Focusable>
+  );
+}
+
+function Sections({ viewer, wide }: Readonly<{ viewer: Viewer | null; wide: boolean }>) {
+  const here = sectionOf(useLocation({ select: (location) => location.pathname }));
+  return (
+    <Row gap={4} align="center" role="navigation" aria-label="Lingua">
+      <NavItem
+        to="/"
+        icon={wide ? 'folders' : undefined}
+        label="Projects"
+        current={here === 'projects'}
+      />
+      {viewer ? (
+        <NavItem
+          to="/contributions"
+          icon={wide ? 'git-pull-request' : undefined}
+          label={wide ? 'My contributions' : 'Contributions'}
+          current={here === 'contributions'}
+        />
+      ) : null}
+      <NavItem
+        to="/setup"
+        icon={wide ? 'activity' : undefined}
+        label="Status"
+        current={here === 'status'}
       />
     </Row>
   );
 }
 
-function CompactSignIn({ setup, href }: Readonly<{ setup: boolean; href: string }>) {
-  const router = useRouter();
-  const go = () => (setup ? void router.navigate({ to: '/setup' }) : window.location.assign(href));
-  return (
-    <IconButton
-      variant="ghost"
-      diameter={36}
-      glyph={18}
-      icon={setup ? 'settings' : 'brand-github'}
-      label={setup ? 'Set up sign-in' : 'Sign in'}
-      onPress={go}
-    />
-  );
-}
-
-function SignInAction() {
+function GitHubSignIn({ wide }: Readonly<{ wide: boolean }>) {
   const here = useLocation({ select: (location) => location.href });
-  const site = useSite();
-  const setup = site?.signIn === false;
-  if (useBreakpoint() === 'base') {
-    return <CompactSignIn setup={setup} href={signInUrl(here)} />;
-  }
-  if (setup) {
+  const href = signInUrl(here);
+  if (wide) {
     return (
-      <Button variant="ghost" size="sm" icon="settings" label="Set up sign-in" asChild>
-        <RouteLink to="/setup" />
-      </Button>
+      <Button
+        variant="glass"
+        size="sm"
+        icon="brand-github"
+        label="Sign in with GitHub"
+        href={href}
+        role="link"
+      />
     );
   }
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <IconButton
+      variant="glass"
+      diameter={44}
+      glyph={20}
       icon="brand-github"
-      label="Sign in"
-      href={signInUrl(here)}
+      label="Sign in with GitHub"
+      href={href}
       role="link"
     />
   );
 }
 
+function SignIn({ wide }: Readonly<{ wide: boolean }>) {
+  if (useSite()?.signIn !== false) {
+    return <GitHubSignIn wide={wide} />;
+  }
+  return wide ? (
+    <Button variant="ghost" size="sm" icon="settings" label="Set up sign-in" asChild>
+      <RouteLink to="/setup" />
+    </Button>
+  ) : null;
+}
+
 /**
- * Lingua's header: the shared site chrome, with who is signed in or a way to
- * sign in that comes back here, or to the setup page while sign-in is not set up.
+ * Lingua's header: the mark, the sections with the current one marked, the
+ * command menu, and the account menu or a way to sign in. On a phone the
+ * sections take a second line.
  */
-export function LinguaHeader({ viewer }: Readonly<{ viewer: Viewer | null }>) {
+export function LinguaHeader() {
+  const viewer = useSite()?.viewer ?? null;
+  const wide = useBreakpoint() !== 'base';
   return (
-    <SiteHeader title="Lingua" actions={viewer ? <SignedIn viewer={viewer} /> : <SignInAction />} />
+    <Box bg="surface1">
+      <Box px={16} py={10}>
+        <Box w="100%" maxW={1080} mx="auto" gap={6}>
+          <Row gap={12} between align="center">
+            <Row gap={20} align="center" shrink={1} minW={0}>
+              <Brand />
+              {wide ? <Sections viewer={viewer} wide /> : null}
+            </Row>
+            <Row gap={8} align="center" shrink={0}>
+              <SearchButton wide={wide} />
+              {viewer ? <AccountMenu viewer={viewer} /> : <SignIn wide={wide} />}
+            </Row>
+          </Row>
+          {wide ? null : <Sections viewer={viewer} wide={false} />}
+        </Box>
+      </Box>
+      <Divider />
+    </Box>
   );
 }

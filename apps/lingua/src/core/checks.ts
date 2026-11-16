@@ -21,7 +21,8 @@ export interface Against {
 /** The longest message Lingua accepts, in UTF-16 code units. */
 export const MAX_MESSAGE = 4000;
 
-const REF = /\$t\(\s*([\w.-]+)\s*\)/g;
+/** A `$t(key)` reference to another message; the key is its first group. */
+export const REF = /\$t\(\s*([\w.-]+)\s*\)/g;
 
 function isControl(char: string): boolean {
   return (char < ' ' && char !== '\t' && char !== '\n') || char === '\u007f';
