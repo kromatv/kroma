@@ -75,7 +75,7 @@
   "admin.directConnections": "Connexion directe à la maison",
   "admin.directConnectionsHint": "Les apps sur le même réseau que le serveur le joignent par son adresse locale au lieu de passer par Internet. Sur le réseau local, les requêtes circulent sans chiffrement, comme en ouvrant le serveur à son adresse locale",
   "admin.directPlay": "Lecture directe",
-  "admin.downloadsSub": "File de téléchargement en direct, historique et clients torrent.",
+  "admin.downloadsSub": "File de téléchargement en direct, historique et clients de téléchargement.",
   "admin.downloadsTitle": "Téléchargements",
   "admin.editUser": "Modifier {name}",
   "admin.editUserAction": "Modifier",
