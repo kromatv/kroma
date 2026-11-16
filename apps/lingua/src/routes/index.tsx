@@ -4,6 +4,7 @@ import { Text } from '@kromatv/ui/kit/atoms/text';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
 import { createFileRoute } from '@tanstack/react-router';
 import { LinguaPage } from '#site/components/lingua-page.component';
+import { RouteLink } from '#site/components/route-link.component';
 import { ProjectCard } from '#site/components/project-card.component';
 import { getHome } from '#site/lib/loaders';
 
@@ -19,18 +20,22 @@ function NoProject({ installUrl }: Readonly<{ installUrl: string | null }>) {
       <EmptyState.Hint>
         {installUrl
           ? 'Install the GitHub App on a repository that has a lingua.json.'
-          : 'No repository is connected to this Lingua yet.'}
+          : 'Lingua has no GitHub App yet, so it cannot read a repository. Set it up first.'}
       </EmptyState.Hint>
-      {installUrl ? (
-        <EmptyState.Actions>
+      <EmptyState.Actions>
+        {installUrl ? (
           <Button
             icon="brand-github"
             label="Install the GitHub App"
             href={installUrl}
             role="link"
           />
-        </EmptyState.Actions>
-      ) : null}
+        ) : (
+          <Button icon="settings" label="Set up Lingua" asChild>
+            <RouteLink to="/setup" />
+          </Button>
+        )}
+      </EmptyState.Actions>
     </EmptyState.Root>
   );
 }
