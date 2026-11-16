@@ -1,8 +1,7 @@
 {
   "$schema": "../../../i18n/schema/project.schema.json",
-  "source": "fr",
-  "fallback": "en",
+  "source": "en",
   "locales": {
-    "en": { "stage": "stable" }
+    "fr": { "stage": "stable" }
   }
 }

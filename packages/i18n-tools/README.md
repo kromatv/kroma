@@ -8,7 +8,7 @@ left to translate.
 ```bash
 bun run i18n                     # every language at a glance
 bun run i18n status de           # one language, file by file
-bun run i18n new nav.x "Texte" en="Text"   # write a message everywhere it is owed
+bun run i18n new nav.x "Text" fr="Texte"   # write a message everywhere it is owed
 bun run i18n rename nav.x nav.y  # in every language, and in the code
 bun run i18n rm nav.y            # delete a message from every language
 bun run i18n unused              # messages no source file names

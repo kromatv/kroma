@@ -55,7 +55,7 @@ describe('the default header', () => {
     // Opening the sheet arms the guard that stops the press which opened it
     // from carrying into it; this is the press after.
     clearPressGuard();
-    fireEvent.click(within(screen.getByLabelText('Notifications')).getByLabelText('Fermer'));
+    fireEvent.click(within(screen.getByLabelText('Notifications')).getByLabelText('Close'));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -65,7 +65,7 @@ describe('the default header', () => {
         <Text>Rien</Text>
       </Drawer.Root>,
     );
-    expect(within(screen.getByLabelText('Notifications')).queryByLabelText('Fermer')).toBeNull();
+    expect(within(screen.getByLabelText('Notifications')).queryByLabelText('Close')).toBeNull();
   });
 });
 
@@ -105,7 +105,7 @@ describe('the parts', () => {
       </Drawer.Root>,
     );
     clearPressGuard();
-    fireEvent.click(within(screen.getByLabelText('Signalement')).getByLabelText('Fermer'));
+    fireEvent.click(within(screen.getByLabelText('Signalement')).getByLabelText('Close'));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -118,7 +118,7 @@ describe('the parts', () => {
         </Drawer.Header>
       </Drawer.Root>,
     );
-    expect(screen.queryByLabelText('Fermer')).toBeNull();
+    expect(screen.queryByLabelText('Close')).toBeNull();
   });
 
   it("names the sheet from `title` even when the header is the caller's", () => {

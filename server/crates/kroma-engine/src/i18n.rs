@@ -227,17 +227,20 @@ mod tests {
 
     #[test]
     fn the_plural_rule_reads_a_tag_the_way_the_catalog_lookup_does() {
-        for tag in ["fr", "FR", "fr-CH", "Français"] {
+        for tag in ["fr", "FR", "fr-CH"] {
             assert_eq!(
                 t(tag, "content.seasonCount", &[("count", "0")]),
                 "0 saison",
                 "{tag}"
             );
         }
-        assert_eq!(
-            t("en-US", "content.seasonCount", &[("count", "0")]),
-            "0 seasons"
-        );
+        for tag in ["en-US", "Français"] {
+            assert_eq!(
+                t(tag, "content.seasonCount", &[("count", "0")]),
+                "0 seasons",
+                "{tag}"
+            );
+        }
     }
 
     #[test]
