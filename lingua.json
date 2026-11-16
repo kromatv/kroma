@@ -1,0 +1,6 @@
+{
+  "source": "en",
+  "references": ["fr"],
+  "locales": ["en", "fr"],
+  "catalogs": [{ "path": "packages/core/src/locales/{locale}/{namespace}.json" }]
+}

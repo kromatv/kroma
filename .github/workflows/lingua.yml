@@ -1,0 +1,79 @@
+name: Lingua
+
+# Deploys apps/lingua to lingua.kroma.tv: creates its D1 database the first
+# time, applies migrations/ before the code that needs them, then publishes the
+# Worker. A dispatch with `connect` also stores the secrets of the GitHub App
+# created at lingua.kroma.tv/setup, so connecting it needs no local wrangler.
+#
+# Needs CLOUDFLARE_API_TOKEN in the `sites` environment (Workers Scripts and
+# D1: Edit). Without it the job skips with a notice.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/lingua/**'
+      - '.github/workflows/lingua.yml'
+  workflow_dispatch:
+    inputs:
+      connect:
+        description: Store the secrets of the GitHub App created at /setup
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lingua
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'sites' || '' }}
+      deployment: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check for the Cloudflare token
+        id: guard
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN not set; skipping the Lingua deploy."
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        if: steps.guard.outputs.has_token == 'true'
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      - name: Install dependencies
+        if: steps.guard.outputs.has_token == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Create the database the first time
+        if: steps.guard.outputs.has_token == 'true'
+        working-directory: apps/lingua
+        run: bunx wrangler d1 info kroma-lingua > /dev/null 2>&1 || bunx wrangler d1 create kroma-lingua --location weur
+
+      - name: Apply migrations
+        if: steps.guard.outputs.has_token == 'true'
+        working-directory: apps/lingua
+        run: bunx wrangler d1 migrations apply kroma-lingua --remote
+
+      - name: Deploy (lingua.kroma.tv)
+        if: steps.guard.outputs.has_token == 'true'
+        run: bun run deploy:lingua
+
+      - name: Connect the GitHub App created at /setup
+        if: steps.guard.outputs.has_token == 'true' && inputs.connect
+        working-directory: apps/lingua
+        run: bun scripts/setup.ts --from-d1 --owner "${{ github.repository_owner }}"
