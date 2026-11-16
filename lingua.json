@@ -1,6 +1,4 @@
 {
-  "source": "en",
-  "references": ["fr"],
-  "locales": ["en", "fr"],
-  "catalogs": [{ "path": "packages/core/src/locales/{locale}/{namespace}.json" }]
+  "url": "https://lingua.kroma.tv",
+  "projects": [{ "path": "packages/core/src/locales" }]
 }

@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { dirname, join, relative } from 'node:path';
-import { CONFIG_PATH, matchCatalog, parseConfig } from '#site/core/config';
+import { dirname, join } from 'node:path';
+import { CONFIG_PATH, parseConfig, placeOf, rootOf } from '#site/core/config';
 import { memoryStore } from '#site/store/memory-store';
 import type { FileRow, Store } from '#site/store/store';
 
@@ -29,16 +29,16 @@ export async function devStore(): Promise<Store> {
     await store.setSynced(DEV_PROJECT, { headSha: 'dev', treeSha: 'dev', config: null, configError: parsed.error, at: 0 });
     return store;
   }
-  const files: FileRow[] = [];
-  for (const { path } of parsed.config.catalogs) {
-    const base = join(root, dirname(path.slice(0, path.indexOf('{'))));
-    const entries = await readdir(base, { recursive: true }).catch(() => [] as string[]);
-    for (const entry of entries) {
-      const file = relative(root, join(base, entry));
-      const match = matchCatalog(parsed.config, file);
-      if (match) files.push({ ...match, blobSha: 'dev', body: await readFile(join(root, file), 'utf8') });
-    }
-  }
+  const projectRoot = rootOf(parsed.config);
+  const entries = await readdir(join(root, projectRoot), { recursive: true }).catch((): string[] => []);
+  const placed = entries.flatMap((entry) => {
+    const path = `${projectRoot}/${entry.split('\\').join('/')}`;
+    const place = placeOf(projectRoot, path);
+    return place ? [{ ...place, path }] : [];
+  });
+  const files: FileRow[] = await Promise.all(
+    placed.map(async (place) => ({ ...place, blobSha: 'dev', body: await readFile(join(root, place.path), 'utf8') })),
+  );
   await store.replaceFiles(DEV_PROJECT, files, []);
   await store.setSynced(DEV_PROJECT, { headSha: 'dev', treeSha: 'dev', config: text, configError: null, at: Math.floor(Date.now() / 1000) });
   return store;

@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { LocaleTag, parseConfig } from '#site/core/config';
+import { LocaleTag } from '#site/core/config';
+import { stableLocales } from '#site/core/policy';
 import { type AppCredentials, asInstallation } from '#site/github/app';
 import { GitHubError } from '#site/github/client';
 import { propose } from '#site/github/propose';
 import { syncProject } from '#site/github/sync';
 import type { Store, User } from '#site/store/store';
+import { openProject } from './workspace';
 
 /** `POST /api/proposals`: which language's edits to send. */
 export const ProposalInput = z.object({ project: z.string().regex(/^[\w.-]+\/[\w.-]+$/), locale: LocaleTag });
@@ -15,7 +17,7 @@ const COOLDOWN = 20;
 /** What sending came to, as the route answers it. */
 export type ProposalResult =
   | { status: 200; body: { kind: 'proposed'; number: number; url: string } | { kind: 'nothing' } }
-  | { status: 404 | 409 | 429 | 502; error: string };
+  | { status: 404 | 409 | 422 | 429 | 502; error: string };
 
 /** Sync the project with its default branch, then send the contributor's edits for the language to their pull request. */
 export async function sendProposal(
@@ -33,15 +35,16 @@ export async function sendProposal(
   try {
     const gh = await asInstallation(app, before.installationId);
     await syncProject({ gh, store }, before, now);
+    const workspace = (await openProject(store, before.id, user))?.workspace;
     const project = await store.project(before.id);
-    const parsed = project?.config ? parseConfig(project.config) : null;
-    if (!project || !parsed?.ok) return { status: 404, error: 'This project has no usable lingua.json' };
-    const config = parsed.config;
-    if (input.locale !== config.source && !config.locales.includes(input.locale)) {
-      return { status: 404, error: 'This project does not offer that language' };
+    if (!project || !workspace) return { status: 404, error: 'This project has no usable lingua.json or i18n.json' };
+    if (!workspace.locales.includes(input.locale)) return { status: 404, error: 'This project does not offer that language' };
+    const read = ['', workspace.policy.source, input.locale, ...stableLocales(workspace.policy)];
+    const files = await store.files(project.id, [...new Set(read)]);
+    const outcome = await propose(gh, store, { project, root: workspace.root, files, user, locale: input.locale, origin, now });
+    if (outcome.kind === 'incomplete') {
+      return { status: 422, error: `Translate the general form of ${outcome.keys.join(', ')} before its plural forms` };
     }
-    const files = await store.files(project.id, [...new Set([config.source, input.locale])]);
-    const outcome = await propose(gh, store, { project, config, files, user, locale: input.locale, origin, now });
     return {
       status: 200,
       body:

@@ -1,43 +1,16 @@
-import { edit, file, ids, project, proposal, user } from './d1-records';
-import type { Edit, EditKey, FileRow, Project, Proposal, Store, Synced, User } from './store';
+import { file, ids, maybe, project, user } from './d1-records';
+import { D1WorkStore } from './d1-work-store';
+import type { FileRow, Project, Store, Synced, User } from './store';
 
-interface D1Statement {
-  bind(...values: unknown[]): D1Statement;
-  run(): Promise<unknown>;
-  first(): Promise<unknown>;
-  all(): Promise<{ results: unknown[] }>;
-}
-
-/** The subset of Cloudflare's D1 binding Lingua uses, declared here as the stats relay does. */
-export interface D1Database {
-  prepare(query: string): D1Statement;
-  batch(statements: D1Statement[]): Promise<unknown>;
-}
-
-const UPSERT_FILE = `INSERT INTO files (project, path, catalog, locale, namespace, blob_sha, body)
+const UPSERT_FILE = `INSERT INTO files (project, path, kind, locale, file, blob_sha, body)
   VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-  ON CONFLICT (project, path) DO UPDATE SET catalog = excluded.catalog, locale = excluded.locale,
-    namespace = excluded.namespace, blob_sha = excluded.blob_sha, body = excluded.body`;
-
-const UPSERT_EDIT = `INSERT INTO edits (project, user_id, locale, namespace, key, value, proposed, updated_at)
-  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-  ON CONFLICT (project, user_id, locale, key) DO UPDATE SET namespace = excluded.namespace,
-    value = excluded.value, proposed = excluded.proposed, updated_at = excluded.updated_at`;
-
-const UPSERT_PROPOSAL = `INSERT INTO proposals (project, user_id, locale, branch, pr_number, pr_url, head_sha, updated_at)
-  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
-  ON CONFLICT (project, user_id, locale) DO UPDATE SET branch = excluded.branch,
-    pr_number = excluded.pr_number, pr_url = excluded.pr_url, head_sha = excluded.head_sha,
-    updated_at = excluded.updated_at`;
+  ON CONFLICT (project, path) DO UPDATE SET kind = excluded.kind, locale = excluded.locale,
+    file = excluded.file, blob_sha = excluded.blob_sha, body = excluded.body`;
 
 const BATCH = 50;
 
-const maybe = <T>(row: unknown, read: (row: unknown) => T): T | null => (row ? read(row) : null);
-
 /** The store over a D1 database migrated by `migrations/`. */
-export class D1Store implements Store {
-  constructor(private readonly db: D1Database) {}
-
+export class D1Store extends D1WorkStore implements Store {
   async projects(): Promise<Project[]> {
     const { results } = await this.db.prepare('SELECT * FROM projects ORDER BY id').all();
     return results.map(project);
@@ -95,7 +68,7 @@ export class D1Store implements Store {
     const filter = locales ? ` AND locale IN (${placeholders})` : '';
     const { results } = await this.db
       .prepare(
-        `SELECT path, catalog, locale, namespace, blob_sha, body FROM files WHERE project = ?1${filter}`,
+        `SELECT path, kind, locale, file, blob_sha, body FROM files WHERE project = ?1${filter}`,
       )
       .bind(projectId, ...(locales ?? []))
       .all();
@@ -111,7 +84,7 @@ export class D1Store implements Store {
       ...upserts.map((f) =>
         this.db
           .prepare(UPSERT_FILE)
-          .bind(projectId, f.path, f.catalog, f.locale, f.namespace, f.blobSha, f.body),
+          .bind(projectId, f.path, f.kind, f.locale, f.file, f.blobSha, f.body),
       ),
       ...removed.map((path) =>
         this.db.prepare('DELETE FROM files WHERE project = ?1 AND path = ?2').bind(projectId, path),
@@ -158,82 +131,6 @@ export class D1Store implements Store {
 
   async deleteSession(hash: string): Promise<void> {
     await this.db.prepare('DELETE FROM sessions WHERE hash = ?1').bind(hash).run();
-  }
-
-  async edits(projectId: string, userId: number, locale: string): Promise<Edit[]> {
-    const { results } = await this.db
-      .prepare(
-        'SELECT * FROM edits WHERE project = ?1 AND user_id = ?2 AND locale = ?3 ORDER BY namespace, key',
-      )
-      .bind(projectId, userId, locale)
-      .all();
-    return results.map(edit);
-  }
-
-  async putEdit(e: Edit): Promise<void> {
-    await this.db
-      .prepare(UPSERT_EDIT)
-      .bind(
-        e.project,
-        e.userId,
-        e.locale,
-        e.namespace,
-        e.key,
-        e.value,
-        e.proposed ? 1 : 0,
-        e.updatedAt,
-      )
-      .run();
-  }
-
-  async deleteEdit(which: EditKey): Promise<void> {
-    await this.db
-      .prepare('DELETE FROM edits WHERE project = ?1 AND user_id = ?2 AND locale = ?3 AND key = ?4')
-      .bind(which.project, which.userId, which.locale, which.key)
-      .run();
-  }
-
-  async markProposed(projectId: string, userId: number, locale: string): Promise<void> {
-    await this.db
-      .prepare('UPDATE edits SET proposed = 1 WHERE project = ?1 AND user_id = ?2 AND locale = ?3')
-      .bind(projectId, userId, locale)
-      .run();
-  }
-
-  async proposal(projectId: string, userId: number, locale: string): Promise<Proposal | null> {
-    const row = await this.db
-      .prepare('SELECT * FROM proposals WHERE project = ?1 AND user_id = ?2 AND locale = ?3')
-      .bind(projectId, userId, locale)
-      .first();
-    return maybe(row, proposal);
-  }
-
-  async proposalByBranch(projectId: string, branch: string): Promise<Proposal | null> {
-    const row = await this.db
-      .prepare('SELECT * FROM proposals WHERE project = ?1 AND branch = ?2')
-      .bind(projectId, branch)
-      .first();
-    return maybe(row, proposal);
-  }
-
-  async saveProposal(p: Proposal): Promise<void> {
-    await this.db
-      .prepare(UPSERT_PROPOSAL)
-      .bind(p.project, p.userId, p.locale, p.branch, p.prNumber, p.prUrl, p.headSha, p.updatedAt)
-      .run();
-  }
-
-  async closeProposal(p: Proposal): Promise<void> {
-    await this.db.batch([
-      this.db
-        .prepare(
-          'DELETE FROM edits WHERE project = ?1 AND user_id = ?2 AND locale = ?3 AND proposed = 1',
-        )
-        .bind(p.project, p.userId, p.locale),
-      this.db
-        .prepare('DELETE FROM proposals WHERE project = ?1 AND user_id = ?2 AND locale = ?3')
-        .bind(p.project, p.userId, p.locale),
-    ]);
   }
 
   async holdSetupCode(code: string, now: number): Promise<void> {

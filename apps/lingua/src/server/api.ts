@@ -1,8 +1,12 @@
 import { type Context, Hono } from 'hono';
 import type { z } from 'zod';
 import { authorizeUrl, userFromCode } from '#site/github/oauth';
+import type { Store, User } from '#site/store/store';
+import { ConfirmInput, saveConfirms } from './confirms';
 import { EditInput, saveEdit } from './edits';
 import { credentials, type Env, storeFor } from './env';
+import { messagePage } from './go';
+import { LocaleInput, startLanguage } from './locales';
 import { ProposalInput, sendProposal } from './proposals';
 import { resolveViewer } from './request';
 import { closeSession, cookie, openSession, randomToken, readCookie } from './session';
@@ -50,6 +54,13 @@ async function jsonInput<S extends z.ZodType>(c: Context<Ctx>, schema: S): Promi
   }
 }
 
+async function contributor(c: Context<Ctx>, refusal: string): Promise<{ store: Store; viewer: User } | Response> {
+  if (!sameOrigin(c)) return c.json({ error: 'Forbidden' }, 403);
+  const store = await storeFor(c.env.env);
+  const viewer = await resolveViewer(c.env.env, store, c.req.header('cookie'), now());
+  return viewer ? { store, viewer } : c.json({ error: refusal }, 401);
+}
+
 const app = new Hono<Ctx>();
 
 app.get('/health', (c) => c.json({ ok: true, github: credentials(c.env.env) !== null }));
@@ -94,16 +105,32 @@ app.post('/auth/logout', async (c) => {
 });
 
 app.put('/api/edits', async (c) => {
-  if (!sameOrigin(c)) return c.json({ error: 'Forbidden' }, 403);
-  const store = await storeFor(c.env.env);
-  const viewer = await resolveViewer(c.env.env, store, c.req.header('cookie'), now());
-  if (!viewer) return c.json({ error: 'Sign in with GitHub to edit' }, 401);
+  const signedIn = await contributor(c, 'Sign in with GitHub to edit');
+  if (signedIn instanceof Response) return signedIn;
   const input = await jsonInput(c, EditInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
-  const result = await saveEdit(store, viewer, input, now());
+  const result = await saveEdit(signedIn.store, signedIn.viewer, input, now());
   return result.status === 200
     ? c.json({ draft: result.draft, issues: result.issues })
     : c.json({ error: result.error, issues: result.issues ?? [] }, result.status);
+});
+
+app.post('/api/confirm', async (c) => {
+  const signedIn = await contributor(c, 'Sign in with GitHub to confirm a translation');
+  if (signedIn instanceof Response) return signedIn;
+  const input = await jsonInput(c, ConfirmInput);
+  if (!input) return c.json({ error: 'Malformed request' }, 400);
+  const result = await saveConfirms(signedIn.store, signedIn.viewer, input, now());
+  return result.status === 200 ? c.json({ confirmed: result.confirmed }) : c.json({ error: result.error }, result.status);
+});
+
+app.post('/api/locales', async (c) => {
+  const signedIn = await contributor(c, 'Sign in with GitHub to start a language');
+  if (signedIn instanceof Response) return signedIn;
+  const input = await jsonInput(c, LocaleInput);
+  if (!input) return c.json({ error: 'Malformed request' }, 400);
+  const result = await startLanguage(signedIn.store, signedIn.viewer, input, now());
+  return result.status === 200 ? c.json({ locale: result.locale, name: result.name }) : c.json({ error: result.error }, result.status);
 });
 
 app.post('/api/proposals', async (c) => {
@@ -141,9 +168,15 @@ app.post('/webhook', async (c) => {
   return c.text('Accepted', 202);
 });
 
+app.get('/go/:owner/:repo/:locale/:key', async (c) => {
+  const store = await storeFor(c.env.env);
+  const viewer = await resolveViewer(c.env.env, store, c.req.header('cookie'), now());
+  return c.redirect(await messagePage(store, viewer, c.req.param()), 302);
+});
+
 app.notFound((c) => c.text('', 404, { [FALL_THROUGH]: '1' }));
 
-/** Answer a request Lingua routes itself (sign-in, edits, proposals, webhook, setup), or null for a page. */
+/** Answer a request Lingua routes itself (sign-in, edits, confirms, languages, proposals, links, webhook, setup), or null for a page. */
 export async function api(request: Request, env: Env, ctx: ExecCtx): Promise<Response | null> {
   const response = await app.fetch(request, { env, ctx });
   return response.headers.has(FALL_THROUGH) ? null : response;

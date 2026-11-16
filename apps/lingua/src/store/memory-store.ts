@@ -1,8 +1,21 @@
-import type { Edit, EditKey, FileRow, Project, Proposal, Store, Synced, User } from './store';
+import type {
+  Confirm,
+  Edit,
+  EditKey,
+  FileRow,
+  Project,
+  Proposal,
+  Start,
+  Store,
+  Synced,
+  User,
+} from './store';
 
 const editId = (e: EditKey) => JSON.stringify([e.project, e.userId, e.locale, e.key]);
 const proposalId = (project: string, userId: number, locale: string) =>
   JSON.stringify([project, userId, locale]);
+
+type Pending = Edit | Confirm | Start;
 
 const UNSYNCED = { config: null, configError: null, headSha: null, treeSha: null, syncedAt: null };
 
@@ -14,6 +27,8 @@ export class MemoryStore implements Store {
     users: new Map<number, User>(),
     sessions: new Map<string, { userId: number; expiresAt: number }>(),
     edits: new Map<string, Edit>(),
+    confirms: new Map<string, Confirm>(),
+    starts: new Map<string, Start>(),
     proposals: new Map<string, Proposal>(),
     setupCodes: new Map<string, number>(),
   };
@@ -35,6 +50,24 @@ export class MemoryStore implements Store {
 
   private editsWhere(match: (e: Edit) => boolean): [string, Edit][] {
     return [...this.held.edits].filter(([, e]) => match(e));
+  }
+
+  private forEachWork(
+    where: { project: string; userId: number; locale: string; proposed?: boolean },
+    act: (held: Map<string, Pending>, id: string, work: Pending) => void,
+  ): void {
+    const tables: Map<string, Pending>[] = [this.held.edits, this.held.confirms, this.held.starts];
+    for (const held of tables) {
+      for (const [id, work] of held) {
+        const mine =
+          work.project === where.project &&
+          work.userId === where.userId &&
+          work.locale === where.locale;
+        if (mine && (where.proposed === undefined || work.proposed === where.proposed)) {
+          act(held, id, work);
+        }
+      }
+    }
   }
 
   async projects(): Promise<Project[]> {
@@ -117,7 +150,7 @@ export class MemoryStore implements Store {
       (e) => e.project === project && e.userId === userId && e.locale === locale,
     )
       .map(([, e]) => e)
-      .sort((a, b) => a.namespace.localeCompare(b.namespace) || a.key.localeCompare(b.key));
+      .sort((a, b) => a.file.localeCompare(b.file) || a.key.localeCompare(b.key));
   }
 
   async putEdit(e: Edit): Promise<void> {
@@ -128,12 +161,34 @@ export class MemoryStore implements Store {
     this.held.edits.delete(editId(which));
   }
 
+  async confirms(project: string, userId: number, locale: string): Promise<Confirm[]> {
+    return [...this.held.confirms.values()]
+      .filter((c) => c.project === project && c.userId === userId && c.locale === locale)
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }
+
+  async putConfirm(c: Confirm): Promise<void> {
+    this.held.confirms.set(editId(c), c);
+  }
+
+  async starts(project: string, userId: number): Promise<Start[]> {
+    return [...this.held.starts.values()]
+      .filter((s) => s.project === project && s.userId === userId)
+      .sort((a, b) => a.locale.localeCompare(b.locale));
+  }
+
+  async putStart(s: Start): Promise<void> {
+    this.held.starts.set(proposalId(s.project, s.userId, s.locale), s);
+  }
+
+  async dropUnsent(project: string, userId: number, locale: string): Promise<void> {
+    this.forEachWork({ project, userId, locale, proposed: false }, (held, id) => held.delete(id));
+  }
+
   async markProposed(project: string, userId: number, locale: string): Promise<void> {
-    const mine = (held: Edit) =>
-      held.project === project && held.userId === userId && held.locale === locale;
-    for (const [id, e] of this.editsWhere(mine)) {
-      this.held.edits.set(id, { ...e, proposed: true });
-    }
+    this.forEachWork({ project, userId, locale }, (held, id, work) =>
+      held.set(id, { ...work, proposed: true }),
+    );
   }
 
   async proposal(project: string, userId: number, locale: string): Promise<Proposal | null> {
@@ -152,11 +207,8 @@ export class MemoryStore implements Store {
   }
 
   async closeProposal(p: Proposal): Promise<void> {
-    const sent = (e: Edit) =>
-      e.project === p.project && e.userId === p.userId && e.locale === p.locale && e.proposed;
-    for (const [id] of this.editsWhere(sent)) {
-      this.held.edits.delete(id);
-    }
+    const where = { project: p.project, userId: p.userId, locale: p.locale, proposed: true };
+    this.forEachWork(where, (held, id) => held.delete(id));
     this.held.proposals.delete(proposalId(p.project, p.userId, p.locale));
   }
 

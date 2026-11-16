@@ -66,9 +66,14 @@ function Source({ row, sourceName }: Readonly<{ row: RowView; sourceName: string
 
 type MessageSave = ReturnType<typeof useMessageSave>;
 
-function Editor({ message, messageKey }: Readonly<{ message: MessageSave; messageKey: string }>) {
+function Editor({
+  message,
+  messageKey,
+  linked,
+}: Readonly<{ message: MessageSave; messageKey: string; linked: boolean }>) {
   return (
     <TextArea
+      autoFocus={linked}
       value={message.value}
       onValueChange={message.setValue}
       onBlur={() => void message.commit()}
@@ -97,16 +102,20 @@ function Translation({
   );
 }
 
-/** One message to translate: key, source, references, and the viewer's text, saved on blur when `editable`. */
-export function MessageRow({
-  row,
-  target,
-  sourceName,
-  editable,
-}: Readonly<{ row: RowView; target: MessageTarget; sourceName: string; editable: boolean }>) {
+type MessageRowProps = Readonly<{
+  row: RowView;
+  target: MessageTarget;
+  sourceName: string;
+  editable: boolean;
+  linked: boolean;
+}>;
+
+/** One message to translate: key, source, references, and the viewer's text, saved on blur when `editable`, its field focused when `linked`. */
+export function MessageRow({ row, target, sourceName, editable, linked }: MessageRowProps) {
   const message = useMessageSave(row, target);
   return (
     <Box
+      nativeID={row.key}
       bg="surface1"
       border={isUntranslated(row) ? 'accent/45' : 'border'}
       radius="lg"
@@ -118,7 +127,7 @@ export function MessageRow({
         <Source row={row} sourceName={sourceName} />
         <Translation message={message}>
           {editable ? (
-            <Editor message={message} messageKey={row.key} />
+            <Editor message={message} messageKey={row.key} linked={linked} />
           ) : (
             <Shown value={message.value} />
           )}

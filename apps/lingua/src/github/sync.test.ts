@@ -4,11 +4,7 @@ import type { Store } from '#site/store/store';
 import { syncProject } from './sync';
 import { fakeGitHub, sha } from './test-support';
 
-const CONFIG = JSON.stringify({
-  source: 'en',
-  locales: ['fr'],
-  catalogs: [{ path: 'loc/{locale}/{namespace}.json' }],
-});
+const CONFIG = JSON.stringify({ projects: [{ path: 'loc' }] });
 
 const BRANCH = 'GET /repos/o/r/branches/main';
 const TREE = `GET /repos/o/r/git/trees/${sha('0e')}?recursive=1`;
@@ -52,20 +48,25 @@ async function sync(store: Store, gh: ReturnType<typeof fakeGitHub>, now: number
 }
 
 describe('syncProject', () => {
-  it('copies every catalog file the config names, and only those', async () => {
+  it('copies every file of the project folder, sub-folders and locks included, and only those', async () => {
     const store = await seeded();
     const gh = repository(sha('a'), {
+      'loc/i18n.json': '{"source":"en"}',
+      'loc/catalogs.ts': 'export {};',
       'loc/en/nav.json': '{"nav.home":"Home"}',
-      'loc/fr/nav.json': '{"nav.home":"Accueil"}',
+      'loc/fr/admin/backup.json': '{"admin.backup.title":"Sauvegarde"}',
+      'loc/fr/i18n.lock': '{}',
     });
 
     const moved = await sync(store, gh, 100);
 
     expect(moved).toBe(true);
-    const files = (await store.files('o/r')).map((f) => `${f.locale} ${f.namespace} ${f.body}`);
+    const files = (await store.files('o/r')).map((f) => `${f.kind} ${f.locale} ${f.file}`);
     expect(files.sort((a, b) => a.localeCompare(b))).toEqual([
-      'en nav {"nav.home":"Home"}',
-      'fr nav {"nav.home":"Accueil"}',
+      'catalog en nav',
+      'catalog fr admin/backup',
+      'lock fr ',
+      'policy  ',
     ]);
     expect(await store.project('o/r')).toMatchObject({
       headSha: sha('a'),

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Edit, FileRow, Project, Proposal, User } from './store';
+import type { Confirm, Edit, FileRow, Project, Proposal, Start, User } from './store';
 
 const ProjectRecord = z.object({
   id: z.string(),
@@ -14,9 +14,9 @@ const ProjectRecord = z.object({
 
 const FileRecord = z.object({
   path: z.string(),
-  catalog: z.number(),
+  kind: z.enum(['policy', 'notes', 'lock', 'catalog']),
   locale: z.string(),
-  namespace: z.string(),
+  file: z.string(),
   blob_sha: z.string(),
   body: z.string(),
 });
@@ -32,11 +32,28 @@ const EditRecord = z.object({
   project: z.string(),
   user_id: z.number(),
   locale: z.string(),
-  namespace: z.string(),
+  file: z.string(),
   key: z.string(),
   value: z.string(),
   proposed: z.number(),
   updated_at: z.number(),
+});
+
+const ConfirmRecord = z.object({
+  project: z.string(),
+  user_id: z.number(),
+  locale: z.string(),
+  key: z.string(),
+  proposed: z.number(),
+  updated_at: z.number(),
+});
+
+const StartRecord = z.object({
+  project: z.string(),
+  user_id: z.number(),
+  locale: z.string(),
+  proposed: z.number(),
+  created_at: z.number(),
 });
 
 const ProposalRecord = z.object({
@@ -70,9 +87,9 @@ export function file(row: unknown): FileRow {
   const r = FileRecord.parse(row);
   return {
     path: r.path,
-    catalog: r.catalog,
+    kind: r.kind,
     locale: r.locale,
-    namespace: r.namespace,
+    file: r.file,
     blobSha: r.blob_sha,
     body: r.body,
   };
@@ -91,11 +108,36 @@ export function edit(row: unknown): Edit {
     project: r.project,
     userId: r.user_id,
     locale: r.locale,
-    namespace: r.namespace,
+    file: r.file,
     key: r.key,
     value: r.value,
     proposed: r.proposed === 1,
     updatedAt: r.updated_at,
+  };
+}
+
+/** A `confirms` row as the store hands it out. */
+export function confirm(row: unknown): Confirm {
+  const r = ConfirmRecord.parse(row);
+  return {
+    project: r.project,
+    userId: r.user_id,
+    locale: r.locale,
+    key: r.key,
+    proposed: r.proposed === 1,
+    updatedAt: r.updated_at,
+  };
+}
+
+/** A `starts` row as the store hands it out. */
+export function start(row: unknown): Start {
+  const r = StartRecord.parse(row);
+  return {
+    project: r.project,
+    userId: r.user_id,
+    locale: r.locale,
+    proposed: r.proposed === 1,
+    createdAt: r.created_at,
   };
 }
 
@@ -112,6 +154,11 @@ export function proposal(row: unknown): Proposal {
     headSha: r.head_sha,
     updatedAt: r.updated_at,
   };
+}
+
+/** A row read by `read`, or null where the query found none. */
+export function maybe<T>(row: unknown, read: (row: unknown) => T): T | null {
+  return row ? read(row) : null;
 }
 
 /** The `id` column of each row. */

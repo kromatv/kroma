@@ -1,11 +1,12 @@
-import { type Messages, parseMessages } from '#site/core/catalog';
+import type { Messages } from '#site/core/catalog';
 import { check } from '#site/core/checks';
-import { type LinguaConfig, parseConfig } from '#site/core/config';
-import { progressOf, rowsFor } from '#site/core/rows';
+import { notesFor } from '#site/core/notes';
+import { stableLocales } from '#site/core/policy';
+import { localeFiles } from '#site/core/shelf';
+import { baseOf, fileOf, merged, type Source } from '#site/core/source';
 import type {
   HomeView,
   Language,
-  LocaleSummary,
   LocaleView,
   NamespaceView,
   ProjectSummary,
@@ -14,8 +15,10 @@ import type {
   RowView,
   Viewer,
 } from '#site/lib/views';
-import type { Edit, FileRow, Project, Store, User } from '#site/store/store';
+import type { Confirm, Edit, Store, Start, User } from '#site/store/store';
 import { type Env, installUrl } from './env';
+import { localeSummary, rowsByFile, type Stood, tally } from './standing';
+import { type Opened, openProject, readLocales, type Workspace } from './workspace';
 
 /** What every page is computed from: the store, the bindings, and who is asking. */
 export interface Context {
@@ -42,158 +45,141 @@ export function languageOf(tag: string): Language {
 const viewerOf = (user: User | null): Viewer | null =>
   user ? { login: user.login, name: user.name, avatarUrl: user.avatarUrl } : null;
 
-function configOf(project: Project): LinguaConfig | null {
-  if (!project.config) return null;
-  const parsed = parseConfig(project.config);
-  return parsed.ok ? parsed.config : null;
-}
-
-function summaryOf(project: Project, config: LinguaConfig | null): ProjectSummary {
+function summaryOf({ project, workspace, error }: Opened): ProjectSummary {
   return {
     id: project.id,
-    source: config ? languageOf(config.source) : null,
-    locales: config ? new Set([config.source, ...config.locales]).size : 0,
+    source: workspace ? languageOf(workspace.policy.source) : null,
+    locales: workspace?.locales.length ?? 0,
     syncedAt: project.syncedAt,
-    error: project.configError,
+    error,
   };
 }
 
-function byNamespace(files: readonly FileRow[], locale: string): Map<string, Messages> {
-  const out = new Map<string, Messages>();
-  for (const file of files) {
-    if (file.locale !== locale) continue;
-    const messages = parseMessages(file.body);
-    if (messages) out.set(file.namespace, { ...out.get(file.namespace), ...messages });
-  }
-  return out;
+interface Work {
+  edits: Edit[];
+  confirms: Confirm[];
+  start: Start | null;
+  proposal: ProposalView | null;
 }
 
-function localeSummary(config: LinguaConfig, sources: Map<string, Messages>, files: readonly FileRow[], locale: string): LocaleSummary {
-  const target = byNamespace(files, locale);
-  let done = 0;
-  let total = 0;
-  for (const [namespace, source] of sources) {
-    const progress = progressOf(rowsFor(source, locale), target.get(namespace) ?? {});
-    done += progress.done;
-    total += progress.total;
-  }
-  return { language: languageOf(locale), progress: { done, total }, isSource: locale === config.source };
-}
-
-const sorted = (map: Map<string, Messages>) => [...map].sort(([a], [b]) => a.localeCompare(b));
-
-async function opened(store: Store, id: string) {
-  const project = await store.project(id);
-  if (!project) return null;
-  const config = configOf(project);
-  return { project, config, summary: summaryOf(project, config) };
-}
-
-async function viewerWork(store: Store, project: string, viewer: User | null, locale: string) {
-  if (!viewer) return { edits: [] as Edit[], proposal: null as ProposalView | null };
-  const [edits, proposal] = await Promise.all([
+async function viewerWork(store: Store, project: string, viewer: User | null, locale: string): Promise<Work> {
+  if (!viewer) return { edits: [], confirms: [], start: null, proposal: null };
+  const [edits, confirms, starts, proposal] = await Promise.all([
     store.edits(project, viewer.id, locale),
+    store.confirms(project, viewer.id, locale),
+    store.starts(project, viewer.id),
     store.proposal(project, viewer.id, locale),
   ]);
-  return { edits, proposal: proposal ? { number: proposal.prNumber, url: proposal.prUrl } : null };
+  const start = starts.find((s) => s.locale === locale) ?? null;
+  return { edits, confirms, start, proposal: proposal ? { number: proposal.prNumber, url: proposal.prUrl } : null };
+}
+
+function pendingOf(work: Work): { drafts: number; proposed: number } {
+  const all = [...work.edits, ...work.confirms, ...(work.start ? [work.start] : [])];
+  return { drafts: all.filter((w) => !w.proposed).length, proposed: all.filter((w) => w.proposed).length };
+}
+
+function draftsIn(work: Work, source: Source, file: string): number {
+  const edits = work.edits.filter((e) => e.file === file && !e.proposed).length;
+  return edits + work.confirms.filter((c) => !c.proposed && fileOf(source, c.key) === file).length;
+}
+
+async function offered(store: Store, id: string, viewer: User | null) {
+  const opened = await openProject(store, id, viewer);
+  return opened?.workspace ? { opened, workspace: opened.workspace } : null;
 }
 
 /** `/`. */
 export async function homeView({ env, store, viewer }: Context): Promise<HomeView> {
   const projects = await store.projects();
+  const opened = await Promise.all(projects.map((project) => openProject(store, project.id, null)));
   return {
     viewer: viewerOf(viewer),
-    projects: projects.map((project) => summaryOf(project, configOf(project))),
+    projects: opened.flatMap((o) => (o ? [summaryOf(o)] : [])),
     installUrl: installUrl(env),
   };
 }
 
 /** `/$owner/$repo`. */
 export async function projectView({ store, viewer }: Context, id: string): Promise<ProjectView | null> {
-  const found = await opened(store, id);
-  if (!found) return null;
-  const { config, summary } = found;
-  const files = config ? await store.files(id) : [];
-  const sources = config ? byNamespace(files, config.source) : new Map<string, Messages>();
-  const locales = config ? [...new Set([config.source, ...config.locales])] : [];
-  return {
-    viewer: viewerOf(viewer),
-    project: summary,
-    repoUrl: `https://github.com/${id}`,
-    locales: config ? locales.map((locale) => localeSummary(config, sources, files, locale)) : [],
-  };
+  const opened = await openProject(store, id, viewer);
+  if (!opened) return null;
+  const { workspace } = opened;
+  const reading = workspace ? await readLocales(store, { id, workspace }, workspace.locales) : null;
+  const locales =
+    workspace && reading
+      ? await Promise.all(workspace.locales.map(async (tag) => localeSummary(workspace, languageOf(tag), await rowsByFile(reading, tag))))
+      : [];
+  return { viewer: viewerOf(viewer), project: summaryOf(opened), repoUrl: `https://github.com/${id}`, locales };
 }
 
 /** `/$owner/$repo/$locale`. */
 export async function localeView({ store, viewer }: Context, id: string, locale: string): Promise<LocaleView | null> {
-  const found = await opened(store, id);
-  const config = found?.config;
-  if (!found || !config || (locale !== config.source && !config.locales.includes(locale))) return null;
-  const files = await store.files(id, [...new Set([config.source, locale])]);
-  const sources = byNamespace(files, config.source);
-  const target = byNamespace(files, locale);
-  const { edits, proposal } = await viewerWork(store, id, viewer, locale);
+  const found = await offered(store, id, viewer);
+  if (!found || !found.workspace.locales.includes(locale)) return null;
+  const { opened, workspace } = found;
+  const reading = await readLocales(store, { id, workspace }, [locale]);
+  const byFile = await rowsByFile(reading, locale);
+  const work = await viewerWork(store, id, viewer, locale);
   return {
     viewer: viewerOf(viewer),
-    project: found.summary,
-    locale: localeSummary(config, sources, files, locale),
-    namespaces: sorted(sources).map(([namespace, source]) => ({
-      namespace,
-      progress: progressOf(rowsFor(source, locale), target.get(namespace) ?? {}),
-      drafts: edits.filter((e) => e.namespace === namespace && !e.proposed).length,
-    })),
-    drafts: edits.filter((e) => !e.proposed).length,
-    proposed: edits.filter((e) => e.proposed).length,
-    proposal,
+    project: summaryOf(opened),
+    locale: localeSummary(workspace, languageOf(locale), byFile),
+    namespaces: [...byFile]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([file, rows]) => ({ file, ...tally(rows), drafts: draftsIn(work, reading.source, file) })),
+    ...pendingOf(work),
+    proposal: work.proposal,
   };
 }
 
-/** `/$owner/$repo/$locale/$namespace`. */
-export async function namespaceView(
-  { store, viewer }: Context,
-  id: string,
-  locale: string,
-  namespace: string,
-): Promise<NamespaceView | null> {
-  const found = await opened(store, id);
-  const config = found?.config;
-  if (!found || !config || (locale !== config.source && !config.locales.includes(locale))) return null;
-  const references = config.references.filter((tag) => tag !== locale && tag !== config.source);
-  const files = await store.files(id, [...new Set([config.source, locale, ...references])]);
-  const sources = byNamespace(files, config.source);
-  const source = sources.get(namespace);
-  if (!source) return null;
-  const target = byNamespace(files, locale).get(namespace) ?? {};
-  const referenced = references.map((tag) => ({ language: languageOf(tag), messages: byNamespace(files, tag).get(namespace) ?? {} }));
-  const { edits, proposal } = await viewerWork(store, id, viewer, locale);
-  const editOf = new Map(edits.filter((e) => e.namespace === namespace).map((e) => [e.key, e]));
-  const keys = new Set(Object.keys(source));
-  const rows: RowView[] = rowsFor(source, locale).map((row) => {
-    const edit = editOf.get(row.key);
-    const current = target[row.key] ?? null;
-    const shown = edit?.value ?? current ?? '';
-    return {
-      key: row.key,
-      source: row.source,
-      references: referenced.map(({ language, messages }) => ({ language, text: messages[row.key] ?? null })),
-      current,
-      draft: edit?.value ?? null,
-      proposed: edit?.proposed ?? false,
-      plural: row.plural,
-      issues:
-        shown.trim() === ''
-          ? []
-          : check(shown, { source: row.source, keys, plural: row.plural !== null }),
-    };
-  });
+interface Around {
+  source: Source;
+  keys: ReadonlySet<string>;
+  referenced: { language: Language; messages: Messages }[];
+  work: Work;
+  workspace: Workspace;
+}
+
+function rowView({ row, current, state }: Stood, around: Around): RowView {
+  const edit = around.work.edits.find((e) => e.key === row.key);
+  const shown = edit?.value ?? current ?? '';
+  const base = baseOf(around.source, row.key) ?? row.key;
+  return {
+    key: row.key,
+    source: row.source,
+    references: around.referenced.map(({ language, messages }) => ({ language, text: messages[row.key] ?? null })),
+    current,
+    draft: edit?.value ?? null,
+    proposed: edit?.proposed ?? false,
+    plural: row.plural,
+    issues: shown.trim() === '' ? [] : check(shown, { source: row.source, keys: around.keys, plural: row.plural !== null }),
+    state,
+    notes: notesFor(around.workspace.notes, base),
+    confirmed: around.work.confirms.some((c) => c.key === base),
+  };
+}
+
+/** `/$owner/$repo/$locale/$file`. */
+export async function namespaceView({ store, viewer }: Context, id: string, at: { locale: string; file: string }): Promise<NamespaceView | null> {
+  const found = await offered(store, id, viewer);
+  if (!found || !found.workspace.locales.includes(at.locale)) return null;
+  const { opened, workspace } = found;
+  const references = stableLocales(workspace.policy).filter((tag) => tag !== at.locale);
+  const reading = await readLocales(store, { id, workspace }, [at.locale, ...references]);
+  const sourceFile = reading.source.files.get(at.file);
+  if (!sourceFile) return null;
+  const byFile = await rowsByFile(reading, at.locale);
+  const work = await viewerWork(store, id, viewer, at.locale);
+  const referenced = references.map((tag) => ({ language: languageOf(tag), messages: merged(localeFiles(reading.shelf, tag)) }));
+  const around = { source: reading.source, keys: new Set(Object.keys(sourceFile)), referenced, work, workspace };
   return {
     viewer: viewerOf(viewer),
-    project: found.summary,
-    locale: localeSummary(config, sources, files, locale),
-    namespace,
-    rows,
-    drafts: edits.filter((e) => !e.proposed).length,
-    proposed: edits.filter((e) => e.proposed).length,
-    proposal,
+    project: summaryOf(opened),
+    locale: localeSummary(workspace, languageOf(at.locale), byFile),
+    file: at.file,
+    rows: (byFile.get(at.file) ?? []).map((stood) => rowView(stood, around)),
+    ...pendingOf(work),
+    proposal: work.proposal,
   };
 }

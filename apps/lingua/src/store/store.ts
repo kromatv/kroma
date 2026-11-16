@@ -1,3 +1,5 @@
+import type { Place } from '#site/core/config';
+
 /** A repository Lingua translates, as its last sync left it. */
 export interface Project {
   id: string;
@@ -10,12 +12,9 @@ export interface Project {
   syncedAt: number | null;
 }
 
-/** One catalog file as the default branch held it at the last sync. */
-export interface FileRow {
+/** One file of a project's i18n folder as the default branch held it at the last sync. */
+export interface FileRow extends Place {
   path: string;
-  catalog: number;
-  locale: string;
-  namespace: string;
   blobSha: string;
   body: string;
 }
@@ -33,7 +32,7 @@ export interface Edit {
   project: string;
   userId: number;
   locale: string;
-  namespace: string;
+  file: string;
   key: string;
   value: string;
   proposed: boolean;
@@ -46,6 +45,25 @@ export interface EditKey {
   userId: number;
   locale: string;
   key: string;
+}
+
+/** A message a contributor says reads right as it is, kept until a pull request carrying it closes. */
+export interface Confirm {
+  project: string;
+  userId: number;
+  locale: string;
+  key: string;
+  proposed: boolean;
+  updatedAt: number;
+}
+
+/** A language a contributor started, theirs alone until a pull request carrying it merges. */
+export interface Start {
+  project: string;
+  userId: number;
+  locale: string;
+  proposed: boolean;
+  createdAt: number;
 }
 
 /** The rolling pull request one contributor has open for one language. */
@@ -92,6 +110,11 @@ export interface Store {
   edits(project: string, userId: number, locale: string): Promise<Edit[]>;
   putEdit(edit: Edit): Promise<void>;
   deleteEdit(which: EditKey): Promise<void>;
+  confirms(project: string, userId: number, locale: string): Promise<Confirm[]>;
+  putConfirm(confirm: Confirm): Promise<void>;
+  starts(project: string, userId: number): Promise<Start[]>;
+  putStart(start: Start): Promise<void>;
+  dropUnsent(project: string, userId: number, locale: string): Promise<void>;
   markProposed(project: string, userId: number, locale: string): Promise<void>;
 
   proposal(project: string, userId: number, locale: string): Promise<Proposal | null>;

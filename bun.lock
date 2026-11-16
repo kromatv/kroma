@@ -89,6 +89,7 @@
       },
       "devDependencies": {
         "@kromatv/bundler": "workspace:*",
+        "@kromatv/i18n-tools": "workspace:*",
         "@tanstack/router-cli": "^1.167.45",
         "@types/node": "^22.20.5",
         "@types/react": "^19.3.0",

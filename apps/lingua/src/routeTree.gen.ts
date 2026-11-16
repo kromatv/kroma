@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OwnerRepoIndexRouteImport } from './routes/$owner/$repo/index'
 import { Route as OwnerRepoLocaleIndexRouteImport } from './routes/$owner/$repo/$locale/index'
-import { Route as OwnerRepoLocaleNamespaceRouteImport } from './routes/$owner/$repo/$locale/$namespace'
+import { Route as OwnerRepoLocaleSplatRouteImport } from './routes/$owner/$repo/$locale/$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,30 +29,29 @@ const OwnerRepoLocaleIndexRoute = OwnerRepoLocaleIndexRouteImport.update({
   path: '/$owner/$repo/$locale/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OwnerRepoLocaleNamespaceRoute =
-  OwnerRepoLocaleNamespaceRouteImport.update({
-    id: '/$owner/$repo/$locale/$namespace',
-    path: '/$owner/$repo/$locale/$namespace',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const OwnerRepoLocaleSplatRoute = OwnerRepoLocaleSplatRouteImport.update({
+  id: '/$owner/$repo/$locale/$',
+  path: '/$owner/$repo/$locale/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
-  '/$owner/$repo/$locale/$namespace': typeof OwnerRepoLocaleNamespaceRoute
+  '/$owner/$repo/$locale/$': typeof OwnerRepoLocaleSplatRoute
   '/$owner/$repo/$locale/': typeof OwnerRepoLocaleIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$owner/$repo': typeof OwnerRepoIndexRoute
-  '/$owner/$repo/$locale/$namespace': typeof OwnerRepoLocaleNamespaceRoute
+  '/$owner/$repo/$locale/$': typeof OwnerRepoLocaleSplatRoute
   '/$owner/$repo/$locale': typeof OwnerRepoLocaleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$owner/$repo/': typeof OwnerRepoIndexRoute
-  '/$owner/$repo/$locale/$namespace': typeof OwnerRepoLocaleNamespaceRoute
+  '/$owner/$repo/$locale/$': typeof OwnerRepoLocaleSplatRoute
   '/$owner/$repo/$locale/': typeof OwnerRepoLocaleIndexRoute
 }
 export interface FileRouteTypes {
@@ -60,26 +59,23 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$owner/$repo/'
-    | '/$owner/$repo/$locale/$namespace'
+    | '/$owner/$repo/$locale/$'
     | '/$owner/$repo/$locale/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/$owner/$repo'
-    | '/$owner/$repo/$locale/$namespace'
-    | '/$owner/$repo/$locale'
+    '/' | '/$owner/$repo' | '/$owner/$repo/$locale/$' | '/$owner/$repo/$locale'
   id:
     | '__root__'
     | '/'
     | '/$owner/$repo/'
-    | '/$owner/$repo/$locale/$namespace'
+    | '/$owner/$repo/$locale/$'
     | '/$owner/$repo/$locale/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   OwnerRepoIndexRoute: typeof OwnerRepoIndexRoute
-  OwnerRepoLocaleNamespaceRoute: typeof OwnerRepoLocaleNamespaceRoute
+  OwnerRepoLocaleSplatRoute: typeof OwnerRepoLocaleSplatRoute
   OwnerRepoLocaleIndexRoute: typeof OwnerRepoLocaleIndexRoute
 }
 
@@ -106,11 +102,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerRepoLocaleIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$owner/$repo/$locale/$namespace': {
-      id: '/$owner/$repo/$locale/$namespace'
-      path: '/$owner/$repo/$locale/$namespace'
-      fullPath: '/$owner/$repo/$locale/$namespace'
-      preLoaderRoute: typeof OwnerRepoLocaleNamespaceRouteImport
+    '/$owner/$repo/$locale/$': {
+      id: '/$owner/$repo/$locale/$'
+      path: '/$owner/$repo/$locale/$'
+      fullPath: '/$owner/$repo/$locale/$'
+      preLoaderRoute: typeof OwnerRepoLocaleSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -119,7 +115,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   OwnerRepoIndexRoute: OwnerRepoIndexRoute,
-  OwnerRepoLocaleNamespaceRoute: OwnerRepoLocaleNamespaceRoute,
+  OwnerRepoLocaleSplatRoute: OwnerRepoLocaleSplatRoute,
   OwnerRepoLocaleIndexRoute: OwnerRepoLocaleIndexRoute,
 }
 export const routeTree = rootRouteImport

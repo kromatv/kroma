@@ -1,26 +1,25 @@
 import { z } from 'zod';
-import type { LinguaConfig } from '#site/core/config';
-import type { Edit, FileRow, Project, Proposal, Store, User } from '#site/store/store';
-import { type GitHub, GitHubError, type Write } from './client';
-import { rewrite, type Target, targetsFor } from './plan';
-import { blobTexts } from './sync';
+import { pathOf } from '#site/core/config';
+import { type Change, planSend, type Work } from '#site/core/plan';
+import { type Shelf, shelfOf } from '#site/core/shelf';
+import type { FileRow, Project, Proposal, Store, User } from '#site/store/store';
+import { type At, catchUp, type Head, refHead, textsAt } from './branch';
+import type { GitHub, Write } from './client';
 
 const Sha = z.string().regex(/^[0-9a-f]{40}$/);
-const Ref = z.object({ object: z.object({ sha: Sha }) });
-const Commit = z.object({ sha: Sha, tree: z.object({ sha: Sha }) });
 const Created = z.object({ sha: Sha });
 const Pull = z.object({ number: z.number(), html_url: z.string() });
-const Paths = z.object({
-  repository: z.record(z.string(), z.object({ oid: Sha.optional() }).nullable()),
-});
 
-/** What a contributor's proposal came to: the pull request carrying it, or nothing left to send. */
-export type Outcome = { kind: 'proposed'; proposal: Proposal } | { kind: 'nothing' };
+/** What a contributor's send came to: the pull request carrying it, nothing left to send, or plural forms sent without their general form. */
+export type Outcome =
+  | { kind: 'proposed'; proposal: Proposal }
+  | { kind: 'nothing' }
+  | { kind: 'incomplete'; keys: string[] };
 
-/** Everything a proposal is built from. The project must be freshly synced. */
+/** Everything a proposal is built from: the project, freshly synced, and the files of its i18n folder under `root`. */
 export interface Proposing {
   project: Project;
-  config: LinguaConfig;
+  root: string;
   files: readonly FileRow[];
   user: User;
   locale: string;
@@ -28,20 +27,10 @@ export interface Proposing {
   now: number;
 }
 
-interface At {
-  gh: GitHub;
-  repo: string;
-}
-
-interface Head {
-  sha: string;
-  tree: string;
-}
-
-interface Start {
+interface Starting {
   existed: boolean;
   base: Head;
-  current: Map<string, string>;
+  shelf: Shelf;
 }
 
 /** The branch one contributor's suggestions for one language ride on. */
@@ -54,87 +43,32 @@ export function noreplyEmail(user: Pick<User, 'id' | 'login'>): string {
   return `${user.id}+${user.login}@users.noreply.github.com`;
 }
 
-async function refHead(at: At, branch: string): Promise<string | null> {
-  try {
-    return (await at.gh.get(`/repos/${at.repo}/git/ref/heads/${branch}`, Ref)).object.sha;
-  } catch (error) {
-    if (error instanceof GitHubError && error.status === 404) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-async function catchUp(at: At, branch: string, head: string): Promise<Head> {
-  const message = `Merge the default branch into ${branch}`;
-  await at.gh.send(
-    {
-      method: 'POST',
-      path: `/repos/${at.repo}/merges`,
-      body: { base: branch, head, commit_message: message },
-    },
-    z.unknown(),
-  );
-  const sha = await refHead(at, branch);
-  if (!sha) {
-    throw new Error(`branch ${branch} vanished`);
-  }
-  const commit = await at.gh.get(`/repos/${at.repo}/git/commits/${sha}`, Commit);
-  return { sha, tree: commit.tree.sha };
-}
-
-async function textsAt(
-  at: At,
-  sha: string,
-  paths: readonly string[],
-): Promise<Map<string, string>> {
-  const [owner, name] = at.repo.split('/');
-  const fields = paths.map((path, i) => {
-    const expression = JSON.stringify(sha + ':' + path);
-    return `p${i}: object(expression: ${expression}) { ... on Blob { oid } }`;
-  });
-  const query = `query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { ${fields.join('\n')} } }`;
-  const data = await at.gh.graphql(query, Paths, { owner, name });
-  const oids = paths.flatMap((path, i): [string, string][] => {
-    const oid = data.repository[`p${i}`]?.oid;
-    return oid ? [[path, oid]] : [];
-  });
-  const texts = await blobTexts(
-    at.gh,
-    at.repo,
-    oids.map(([, oid]) => oid),
-  );
-  return new Map(
-    oids.flatMap(([path, oid]): [string, string][] => {
-      const text = texts.get(oid);
-      return text === undefined ? [] : [[path, text]];
-    }),
-  );
+function pathsToRead(input: Proposing): string[] {
+  const { root, locale, files } = input;
+  const mirrored = files
+    .filter((f) => f.kind === 'catalog')
+    .map((f) => pathOf(root, { kind: 'catalog', locale, file: f.file }));
+  const lock = pathOf(root, { kind: 'lock', locale, file: '' });
+  return [...new Set([...files.map((f) => f.path), ...mirrored, lock])];
 }
 
 async function startingPoint(
   at: At,
   branch: string,
-  plan: { head: Head; input: Proposing; targets: readonly Target[] },
-): Promise<Start> {
+  plan: { head: Head; input: Proposing },
+): Promise<Starting> {
+  const { input } = plan;
   const existing = await refHead(at, branch);
   if (!existing) {
-    const own = plan.input.files.filter((f) => f.locale === plan.input.locale);
-    return { existed: false, base: plan.head, current: new Map(own.map((f) => [f.path, f.body])) };
+    return { existed: false, base: plan.head, shelf: shelfOf(input.root, input.files) };
   }
   const base = await catchUp(at, branch, plan.head.sha);
-  return {
-    existed: true,
-    base,
-    current: await textsAt(
-      at,
-      base.sha,
-      plan.targets.map((t) => t.path),
-    ),
-  };
+  const known = new Map(input.files.map((f) => [f.blobSha, f.body]));
+  const texts = await textsAt(at, base.sha, { paths: pathsToRead(input), known });
+  return { existed: true, base, shelf: { root: input.root, files: texts } };
 }
 
-function treeOf(start: Start, files: readonly { path: string; content: string }[]) {
+function treeOf(start: Starting, files: readonly Change[]) {
   return {
     base_tree: start.base.tree,
     tree: files.map((f) => ({ path: f.path, mode: '100644', type: 'blob', content: f.content })),
@@ -143,8 +77,8 @@ function treeOf(start: Start, files: readonly { path: string; content: string }[
 
 async function commitFiles(
   at: At,
-  start: Start,
-  change: { files: { path: string; content: string }[]; message: string; author: object },
+  start: Starting,
+  change: { files: Change[]; message: string; author: object },
 ): Promise<string> {
   const trees: Write = {
     method: 'POST',
@@ -208,16 +142,23 @@ async function ensurePull(at: At, branch: string, input: Proposing): Promise<z.i
   );
 }
 
-function changeFor(
-  input: Proposing,
-  edits: readonly Edit[],
-  files: { path: string; content: string }[],
-) {
-  const count = edits.length;
+function counted(count: number, noun: string): string[] {
+  if (count === 0) {
+    return [];
+  }
+  return [`${count} ${count === 1 ? noun : noun + 's'}`];
+}
+
+function changeFor(input: Proposing, work: Work, files: Change[]) {
   const { user } = input;
+  const parts = [
+    ...(work.start ? ['a new language'] : []),
+    ...counted(Object.keys(work.edits).length, 'message'),
+    ...counted(work.confirms.length, 'confirmation'),
+  ];
   return {
     files,
-    message: `i18n(${input.locale}): ${count} ${count === 1 ? 'message' : 'messages'} from Lingua`,
+    message: `i18n(${input.locale}): ${parts.join(', ')} from Lingua`,
     author: {
       name: user.name ?? user.login,
       email: noreplyEmail(user),
@@ -229,7 +170,7 @@ function changeFor(
 async function publish(
   at: At,
   branch: string,
-  step: { start: Start; change: ReturnType<typeof changeFor> },
+  step: { start: Starting; change: ReturnType<typeof changeFor> },
 ): Promise<string> {
   if (step.change.files.length === 0) {
     return step.start.base.sha;
@@ -259,31 +200,48 @@ async function settle(
   return { kind: 'proposed', proposal };
 }
 
+async function workOf(store: Store, input: Proposing): Promise<Work> {
+  const { project, user, locale } = input;
+  const [edits, confirms, starts] = await Promise.all([
+    store.edits(project.id, user.id, locale),
+    store.confirms(project.id, user.id, locale),
+    store.starts(project.id, user.id),
+  ]);
+  return {
+    locale,
+    edits: Object.fromEntries(edits.map((e) => [e.key, e.value])),
+    confirms: confirms.filter((c) => !c.proposed).map((c) => c.key),
+    start: starts.some((s) => s.locale === locale),
+  };
+}
+
+const idle = (work: Work) =>
+  Object.keys(work.edits).length === 0 && work.confirms.length === 0 && !work.start;
+
 /**
- * Send a contributor's open edits for a language to GitHub: one commit,
- * authored by them, on their branch, which catches up with the default branch
- * first, and one rolling pull request opened by the App.
+ * Send a contributor's edits, confirms and started language to GitHub as one
+ * commit authored by them, on their branch, which catches up with the
+ * default branch first, and one rolling pull request opened by the App.
  */
 export async function propose(gh: GitHub, store: Store, input: Proposing): Promise<Outcome> {
   const { project, user, locale } = input;
-  const edits = await store.edits(project.id, user.id, locale);
-  const targets = targetsFor({ config: input.config, files: input.files, edits, locale });
-  if (targets.length === 0 || !project.headSha || !project.treeSha) {
+  const work = await workOf(store, input);
+  if (idle(work) || !project.headSha || !project.treeSha) {
     return { kind: 'nothing' };
   }
   const at = { gh, repo: project.id };
   const branch = branchFor(user.login, locale);
-  const start = await startingPoint(at, branch, {
-    head: { sha: project.headSha, tree: project.treeSha },
-    input,
-    targets,
-  });
-  const change = changeFor(input, edits, rewrite(targets, start.current));
-  if (change.files.length === 0 && !start.existed) {
-    await Promise.all(edits.map((e) => store.deleteEdit(e)));
+  const head = { sha: project.headSha, tree: project.treeSha };
+  const start = await startingPoint(at, branch, { head, input });
+  const plan = await planSend(start.shelf, work);
+  if (plan.incomplete.length > 0) {
+    return { kind: 'incomplete', keys: plan.incomplete };
+  }
+  if (plan.changes.length === 0 && !start.existed) {
+    await store.dropUnsent(project.id, user.id, locale);
     return { kind: 'nothing' };
   }
-  const head = await publish(at, branch, { start, change });
+  const sha = await publish(at, branch, { start, change: changeFor(input, work, plan.changes) });
   const pull = await ensurePull(at, branch, input);
-  return settle(store, input, { branch, pull, head });
+  return settle(store, input, { branch, pull, head: sha });
 }

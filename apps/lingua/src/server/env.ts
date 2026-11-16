@@ -1,5 +1,6 @@
 import type { AppCredentials } from '#site/github/app';
-import { type D1Database, D1Store } from '#site/store/d1-store';
+import { D1Store } from '#site/store/d1-store';
+import type { D1Database } from '#site/store/d1-work-store';
 import type { Store } from '#site/store/store';
 
 /** The Worker's bindings. The GitHub values are `wrangler secret`s; until they are set Lingua is read-only. */

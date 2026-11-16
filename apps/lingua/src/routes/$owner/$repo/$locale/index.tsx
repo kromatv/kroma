@@ -42,11 +42,11 @@ function NamespaceFilterChoice({
   );
 }
 
-function TranslateNamespace({ namespace }: Readonly<{ namespace: string }>) {
+function TranslateNamespace({ file }: Readonly<{ file: string }>) {
   const params = Route.useParams();
   return (
     <Button variant="ghost" size="sm" iconRight="chevron-right" label="Translate" asChild>
-      <RouteLink to="/$owner/$repo/$locale/$namespace" params={{ ...params, namespace }} />
+      <RouteLink to="/$owner/$repo/$locale/$" params={{ ...params, _splat: file }} />
     </Button>
   );
 }
@@ -54,15 +54,15 @@ function TranslateNamespace({ namespace }: Readonly<{ namespace: string }>) {
 function NamespaceList({ namespaces }: Readonly<{ namespaces: readonly NamespaceSummary[] }>) {
   return (
     <ProgressList>
-      {namespaces.map(({ namespace, progress, drafts }) => (
+      {namespaces.map(({ file, progress, drafts }) => (
         <ProgressRow
-          key={namespace}
-          title={namespace}
+          key={file}
+          title={file}
           badges={
             drafts > 0 ? <Badge tone="info">{`${counted(drafts, 'edit')} not sent`}</Badge> : null
           }
           progress={progress}
-          action={<TranslateNamespace namespace={namespace} />}
+          action={<TranslateNamespace file={file} />}
         />
       ))}
     </ProgressList>

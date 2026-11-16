@@ -4,7 +4,7 @@ import { Text } from '@kromatv/ui/kit/atoms/text';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
 import { SegmentGroup } from '@kromatv/ui/kit/molecules/segment-group';
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { LinguaPage } from '#site/components/lingua-page.component';
 import { MessageRow } from '#site/components/message-row.component';
 import { RouteLink } from '#site/components/route-link.component';
@@ -16,11 +16,13 @@ import { projectId } from '#site/lib/project-id';
 import { isUntranslated, matchesRowFilter, type RowFilter } from '#site/lib/row-filter';
 import type { NamespaceView, RowView } from '#site/lib/views';
 
-export const Route = createFileRoute('/$owner/$repo/$locale/$namespace')({
-  loader: ({ params }) =>
-    getNamespace({
-      data: { id: projectId(params), locale: params.locale, namespace: params.namespace },
-    }),
+export const Route = createFileRoute('/$owner/$repo/$locale/$')({
+  loader: ({ params }) => {
+    const { _splat } = params;
+    return getNamespace({
+      data: { id: projectId(params), locale: params.locale, file: _splat ?? '' },
+    });
+  },
   component: NamespacePage,
 });
 
@@ -74,12 +76,35 @@ function MessagesBar({
   );
 }
 
+function onHashChange(change: () => void): () => void {
+  window.addEventListener('hashchange', change);
+  return () => window.removeEventListener('hashchange', change);
+}
+
+function keyOf(hash: string): string | null {
+  try {
+    return hash.length > 1 ? decodeURIComponent(hash.slice(1)) : null;
+  } catch {
+    return null;
+  }
+}
+
+function useLinkedKey(): string | null {
+  const hash = useSyncExternalStore(
+    onHashChange,
+    () => window.location.hash,
+    () => '',
+  );
+  return keyOf(hash);
+}
+
 function Messages({ view }: Readonly<{ view: NamespaceView }>) {
   const { filter, choose, shown } = useRowFilter(view.rows);
+  const linked = useLinkedKey();
   const target = {
     project: view.project.id,
     locale: view.locale.language.tag,
-    namespace: view.namespace,
+    file: view.file,
   };
   return (
     <Column gap={16}>
@@ -91,8 +116,9 @@ function Messages({ view }: Readonly<{ view: NamespaceView }>) {
       ) : null}
       {shown.map((row) => (
         <MessageRow
-          key={row.key}
+          key={row.key === linked ? `${row.key}#linked` : row.key}
           row={row}
+          linked={row.key === linked}
           target={target}
           sourceName={view.project.source?.name ?? 'Source'}
           editable={view.viewer !== null}
@@ -113,13 +139,13 @@ function BackToLocale({ name }: Readonly<{ name?: string }>) {
   );
 }
 
-function MissingNamespace({ namespace }: Readonly<{ namespace: string }>) {
+function MissingFile({ file }: Readonly<{ file: string }>) {
   return (
     <LinguaPage viewer={null}>
       <BackToLocale />
       <EmptyState.Root icon="file-off">
-        <EmptyState.Title>No such namespace</EmptyState.Title>
-        <EmptyState.Hint>{`The source has no ${namespace} namespace.`}</EmptyState.Hint>
+        <EmptyState.Title>No such file</EmptyState.Title>
+        <EmptyState.Hint>{`The source has no ${file} file.`}</EmptyState.Hint>
       </EmptyState.Root>
     </LinguaPage>
   );
@@ -129,7 +155,7 @@ function NamespaceHeading({ view }: Readonly<{ view: NamespaceView }>) {
   const { language } = view.locale;
   return (
     <Column gap={6}>
-      <Text variant="h1">{view.namespace}</Text>
+      <Text variant="h1">{view.file}</Text>
       <Text color="textMuted">{`${view.project.id} · ${language.name} (${language.nativeName})`}</Text>
     </Column>
   );
@@ -137,16 +163,16 @@ function NamespaceHeading({ view }: Readonly<{ view: NamespaceView }>) {
 
 function NamespacePage() {
   const view = Route.useLoaderData();
-  const { locale, namespace } = Route.useParams();
+  const { locale, _splat: file = '' } = Route.useParams();
   if (!view) {
-    return <MissingNamespace namespace={namespace} />;
+    return <MissingFile file={file} />;
   }
   return (
     <LinguaPage viewer={view.viewer}>
       <BackToLocale name={view.locale.language.name} />
       <NamespaceHeading view={view} />
       {view.viewer ? null : <SignInPrompt />}
-      <Messages key={`${locale}/${namespace}`} view={view} />
+      <Messages key={`${locale}/${file}`} view={view} />
       {view.viewer ? (
         <SendBar
           project={view.project.id}

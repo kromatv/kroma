@@ -65,7 +65,7 @@ async function call<S extends z.ZodType>({
 export function saveEdit(edit: {
   project: string;
   locale: string;
-  namespace: string;
+  file: string;
   key: string;
   value: string;
 }): Promise<Saved> {

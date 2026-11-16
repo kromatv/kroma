@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CONFIG_PATH, type LinguaConfig, matchCatalog, parseConfig } from '#site/core/config';
+import { CONFIG_PATH, type LinguaConfig, parseConfig, placeOf, rootOf } from '#site/core/config';
 import type { FileRow, Project, Store } from '#site/store/store';
 import { type GitHub, GitHubError } from './client';
 
@@ -93,10 +93,11 @@ async function configAt(gh: GitHub, repo: string, tree: readonly TreeEntry[]) {
     : { config: null, text: null, error: parsed.error };
 }
 
-function catalogEntries(config: LinguaConfig | null, tree: readonly TreeEntry[]) {
+function projectEntries(config: LinguaConfig | null, tree: readonly TreeEntry[]) {
+  const root = config ? rootOf(config) : null;
   return tree.flatMap((entry) => {
-    const match = config && entry.type === 'blob' ? matchCatalog(config, entry.path) : null;
-    return match ? [{ ...match, sha: entry.sha }] : [];
+    const place = root !== null && entry.type === 'blob' ? placeOf(root, entry.path) : null;
+    return place ? [{ ...place, path: entry.path, sha: entry.sha }] : [];
   });
 }
 
@@ -111,13 +112,13 @@ async function readTree(gh: GitHub, repo: string, tree: string) {
     };
   }
   const found = await configAt(gh, repo, read.tree);
-  return { ...found, entries: catalogEntries(found.config, read.tree) };
+  return { ...found, entries: projectEntries(found.config, read.tree) };
 }
 
 async function refreshFiles(
   { gh, store }: Syncing,
   repo: string,
-  entries: ReturnType<typeof catalogEntries>,
+  entries: ReturnType<typeof projectEntries>,
 ) {
   const held = await store.files(repo);
   const known = new Map(held.map((f) => [f.path, f.blobSha]));
@@ -137,9 +138,9 @@ async function refreshFiles(
 }
 
 /**
- * Bring a project's copy of its catalogs level with its default branch: read
- * `lingua.json`, then fetch only the files whose blob changed since the last
- * sync. Returns whether anything moved.
+ * Bring a project's copy of its i18n folder level with its default branch:
+ * read `lingua.json`, then fetch only the files whose blob changed since the
+ * last sync. Returns whether anything moved.
  */
 export async function syncProject(
   syncing: Syncing,

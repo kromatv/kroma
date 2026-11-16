@@ -12,6 +12,9 @@ function row(over: Partial<RowView> = {}): RowView {
     proposed: false,
     plural: null,
     issues: [],
+    state: 'missing',
+    notes: [],
+    confirmed: false,
     ...over,
   };
 }

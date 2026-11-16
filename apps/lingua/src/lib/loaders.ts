@@ -7,19 +7,19 @@ export const projectInput = ({ id }: { id: string }) => ({ id });
 /** A language page's input. */
 export const localeInput = ({ id, locale }: { id: string; locale: string }) => ({ id, locale });
 
-/** A namespace page's input. */
+/** A catalog file page's input. */
 export const namespaceInput = ({
   id,
   locale,
-  namespace,
+  file,
 }: {
   id: string;
   locale: string;
-  namespace: string;
+  file: string;
 }) => ({
   id,
   locale,
-  namespace,
+  file,
 });
 
 /** `/`. */
@@ -47,11 +47,11 @@ export const getLocale = createServerFn()
     return localeView(await requestContext(), data.id, data.locale);
   });
 
-/** `/$owner/$repo/$locale/$namespace`, or null for a namespace the source does not have. */
+/** `/$owner/$repo/$locale/$file`, or null for a file the source does not have. */
 export const getNamespace = createServerFn()
   .validator(namespaceInput)
   .handler(async ({ data }): Promise<NamespaceView | null> => {
     const { requestContext } = await import('#site/server/request');
     const { namespaceView } = await import('#site/server/views');
-    return namespaceView(await requestContext(), data.id, data.locale, data.namespace);
+    return namespaceView(await requestContext(), data.id, { locale: data.locale, file: data.file });
   });

@@ -15,6 +15,15 @@ export interface Progress {
   total: number;
 }
 
+/** How far a language has come in the project's `i18n.json`: a `draft` is offered to no reader yet. */
+export type Stage = 'draft' | 'beta' | 'stable';
+
+/** Where a message stands in a language: `outdated` when the source moved since it was translated, `unreviewed` when a machine wrote it. */
+export type RowState = 'missing' | 'translated' | 'outdated' | 'unreviewed';
+
+/** How many messages stand in each state. */
+export type StateCounts = Record<RowState, number>;
+
 /** A language, named in English and in itself. */
 export interface Language {
   tag: string;
@@ -38,11 +47,14 @@ export interface HomeView {
   installUrl: string | null;
 }
 
-/** One language of a project, with how far along it is. */
+/** One language of a project, with how far along it is. `started` is a language only the viewer has, until they send it. */
 export interface LocaleSummary {
   language: Language;
+  stage: Stage;
   progress: Progress;
+  states: StateCounts;
   isSource: boolean;
+  started: boolean;
 }
 
 /** `/$owner/$repo`: a project's languages. */
@@ -53,10 +65,11 @@ export interface ProjectView {
   locales: LocaleSummary[];
 }
 
-/** One namespace of a language, with how far along it is and how many unsent edits the viewer holds there. */
+/** One catalog file of a language (`nav`, `admin/backup`), with how far along it is and how many unsent edits the viewer holds there. */
 export interface NamespaceSummary {
-  namespace: string;
+  file: string;
   progress: Progress;
+  states: StateCounts;
   drafts: number;
 }
 
@@ -86,7 +99,9 @@ export interface Reference {
 /**
  * One message to translate. `current` is what the default branch says,
  * `draft` the viewer's unsent or proposed edit, `plural` the CLDR category the
- * message renders (null when it is not a plural form).
+ * message renders (null when it is not a plural form), `notes` what the
+ * project tells translators about it, most specific last, and `confirmed`
+ * whether the viewer holds a confirm of it.
  */
 export interface RowView {
   key: string;
@@ -97,14 +112,17 @@ export interface RowView {
   proposed: boolean;
   plural: string | null;
   issues: Issue[];
+  state: RowState;
+  notes: string[];
+  confirmed: boolean;
 }
 
-/** `/$owner/$repo/$locale/$namespace`: every message of one namespace in one language. */
+/** `/$owner/$repo/$locale/$file`: every message of one catalog file in one language. */
 export interface NamespaceView {
   viewer: Viewer | null;
   project: ProjectSummary;
   locale: LocaleSummary;
-  namespace: string;
+  file: string;
   rows: RowView[];
   drafts: number;
   proposed: number;

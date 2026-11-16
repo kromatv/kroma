@@ -7,7 +7,7 @@ import type { Issue, RowView } from '#site/lib/views';
 export interface MessageTarget {
   project: string;
   locale: string;
-  namespace: string;
+  file: string;
 }
 
 /** How the last save of a message went. */

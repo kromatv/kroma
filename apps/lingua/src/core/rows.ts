@@ -58,12 +58,3 @@ export function rowsFor(source: Messages, locale: string): Row[] {
   }
   return rows;
 }
-
-/** How much of `rows` a language's messages already say. */
-export function progressOf(
-  rows: readonly Row[],
-  messages: Messages,
-): { done: number; total: number } {
-  const done = rows.filter((row) => (messages[row.key] ?? '').trim() !== '').length;
-  return { done, total: rows.length };
-}
