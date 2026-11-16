@@ -19,6 +19,7 @@ mod naming;
 mod place;
 mod recycle;
 mod replace;
+mod series_home;
 mod subtitles;
 
 pub use recycle::empty_recycle_bin;
@@ -28,6 +29,7 @@ use ledger::{until_it_lands, BUSY_BACKOFF};
 use naming::{episode_ctx, movie_ctx, resolve_meta, stem_of};
 use place::{ext_of, Placement};
 use replace::drop_replaced;
+use series_home::{episode_dest, SeriesHome};
 use subtitles::place_with_subtitles;
 
 #[derive(Debug, Default)]
@@ -162,6 +164,10 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
             .ok_or_else(|| anyhow!("library {} has no folder", lib.name))?,
     );
     let tpl = kroma_naming::NamingTemplates::read(|k, d| state.setting_str(k, d));
+    let home = match row.kind.as_str() {
+        "movie" => None,
+        _ => SeriesHome::find(state, meta.tmdb_id, &lib)?,
+    };
     let replacing = row.upgrade
         && state.setting_bool("acqReplaceOnUpgrade", true)
         && !crate::rules::store::is_beside(state.store(), &row.id)?;
@@ -190,7 +196,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
                 .ok_or_else(|| anyhow!("could not determine the episode number"))?;
             let season = row.season.or(parsed.season).unwrap_or(1);
             let ctx = episode_ctx(&meta, season, episode, &parsed);
-            let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(largest_video)));
+            let dest = episode_dest(&tpl, home.as_ref(), &lib_root, &ctx, ext_of(largest_video));
             let at = place_with_subtitles(state, largest_video, content.files(), &dest, mode)?;
             placed.push((
                 Replaced::Episode(season, episode),
@@ -218,7 +224,7 @@ fn import_one<S: HostStorage>(state: &S, row: &DownloadRow) -> Result<Vec<String
                     continue;
                 }
                 let ctx = episode_ctx(&meta, season, episode, &parsed);
-                let dest = lib_root.join(tpl.episode_rel_path(&ctx, ext_of(src)));
+                let dest = episode_dest(&tpl, home.as_ref(), &lib_root, &ctx, ext_of(src));
                 let at = place_with_subtitles(state, src, content.files(), &dest, mode)?;
                 placed.push((
                     Replaced::Episode(season, episode),
