@@ -3,6 +3,7 @@ import type { Messages } from './catalog';
 const CATEGORY = /_(zero|one|two|few|many|other)$/;
 
 const COUNTED_BELOW = 1000;
+const CLDR_ORDER = ['zero', 'one', 'two', 'few', 'many', 'other'] as const;
 const reachedBy = new Map<string, string[]>();
 
 /**
@@ -17,10 +18,7 @@ export function pluralCategories(locale: string): string[] {
   }
   const rules = new Intl.PluralRules(locale);
   const reached = new Set(Array.from({ length: COUNTED_BELOW }, (_, n) => rules.select(n)));
-  const categories = [
-    ...rules.resolvedOptions().pluralCategories.filter((c) => c !== 'other' && reached.has(c)),
-    'other',
-  ];
+  const categories = [...CLDR_ORDER.filter((c) => c !== 'other' && reached.has(c)), 'other'];
   reachedBy.set(locale, categories);
   return categories;
 }
