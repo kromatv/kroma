@@ -208,7 +208,7 @@
     "modules/tv.kroma.torrents/ui/src/downloads-page.component.tsx": 1,
     "modules/tv.kroma.torrents/ui/src/link-modal.component.tsx": 1,
     "modules/tv.kroma.torrents/ui/src/manual-grab-content.tsx": 1,
-    "modules/tv.kroma.torrents/ui/src/manual-grab.component.tsx": 2,
+    "modules/tv.kroma.torrents/ui/src/manual-grab.component.tsx": 1,
     "modules/tv.kroma.torrents/ui/src/title-picker.component.tsx": 1,
     "modules/tv.kroma.torrents/ui/src/torrent-contents.component.tsx": 1,
     "modules/tv.kroma.vpn/ui/src/mullvad-panel.component.tsx": 1,
