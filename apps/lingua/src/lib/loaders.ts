@@ -1,5 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
-import type { HomeView, LocaleView, NamespaceView, ProjectView } from '#site/lib/views';
+import { z } from 'zod';
+import type {
+  HomeView,
+  LocaleView,
+  NamespaceView,
+  ProjectView,
+  SetupView,
+  SiteView,
+} from '#site/lib/views';
 
 /** What crosses the wire for a project page: the `owner/repo` id, and nothing else a caller hung off it. */
 export const projectInput = ({ id }: { id: string }) => ({ id });
@@ -54,4 +62,22 @@ export const getNamespace = createServerFn()
     const { requestContext } = await import('#site/server/request');
     const { namespaceView } = await import('#site/server/views');
     return namespaceView(await requestContext(), data.id, { locale: data.locale, file: data.file });
+  });
+
+/** Every page's chrome, from the root route. */
+export const getSite = createServerFn().handler(async (): Promise<SiteView> => {
+  const { servedRequest } = await import('#site/server/request');
+  const { siteView } = await import('#site/server/views');
+  const { env, origin } = await servedRequest();
+  return siteView(env, origin);
+});
+
+/** `/setup`, given the code GitHub returned with when it did. */
+export const getSetup = createServerFn()
+  .validator(z.object({ code: z.string().max(64).nullable() }))
+  .handler(async ({ data }): Promise<SetupView> => {
+    const { requestContext, servedRequest } = await import('#site/server/request');
+    const { setupView } = await import('#site/server/views');
+    const { origin, cookies } = await servedRequest();
+    return setupView(await requestContext(), { origin, code: data.code, cookies });
   });

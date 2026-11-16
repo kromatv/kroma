@@ -128,3 +128,35 @@ export interface NamespaceView {
   proposed: number;
   proposal: ProposalView | null;
 }
+
+/** What every page's chrome needs: the address this deployment answers on, and whether anyone can sign in. */
+export interface SiteView {
+  origin: string;
+  signIn: boolean;
+}
+
+/** An account a GitHub App can be created under: the operator's own, or an organisation they administer. */
+export interface AppOwner {
+  login: string;
+  avatarUrl: string | null;
+  kind: 'user' | 'organization';
+}
+
+/**
+ * `/setup`: what this deployment has connected to GitHub. `manifest` is the
+ * App's manifest as GitHub's form takes it, `owners` the accounts the operator
+ * may create it under (empty until they let Lingua list them), `repositories`
+ * how many the App syncs, and `code` the one GitHub returned with, while it
+ * still waits to be traded for the App's secrets.
+ */
+export interface SetupView {
+  viewer: Viewer | null;
+  origin: string;
+  app: boolean;
+  signIn: boolean;
+  installUrl: string | null;
+  repositories: number;
+  manifest: string;
+  owners: AppOwner[];
+  code: string | null;
+}

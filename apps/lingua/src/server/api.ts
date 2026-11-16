@@ -1,9 +1,12 @@
+import { defaultStringifySearch } from '@tanstack/react-router';
 import { type Context, Hono } from 'hono';
 import type { z } from 'zod';
 import { asInstallation } from '#site/github/app';
-import { authorizeUrl, userFromCode } from '#site/github/oauth';
+import { authorizeUrl, type OAuthCredentials, userFromCode } from '#site/github/oauth';
+import { type Problem, problemPath } from '#site/lib/problem';
 import { returnAddress } from '#site/lib/send-return';
 import type { Store, User } from '#site/store/store';
+import { appOwners, askForOwners, LISTING_OWNERS, ownersCookie } from './app-owners';
 import { answerSend, askToSend, forgetPending, type PendingSend, pendingCookie, readPending } from './authorizations';
 import { ConfirmInput, saveConfirms } from './confirms';
 import { EditInput, saveEdit } from './edits';
@@ -13,7 +16,7 @@ import { LocaleInput, startLanguage } from './locales';
 import { sendProposal, SendInput } from './proposals';
 import { resolveViewer } from './request';
 import { closeSession, cookie, openSession, randomToken, readCookie } from './session';
-import { SETUP_CODE, setupDonePage, setupPage } from './setup';
+import { SETUP_CODE } from './setup';
 import { handleDelivery, verifySignature } from './webhook';
 
 /** The slice of the Worker's execution context Lingua uses. */
@@ -69,41 +72,67 @@ const app = new Hono<Ctx>();
 
 app.get('/health', (c) => c.json({ ok: true, github: appCredentials(c.env.env) !== null, signIn: oauthCredentials(c.env.env) !== null }));
 
-app.get('/setup', (c) => {
-  const connected = { app: appCredentials(c.env.env) !== null, oauth: oauthCredentials(c.env.env) !== null };
-  return connected.app && connected.oauth ? c.text('Lingua is already set up.', 404) : setupPage(origin(c), connected);
-});
 app.get('/setup/done', async (c) => {
-  if (appCredentials(c.env.env)) return c.text('Lingua is already set up.', 404);
-  const code = c.req.query('code') ?? null;
-  if (code && SETUP_CODE.test(code)) await (await storeFor(c.env.env)).holdSetupCode(code, now());
-  return setupDonePage(code, origin(c));
+  if (appCredentials(c.env.env)) return c.redirect(problemPath('already-connected'), 303);
+  const code = c.req.query('code');
+  if (!code || !SETUP_CODE.test(code)) return c.redirect(problemPath('setup-code-missing'), 303);
+  await (await storeFor(c.env.env)).holdSetupCode(code, now());
+  return c.redirect(`/setup${defaultStringifySearch({ created: 1, code })}`, 303);
 });
+
+function toGitHub(c: Context<Ctx>, after: string, ask: (at: { redirectUri: string; state: string }) => string): Response {
+  const token = randomToken();
+  c.header('Set-Cookie', cookie(OAUTH, token, 600));
+  return c.redirect(ask({ redirectUri: callbackUri(c), state: `${token}.${after}` }));
+}
 
 app.get('/auth/login', (c) => {
   const oauth = oauthCredentials(c.env.env);
-  if (!oauth) return c.text('Sign-in is not configured on this deployment yet.', 503);
-  const token = randomToken();
-  c.header('Set-Cookie', cookie(OAUTH, token, 600));
-  const state = `${token}.${safeReturn(c.req.query('to'))}`;
-  return c.redirect(authorizeUrl(oauth, { redirectUri: callbackUri(c), state }));
+  if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
+  return toGitHub(c, safeReturn(c.req.query('to')), (at) => authorizeUrl(oauth, at));
 });
 
-async function signIn(c: Context<Ctx>): Promise<Response> {
+app.get('/auth/setup', (c) => {
   const oauth = oauthCredentials(c.env.env);
-  const token = readCookie(c.req.header('cookie'), OAUTH);
-  const [given, ...to] = (c.req.query('state') ?? '').split('.');
-  const code = c.req.query('code');
-  if (!oauth || !code || !token || given !== token) return c.text('This sign-in link expired. Try again.', 400);
+  if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
+  if (appCredentials(c.env.env)) return c.redirect('/setup', 303);
+  return toGitHub(c, LISTING_OWNERS, (at) => askForOwners(oauth, at));
+});
+
+async function signIn(c: Context<Ctx>, oauth: OAuthCredentials, code: string, to: string): Promise<Response> {
   const store = await storeFor(c.env.env);
   const user = await userFromCode(oauth, { code, redirectUri: callbackUri(c) }).catch((error: unknown) => {
     console.error('lingua: sign-in failed', error);
     return null;
   });
-  if (!user) return c.text('GitHub did not confirm the sign-in. Try again.', 400);
+  if (!user) return c.redirect(problemPath('sign-in-refused'));
   c.header('Set-Cookie', await openSession(store, user, now()), { append: true });
+  return c.redirect(safeReturn(to));
+}
+
+async function listOwners(c: Context<Ctx>, oauth: OAuthCredentials, code: string): Promise<Response> {
+  const owners = await appOwners(oauth, { code, redirectUri: callbackUri(c) }).catch((error: unknown) => {
+    console.error('lingua: listing where the App may be created failed', error);
+    return null;
+  });
+  if (!owners) return c.redirect(problemPath('owners-unlisted'));
+  c.header('Set-Cookie', await ownersCookie(owners, oauth.clientSecret), { append: true });
+  return c.redirect('/setup', 303);
+}
+
+async function returnFromGitHub(c: Context<Ctx>): Promise<Response> {
+  const oauth = oauthCredentials(c.env.env);
+  if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
+  const token = readCookie(c.req.header('cookie'), OAUTH);
+  const [given, ...rest] = (c.req.query('state') ?? '').split('.');
+  const after = rest.join('.');
+  const listing = after === LISTING_OWNERS;
+  const failed = (problem: Problem) => c.redirect(problemPath(listing ? 'owners-unlisted' : problem));
+  if (!token || given !== token) return failed('sign-in-expired');
   c.header('Set-Cookie', cookie(OAUTH, '', 0), { append: true });
-  return c.redirect(safeReturn(to.join('.')));
+  const code = c.req.query('code');
+  if (!code) return failed('sign-in-refused');
+  return listing ? listOwners(c, oauth, code) : signIn(c, oauth, code, after);
 }
 
 async function returnFromSend(c: Context<Ctx>, pending: PendingSend): Promise<Response> {
@@ -125,7 +154,7 @@ async function returnFromSend(c: Context<Ctx>, pending: PendingSend): Promise<Re
 
 app.get('/auth/callback', async (c) => {
   const pending = readPending(c.req.header('cookie'));
-  return pending && c.req.query('state') === pending.state ? returnFromSend(c, pending) : signIn(c);
+  return pending && c.req.query('state') === pending.state ? returnFromSend(c, pending) : returnFromGitHub(c);
 });
 
 app.post('/auth/logout', async (c) => {
