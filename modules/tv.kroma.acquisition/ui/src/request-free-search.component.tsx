@@ -195,6 +195,7 @@ function bodyFor(r: ManualReleaseView) {
   return {
     magnetOrUrl: r.downloadUrl ?? r.detailsUrl ?? '',
     protocol: r.protocol,
+    releaseTitle: r.title,
     kind,
     title: r.parsedTitle || null,
     year: r.year,

@@ -164,7 +164,9 @@ unpacking to the client, so the importer finds plain video files, as it does for
   answers whether any grab can still go out. An automatic search asks once per pass and skips
   the releases of a held protocol, so a Usenet release still goes through.
 - **Manual add** asks which protocol a pasted link is, from the protocols the enabled clients
-  take, and only offers file selection for a torrent.
+  take, and only offers file selection for a torrent. It also sends the release's name, which
+  a magnet carries in its `dn=` and an `.nzb` link does not, so the queue and the client name
+  the download after the release rather than the title.
 
 ## Unresolved
 

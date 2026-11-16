@@ -50,6 +50,7 @@ function addBody(
   return {
     magnetOrUrl: source.magnet,
     protocol: source.protocol,
+    releaseTitle: source.releaseTitle || null,
     kind: target.kind,
     title: target.title.trim() || null,
     year: numberOf(target.year),

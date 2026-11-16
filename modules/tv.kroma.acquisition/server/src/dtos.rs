@@ -179,6 +179,8 @@ pub struct ManualAddBody {
     pub magnet_or_url: String,
     #[serde(default)]
     pub protocol: Option<String>,
+    #[serde(default)]
+    pub release_title: Option<String>,
     pub kind: String,
     pub title: Option<String>,
     pub year: Option<u32>,

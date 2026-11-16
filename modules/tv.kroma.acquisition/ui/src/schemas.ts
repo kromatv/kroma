@@ -28,6 +28,7 @@ export type TorrentAnalysis = z.infer<typeof TorrentAnalysis>;
 export const ManualAddBody = z.object({
   magnetOrUrl: z.string(),
   protocol: z.string().nullish(),
+  releaseTitle: z.string().nullish(),
   kind: z.string(),
   title: z.string().nullable(),
   year: z.number().nullable(),
