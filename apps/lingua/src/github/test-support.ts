@@ -151,12 +151,12 @@ function urlOf(input: RequestInfo | URL): URL {
  */
 export function gitHubFetch(fake: FakeRepository): typeof fetch & { calls: Call[] } {
   const calls: Call[] = [];
-  const fetchFn = async (input: RequestInfo | URL, init?: RequestInit) => {
+  const fetchFn = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = urlOf(input);
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
     const call = { method: init?.method ?? 'GET', path: `${url.pathname}${url.search}`, body };
     calls.push(call);
-    return respond(fake, call);
+    return Promise.resolve(respond(fake, call));
   };
   return Object.assign(fetchFn, { calls });
 }
