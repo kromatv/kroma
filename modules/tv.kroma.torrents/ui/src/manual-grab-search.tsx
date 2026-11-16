@@ -7,6 +7,7 @@ import type { ManualReleaseView } from '@kromatv/module-acquisition/schemas';
 import { apiErrorText, useFormat, useT } from '@kromatv/module-sdk';
 import { Box, Button, Field, Focusable, Icon, Row, sv, Text } from '@kromatv/ui/kit';
 import { type CSSProperties, useState } from 'react';
+import { protocolLabel } from './protocol';
 
 /** The indexer sweep, scoped by whatever the target step says: a season or an
  *  episode there makes it a TV search, which is the only way to find one. */
@@ -162,7 +163,7 @@ function ResultRow({
         </Text>
         <Row wrap gapX={10} mt={2}>
           <Text variant="meta" color="textDim">
-            {r.indexerName}
+            {[r.indexerName, protocolLabel(t, r.protocol)].filter(Boolean).join(' · ')}
           </Text>
           {r.resolution ? (
             <Text variant="meta" color="info">
