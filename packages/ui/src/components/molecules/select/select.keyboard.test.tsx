@@ -232,7 +232,7 @@ describe('the parts', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'select' });
 
     press(trigger);
-    fireEvent.click(screen.getByLabelText('Fermer'));
+    fireEvent.click(screen.getByLabelText('Close'));
     expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'outside' });
   });
 

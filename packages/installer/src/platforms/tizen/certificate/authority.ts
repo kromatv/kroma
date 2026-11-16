@@ -16,7 +16,7 @@ export interface AuthorCertificate {
   directory: string;
   certificate: string;
   key: string;
-  archive: string;
+  archive: string | null;
   password: string;
   passwordFile: string;
 }
@@ -31,9 +31,9 @@ export interface AuthorRequest {
 
 /**
  * An author certificate of this machine's own: an RSA key, a self-signed X.509
- * over it, and the PKCS#12 the Tizen tools sign with. It is the whole chain for
- * an emulator, and half of it for a retail set, whose distributor certificate
- * only Samsung can issue.
+ * over it, and, where openssl is, the PKCS#12 the Tizen tools sign with. It is
+ * the whole chain for an emulator, and half of it for a retail set, whose
+ * distributor certificate only Samsung can issue.
  */
 export async function createAuthorCertificate(request: AuthorRequest): Promise<AuthorCertificate> {
   const { directory, alias, password, subject } = request;
@@ -50,15 +50,17 @@ export async function createAuthorCertificate(request: AuthorRequest): Promise<A
   const paths = {
     certificate: join(directory, 'author.crt'),
     key: join(directory, 'author.key'),
-    archive: join(directory, 'author.p12'),
     passwordFile: join(directory, 'author.pwd'),
   };
   await writeFile(paths.certificate, toPem(certificate, 'CERTIFICATE'));
   await writeFile(paths.key, privateKey.export({ format: 'pem', type: 'pkcs8' }), { mode: 0o600 });
   await writeFile(paths.passwordFile, password, { mode: 0o600 });
-  await pack(paths, alias, password);
 
-  return { directory, password, ...paths };
+  const archive = existsSync(OPENSSL) ? join(directory, 'author.p12') : null;
+  if (archive) {
+    await pack({ ...paths, archive }, alias, password);
+  }
+  return { directory, password, archive, ...paths };
 }
 
 async function pack(
@@ -66,9 +68,6 @@ async function pack(
   alias: string,
   password: string,
 ): Promise<void> {
-  if (!existsSync(OPENSSL)) {
-    throw new Error('openssl is needed to write the .p12 and is not here');
-  }
   await runOk([
     OPENSSL,
     'pkcs12',

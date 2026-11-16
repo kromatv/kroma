@@ -19,8 +19,14 @@ export interface Television {
   developerMode: DeveloperMode;
   sideloadable: boolean;
   note: string;
+  nextStep?: string;
   runtime: Runtime | null;
   identifier?: string;
+}
+
+/** Whether a set takes an app now: developer mode on, and nothing left to do on it first. */
+export function isReady(tv: Pick<Television, 'developerMode' | 'nextStep'>): boolean {
+  return tv.developerMode === 'on' && !tv.nextStep;
 }
 
 /** `Android 12, WebView 108`, trailed by `by model` for a version nothing reported. */

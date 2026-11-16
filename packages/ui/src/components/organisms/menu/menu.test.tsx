@@ -92,7 +92,7 @@ describe('<Menu>', () => {
     expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'escape' });
 
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByLabelText('Fermer'));
+    fireEvent.click(screen.getByLabelText('Close'));
     expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'outside' });
   });
 

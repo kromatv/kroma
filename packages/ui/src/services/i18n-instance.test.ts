@@ -25,7 +25,7 @@ describe('the instance the kit translates through', () => {
       const { fallbackLocale, providerI18n, translatorFor } = await load();
 
       expect(translatorFor('en')('player.play')).toBe('Play');
-      expect(fallbackLocale()).toBe('fr');
+      expect(fallbackLocale()).toBe('en');
       expect(providerI18n()).toBeDefined();
     },
   );
@@ -39,7 +39,7 @@ describe('the instance the kit translates through', () => {
       const { fallbackLocale, providerI18n, translatorFor } = await load();
 
       expect(translatorFor('fr', shouting)('player.play')).toBe('PLAYER.PLAY');
-      expect(fallbackLocale()).toBe('fr');
+      expect(fallbackLocale()).toBe('en');
       expect(providerI18n()).not.toBe(shouting);
     },
   );

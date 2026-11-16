@@ -33,7 +33,7 @@ describe('ten-foot keyboard blur', () => {
 // space / delete / close, in that order. A glyph key draws no words, so its
 // label is its accessible name alone - which is how a test finds it.
 function tailKeys(): Element[] {
-  return ['Espace', 'Supprimer', 'Fermer'].map((name) => screen.getByLabelText(name));
+  return ['Space', 'Delete', 'Close'].map((name) => screen.getByLabelText(name));
 }
 
 describe('SearchKeyboard', () => {
@@ -90,10 +90,10 @@ describe('SearchKeyboard', () => {
 describe('UrlKeyboard', () => {
   // The editing keys carry the default locale's labels; the rest are their glyph.
   it.each([
-    ['deletes the last character', 'kroma', 'Supprimer', 'krom'],
+    ['deletes the last character', 'kroma', 'Delete', 'krom'],
     ['appends the key that was pressed, URL specials included', 'kroma', ':', 'kroma:'],
     ['carries a dot key of its own on the tail row', 'kroma', '.', 'kroma.'],
-    ['empties the whole value from the clear key', 'kroma.local:4040', 'Effacer', ''],
+    ['empties the whole value from the clear key', 'kroma.local:4040', 'Clear', ''],
   ])('%s', (_what, value, key, next) => {
     const onValueChange = vi.fn();
     render(<UrlKeyboard value={value} onValueChange={onValueChange} />);

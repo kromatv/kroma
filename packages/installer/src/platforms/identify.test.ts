@@ -5,6 +5,12 @@ import { identify } from './identify';
 const adb = vi.hoisted(() => vi.fn(async (): Promise<AdbDevice | null> => null));
 vi.mock('./androidtv/adb', () => ({ adbDevice: adb }));
 
+const ownAddresses = vi.hoisted(() => vi.fn((): string[] => []));
+vi.mock('../discovery/lan', async (original) => ({
+  ...(await original<typeof import('../discovery/lan')>()),
+  localAddresses: ownAddresses,
+}));
+
 const answering = (routes: Record<string, unknown>) =>
   vi.stubGlobal('fetch', (url: string) => {
     const body = routes[url];
@@ -185,6 +191,37 @@ describe('identify', () => {
 
     expect(tv?.name).toBe('75" The Frame');
     expect(tv?.note).toContain('192.168.1.124');
+  });
+
+  it('says to restart a Samsung that names this computer but keeps sdb closed', async () => {
+    ownAddresses.mockReturnValueOnce(['192.168.1.124']);
+    answering({ 'http://192.168.1.107:8001/api/v2/': theFrame });
+
+    const tv = await identify('192.168.1.107', new Set([8001]));
+
+    expect(tv).toMatchObject({
+      developerMode: 'on',
+      nextStep: 'restart it: unplug the TV for 30 seconds',
+      note: 'Developer mode on, host PC 192.168.1.124, but sdb stays closed until the TV restarts: unplug the TV for 30 seconds',
+    });
+  });
+
+  it('says a Samsung names another computer as its host PC', async () => {
+    ownAddresses.mockReturnValueOnce(['192.168.1.85']);
+    answering({ 'http://192.168.1.107:8001/api/v2/': theFrame });
+
+    const tv = await identify('192.168.1.107', new Set([8001, 26101]));
+
+    expect(tv?.nextStep).toBe('host PC is 192.168.1.124, not 192.168.1.85');
+  });
+
+  it('leaves a ready Samsung with nothing to do', async () => {
+    ownAddresses.mockReturnValueOnce(['192.168.1.124']);
+    answering({ 'http://192.168.1.107:8001/api/v2/': theFrame });
+
+    const tv = await identify('192.168.1.107', new Set([8001, 26101]));
+
+    expect(tv).not.toHaveProperty('nextStep');
   });
 
   it('dates what a Samsung runs from the model year it opens with', async () => {

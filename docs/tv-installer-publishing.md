@@ -23,8 +23,7 @@ bun run tv:smoke                    # install the tarball outside the repo, run 
 | `LICENSE` | the repository's |
 
 It has no dependency, so `npx` downloads about 115 kB and installs nothing
-else. It declares `os: darwin, linux`: the installer reads an ARP table and a
-keychain and drives `adb` and LG's tools, and Windows has not been done.
+else. It declares `os: darwin, linux, win32`.
 
 The workspace runs the installer under Bun, and its sources are typed against
 Node so that a Bun call does not compile. The smoke script is the second guard:

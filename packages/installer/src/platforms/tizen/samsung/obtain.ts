@@ -2,7 +2,11 @@ import { type LogLine, run } from '../../../shared/run';
 import { type Obtained, requestCertificates } from './request';
 import { signIn } from './sign-in';
 
-const BROWSER: Partial<Record<NodeJS.Platform, string>> = { darwin: 'open', linux: 'xdg-open' };
+const BROWSER: Partial<Record<NodeJS.Platform, readonly string[]>> = {
+  darwin: ['open'],
+  linux: ['xdg-open'],
+  win32: ['rundll32', 'url.dll,FileProtocolHandler'],
+};
 
 export interface CertificateWish {
   duid: string;
@@ -19,7 +23,7 @@ export async function obtainCertificates({ duid, log }: CertificateWish): Promis
     log(`sign in to your Samsung account in the browser. If none opened, go to: ${url}`);
     const opener = BROWSER[process.platform];
     if (opener) {
-      run([opener, url]).catch(() => undefined);
+      run([...opener, url]).catch(() => undefined);
     }
   });
   return requestCertificates({ access, duid, log });

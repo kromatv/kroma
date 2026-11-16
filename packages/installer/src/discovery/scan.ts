@@ -111,7 +111,11 @@ export async function watch(options: WatchOptions): Promise<Television[]> {
       onFound: (tv) => {
         const before = seen.get(tv.host);
         seen.set(tv.host, tv);
-        if (before?.developerMode !== tv.developerMode || before?.name !== tv.name) {
+        if (
+          before?.developerMode !== tv.developerMode ||
+          before?.nextStep !== tv.nextStep ||
+          before?.name !== tv.name
+        ) {
           options.onFound?.(tv);
         }
       },

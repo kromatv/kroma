@@ -93,6 +93,20 @@ describe('scanCommand', () => {
     expect(printed[0]).toContain('[TV] Salon');
   });
 
+  it('prints what to do on a set that is on but not ready yet', async () => {
+    const waiting = {
+      ...salon,
+      nextStep: 'restart it: unplug the TV for 30 seconds',
+      note: 'Developer mode on, host PC 192.168.1.85, but sdb stays closed until the TV restarts: unplug the TV for 30 seconds',
+    };
+    scan.mockResolvedValue([waiting]);
+
+    await scanCommand(options);
+
+    expect(printed[0]).toContain(waiting.note);
+    expect(printed[0]).not.toContain('ready');
+  });
+
   it('prints what a set runs under its own line', async () => {
     scan.mockResolvedValue([cuisine]);
 

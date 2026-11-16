@@ -25,7 +25,7 @@ téléviseur.
 ## Installer depuis un ordinateur
 
 Les téléviseurs Samsung, LG et Android TV installent KROMA depuis un ordinateur
-Mac ou Linux, avec l'installeur de KROMA. Il nécessite
+Mac, Windows ou Linux, avec l'installeur de KROMA. Il nécessite
 [Node.js](https://nodejs.org) 22 ou plus récent. Chaque guide ci-dessus indique
 ce qu'il faut d'abord activer sur le téléviseur. Lancez ensuite l'installeur :
 
@@ -46,8 +46,8 @@ l'a installé :
 npx @kromatv/installer update
 ```
 
-L'installeur ne fonctionne pas sur Windows. Chaque guide propose une autre
-méthode pour Windows.
+Sur Windows, lancez-le dans PowerShell ou l'invite de commandes, pas dans WSL :
+WSL a son propre réseau et ne trouve pas le téléviseur.
 
 ## Connecter le téléviseur à votre serveur
 

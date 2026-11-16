@@ -126,10 +126,10 @@ async fn the_matrix_lists_every_kind_under_its_category_in_the_readers_language(
     assert_eq!(status, StatusCode::OK);
     let job = kind(&prefs, "system.job.failed");
     assert_eq!(job["category"], json!("system"));
-    assert_eq!(job["label"], json!("Tâche en échec"));
+    assert_eq!(job["label"], json!("Task failed"));
     let completed = kind(&prefs, COMPLETED);
     assert_eq!(completed["category"], json!("downloads"));
-    assert_eq!(completed["label"], json!("Téléchargements terminés"));
+    assert_eq!(completed["label"], json!("Finished downloads"));
     assert_eq!(completed["inApp"], json!(true));
     assert_eq!(completed["push"], json!(false));
 }
@@ -180,7 +180,7 @@ async fn a_type_a_module_declared_reaches_its_reader_in_their_own_language() {
     assert!(body["sent"].as_u64().unwrap() >= 1, "{body}");
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
     let row = &inbox["notifications"][0];
-    assert_eq!(row["title"], json!("Téléchargement terminé"));
+    assert_eq!(row["title"], json!("Download finished"));
     assert_eq!(row["body"], json!("Dune.2021"));
     assert_eq!(row["category"], json!("downloads"));
 }

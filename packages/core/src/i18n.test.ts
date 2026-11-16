@@ -59,8 +59,8 @@ describe('detectLocale', () => {
   it('falls back to the default locale when navigator has no supported locale', () => {
     // Bun's navigator.language varies by machine and CI, so stub it out.
     vi.stubGlobal('navigator', undefined);
-    expect(detectLocale('xx')).toBe('fr');
-    expect(detectLocale(null as unknown as string)).toBe('fr');
+    expect(detectLocale('xx')).toBe('en');
+    expect(detectLocale(null as unknown as string)).toBe('en');
   });
 
   it('uses navigator languages when no explicit preference resolves', () => {
@@ -111,9 +111,12 @@ describe('catalogs added at runtime', () => {
   });
 
   it('falls back inside the scope to its default locale', () => {
-    const dispose = addCatalogs('probe.fallback', catalogs);
+    const dispose = addCatalogs('probe.fallback', {
+      en: { item: '{count} items' },
+      fr: { greeting: 'Bonjour {name}' },
+    });
 
-    expect(createTranslator('en', 'probe.fallback')('item', { count: 5 })).toBe('5 articles');
+    expect(createTranslator('fr', 'probe.fallback')('item', { count: 5 })).toBe('5 items');
 
     dispose();
   });

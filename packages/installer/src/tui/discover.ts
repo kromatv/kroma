@@ -3,7 +3,7 @@ import { watch } from '../discovery/scan';
 import { diagnoseEmptyScan } from '../discovery/hints';
 import { askForLocalNetwork, openPrivacySettings } from '../discovery/local-network';
 import { platformFor } from '../platforms/registry';
-import { runtimeLabel, type Television } from '../shared/television';
+import { isReady, runtimeLabel, type Television } from '../shared/television';
 import { type LiveOption, liveMultiselect } from './live-multiselect';
 
 const MAX_ROUNDS = 40;
@@ -90,6 +90,11 @@ export async function discover(
       }
       say(true);
     },
+  }).catch((error: unknown) => {
+    doing = 'stopped looking';
+    picker.notice(`the scan stopped: ${error instanceof Error ? error.message : String(error)}`);
+    say(true);
+    return [];
   });
 
   const ticked = await picker.answer;
@@ -129,13 +134,16 @@ function asOption(tv: Television): LiveOption<string> {
     label: `${tv.name}  ${tv.host}`,
     hint: parts.filter((part) => part !== '').join(' · '),
     disabled: !tv.sideloadable,
-    ticked: tv.developerMode === 'on',
+    ticked: isReady(tv),
   };
 }
 
 function state(tv: Television): string {
   if (!tv.sideloadable) {
     return 'takes no app';
+  }
+  if (tv.nextStep) {
+    return tv.nextStep;
   }
   return tv.developerMode === 'on' ? 'ready' : platformFor(tv.platform).notReadyHint;
 }

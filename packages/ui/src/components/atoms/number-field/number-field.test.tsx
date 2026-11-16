@@ -30,7 +30,7 @@ describe('NumberField', () => {
     press('ArrowDown');
 
     const edge = activeTheme().ring.focusEdge;
-    const step = screen.getByLabelText('Augmenter');
+    const step = screen.getByLabelText('Increase');
     expect(declared(step, 'outlineOffset')).toBe(`${edge.outlineOffset}px`);
     expect(declared(step, 'outlineWidth')).toBe(`${edge.outlineWidth}px`);
   });
@@ -44,6 +44,6 @@ describe('NumberField', () => {
       </FocusScope>,
     );
 
-    expect(wearsRing(screen.getByLabelText('Augmenter'))).toBe(false);
+    expect(wearsRing(screen.getByLabelText('Increase'))).toBe(false);
   });
 });

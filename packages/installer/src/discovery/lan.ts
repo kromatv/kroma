@@ -2,7 +2,8 @@ import { networkInterfaces } from 'node:os';
 
 // A television sits on the network the router hands out, and sweeping the
 // virtual bridges beside it triples how long a scan takes for nothing.
-const VIRTUAL = /^(bridge|utun|awdl|llw|anpi|ap\d|docker|virbr|br-|tun|tap|veth|zt|wg)/;
+const VIRTUAL =
+  /^(bridge|utun|awdl|llw|anpi|ap\d|docker|virbr|br-|tun|tap|veth|zt|wg|vEthernet|VirtualBox|VMware)/;
 
 export interface Subnet {
   iface: string;
@@ -26,6 +27,15 @@ export function localSubnets(): Subnet[] {
     }
   }
   return out;
+}
+
+/** Every IPv4 address this machine holds, loopback aside, virtual interfaces included. */
+export function localAddresses(): string[] {
+  return Object.values(networkInterfaces()).flatMap((entries) =>
+    (entries ?? [])
+      .filter((entry) => entry.family === 'IPv4' && !entry.internal)
+      .map((entry) => entry.address),
+  );
 }
 
 /** `192.168.1.42` -> `192.168.1`, or null for anything that is not dotted-quad IPv4. */

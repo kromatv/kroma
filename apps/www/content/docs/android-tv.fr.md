@@ -75,9 +75,9 @@ KROMA. Il fonctionne quand le téléviseur propose **Network debugging** ou
 avec un code d'association demande plutôt
 [Depuis un ordinateur, avec un code d'association](#depuis-un-ordinateur-avec-un-code-dassociation).
 
-Il vous faut un ordinateur Mac ou Linux sur le même réseau que le téléviseur,
-avec [Node.js](https://nodejs.org) 22 ou plus récent. `node --version` affiche
-la version. L'installeur ne fonctionne pas sur Windows.
+Il vous faut un ordinateur Mac, Windows ou Linux sur le même réseau que le
+téléviseur, avec [Node.js](https://nodejs.org) 22 ou plus récent.
+`node --version` affiche la version.
 
 1. Sur le téléviseur, ouvrez **Paramètres** > **Système** > **À propos**, puis
    sélectionnez **Build Android TV** sept fois, jusqu'à ce que le téléviseur

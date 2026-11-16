@@ -32,6 +32,7 @@ const lifetimeDays = (certificate: X509Certificate) =>
 const asked = request();
 const author = await createAuthorCertificate(asked);
 const signed = new X509Certificate(await readFile(author.certificate));
+const archive = author.archive ?? 'no archive was written';
 
 afterEach(() => {
   vi.doUnmock('./openssl');
@@ -91,7 +92,7 @@ describe('createAuthorCertificate', () => {
   it('packs an archive that opens under the password it wrote beside it', async () => {
     const written = await readFile(author.passwordFile, 'utf8');
 
-    const { chain, key } = readPkcs12({ archive: author.archive, password: written });
+    const { chain, key } = readPkcs12({ archive, password: written });
 
     expect(chain[0]?.checkPrivateKey(key)).toBe(true);
     expect(chain[0]?.subject).toBe(signed.subject);
@@ -100,19 +101,22 @@ describe('createAuthorCertificate', () => {
   it('files the key in the archive under the alias the Tizen tools look it up by', () => {
     const dumped = spawnSync(
       OPENSSL,
-      ['pkcs12', '-in', author.archive, '-nokeys', '-info', '-passin', 'stdin'],
+      ['pkcs12', '-in', archive, '-nokeys', '-info', '-passin', 'stdin'],
       { input: `${asked.password}\n`, encoding: 'utf8' },
     );
 
     expect(dumped.stdout + dumped.stderr).toContain(`friendlyName: ${asked.alias}`);
   });
 
-  it('says openssl is needed when this machine has none', async () => {
+  it('writes the key and its certificate but no archive when this machine has no openssl', async () => {
     vi.resetModules();
     vi.doMock('./openssl', () => ({ OPENSSL: join(tmpdir(), 'kroma-openssl-that-is-not-here') }));
-
     const { createAuthorCertificate: withoutOpenssl } = await import('./authority');
 
-    await expect(withoutOpenssl(request())).rejects.toThrow('openssl is needed');
+    const bare = await withoutOpenssl(request());
+
+    expect(bare.archive).toBeNull();
+    const key = createPrivateKey(await readFile(bare.key));
+    expect(new X509Certificate(await readFile(bare.certificate)).checkPrivateKey(key)).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 # Translating KROMA
 
-KROMA is written in French and kept complete in English. Every other language
+KROMA is written in English and kept complete in French. Every other language
 is a folder of JSON files that can be translated a little at a time: what is not
 translated yet reads in English.
 
@@ -14,8 +14,8 @@ bun run i18n
 
 ```
 Language      Stage   Translated  Unreviewed  Inherited  Outdated  Missing  Coverage
-fr  Français  source        4363           0          0         0        0      100%  ████████████████
-en  English   stable        4363           0          0         0        0      100%  ████████████████
+en  English   source        4363           0          0         0        0      100%  ████████████████
+fr  Français  stable        4363           0          0         0        0      100%  ████████████████
 de  Deutsch   beta          2410         800          0        12     1941     55.5%  █████████░░░░░░░
 ```
 
@@ -44,18 +44,18 @@ bun run i18n todo de --out de.todo.json
 bun run i18n todo de player. content.   # only some keys
 ```
 
-The file lists each message with its French source, the English text, and what
-the language says today when the translation is outdated:
+The file lists each message with its English source, and what the language
+says today when the translation is outdated:
 
 ```json
 {
   "core": {
-    "player.play": { "state": "missing", "source": "Lecture", "reference": "Play" },
+    "player.play": { "state": "missing", "source": "Play" },
     "content.seasonCount": {
       "state": "missing",
       "source": {
-        "content.seasonCount": "{count} saisons",
-        "content.seasonCount_one": "{count} saison"
+        "content.seasonCount": "{count} seasons",
+        "content.seasonCount_one": "{count} season"
       }
     }
   }
@@ -105,7 +105,7 @@ bun run i18n translate de               # everything missing or outdated
 bun run i18n translate de player. --limit 100
 ```
 
-It sends each batch with the French source, the English text and the notes,
+It sends each batch with the English source and the notes,
 with no tools and none of the project's settings. An answer is checked before
 it is kept: it has to be a key that was asked for, it cannot be empty, and it
 cannot name a placeholder the source does not pass.
@@ -155,8 +155,7 @@ English, a limit on length.
   form and must exist. Russian writes `key`, `key_one`, `key_few` and
   `key_many`; Japanese writes `key` alone. `key_zero` is honoured at zero in
   every language, for a sentence like "No results".
-- Translate the meaning. The French is the source of truth and the English is
-  there to help.
+- Translate the meaning. The English is the source of truth.
 
 ## Check
 
@@ -208,7 +207,7 @@ commit. A module outside this repository uses the same commands as
 
 ## When the source changes
 
-A message whose French text changed after you translated it shows as outdated.
+A message whose English text changed after you translated it shows as outdated.
 Retranslate it, or, where your translation still holds, run:
 
 ```bash

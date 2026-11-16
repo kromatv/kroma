@@ -87,6 +87,9 @@ async function secret(value: string): Promise<string> {
   if (existsSync(value)) {
     return readFileSync(value, 'utf8').trim();
   }
+  if (process.platform !== 'darwin') {
+    return '';
+  }
 
   const { code, output } = await run(['security', 'find-generic-password', '-a', value, '-w'], {
     timeoutMs: KEYCHAIN_TIMEOUT_MS,
