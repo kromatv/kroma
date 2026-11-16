@@ -71,9 +71,9 @@ version. Android 13 and later, which includes the Chromecast with Google TV
 since its 2025 update and the Google TV Streamer, may offer only
 **Wireless debugging**.
 
-You need a Mac or a Linux computer on the same network as the TV, with
-[Node.js](https://nodejs.org) 22 or later. `node --version` prints the
-version. The installer does not run on Windows.
+You need a Mac, a Windows PC or a Linux computer on the same network as the
+TV, with [Node.js](https://nodejs.org) 22 or later. `node --version` prints the
+version.
 
 1. On the TV, open **Settings** > **System** > **About**, select
    **Android TV OS build** seven times, until the TV says that you are a

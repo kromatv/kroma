@@ -172,6 +172,15 @@ describe('discover', () => {
     expect(lastStatus()).toBe('nothing new · no TV yet');
   });
 
+  it('stops looking and says why when the scan fails', async () => {
+    vi.mocked(watch).mockRejectedValue(new Error('spawn arp ENOENT'));
+    picker.reply([]);
+
+    expect(await within(discover())).toEqual([]);
+    expect(picker.notice).toHaveBeenCalledExactlyOnceWith('the scan stopped: spawn arp ENOENT');
+    expect(lastStatus()).toBe('stopped looking · no TV yet');
+  });
+
   it('counts a round that found something as a reason to keep going', async () => {
     scanReports(({ onRound, onFound }) => {
       onRound?.(1);

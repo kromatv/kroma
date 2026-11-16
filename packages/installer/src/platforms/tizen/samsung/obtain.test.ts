@@ -61,6 +61,14 @@ describe('obtainCertificates', () => {
     expect(run).toHaveBeenCalledWith(['xdg-open', SIGN_IN]);
   });
 
+  it('opens the sign-in through the URL handler on Windows, whatever its address holds', async () => {
+    on('win32');
+
+    await obtainCertificates({ duid: '1900A2C4D6E8', log });
+
+    expect(run).toHaveBeenCalledWith(['rundll32', 'url.dll,FileProtocolHandler', SIGN_IN]);
+  });
+
   it('only says the address on a system it knows no browser command for', async () => {
     on('freebsd');
 

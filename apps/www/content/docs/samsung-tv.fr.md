@@ -18,15 +18,15 @@ votre téléviseur peut faire fonctionner :
 ## Avant de commencer
 
 - Un téléviseur Samsung connecté de 2017 ou plus récent.
-- Un ordinateur Mac ou Linux sur le même réseau que le téléviseur, avec
-  [Node.js](https://nodejs.org) 22 ou plus récent. `node --version` affiche la
-  version. Sur Windows, suivez plutôt
-  [Facultatif : installer avec Tizen Studio](#facultatif--installer-avec-tizen-studio).
+- Un ordinateur Mac, Windows ou Linux sur le même réseau que le téléviseur,
+  avec [Node.js](https://nodejs.org) 22 ou plus récent. `node --version`
+  affiche la version.
 - Un compte Samsung, du même type que celui que vous utilisez sur le
   téléviseur. Il est gratuit.
 - L'adresse de votre ordinateur sur le réseau, par exemple `192.168.1.20`. Sur
   un Mac, elle se trouve dans **Réglages Système** > **Wi-Fi** > **Détails**.
-  Sur Linux, exécutez `hostname -I`. L'installeur l'affiche aussi.
+  Sur Windows, exécutez `ipconfig`. Sur Linux, exécutez `hostname -I`.
+  L'installeur l'affiche aussi.
 
 ## Activer le mode développeur sur le téléviseur
 

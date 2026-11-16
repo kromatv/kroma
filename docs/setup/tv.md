@@ -21,8 +21,8 @@ Apple TV or a Fire TV with Fire OS, or open KROMA in the TV's web browser.
 
 ## Install from a computer
 
-Samsung, LG and Android TV sets install KROMA from a Mac or a Linux computer,
-with KROMA's own installer. It needs [Node.js](https://nodejs.org) 22 or
+Samsung, LG and Android TV sets install KROMA from a Mac, a Windows PC or a
+Linux computer, with KROMA's own installer. It needs [Node.js](https://nodejs.org) 22 or
 later. Each guide above says what to turn on on the TV first. Then start the
 installer:
 
@@ -40,8 +40,8 @@ Later, update KROMA on every TV that this computer installed it on:
 npx @kromatv/installer update
 ```
 
-The installer does not run on Windows. Each guide gives another way for
-Windows.
+On Windows, run it in PowerShell or Command Prompt, not in WSL: WSL sits on a
+network of its own and does not find the TV.
 
 ## Connect the TV to your server
 

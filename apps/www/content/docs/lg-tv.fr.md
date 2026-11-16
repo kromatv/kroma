@@ -14,10 +14,9 @@ navigateur.
 ## Avant de commencer
 
 - Un téléviseur LG de 2018 ou plus récent.
-- Un ordinateur Mac ou Linux sur le même réseau que le téléviseur, avec
-  [Node.js](https://nodejs.org) 22 ou plus récent. `node --version` affiche la
-  version. Sur Windows, suivez plutôt
-  [Facultatif : installer avec webOS Dev Manager](#facultatif--installer-avec-webos-dev-manager).
+- Un ordinateur Mac, Windows ou Linux sur le même réseau que le téléviseur,
+  avec [Node.js](https://nodejs.org) 22 ou plus récent. `node --version`
+  affiche la version.
 - Un compte développeur LG gratuit. Créez-le sur
   [webostv.developer.lge.com](https://webostv.developer.lge.com) avec
   **Sign In** > **Create Account**.

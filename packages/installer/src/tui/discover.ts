@@ -90,6 +90,11 @@ export async function discover(
       }
       say(true);
     },
+  }).catch((error: unknown) => {
+    doing = 'stopped looking';
+    picker.notice(`the scan stopped: ${error instanceof Error ? error.message : String(error)}`);
+    say(true);
+    return [];
   });
 
   const ticked = await picker.answer;

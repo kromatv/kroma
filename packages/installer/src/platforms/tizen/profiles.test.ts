@@ -23,7 +23,12 @@ const xml = [
 
 const onDisk = new Map<string, string>();
 
+const running = process.platform;
+const on = (platform: string) =>
+  Object.defineProperty(process, 'platform', { value: platform, configurable: true });
+
 beforeEach(() => {
+  on('darwin');
   onDisk.clear();
   onDisk.set('/tizen-data/profile/profiles.xml', xml);
   vi.mocked(existsSync).mockImplementation((path) => onDisk.has(String(path)));
@@ -31,6 +36,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  on(running);
   vi.clearAllMocks();
 });
 
@@ -108,5 +114,12 @@ describe('readProfile', () => {
     vi.mocked(run).mockResolvedValue({ code: 1, output: 'The specified item could not be found' });
 
     expect((await readProfile('LUMA'))?.author.password).toBe('');
+  });
+
+  it('asks no keychain on a system that has none', async () => {
+    on('win32');
+
+    expect((await readProfile('LUMA'))?.author.password).toBe('');
+    expect(run).not.toHaveBeenCalled();
   });
 });
