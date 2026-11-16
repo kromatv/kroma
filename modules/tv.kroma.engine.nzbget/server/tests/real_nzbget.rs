@@ -66,6 +66,23 @@ fn a_real_nzbget_downloads_an_nzb_through_to_completed_and_forgets_it_once_remov
 
 #[test]
 #[ignore = "needs a running NZBGet with a news server"]
+fn a_real_nzbget_downloads_a_release_again_when_it_is_added_again() {
+    let client = nzbget(&env("KROMA_TEST_NZBGET_PASSWORD"));
+    let name = "Kroma.Again.2026.1080p.WEB-DL.x264-GRP";
+
+    let first = add(&client, "good.nzb", name);
+    let (once, _) = settled(&client, &first);
+    let second = add(&client, "good.nzb", name);
+    let (again, seen) = settled(&client, &second);
+    client.remove(&first, true).unwrap();
+    client.remove(&second, true).unwrap();
+
+    assert_eq!(once.state, JobState::Completed);
+    assert_eq!(again.state, JobState::Completed, "{seen:?} {:?}", again.error);
+}
+
+#[test]
+#[ignore = "needs a running NZBGet with a news server"]
 fn a_real_nzbget_fails_an_nzb_whose_articles_the_server_does_not_have() {
     let client = nzbget(&env("KROMA_TEST_NZBGET_PASSWORD"));
 

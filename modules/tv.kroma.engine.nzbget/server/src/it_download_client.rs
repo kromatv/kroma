@@ -92,7 +92,7 @@ fn add_hands_the_url_to_append_in_the_documented_parameter_order() {
             false,
             "",
             0,
-            "SCORE",
+            "FORCE",
             false
         ])
     );

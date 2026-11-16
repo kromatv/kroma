@@ -67,7 +67,7 @@ impl NzbGet {
         };
         let id: i64 = self.rpc(
             "append",
-            json!([filename, req.url, req.label, 0, false, false, "", 0, "SCORE", false]),
+            json!([filename, req.url, req.label, 0, false, false, "", 0, "FORCE", false]),
         )?;
         if id <= 0 {
             bail!("NZBGet refused the release (append returned {id})");
