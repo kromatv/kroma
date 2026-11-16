@@ -2,8 +2,7 @@ name: Lingua
 
 # Deploys apps/lingua to lingua.kroma.tv: creates its D1 database the first
 # time, applies migrations/ before the code that needs them, then publishes the
-# Worker. A dispatch with `connect` also stores the secrets of the GitHub App
-# created at lingua.kroma.tv/setup, so connecting it needs no local wrangler.
+# Worker. The repositories it translates are LINGUA_PROJECTS in wrangler.jsonc.
 #
 # Needs CLOUDFLARE_API_TOKEN in the `sites` environment (Workers Scripts and
 # D1: Edit). Without it the job skips with a notice. When LINGUA_OAUTH_CLIENT_ID
@@ -16,11 +15,6 @@ on:
       - 'apps/lingua/**'
       - '.github/workflows/lingua.yml'
   workflow_dispatch:
-    inputs:
-      connect:
-        description: Store the secrets of the GitHub App created at /setup
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -74,11 +68,6 @@ jobs:
       - name: Deploy (lingua.kroma.tv)
         if: steps.guard.outputs.has_token == 'true'
         run: bun run deploy:lingua
-
-      - name: Connect the GitHub App created at /setup
-        if: steps.guard.outputs.has_token == 'true' && inputs.connect
-        working-directory: apps/lingua
-        run: bun scripts/setup.ts --from-d1 --owner "${{ github.repository_owner }}"
 
       - name: Store the OAuth App's client id and secret
         if: steps.guard.outputs.has_token == 'true'

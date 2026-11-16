@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FileRow } from '#site/store/store';
 import { ada, projectOnDisk, removeProjects, rowsOf, sendAs, storeHolding } from './fixture';
-import { ForkPending } from './fork';
-import type { Sender } from './lane';
+import { type Forking, ForkPending } from './fork';
 import { type Call, type Fork, fakeGitHub, forkRoutes, sha } from './test-support';
 
 const FORK: Fork = { upstream: 'o/r', repo: 'Ada/r', branch: 'lingua/en' };
@@ -20,7 +19,7 @@ const project = () =>
     }),
   );
 
-const through = (gh: Fake): Sender => ({ kind: 'fork', gh, wait: async () => {} });
+const through = (gh: Fake): Forking => ({ gh, wait: async () => {} });
 
 const isWrite = (call: Call) => call.method !== 'GET' && call.method !== 'GRAPHQL';
 
@@ -122,7 +121,7 @@ describe('propose through a fork', () => {
       routes: { 'POST /repos/o/r/forks': () => ({ full_name: 'Ada/r', fork: true }) },
     });
 
-    const sending = sendAs({ kind: 'fork', gh, wait }, store);
+    const sending = sendAs({ gh, wait }, store);
 
     await expect(sending).rejects.toBeInstanceOf(ForkPending);
     expect(wait).toHaveBeenCalledTimes(9);

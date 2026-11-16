@@ -17,6 +17,7 @@
       "migrations_dir": "migrations",
     },
   ],
-  "triggers": { "crons": ["*/10 * * * *"] },
+  "vars": { "LINGUA_PROJECTS": "kromatv/kroma" },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "routes": [{ "pattern": "lingua.kroma.tv", "custom_domain": true }],
 }

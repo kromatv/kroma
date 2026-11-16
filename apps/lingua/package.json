@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Lingua (lingua.kroma.tv): translate a repository's catalogs in the browser, sign in with GitHub, and send each contributor's suggestions as a rolling pull request. Self-hosted on Cloudflare Workers + D1, synced with the repository by a GitHub App.",
+  "description": "Lingua (lingua.kroma.tv): translate a repository's catalogs in the browser, sign in with GitHub, and send each contributor's suggestions as a rolling pull request. Self-hosted on Cloudflare Workers + D1, reading public repositories on a cron.",
   "author": "Maxime Scharwath <maxscharwath@gmail.com>",
   "license": "AGPL-3.0-or-later",
   "repository": {
@@ -21,8 +21,7 @@
     "generate-routes": "tsr generate",
     "migrate": "wrangler d1 migrations apply kroma-lingua --remote",
     "migrate:local": "wrangler d1 migrations apply kroma-lingua --local",
-    "deploy": "bun run build && wrangler deploy",
-    "setup": "bun scripts/setup.ts"
+    "deploy": "bun run build && wrangler deploy"
   },
   "dependencies": {
     "@kromatv/i18n": "workspace:*",

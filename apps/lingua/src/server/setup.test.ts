@@ -1,85 +1,54 @@
 import { describe, expect, it } from 'vitest';
+import { sha } from '#site/github/test-support';
 import { memoryStore } from '#site/store/memory-store';
-import { ownersCookie } from './app-owners';
-import { appManifest } from './setup';
-import { seededStore } from './test-support';
-import { setupView } from './views';
+import type { Store } from '#site/store/store';
+import { setupView } from './setup';
 
 const ORIGIN = 'https://lingua.test';
-const CODE = 'a180b1a3d263c81bc644';
-const APP = {
-  GITHUB_APP_ID: '1',
-  GITHUB_APP_SLUG: 'lingua-test',
-  GITHUB_APP_PRIVATE_KEY: 'key',
-  GITHUB_WEBHOOK_SECRET: 'secret',
-};
 const OAUTH = { GITHUB_OAUTH_CLIENT_ID: 'id', GITHUB_OAUTH_CLIENT_SECRET: 'secret' };
+const CONFIG = JSON.stringify({ projects: [{ path: 'loc' }] });
 
-describe('appManifest', () => {
-  it('registers the App with the permissions, events and addresses of the deployment', () => {
-    expect(appManifest(ORIGIN)).toEqual({
-      name: 'Lingua lingua.test',
-      url: ORIGIN,
-      description:
-        'Translate this repository in the browser; every contributor’s edits arrive as a pull request.',
-      hook_attributes: { url: `${ORIGIN}/webhook`, active: true },
-      redirect_url: `${ORIGIN}/setup/done`,
-      public: true,
-      request_oauth_on_install: false,
-      default_permissions: { contents: 'write', pull_requests: 'write', metadata: 'read' },
-      default_events: ['push', 'pull_request'],
-    });
-  });
-});
+async function storeWith(...ids: string[]): Promise<Store> {
+  const store = memoryStore();
+  await Promise.all(ids.map((id) => store.upsertProject({ id: id, branch: 'main', pinned: false })));
+  return store;
+}
+
+const synced = (store: Store, id: string, configError: string | null = null) =>
+  store.setSynced(id, { headSha: sha('a'), treeSha: sha('0e'), config: configError ? null : CONFIG, configError, at: 1 });
 
 describe('setupView', () => {
-  it('reports every step done once both apps are set and a repository is connected', async () => {
-    const context = { env: { ...APP, ...OAUTH }, store: await seededStore(), viewer: null };
+  it('shows sign-in as set once both OAuth secrets are, and lists nothing while no repository is', async () => {
+    const view = await setupView({ env: OAUTH, store: memoryStore(), viewer: null }, ORIGIN);
 
-    const view = await setupView(context, { origin: ORIGIN, code: CODE, cookies: null });
-
-    expect(view).toMatchObject({
-      app: true,
-      signIn: true,
-      installUrl: 'https://github.com/apps/lingua-test/installations/new',
-      repositories: 1,
-      code: null,
-    });
+    expect(view).toEqual({ viewer: null, origin: ORIGIN, signIn: true, repositories: [] });
   });
 
-  it('offers the manifest and keeps the code GitHub returned while the App is missing', async () => {
-    const context = { env: {}, store: memoryStore(), viewer: null };
+  it('tells where the sync of each listed repository stands', async () => {
+    const store = await storeWith('o/current', 'o/reading', 'o/failed', 'o/broken');
+    await Promise.all([synced(store, 'o/current'), synced(store, 'o/reading'), synced(store, 'o/broken', 'lingua.json is missing')]);
+    await store.setBranchHead('o/reading', { sha: sha('b'), etag: null, progress: { done: 40, total: 90 } });
+    await store.endSync('o/current', { at: 7, error: null });
+    await store.endSync('o/failed', { at: 8, error: 'GET /repos/o/failed/commits/main: Not Found' });
+    const env = { LINGUA_PROJECTS: 'o/current, o/reading, o/failed, o/broken, o/new@next' };
 
-    const view = await setupView(context, { origin: ORIGIN, code: CODE, cookies: null });
+    const view = await setupView({ env, store, viewer: null }, ORIGIN);
 
-    expect(view).toMatchObject({
-      app: false,
-      signIn: false,
-      installUrl: null,
-      repositories: 0,
-      manifest: JSON.stringify(appManifest(ORIGIN)),
-      code: CODE,
-    });
+    expect(view.signIn).toBe(false);
+    expect(view.repositories).toEqual([
+      { id: 'o/current', branch: 'main', checkedAt: 7, sync: { kind: 'current' }, configError: null },
+      { id: 'o/reading', branch: 'main', checkedAt: null, sync: { kind: 'reading', progress: { done: 40, total: 90 } }, configError: null },
+      { id: 'o/failed', branch: 'main', checkedAt: 8, sync: { kind: 'failed', error: 'GET /repos/o/failed/commits/main: Not Found' }, configError: null },
+      { id: 'o/broken', branch: 'main', checkedAt: null, sync: { kind: 'current' }, configError: 'lingua.json is missing' },
+      { id: 'o/new', branch: 'next', checkedAt: null, sync: { kind: 'waiting' }, configError: null },
+    ]);
   });
 
-  it('hands the page the accounts this browser was handed, its own first', async () => {
-    const owners = [
-      { login: 'ada', avatarUrl: null, kind: 'user' },
-      { login: 'kromatv', avatarUrl: null, kind: 'organization' },
-    ] as const;
-    const cookies = (await ownersCookie(owners, OAUTH.GITHUB_OAUTH_CLIENT_SECRET)).split(';')[0] ?? null;
-    const context = { env: OAUTH, store: memoryStore(), viewer: null };
+  it('shows a repository it holds but never read as waiting for its first sync', async () => {
+    const store = await storeWith('o/r');
 
-    const view = await setupView(context, { origin: ORIGIN, code: null, cookies });
+    const view = await setupView({ env: { LINGUA_PROJECTS: 'o/r' }, store, viewer: null }, ORIGIN);
 
-    expect(view.owners.map((owner) => owner.login)).toEqual(['ada', 'kromatv']);
-  });
-
-  it('drops a code that is not one GitHub sends', async () => {
-    const context = { env: {}, store: memoryStore(), viewer: null };
-
-    const view = await setupView(context, { origin: ORIGIN, code: 'rm -rf /', cookies: null });
-
-    expect(view.code).toBeNull();
+    expect(view.repositories[0]?.sync).toEqual({ kind: 'waiting' });
   });
 });

@@ -13,14 +13,11 @@ import type {
   ProjectView,
   ProposalView,
   RowView,
-  SetupView,
   SiteView,
   Viewer,
 } from '#site/lib/views';
 import type { Confirm, Edit, Store, Start, User } from '#site/store/store';
-import { readOwners } from './app-owners';
-import { appCredentials, type Env, installUrl, oauthCredentials } from './env';
-import { appManifest, SETUP_CODE } from './setup';
+import { type Env, oauthCredentials } from './env';
 import { localeSummary, rowsByFile, type Stood, tally } from './standing';
 import { type Opened, openProject, readLocales, type Workspace } from './workspace';
 
@@ -46,7 +43,8 @@ export function languageOf(tag: string): Language {
   }
 }
 
-const viewerOf = (user: User | null): Viewer | null =>
+/** The signed-in contributor as the header shows them. */
+export const asViewer = (user: User | null): Viewer | null =>
   user ? { login: user.login, name: user.name, avatarUrl: user.avatarUrl } : null;
 
 function summaryOf({ project, workspace, error }: Opened): ProjectSummary {
@@ -94,14 +92,10 @@ async function offered(store: Store, id: string, viewer: User | null) {
 }
 
 /** `/`. */
-export async function homeView({ env, store, viewer }: Context): Promise<HomeView> {
+export async function homeView({ store, viewer }: Context): Promise<HomeView> {
   const projects = await store.projects();
   const opened = await Promise.all(projects.map((project) => openProject(store, project.id, null)));
-  return {
-    viewer: viewerOf(viewer),
-    projects: opened.flatMap((o) => (o ? [summaryOf(o)] : [])),
-    installUrl: installUrl(env),
-  };
+  return { viewer: asViewer(viewer), projects: opened.flatMap((o) => (o ? [summaryOf(o)] : [])) };
 }
 
 /** `/$owner/$repo`. */
@@ -114,7 +108,7 @@ export async function projectView({ store, viewer }: Context, id: string): Promi
     workspace && reading
       ? await Promise.all(workspace.locales.map(async (tag) => localeSummary(workspace, languageOf(tag), await rowsByFile(reading, tag))))
       : [];
-  return { viewer: viewerOf(viewer), project: summaryOf(opened), repoUrl: `https://github.com/${id}`, locales };
+  return { viewer: asViewer(viewer), project: summaryOf(opened), repoUrl: `https://github.com/${id}`, locales };
 }
 
 /** `/$owner/$repo/$locale`. */
@@ -126,7 +120,7 @@ export async function localeView({ store, viewer }: Context, id: string, locale:
   const byFile = await rowsByFile(reading, locale);
   const work = await viewerWork(store, id, viewer, locale);
   return {
-    viewer: viewerOf(viewer),
+    viewer: asViewer(viewer),
     project: summaryOf(opened),
     locale: localeSummary(workspace, languageOf(locale), byFile),
     namespaces: [...byFile]
@@ -178,7 +172,7 @@ export async function namespaceView({ store, viewer }: Context, id: string, at: 
   const referenced = references.map((tag) => ({ language: languageOf(tag), messages: merged(localeFiles(reading.shelf, tag)) }));
   const around = { source: reading.source, keys: new Set(Object.keys(sourceFile)), referenced, work, workspace };
   return {
-    viewer: viewerOf(viewer),
+    viewer: asViewer(viewer),
     project: summaryOf(opened),
     locale: localeSummary(workspace, languageOf(at.locale), byFile),
     file: at.file,
@@ -191,31 +185,4 @@ export async function namespaceView({ store, viewer }: Context, id: string, at: 
 /** What every page's chrome shows: where this deployment answers, and whether anyone can sign in. */
 export function siteView(env: Env, origin: string): SiteView {
   return { origin, signIn: oauthCredentials(env) !== null };
-}
-
-interface SetupAsk {
-  origin: string;
-  code: string | null;
-  cookies: string | null;
-}
-
-/** `/setup`: what this deployment has connected, and the code GitHub returned with while it is still owed. */
-export async function setupView({ env, store, viewer }: Context, ask: SetupAsk): Promise<SetupView> {
-  const app = appCredentials(env) !== null;
-  const oauth = oauthCredentials(env);
-  const [projects, owners] = await Promise.all([
-    store.projects(),
-    oauth && !app ? readOwners(ask.cookies, oauth.clientSecret) : [],
-  ]);
-  return {
-    viewer: viewerOf(viewer),
-    origin: ask.origin,
-    app,
-    signIn: oauth !== null,
-    installUrl: installUrl(env),
-    repositories: projects.length,
-    manifest: JSON.stringify(appManifest(ask.origin)),
-    owners,
-    code: !app && ask.code !== null && SETUP_CODE.test(ask.code) ? ask.code : null,
-  };
 }

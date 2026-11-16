@@ -9,6 +9,7 @@ vi.mock('@tanstack/react-start/server', () => ({
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe('resolveViewer', () => {
@@ -34,5 +35,37 @@ describe('requestContext', () => {
 
     expect(context.env.LINGUA_DB).toBe(db);
     expect(context.viewer).toEqual({ id: 42, login: 'ada', name: null, avatarUrl: null });
+  });
+});
+
+async function requestIn(workerd: object) {
+  vi.resetModules();
+  vi.stubGlobal('KROMA_WORKERD', workerd);
+  return import('./request');
+}
+
+describe('refreshAfterServing', () => {
+  it('hands the project’s pass to the Worker to finish once the page is served', async () => {
+    const held: Promise<unknown>[] = [];
+    const { refreshAfterServing } = await requestIn({ env: { LINGUA_DB: fakeD1() }, waitUntil: (p: Promise<unknown>) => held.push(p) });
+
+    await refreshAfterServing('o/r');
+
+    expect(held).toHaveLength(1);
+    await expect(held[0]).resolves.toBeUndefined();
+  });
+
+  it('logs a pass that could not run', async () => {
+    const held: Promise<unknown>[] = [];
+    const failing = fakeD1(() => {
+      throw new Error('D1 is down');
+    });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const { refreshAfterServing } = await requestIn({ env: { LINGUA_DB: failing }, waitUntil: (p: Promise<unknown>) => held.push(p) });
+
+    await refreshAfterServing('o/r');
+    await Promise.all(held);
+
+    expect(logged).toHaveBeenCalledWith('lingua: o/r did not refresh', expect.any(Error));
   });
 });

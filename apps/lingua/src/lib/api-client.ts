@@ -78,13 +78,12 @@ export function saveEdit(edit: {
 
 /**
  * Send every edit the viewer holds for a language to its pull request, opening
- * it the first time: from their fork once GitHub has their permission, or with
- * `via: 'lingua'` through Lingua's App. GitHub comes back to the page `to`.
+ * it the first time, from their fork once GitHub has their permission. GitHub
+ * comes back to the page `to`.
  */
 export function sendProposal(target: {
   project: string;
   locale: string;
-  via: 'fork' | 'lingua';
   to: string;
 }): Promise<Proposed> {
   return call({ method: 'POST', path: '/api/proposals', body: target, schema: ProposedSchema });

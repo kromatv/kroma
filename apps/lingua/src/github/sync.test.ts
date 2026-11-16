@@ -1,57 +1,71 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { memoryStore } from '#site/store/memory-store';
 import type { Store } from '#site/store/store';
-import { GitHubError } from './client';
-import { discoverInstallation, installations, syncProject } from './sync';
-import { fakeGitHub, sha } from './test-support';
+import { reader } from './reader';
+import { syncProject } from './sync';
+import { gitHubFetch, sha } from './test-support';
 
 const CONFIG = JSON.stringify({ projects: [{ path: 'loc' }] });
+const HEAD = 'GET /repos/o/r/commits/main';
 
-const BRANCH = 'GET /repos/o/r/branches/main';
-const TREE = `GET /repos/o/r/git/trees/${sha('0e')}?recursive=1`;
+const blobOf = (body: string) => createHash('sha1').update(body).digest('hex');
 
-function repository(head: string, files: Record<string, string>, config = CONFIG) {
-  const blobs: Record<string, string> = { [sha('c')]: config };
-  const tree = [
-    { path: 'lingua.json', type: 'blob', sha: sha('c') },
-    { path: 'README.md', type: 'blob', sha: sha('d') },
-  ];
-  for (const [path, body] of Object.entries(files)) {
-    const oid = sha(String(Object.keys(blobs).length + 1));
-    blobs[oid] = body;
-    tree.push({ path, type: 'blob', sha: oid });
-  }
-  return fakeGitHub({
+function repository(head: string, files: Record<string, string>, config: string | null = CONFIG) {
+  const all = config === null ? files : { 'lingua.json': config, 'README.md': '# r', ...files };
+  const tree = Object.entries(all).map(([path, body]) => ({
+    path,
+    type: 'blob',
+    sha: blobOf(body),
+  }));
+  const raw = Object.entries(all).map(([path, body]) => [
+    `GET /o/r/${head}/${path}`,
+    () => new Response(body),
+  ]);
+  return gitHubFetch({
     routes: {
-      [BRANCH]: () => ({ commit: { sha: head, commit: { tree: { sha: sha('0e') } } } }),
-      [TREE]: () => ({ truncated: false, tree }),
+      [HEAD]: (_, headers) =>
+        headers.get('if-none-match') === `"${head}"`
+          ? new Response(null, { status: 304 })
+          : new Response(head, { headers: { etag: `"${head}"` } }),
+      [`GET /repos/o/r/git/trees/${head}?recursive=1`]: () => ({
+        sha: sha('0e'),
+        truncated: false,
+        tree,
+      }),
+      ...Object.fromEntries(raw),
     },
-    blobs,
   });
 }
 
-async function current(store: Store) {
-  const found = await store.project('o/r');
-  if (!found) {
-    throw new Error('the project was not seeded');
-  }
-  return found;
-}
-
-async function seeded() {
+async function seeded(): Promise<Store> {
   const store = memoryStore();
-  await store.upsertProject('o/r', 1, 'main');
+  await store.upsertProject({ id: 'o/r', branch: 'main', pinned: false });
   return store;
 }
 
-async function sync(store: Store, gh: ReturnType<typeof fakeGitHub>, now: number) {
-  return syncProject({ gh, store }, await current(store), now);
+async function pass(
+  store: Store,
+  fetchFn: typeof fetch,
+  at: { now?: number; requests?: number } = {},
+) {
+  const project = await store.project('o/r');
+  if (!project) {
+    throw new Error('the project was not seeded');
+  }
+  const read = reader({ oauth: null, requests: at.requests ?? 45 }, fetchFn);
+  return syncProject({ reader: read, store }, project, at.now ?? 100);
 }
+
+const catalogs = (count: number) =>
+  Object.fromEntries(
+    Array.from({ length: count }, (_, i) => [`loc/en/f${i}.json`, `{"k${i}":"v"}`]),
+  );
 
 describe('syncProject', () => {
   it('copies every file of the project folder, sub-folders and locks included, and only those', async () => {
     const store = await seeded();
-    const gh = repository(sha('a'), {
+    const fetchFn = repository(sha('a'), {
       'loc/i18n.json': '{"source":"en"}',
       'loc/catalogs.ts': 'export {};',
       'loc/en/nav.json': '{"nav.home":"Home"}',
@@ -59,10 +73,10 @@ describe('syncProject', () => {
       'loc/fr/i18n.lock': '{}',
     });
 
-    const moved = await sync(store, gh, 100);
+    const outcome = await pass(store, fetchFn);
 
-    expect(moved).toBe(true);
     const files = (await store.files('o/r')).map((f) => `${f.kind} ${f.locale} ${f.file}`);
+    expect(outcome).toBe('moved');
     expect(files.sort((a, b) => a.localeCompare(b))).toEqual([
       'catalog en nav',
       'catalog fr admin/backup',
@@ -74,58 +88,115 @@ describe('syncProject', () => {
       treeSha: sha('0e'),
       config: CONFIG,
       configError: null,
+      progress: null,
     });
   });
 
-  it('does nothing while the default branch has not moved', async () => {
+  it('reads a large change over several passes, and records the head only once every file is stored', async () => {
     const store = await seeded();
-    const gh = repository(sha('a'), { 'loc/en/nav.json': '{}' });
-    await sync(store, gh, 100);
-    gh.calls.length = 0;
+    const fetchFn = repository(sha('a'), catalogs(90));
 
-    const moved = await sync(store, gh, 200);
+    const outcomes = [await pass(store, fetchFn, { now: 100 })];
+    const first = await store.project('o/r');
+    outcomes.push(await pass(store, fetchFn, { now: 200 }));
+    const second = await store.project('o/r');
+    outcomes.push(await pass(store, fetchFn, { now: 300 }));
 
-    expect(moved).toBe(false);
-    expect(gh.calls.map((c) => c.method)).toEqual(['GET']);
+    expect(outcomes).toEqual(['behind', 'behind', 'moved']);
+    expect([first?.headSha, first?.progress]).toEqual([null, { done: 40, total: 90 }]);
+    expect([second?.headSha, second?.progress]).toEqual([null, { done: 80, total: 90 }]);
+    expect(await store.project('o/r')).toMatchObject({
+      headSha: sha('a'),
+      branchSha: sha('a'),
+      progress: null,
+      syncedAt: 300,
+    });
+    expect(await store.files('o/r')).toHaveLength(90);
+  });
+
+  it('asks once, conditionally, about a branch that has not moved', async () => {
+    const store = await seeded();
+    const fetchFn = repository(sha('a'), { 'loc/en/nav.json': '{}' });
+    await pass(store, fetchFn);
+    fetchFn.calls.length = 0;
+    fetchFn.headers.length = 0;
+
+    const outcome = await pass(store, fetchFn, { now: 200 });
+
+    expect(outcome).toBe('unchanged');
+    expect(fetchFn.calls.map((c) => c.path)).toEqual(['/repos/o/r/commits/main']);
+    expect(fetchFn.headers[0]?.get('if-none-match')).toBe(`"${sha('a')}"`);
+  });
+
+  it('records the head of a branch that matches the copy without reading anything else', async () => {
+    const store = await seeded();
+    await store.setSynced('o/r', {
+      headSha: sha('a'),
+      treeSha: sha('0e'),
+      config: CONFIG,
+      configError: null,
+      at: 1,
+    });
+    const fetchFn = repository(sha('a'), {});
+
+    await pass(store, fetchFn);
+
+    expect(fetchFn.calls).toHaveLength(1);
+    expect(await store.project('o/r')).toMatchObject({
+      branchSha: sha('a'),
+      etag: `"${sha('a')}"`,
+    });
+  });
+
+  it('leaves the files for the next pass when the budget cannot reach the tree', async () => {
+    const store = await seeded();
+    const fetchFn = repository(sha('a'), { 'loc/en/nav.json': '{}' });
+
+    const outcome = await pass(store, fetchFn, { requests: 2 });
+
+    expect(outcome).toBe('behind');
+    expect(fetchFn.calls).toHaveLength(1);
+    expect(await store.project('o/r')).toMatchObject({
+      headSha: null,
+      branchSha: sha('a'),
+      progress: null,
+    });
   });
 
   it('forgets a catalog file the branch deleted', async () => {
     const store = await seeded();
-    await sync(
+    await pass(
       store,
-      repository(sha('a'), { 'loc/en/nav.json': '{}', 'loc/fr/nav.json': '{}' }),
-      100,
+      repository(sha('a'), { 'loc/en/nav.json': '{}', 'loc/fr/nav.json': '{"x":"y"}' }),
     );
 
-    await sync(store, repository(sha('b'), { 'loc/en/nav.json': '{}' }), 200);
+    await pass(store, repository(sha('b'), { 'loc/en/nav.json': '{}' }));
 
     expect((await store.files('o/r')).map((f) => f.path)).toEqual(['loc/en/nav.json']);
   });
 
   it('records why a project without a lingua.json cannot be read', async () => {
     const store = await seeded();
-    const gh = fakeGitHub({
-      routes: {
-        [BRANCH]: () => ({ commit: { sha: sha('a'), commit: { tree: { sha: sha('0e') } } } }),
-        [TREE]: () => ({ truncated: false, tree: [] }),
-      },
-    });
 
-    await sync(store, gh, 100);
+    await pass(store, repository(sha('a'), {}, null));
 
     expect((await store.project('o/r'))?.configError).toBe('lingua.json is missing');
   });
 
   it('records why a tree too large to read in one request cannot be read', async () => {
     const store = await seeded();
-    const gh = fakeGitHub({
+    const fetchFn = gitHubFetch({
       routes: {
-        [BRANCH]: () => ({ commit: { sha: sha('a'), commit: { tree: { sha: sha('0e') } } } }),
-        [TREE]: () => ({ truncated: true, tree: [] }),
+        [HEAD]: () => new Response(sha('a')),
+        [`GET /repos/o/r/git/trees/${sha('a')}?recursive=1`]: () => ({
+          sha: sha('0e'),
+          truncated: true,
+          tree: [],
+        }),
       },
     });
 
-    await sync(store, gh, 100);
+    await pass(store, fetchFn);
 
     expect((await store.project('o/r'))?.configError).toBe(
       'the repository tree is too large to read in one request',
@@ -134,74 +205,9 @@ describe('syncProject', () => {
 
   it('records why a lingua.json that does not parse cannot be read', async () => {
     const store = await seeded();
-    const gh = repository(sha('a'), {}, '{}');
 
-    await sync(store, gh, 100);
+    await pass(store, repository(sha('a'), {}, '{}'));
 
     expect((await store.project('o/r'))?.configError).toMatch(/^lingua\.json/);
-  });
-});
-
-describe('discoverInstallation', () => {
-  it('tracks the branch an operator pinned instead of the default one', async () => {
-    const store = memoryStore();
-    const gh = fakeGitHub({
-      routes: {
-        'GET /installation/repositories?per_page=100': () => ({
-          repositories: [{ full_name: 'o/r', default_branch: 'main' }],
-        }),
-        'GET /repos/o/r/contents/lingua.json?ref=next': () => ({}),
-      },
-    });
-
-    await discoverInstallation({ gh, store, branches: new Map([['o/r', 'next']]) }, 7);
-
-    expect(await store.project('o/r')).toMatchObject({ installationId: 7, branch: 'next' });
-  });
-});
-
-describe('discoverInstallation', () => {
-  it('forgets a repository whose lingua.json is gone, and skips an archived one', async () => {
-    const store = memoryStore();
-    await store.upsertProject('o/old', 7, 'main');
-    const gh = fakeGitHub({
-      routes: {
-        'GET /installation/repositories?per_page=100': () => ({
-          repositories: [
-            { full_name: 'o/old', default_branch: 'main' },
-            { full_name: 'o/archived', default_branch: 'main', archived: true },
-          ],
-        }),
-      },
-    });
-
-    await discoverInstallation({ gh, store }, 7);
-
-    expect(await store.projects()).toEqual([]);
-  });
-
-  it('passes on a failure other than a missing lingua.json', async () => {
-    const gh = fakeGitHub({
-      routes: {
-        'GET /installation/repositories?per_page=100': () => ({
-          repositories: [{ full_name: 'o/r', default_branch: 'main' }],
-        }),
-        'GET /repos/o/r/contents/lingua.json?ref=main': () => {
-          throw new GitHubError(500, 'down');
-        },
-      },
-    });
-
-    await expect(discoverInstallation({ gh, store: memoryStore() }, 7)).rejects.toThrow('down');
-  });
-});
-
-describe('installations', () => {
-  it('lists every installation of the App by id', async () => {
-    const gh = fakeGitHub({
-      routes: { 'GET /app/installations?per_page=100': () => [{ id: 3 }, { id: 5 }] },
-    });
-
-    expect(await installations(gh)).toEqual([3, 5]);
   });
 });

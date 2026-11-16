@@ -13,35 +13,25 @@ export const Route = createFileRoute('/')({
   component: Home,
 });
 
-function NoProject({ installUrl }: Readonly<{ installUrl: string | null }>) {
+function NoProject() {
   return (
     <EmptyState.Root icon="language">
       <EmptyState.Title>No project yet</EmptyState.Title>
       <EmptyState.Hint>
-        {installUrl
-          ? 'Install the GitHub App on a repository that has a lingua.json.'
-          : 'Lingua has no GitHub App yet, so it cannot read a repository. Set it up first.'}
+        Lingua translates the public repositories its LINGUA_PROJECTS variable lists, each with a
+        lingua.json at its root. None is listed yet, or none has been read yet.
       </EmptyState.Hint>
       <EmptyState.Actions>
-        {installUrl ? (
-          <Button
-            icon="brand-github"
-            label="Install the GitHub App"
-            href={installUrl}
-            role="link"
-          />
-        ) : (
-          <Button icon="settings" label="Set up Lingua" asChild>
-            <RouteLink to="/setup" />
-          </Button>
-        )}
+        <Button icon="settings" label="Set up Lingua" asChild>
+          <RouteLink to="/setup" />
+        </Button>
       </EmptyState.Actions>
     </EmptyState.Root>
   );
 }
 
 function Home() {
-  const { viewer, projects, installUrl } = Route.useLoaderData();
+  const { viewer, projects } = Route.useLoaderData();
   return (
     <LinguaPage viewer={viewer}>
       <Column gap={10}>
@@ -52,7 +42,7 @@ function Home() {
         </Text>
       </Column>
       {projects.length === 0 ? (
-        <NoProject installUrl={installUrl} />
+        <NoProject />
       ) : (
         <Row gap={16} wrap align="stretch">
           {projects.map((project) => (

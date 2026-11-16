@@ -1,16 +1,36 @@
 import type { Place } from '#site/core/config';
 
-/** A repository Lingua translates, as its last sync left it. */
+/** How many of the files that changed at a branch head a sync has stored so far. */
+export interface Progress {
+  done: number;
+  total: number;
+}
+
+/**
+ * A repository Lingua translates, as its last sync left it. `headSha` is the
+ * commit every stored file was read at; `branchSha` is where the branch stood
+ * at the last check, with the `etag` GitHub sent for it, and `progress` counts
+ * the files read toward it while it is ahead of `headSha`. `pinned` says the
+ * branch came from `LINGUA_PROJECTS` rather than from the repository's default.
+ */
 export interface Project {
   id: string;
-  installationId: number;
   branch: string;
+  pinned: boolean;
   config: string | null;
   configError: string | null;
   headSha: string | null;
   treeSha: string | null;
   syncedAt: number | null;
+  branchSha: string | null;
+  etag: string | null;
+  progress: Progress | null;
+  syncError: string | null;
+  checkedAt: number | null;
 }
+
+/** Which branch of a repository a project tracks, and whether `LINGUA_PROJECTS` pinned it. */
+export type Tracked = Pick<Project, 'id' | 'branch' | 'pinned'>;
 
 /** One file of a project's i18n folder as the default branch held it at the last sync. */
 export interface FileRow extends Place {
@@ -82,22 +102,39 @@ export interface Proposal {
   updatedAt: number;
 }
 
-/** What a sync learned about a project's default branch. */
+/** A branch head whose every changed file is stored, and the `etag` GitHub sent with it, when it sent one. */
 export interface Synced {
   headSha: string;
   treeSha: string;
   config: string | null;
   configError: string | null;
   at: number;
+  etag?: string | null;
+}
+
+/** Where a branch stood at a check, and how far the stored files have come toward it: `progress` is null once they hold it. */
+export interface BranchHead {
+  sha: string;
+  etag: string | null;
+  progress: Progress | null;
+}
+
+/** How a pass ended: when, and the error that stopped it. */
+export interface Checked {
+  at: number;
+  error: string | null;
 }
 
 /** Every read and write Lingua makes, so the rules can run against an in-memory stand-in. */
 export interface Store {
   projects(): Promise<Project[]>;
   project(id: string): Promise<Project | null>;
-  upsertProject(id: string, installationId: number, branch: string): Promise<void>;
-  dropProjects(installationId: number, keep: readonly string[]): Promise<void>;
+  upsertProject(tracked: Tracked): Promise<void>;
+  dropProjects(keep: readonly string[]): Promise<void>;
   setSynced(id: string, synced: Synced): Promise<void>;
+  setBranchHead(id: string, head: BranchHead): Promise<void>;
+  claimSync(id: string, now: number, until: number): Promise<Project | null>;
+  endSync(id: string, checked: Checked): Promise<void>;
 
   files(project: string, locales?: readonly string[]): Promise<FileRow[]>;
   replaceFiles(
@@ -122,9 +159,7 @@ export interface Store {
   markProposed(project: string, userId: number, locale: string): Promise<void>;
 
   proposal(project: string, userId: number, locale: string): Promise<Proposal | null>;
-  proposalByBranch(project: string, branch: string): Promise<Proposal | null>;
+  proposalsOf(project: string): Promise<Proposal[]>;
   saveProposal(proposal: Proposal): Promise<void>;
   closeProposal(proposal: Proposal): Promise<void>;
-
-  holdSetupCode(code: string, now: number): Promise<void>;
 }

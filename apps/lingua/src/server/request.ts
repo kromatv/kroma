@@ -1,6 +1,7 @@
 import { workerContext } from '@kromatv/site-kit/worker-env';
 import type { Store, User } from '#site/store/store';
 import { type Env, readEnv, storeFor } from './env';
+import { refreshStale } from './scheduled';
 import { viewerOf } from './session';
 import type { Context } from './views';
 
@@ -28,4 +29,11 @@ export async function requestContext(): Promise<Context> {
   const store = await storeFor(env);
   const viewer = await resolveViewer(env, store, cookies, Math.floor(Date.now() / 1000));
   return { env, store, viewer };
+}
+
+/** Once the page is served, pass over project `id` if its last pass is stale: the page never waits on GitHub. */
+export async function refreshAfterServing(id: string): Promise<void> {
+  const { env, waitUntil } = await workerContext();
+  const pass = refreshStale(readEnv(env), id, Math.floor(Date.now() / 1000));
+  waitUntil(pass.catch((error: unknown) => console.error(`lingua: ${id} did not refresh`, error)));
 }

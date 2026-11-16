@@ -5,13 +5,19 @@ import { fakeD1, type Rows } from './test-support';
 
 const PROJECT = {
   id: 'o/r',
-  installation_id: 1,
   branch: 'main',
+  pinned: 1,
   config: '{}',
   config_error: null,
   head_sha: 'h',
   tree_sha: 't',
   synced_at: 5,
+  branch_sha: 'b',
+  etag: '"e"',
+  files_done: 40,
+  files_total: 90,
+  sync_error: null,
+  checked_at: 6,
 };
 
 const ADA = { id: 42, login: 'ada', name: null, avatar_url: 'https://a.test/ada.png' };
@@ -38,13 +44,18 @@ describe('D1Store projects', () => {
 
     expect(listed).toEqual({
       id: 'o/r',
-      installationId: 1,
       branch: 'main',
+      pinned: true,
       config: '{}',
       configError: null,
       headSha: 'h',
       treeSha: 't',
       syncedAt: 5,
+      branchSha: 'b',
+      etag: '"e"',
+      progress: { done: 40, total: 90 },
+      syncError: null,
+      checkedAt: 6,
     });
     expect(await store.project('o/r')).toEqual(listed);
   });
@@ -53,11 +64,22 @@ describe('D1Store projects', () => {
     expect(await new D1Store(fakeD1()).project('o/r')).toBeNull();
   });
 
-  it('records the branch an installation is tracked on, and what a sync read', async () => {
+  it('reads no progress while no pass is reading toward a newer head', async () => {
+    const row = { ...PROJECT, files_done: null, files_total: null };
+
+    const found = await new D1Store(fakeD1(answering('SELECT * FROM projects', [row]))).project(
+      'o/r',
+    );
+
+    expect(found?.progress).toBeNull();
+  });
+
+  it('records the branch a project is tracked on, what a sync read, and where a pass left off', async () => {
     const db = fakeD1();
     const store = new D1Store(db);
 
-    await store.upsertProject('o/r', 1, 'next');
+    await store.upsertProject({ id: 'o/r', branch: 'next', pinned: true });
+    await store.upsertProject({ id: 'o/s', branch: 'main', pinned: false });
     await store.setSynced('o/r', {
       headSha: 'h',
       treeSha: 't',
@@ -65,17 +87,37 @@ describe('D1Store projects', () => {
       configError: 'missing',
       at: 9,
     });
+    await store.setBranchHead('o/r', { sha: 'b', etag: null, progress: { done: 4, total: 9 } });
+    await store.setBranchHead('o/r', { sha: 'b', etag: '"e"', progress: null });
+    await store.endSync('o/r', { at: 10, error: 'down' });
 
     expect(db.ran.map((r) => r.values)).toEqual([
-      ['o/r', 1, 'next'],
-      ['o/r', 'h', 't', null, 'missing', 9],
+      ['o/r', 'next', 1],
+      ['o/s', 'main', 0],
+      ['o/r', 'h', 't', null, 'missing', 9, null],
+      ['o/r', 'b', null, 4, 9],
+      ['o/r', 'b', '"e"', null, null],
+      ['o/r', 10, 'down'],
     ]);
   });
 
-  it('drops the files and the row of each project the installation no longer reaches', async () => {
+  it('claims a project for a pass, handing back the row the lease now holds', async () => {
+    const db = fakeD1(answering('UPDATE projects SET syncing_until', [PROJECT]));
+
+    const claimed = await new D1Store(db).claimSync('o/r', 100, 160);
+
+    expect(claimed?.id).toBe('o/r');
+    expect(db.ran[0]?.values).toEqual(['o/r', 100, 160]);
+  });
+
+  it('answers null while another pass holds the lease', async () => {
+    expect(await new D1Store(fakeD1()).claimSync('o/r', 100, 160)).toBeNull();
+  });
+
+  it('drops the files and the row of each project no longer listed', async () => {
     const db = fakeD1(answering('SELECT id FROM projects', [{ id: 'o/r' }, { id: 'o/gone' }]));
 
-    await new D1Store(db).dropProjects(1, ['o/r']);
+    await new D1Store(db).dropProjects(['o/r']);
 
     expect(db.ran.slice(1)).toEqual([
       { sql: 'DELETE FROM files WHERE project = ?1', values: ['o/gone'] },
@@ -83,10 +125,10 @@ describe('D1Store projects', () => {
     ]);
   });
 
-  it('drops nothing while the installation reaches every project', async () => {
+  it('drops nothing while every project is listed', async () => {
     const db = fakeD1(answering('SELECT id FROM projects', [{ id: 'o/r' }]));
 
-    await new D1Store(db).dropProjects(1, ['o/r']);
+    await new D1Store(db).dropProjects(['o/r']);
 
     expect(db.batches).toEqual([]);
   });
@@ -167,13 +209,5 @@ describe('D1Store sessions', () => {
       'INSERT INTO sessions',
       'DELETE FROM sessions',
     ]);
-  });
-
-  it('holds a setup code and forgets those older than an hour', async () => {
-    const db = fakeD1();
-
-    await new D1Store(db).holdSetupCode('code', 7200);
-
-    expect(db.ran.map((r) => r.values)).toEqual([[3600], ['code', 7200]]);
   });
 });

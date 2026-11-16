@@ -1,6 +1,4 @@
-import { generateKeyPairSync } from 'node:crypto';
 import { z } from 'zod';
-import type { AppCredentials } from './app';
 import { type GitHub, GitHubError } from './client';
 
 /** One request a fake GitHub received. */
@@ -10,9 +8,12 @@ export interface Call {
   body: unknown;
 }
 
-type Handler = (body: unknown) => unknown;
+type Handler = (body: unknown, headers: Headers) => unknown;
 
-/** What a fake GitHub holds: REST answers by `METHOD /path`, blob texts by oid, and blob oids by `sha:path`. */
+/**
+ * What a fake GitHub holds: answers by `METHOD /path`, a `Response` taken as
+ * it is and anything else as JSON, blob texts by oid, and blob oids by `sha:path`.
+ */
 export interface FakeRepository {
   routes: Record<string, Handler>;
   blobs?: Record<string, string>;
@@ -93,12 +94,12 @@ export function forkRoutes(fork: Fork): Record<string, Handler> {
   };
 }
 
-function answer(fake: FakeRepository, call: Call): unknown {
+function answer(fake: FakeRepository, call: Call, headers = new Headers()): unknown {
   const handler = fake.routes[`${call.method} ${call.path}`];
   if (!handler) {
     throw new GitHubError(404, `${call.method} ${call.path}: Not Found`);
   }
-  return handler(call.body);
+  return handler(call.body, headers);
 }
 
 function blobAliases(fake: FakeRepository, query: string): [string, unknown][] {
@@ -125,13 +126,14 @@ function repositoryOf(fake: FakeRepository, query: string): Record<string, unkno
 
 const GraphQLBody = z.object({ query: z.string() });
 
-function respond(fake: FakeRepository, call: Call): Response {
+function respond(fake: FakeRepository, call: Call, headers: Headers): Response {
   if (call.path === '/graphql') {
     const { query } = GraphQLBody.parse(call.body);
     return Response.json({ data: { repository: repositoryOf(fake, query) } });
   }
   try {
-    return Response.json(answer(fake, call));
+    const answered = answer(fake, call, headers);
+    return answered instanceof Response ? answered : Response.json(answered);
   } catch (error) {
     if (!(error instanceof GitHubError)) {
       throw error;
@@ -145,30 +147,27 @@ function urlOf(input: RequestInfo | URL): URL {
 }
 
 /**
- * GitHub over HTTP, as `fetch` reaches it: REST routes from `fake` by
- * `METHOD /path?query` on any GitHub host, GraphQL blob reads from its blobs,
- * a 404 with GitHub's message for anything else. Records every call.
+ * GitHub over HTTP, as `fetch` reaches it: routes from `fake` by
+ * `METHOD /path?query` on any host, api.github.com's and
+ * raw.githubusercontent.com's alike, GraphQL blob reads from its blobs, a 404
+ * with GitHub's message for anything else. Records every call, and the
+ * headers each one carried at the same index.
  */
-export function gitHubFetch(fake: FakeRepository): typeof fetch & { calls: Call[] } {
+export function gitHubFetch(
+  fake: FakeRepository,
+): typeof fetch & { calls: Call[]; headers: Headers[] } {
   const calls: Call[] = [];
+  const sent: Headers[] = [];
   const fetchFn = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const url = urlOf(input);
     const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
     const call = { method: init?.method ?? 'GET', path: `${url.pathname}${url.search}`, body };
+    const headers = new Headers(init?.headers);
     calls.push(call);
-    return Promise.resolve(respond(fake, call));
+    sent.push(headers);
+    return Promise.resolve(respond(fake, call, headers));
   };
-  return Object.assign(fetchFn, { calls });
-}
-
-/** A GitHub App with a freshly minted RSA key, as its `wrangler secret`s hold it. */
-export function testApp(): AppCredentials {
-  const { privateKey } = generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-    privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
-    publicKeyEncoding: { type: 'spki', format: 'pem' },
-  });
-  return { appId: '1', privateKey, webhookSecret: 'whsec' };
+  return Object.assign(fetchFn, { calls, headers: sent });
 }
 
 /** A GitHub answering from `fake`, 404 for any route it does not hold, recording every call. */

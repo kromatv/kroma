@@ -14,11 +14,8 @@ import {
   storeHolding,
   write,
 } from './fixture';
-import { branchFor } from './lane';
 import { noreplyEmail } from './propose';
-import { type FakeRepository, fakeGitHub, sha } from './test-support';
-
-const BRANCH = 'lingua/ada/en';
+import { type FakeRepository, fakeGitHub, forkRoutes, sha } from './test-support';
 
 const POLICY =
   '{\n  "source": "fr",\n  "fallback": "en",\n  "locales": {\n    "en": { "stage": "stable" },\n    "es": { "stage": "beta" }\n  }\n}\n';
@@ -49,25 +46,22 @@ function repository(): CatalogSet {
 }
 
 const send = (store: Store, gh: ReturnType<typeof fakeGitHub>, locale = 'en') =>
-  sendAs({ kind: 'app', gh }, store, locale);
+  sendAs({ gh, wait: async () => {} }, store, locale);
 
-const pulls = (branch: string) =>
-  `GET /repos/o/r/pulls?state=open&head=o:${encodeURIComponent(branch)}`;
-
-const newBranch = (branch: string): FakeRepository => ({
-  routes: {
-    'POST /repos/o/r/git/trees': () => ({ sha: sha('e') }),
-    'POST /repos/o/r/git/commits': () => ({ sha: sha('f') }),
-    'POST /repos/o/r/git/refs': () => ({}),
-    [pulls(branch)]: () => [],
-    'POST /repos/o/r/pulls': () => ({ number: 7, html_url: 'https://github.com/o/r/pull/7' }),
-  },
+const fork = (locale: string, head?: string): FakeRepository => ({
+  routes: forkRoutes({
+    upstream: 'o/r',
+    repo: 'Ada/r',
+    branch: `lingua/${locale}`,
+    made: true,
+    head,
+  }),
 });
 
 const TreeBody = z.object({ tree: z.array(z.object({ path: z.string(), content: z.string() })) });
 
 function committed(gh: ReturnType<typeof fakeGitHub>) {
-  const body = gh.calls.find((c) => c.path === '/repos/o/r/git/trees')?.body;
+  const body = gh.calls.find((c) => c.path === '/repos/Ada/r/git/trees')?.body;
   return TreeBody.parse(body).tree.map(({ path, content }) => ({ path, content }));
 }
 
@@ -87,7 +81,7 @@ describe('propose', () => {
     syncSet(set);
     confirm(set, 'en', ['admin.backup.title']);
 
-    const gh = fakeGitHub(newBranch(BRANCH));
+    const gh = fakeGitHub(fork('en'));
 
     await send(store, gh);
 
@@ -103,7 +97,7 @@ describe('propose', () => {
     const before = rowsOf(set);
     confirm(set, 'en', ['admin.backup.title']);
 
-    const gh = fakeGitHub(newBranch(BRANCH));
+    const gh = fakeGitHub(fork('en'));
 
     const outcome = await send(store, gh);
 
@@ -124,7 +118,7 @@ describe('propose', () => {
     fill(set, 'de', { 'nav.home': 'Startseite' });
     syncSet(set);
 
-    const gh = fakeGitHub(newBranch('lingua/ada/de'));
+    const gh = fakeGitHub(fork('de'));
 
     await send(store, gh, 'de');
 
@@ -146,69 +140,48 @@ describe('propose', () => {
       edits: { 'nav.count_one': '{count} película' },
     });
 
-    const outcome = await send(store, fakeGitHub(newBranch('lingua/ada/es')), 'es');
+    const outcome = await send(store, fakeGitHub(fork('es')), 'es');
 
     expect(outcome).toEqual({ kind: 'incomplete', keys: ['nav.count'] });
-  });
-
-  it('opens the pull request from the App, crediting the commit to the contributor', async () => {
-    const store = await storeHolding(rowsOf(repository()), { edits: { 'nav.back': 'Back' } });
-    const gh = fakeGitHub(newBranch(BRANCH));
-
-    const outcome = await send(store, gh);
-
-    expect(gh.calls.find((c) => c.path === '/repos/o/r/git/commits')?.body).toMatchObject({
-      parents: [sha('a')],
-      author: { name: 'Ada L.', email: '42+Ada@users.noreply.github.com' },
-    });
-    expect(gh.calls.find((c) => c.path === '/repos/o/r/git/refs')?.body).toEqual({
-      ref: `refs/heads/${BRANCH}`,
-      sha: sha('f'),
-    });
-    expect(gh.calls.find((c) => c.path === '/repos/o/r/pulls')?.body).toMatchObject({
-      head: BRANCH,
-      base: 'main',
-    });
-    expect(outcome).toMatchObject({
-      kind: 'proposed',
-      proposal: { prNumber: 7, headSha: sha('f') },
-    });
-    expect((await store.edits('o/r', ada.id, 'en')).every((e) => e.proposed)).toBe(true);
   });
 
   it('catches an existing branch up with the default branch and builds on what it holds', async () => {
     const rows = rowsOf(repository());
     const store = await storeHolding(rows, { edits: { 'nav.count_one': '{count} movie' } });
+    await store.saveProposal({
+      project: 'o/r',
+      userId: 42,
+      locale: 'en',
+      branch: 'ada:lingua/en',
+      prNumber: 7,
+      prUrl: 'https://github.com/o/r/pull/7',
+      headSha: sha('9'),
+      updatedAt: 1,
+    });
     const onBranch =
       '{\n  "nav.home": "Home",\n  "nav.back": "Go back",\n  "nav.count": "{count} movies"\n}\n';
     const gh = fakeGitHub({
       routes: {
-        [`GET /repos/o/r/git/ref/heads/${BRANCH}`]: () => ({ object: { sha: sha('b') } }),
-        'POST /repos/o/r/merges': () => null,
-        [`GET /repos/o/r/git/commits/${sha('b')}`]: () => ({
-          sha: sha('b'),
-          tree: { sha: sha('0d') },
-        }),
-        'POST /repos/o/r/git/trees': () => ({ sha: sha('e') }),
-        'POST /repos/o/r/git/commits': () => ({ sha: sha('f') }),
-        [`PATCH /repos/o/r/git/refs/heads/${BRANCH}`]: () => ({}),
-        [pulls(BRANCH)]: () => [{ number: 7, html_url: 'https://github.com/o/r/pull/7' }],
+        ...fork('en', sha('9')).routes,
+        'GET /repos/o/r/pulls?state=open&head=Ada:lingua%2Fen': () => [
+          { number: 7, html_url: 'https://github.com/o/r/pull/7' },
+        ],
       },
-      blobs: { [sha('9')]: onBranch },
+      blobs: { [sha('8')]: onBranch },
       paths: {
-        ...Object.fromEntries(rows.map((row) => [`${sha('b')}:${row.path}`, row.blobSha])),
-        [`${sha('b')}:${ROOT}/en/nav.json`]: sha('9'),
+        ...Object.fromEntries(rows.map((row) => [`${sha('9')}:${row.path}`, row.blobSha])),
+        [`${sha('9')}:${ROOT}/en/nav.json`]: sha('8'),
       },
     });
 
     await send(store, gh);
 
-    expect(gh.calls.find((c) => c.path === '/repos/o/r/merges')?.body).toMatchObject({
-      base: BRANCH,
+    expect(gh.calls.find((c) => c.path === '/repos/Ada/r/merges')?.body).toMatchObject({
+      base: 'lingua/en',
       head: sha('a'),
     });
-    expect(gh.calls.find((c) => c.path === '/repos/o/r/git/commits')?.body).toMatchObject({
-      parents: [sha('b')],
+    expect(gh.calls.find((c) => c.path === '/repos/Ada/r/git/commits')?.body).toMatchObject({
+      parents: [sha('9')],
     });
     expect(committed(gh).find((f) => f.path === `${ROOT}/en/nav.json`)?.content).toBe(
       '{\n  "nav.home": "Home",\n  "nav.back": "Go back",\n  "nav.count": "{count} movies",\n  "nav.count_one": "{count} movie"\n}\n',
@@ -219,7 +192,7 @@ describe('propose', () => {
   it('sends nothing and drops the work when the default branch already says the same', async () => {
     const store = await storeHolding(rowsOf(repository()), { edits: { 'nav.home': 'Home' } });
 
-    const outcome = await send(store, fakeGitHub({ routes: {} }));
+    const outcome = await send(store, fakeGitHub(fork('en')));
 
     expect(outcome).toEqual({ kind: 'nothing' });
     expect(await store.edits('o/r', ada.id, 'en')).toEqual([]);
@@ -227,10 +200,6 @@ describe('propose', () => {
 });
 
 describe('naming', () => {
-  it('gives each contributor one branch per language', () => {
-    expect(branchFor('Ada', 'pt-BR')).toBe('lingua/ada/pt-BR');
-  });
-
   it('credits commits to the address GitHub keeps private', () => {
     expect(noreplyEmail({ id: 1, login: 'x' })).toBe('1+x@users.noreply.github.com');
   });

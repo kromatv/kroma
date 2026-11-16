@@ -3,13 +3,19 @@ import type { Confirm, Edit, FileRow, Project, Proposal, Start, User } from './s
 
 const ProjectRecord = z.object({
   id: z.string(),
-  installation_id: z.number(),
   branch: z.string(),
+  pinned: z.number(),
   config: z.string().nullable(),
   config_error: z.string().nullable(),
   head_sha: z.string().nullable(),
   tree_sha: z.string().nullable(),
   synced_at: z.number().nullable(),
+  branch_sha: z.string().nullable(),
+  etag: z.string().nullable(),
+  files_done: z.number().nullable(),
+  files_total: z.number().nullable(),
+  sync_error: z.string().nullable(),
+  checked_at: z.number().nullable(),
 });
 
 const FileRecord = z.object({
@@ -70,15 +76,24 @@ const ProposalRecord = z.object({
 /** A `projects` row as the store hands it out. */
 export function project(row: unknown): Project {
   const r = ProjectRecord.parse(row);
+  const progress =
+    r.files_done === null || r.files_total === null
+      ? null
+      : { done: r.files_done, total: r.files_total };
   return {
     id: r.id,
-    installationId: r.installation_id,
     branch: r.branch,
+    pinned: r.pinned === 1,
     config: r.config,
     configError: r.config_error,
     headSha: r.head_sha,
     treeSha: r.tree_sha,
     syncedAt: r.synced_at,
+    branchSha: r.branch_sha,
+    etag: r.etag,
+    progress,
+    syncError: r.sync_error,
+    checkedAt: r.checked_at,
   };
 }
 

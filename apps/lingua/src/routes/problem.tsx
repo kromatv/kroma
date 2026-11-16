@@ -36,24 +36,6 @@ const EXPLAINED: Record<Problem, Explained> = {
     hint: 'It was cancelled on GitHub, or GitHub refused it. Try again.',
     ways: ['sign-in', 'home'],
   },
-  'owners-unlisted': {
-    icon: 'brand-github',
-    title: 'GitHub did not list your organisations',
-    hint: 'It was cancelled on GitHub, took longer than ten minutes, or GitHub refused it. Ask again from the setup page, or type the organisation there.',
-    ways: ['setup'],
-  },
-  'setup-code-missing': {
-    icon: 'key',
-    title: 'GitHub did not send a code',
-    hint: 'Creating the GitHub App comes back here with a one-hour code, and this return had none. Start again from the setup page.',
-    ways: ['setup'],
-  },
-  'already-connected': {
-    icon: 'plug-connected',
-    title: 'Lingua already has a GitHub App',
-    hint: 'This deployment is connected, so the code GitHub sent was not kept. The setup page shows what is left to do.',
-    ways: ['setup', 'home'],
-  },
 };
 
 const UNKNOWN: Explained = {

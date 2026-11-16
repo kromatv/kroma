@@ -103,7 +103,7 @@ describe('D1WorkStore', () => {
     expect(db.ran.map((r) => r.values)).toEqual(Array.from({ length: 3 }, () => ['o/r', 42, 'fr']));
   });
 
-  it('finds a pull request by its contributor’s language and by its branch', async () => {
+  it('finds a pull request by its contributor’s language, and among every one of its project', async () => {
     const store = new D1WorkStore(fakeD1(byTable({ proposals: [PROPOSAL] })));
 
     const mine = await store.proposal('o/r', 42, 'fr');
@@ -118,11 +118,11 @@ describe('D1WorkStore', () => {
       headSha: 'h',
       updatedAt: 3,
     });
-    expect(await store.proposalByBranch('o/r', 'lingua/fr')).toEqual(mine);
+    expect(await store.proposalsOf('o/r')).toEqual([mine]);
   });
 
   it('answers null for a pull request it does not hold', async () => {
-    expect(await new D1WorkStore(fakeD1()).proposalByBranch('o/r', 'lingua/fr')).toBeNull();
+    expect(await new D1WorkStore(fakeD1()).proposal('o/r', 42, 'fr')).toBeNull();
   });
 
   it('forgets a closed pull request with the work it carried, in one batch', async () => {

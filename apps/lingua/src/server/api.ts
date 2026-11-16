@@ -1,35 +1,26 @@
-import { defaultStringifySearch } from '@tanstack/react-router';
 import { type Context, Hono } from 'hono';
 import type { z } from 'zod';
-import { asInstallation } from '#site/github/app';
 import { authorizeUrl, type OAuthCredentials, userFromCode } from '#site/github/oauth';
+import { reader } from '#site/github/reader';
 import { type Problem, problemPath } from '#site/lib/problem';
 import { returnAddress } from '#site/lib/send-return';
 import type { Store, User } from '#site/store/store';
-import { appOwners, askForOwners, LISTING_OWNERS, ownersCookie } from './app-owners';
 import { answerSend, askToSend, forgetPending, type PendingSend, pendingCookie, readPending } from './authorizations';
 import { ConfirmInput, saveConfirms } from './confirms';
 import { EditInput, saveEdit } from './edits';
-import { appCredentials, type Env, oauthCredentials, storeFor, trackedBranches } from './env';
+import { type Env, listedProjects, oauthCredentials, storeFor } from './env';
 import { messagePage } from './go';
 import { LocaleInput, startLanguage } from './locales';
 import { sendProposal, SendInput } from './proposals';
 import { resolveViewer } from './request';
 import { closeSession, cookie, openSession, randomToken, readCookie } from './session';
-import { SETUP_CODE } from './setup';
-import { handleDelivery, verifySignature } from './webhook';
 
-/** The slice of the Worker's execution context Lingua uses. */
-export interface ExecCtx {
-  waitUntil(promise: Promise<unknown>): void;
-}
-
-type Ctx = { Bindings: { env: Env; ctx: ExecCtx } };
+type Ctx = { Bindings: { env: Env } };
 
 const FALL_THROUGH = 'x-lingua-fall-through';
 const OAUTH = 'lingua_oauth';
 const MAX_BODY = 64 * 1024;
-const MAX_WEBHOOK = 4 * 1024 * 1024;
+const SEND_READS = 20;
 
 const now = () => Math.floor(Date.now() / 1000);
 const origin = (c: Context<Ctx>) => new URL(c.req.url).origin;
@@ -70,15 +61,7 @@ async function contributor(c: Context<Ctx>, refusal: string): Promise<{ store: S
 
 const app = new Hono<Ctx>();
 
-app.get('/health', (c) => c.json({ ok: true, github: appCredentials(c.env.env) !== null, signIn: oauthCredentials(c.env.env) !== null }));
-
-app.get('/setup/done', async (c) => {
-  if (appCredentials(c.env.env)) return c.redirect(problemPath('already-connected'), 303);
-  const code = c.req.query('code');
-  if (!code || !SETUP_CODE.test(code)) return c.redirect(problemPath('setup-code-missing'), 303);
-  await (await storeFor(c.env.env)).holdSetupCode(code, now());
-  return c.redirect(`/setup${defaultStringifySearch({ created: 1, code })}`, 303);
-});
+app.get('/health', (c) => c.json({ ok: true, signIn: oauthCredentials(c.env.env) !== null, projects: listedProjects(c.env.env).length }));
 
 function toGitHub(c: Context<Ctx>, after: string, ask: (at: { redirectUri: string; state: string }) => string): Response {
   const token = randomToken();
@@ -92,13 +75,6 @@ app.get('/auth/login', (c) => {
   return toGitHub(c, safeReturn(c.req.query('to')), (at) => authorizeUrl(oauth, at));
 });
 
-app.get('/auth/setup', (c) => {
-  const oauth = oauthCredentials(c.env.env);
-  if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
-  if (appCredentials(c.env.env)) return c.redirect('/setup', 303);
-  return toGitHub(c, LISTING_OWNERS, (at) => askForOwners(oauth, at));
-});
-
 async function signIn(c: Context<Ctx>, oauth: OAuthCredentials, code: string, to: string): Promise<Response> {
   const store = await storeFor(c.env.env);
   const user = await userFromCode(oauth, { code, redirectUri: callbackUri(c) }).catch((error: unknown) => {
@@ -110,44 +86,33 @@ async function signIn(c: Context<Ctx>, oauth: OAuthCredentials, code: string, to
   return c.redirect(safeReturn(to));
 }
 
-async function listOwners(c: Context<Ctx>, oauth: OAuthCredentials, code: string): Promise<Response> {
-  const owners = await appOwners(oauth, { code, redirectUri: callbackUri(c) }).catch((error: unknown) => {
-    console.error('lingua: listing where the App may be created failed', error);
-    return null;
-  });
-  if (!owners) return c.redirect(problemPath('owners-unlisted'));
-  c.header('Set-Cookie', await ownersCookie(owners, oauth.clientSecret), { append: true });
-  return c.redirect('/setup', 303);
-}
-
 async function returnFromGitHub(c: Context<Ctx>): Promise<Response> {
   const oauth = oauthCredentials(c.env.env);
   if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
   const token = readCookie(c.req.header('cookie'), OAUTH);
   const [given, ...rest] = (c.req.query('state') ?? '').split('.');
-  const after = rest.join('.');
-  const listing = after === LISTING_OWNERS;
-  const failed = (problem: Problem) => c.redirect(problemPath(listing ? 'owners-unlisted' : problem));
+  const failed = (problem: Problem) => c.redirect(problemPath(problem));
   if (!token || given !== token) return failed('sign-in-expired');
   c.header('Set-Cookie', cookie(OAUTH, '', 0), { append: true });
   const code = c.req.query('code');
   if (!code) return failed('sign-in-refused');
-  return listing ? listOwners(c, oauth, code) : signIn(c, oauth, code, after);
+  return signIn(c, oauth, code, rest.join('.'));
 }
 
 async function returnFromSend(c: Context<Ctx>, pending: PendingSend): Promise<Response> {
   const env = c.env.env;
-  const [app, oauth] = [appCredentials(env), oauthCredentials(env)];
+  const oauth = oauthCredentials(env);
   c.header('Set-Cookie', forgetPending());
-  if (!app || !oauth) return c.redirect(returnAddress(pending.to, { kind: 'failed', reason: 'failed' }));
+  if (!oauth) return c.redirect(returnAddress(pending.to, { kind: 'failed', reason: 'failed' }));
   const store = await storeFor(env);
+  const sendReader = reader({ oauth, requests: SEND_READS });
   const location = await answerSend({
     oauth,
     pending,
     viewer: await resolveViewer(env, store, c.req.header('cookie'), now()),
     query: { code: c.req.query('code'), error: c.req.query('error') },
     redirectUri: callbackUri(c),
-    send: (as, user) => sendProposal(store, { app, user, input: pending, origin: origin(c), as }, now()),
+    send: (as, user) => sendProposal(store, { reader: sendReader, user, input: pending, origin: origin(c), as }, now()),
   });
   return c.redirect(location);
 }
@@ -205,46 +170,10 @@ function authorizeSend(c: Context<Ctx>, viewer: User, input: z.infer<typeof Send
 app.post('/api/proposals', async (c) => {
   const signedIn = await contributor(c, 'Sign in with GitHub to send changes');
   if (signedIn instanceof Response) return signedIn;
-  const github = appCredentials(c.env.env);
-  if (!github) return c.json({ error: 'This deployment is not connected to GitHub yet' }, 503);
   const input = await jsonInput(c, SendInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
-  if (input.via === 'fork') return authorizeSend(c, signedIn.viewer, input);
-  const sending = { app: github, user: signedIn.viewer, input, origin: origin(c) };
-  const result = await sendProposal(signedIn.store, sending, now());
-  return result.status === 200 ? c.json(result.body) : c.json({ error: result.error }, result.status);
-});
-
-app.post('/webhook', async (c) => {
-  const github = appCredentials(c.env.env);
-  if (!github) return c.text('Not configured', 503);
-  const body = await boundedBody(c, MAX_WEBHOOK);
-  if (body === null) return c.text('Too large', 413);
-  if (!(await verifySignature(github.webhookSecret, body, c.req.header('x-hub-signature-256') ?? null))) {
-    return c.text('Bad signature', 401);
-  }
-  let payload: unknown;
-  try {
-    payload = JSON.parse(body);
-  } catch {
-    return c.text('Malformed payload', 400);
-  }
-  const store = await storeFor(c.env.env);
-  const delivery = { event: c.req.header('x-github-event') ?? '', payload };
-  c.env.ctx.waitUntil(
-    handleDelivery(
-      {
-        connect: (id) => asInstallation(github, id),
-        store,
-        now: now(),
-        branches: trackedBranches(c.env.env),
-      },
-      delivery,
-    ).catch((error: unknown) =>
-      console.error('lingua: webhook failed', error),
-    ),
-  );
-  return c.text('Accepted', 202);
+  if (!(await signedIn.store.project(input.project))) return c.json({ error: 'Lingua does not translate this project' }, 404);
+  return authorizeSend(c, signedIn.viewer, input);
 });
 
 app.get('/go/:owner/:repo/:locale/:key', async (c) => {
@@ -255,8 +184,8 @@ app.get('/go/:owner/:repo/:locale/:key', async (c) => {
 
 app.notFound((c) => c.text('', 404, { [FALL_THROUGH]: '1' }));
 
-/** Answer a request Lingua routes itself (sign-in, edits, confirms, languages, proposals, links, webhook, setup), or null for a page. */
-export async function api(request: Request, env: Env, ctx: ExecCtx): Promise<Response | null> {
-  const response = await app.fetch(request, { env, ctx });
+/** Answer a request Lingua routes itself (sign-in, edits, confirms, languages, proposals, links), or null for a page. */
+export async function api(request: Request, env: Env): Promise<Response | null> {
+  const response = await app.fetch(request, { env });
   return response.headers.has(FALL_THROUGH) ? null : response;
 }

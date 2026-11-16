@@ -1,94 +1,24 @@
-import { z } from 'zod';
 import { CONFIG_PATH, type LinguaConfig, parseConfig, placeOf, rootOf } from '#site/core/config';
 import type { FileRow, Project, Store } from '#site/store/store';
-import { type GitHub, GitHubError } from './client';
+import type { Reader, Seen, TreeEntry } from './reader';
 
-const Sha = z.string().regex(/^[0-9a-f]{40}$/);
+const FILES_PER_PASS = 40;
 
-const Branch = z.object({
-  commit: z.object({ sha: Sha, commit: z.object({ tree: z.object({ sha: Sha }) }) }),
-});
-
-const TreeEntry = z.object({ path: z.string(), type: z.string(), sha: Sha });
-type TreeEntry = z.infer<typeof TreeEntry>;
-
-const Tree = z.object({ truncated: z.boolean(), tree: z.array(TreeEntry) });
-
-const Blobs = z.object({
-  repository: z.record(z.string(), z.object({ text: z.string().nullable().optional() }).nullable()),
-});
-
-const Installations = z.array(z.object({ id: z.number() }));
-
-const Repositories = z.object({
-  repositories: z.array(
-    z.object({
-      full_name: z.string(),
-      default_branch: z.string(),
-      archived: z.boolean().optional(),
-    }),
-  ),
-});
-
-const BATCH = 60;
-
-/** Who a sync talks to and where it keeps what it read. */
+/** Who a sync reads GitHub through and where it keeps what it read. */
 export interface Syncing {
-  gh: GitHub;
+  reader: Reader;
   store: Store;
-  /** A branch to track instead of a repository's default one, by `owner/repo`. */
-  branches?: ReadonlyMap<string, string>;
 }
 
-/** The head of a branch: its commit and the tree under it. */
-export async function headOf(
-  gh: GitHub,
-  repo: string,
-  branch: string,
-): Promise<{ sha: string; tree: string }> {
-  const found = await gh.get(`/repos/${repo}/branches/${encodeURIComponent(branch)}`, Branch);
-  return { sha: found.commit.sha, tree: found.commit.commit.tree.sha };
-}
+/** How a pass left a project's copy: it held the branch head already, it holds it now, or files are left to read. */
+export type SyncOutcome = 'unchanged' | 'moved' | 'behind';
 
-async function blobBatch(
-  gh: GitHub,
-  repo: string,
-  oids: readonly string[],
-): Promise<[string, string][]> {
-  const [owner, name] = repo.split('/');
-  const fields = oids
-    .map((oid, i) => `b${i}: object(oid: "${Sha.parse(oid)}") { ... on Blob { text } }`)
-    .join('\n');
-  const data = await gh.graphql(
-    `query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { ${fields} } }`,
-    Blobs,
-    { owner, name },
-  );
-  return oids.flatMap((oid, i): [string, string][] => {
-    const text = data.repository[`b${i}`]?.text;
-    return typeof text === 'string' ? [[oid, text]] : [];
-  });
-}
-
-/** The text of every blob in `oids`, read in batches through GraphQL so a sync costs a handful of requests. */
-export async function blobTexts(
-  gh: GitHub,
-  repo: string,
-  oids: readonly string[],
-): Promise<Map<string, string>> {
-  const batches = Array.from({ length: Math.ceil(oids.length / BATCH) }, (_, i) =>
-    oids.slice(i * BATCH, (i + 1) * BATCH),
-  );
-  const answered = await Promise.all(batches.map((batch) => blobBatch(gh, repo, batch)));
-  return new Map(answered.flat());
-}
-
-async function configAt(gh: GitHub, repo: string, tree: readonly TreeEntry[]) {
-  const entry = tree.find((e) => e.path === CONFIG_PATH && e.type === 'blob');
+async function configAt(reader: Reader, repo: string, at: { sha: string; tree: TreeEntry[] }) {
+  const entry = at.tree.find((e) => e.path === CONFIG_PATH && e.type === 'blob');
   if (!entry) {
     return { config: null, text: null, error: `${CONFIG_PATH} is missing` };
   }
-  const text = (await blobTexts(gh, repo, [entry.sha])).get(entry.sha) ?? '';
+  const text = await reader.text(repo, at.sha, CONFIG_PATH);
   const parsed = parseConfig(text);
   return parsed.ok
     ? { config: parsed.config, text, error: null }
@@ -103,106 +33,97 @@ function projectEntries(config: LinguaConfig | null, tree: readonly TreeEntry[])
   });
 }
 
-async function readTree(gh: GitHub, repo: string, tree: string) {
-  const read = await gh.get(`/repos/${repo}/git/trees/${tree}?recursive=1`, Tree);
+async function readTree(reader: Reader, repo: string, sha: string) {
+  const read = await reader.tree(repo, sha);
   if (read.truncated) {
     return {
+      tree: read.sha,
       config: null,
       text: null,
       error: 'the repository tree is too large to read in one request',
       entries: [],
     };
   }
-  const found = await configAt(gh, repo, read.tree);
-  return { ...found, entries: projectEntries(found.config, read.tree) };
+  const found = await configAt(reader, repo, { sha, tree: read.tree });
+  return { ...found, tree: read.sha, entries: projectEntries(found.config, read.tree) };
 }
 
-async function refreshFiles(
-  { gh, store }: Syncing,
-  repo: string,
+async function storeBatch(
+  { reader, store }: Syncing,
+  at: { repo: string; seen: Seen },
   entries: ReturnType<typeof projectEntries>,
-) {
-  const held = await store.files(repo);
+): Promise<{ changed: number; left: number }> {
+  const held = await store.files(at.repo);
   const known = new Map(held.map((f) => [f.path, f.blobSha]));
   const changed = entries.filter((entry) => known.get(entry.path) !== entry.sha);
-  const texts = await blobTexts(gh, repo, [...new Set(changed.map((e) => e.sha))]);
-  const upserts = changed.flatMap((entry): FileRow[] => {
-    const body = texts.get(entry.sha);
-    const { sha, ...where } = entry;
-    return body === undefined ? [] : [{ ...where, blobSha: sha, body }];
-  });
-  const present = new Set(entries.map((e) => e.path));
-  await store.replaceFiles(
-    repo,
-    upserts,
-    held.filter((f) => !present.has(f.path)).map((f) => f.path),
+  const batch = changed.slice(0, Math.min(FILES_PER_PASS, reader.left));
+  const upserts = await Promise.all(
+    batch.map(async ({ sha, ...place }): Promise<FileRow> => {
+      const body = await reader.text(at.repo, at.seen.sha, place.path);
+      return { ...place, blobSha: sha, body };
+    }),
   );
+  const present = new Set(entries.map((e) => e.path));
+  const removed = held.filter((f) => !present.has(f.path)).map((f) => f.path);
+  await store.replaceFiles(at.repo, upserts, removed);
+  return { changed: changed.length, left: changed.length - batch.length };
+}
+
+const progressAt = (project: Project, seen: Seen) =>
+  project.branchSha === seen.sha ? project.progress : null;
+
+async function keepHead(store: Store, project: Project, seen: Seen): Promise<void> {
+  if (seen.sha !== project.branchSha || seen.etag !== project.etag) {
+    await store.setBranchHead(project.id, { ...seen, progress: null });
+  }
+}
+
+async function readToward(
+  syncing: Syncing,
+  at: { project: Project; seen: Seen; now: number },
+): Promise<SyncOutcome> {
+  const { reader, store } = syncing;
+  const { project, seen } = at;
+  if (reader.left < 3) {
+    await store.setBranchHead(project.id, { ...seen, progress: progressAt(project, seen) });
+    return 'behind';
+  }
+  const read = await readTree(reader, project.id, seen.sha);
+  const { changed, left } = await storeBatch(syncing, { repo: project.id, seen }, read.entries);
+  if (left > 0) {
+    const total = progressAt(project, seen)?.total ?? changed;
+    await store.setBranchHead(project.id, { ...seen, progress: { done: total - left, total } });
+    return 'behind';
+  }
+  const { text: config, error: configError, tree: treeSha } = read;
+  await store.setSynced(project.id, {
+    headSha: seen.sha,
+    treeSha,
+    config,
+    configError,
+    at: at.now,
+    etag: seen.etag,
+  });
+  return 'moved';
 }
 
 /**
- * Bring a project's copy of its i18n folder level with its default branch:
- * read `lingua.json`, then fetch only the files whose blob changed since the
- * last sync. Returns whether anything moved.
+ * One pass over a project: ask where its branch points (one conditional
+ * request when it has not moved), then read at most forty of the files of its
+ * i18n folder whose blob changed, as far as the reader's budget goes. The new
+ * head is recorded only once every changed file is stored, so the next pass
+ * carries on where this one stopped.
  */
 export async function syncProject(
   syncing: Syncing,
   project: Project,
   now: number,
-): Promise<boolean> {
-  const head = await headOf(syncing.gh, project.id, project.branch);
-  if (head.sha === project.headSha) {
-    return false;
+): Promise<SyncOutcome> {
+  const since = project.branchSha === null ? null : { sha: project.branchSha, etag: project.etag };
+  const seen = await syncing.reader.branchHead(project.id, project.branch, since);
+  if (seen.sha !== project.headSha) {
+    return readToward(syncing, { project, seen, now });
   }
-  const read = await readTree(syncing.gh, project.id, head.tree);
-  await refreshFiles(syncing, project.id, read.entries);
-  await syncing.store.setSynced(project.id, {
-    headSha: head.sha,
-    treeSha: head.tree,
-    config: read.text,
-    configError: read.error,
-    at: now,
-  });
-  return true;
-}
-
-async function hasConfig(gh: GitHub, repo: string, branch: string): Promise<boolean> {
-  try {
-    await gh.get(
-      `/repos/${repo}/contents/${CONFIG_PATH}?ref=${encodeURIComponent(branch)}`,
-      z.unknown(),
-    );
-    return true;
-  } catch (error) {
-    if (error instanceof GitHubError && error.status === 404) {
-      return false;
-    }
-    throw error;
-  }
-}
-
-/** Record every repository an installation reaches that carries a `lingua.json`, and forget the rest. */
-export async function discoverInstallation(
-  { gh, store, branches }: Syncing,
-  installationId: number,
-): Promise<void> {
-  const { repositories } = await gh.get('/installation/repositories?per_page=100', Repositories);
-  const live = repositories.filter((repo) => !repo.archived);
-  const tracked = (repo: (typeof live)[number]) =>
-    branches?.get(repo.full_name) ?? repo.default_branch;
-  const configured = await Promise.all(
-    live.map((repo) => hasConfig(gh, repo.full_name, tracked(repo))),
-  );
-  const kept = live.filter((_, i) => configured[i]);
-  await Promise.all(
-    kept.map((repo) => store.upsertProject(repo.full_name, installationId, tracked(repo))),
-  );
-  await store.dropProjects(
-    installationId,
-    kept.map((repo) => repo.full_name),
-  );
-}
-
-/** Every installation of the App, as the App itself lists them. */
-export async function installations(app: GitHub): Promise<number[]> {
-  return (await app.get('/app/installations?per_page=100', Installations)).map((i) => i.id);
+  await keepHead(syncing.store, project, seen);
+  return 'unchanged';
 }

@@ -5,7 +5,8 @@ import { type Shelf, shelfOf } from '#site/core/shelf';
 import type { FileRow, Project, Proposal, Store, User } from '#site/store/store';
 import { type At, catchUp, type Head, refHead, textsAt } from './branch';
 import type { Write } from './client';
-import { type Lane, laneFor, type Sender } from './lane';
+import type { Forking } from './fork';
+import { type Lane, laneFor } from './lane';
 
 const Sha = z.string().regex(/^[0-9a-f]{40}$/);
 const Created = z.object({ sha: Sha });
@@ -220,18 +221,17 @@ const idle = (work: Work) =>
 
 /**
  * Send a contributor's edits, confirms and started language to GitHub as one
- * commit authored and committed by them, on their branch, which catches up
- * with the default branch first, and one rolling pull request. Through a fork,
- * the branch and the pull request are the contributor's; through the App, the
- * branch is on the project and the App opens the pull request.
+ * commit authored and committed by them, on the branch of their fork, which
+ * catches up with the default branch first, and one rolling pull request they
+ * open on the project.
  */
-export async function propose(sender: Sender, store: Store, input: Proposing): Promise<Outcome> {
+export async function propose(forking: Forking, store: Store, input: Proposing): Promise<Outcome> {
   const { project, user, locale } = input;
   const work = await workOf(store, input);
   if (idle(work) || !project.headSha || !project.treeSha) {
     return { kind: 'nothing' };
   }
-  const lane = await laneFor(sender, input, await store.proposal(project.id, user.id, locale));
+  const lane = await laneFor(forking, input, await store.proposal(project.id, user.id, locale));
   const head = { sha: project.headSha, tree: project.treeSha };
   const start = await startingPoint(lane, { head, input });
   const plan = await planSend(start.shelf, work);

@@ -11,9 +11,6 @@ export type Sending =
   | { kind: 'declined' }
   | { kind: 'failed'; message: string };
 
-/** How a send reaches GitHub: from the contributor's fork, or through Lingua's App. */
-export type SendVia = 'fork' | 'lingua';
-
 function sendingOf(returned: Returned | null): Sending {
   if (!returned || returned.kind === 'nothing') {
     return { kind: 'idle' };
@@ -39,8 +36,8 @@ function useReturnedSend(): Sending {
 
 /**
  * The viewer's send for one language. `send` asks GitHub's permission and
- * leaves for it, unless `via` is `lingua`; a send that comes back from GitHub
- * starts the bar in the state it came back in.
+ * leaves for it; a send that comes back from GitHub starts the bar in the
+ * state it came back in.
  */
 export function useSending(target: Readonly<{ project: string; locale: string }>) {
   const router = useRouter();
@@ -48,10 +45,10 @@ export function useSending(target: Readonly<{ project: string; locale: string }>
   const returned = useReturnedSend();
   const [sending, setSending] = useState<Sending>(returned);
 
-  const send = async (via: SendVia) => {
+  const send = async () => {
     setSending({ kind: 'sending' });
     try {
-      const result = await sendProposal({ ...target, via, to: pathname });
+      const result = await sendProposal({ ...target, to: pathname });
       if (result.kind === 'authorize') {
         window.location.assign(result.url);
         return;

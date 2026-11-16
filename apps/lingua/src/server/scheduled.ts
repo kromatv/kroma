@@ -1,26 +1,47 @@
-import { asApp, asInstallation } from '#site/github/app';
-import { installations } from '#site/github/sync';
-import { appCredentials, type Env, storeFor, trackedBranches } from './env';
-import { syncInstallation } from './webhook';
+import { type Pass, passIfStale, passOver, trackProjects } from '#site/github/pass';
+import { reader } from '#site/github/reader';
+import type { Syncing } from '#site/github/sync';
+import type { Project } from '#site/store/store';
+import { type Env, listedProjects, oauthCredentials, storeFor } from './env';
 
-/** The cron's pass: find every repository the App reaches that has a `lingua.json`, then sync each one. */
-export async function refreshAll(env: Env, now: number): Promise<void> {
-  const app = appCredentials(env);
-  if (!app || !env.LINGUA_DB) {
-    return;
+const REQUESTS_PER_RUN = 45;
+
+async function syncingFor(env: Env, fetchFn: typeof fetch): Promise<Syncing | null> {
+  if (!env.LINGUA_DB) return null;
+  const allowance = { oauth: oauthCredentials(env), requests: REQUESTS_PER_RUN };
+  return { reader: reader(allowance, fetchFn), store: await storeFor(env) };
+}
+
+const oldestCheckFirst = (a: Project, b: Project) => (a.checkedAt ?? 0) - (b.checkedAt ?? 0);
+
+function logFailure(id: string, pass: Pass): void {
+  if (pass.kind === 'failed') console.error(`lingua: ${id} did not sync`, pass.error);
+}
+
+async function passesInTurn(syncing: Syncing, ids: readonly string[], now: number): Promise<void> {
+  const [id, ...rest] = ids;
+  if (id === undefined || syncing.reader.left < 1) return;
+  logFailure(id, await passOver(syncing, id, now));
+  await passesInTurn(syncing, rest, now);
+}
+
+/**
+ * The cron's run: hold every repository `LINGUA_PROJECTS` lists, then pass
+ * over each one in turn, the longest unchecked first, while the run's budget
+ * of GitHub requests lasts.
+ */
+export async function refreshAll(env: Env, now: number, fetchFn: typeof fetch = fetch): Promise<void> {
+  const syncing = await syncingFor(env, fetchFn);
+  if (!syncing) return;
+  for (const { id, error } of await trackProjects(syncing, listedProjects(env))) {
+    console.error(`lingua: ${id} could not be read`, error);
   }
-  const store = await storeFor(env);
-  const ids = await installations(await asApp(app));
-  const passes = ids.map(async (id) => {
-    try {
-      await syncInstallation(
-        { gh: await asInstallation(app, id), store, branches: trackedBranches(env) },
-        id,
-        now,
-      );
-    } catch (error) {
-      console.error(`lingua: installation ${id} did not sync`, error);
-    }
-  });
-  await Promise.all(passes);
+  const projects = (await syncing.store.projects()).sort(oldestCheckFirst);
+  await passesInTurn(syncing, projects.map((p) => p.id), now);
+}
+
+/** A page's run: pass over project `id` when its last pass ended more than two minutes ago. */
+export async function refreshStale(env: Env, id: string, now: number, fetchFn: typeof fetch = fetch): Promise<void> {
+  const syncing = await syncingFor(env, fetchFn);
+  if (syncing) logFailure(id, await passIfStale(syncing, id, now));
 }

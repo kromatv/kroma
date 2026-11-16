@@ -96,23 +96,24 @@ describe('projectView', () => {
 });
 
 describe('homeView', () => {
-  it('lists every project with its source language, and where to install the App', async () => {
+  it('lists every project with its source language, for whoever is looking', async () => {
     const store = await seededStore();
 
-    const view = await homeView({ env: { GITHUB_APP_SLUG: 'lingua' }, store, viewer: ada });
+    const view = await homeView(pageContext(store, ada));
 
-    expect(view.viewer).toEqual({ login: 'ada', name: null, avatarUrl: null });
-    expect(view.projects).toEqual([{ id: 'o/r', source: languageOf('en'), locales: 3, syncedAt: 1, error: null }]);
-    expect(view.installUrl).toBe('https://github.com/apps/lingua/installations/new');
+    expect(view).toEqual({
+      viewer: { login: 'ada', name: null, avatarUrl: null },
+      projects: [{ id: 'o/r', source: languageOf('en'), locales: 3, syncedAt: 1, error: null }],
+    });
   });
 
   it('says why a project cannot be translated', async () => {
     const store = await seededStore();
-    await store.upsertProject('o/broken', 1, 'main');
+    await store.upsertProject({ id: 'o/broken', branch: 'main', pinned: false });
     await store.setSynced('o/broken', { headSha: 'h', treeSha: 't', config: '{}', configError: null, at: 1 });
-    await store.upsertProject('o/missing', 1, 'main');
+    await store.upsertProject({ id: 'o/missing', branch: 'main', pinned: false });
     await store.setSynced('o/missing', { headSha: 'h', treeSha: 't', config: null, configError: 'lingua.json is missing', at: 1 });
-    await store.upsertProject('o/unlisted', 1, 'main');
+    await store.upsertProject({ id: 'o/unlisted', branch: 'main', pinned: false });
     await store.setSynced('o/unlisted', { headSha: 'h', treeSha: 't', config: JSON.stringify({ projects: [{ path: 'loc' }] }), configError: null, at: 1 });
 
     const view = await homeView(pageContext(store, null));

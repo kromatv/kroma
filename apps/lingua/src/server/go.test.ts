@@ -41,7 +41,7 @@ describe('GET /go', () => {
   it("redirects to a message of this repository's catalogs", async () => {
     const request = new Request('https://lingua.test/go/kromatv/kroma/en/admin.aiAddProvider');
 
-    const response = await api(request, {}, { waitUntil: () => undefined });
+    const response = await api(request, {});
 
     expect(response?.status).toBe(302);
     expect(response?.headers.get('location')).toBe('/kromatv/kroma/en/admin/ai#admin.aiAddProvider');

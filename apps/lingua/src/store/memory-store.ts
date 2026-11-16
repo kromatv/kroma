@@ -1,4 +1,6 @@
 import type {
+  BranchHead,
+  Checked,
   Confirm,
   Edit,
   EditKey,
@@ -8,6 +10,7 @@ import type {
   Start,
   Store,
   Synced,
+  Tracked,
   User,
 } from './store';
 
@@ -17,7 +20,18 @@ const proposalId = (project: string, userId: number, locale: string) =>
 
 type Pending = Edit | Confirm | Start;
 
-const UNSYNCED = { config: null, configError: null, headSha: null, treeSha: null, syncedAt: null };
+const UNSYNCED = {
+  config: null,
+  configError: null,
+  headSha: null,
+  treeSha: null,
+  syncedAt: null,
+  branchSha: null,
+  etag: null,
+  progress: null,
+  syncError: null,
+  checkedAt: null,
+};
 
 /** The store held in memory, for tests and for a local run without D1. */
 export class MemoryStore implements Store {
@@ -30,13 +44,8 @@ export class MemoryStore implements Store {
     confirms: new Map<string, Confirm>(),
     starts: new Map<string, Start>(),
     proposals: new Map<string, Proposal>(),
-    setupCodes: new Map<string, number>(),
+    leases: new Map<string, number>(),
   };
-
-  /** The setup codes held, newest first. */
-  get setupCodes(): string[] {
-    return [...this.held.setupCodes].sort(([, a], [, b]) => b - a).map(([code]) => code);
-  }
 
   private filesOf(project: string): Map<string, FileRow> {
     const existing = this.held.files.get(project);
@@ -46,6 +55,13 @@ export class MemoryStore implements Store {
     const created = new Map<string, FileRow>();
     this.held.files.set(project, created);
     return created;
+  }
+
+  private update(id: string, change: Partial<Project>): void {
+    const p = this.held.projects.get(id);
+    if (p) {
+      this.held.projects.set(id, { ...p, ...change });
+    }
   }
 
   private editsWhere(match: (e: Edit) => boolean): [string, Edit][] {
@@ -78,14 +94,16 @@ export class MemoryStore implements Store {
     return this.held.projects.get(id) ?? null;
   }
 
-  async upsertProject(id: string, installationId: number, branch: string): Promise<void> {
-    const existing = this.held.projects.get(id) ?? UNSYNCED;
-    this.held.projects.set(id, { ...existing, id, installationId, branch });
+  async upsertProject(t: Tracked): Promise<void> {
+    const existing = this.held.projects.get(t.id);
+    const kept =
+      existing?.branch === t.branch ? existing : { ...existing, etag: null, branchSha: null };
+    this.held.projects.set(t.id, { ...UNSYNCED, ...kept, ...t });
   }
 
-  async dropProjects(installationId: number, keep: readonly string[]): Promise<void> {
+  async dropProjects(keep: readonly string[]): Promise<void> {
     for (const p of this.held.projects.values()) {
-      if (p.installationId === installationId && !keep.includes(p.id)) {
+      if (!keep.includes(p.id)) {
         this.held.projects.delete(p.id);
         this.held.files.delete(p.id);
       }
@@ -93,17 +111,35 @@ export class MemoryStore implements Store {
   }
 
   async setSynced(id: string, s: Synced): Promise<void> {
-    const p = this.held.projects.get(id);
-    if (p) {
-      this.held.projects.set(id, {
-        ...p,
-        headSha: s.headSha,
-        treeSha: s.treeSha,
-        config: s.config,
-        configError: s.configError,
-        syncedAt: s.at,
-      });
+    this.update(id, {
+      headSha: s.headSha,
+      treeSha: s.treeSha,
+      config: s.config,
+      configError: s.configError,
+      syncedAt: s.at,
+      branchSha: s.headSha,
+      etag: s.etag ?? null,
+      progress: null,
+    });
+  }
+
+  async setBranchHead(id: string, head: BranchHead): Promise<void> {
+    this.update(id, { branchSha: head.sha, etag: head.etag, progress: head.progress });
+  }
+
+  async claimSync(id: string, now: number, until: number): Promise<Project | null> {
+    const held = this.held.leases.get(id);
+    const project = this.held.projects.get(id);
+    if (!project || (held !== undefined && held > now)) {
+      return null;
     }
+    this.held.leases.set(id, until);
+    return project;
+  }
+
+  async endSync(id: string, checked: Checked): Promise<void> {
+    this.held.leases.delete(id);
+    this.update(id, { checkedAt: checked.at, syncError: checked.error });
   }
 
   async files(project: string, locales?: readonly string[]): Promise<FileRow[]> {
@@ -195,11 +231,10 @@ export class MemoryStore implements Store {
     return this.held.proposals.get(proposalId(project, userId, locale)) ?? null;
   }
 
-  async proposalByBranch(project: string, branch: string): Promise<Proposal | null> {
-    return (
-      [...this.held.proposals.values()].find((p) => p.project === project && p.branch === branch) ??
-      null
-    );
+  async proposalsOf(project: string): Promise<Proposal[]> {
+    return [...this.held.proposals.values()]
+      .filter((p) => p.project === project)
+      .sort((a, b) => a.updatedAt - b.updatedAt);
   }
 
   async saveProposal(p: Proposal): Promise<void> {
@@ -210,10 +245,6 @@ export class MemoryStore implements Store {
     const where = { project: p.project, userId: p.userId, locale: p.locale, proposed: true };
     this.forEachWork(where, (held, id) => held.delete(id));
     this.held.proposals.delete(proposalId(p.project, p.userId, p.locale));
-  }
-
-  async holdSetupCode(code: string, now: number): Promise<void> {
-    this.held.setupCodes.set(code, now);
   }
 }
 

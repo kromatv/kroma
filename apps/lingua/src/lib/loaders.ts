@@ -1,5 +1,4 @@
 import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
 import type {
   HomeView,
   LocaleView,
@@ -41,8 +40,9 @@ export const getHome = createServerFn().handler(async (): Promise<HomeView> => {
 export const getProject = createServerFn()
   .validator(projectInput)
   .handler(async ({ data }): Promise<ProjectView | null> => {
-    const { requestContext } = await import('#site/server/request');
+    const { refreshAfterServing, requestContext } = await import('#site/server/request');
     const { projectView } = await import('#site/server/views');
+    await refreshAfterServing(data.id);
     return projectView(await requestContext(), data.id);
   });
 
@@ -50,8 +50,9 @@ export const getProject = createServerFn()
 export const getLocale = createServerFn()
   .validator(localeInput)
   .handler(async ({ data }): Promise<LocaleView | null> => {
-    const { requestContext } = await import('#site/server/request');
+    const { refreshAfterServing, requestContext } = await import('#site/server/request');
     const { localeView } = await import('#site/server/views');
+    await refreshAfterServing(data.id);
     return localeView(await requestContext(), data.id, data.locale);
   });
 
@@ -59,8 +60,9 @@ export const getLocale = createServerFn()
 export const getNamespace = createServerFn()
   .validator(namespaceInput)
   .handler(async ({ data }): Promise<NamespaceView | null> => {
-    const { requestContext } = await import('#site/server/request');
+    const { refreshAfterServing, requestContext } = await import('#site/server/request');
     const { namespaceView } = await import('#site/server/views');
+    await refreshAfterServing(data.id);
     return namespaceView(await requestContext(), data.id, { locale: data.locale, file: data.file });
   });
 
@@ -72,12 +74,10 @@ export const getSite = createServerFn().handler(async (): Promise<SiteView> => {
   return siteView(env, origin);
 });
 
-/** `/setup`, given the code GitHub returned with when it did. */
-export const getSetup = createServerFn()
-  .validator(z.object({ code: z.string().max(64).nullable() }))
-  .handler(async ({ data }): Promise<SetupView> => {
-    const { requestContext, servedRequest } = await import('#site/server/request');
-    const { setupView } = await import('#site/server/views');
-    const { origin, cookies } = await servedRequest();
-    return setupView(await requestContext(), { origin, code: data.code, cookies });
-  });
+/** `/setup`. */
+export const getSetup = createServerFn().handler(async (): Promise<SetupView> => {
+  const { requestContext, servedRequest } = await import('#site/server/request');
+  const { setupView } = await import('#site/server/setup');
+  const { origin } = await servedRequest();
+  return setupView(await requestContext(), origin);
+});

@@ -50,8 +50,31 @@ const GraphQLAnswer = z.object({
 });
 
 interface Session {
-  authorization: string;
+  authorization: string | null;
   fetchFn: typeof fetch;
+}
+
+/** The headers every request to GitHub carries: who Lingua is, and who it speaks as when `authorization` is set. */
+export function gitHubHeaders(authorization: string | null): Record<string, string> {
+  return {
+    ...(authorization === null ? {} : { Authorization: authorization }),
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'kroma-lingua',
+  };
+}
+
+/** The error a GitHub answer that was not a success reads as, with the message GitHub gave when it gave one. */
+export function refusal(response: Response, what: string, text: string): GitHubError {
+  return new GitHubError(response.status, `${what}: ${messageIn(text) ?? response.statusText}`);
+}
+
+function messageIn(text: string): string | undefined {
+  try {
+    return ErrorBody.safeParse(JSON.parse(text)).data?.message;
+  } catch {
+    return undefined;
+  }
 }
 
 async function request(
@@ -63,25 +86,20 @@ async function request(
   const response = await fetchFn(`${API}${write.path}`, {
     method: write.method,
     headers: {
-      Authorization: session.authorization,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'kroma-lingua',
+      ...gitHubHeaders(session.authorization),
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await response.text();
-  const json: unknown = text ? JSON.parse(text) : null;
   if (!response.ok) {
-    const message = ErrorBody.safeParse(json).data?.message ?? response.statusText;
-    throw new GitHubError(response.status, `${write.method} ${write.path}: ${message}`);
+    throw refusal(response, `${write.method} ${write.path}`, text);
   }
-  return json;
+  return text ? JSON.parse(text) : null;
 }
 
-/** A client speaking with `authorization` (`Bearer <token>`), through `fetchFn`. */
-export function gitHub(authorization: string, fetchFn: typeof fetch = fetch): GitHub {
+/** A client speaking with `authorization` (`Bearer <token>`, `Basic <id:secret>`), or anonymously when it is null, through `fetchFn`. */
+export function gitHub(authorization: string | null, fetchFn: typeof fetch = fetch): GitHub {
   const session = { authorization, fetchFn };
   return {
     get: async (path, schema) => schema.parse(await request(session, { method: 'GET', path })),

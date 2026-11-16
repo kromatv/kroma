@@ -1,14 +1,12 @@
-import { createHmac } from 'node:crypto';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { gitHubFetch, sha, testApp } from '#site/github/test-support';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { gitHubFetch, sha } from '#site/github/test-support';
 import { MemoryStore } from '#site/store/memory-store';
 import type { Store } from '#site/store/store';
 import { api } from './api';
-import { readOwners } from './app-owners';
 import { type PendingSend, pendingCookie, readPending } from './authorizations';
 import type { Env } from './env';
 import { openSession } from './session';
-import { ada, gitHubListing, membership, seededStore } from './test-support';
+import { ada, seededStore } from './test-support';
 
 const H = vi.hoisted(() => ({ store: null as Store | null }));
 
@@ -18,14 +16,7 @@ vi.mock('./env', async (importOriginal) => ({
 }));
 
 const ORIGIN = 'https://lingua.test';
-const OAUTH: Env = { GITHUB_OAUTH_CLIENT_ID: 'cid', GITHUB_OAUTH_CLIENT_SECRET: 'csecret' };
-
-let env: Env;
-
-beforeAll(() => {
-  const app = testApp();
-  env = { ...OAUTH, GITHUB_APP_ID: app.appId, GITHUB_APP_PRIVATE_KEY: app.privateKey, GITHUB_WEBHOOK_SECRET: app.webhookSecret };
-}, 60_000);
+const env: Env = { GITHUB_OAUTH_CLIENT_ID: 'cid', GITHUB_OAUTH_CLIENT_SECRET: 'csecret', LINGUA_PROJECTS: 'o/r' };
 
 beforeEach(async () => {
   H.store = await seededStore();
@@ -36,9 +27,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const later = { waitUntil: () => undefined };
-
-const get = (path: string, init: RequestInit = {}, on: Env = env) => api(new Request(`${ORIGIN}${path}`, init), on, later);
+const get = (path: string, init: RequestInit = {}, on: Env = env) => api(new Request(`${ORIGIN}${path}`, init), on);
 
 async function signedIn(): Promise<string> {
   const set = await openSession(H.store ?? new MemoryStore(), ada, Math.floor(Date.now() / 1000));
@@ -57,10 +46,10 @@ describe('api', () => {
     expect(await get('/o/r')).toBeNull();
   });
 
-  it('reports which of its two GitHub apps the deployment holds', async () => {
-    const response = await get('/health', {}, OAUTH);
+  it('reports whether people can sign in, and how many repositories it lists', async () => {
+    const response = await get('/health');
 
-    expect(await response?.json()).toEqual({ ok: true, github: false, signIn: true });
+    expect(await response?.json()).toEqual({ ok: true, signIn: true, projects: 1 });
   });
 
   it('lands a message link on the page of the file that holds it', async () => {
@@ -71,42 +60,16 @@ describe('api', () => {
 });
 
 describe('setup', () => {
-  it('leaves the setup page to the router, connected or not', async () => {
+  it('leaves the setup page to the router, set up or not', async () => {
     const pages = await Promise.all([get('/setup', {}, {}), get('/setup')]);
 
     expect(pages).toEqual([null, null]);
   });
 
-  it('explains a return from GitHub without a usable code', async () => {
-    const responses = await Promise.all(['/setup/done?code=<x>', '/setup/done'].map((path) => get(path, {}, {})));
+  it('routes nothing a GitHub App would call', async () => {
+    const answers = await Promise.all([get('/setup/done?code=abcdef12'), get('/webhook', { method: 'POST', body: '{}' })]);
 
-    expect(responses.map((response) => response?.headers.get('location'))).toEqual([
-      '/problem?reason=setup-code-missing',
-      '/problem?reason=setup-code-missing',
-    ]);
-  });
-
-  it('holds the code GitHub returns from the manifest and sends the browser to the setup page', async () => {
-    const store = new MemoryStore();
-    H.store = store;
-
-    const response = await get('/setup/done?code=abcdef12', {}, {});
-
-    expect(response?.status).toBe(303);
-    expect(response?.headers.get('location')).toBe('/setup?created=1&code=abcdef12');
-    expect(store.setupCodes).toEqual(['abcdef12']);
-  });
-
-  it('quotes a code the router would read as a number', async () => {
-    const response = await get('/setup/done?code=12345678', {}, {});
-
-    expect(response?.headers.get('location')).toBe('/setup?created=1&code=%2212345678%22');
-  });
-
-  it('explains a return from GitHub once the App is connected', async () => {
-    const response = await get('/setup/done?code=abcdef12');
-
-    expect(response?.headers.get('location')).toBe('/problem?reason=already-connected');
+    expect(answers).toEqual([null, null]);
   });
 });
 
@@ -289,36 +252,6 @@ describe('signing in', () => {
   });
 });
 
-describe('choosing where to create the App', () => {
-  it('asks GitHub to read the organisations, under a state marked for it', async () => {
-    const response = await get('/auth/setup', {}, OAUTH);
-
-    const asked = new URL(response?.headers.get('location') ?? '');
-    expect(asked.searchParams.get('scope')).toBe('read:org');
-    expect(stateOf(response)).toMatch(/^[\w-]+\.owners$/);
-  });
-
-  it('hands the setup page the accounts the App may be created under', async () => {
-    vi.stubGlobal('fetch', gitHubListing([membership('kromatv', 'admin')]));
-
-    const response = await get('/auth/callback?code=c&state=tok.owners', { headers: { cookie: 'lingua_oauth=tok' } }, OAUTH);
-
-    const held = cookiesOf(response).find((line) => line.startsWith('lingua_owners=')) ?? '';
-    const owners = await readOwners(held.split(';')[0], 'csecret');
-    expect(response?.status).toBe(303);
-    expect(response?.headers.get('location')).toBe('/setup');
-    expect(owners.map((owner) => owner.login)).toEqual(['ada', 'kromatv']);
-  });
-
-  it('sends the operator back to setup when GitHub would not list them', async () => {
-    const headers = { cookie: 'lingua_oauth=tok' };
-
-    const response = await get('/auth/callback?error=access_denied&state=tok.owners', { headers }, OAUTH);
-
-    expect(response?.headers.get('location')).toBe('/problem?reason=owners-unlisted');
-  });
-});
-
 describe('sending', () => {
   it('asks the contributor’s GitHub for public_repo before sending from their fork', async () => {
     const response = await send('POST', '/api/proposals', { project: 'o/r', locale: 'fr', to: '/o/r/fr' });
@@ -329,15 +262,14 @@ describe('sending', () => {
     expect(cookiesOf(response)[0]).toMatch(/^lingua_send=/);
   });
 
-  it('cannot send before the deployment holds both of its GitHub apps', async () => {
-    const withoutApp = await send('POST', '/api/proposals', { project: 'o/r', locale: 'fr' }, OAUTH);
-    const withoutOAuth = await send('POST', '/api/proposals', { project: 'o/r', locale: 'fr' }, { ...env, GITHUB_OAUTH_CLIENT_ID: undefined });
+  it('cannot send before sign-in is configured', async () => {
+    const response = await send('POST', '/api/proposals', { project: 'o/r', locale: 'fr' }, {});
 
-    expect([withoutApp?.status, withoutOAuth?.status]).toEqual([503, 503]);
+    expect(response?.status).toBe(503);
   });
 
-  it('refuses to send a project Lingua does not translate', async () => {
-    const response = await send('POST', '/api/proposals', { project: 'x/y', locale: 'fr', via: 'lingua' });
+  it('refuses to send a project Lingua does not translate, before asking GitHub anything', async () => {
+    const response = await send('POST', '/api/proposals', { project: 'x/y', locale: 'fr' });
 
     expect(response?.status).toBe(404);
     expect(await response?.json()).toEqual({ error: 'Lingua does not translate this project' });
@@ -358,7 +290,6 @@ describe('sending', () => {
       routes: {
         'POST /login/oauth/access_token': () => ({ access_token: 'gho_x', scope: 'public_repo' }),
         'GET /user': () => ({ id: 42, login: 'ada' }),
-        'POST /app/installations/1/access_tokens': () => ({ token: 'ghs_x', expires_at: new Date(Date.now() + 3_600_000).toISOString() }),
       },
     }));
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -368,18 +299,20 @@ describe('sending', () => {
     expect(response?.headers.get('location')).toBe('/o/r/fr?send=failed');
   });
 
-  it('answers a send through Lingua’s App with what it came to', async () => {
+  it('brings back a send that found nothing left to send, once the copy is level with the branch', async () => {
     await H.store?.setSynced('o/r', { headSha: sha('a'), treeSha: sha('0e'), config: JSON.stringify({ projects: [{ path: 'loc' }] }), configError: null, at: 1 });
+    const headers = { cookie: `${pendingCookie(pending).split(';')[0]}; ${await signedIn()}` };
     vi.stubGlobal('fetch', gitHubFetch({
       routes: {
-        'POST /app/installations/1/access_tokens': () => ({ token: 'ghs_x', expires_at: new Date(Date.now() + 3_600_000).toISOString() }),
-        'GET /repos/o/r/branches/main': () => ({ commit: { sha: sha('a'), commit: { tree: { sha: sha('0e') } } } }),
+        'POST /login/oauth/access_token': () => ({ access_token: 'gho_x', scope: 'public_repo' }),
+        'GET /user': () => ({ id: 42, login: 'ada' }),
+        'GET /repos/o/r/commits/main': () => new Response(sha('a')),
       },
     }));
 
-    const response = await send('POST', '/api/proposals', { project: 'o/r', locale: 'fr', via: 'lingua' });
+    const response = await get('/auth/callback?state=s&code=c', { headers });
 
-    expect(await response?.json()).toEqual({ kind: 'nothing' });
+    expect(response?.headers.get('location')).toBe('/o/r/fr?send=nothing');
   });
 
   it('comes back to the language’s own page when a send names none', async () => {
@@ -389,72 +322,11 @@ describe('sending', () => {
     expect(readPending(header)?.to).toBe('/o/r/fr');
   });
 
-  it('brings a send back as failed once the deployment lost its GitHub App', async () => {
+  it('brings a send back as failed once the deployment lost its OAuth App', async () => {
     const headers = { cookie: pendingCookie(pending).split(';')[0] ?? '' };
 
-    const response = await get('/auth/callback?state=s&code=c', { headers }, OAUTH);
+    const response = await get('/auth/callback?state=s&code=c', { headers }, {});
 
     expect(response?.headers.get('location')).toBe('/o/r/fr?send=failed');
-  });
-});
-
-const signatureOf = (body: string, secret = 'whsec') => `sha256=${createHmac('sha256', secret).update(body).digest('hex')}`;
-
-function delivery(event: string, payload: unknown, secret?: string): RequestInit {
-  const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  return { method: 'POST', headers: { 'x-github-event': event, 'x-hub-signature-256': signatureOf(body, secret) }, body };
-}
-
-async function deliver(init: RequestInit): Promise<Response | null> {
-  const held: Promise<unknown>[] = [];
-  const response = await api(new Request(`${ORIGIN}/webhook`, init), env, { waitUntil: (p) => held.push(p) });
-  await Promise.all(held);
-  return response;
-}
-
-describe('the webhook', () => {
-  it('acts on a signed delivery after answering it', async () => {
-    const response = await deliver(delivery('installation', { action: 'deleted', installation: { id: 1 } }));
-
-    expect(response?.status).toBe(202);
-    expect(await H.store?.projects()).toEqual([]);
-  });
-
-  it('logs a delivery it could not act on', async () => {
-    vi.stubGlobal('fetch', gitHubFetch({ routes: {} }));
-    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-    await deliver(delivery('installation', { action: 'created', installation: { id: 404 } }));
-
-    expect(logged).toHaveBeenCalledWith('lingua: webhook failed', expect.any(Error));
-  });
-
-  it('refuses a delivery GitHub did not sign, or one that is not JSON', async () => {
-    const [forged, unsigned, garbled] = await Promise.all([
-      deliver(delivery('push', {}, 'guess')),
-      deliver({ method: 'POST', body: '{}' }),
-      deliver(delivery('push', '{')),
-    ]);
-
-    expect([forged?.status, unsigned?.status, garbled?.status]).toEqual([401, 401, 400]);
-  });
-
-  it('accepts a signed delivery that names no event, and does nothing with it', async () => {
-    const response = await deliver({ method: 'POST', body: '{}', headers: { 'x-hub-signature-256': signatureOf('{}') } });
-
-    expect(response?.status).toBe(202);
-    expect(await H.store?.project('o/r')).not.toBeNull();
-  });
-
-  it('refuses a delivery past four megabytes', async () => {
-    const response = await deliver(delivery('push', 'x'.repeat(4 * 1024 * 1024 + 1)));
-
-    expect(response?.status).toBe(413);
-  });
-
-  it('refuses every delivery until the App is connected', async () => {
-    const response = await api(new Request(`${ORIGIN}/webhook`, delivery('push', {})), OAUTH, later);
-
-    expect(response?.status).toBe(503);
   });
 });

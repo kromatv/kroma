@@ -9,6 +9,7 @@ const SendFailure = z.enum([
   'diverged',
   'other-account',
   'expired',
+  'syncing',
   'failed',
 ]);
 
@@ -28,6 +29,7 @@ export const SEND_FAILURES: Record<SendFailure, string> = {
   'other-account':
     'GitHub answered for another account than the one signed in here. Sign in again, then send.',
   expired: 'GitHub took too long to answer. Send again.',
+  syncing: 'Lingua is still reading the latest changes of the repository. Send again in a minute.',
   failed: 'GitHub refused the change. Try again in a minute.',
 };
 

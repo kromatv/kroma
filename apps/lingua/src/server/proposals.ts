@@ -1,11 +1,10 @@
 import { z } from 'zod';
 import { LocaleTag } from '#site/core/config';
 import { stableLocales } from '#site/core/policy';
-import { type AppCredentials, asInstallation } from '#site/github/app';
 import { type GitHub, GitHubError } from '#site/github/client';
 import { ForkDiverged, ForkPending } from '#site/github/fork';
-import type { Sender } from '#site/github/lane';
 import { type Outcome, propose } from '#site/github/propose';
+import type { Reader } from '#site/github/reader';
 import { syncProject } from '#site/github/sync';
 import { SEND_FAILURES, type SendFailure } from '#site/lib/send-return';
 import type { Project, Store, User } from '#site/store/store';
@@ -15,11 +14,8 @@ import { openProject } from './workspace';
 export const ProposalInput = z.object({ project: z.string().regex(/^[\w.-]+\/[\w.-]+$/), locale: LocaleTag });
 export type ProposalInput = z.infer<typeof ProposalInput>;
 
-/** `POST /api/proposals`: what to send, through the contributor's fork unless `via` is `lingua`, and the page to come back to. */
-export const SendInput = ProposalInput.extend({
-  via: z.enum(['fork', 'lingua']).default('fork'),
-  to: z.string().max(512).optional(),
-});
+/** `POST /api/proposals`: what to send, and the page to come back to. */
+export const SendInput = ProposalInput.extend({ to: z.string().max(512).optional() });
 
 const COOLDOWN = 20;
 
@@ -28,13 +24,13 @@ export type ProposalResult =
   | { status: 200; body: { kind: 'proposed'; number: number; url: string } | { kind: 'nothing' } }
   | { status: 404 | 409 | 422 | 429 | 502 | 503; reason: SendFailure; error: string };
 
-/** A send: who it is for, and the client GitHub handed back for them when they send as themselves. Without it, the App sends. */
+/** A send: who it is for, the client GitHub handed back for them, and the reader that brings the project level with its branch first. */
 export interface Sending {
-  app: AppCredentials;
+  reader: Reader;
   user: User;
   input: ProposalInput;
   origin: string;
-  as?: GitHub;
+  as: GitHub;
 }
 
 type Refused = Exclude<ProposalResult, { status: 200 }>;
@@ -61,20 +57,18 @@ function failure(error: unknown): Refused {
 
 async function sendSynced(store: Store, sending: Sending & { before: Project }, now: number): Promise<ProposalResult> {
   const { before, user, input } = sending;
-  const gh = await asInstallation(sending.app, before.installationId);
-  await syncProject({ gh, store }, before, now);
+  if ((await syncProject({ reader: sending.reader, store }, before, now)) === 'behind') return refused(503, 'syncing');
   const workspace = (await openProject(store, before.id, user))?.workspace;
   const project = await store.project(before.id);
   if (!project || !workspace) return refused(404, 'missing', 'This project has no usable lingua.json or i18n.json');
   if (!workspace.locales.includes(input.locale)) return refused(404, 'missing', 'This project does not offer that language');
   const read = ['', workspace.policy.source, input.locale, ...stableLocales(workspace.policy)];
   const files = await store.files(project.id, [...new Set(read)]);
-  const sender: Sender = sending.as ? { kind: 'fork', gh: sending.as } : { kind: 'app', gh };
   const proposing = { project, root: workspace.root, files, user, locale: input.locale, origin: sending.origin, now };
-  return resultOf(await propose(sender, store, proposing));
+  return resultOf(await propose({ gh: sending.as }, store, proposing));
 }
 
-/** Sync the project with its default branch, then send the contributor's edits for the language to their pull request. */
+/** Bring the project level with its branch, then send the contributor's edits for the language to their pull request. Refused while the branch changed more files than one pass reads. */
 export async function sendProposal(store: Store, sending: Sending, now: number): Promise<ProposalResult> {
   const { user, input } = sending;
   const before = await store.project(input.project);

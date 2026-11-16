@@ -134,12 +134,12 @@ export class D1WorkStore {
     return maybe(row, proposal);
   }
 
-  async proposalByBranch(projectId: string, branch: string): Promise<Proposal | null> {
-    const row = await this.db
-      .prepare('SELECT * FROM proposals WHERE project = ?1 AND branch = ?2')
-      .bind(projectId, branch)
-      .first();
-    return maybe(row, proposal);
+  async proposalsOf(projectId: string): Promise<Proposal[]> {
+    const { results } = await this.db
+      .prepare('SELECT * FROM proposals WHERE project = ?1 ORDER BY updated_at')
+      .bind(projectId)
+      .all();
+    return results.map(proposal);
   }
 
   async saveProposal(p: Proposal): Promise<void> {

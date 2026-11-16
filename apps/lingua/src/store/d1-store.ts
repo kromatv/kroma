@@ -1,11 +1,16 @@
 import { file, ids, maybe, project, user } from './d1-records';
 import { D1WorkStore } from './d1-work-store';
-import type { FileRow, Project, Store, Synced, User } from './store';
+import type { BranchHead, Checked, FileRow, Project, Store, Synced, Tracked, User } from './store';
 
 const UPSERT_FILE = `INSERT INTO files (project, path, kind, locale, file, blob_sha, body)
   VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
   ON CONFLICT (project, path) DO UPDATE SET kind = excluded.kind, locale = excluded.locale,
     file = excluded.file, blob_sha = excluded.blob_sha, body = excluded.body`;
+
+const UPSERT_PROJECT = `INSERT INTO projects (id, branch, pinned) VALUES (?1, ?2, ?3)
+  ON CONFLICT (id) DO UPDATE SET branch = excluded.branch, pinned = excluded.pinned,
+    etag = CASE WHEN branch = excluded.branch THEN etag END,
+    branch_sha = CASE WHEN branch = excluded.branch THEN branch_sha END`;
 
 const BATCH = 50;
 
@@ -23,21 +28,15 @@ export class D1Store extends D1WorkStore implements Store {
     );
   }
 
-  async upsertProject(id: string, installationId: number, branch: string): Promise<void> {
+  async upsertProject(t: Tracked): Promise<void> {
     await this.db
-      .prepare(
-        `INSERT INTO projects (id, installation_id, branch) VALUES (?1, ?2, ?3)
-         ON CONFLICT (id) DO UPDATE SET installation_id = excluded.installation_id, branch = excluded.branch`,
-      )
-      .bind(id, installationId, branch)
+      .prepare(UPSERT_PROJECT)
+      .bind(t.id, t.branch, t.pinned ? 1 : 0)
       .run();
   }
 
-  async dropProjects(installationId: number, keep: readonly string[]): Promise<void> {
-    const { results } = await this.db
-      .prepare('SELECT id FROM projects WHERE installation_id = ?1')
-      .bind(installationId)
-      .all();
+  async dropProjects(keep: readonly string[]): Promise<void> {
+    const { results } = await this.db.prepare('SELECT id FROM projects').all();
     const gone = ids(results).filter((id) => !keep.includes(id));
     if (gone.length === 0) {
       return;
@@ -53,10 +52,40 @@ export class D1Store extends D1WorkStore implements Store {
   async setSynced(id: string, s: Synced): Promise<void> {
     await this.db
       .prepare(
-        `UPDATE projects SET head_sha = ?2, tree_sha = ?3, config = ?4, config_error = ?5, synced_at = ?6
+        `UPDATE projects SET head_sha = ?2, tree_sha = ?3, config = ?4, config_error = ?5, synced_at = ?6,
+           branch_sha = ?2, etag = ?7, files_done = NULL, files_total = NULL
          WHERE id = ?1`,
       )
-      .bind(id, s.headSha, s.treeSha, s.config, s.configError, s.at)
+      .bind(id, s.headSha, s.treeSha, s.config, s.configError, s.at, s.etag ?? null)
+      .run();
+  }
+
+  async setBranchHead(id: string, head: BranchHead): Promise<void> {
+    await this.db
+      .prepare(
+        'UPDATE projects SET branch_sha = ?2, etag = ?3, files_done = ?4, files_total = ?5 WHERE id = ?1',
+      )
+      .bind(id, head.sha, head.etag, head.progress?.done ?? null, head.progress?.total ?? null)
+      .run();
+  }
+
+  async claimSync(id: string, now: number, until: number): Promise<Project | null> {
+    const row = await this.db
+      .prepare(
+        `UPDATE projects SET syncing_until = ?3
+         WHERE id = ?1 AND (syncing_until IS NULL OR syncing_until <= ?2) RETURNING *`,
+      )
+      .bind(id, now, until)
+      .first();
+    return maybe(row, project);
+  }
+
+  async endSync(id: string, checked: Checked): Promise<void> {
+    await this.db
+      .prepare(
+        'UPDATE projects SET syncing_until = NULL, checked_at = ?2, sync_error = ?3 WHERE id = ?1',
+      )
+      .bind(id, checked.at, checked.error)
       .run();
   }
 
@@ -131,14 +160,5 @@ export class D1Store extends D1WorkStore implements Store {
 
   async deleteSession(hash: string): Promise<void> {
     await this.db.prepare('DELETE FROM sessions WHERE hash = ?1').bind(hash).run();
-  }
-
-  async holdSetupCode(code: string, now: number): Promise<void> {
-    await this.db.batch([
-      this.db.prepare('DELETE FROM setup_codes WHERE created_at < ?1').bind(now - 3600),
-      this.db
-        .prepare('INSERT OR IGNORE INTO setup_codes (code, created_at) VALUES (?1, ?2)')
-        .bind(code, now),
-    ]);
   }
 }

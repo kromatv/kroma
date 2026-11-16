@@ -4,19 +4,35 @@ Translate a repository in the browser. A contributor signs in with GitHub, fixes
 or adds messages in their language, and presses **Send**: their edits land in the
 repository as a pull request they opened, in commits authored by them.
 
-It runs on Cloudflare (one Worker, one D1 database, a cron) and talks to GitHub
-through two apps of its own: a GitHub App that keeps the repositories in sync,
-and an OAuth App that signs people in. Anyone can host their own. KROMA's runs at
+It runs on Cloudflare (one Worker, one D1 database, a cron) and needs one thing
+from GitHub: an OAuth App, which signs people in. It translates public
+repositories only. Anyone can host their own. KROMA's runs at
 [lingua.kroma.tv](https://lingua.kroma.tv).
 
 ## How it works
 
-- **The repository is the source of truth.** A `lingua.json` at its root names
-  the folder of an i18n project, the one holding its `i18n.json`. On every push
-  to the default branch (the App's webhook, plus a sync every ten minutes in
-  case one is missed), Lingua re-reads the files of that folder whose blob
-  changed and keeps a copy in D1. Nothing is edited in D1 that the repository
-  does not end up holding.
+- **The repository is the source of truth.** The Worker variable
+  `LINGUA_PROJECTS` lists the repositories to translate. A `lingua.json` at the
+  root of each names the folder of its i18n project, the one holding its
+  `i18n.json`. Lingua keeps a copy of that folder in D1 and edits nothing there
+  that the repository does not end up holding.
+- **Lingua reads without a token of its own.** It calls GitHub's REST API with
+  the OAuth App's client id and secret as HTTP Basic, and GitHub serves public
+  data to them at 5,000 requests an hour. Until they are set it reads anonymously, at
+  60 an hour. File contents come from `raw.githubusercontent.com` at a commit.
+- **A sync is a pass, and a pass is small.** A Worker on the free plan may make
+  50 subrequests per invocation, so one pass asks where the branch points,
+  lists the tree, and reads at most 40 of the files whose blob changed. When
+  the branch has not moved, the pass makes one conditional request, which
+  GitHub answers `304 Not Modified` and does not count against the limit. The
+  new head is recorded only once every changed file of that head is stored, so
+  the next pass carries on where this one stopped. A large change takes a few
+  passes, and `/setup` shows how far along it is.
+- **Passes run on a cron and on page loads.** Every five minutes the cron
+  passes over each project in turn, the one checked longest ago first, while its
+  budget of 45 requests lasts. Opening a project, language or file page whose
+  last pass ended more than two minutes ago starts one after the page is
+  served. A lease in D1 keeps two passes off one project.
 - **An edit is a draft until it is sent.** Saving checks the message against its
   source: a `{placeholder}` the source does not have, or a `$t(key)` reference
   to a message outside its file, is refused, because it would print raw on
@@ -30,13 +46,13 @@ and an OAuth App that signs people in. Anyone can host their own. KROMA's runs a
   `lingua/<locale>` on the fork. The contributor authors and commits it, as
   `<id>+<login>@users.noreply.github.com`, so it counts on their profile and
   publishes no address. If the default branch moved, the branch merges it
-  first. The pull request is theirs, and maintainers may push to it.
-- **A contributor who refuses `public_repo` can send through Lingua instead.**
-  The App pushes the same commit to `lingua/<login>/<locale>` on the repository
-  and opens the pull request itself.
-- **Merged or closed**, the proposal and its edits are forgotten. The App
-  deletes a branch it pushed to the repository; a branch on a fork stays with
-  its owner.
+  first. The pull request is theirs, and maintainers may push to it. A
+  contributor who refuses `public_repo` cannot send: the send bar says why and
+  offers to ask again. A send also refuses while a pass is still reading the
+  branch's latest changes.
+- **Merged or closed**, the proposal and its edits are forgotten. Each pass asks
+  GitHub about every open proposal of its project. The branch on the fork stays
+  with its owner.
 
 Lingua never keeps a contributor's GitHub token. Signing in asks for no scope
 and reads who they are once. A send uses its `public_repo` token for that one
@@ -113,27 +129,9 @@ bun run deploy
 `wrangler.jsonc` names the database and carries no id: wrangler resolves the
 binding by name, so the same file deploys to any account.
 
-Then connect GitHub:
+Then:
 
-1. Open `https://<your host>/setup` and pick where the App goes. Once sign-in
-   works (step 3), **Choose where to create the GitHub App** asks GitHub to
-   let Lingua read your organisations (`read:org`) and lists your account and
-   each organisation you administer. Lingua keeps that list in a signed cookie
-   for an hour and drops the token. Without sign-in, type the organisation, or
-   leave it empty for your own account. Then press **Create the GitHub App**.
-   GitHub registers the App with the permissions it needs (contents and pull
-   requests: write; metadata: read) and the webhook, then returns to
-   `/setup/done`, which keeps the one-hour code GitHub sent and sends you back
-   to `/setup`.
-2. Trade the code for the App's secrets, within the hour. On KROMA's
-   deployment, run the **Lingua** workflow with **connect** ticked. Anywhere
-   else, run the command `/setup` shows:
-   `bun run --filter @kromatv/lingua setup <code>`. Either way the script
-   stores the App's id, slug, private key and webhook secret with
-   `wrangler secret bulk` and prints none of them. With `--owner`, it only
-   accepts an App that account owns, so an App a stranger made through your
-   `/setup` page is never connected.
-3. Create the OAuth App people sign in through. GitHub has no one-click flow
+1. Create the OAuth App people sign in through. GitHub has no one-click flow
    for it: under **Settings → Developer settings → OAuth Apps → New OAuth
    App** (an organisation's settings work too), fill in
 
@@ -154,18 +152,29 @@ Then connect GitHub:
    `LINGUA_OAUTH_CLIENT_ID` and `LINGUA_OAUTH_CLIENT_SECRET` instead (GitHub
    reserves the `GITHUB_` prefix for its own): every run of the **Lingua**
    workflow stores them in the Worker.
-4. Install the App on the repositories to translate. Each needs a
-   `lingua.json`. The next push or the next ten-minute sync picks it up.
+2. List the repositories in `LINGUA_PROJECTS`, under `vars` in
+   `wrangler.jsonc`. A variable set in the dashboard is gone after the next
+   `wrangler deploy`. Each repository needs a `lingua.json` at its root. The
+   next cron, within five minutes, picks it up.
 
-`/setup` marks each step done or to do, and stays up as a status page once
-everything is connected. A sign-in or a return from GitHub that cannot finish
-lands on `/problem`, which says why and links to the way forward.
+`/setup` shows whether sign-in is set and, for each listed repository, the
+branch Lingua tracks, its last check, and whether it is up to date, still
+reading (with the files read so far), or stopped by an error. A sign-in that
+cannot finish lands on `/problem`, which says why and links to the way forward.
 
-To try a repository whose `lingua.json` is not on its default branch yet, pin
-the branch Lingua tracks with the `LINGUA_BRANCHES` variable, `owner/repo=branch`
-comma separated: `bunx wrangler deploy --var LINGUA_BRANCHES:kromatv/kroma=feat/lingua`.
-Lingua then reads that branch, syncs on pushes to it, and opens pull requests
-against it. The next deploy without `--var` drops it.
+To try a branch that is not merged yet, pin it for one deploy:
+`bunx wrangler deploy --var LINGUA_PROJECTS:kromatv/kroma@feat/lingua`. Lingua
+then reads that branch and opens pull requests against it. The next deploy
+without `--var` goes back to the default branch.
+
+### Bindings and variables
+
+| Name | Kind | Meaning |
+| --- | --- | --- |
+| `LINGUA_DB` | D1 binding | Projects, the copy of their i18n folders, users, sessions, edits and proposals. Without it, `vite dev` reads the checkout instead. |
+| `LINGUA_PROJECTS` | variable | The repositories to translate, comma separated: `owner/repo` tracks the default branch, read from GitHub once; `owner/repo@branch` tracks that branch. A repository dropped from the list is forgotten at the next cron. |
+| `GITHUB_OAUTH_CLIENT_ID`, `GITHUB_OAUTH_CLIENT_SECRET` | secrets | The OAuth App. It signs people in, asks for `public_repo` on a send, and authenticates every read of a repository. Without them nobody can sign in, and reads are anonymous. |
+| `LINGUA_DEV_LOGIN` | variable | Local only: without D1, signs every request in as this login. |
 
 ## Running it locally
 
@@ -182,14 +191,14 @@ runs in, and its project folder, from disk. Sending needs GitHub and is refused.
 | Folder | Holds |
 | --- | --- |
 | `src/core/` | The rules, with no I/O: `lingua.json`, `i18n.json`, catalog files, locks, notes, plural rows, checks, and the plan of a send. |
-| `src/github/` | The App's JWT, OAuth, the API client, sync, forks, and building a proposal. |
+| `src/github/` | OAuth, the API client, the reader for public data, sync passes, forks, and building a proposal. |
 | `src/store/` | Every read and write behind `Store`: D1, and an in-memory twin for tests and dev. |
-| `src/server/` | Routes (sign-in, edits, proposals, webhook, setup), sessions, the cron, and the page data. |
+| `src/server/` | Routes (sign-in, edits, proposals, links), sessions, the cron and the passes pages start, and the page data. |
 | `src/routes/`, `src/components/` | The pages, built with `@kromatv/ui`. |
 
 `bun run test apps/lingua` runs the tests. GitHub is faked at the `GitHub`
-interface (`src/github/test-support.ts`), so a proposal's branch, commit, author
-and pull request, on the repository or on a contributor's fork, are checked
-without a network. The files a send commits are
+interface and over `fetch` (`src/github/test-support.ts`), so a sync pass and a
+proposal's branch, commit, author and pull request on a contributor's fork are
+checked without a network. The files a send commits are
 checked against what `@kromatv/i18n-tools` writes for the same work, on a
 fixture project and on this repository's own catalogs.

@@ -67,9 +67,10 @@ describe('sendProposal', () => {
     const url = 'https://github.com/login/oauth/authorize?client_id=x';
     serverAnswering(Response.json({ kind: 'authorize', url }));
 
-    expect(
-      await sendProposal({ project: 'o/r', locale: 'fr', via: 'fork', to: '/o/r/fr' }),
-    ).toEqual({ kind: 'authorize', url });
+    expect(await sendProposal({ project: 'o/r', locale: 'fr', to: '/o/r/fr' })).toEqual({
+      kind: 'authorize',
+      url,
+    });
   });
 });
 

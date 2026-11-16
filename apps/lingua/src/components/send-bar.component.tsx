@@ -4,7 +4,7 @@ import { Button } from '@kromatv/ui/kit/atoms/button';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import type { ReactNode } from 'react';
 import { counted } from '#site/lib/counted';
-import { type Sending, type SendVia, useSending } from '#site/lib/use-sending.hook';
+import { type Sending, useSending } from '#site/lib/use-sending.hook';
 import type { ProposalView } from '#site/lib/views';
 
 const sDefinition = styles({
@@ -20,7 +20,7 @@ function statusOf(
   }
   if (sending.kind === 'declined') {
     return {
-      text: 'GitHub was not allowed to open the pull request under your name. Lingua can open it for you, with your commits.',
+      text: 'Lingua opens the pull request under your GitHub account, from your own fork, so it needs the public_repo permission. Try again and allow it on GitHub.',
       tone: 'text',
     };
   }
@@ -74,19 +74,11 @@ function PullRequestLink({ proposal }: Readonly<{ proposal: ProposalView }>) {
   );
 }
 
-function SendThroughLingua({
-  disabled,
-  onSend,
-}: Readonly<{ disabled: boolean; onSend: (via: SendVia) => void }>) {
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      label="Send through Lingua instead"
-      disabled={disabled}
-      onPress={() => onSend('lingua')}
-    />
-  );
+function sendLabel(sending: Sending, drafts: number): string {
+  if (sending.kind === 'declined') {
+    return 'Try again';
+  }
+  return drafts > 0 ? `Send ${counted(drafts, 'change')}` : 'Send changes';
 }
 
 function Actions({
@@ -98,21 +90,18 @@ function Actions({
   sending: Sending;
   drafts: number;
   proposal: ProposalView | null;
-  onSend: (via: SendVia) => void;
+  onSend: () => void;
 }>) {
   return (
     <Row gap={8} wrap>
       {proposal ? <PullRequestLink proposal={proposal} /> : null}
-      {sending.kind === 'declined' ? (
-        <SendThroughLingua disabled={drafts === 0} onSend={onSend} />
-      ) : null}
       <Button
         size="sm"
         icon="send"
-        label={drafts > 0 ? `Send ${counted(drafts, 'change')}` : 'Send changes'}
+        label={sendLabel(sending, drafts)}
         disabled={drafts === 0}
         loading={sending.kind === 'sending'}
-        onPress={() => onSend('fork')}
+        onPress={onSend}
       />
     </Row>
   );
@@ -157,12 +146,7 @@ export function SendBar({
   return (
     <Dock>
       <Summary sending={sending} drafts={drafts} proposed={proposed} proposal={proposal} />
-      <Actions
-        sending={sending}
-        drafts={drafts}
-        proposal={proposal}
-        onSend={(via) => void send(via)}
-      />
+      <Actions sending={sending} drafts={drafts} proposal={proposal} onSend={() => void send()} />
     </Dock>
   );
 }

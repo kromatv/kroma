@@ -1,54 +1,94 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { gitHubFetch, testApp } from '#site/github/test-support';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { gitHubFetch, sha } from '#site/github/test-support';
+import { memoryStore } from '#site/store/memory-store';
+import type { Store } from '#site/store/store';
 import { fakeD1 } from '#site/store/test-support';
 import type { Env } from './env';
-import { refreshAll } from './scheduled';
+import { refreshAll, refreshStale } from './scheduled';
 
-let env: Env;
+const H = vi.hoisted(() => ({ store: null as Store | null }));
 
-beforeAll(() => {
-  const app = testApp();
-  env = { GITHUB_APP_ID: app.appId, GITHUB_APP_PRIVATE_KEY: app.privateKey, GITHUB_WEBHOOK_SECRET: app.webhookSecret };
-}, 60_000);
+vi.mock('./env', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./env')>()),
+  storeFor: async () => H.store,
+}));
+
+const CONFIG = JSON.stringify({ projects: [{ path: 'loc' }] });
+
+beforeEach(() => {
+  H.store = memoryStore();
+});
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
-const LATER = () => new Date(Date.now() + 3_600_000).toISOString();
+const env = (projects: string): Env => ({ LINGUA_DB: fakeD1(), LINGUA_PROJECTS: projects, GITHUB_OAUTH_CLIENT_ID: 'cid', GITHUB_OAUTH_CLIENT_SECRET: 'csecret' });
+
+const branchAt = (head: string) => () => new Response(head, { headers: { etag: `"${head}"` } });
+
+function emptyRepository(repo: string, head: string) {
+  return {
+    [`GET /repos/${repo}/commits/main`]: branchAt(head),
+    [`GET /repos/${repo}/git/trees/${head}?recursive=1`]: () => ({ sha: sha('0e'), truncated: false, tree: [{ path: 'lingua.json', type: 'blob', sha: sha('c') }] }),
+    [`GET /${repo}/${head}/lingua.json`]: () => new Response(CONFIG),
+  };
+}
 
 describe('refreshAll', () => {
-  it('discovers the repositories of every installation of the App', async () => {
-    const fetchFn = gitHubFetch({
-      routes: {
-        'GET /app/installations?per_page=100': () => [{ id: 7 }],
-        'POST /app/installations/7/access_tokens': () => ({ token: 'ghs_x', expires_at: LATER() }),
-        'GET /installation/repositories?per_page=100': () => ({ repositories: [] }),
-      },
-    });
-    vi.stubGlobal('fetch', fetchFn);
+  it('holds every listed repository and syncs each one', async () => {
+    const fetchFn = gitHubFetch({ routes: { 'GET /repos/o/s': () => ({ default_branch: 'main' }), ...emptyRepository('o/r', sha('a')), ...emptyRepository('o/s', sha('b')) } });
 
-    await refreshAll({ ...env, LINGUA_DB: fakeD1() }, 5);
+    await refreshAll(env('o/r@main, o/s'), 100, fetchFn);
 
-    expect(fetchFn.calls.map((c) => c.path)).toContain('/installation/repositories?per_page=100');
+    expect((await H.store?.projects())?.map((p) => [p.id, p.headSha, p.checkedAt])).toEqual([
+      ['o/r', sha('a'), 100],
+      ['o/s', sha('b'), 100],
+    ]);
   });
 
-  it('logs an installation that did not sync and carries on', async () => {
-    vi.stubGlobal('fetch', gitHubFetch({ routes: { 'GET /app/installations?per_page=100': () => [{ id: 8 }] } }));
+  it('stops passing over projects once the run has spent its requests, logging each failed pass', async () => {
+    const listed = Array.from({ length: 50 }, (_, i) => `o/r${i}@main`).join(',');
+    const fetchFn = gitHubFetch({ routes: {} });
     const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    await refreshAll({ ...env, LINGUA_DB: fakeD1() }, 5);
+    await refreshAll(env(listed), 100, fetchFn);
 
-    expect(logged).toHaveBeenCalledWith('lingua: installation 8 did not sync', expect.any(Error));
+    expect(fetchFn.calls).toHaveLength(45);
+    expect(logged).toHaveBeenCalledWith('lingua: o/r0 did not sync', expect.any(Error));
   });
 
-  it('does nothing without a database or before the App is connected', async () => {
-    const fetchFn = gitHubFetch({ routes: {} });
-    vi.stubGlobal('fetch', fetchFn);
+  it('logs a listed repository GitHub does not answer for', async () => {
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    await refreshAll(env, 5);
-    await refreshAll({ LINGUA_DB: fakeD1() }, 5);
+    await refreshAll(env('o/gone'), 100, gitHubFetch({ routes: {} }));
+
+    expect(logged).toHaveBeenCalledWith('lingua: o/gone could not be read', expect.any(Error));
+  });
+
+  it('does nothing without a database', async () => {
+    const fetchFn = gitHubFetch({ routes: {} });
+
+    await refreshAll({ LINGUA_PROJECTS: 'o/r' }, 100, fetchFn);
+
+    expect(fetchFn.calls).toEqual([]);
+  });
+});
+
+describe('refreshStale', () => {
+  it('passes over a listed project a page opened once its last pass is stale', async () => {
+    await H.store?.upsertProject({ id: 'o/r', branch: 'main', pinned: false });
+    const fetchFn = gitHubFetch({ routes: emptyRepository('o/r', sha('a')) });
+
+    await refreshStale(env('o/r'), 'o/r', 100, fetchFn);
+
+    expect((await H.store?.project('o/r'))?.headSha).toBe(sha('a'));
+  });
+
+  it('does nothing without a database', async () => {
+    const fetchFn = gitHubFetch({ routes: {} });
+
+    await refreshStale({}, 'o/r', 100, fetchFn);
 
     expect(fetchFn.calls).toEqual([]);
   });

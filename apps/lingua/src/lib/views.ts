@@ -44,7 +44,6 @@ export interface ProjectSummary {
 export interface HomeView {
   viewer: Viewer | null;
   projects: ProjectSummary[];
-  installUrl: string | null;
 }
 
 /** One language of a project, with how far along it is. `started` is a language only the viewer has, until they send it. */
@@ -135,28 +134,34 @@ export interface SiteView {
   signIn: boolean;
 }
 
-/** An account a GitHub App can be created under: the operator's own, or an organisation they administer. */
-export interface AppOwner {
-  login: string;
-  avatarUrl: string | null;
-  kind: 'user' | 'organization';
-}
+/**
+ * Where a repository's sync stands: never read yet, reading the files its
+ * branch changed (`progress` once a pass counted them), holding the branch
+ * head, or stopped by `error` at its last pass.
+ */
+export type SyncState =
+  | { kind: 'waiting' }
+  | { kind: 'reading'; progress: Progress | null }
+  | { kind: 'current' }
+  | { kind: 'failed'; error: string };
 
 /**
- * `/setup`: what this deployment has connected to GitHub. `manifest` is the
- * App's manifest as GitHub's form takes it, `owners` the accounts the operator
- * may create it under (empty until they let Lingua list them), `repositories`
- * how many the App syncs, and `code` the one GitHub returned with, while it
- * still waits to be traded for the App's secrets.
+ * One repository `LINGUA_PROJECTS` lists, as `/setup` shows it: the branch it
+ * tracks (null until GitHub named its default one), when its last pass ended,
+ * in seconds, its sync, and why its `lingua.json` could not be read.
  */
+export interface RepositoryStatus {
+  id: string;
+  branch: string | null;
+  checkedAt: number | null;
+  sync: SyncState;
+  configError: string | null;
+}
+
+/** `/setup`: whether people can sign in, and how each listed repository syncs. */
 export interface SetupView {
   viewer: Viewer | null;
   origin: string;
-  app: boolean;
   signIn: boolean;
-  installUrl: string | null;
-  repositories: number;
-  manifest: string;
-  owners: AppOwner[];
-  code: string | null;
+  repositories: RepositoryStatus[];
 }

@@ -3,36 +3,28 @@ import { Button } from '@kromatv/ui/kit/atoms/button';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import { Callout } from '@kromatv/ui/kit/molecules/callout';
 import { createFileRoute } from '@tanstack/react-router';
-import { z } from 'zod';
 import { CopyValue } from '#site/components/copy-value.component';
-import { CreateAppForm } from '#site/components/create-app-form.component';
 import { LinguaPage } from '#site/components/lingua-page.component';
+import { RepositoryRow } from '#site/components/repository-row.component';
 import { RouteLink } from '#site/components/route-link.component';
 import { SetupStep } from '#site/components/setup-step.component';
 import { counted } from '#site/lib/counted';
 import { getSetup } from '#site/lib/loaders';
 import type { SetupView } from '#site/lib/views';
 
-const SetupSearch = z.object({
-  created: z.literal(1).optional().catch(undefined),
-  code: z.string().max(64).optional().catch(undefined),
-});
-
 export const Route = createFileRoute('/setup')({
-  validateSearch: SetupSearch,
-  loaderDeps: ({ search }) => ({ code: search.created ? (search.code ?? null) : null }),
-  loader: ({ deps }) => getSetup({ data: { code: deps.code } }),
+  loader: () => getSetup(),
   component: SetupPage,
 });
 
-const translated = (view: SetupView) => view.app && view.repositories > 0;
+const translating = (view: SetupView) => view.repositories.length > 0;
 
 function AllDone({ repositories }: Readonly<{ repositories: number }>) {
   return (
     <Callout.Root tone="success" icon="circle-check">
       <Callout.Title>Lingua is set up</Callout.Title>
       <Callout.Detail>
-        {`Both apps are connected, and Lingua translates ${counted(repositories, 'project')}.`}
+        {`People can sign in, and Lingua translates ${counted(repositories, 'project')}.`}
       </Callout.Detail>
       <Callout.Actions>
         <Button size="sm" icon="home" label="Go home" asChild>
@@ -40,39 +32,6 @@ function AllDone({ repositories }: Readonly<{ repositories: number }>) {
         </Button>
       </Callout.Actions>
     </Callout.Root>
-  );
-}
-
-function AlmostThere({ code }: Readonly<{ code: string }>) {
-  return (
-    <Callout.Root tone="accent" icon="hourglass">
-      <Callout.Title>Almost there</Callout.Title>
-      <Callout.Detail>
-        GitHub created the App. Store its secrets in this Worker within the hour, one of two ways.
-      </Callout.Detail>
-      <Column gap={10} mt={8}>
-        <Text>
-          From the deploy pipeline: run the <Text variant="label">Lingua</Text> workflow with{' '}
-          <Text variant="label">connect</Text> ticked. This deployment kept the code for it.
-        </Text>
-        <Text>From a checkout where wrangler is signed in:</Text>
-        <CopyValue label="Command" value={`bun run --filter @kromatv/lingua setup ${code}`} />
-      </Column>
-    </Callout.Root>
-  );
-}
-
-function AppStep({ view }: Readonly<{ view: SetupView }>) {
-  return (
-    <SetupStep
-      title="1. GitHub App"
-      purpose="It keeps the repositories in sync and receives their webhooks. GitHub fills in every permission and address, then sends you back here."
-      done={view.app}
-    >
-      {view.app ? null : (
-        <CreateAppForm manifest={view.manifest} owners={view.owners} signIn={view.signIn} />
-      )}
-    </SetupStep>
   );
 }
 
@@ -104,8 +63,8 @@ function OAuthValues({ origin }: Readonly<{ origin: string }>) {
 function SignInStep({ view }: Readonly<{ view: SetupView }>) {
   return (
     <SetupStep
-      title="2. Sign-in (GitHub OAuth App)"
-      purpose="Contributors sign in through it, and it opens each one’s pull request from their own fork, under their name."
+      title="Sign-in (GitHub OAuth App)"
+      purpose="Contributors sign in through it, and each send opens their pull request from their own fork, under their name. Its client id and secret also authenticate every read of a repository."
       done={view.signIn}
     >
       {view.signIn ? null : <OAuthValues origin={view.origin} />}
@@ -113,30 +72,34 @@ function SignInStep({ view }: Readonly<{ view: SetupView }>) {
   );
 }
 
-function InstallStep({ view }: Readonly<{ view: SetupView }>) {
-  const done = translated(view);
+function AddRepository() {
+  return (
+    <Column gap={8}>
+      <Text>
+        To add one, list it in the Worker variable <Text font="mono">LINGUA_PROJECTS</Text> and
+        commit a <Text font="mono">lingua.json</Text> at its root.
+      </Text>
+      <CopyValue label="LINGUA_PROJECTS" value="owner/repo, owner/other@branch" />
+      <Text color="textMuted">
+        Entries are comma separated: <Text font="mono">owner/repo</Text> tracks the default branch,{' '}
+        <Text font="mono">owner/repo@branch</Text> another one. The repository must be public. The
+        next sync, within five minutes, picks it up.
+      </Text>
+    </Column>
+  );
+}
+
+function RepositoriesStep({ view }: Readonly<{ view: SetupView }>) {
   return (
     <SetupStep
-      title="3. Install the App"
-      purpose="On each repository to translate. Each needs a lingua.json at its root; the next push or the next ten-minute sync picks it up."
-      done={done}
+      title="Repositories"
+      purpose="The public repositories Lingua translates. It reads each one every five minutes, and when one of its pages opens."
+      done={translating(view)}
     >
-      {view.installUrl ? (
-        <Row gap={12} wrap align="center">
-          <Button
-            variant={done ? 'outline' : 'primary'}
-            icon="brand-github"
-            label={done ? 'Install on more repositories' : 'Install the GitHub App'}
-            href={view.installUrl}
-            role="link"
-          />
-          {done ? (
-            <Text color="textMuted">{`Lingua translates ${counted(view.repositories, 'project')}.`}</Text>
-          ) : null}
-        </Row>
-      ) : (
-        <Text color="textDim">The install link appears here once the GitHub App exists.</Text>
-      )}
+      {view.repositories.map((repository) => (
+        <RepositoryRow key={repository.id} repository={repository} />
+      ))}
+      <AddRepository />
     </SetupStep>
   );
 }
@@ -149,17 +112,15 @@ function SetupPage() {
         <Column gap={10}>
           <Text variant="h1">Set up Lingua</Text>
           <Text color="textMuted">
-            Lingua talks to GitHub through two apps: a GitHub App that keeps the repositories in
-            sync, and an OAuth App people sign in with.
+            Lingua signs contributors in through a GitHub OAuth App, and reads the public
+            repositories it is told to translate.
           </Text>
         </Column>
-        {view.app && view.signIn && translated(view) ? (
-          <AllDone repositories={view.repositories} />
+        {view.signIn && translating(view) ? (
+          <AllDone repositories={view.repositories.length} />
         ) : null}
-        {view.code ? <AlmostThere code={view.code} /> : null}
-        <AppStep view={view} />
         <SignInStep view={view} />
-        <InstallStep view={view} />
+        <RepositoriesStep view={view} />
       </Column>
     </LinguaPage>
   );

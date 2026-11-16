@@ -21,13 +21,11 @@ afterEach(() => {
 
 describe('the worker entry', () => {
   it('answers a route Lingua handles itself without rendering a page', async () => {
-    const response = await server.fetch(
-      new Request('https://lingua.test/health'),
-      {},
-      { waitUntil: () => undefined },
-    );
+    const response = await server.fetch(new Request('https://lingua.test/health'), {
+      LINGUA_PROJECTS: 'o/r, o/s@next',
+    });
 
-    expect(await response.json()).toEqual({ ok: true, github: false, signIn: false });
+    expect(await response.json()).toEqual({ ok: true, signIn: false, projects: 2 });
     expect(rendered).toEqual([]);
   });
 

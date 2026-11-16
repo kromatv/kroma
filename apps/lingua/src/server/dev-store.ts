@@ -28,7 +28,7 @@ export async function devStore(): Promise<Store> {
 async function seedFrom(store: Store, root: string): Promise<void> {
   const text = await readFile(join(root, CONFIG_PATH), 'utf8');
   const parsed = parseConfig(text);
-  await store.upsertProject(DEV_PROJECT, 0, 'main');
+  await store.upsertProject({ id: DEV_PROJECT, branch: 'main', pinned: false });
   if (!parsed.ok) {
     await store.setSynced(DEV_PROJECT, { headSha: 'dev', treeSha: 'dev', config: null, configError: parsed.error, at: 0 });
     return;

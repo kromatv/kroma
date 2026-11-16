@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { type GitHub, unlessMissing } from './client';
-import { blobTexts } from './sync';
 
 const Sha = z.string().regex(/^[0-9a-f]{40}$/);
 const Ref = z.object({ object: z.object({ sha: Sha }) });
@@ -8,6 +7,11 @@ const Commit = z.object({ sha: Sha, tree: z.object({ sha: Sha }) });
 const Paths = z.object({
   repository: z.record(z.string(), z.object({ oid: Sha.optional() }).nullable()),
 });
+const Blobs = z.object({
+  repository: z.record(z.string(), z.object({ text: z.string().nullable().optional() }).nullable()),
+});
+
+const BATCH = 60;
 
 /** One repository, through one GitHub client. */
 export interface At {
@@ -60,6 +64,30 @@ async function oidsAt(at: At, sha: string, paths: readonly string[]): Promise<[s
   });
 }
 
+async function blobBatch(at: At, oids: readonly string[]): Promise<[string, string][]> {
+  const [owner, name] = at.repo.split('/');
+  const fields = oids
+    .map((oid, i) => `b${i}: object(oid: "${Sha.parse(oid)}") { ... on Blob { text } }`)
+    .join('\n');
+  const data = await at.gh.graphql(
+    `query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) { ${fields} } }`,
+    Blobs,
+    { owner, name },
+  );
+  return oids.flatMap((oid, i): [string, string][] => {
+    const text = data.repository[`b${i}`]?.text;
+    return typeof text === 'string' ? [[oid, text]] : [];
+  });
+}
+
+async function blobTexts(at: At, oids: readonly string[]): Promise<Map<string, string>> {
+  const batches = Array.from({ length: Math.ceil(oids.length / BATCH) }, (_, i) =>
+    oids.slice(i * BATCH, (i + 1) * BATCH),
+  );
+  const answered = await Promise.all(batches.map((batch) => blobBatch(at, batch)));
+  return new Map(answered.flat());
+}
+
 /** The text of each of `paths` that commit `sha` holds, reading only blobs `known` does not already have. */
 export async function textsAt(
   at: At,
@@ -68,7 +96,7 @@ export async function textsAt(
 ): Promise<Map<string, string>> {
   const oids = await oidsAt(at, sha, read.paths);
   const missing = [...new Set(oids.map(([, oid]) => oid).filter((oid) => !read.known.has(oid)))];
-  const fetched = await blobTexts(at.gh, at.repo, missing);
+  const fetched = await blobTexts(at, missing);
   return new Map(
     oids.flatMap(([path, oid]): [string, string][] => {
       const text = read.known.get(oid) ?? fetched.get(oid);

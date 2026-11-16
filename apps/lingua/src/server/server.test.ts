@@ -5,7 +5,6 @@ import { saveEdit } from './edits';
 import { startLanguage } from './locales';
 import { closeSession, openSession, readCookie, viewerOf } from './session';
 import { ada, seededStore } from './test-support';
-import { verifySignature } from './webhook';
 
 const edit = (key: string, value: string) => ({ project: 'o/r', locale: 'fr', file: 'p', key, value });
 
@@ -121,15 +120,5 @@ describe('sessions', () => {
   it('reads one cookie out of many', () => {
     expect(readCookie('a=1; b=x%20y; c=3', 'b')).toBe('x y');
     expect(readCookie(undefined, 'b')).toBeNull();
-  });
-});
-
-describe('verifySignature', () => {
-  it('accepts GitHub’s HMAC of the exact body and nothing else', async () => {
-    const signature = 'sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17';
-
-    expect(await verifySignature("It's a Secret to Everybody", 'Hello, World!', signature)).toBe(true);
-    expect(await verifySignature("It's a Secret to Everybody", 'Hello, World?', signature)).toBe(false);
-    expect(await verifySignature("It's a Secret to Everybody", 'Hello, World!', null)).toBe(false);
   });
 });

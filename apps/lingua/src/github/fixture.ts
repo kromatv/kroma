@@ -7,7 +7,7 @@ import { placeOf } from '#site/core/config';
 import { parsePolicy } from '#site/core/policy';
 import { memoryStore } from '#site/store/memory-store';
 import type { FileRow, Store, User } from '#site/store/store';
-import type { Sender } from './lane';
+import type { Forking } from './fork';
 import { type Outcome, propose } from './propose';
 import { sha } from './test-support';
 
@@ -109,7 +109,7 @@ export interface HeldWork {
 export async function storeHolding(rows: readonly FileRow[], work: HeldWork): Promise<Store> {
   const store = memoryStore();
   const mine = { project: 'o/r', userId: ada.id, locale: work.locale ?? 'en', proposed: false };
-  await store.upsertProject('o/r', 1, 'main');
+  await store.upsertProject({ id: 'o/r', branch: 'main', pinned: false });
   await store.setSynced('o/r', {
     headSha: sha('a'),
     treeSha: sha('0e'),
@@ -128,14 +128,14 @@ export async function storeHolding(rows: readonly FileRow[], work: HeldWork): Pr
   return store;
 }
 
-/** Send `ada`'s work for `locale` through `sender`, from the project the store holds. */
-export async function sendAs(sender: Sender, store: Store, locale = 'en'): Promise<Outcome> {
+/** Send `ada`'s work for `locale` through her fork, from the project the store holds. */
+export async function sendAs(forking: Forking, store: Store, locale = 'en'): Promise<Outcome> {
   const project = await store.project('o/r');
   if (!project) {
     throw new Error('the project was not seeded');
   }
   const files = await store.files('o/r');
-  return propose(sender, store, {
+  return propose(forking, store, {
     project,
     root: ROOT,
     files,

@@ -1,35 +1,27 @@
-import type { AppCredentials } from '#site/github/app';
 import type { OAuthCredentials } from '#site/github/oauth';
+import type { ListedProject } from '#site/github/pass';
 import { D1Store } from '#site/store/d1-store';
 import type { D1Database } from '#site/store/d1-work-store';
 import type { Store } from '#site/store/store';
 
 /**
- * The Worker's bindings. The GitHub values are `wrangler secret`s: the App's
- * keep the repositories in sync, the OAuth App's sign people in. Until both
- * are set Lingua is read-only.
+ * The Worker's bindings. The OAuth App's id and secret are `wrangler secret`s:
+ * they sign people in, and authenticate every read of a repository.
+ * `LINGUA_PROJECTS` is a variable naming the repositories to translate.
  */
 export interface Env {
   LINGUA_DB?: D1Database;
-  GITHUB_APP_ID?: string;
-  GITHUB_APP_SLUG?: string;
-  GITHUB_APP_PRIVATE_KEY?: string;
-  GITHUB_WEBHOOK_SECRET?: string;
   GITHUB_OAUTH_CLIENT_ID?: string;
   GITHUB_OAUTH_CLIENT_SECRET?: string;
   LINGUA_DEV_LOGIN?: string;
-  LINGUA_BRANCHES?: string;
+  LINGUA_PROJECTS?: string;
 }
 
 const STRINGS = [
-  'GITHUB_APP_ID',
-  'GITHUB_APP_SLUG',
-  'GITHUB_APP_PRIVATE_KEY',
-  'GITHUB_WEBHOOK_SECRET',
   'GITHUB_OAUTH_CLIENT_ID',
   'GITHUB_OAUTH_CLIENT_SECRET',
   'LINGUA_DEV_LOGIN',
-  'LINGUA_BRANCHES',
+  'LINGUA_PROJECTS',
 ] as const;
 
 function isD1(value: unknown): value is D1Database {
@@ -47,19 +39,6 @@ export function readEnv(raw: Readonly<Record<string, unknown>>): Env {
   return env;
 }
 
-/** The GitHub App this deployment syncs as, or null until each of its secrets is set. */
-export function appCredentials(env: Env): AppCredentials | null {
-  const { GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, GITHUB_WEBHOOK_SECRET } = env;
-  if (!GITHUB_APP_ID || !GITHUB_APP_PRIVATE_KEY || !GITHUB_WEBHOOK_SECRET) {
-    return null;
-  }
-  return {
-    appId: GITHUB_APP_ID,
-    privateKey: GITHUB_APP_PRIVATE_KEY.replaceAll(String.raw`\n`, '\n'),
-    webhookSecret: GITHUB_WEBHOOK_SECRET,
-  };
-}
-
 /** The OAuth App people sign in through, or null until both of its secrets are set. */
 export function oauthCredentials(env: Env): OAuthCredentials | null {
   const { GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET } = env;
@@ -67,11 +46,6 @@ export function oauthCredentials(env: Env): OAuthCredentials | null {
     return null;
   }
   return { clientId: GITHUB_OAUTH_CLIENT_ID, clientSecret: GITHUB_OAUTH_CLIENT_SECRET };
-}
-
-/** Where a repository owner installs the App, once its slug is known. */
-export function installUrl(env: Env): string | null {
-  return env.GITHUB_APP_SLUG ? `https://github.com/apps/${env.GITHUB_APP_SLUG}/installations/new` : null;
 }
 
 let local: Promise<Store> | undefined;
@@ -85,18 +59,18 @@ export async function storeFor(env: Env): Promise<Store> {
   return local;
 }
 
-const REPO = /^[\w.-]+\/[\w.-]+$/;
-const BRANCH = /^[\w./-]+$/;
+const ENTRY = /^([\w.-]+\/[\w.-]+)(?:@([\w./-]+))?$/;
 
 /**
- * Branches an operator pinned in `LINGUA_BRANCHES` (`owner/repo=branch`, comma
- * separated), tracked instead of each repository's default branch. Lets a
- * deployment follow a branch that is not merged yet.
+ * The repositories `LINGUA_PROJECTS` lists, comma separated: `owner/repo`
+ * tracks the repository's default branch, `owner/repo@branch` that branch. An
+ * entry that is neither is skipped, and a repository listed twice keeps its first entry.
  */
-export function trackedBranches(env: Env): ReadonlyMap<string, string> {
-  const pairs = (env.LINGUA_BRANCHES ?? '').split(',').flatMap((entry): [string, string][] => {
-    const [repo = '', branch = ''] = entry.trim().split('=');
-    return REPO.test(repo) && BRANCH.test(branch) ? [[repo, branch]] : [];
-  });
-  return new Map(pairs);
+export function listedProjects(env: Env): ListedProject[] {
+  const listed = new Map<string, ListedProject>();
+  for (const entry of (env.LINGUA_PROJECTS ?? '').split(',')) {
+    const [, id, branch] = ENTRY.exec(entry.trim()) ?? [];
+    if (id && !listed.has(id)) listed.set(id, { id, branch: branch ?? null });
+  }
+  return [...listed.values()];
 }
