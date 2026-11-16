@@ -26,17 +26,18 @@ bun run ci snyk code [--publish]          Snyk Code, as SARIF; --publish adds th
 ```
 lanes ─┬─ checks (typecheck + lint + kit audit)         code
        ├─ test 1..4 ──── test-report (merge → lcov)     code
-       ├─ spec (the requirement index is in step)       spec
-       ├─ build {web, site, tizen, webos, tv-native}    fleet
+       ├─ build (web, site, tizen, webos, tv-native)    fleet, off on a push to main
        ├─ android (Kotlin compile)                      android
        ├─ desktop (cargo check, Linux mpv path)         desktop
-       ├─ rust (server, module host, server clippy) ┐   rust
-       ├─ rust (modules n) ─────────────────────────┴─ rust (one lcov)
+       ├─ sdk (the npm package, staged and smoked)      sdk, off on a push to main
+       ├─ rust (server, module host, server clippy)     rust
+       ├─ rust (modules n)                              rust
        ├─ rust (modules as components)                  rust
        ├─ module audit                                  rust
        ├─ wasm host {macos, windows}                    wasmhost
-       ├─ sonar ◄── test-report + rust                  SONAR_TOKEN present
-       └─ required ◄── lanes + every job above but wasm host and sonar
+       ├─ sonar ◄── test-report + rust (one lcov)       SONAR_TOKEN present
+       └─ required ◄── lanes + every job above but wasm host and sonar,
+                       then the requirement index       spec
 ```
 
 The one required check on `main` is **Required** (`bun run ci required`). A
@@ -47,7 +48,17 @@ exists. GitHub reports a skipped required check as a pass, so when the
 required checks were the jobs themselves, a failed `lanes` skipped all three
 and the pull request could merge with nothing run. Adding a job means adding
 it to `required`'s `needs` and to its `LANE_OF` map; branch protection stays
-as it is.
+as it is. The `main` ruleset also requires **Branch name**, which is why that
+check stays a job of its own.
+
+The org runs on GitHub's Free plan: 20 jobs at once across every workflow, 5
+of them on macOS, and a merge to main starts Build & Release, Synology and
+the CI run below together. A job therefore earns its own runner only when it
+runs long enough to gain from one. The five fleet builds share one job, a
+step each, since each built in under a minute behind half a minute of `bun
+install`; every step runs when an earlier one fails, so the log names each
+target that broke. The requirement index is a step of `required`, and the
+Rust coverage is merged by the scan that reads it.
 
 `lanes` lists the changed files through the GitHub API (pull request files, or
 the push's compare) and matches them against `packages/ci-tools/src/lanes.ts`.
@@ -59,11 +70,18 @@ red one. Another workflow, or a script
 only a release workflow calls, cannot change what CI checks: it is linted as
 code and builds nothing (`synology.yml` reaches the synology lane).
 
+A push to main turns **fleet** and **sdk** off (`forPush` in `lanes.ts`). The
+pull request built them already, and the same push builds them again from
+that commit elsewhere: Build & Release the TV clients and the SDK package,
+Synology the web SPA, `site.yml` the site. A break still turns a run red. **android** and **desktop** stay on:
+their jobs write the Gradle and cargo caches the pull requests read, and only
+main writes a cache.
+
 Prose opens no lane, with two exceptions. `docs/spec/**` opens **spec**, which
 runs `bun run spec:check`. The requirement index is generated and committed, so
 a chapter edited without regenerating it is one way a prose change can be
-wrong. The script imports nothing, so that job installs nothing and takes
-seconds.
+wrong. The script imports nothing, so it runs as a step of `required`,
+which installs nothing more for it.
 
 The setup guides are the other: `docs/setup/**` and their translations in
 `apps/www/content/docs/**` open **site**, because kroma.tv compiles them into
@@ -103,10 +121,10 @@ the tests of the four crates that build and run WebAssembly components
 runner. Those were two thirds of the server's test time, one binary after
 another behind the rest. The two test jobs read the `rust-server` cache, and
 the core one writes it. `bun run ci rust test --only <id,id>` runs the same on a
-laptop, the whole server when no `--part` is given. The required **Rust** check
-waits for every job and merges their coverage into `server/lcov.info` (`bun run
-ci lcov merge`): both server jobs measure the crates they share, and a file two
-reports carry is counted once, with the hits of both.
+laptop, the whole server when no `--part` is given. `required` waits for
+every Rust job, and the scan merges their coverage into `server/lcov.info`
+(`bun run ci lcov merge`): both server jobs measure the crates they share, and
+a file two reports carry is counted once, with the hits of both.
 
 The dev profile builds Cranelift and the wasmtime runtime optimised
 (`[profile.dev.package.*]` in `server/Cargo.toml`). A debug Cranelift took up

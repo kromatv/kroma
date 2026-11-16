@@ -165,25 +165,6 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-  # The index is generated and committed, so a chapter edited without
-  # regenerating it is the one way a prose change can be wrong. The script
-  # imports nothing, which is why this job installs nothing.
-  spec:
-    name: Spec index
-    needs: lanes
-    if: needs.lanes.outputs.spec == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-          no-cache: true
-      - run: bun run spec:check
-
   # One report from the four shards: the lcov Sonar reads and the summary the
   # run page shows. Required on main in place of the shards themselves, so a
   # shard that never ran (a cancelled runner) cannot pass as a green run.
@@ -221,45 +202,74 @@ jobs:
           if-no-files-found: error
 
   build:
-    name: Build ${{ matrix.target }}
+    name: Build
     needs: lanes
     if: needs.lanes.outputs.fleet == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
     timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [web, site, tizen, webos, tv-native]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version-file: .bun-version
           no-cache: true
-      - run: bun install --frozen-lockfile
+      - id: install
+        run: bun install --frozen-lockfile
+      - id: web
+        run: bun run ci build web
       # The site's build reads the published releases from the GitHub API to
       # bake /download. Anonymous GitHub allows sixty requests an hour per IP
       # and runners share them; the token keeps this off a limit someone else
       # spent.
-      - id: build
-        run: bun run ci build ${{ matrix.target }} ${{ matrix.target == 'tizen' && '--slice' || '' }}
+      - id: site
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run ci build site
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - id: tizen
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run ci build tizen --slice
+      - id: webos
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run ci build webos
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: bun run ci build tv-native
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: steps.build.outputs.dist != ''
+        if: ${{ !cancelled() && steps.web.outcome == 'success' }}
         with:
-          name: kroma-${{ matrix.target }}-ci
-          path: ${{ steps.build.outputs.dist }}
+          name: kroma-web-ci
+          path: ${{ steps.web.outputs.dist }}
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.site.outcome == 'success' }}
+        with:
+          name: kroma-site-ci
+          path: ${{ steps.site.outputs.dist }}
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.tizen.outcome == 'success' }}
+        with:
+          name: kroma-tizen-ci
+          path: ${{ steps.tizen.outputs.dist }}
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() && steps.webos.outcome == 'success' }}
+        with:
+          name: kroma-webos-ci
+          path: ${{ steps.webos.outputs.dist }}
           retention-days: 7
           if-no-files-found: error
       # Sideloading sets: one build, one package per Tizen generation.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: steps.build.outputs.slices != ''
+        if: ${{ !cancelled() && steps.tizen.outcome == 'success' }}
         with:
           name: kroma-tizen-generations-ci
-          path: ${{ steps.build.outputs.slices }}
+          path: ${{ steps.tizen.outputs.slices }}
           retention-days: 7
           if-no-files-found: error
 
@@ -546,44 +556,6 @@ jobs:
       - run: sccache --show-stats
         if: needs.lanes.outputs.sccache == 'true'
 
-  # The required check: green when every Rust job is, with their coverage in
-  # one report for the scan. Skipped, like the jobs, when no Rust can be
-  # reached.
-  rust:
-    name: Rust
-    needs: [lanes, rust-shard]
-    if: always() && needs.lanes.outputs.rust == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    timeout-minutes: 5
-    steps:
-      - name: Every Rust job passed
-        env:
-          RESULT: ${{ needs.rust-shard.result }}
-        run: |
-          [[ "$RESULT" == success ]] || { echo "::error::a Rust job ended $RESULT"; exit 1; }
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
-        with:
-          bun-version-file: .bun-version
-          no-cache: true
-      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: coverage-rust-*
-          path: parts
-      # The server's two test jobs both measure the crates they share, so a
-      # file can come twice; merging adds its hits instead of listing it twice.
-      - name: One coverage report
-        run: bun run ci lcov merge server/lcov.info parts/*/lcov.info
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: coverage-rust
-          path: server/lcov.info
-          retention-days: 1
-          if-no-files-found: error
-
   # The check main requires, in place of one per job. A skipped required
   # check reports as a pass, so when `lanes` failed every job behind it was
   # skipped and the run went green; here a skip passes only with its lane off.
@@ -591,7 +563,7 @@ jobs:
   # changes.
   required:
     name: Required
-    needs: [lanes, checks, test-report, spec, build, tv-native, sdk, desktop, rust, rust-components, module-audit]
+    needs: [lanes, checks, test-report, build, tv-native, sdk, desktop, rust-shard, rust-components, module-audit]
     if: always()
     runs-on: ubuntu-latest
     permissions:
@@ -608,22 +580,25 @@ jobs:
         env:
           NEEDS: ${{ toJSON(needs) }}
           LANE_OF: >-
-            {"checks": "code", "test-report": "code", "spec": "spec", "build": "fleet", "tv-native": "android",
-            "sdk": "sdk", "desktop": "desktop", "rust": "rust",
-            "rust-components": "rust", "module-audit": "rust"}
+            {"checks": "code", "test-report": "code", "build": "fleet",
+            "tv-native": "android", "sdk": "sdk", "desktop": "desktop",
+            "rust-shard": "rust", "rust-components": "rust",
+            "module-audit": "rust"}
+      - run: bun run spec:check
+        if: ${{ !cancelled() && needs.lanes.outputs.spec == 'true' }}
 
   # The scan reads the coverage the gates above produced; nothing runs twice.
   # Rust coverage is absent on a change that touched no Rust, and the scan
   # carries JS/TS coverage alone, which is what the new-code gate scores.
   sonar:
     name: SonarCloud
-    needs: [lanes, checks, test-report, rust]
+    needs: [lanes, checks, test-report, rust-shard]
     if: >-
       !cancelled()
       && needs.lanes.outputs.sonar == 'true'
       && needs.test-report.result == 'success'
-      && needs.rust.result != 'failure'
-      && needs.rust.result != 'cancelled'
+      && needs.rust-shard.result != 'failure'
+      && needs.rust-shard.result != 'cancelled'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -651,10 +626,14 @@ jobs:
           name: coverage-python
           path: coverage/python
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        if: needs.rust.result == 'success'
+        if: needs.rust-shard.result == 'success'
         with:
-          name: coverage-rust
-          path: server
+          pattern: coverage-rust-*
+          path: parts
+      # The server's two test jobs both measure the crates they share, so a
+      # file can come twice; merging adds its hits instead of listing it twice.
+      - if: needs.rust-shard.result == 'success'
+        run: bun run ci lcov merge server/lcov.info parts/*/lcov.info
       - run: bun run ci sonar prepare
       # A pull request carries its own context and the action reads it. Anything
       # else has to say which branch it is, or the analysis lands on the default

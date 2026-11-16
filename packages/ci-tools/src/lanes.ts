@@ -129,3 +129,18 @@ export function matchLanes(files: readonly string[] | 'all'): Verdict {
   }
   return verdict;
 }
+
+const REBUILT_BY_RELEASE: readonly LaneName[] = ['fleet', 'sdk'];
+
+/**
+ * The lanes a push to main runs. Build & Release builds the same commit's
+ * clients and SDK package, and the pull request built them once already, so
+ * those lanes are off.
+ */
+export function forPush(verdict: Verdict): Verdict {
+  const out = { ...verdict };
+  for (const name of REBUILT_BY_RELEASE) {
+    out[name] = false;
+  }
+  return out;
+}
