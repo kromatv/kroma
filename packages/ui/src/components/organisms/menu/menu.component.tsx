@@ -25,7 +25,7 @@ import {
   type MenuState,
   useMenu,
 } from './menu-context';
-import { Item, labelOf, type MenuItemProps, Separator } from './menu-item';
+import { Header, Item, labelOf, type MenuItemProps, Separator } from './menu-item';
 import { MenuSurface } from './menu-surface.component';
 import type { MenuRowSpec } from './menu-surface-dialog.component';
 
@@ -43,8 +43,8 @@ interface MenuRootProps {
    *  platform - a dialog under a D-pad, an anchored panel under a pointer.
    *  Naming one overrides both. */
   presentation?: MenuPresentation;
-  /** A <Menu.Trigger>, then the <Menu.Item>s and <Menu.Separator>s. Only DIRECT
-   *  children take part in the menu. */
+  /** A <Menu.Trigger>, then a <Menu.Header>, the <Menu.Item>s and
+   *  <Menu.Separator>s. Only DIRECT children take part in the menu. */
   children: ReactNode;
 }
 
@@ -53,7 +53,9 @@ function isItem(node: ReactNode): node is ReactElement<MenuItemProps> {
 }
 
 function isEntry(node: ReactNode): node is ReactElement {
-  return isItem(node) || (isValidElement(node) && node.type === Separator);
+  return (
+    isItem(node) || (isValidElement(node) && (node.type === Separator || node.type === Header))
+  );
 }
 
 function Root({
@@ -176,7 +178,7 @@ function TriggerButton({
   return <IconButton {...button} ref={anchor} />;
 }
 
-const Menu = { Root, Trigger, Item, Separator };
+const Menu = { Root, Trigger, Header, Item, Separator };
 
 export type { MenuTone } from './menu-item';
 export type {

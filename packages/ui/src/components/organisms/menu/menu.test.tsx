@@ -75,6 +75,27 @@ describe('<Menu>', () => {
     expect(screen.queryByRole('menu')).toBeNull();
   });
 
+  it('shows a header above the items, and the keys pass over it', () => {
+    const onRemove = vi.fn();
+    render(
+      <Menu.Root label="Account">
+        <Menu.Trigger />
+        <Menu.Header>
+          <Text>ada</Text>
+        </Menu.Header>
+        <Menu.Item onSelect={() => {}}>Profile</Menu.Item>
+        <Menu.Item onSelect={onRemove}>Sign out</Menu.Item>
+      </Menu.Root>,
+    );
+    const trigger = screen.getByLabelText('Account');
+    fireEvent.click(trigger);
+    expect(screen.getByRole('menu').textContent).toContain('ada');
+    expect(screen.getAllByRole('menuitem')).toHaveLength(2);
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+    expect(onRemove).toHaveBeenCalledTimes(1);
+  });
+
   it('fires the item a pointer presses', () => {
     const onRename = vi.fn();
     render(<Actions onRename={onRename} />);

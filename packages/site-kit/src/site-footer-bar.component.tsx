@@ -18,7 +18,7 @@ export function SiteFooterBar({ links }: Readonly<{ links: readonly FooterLink[]
           <Text variant="meta" color="textDim">
             {`© 2026 KROMA · ${site.license}`}
           </Text>
-          <Row gap={2} wrap>
+          <Row gap={2} wrap shrink={1} minW={0}>
             {links.map((link) => (
               <Button
                 key={link.label}
