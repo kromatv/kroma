@@ -66,12 +66,13 @@ async function generatedProfile(log: LogLine): Promise<SigningProfile> {
   });
   log(`certificate at ${author.certificate}`);
 
-  const profile = {
-    name: KROMA_PROFILE,
-    author: { archive: author.archive, password: author.password },
-  };
-  await writeProfile(profile).catch(() => undefined);
-  return profile;
+  if (author.archive) {
+    await writeProfile({
+      name: KROMA_PROFILE,
+      author: { archive: author.archive, password: author.password },
+    }).catch(() => undefined);
+  }
+  return { name: KROMA_PROFILE, author: { key: author.key, chain: author.certificate } };
 }
 
 /**

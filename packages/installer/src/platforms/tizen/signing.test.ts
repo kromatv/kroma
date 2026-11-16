@@ -185,9 +185,24 @@ describe('profileFor', () => {
     });
     expect(profile).toEqual({
       name: 'kroma',
+      author: { key: '/certs/kroma/kroma.key', chain: '/certs/kroma/kroma.crt' },
+    });
+    expect(vi.mocked(writeProfile)).toHaveBeenCalledWith({
+      name: 'kroma',
       author: { archive: '/certs/kroma/kroma.p12', password: 'a-random-password' },
     });
-    expect(vi.mocked(writeProfile)).toHaveBeenCalledWith(profile);
+  });
+
+  it('signs with the generated key on a machine without openssl, and leaves Tizen Studio alone', async () => {
+    vi.mocked(createAuthorCertificate).mockResolvedValue({ ...generated, archive: null });
+
+    const profile = await profileFor('192.168.1.31', log);
+
+    expect(profile.author).toEqual({
+      key: '/certs/kroma/kroma.key',
+      chain: '/certs/kroma/kroma.crt',
+    });
+    expect(vi.mocked(writeProfile)).not.toHaveBeenCalled();
   });
 
   it('signs with the generated profile even when the Tizen file refused it', async () => {
