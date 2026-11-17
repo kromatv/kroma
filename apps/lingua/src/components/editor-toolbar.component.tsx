@@ -19,8 +19,11 @@ export interface MessageQuery {
   counts: Record<RowFilter, number>;
 }
 
-/** The editor's search, its filters with what each lists, and, on a wide screen, its shortcuts; pinned to the top while the list scrolls there. */
-export function EditorToolbar({ list }: Readonly<{ list: MessageQuery }>) {
+/** The editor's search, its filters with what each lists, and, on a wide screen for a viewer who can edit, its shortcuts; pinned to the top while the list scrolls there. */
+export function EditorToolbar({
+  list,
+  editable,
+}: Readonly<{ list: MessageQuery; editable: boolean }>) {
   const s = useStyles(sDefinition);
   const wide = useBreakpoint() !== 'base';
   return (
@@ -42,7 +45,7 @@ export function EditorToolbar({ list }: Readonly<{ list: MessageQuery }>) {
             choices={messageFilters(list.counts)}
           />
         </Row>
-        {wide ? <ShortcutsHint /> : null}
+        {wide && editable ? <ShortcutsHint /> : null}
       </Column>
     </Box>
   );

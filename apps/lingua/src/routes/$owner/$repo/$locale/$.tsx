@@ -85,7 +85,7 @@ function Messages({ view }: Readonly<{ view: NamespaceView }>) {
     <EditorFields.Provider value={fields}>
       <Column gap={12}>
         <Notes notes={shared} />
-        <EditorToolbar list={list} />
+        <EditorToolbar list={list} editable={context.editable} />
         {narrowed ? (
           <Text
             variant="meta"
