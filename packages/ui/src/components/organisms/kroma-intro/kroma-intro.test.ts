@@ -55,6 +55,18 @@ describe('KromaIntro (film path)', () => {
     expect(video.muted).toBe(true);
   });
 
+  it('pins its overlay to the four edges of the screen', async () => {
+    const { container } = await mount(vi.fn());
+
+    const overlay = container.querySelector<HTMLElement>('.kroma-intro')?.style;
+    expect([overlay?.top, overlay?.right, overlay?.bottom, overlay?.left]).toEqual([
+      '0px',
+      '0px',
+      '0px',
+      '0px',
+    ]);
+  });
+
   it('a gesture at the very top restarts the film with sound', async () => {
     const { video } = await mount(vi.fn());
     video.currentTime = 0.2;

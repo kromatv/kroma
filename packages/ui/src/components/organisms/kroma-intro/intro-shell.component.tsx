@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { KEYFRAMES } from './animations';
+import { PINNED } from './constants';
 
 export interface IntroShellProps {
   exiting: boolean;
@@ -16,7 +17,7 @@ export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
       className="kroma-intro"
       style={{
         position: 'fixed',
-        inset: 0,
+        ...PINNED,
         zIndex: 9999,
         overflow: 'hidden',
         background: 'bg',
@@ -35,7 +36,7 @@ export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
       <div
         style={{
           position: 'absolute',
-          inset: 0,
+          ...PINNED,
           background: 'bg',
           opacity: exiting ? 1 : 0,
           transition: 'opacity .8s ease',

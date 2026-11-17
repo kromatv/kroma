@@ -1,4 +1,13 @@
 import { useEffect, useEffectEvent } from 'react';
+import { type RemoteKey, resolveRemoteKey } from '#ui/lib/remote-keys';
+
+const SKIP_KEYS: ReadonlySet<RemoteKey> = new Set<RemoteKey>(['Enter', 'Back', 'PlayPause']);
+const SKIP_NAMES: ReadonlySet<string> = new Set(['GoBack', 'BrowserBack']);
+
+function skips(e: KeyboardEvent): boolean {
+  const remote = resolveRemoteKey(e);
+  return (remote !== null && SKIP_KEYS.has(remote)) || SKIP_NAMES.has(e.key);
+}
 
 export interface IntroKeysParams {
   /** Skip to the app: OK/Enter, Space, Back/Escape. */
@@ -24,19 +33,11 @@ export function useIntroKeys({ exit, replay, unblock }: IntroKeysParams): void {
 
   // Skip / replay via keyboard + TV remote (OK/Enter, Space, Back/Escape).
   const onKey = useEffectEvent((e: KeyboardEvent) => {
-    const k = e.key;
-    if (
-      k === 'Enter' ||
-      k === ' ' ||
-      k === 'Spacebar' ||
-      k === 'Escape' ||
-      k === 'GoBack' ||
-      k === 'BrowserBack'
-    ) {
+    if (skips(e)) {
       e.preventDefault();
       e.stopImmediatePropagation();
       exit();
-    } else if (k === 'r' || k === 'R') {
+    } else if (e.key === 'r' || e.key === 'R') {
       e.preventDefault();
       e.stopImmediatePropagation();
       replay();

@@ -16,6 +16,9 @@ export const VIDEO_SOURCES = [
   },
 ] as const;
 
+// Not `inset`, which is Chromium 87: below it the intro's layers cover nothing.
+export const PINNED = { top: 0, right: 0, bottom: 0, left: 0 } as const;
+
 // Fallback when the audio is blocked: past the 4.992s sting, so a sting that
 // does play always reaches its own `ended`.
 export const SAFETY_MS = 5400;
