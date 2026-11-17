@@ -14,12 +14,14 @@ import {
   pendingCookie,
   readPending,
 } from './authorizations';
+import type { Actor } from './actor';
 import { boundedText } from './body';
 import { ConfirmInput, saveConfirms } from './confirms';
 import { DiscardInput, discardDrafts } from './discard';
 import { EditInput, saveEdit } from './edits';
 import { type Env, listedProjects, oauthCredentials, storeFor } from './env';
 import { messagePage } from './go';
+import { report } from './log';
 import { LocaleInput, startLanguage } from './locales';
 import { sendProposal, SendInput } from './proposals';
 import { ChainInput, CHAIN_HEADER, chainProven } from './chain';
@@ -50,7 +52,9 @@ async function jsonInput<S extends z.ZodType>(
   schema: S,
 ): Promise<z.infer<S> | null> {
   const text = await boundedText(c.req.raw, MAX_BODY);
-  if (text === null) return null;
+  if (text === null) {
+    return null;
+  }
   try {
     const parsed = schema.safeParse(JSON.parse(text));
     return parsed.success ? parsed.data : null;
@@ -59,14 +63,21 @@ async function jsonInput<S extends z.ZodType>(
   }
 }
 
+const viewerAt = (c: Context<Ctx>, store: Store) =>
+  resolveViewer(c.env.env, store, { cookies: c.req.header('cookie'), now: now() });
+
 async function contributor(
   c: Context<Ctx>,
   refusal: string,
-): Promise<{ store: Store; viewer: User } | Response> {
-  if (!sameOrigin(c)) return c.json({ error: 'Forbidden' }, 403);
+): Promise<{ store: Store; viewer: User; by: Actor } | Response> {
+  if (!sameOrigin(c)) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
   const store = await storeFor(c.env.env);
-  const viewer = await resolveViewer(c.env.env, store, c.req.header('cookie'), now());
-  return viewer ? { store, viewer } : c.json({ error: refusal }, 401);
+  const viewer = await viewerAt(c, store);
+  return viewer
+    ? { store, viewer, by: { user: viewer, now: now() } }
+    : c.json({ error: refusal }, 401);
 }
 
 const app = new Hono<Ctx>();
@@ -91,52 +102,62 @@ function toGitHub(
 
 app.get('/auth/login', (c) => {
   const oauth = oauthCredentials(c.env.env);
-  if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
+  if (!oauth) {
+    return c.redirect(problemPath('sign-in-unavailable'));
+  }
   return toGitHub(c, returnPath(c.req.query('to')), (at) => authorizeUrl(oauth, at));
 });
 
 async function signIn(
   c: Context<Ctx>,
   oauth: OAuthCredentials,
-  code: string,
-  to: string,
+  back: { code: string; to: string },
 ): Promise<Response> {
   const store = await storeFor(c.env.env);
-  const user = await userFromCode(oauth, { code, redirectUri: callbackUri(c) }).catch(
-    (error: unknown) => {
-      console.error('lingua: sign-in failed', error);
-      return null;
-    },
-  );
-  if (!user) return c.redirect(problemPath('sign-in-refused'));
+  const callback = { code: back.code, redirectUri: callbackUri(c) };
+  const user = await userFromCode(oauth, callback).catch((error: unknown) => {
+    report('sign-in failed', error);
+    return null;
+  });
+  if (!user) {
+    return c.redirect(problemPath('sign-in-refused'));
+  }
   c.header('Set-Cookie', await openSession(store, user, now()), { append: true });
-  return c.redirect(returnPath(to));
+  return c.redirect(returnPath(back.to));
 }
 
 async function returnFromGitHub(c: Context<Ctx>): Promise<Response> {
   const oauth = oauthCredentials(c.env.env);
-  if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
+  if (!oauth) {
+    return c.redirect(problemPath('sign-in-unavailable'));
+  }
   const token = readCookie(c.req.header('cookie'), OAUTH);
   const [given, ...rest] = (c.req.query('state') ?? '').split('.');
   const failed = (problem: Problem) => c.redirect(problemPath(problem));
-  if (!token || given !== token) return failed('sign-in-expired');
+  if (!token || given !== token) {
+    return failed('sign-in-expired');
+  }
   c.header('Set-Cookie', cookie(OAUTH, '', 0), { append: true });
   const code = c.req.query('code');
-  if (!code) return failed('sign-in-refused');
-  return signIn(c, oauth, code, rest.join('.'));
+  if (!code) {
+    return failed('sign-in-refused');
+  }
+  return signIn(c, oauth, { code, to: rest.join('.') });
 }
 
 async function returnFromSend(c: Context<Ctx>, pending: PendingSend): Promise<Response> {
   const env = c.env.env;
   const oauth = oauthCredentials(env);
   c.header('Set-Cookie', forgetPending());
-  if (!oauth) return c.redirect(returnAddress(pending.to, { kind: 'failed', reason: 'failed' }));
+  if (!oauth) {
+    return c.redirect(returnAddress(pending.to, { kind: 'failed', reason: 'failed' }));
+  }
   const store = await storeFor(env);
   const sendReader = reader({ oauth, requests: SEND_READS });
   const location = await answerSend({
     oauth,
     pending,
-    viewer: await resolveViewer(env, store, c.req.header('cookie'), now()),
+    viewer: await viewerAt(c, store),
     query: { code: c.req.query('code'), error: c.req.query('error') },
     redirectUri: callbackUri(c),
     send: (as, user) =>
@@ -157,7 +178,9 @@ app.get('/auth/callback', async (c) => {
 });
 
 app.post('/auth/logout', async (c) => {
-  if (!sameOrigin(c)) return c.text('Forbidden', 403);
+  if (!sameOrigin(c)) {
+    return c.text('Forbidden', 403);
+  }
   const store = await storeFor(c.env.env);
   c.header('Set-Cookie', await closeSession(store, c.req.header('cookie')));
   return c.redirect('/', 303);
@@ -165,10 +188,14 @@ app.post('/auth/logout', async (c) => {
 
 app.put('/api/edits', async (c) => {
   const signedIn = await contributor(c, 'Sign in with GitHub to edit');
-  if (signedIn instanceof Response) return signedIn;
+  if (signedIn instanceof Response) {
+    return signedIn;
+  }
   const input = await jsonInput(c, EditInput);
-  if (!input) return c.json({ error: 'Malformed request' }, 400);
-  const result = await saveEdit(signedIn.store, signedIn.viewer, input, now());
+  if (!input) {
+    return c.json({ error: 'Malformed request' }, 400);
+  }
+  const result = await saveEdit(signedIn.store, signedIn.by, input);
   return result.status === 200
     ? c.json({ draft: result.draft, issues: result.issues })
     : c.json({ error: result.error, issues: result.issues ?? [] }, result.status);
@@ -176,10 +203,14 @@ app.put('/api/edits', async (c) => {
 
 app.post('/api/confirm', async (c) => {
   const signedIn = await contributor(c, 'Sign in with GitHub to confirm a translation');
-  if (signedIn instanceof Response) return signedIn;
+  if (signedIn instanceof Response) {
+    return signedIn;
+  }
   const input = await jsonInput(c, ConfirmInput);
-  if (!input) return c.json({ error: 'Malformed request' }, 400);
-  const result = await saveConfirms(signedIn.store, signedIn.viewer, input, now());
+  if (!input) {
+    return c.json({ error: 'Malformed request' }, 400);
+  }
+  const result = await saveConfirms(signedIn.store, signedIn.by, input);
   return result.status === 200
     ? c.json({ confirmed: result.confirmed })
     : c.json({ error: result.error }, result.status);
@@ -195,8 +226,8 @@ app.post('/internal/sync', async (c) => {
   }
   const { waitUntil } = await workerContext();
   waitUntil(
-    refreshChained(c.env.env, { id: input.project, hop: input.hop }, now()).catch(
-      (error: unknown) => console.error(`lingua: ${input.project} chained pass failed`, error),
+    refreshChained(c.env.env, { id: input.project, hop: input.hop }, { now: now() }).catch(
+      (error: unknown) => report(`${input.project} chained pass failed`, error),
     ),
   );
   return c.json({ accepted: true }, 202);
@@ -204,10 +235,14 @@ app.post('/internal/sync', async (c) => {
 
 app.post('/api/sync', async (c) => {
   const signedIn = await contributor(c, 'Sign in with GitHub to sync a repository');
-  if (signedIn instanceof Response) return signedIn;
+  if (signedIn instanceof Response) {
+    return signedIn;
+  }
   const input = await jsonInput(c, SyncInput);
-  if (!input) return c.json({ error: 'Malformed request' }, 400);
-  const result = await syncNow(c.env.env, input, now());
+  if (!input) {
+    return c.json({ error: 'Malformed request' }, 400);
+  }
+  const result = await syncNow(c.env.env, input, { now: now() });
   return result.status === 200
     ? c.json(result.repository)
     : c.json({ error: result.error }, result.status);
@@ -215,10 +250,14 @@ app.post('/api/sync', async (c) => {
 
 app.post('/api/locales', async (c) => {
   const signedIn = await contributor(c, 'Sign in with GitHub to start a language');
-  if (signedIn instanceof Response) return signedIn;
+  if (signedIn instanceof Response) {
+    return signedIn;
+  }
   const input = await jsonInput(c, LocaleInput);
-  if (!input) return c.json({ error: 'Malformed request' }, 400);
-  const result = await startLanguage(signedIn.store, signedIn.viewer, input, now());
+  if (!input) {
+    return c.json({ error: 'Malformed request' }, 400);
+  }
+  const result = await startLanguage(signedIn.store, signedIn.by, input);
   return result.status === 200
     ? c.json({ locale: result.locale, name: result.name })
     : c.json({ error: result.error }, result.status);
@@ -226,9 +265,13 @@ app.post('/api/locales', async (c) => {
 
 app.post('/api/discard', async (c) => {
   const signedIn = await contributor(c, 'Sign in with GitHub to discard changes');
-  if (signedIn instanceof Response) return signedIn;
+  if (signedIn instanceof Response) {
+    return signedIn;
+  }
   const input = await jsonInput(c, DiscardInput);
-  if (!input) return c.json({ error: 'Malformed request' }, 400);
+  if (!input) {
+    return c.json({ error: 'Malformed request' }, 400);
+  }
   const result = await discardDrafts(signedIn.store, signedIn.viewer, input);
   return result.status === 200
     ? c.json({ discarded: result.discarded, removed: result.removed })
@@ -237,7 +280,9 @@ app.post('/api/discard', async (c) => {
 
 function authorizeSend(c: Context<Ctx>, viewer: User, input: z.infer<typeof SendInput>): Response {
   const oauth = oauthCredentials(c.env.env);
-  if (!oauth) return c.json({ error: 'Sign-in is not configured on this deployment yet' }, 503);
+  if (!oauth) {
+    return c.json({ error: 'Sign-in is not configured on this deployment yet' }, 503);
+  }
   const { project, locale } = input;
   const pending = {
     state: randomToken(),
@@ -254,17 +299,22 @@ function authorizeSend(c: Context<Ctx>, viewer: User, input: z.infer<typeof Send
 
 app.post('/api/proposals', async (c) => {
   const signedIn = await contributor(c, 'Sign in with GitHub to send changes');
-  if (signedIn instanceof Response) return signedIn;
+  if (signedIn instanceof Response) {
+    return signedIn;
+  }
   const input = await jsonInput(c, SendInput);
-  if (!input) return c.json({ error: 'Malformed request' }, 400);
-  if (!(await signedIn.store.project(input.project)))
+  if (!input) {
+    return c.json({ error: 'Malformed request' }, 400);
+  }
+  if (!(await signedIn.store.project(input.project))) {
     return c.json({ error: 'Lingua does not translate this project' }, 404);
+  }
   return authorizeSend(c, signedIn.viewer, input);
 });
 
 app.get('/go/:owner/:repo/:locale/:key', async (c) => {
   const store = await storeFor(c.env.env);
-  const viewer = await resolveViewer(c.env.env, store, c.req.header('cookie'), now());
+  const viewer = await viewerAt(c, store);
   return c.redirect(await messagePage(store, viewer, c.req.param()), 302);
 });
 

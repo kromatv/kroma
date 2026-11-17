@@ -7,7 +7,7 @@ import { asViewer, type Context } from './views';
 
 /** Where the sync of a listed repository stands, from its project, or waiting when it has none yet. */
 export function statusOf(listed: ListedProject, project: Project | undefined): RepositoryStatus {
-  if (!project)
+  if (!project) {
     return {
       id: listed.id,
       branch: listed.branch,
@@ -15,6 +15,7 @@ export function statusOf(listed: ListedProject, project: Project | undefined): R
       sync: { kind: 'waiting' },
       configError: null,
     };
+  }
   return {
     id: listed.id,
     branch: project.branch,

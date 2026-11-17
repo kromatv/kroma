@@ -9,8 +9,9 @@ export const ada: User = { id: 42, login: 'ada', name: null, avatarUrl: null };
 
 const ROOT = 'loc';
 
+const said = (key: string, text: string) => digest({ key, forms: { [key]: text } });
+
 async function lockText(): Promise<string> {
-  const said = (key: string, text: string) => digest({ key, forms: { [key]: text } });
   const [play, title, sauvegarde] = await Promise.all([
     said('p.play', 'Lire {title}'),
     said('admin.backup.title', 'Backup'),

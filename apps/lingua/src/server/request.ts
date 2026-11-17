@@ -1,6 +1,7 @@
 import { workerContext } from '@kromatv/site-kit/worker-env';
 import type { Store, User } from '#site/store/store';
 import { type Env, readEnv, storeFor } from './env';
+import { report } from './log';
 import { refreshStale } from './scheduled';
 import { viewerOf } from './session';
 import type { Context } from './views';
@@ -11,13 +12,12 @@ const DEV_USER_ID = 1;
 export async function resolveViewer(
   env: Env,
   store: Store,
-  cookieHeader: string | null | undefined,
-  now: number,
+  asked: { cookies: string | null | undefined; now: number },
 ): Promise<User | null> {
   if (!env.LINGUA_DB && env.LINGUA_DEV_LOGIN) {
     return { id: DEV_USER_ID, login: env.LINGUA_DEV_LOGIN, name: null, avatarUrl: null };
   }
-  return viewerOf(store, cookieHeader, now);
+  return viewerOf(store, asked.cookies, asked.now);
 }
 
 /** The request TanStack Start is serving: the Worker's bindings, the origin it came to, and its cookies. */
@@ -40,13 +40,13 @@ export async function servedRequest(): Promise<{
 export async function requestContext(): Promise<Context> {
   const { env, cookies } = await servedRequest();
   const store = await storeFor(env);
-  const viewer = await resolveViewer(env, store, cookies, Math.floor(Date.now() / 1000));
+  const viewer = await resolveViewer(env, store, { cookies, now: Math.floor(Date.now() / 1000) });
   return { env, store, viewer };
 }
 
 /** Once the page is served, pass over project `id` if its last pass is stale: the page never waits on GitHub. */
 export async function refreshAfterServing(id: string): Promise<void> {
   const { env, waitUntil } = await workerContext();
-  const pass = refreshStale(readEnv(env), id, Math.floor(Date.now() / 1000));
-  waitUntil(pass.catch((error: unknown) => console.error(`lingua: ${id} did not refresh`, error)));
+  const pass = refreshStale(readEnv(env), id, { now: Math.floor(Date.now() / 1000) });
+  waitUntil(pass.catch((error: unknown) => report(`${id} did not refresh`, error)));
 }

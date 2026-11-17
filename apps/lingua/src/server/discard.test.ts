@@ -12,21 +12,19 @@ describe('discardDrafts', () => {
     const store = await seededStore();
     await saveEdit(
       store,
-      ada,
+      { user: ada, now: 2 },
       { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' },
-      2,
     );
     await saveConfirms(
       store,
-      ada,
+      { user: ada, now: 2 },
       { project: 'o/r', locale: 'fr', keys: ['admin.backup.title'] },
-      2,
     );
 
     const result = await discardDrafts(store, ada, { project: 'o/r', locale: 'fr' });
 
     expect(result).toEqual({ status: 200, discarded: 2, removed: false });
-    expect(pendingOf(await viewerWork(store, 'o/r', ada, 'fr'))).toEqual({
+    expect(pendingOf(await viewerWork(store, ada, { project: 'o/r', locale: 'fr' }))).toEqual({
       drafts: 0,
       proposed: 0,
     });
@@ -34,12 +32,11 @@ describe('discardDrafts', () => {
 
   it('removes a language the contributor started and never sent, with everything in it', async () => {
     const store = await seededStore();
-    await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 2);
+    await startLanguage(store, { user: ada, now: 2 }, { project: 'o/r', locale: 'de' });
     await saveEdit(
       store,
-      ada,
+      { user: ada, now: 3 },
       { project: 'o/r', locale: 'de', file: 'p', key: 'p.play', value: '{title} abspielen' },
-      3,
     );
 
     const result = await discardDrafts(store, ada, { project: 'o/r', locale: 'de' });
@@ -50,25 +47,23 @@ describe('discardDrafts', () => {
 
   it('keeps what already rides in the pull request, and a started language that was sent', async () => {
     const store = await seededStore();
-    await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 2);
+    await startLanguage(store, { user: ada, now: 2 }, { project: 'o/r', locale: 'de' });
     await saveEdit(
       store,
-      ada,
+      { user: ada, now: 3 },
       { project: 'o/r', locale: 'de', file: 'p', key: 'p.play', value: '{title} abspielen' },
-      3,
     );
     await store.markProposed('o/r', ada.id, 'de');
     await saveEdit(
       store,
-      ada,
+      { user: ada, now: 4 },
       { project: 'o/r', locale: 'de', file: 'p', key: 'p.n_one', value: 'Ein Element' },
-      4,
     );
 
     const result = await discardDrafts(store, ada, { project: 'o/r', locale: 'de' });
 
     expect(result).toEqual({ status: 200, discarded: 1, removed: false });
-    expect(pendingOf(await viewerWork(store, 'o/r', ada, 'de'))).toEqual({
+    expect(pendingOf(await viewerWork(store, ada, { project: 'o/r', locale: 'de' }))).toEqual({
       drafts: 0,
       proposed: 2,
     });

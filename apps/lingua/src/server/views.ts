@@ -21,7 +21,7 @@ import { type Env, oauthCredentials } from './env';
 import { localeSummary, rowsByFile, type Stood, tally } from './standing';
 import { syncOf } from './sync-state';
 import { pendingOf, type Work, viewerWork } from './work';
-import { type Opened, openProject, readLocales, type Workspace } from './workspace';
+import { type Opened, openProject, type Reading, readLocales, type Workspace } from './workspace';
 
 /** What every page is computed from: the store, the bindings, and who is asking. */
 export interface Context {
@@ -69,7 +69,9 @@ export async function projectView(
   id: string,
 ): Promise<ProjectView | null> {
   const opened = await openProject(store, id, viewer);
-  if (!opened) return null;
+  if (!opened) {
+    return null;
+  }
   const { workspace } = opened;
   const reading = workspace ? await readLocales(store, { id, workspace }, workspace.locales) : null;
   const locales =
@@ -95,22 +97,23 @@ export async function localeView(
   locale: string,
 ): Promise<LocaleView | null> {
   const found = await offered(store, id, viewer);
-  if (!found?.workspace.locales.includes(locale)) return null;
+  if (!found?.workspace.locales.includes(locale)) {
+    return null;
+  }
   const { opened, workspace } = found;
   const reading = await readLocales(store, { id, workspace }, [locale]);
   const byFile = await rowsByFile(reading, locale);
-  const work = await viewerWork(store, id, viewer, locale);
+  const work = await viewerWork(store, viewer, { project: id, locale });
   return {
     viewer: asViewer(viewer),
     project: summaryOf(opened),
     locale: localeSummary(workspace, languageOf(locale), byFile),
     namespaces: [...byFile]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([file, rows]) => ({
-        file,
-        ...tally(rows),
-        drafts: draftsIn(work, reading.source, file),
-      })),
+      .map(([file, rows]) => {
+        const { progress, states } = tally(rows);
+        return { file, progress, states, drafts: draftsIn(work, reading.source, file) };
+      }),
     ...pendingOf(work),
     proposal: work.proposal,
   };
@@ -124,9 +127,37 @@ interface Around {
   workspace: Workspace;
 }
 
+function aroundOf(
+  reading: Reading,
+  file: string,
+  rest: Pick<Around, 'work' | 'workspace'> & { references: readonly string[] },
+): Around | null {
+  const sourceFile = reading.source.files.get(file);
+  if (!sourceFile) {
+    return null;
+  }
+  const referenced = rest.references.map((tag) => ({
+    language: languageOf(tag),
+    messages: merged(localeFiles(reading.shelf, tag)),
+  }));
+  const keys = new Set(Object.keys(sourceFile));
+  return { source: reading.source, keys, referenced, work: rest.work, workspace: rest.workspace };
+}
+
+function draftOf(work: Work, key: string): Pick<RowView, 'draft' | 'proposed'> {
+  const edit = work.edits.find((e) => e.key === key);
+  return { draft: edit?.value ?? null, proposed: edit?.proposed ?? false };
+}
+
+function issuesOf(row: Stood['row'], shown: string, keys: ReadonlySet<string>): RowView['issues'] {
+  if (shown.trim() === '') {
+    return [];
+  }
+  return check(shown, { source: row.source, keys, plural: row.plural !== null });
+}
+
 function rowView({ row, current, state }: Stood, around: Around): RowView {
-  const edit = around.work.edits.find((e) => e.key === row.key);
-  const shown = edit?.value ?? current ?? '';
+  const { draft, proposed } = draftOf(around.work, row.key);
   const base = baseOf(around.source, row.key) ?? row.key;
   return {
     key: row.key,
@@ -136,13 +167,10 @@ function rowView({ row, current, state }: Stood, around: Around): RowView {
       text: messages[row.key] ?? null,
     })),
     current,
-    draft: edit?.value ?? null,
-    proposed: edit?.proposed ?? false,
+    draft,
+    proposed,
     plural: row.plural,
-    issues:
-      shown.trim() === ''
-        ? []
-        : check(shown, { source: row.source, keys: around.keys, plural: row.plural !== null }),
+    issues: issuesOf(row, draft ?? current ?? '', around.keys),
     state,
     notes: notesFor(around.workspace.notes, base),
     confirmed: around.work.confirms.some((c) => c.key === base),
@@ -156,25 +184,18 @@ export async function namespaceView(
   at: { locale: string; file: string },
 ): Promise<NamespaceView | null> {
   const found = await offered(store, id, viewer);
-  if (!found?.workspace.locales.includes(at.locale)) return null;
+  if (!found?.workspace.locales.includes(at.locale)) {
+    return null;
+  }
   const { opened, workspace } = found;
   const references = stableLocales(workspace.policy).filter((tag) => tag !== at.locale);
   const reading = await readLocales(store, { id, workspace }, [at.locale, ...references]);
-  const sourceFile = reading.source.files.get(at.file);
-  if (!sourceFile) return null;
+  const work = await viewerWork(store, viewer, { project: id, locale: at.locale });
+  const around = aroundOf(reading, at.file, { references, work, workspace });
+  if (!around) {
+    return null;
+  }
   const byFile = await rowsByFile(reading, at.locale);
-  const work = await viewerWork(store, id, viewer, at.locale);
-  const referenced = references.map((tag) => ({
-    language: languageOf(tag),
-    messages: merged(localeFiles(reading.shelf, tag)),
-  }));
-  const around = {
-    source: reading.source,
-    keys: new Set(Object.keys(sourceFile)),
-    referenced,
-    work,
-    workspace,
-  };
   return {
     viewer: asViewer(viewer),
     project: summaryOf(opened),

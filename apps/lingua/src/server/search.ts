@@ -24,9 +24,13 @@ export async function messageSearch(
   id: string,
   at: { locale: string; query: string },
 ): Promise<MessageHit[]> {
-  if (at.query.trim().length < 2) return [];
+  if (at.query.trim().length < 2) {
+    return [];
+  }
   const workspace = (await openProject(store, id, viewer))?.workspace;
-  if (!workspace?.locales.includes(at.locale)) return [];
+  if (!workspace?.locales.includes(at.locale)) {
+    return [];
+  }
   const byFile = await rowsByFile(
     await readLocales(store, { id, workspace }, [at.locale]),
     at.locale,

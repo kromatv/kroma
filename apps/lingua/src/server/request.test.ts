@@ -13,9 +13,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+const ASKED = { cookies: null, now: 5 };
+
 describe('resolveViewer', () => {
   it('signs a local run without D1 in as the stand-in login', async () => {
-    const viewer = await resolveViewer({ LINGUA_DEV_LOGIN: 'dev' }, await seededStore(), null, 5);
+    const viewer = await resolveViewer({ LINGUA_DEV_LOGIN: 'dev' }, await seededStore(), ASKED);
 
     expect(viewer).toEqual({ id: 1, login: 'dev', name: null, avatarUrl: null });
   });
@@ -24,8 +26,7 @@ describe('resolveViewer', () => {
     const viewer = await resolveViewer(
       { LINGUA_DEV_LOGIN: 'dev', LINGUA_DB: fakeD1() },
       await seededStore(),
-      null,
-      5,
+      ASKED,
     );
 
     expect(viewer).toBeNull();

@@ -3,7 +3,7 @@ import { ProjectId } from '#site/core/config';
 import { passOver, trackProjects } from '#site/github/pass';
 import type { RepositoryStatus } from '#site/lib/views';
 import { type Env, listedProjects } from './env';
-import { syncingFor } from './scheduled';
+import { type Run, syncingFor } from './scheduled';
 import { statusOf } from './setup';
 
 /** `POST /api/sync`: which repository to read now. */
@@ -20,22 +20,17 @@ export type SyncNow =
  * never was, and say where its sync stands. One call reads as much as one
  * request may; a sync still `reading` goes on with the next call.
  */
-export async function syncNow(
-  env: Env,
-  input: SyncInput,
-  now: number,
-  fetchFn: typeof fetch = fetch,
-): Promise<SyncNow> {
+export async function syncNow(env: Env, input: SyncInput, run: Run): Promise<SyncNow> {
   const listed = listedProjects(env).find((entry) => entry.id === input.project);
   if (!listed) {
     return { status: 404, error: 'Lingua does not translate this repository' };
   }
-  const syncing = await syncingFor(env, fetchFn);
+  const syncing = await syncingFor(env, run.fetchFn ?? fetch);
   if (!syncing) {
     return { status: 503, error: 'This deployment has no database' };
   }
   await trackProjects(syncing, listedProjects(env));
-  const pass = await passOver(syncing, listed.id, now);
+  const pass = await passOver(syncing, listed.id, run.now);
   if (pass.kind === 'skipped') {
     return { status: 409, error: 'A sync of this repository is already running' };
   }

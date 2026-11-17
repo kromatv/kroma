@@ -1,3 +1,23 @@
+interface Reading {
+  reader: ReadableStreamDefaultReader<Uint8Array>;
+  decoder: TextDecoder;
+  limit: number;
+}
+
+async function drained(reading: Reading, text: string, size: number): Promise<string | null> {
+  const { reader, decoder, limit } = reading;
+  const chunk = await reader.read();
+  if (chunk.done) {
+    return text + decoder.decode();
+  }
+  const read = size + chunk.value.byteLength;
+  if (read > limit) {
+    await reader.cancel();
+    return null;
+  }
+  return drained(reading, text + decoder.decode(chunk.value, { stream: true }), read);
+}
+
 /**
  * A request's body as text, or null once it runs past `limit` bytes. A
  * declared length past the limit is refused unread; a body that declares none
@@ -11,19 +31,5 @@ export async function boundedText(
     return null;
   }
   const reader = request.body?.getReader();
-  if (!reader) {
-    return '';
-  }
-  const decoder = new TextDecoder();
-  let text = '';
-  let size = 0;
-  for (let chunk = await reader.read(); !chunk.done; chunk = await reader.read()) {
-    size += chunk.value.byteLength;
-    if (size > limit) {
-      await reader.cancel();
-      return null;
-    }
-    text += decoder.decode(chunk.value, { stream: true });
-  }
-  return text + decoder.decode();
+  return reader ? drained({ reader, decoder: new TextDecoder(), limit }, '', 0) : '';
 }

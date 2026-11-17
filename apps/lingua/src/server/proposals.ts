@@ -8,6 +8,7 @@ import type { Reader } from '#site/github/reader';
 import { syncProject } from '#site/github/sync';
 import { SEND_FAILURES, type SendFailure } from '#site/lib/send-return';
 import type { Project, Store, User } from '#site/store/store';
+import { report } from './log';
 import { openProject } from './workspace';
 
 /** Which language's edits to send. */
@@ -59,10 +60,16 @@ function resultOf(outcome: Outcome): ProposalResult {
 }
 
 function failure(error: unknown): Refused {
-  if (error instanceof GitHubError && error.status === 409) return refused(409, 'conflict');
-  if (error instanceof ForkDiverged) return refused(409, 'diverged');
-  if (error instanceof ForkPending) return refused(503, 'forking');
-  console.error('lingua: proposal failed', error);
+  if (error instanceof GitHubError && error.status === 409) {
+    return refused(409, 'conflict');
+  }
+  if (error instanceof ForkDiverged) {
+    return refused(409, 'diverged');
+  }
+  if (error instanceof ForkPending) {
+    return refused(503, 'forking');
+  }
+  report('proposal failed', error);
   return refused(502, 'failed');
 }
 
@@ -72,14 +79,17 @@ async function sendSynced(
   now: number,
 ): Promise<ProposalResult> {
   const { before, user, input } = sending;
-  if ((await syncProject({ reader: sending.reader, store }, before, now)) === 'behind')
+  if ((await syncProject({ reader: sending.reader, store }, before, now)) === 'behind') {
     return refused(503, 'syncing');
+  }
   const workspace = (await openProject(store, before.id, user))?.workspace;
   const project = await store.project(before.id);
-  if (!project || !workspace)
+  if (!project || !workspace) {
     return refused(404, 'missing', 'This project has no usable lingua.json or i18n.json');
-  if (!workspace.locales.includes(input.locale))
+  }
+  if (!workspace.locales.includes(input.locale)) {
     return refused(404, 'missing', 'This project does not offer that language');
+  }
   const read = ['', workspace.policy.source, input.locale, ...stableLocales(workspace.policy)];
   const files = await store.files(project.id, [...new Set(read)]);
   const proposing = {
@@ -102,9 +112,13 @@ export async function sendProposal(
 ): Promise<ProposalResult> {
   const { user, input } = sending;
   const before = await store.project(input.project);
-  if (!before) return refused(404, 'missing', 'Lingua does not translate this project');
+  if (!before) {
+    return refused(404, 'missing', 'Lingua does not translate this project');
+  }
   const last = await store.proposal(before.id, user.id, input.locale);
-  if (last && now - last.updatedAt < COOLDOWN) return refused(429, 'busy');
+  if (last && now - last.updatedAt < COOLDOWN) {
+    return refused(429, 'busy');
+  }
   try {
     return await sendSynced(store, { ...sending, before }, now);
   } catch (error) {

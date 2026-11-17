@@ -15,7 +15,9 @@ function decoded(value: string): string | null {
 export function readCookie(header: string | null | undefined, name: string): string | null {
   for (const part of (header ?? '').split(';')) {
     const [key, ...rest] = part.trim().split('=');
-    if (key === name) return decoded(rest.join('='));
+    if (key === name) {
+      return decoded(rest.join('='));
+    }
   }
   return null;
 }
@@ -67,6 +69,8 @@ export async function closeSession(
   cookieHeader: string | null | undefined,
 ): Promise<string> {
   const token = readCookie(cookieHeader, SESSION);
-  if (token) await store.deleteSession(await hashOf(token));
+  if (token) {
+    await store.deleteSession(await hashOf(token));
+  }
   return cookie(SESSION, '', 0);
 }

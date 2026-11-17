@@ -67,8 +67,7 @@ export async function chainProven(
 export async function stillReading(store: Store, id: string): Promise<boolean> {
   const project = await store.project(id);
   return (
-    project !== null &&
-    project.syncError === null &&
+    project?.syncError === null &&
     project.branchSha !== null &&
     project.branchSha !== project.headSha
   );

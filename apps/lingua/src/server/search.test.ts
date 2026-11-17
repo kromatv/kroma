@@ -7,7 +7,7 @@ import { ada, pageContext, seededStore } from './test-support';
 describe('projectIndex', () => {
   it('lists each project with the languages the viewer can open, their own started ones too', async () => {
     const store = await seededStore();
-    await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 1);
+    await startLanguage(store, { user: ada, now: 1 }, { project: 'o/r', locale: 'de' });
 
     const [anyone, theirs] = await Promise.all([
       projectIndex(pageContext(store, null)),

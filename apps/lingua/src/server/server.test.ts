@@ -18,7 +18,7 @@ describe('saveEdit', () => {
   it('keeps a translation that renders the same placeholders', async () => {
     const store = await seededStore();
 
-    const result = await saveEdit(store, ada, edit('p.play', 'Regarder {title}'), 5);
+    const result = await saveEdit(store, { user: ada, now: 5 }, edit('p.play', 'Regarder {title}'));
 
     expect(result).toEqual({ status: 200, draft: 'Regarder {title}', issues: [] });
     expect((await store.edits('o/r', ada.id, 'fr')).map((e) => [e.file, e.value])).toEqual([
@@ -29,7 +29,7 @@ describe('saveEdit', () => {
   it('refuses a translation that would print a placeholder nobody fills', async () => {
     const store = await seededStore();
 
-    const result = await saveEdit(store, ada, edit('p.play', 'Lire {name}'), 5);
+    const result = await saveEdit(store, { user: ada, now: 5 }, edit('p.play', 'Lire {name}'));
 
     expect(result).toMatchObject({
       status: 422,
@@ -40,9 +40,9 @@ describe('saveEdit', () => {
 
   it('drops the edit when it says what the branch already says, or nothing', async () => {
     const store = await seededStore();
-    await saveEdit(store, ada, edit('p.play', 'Regarder {title}'), 5);
+    await saveEdit(store, { user: ada, now: 5 }, edit('p.play', 'Regarder {title}'));
 
-    await saveEdit(store, ada, edit('p.play', 'Lire {title}'), 6);
+    await saveEdit(store, { user: ada, now: 6 }, edit('p.play', 'Lire {title}'));
 
     expect(await store.edits('o/r', ada.id, 'fr')).toEqual([]);
   });
@@ -52,11 +52,14 @@ describe('saveEdit', () => {
 
     const polish = await saveEdit(
       store,
-      ada,
+      { user: ada, now: 5 },
       { ...edit('p.n_many', '{count} elementów'), locale: 'pl' },
-      5,
     );
-    const french = await saveEdit(store, ada, edit('p.n_many', '{count} d’éléments'), 5);
+    const french = await saveEdit(
+      store,
+      { user: ada, now: 5 },
+      edit('p.n_many', '{count} d’éléments'),
+    );
 
     expect(polish.status).toBe(200);
     expect(french.status).toBe(404);
@@ -65,10 +68,11 @@ describe('saveEdit', () => {
   it('refuses a key the source does not have, and a language the project does not offer', async () => {
     const store = await seededStore();
 
-    expect((await saveEdit(store, ada, edit('p.nope', 'x'), 5)).status).toBe(404);
-    expect((await saveEdit(store, ada, { ...edit('p.play', 'x'), locale: 'de' }, 5)).status).toBe(
-      404,
-    );
+    expect((await saveEdit(store, { user: ada, now: 5 }, edit('p.nope', 'x'))).status).toBe(404);
+    expect(
+      (await saveEdit(store, { user: ada, now: 5 }, { ...edit('p.play', 'x'), locale: 'de' }))
+        .status,
+    ).toBe(404);
   });
 
   it('takes a message of a file in a sub-folder', async () => {
@@ -76,9 +80,8 @@ describe('saveEdit', () => {
 
     const result = await saveEdit(
       store,
-      ada,
+      { user: ada, now: 5 },
       { ...edit('admin.backup.run', 'Lancer'), file: 'admin/backup' },
-      5,
     );
 
     expect(result.status).toBe(200);
@@ -91,9 +94,8 @@ describe('saveConfirms', () => {
 
     const result = await saveConfirms(
       store,
-      ada,
+      { user: ada, now: 5 },
       { project: 'o/r', locale: 'fr', keys: ['p.play', 'p.n_one', 'p.n'] },
-      5,
     );
 
     expect(result).toEqual({ status: 200, confirmed: ['p.play', 'p.n'] });
@@ -108,15 +110,13 @@ describe('saveConfirms', () => {
 
     const source = await saveConfirms(
       store,
-      ada,
+      { user: ada, now: 5 },
       { project: 'o/r', locale: 'en', keys: ['p.play'] },
-      5,
     );
     const unknown = await saveConfirms(
       store,
-      ada,
+      { user: ada, now: 5 },
       { project: 'o/r', locale: 'fr', keys: ['p.nope'] },
-      5,
     );
 
     expect([source.status, unknown.status]).toEqual([404, 404]);
@@ -127,7 +127,11 @@ describe('startLanguage', () => {
   it('starts a language for the contributor, named in itself', async () => {
     const store = await seededStore();
 
-    const result = await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 5);
+    const result = await startLanguage(
+      store,
+      { user: ada, now: 5 },
+      { project: 'o/r', locale: 'de' },
+    );
 
     expect(result).toEqual({ status: 200, locale: 'de', name: 'Deutsch' });
     expect((await store.starts('o/r', ada.id)).map((s) => s.locale)).toEqual(['de']);
@@ -135,10 +139,18 @@ describe('startLanguage', () => {
 
   it('refuses a language the project or the contributor has already', async () => {
     const store = await seededStore();
-    await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 5);
+    await startLanguage(store, { user: ada, now: 5 }, { project: 'o/r', locale: 'de' });
 
-    const listed = await startLanguage(store, ada, { project: 'o/r', locale: 'pl' }, 6);
-    const again = await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 6);
+    const listed = await startLanguage(
+      store,
+      { user: ada, now: 6 },
+      { project: 'o/r', locale: 'pl' },
+    );
+    const again = await startLanguage(
+      store,
+      { user: ada, now: 6 },
+      { project: 'o/r', locale: 'de' },
+    );
 
     expect([listed.status, again.status]).toEqual([409, 409]);
   });
@@ -147,15 +159,16 @@ describe('startLanguage', () => {
     const store = await seededStore();
     const tags = ['de', 'es', 'it', 'nl', 'sv', 'da', 'fi', 'nb', 'cs'];
     const held = tags.slice(0, MAX_STARTED);
-    for (const locale of held) {
-      await startLanguage(store, ada, { project: 'o/r', locale }, 5);
-    }
+    await held.reduce(
+      (before, locale) =>
+        before.then(() => startLanguage(store, { user: ada, now: 5 }, { project: 'o/r', locale })),
+      Promise.resolve<unknown>(undefined),
+    );
 
     const over = await startLanguage(
       store,
-      ada,
+      { user: ada, now: 6 },
       { project: 'o/r', locale: tags[MAX_STARTED] ?? '' },
-      6,
     );
 
     expect(over.status).toBe(409);

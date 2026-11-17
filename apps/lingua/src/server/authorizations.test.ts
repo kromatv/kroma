@@ -37,6 +37,19 @@ function answer(over: Partial<SendAnswer>): SendAnswer {
   };
 }
 
+const stillForking = async (): Promise<ProposalResult> => ({
+  status: 503,
+  reason: 'forking',
+  error: '',
+});
+
+const nothingLeft = async (): Promise<ProposalResult> => ({
+  status: 200,
+  body: { kind: 'nothing' },
+});
+
+const refusingTheCode: typeof fetch = async () => Response.json({ error: 'bad_verification_code' });
+
 describe('answerSend', () => {
   it('returns a refused permission to its page as declined, sending nothing', async () => {
     const send = vi.fn(async () => proposed);
@@ -81,14 +94,8 @@ describe('answerSend', () => {
   });
 
   it('returns a refused send with the reason the page reads it by', async () => {
-    const send = async (): Promise<ProposalResult> => ({
-      status: 503,
-      reason: 'forking',
-      error: '',
-    });
-
     const to = await answerSend(
-      answer({ fetchFn: gitHubGranting({ scope: 'public_repo', id: 42 }), send }),
+      answer({ fetchFn: gitHubGranting({ scope: 'public_repo', id: 42 }), send: stillForking }),
     );
 
     expect(to).toBe('/o/r/fr?send=forking');
@@ -101,17 +108,14 @@ describe('answerSend when GitHub’s answer cannot be used', () => {
   });
 
   it('returns a send as failed when GitHub would not trade the code', async () => {
-    const fetchFn: typeof fetch = async () => Response.json({ error: 'bad_verification_code' });
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    expect(await answerSend(answer({ fetchFn }))).toBe('/o/r/fr?send=failed');
+    expect(await answerSend(answer({ fetchFn: refusingTheCode }))).toBe('/o/r/fr?send=failed');
   });
 
   it('returns a send that found nothing left to carry', async () => {
-    const send = async (): Promise<ProposalResult> => ({ status: 200, body: { kind: 'nothing' } });
-
     const to = await answerSend(
-      answer({ fetchFn: gitHubGranting({ scope: 'repo', id: 42 }), send }),
+      answer({ fetchFn: gitHubGranting({ scope: 'repo', id: 42 }), send: nothingLeft }),
     );
 
     expect(to).toBe('/o/r/fr?send=nothing');

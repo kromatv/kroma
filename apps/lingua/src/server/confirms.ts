@@ -2,14 +2,15 @@ import { z } from 'zod';
 import { LocaleTag, ProjectId } from '#site/core/config';
 import { localeFiles, shelfOf } from '#site/core/shelf';
 import { baseOf, sourceOf } from '#site/core/source';
-import type { Store, User } from '#site/store/store';
+import type { Store } from '#site/store/store';
+import type { Actor } from './actor';
 import { openProject } from './workspace';
 
 /** `POST /api/confirm`: messages of one language the contributor says read right as they are. */
 export const ConfirmInput = z.object({
   project: ProjectId,
   locale: LocaleTag,
-  keys: z.array(z.string().min(1).max(256)).min(1).max(200),
+  keys: z.array(z.string().nonempty().max(256)).min(1).max(200),
 });
 export type ConfirmInput = z.infer<typeof ConfirmInput>;
 
@@ -19,11 +20,10 @@ export type ConfirmResult = { status: 200; confirmed: string[] } | { status: 404
 /** Keep the contributor's confirms until their next send rewrites those lock entries against the current source. */
 export async function saveConfirms(
   store: Store,
-  user: User,
+  by: Actor,
   input: ConfirmInput,
-  now: number,
 ): Promise<ConfirmResult> {
-  const workspace = (await openProject(store, input.project, user))?.workspace;
+  const workspace = (await openProject(store, input.project, by.user))?.workspace;
   if (!workspace) {
     return { status: 404, error: 'Lingua does not translate this project' };
   }
@@ -37,9 +37,9 @@ export async function saveConfirms(
   if (confirmed.length === 0) {
     return { status: 404, error: 'There is no such message' };
   }
-  const mine = { project: input.project, userId: user.id, locale: input.locale };
+  const mine = { project: input.project, userId: by.user.id, locale: input.locale };
   await Promise.all(
-    confirmed.map((key) => store.putConfirm({ ...mine, key, proposed: false, updatedAt: now })),
+    confirmed.map((key) => store.putConfirm({ ...mine, key, proposed: false, updatedAt: by.now })),
   );
   return { status: 200, confirmed };
 }

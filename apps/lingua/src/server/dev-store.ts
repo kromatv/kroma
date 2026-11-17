@@ -6,23 +6,37 @@ import type { FileRow, Store } from '#site/store/store';
 
 const DEV_PROJECT = 'kromatv/kroma';
 
-async function repositoryRoot(from: string): Promise<string | null> {
-  for (let dir = from; ; dir = dirname(dir)) {
-    const found = await readFile(join(dir, CONFIG_PATH), 'utf8').then(
-      () => true,
-      () => false,
-    );
-    if (found) return dir;
-    if (dirname(dir) === dir) return null;
+const SYNCED = { headSha: 'dev', treeSha: 'dev' };
+
+const exists = (path: string) =>
+  readFile(path, 'utf8').then(
+    () => true,
+    () => false,
+  );
+
+async function repositoryRoot(dir: string): Promise<string | null> {
+  if (await exists(join(dir, CONFIG_PATH))) {
+    return dir;
   }
+  const above = dirname(dir);
+  return above === dir ? null : repositoryRoot(above);
 }
 
-/** A store holding the checkout this dev server runs in, read from disk, so the pages render without D1 or GitHub. */
-export async function devStore(): Promise<Store> {
-  const store = memoryStore();
-  const root = await repositoryRoot(process.cwd());
-  if (root) await seedFrom(store, root);
-  return store;
+async function projectFiles(root: string, projectRoot: string): Promise<FileRow[]> {
+  const entries = await readdir(join(root, projectRoot), { recursive: true }).catch(
+    (): string[] => [],
+  );
+  const placed = entries.flatMap((entry) => {
+    const path = `${projectRoot}/${entry.replaceAll('\\', '/')}`;
+    const place = placeOf(projectRoot, path);
+    return place ? [{ place, path }] : [];
+  });
+  return Promise.all(
+    placed.map(async ({ place, path }) => {
+      const body = await readFile(join(root, path), 'utf8');
+      return Object.assign(place, { path, blobSha: 'dev', body });
+    }),
+  );
 }
 
 async function seedFrom(store: Store, root: string): Promise<void> {
@@ -30,37 +44,21 @@ async function seedFrom(store: Store, root: string): Promise<void> {
   const parsed = parseConfig(text);
   await store.upsertProject({ id: DEV_PROJECT, branch: 'main', pinned: false });
   if (!parsed.ok) {
-    await store.setSynced(DEV_PROJECT, {
-      headSha: 'dev',
-      treeSha: 'dev',
-      config: null,
-      configError: parsed.error,
-      at: 0,
-    });
+    const failed = { ...SYNCED, config: null, configError: parsed.error, at: 0 };
+    await store.setSynced(DEV_PROJECT, failed);
     return;
   }
-  const projectRoot = rootOf(parsed.config);
-  const entries = await readdir(join(root, projectRoot), { recursive: true }).catch(
-    (): string[] => [],
-  );
-  const placed = entries.flatMap((entry) => {
-    const path = `${projectRoot}/${entry.replaceAll('\\', '/')}`;
-    const place = placeOf(projectRoot, path);
-    return place ? [{ ...place, path }] : [];
-  });
-  const files: FileRow[] = await Promise.all(
-    placed.map(async (place) => ({
-      ...place,
-      blobSha: 'dev',
-      body: await readFile(join(root, place.path), 'utf8'),
-    })),
-  );
-  await store.replaceFiles(DEV_PROJECT, files, []);
-  await store.setSynced(DEV_PROJECT, {
-    headSha: 'dev',
-    treeSha: 'dev',
-    config: text,
-    configError: null,
-    at: Math.floor(Date.now() / 1000),
-  });
+  await store.replaceFiles(DEV_PROJECT, await projectFiles(root, rootOf(parsed.config)), []);
+  const at = Math.floor(Date.now() / 1000);
+  await store.setSynced(DEV_PROJECT, { ...SYNCED, config: text, configError: null, at });
+}
+
+/** A store holding the checkout this dev server runs in, read from disk, so the pages render without D1 or GitHub. */
+export async function devStore(): Promise<Store> {
+  const store = memoryStore();
+  const root = await repositoryRoot(process.cwd());
+  if (root) {
+    await seedFrom(store, root);
+  }
+  return store;
 }

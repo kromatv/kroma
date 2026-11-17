@@ -6,7 +6,7 @@ import { fakeD1 } from '#site/store/test-support';
 import type { Env } from './env';
 import { refreshAll, refreshStale } from './scheduled';
 
-const H = vi.hoisted(() => ({ store: null as Store | null }));
+const H = vi.hoisted((): { store: Store | null } => ({ store: null }));
 
 vi.mock('./env', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./env')>()),
@@ -95,7 +95,7 @@ describe('refreshStale', () => {
     await H.store?.upsertProject({ id: 'o/r', branch: 'main', pinned: false });
     const fetchFn = gitHubFetch({ routes: emptyRepository('o/r', sha('a')) });
 
-    await refreshStale(env('o/r'), 'o/r', 100, fetchFn);
+    await refreshStale(env('o/r'), 'o/r', { now: 100, fetchFn });
 
     expect((await H.store?.project('o/r'))?.headSha).toBe(sha('a'));
   });
@@ -103,7 +103,7 @@ describe('refreshStale', () => {
   it('does nothing without a database', async () => {
     const fetchFn = gitHubFetch({ routes: {} });
 
-    await refreshStale({}, 'o/r', 100, fetchFn);
+    await refreshStale({}, 'o/r', { now: 100, fetchFn });
 
     expect(fetchFn.calls).toEqual([]);
   });

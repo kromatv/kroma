@@ -27,10 +27,13 @@ export async function discardDrafts(
   input: DiscardInput,
 ): Promise<DiscardResult> {
   const workspace = (await openProject(store, input.project, user))?.workspace;
-  if (!workspace) return { status: 404, error: 'Lingua does not translate this project' };
-  if (!workspace.locales.includes(input.locale))
+  if (!workspace) {
+    return { status: 404, error: 'Lingua does not translate this project' };
+  }
+  if (!workspace.locales.includes(input.locale)) {
     return { status: 404, error: 'This project does not offer that language' };
-  const work = await viewerWork(store, input.project, user, input.locale);
+  }
+  const work = await viewerWork(store, user, input);
   await store.dropUnsent(input.project, user.id, input.locale);
   const removed = workspace.started.has(input.locale) && work.start?.proposed === false;
   return { status: 200, discarded: pendingOf(work).drafts, removed };

@@ -214,6 +214,7 @@
     "**/*.template.html",
     "clients/synology",
     "server",
+    "!apps/lingua/src/server",
     "apps/www/src/styles.css",
     "clients/mobile/google-services.json"
   ],
@@ -374,7 +375,8 @@
         "**/scripts/**",
         "**/*.config.ts",
         "**/*.config.mjs",
-        "**/vite/**"
+        "**/vite/**",
+        "apps/lingua/src/server/log.ts"
       ],
       "rules": {
         "no-console": "off"

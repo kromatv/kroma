@@ -11,11 +11,14 @@ async function storeWithWork(): Promise<Store> {
   const store = await seededStore();
   await saveEdit(
     store,
-    ada,
+    { user: ada, now: 2 },
     { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' },
-    2,
   );
-  await saveConfirms(store, ada, { project: 'o/r', locale: 'fr', keys: ['admin.backup.title'] }, 2);
+  await saveConfirms(
+    store,
+    { user: ada, now: 2 },
+    { project: 'o/r', locale: 'fr', keys: ['admin.backup.title'] },
+  );
   return store;
 }
 
@@ -93,7 +96,7 @@ describe('projectView', () => {
 
   it('shows a language a contributor started to them alone', async () => {
     const store = await seededStore();
-    await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 1);
+    await startLanguage(store, { user: ada, now: 1 }, { project: 'o/r', locale: 'de' });
 
     const theirs = await projectView(pageContext(store, ada), 'o/r');
     const anyone = await projectView(pageContext(store, null), 'o/r');
@@ -191,7 +194,7 @@ describe('localeView', () => {
 
   it('shows the pull request the viewer’s sent work rides in', async () => {
     const store = await storeWithWork();
-    await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 2);
+    await startLanguage(store, { user: ada, now: 2 }, { project: 'o/r', locale: 'de' });
     await store.markProposed('o/r', ada.id, 'de');
     await store.saveProposal({
       project: 'o/r',

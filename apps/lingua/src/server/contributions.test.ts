@@ -26,13 +26,12 @@ describe('contributionsView', () => {
     const store = await seededStore();
     await saveEdit(
       store,
-      ada,
+      { user: ada, now: 2 },
       { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' },
-      2,
     );
     await saveEdit(
       store,
-      ada,
+      { user: ada, now: 2 },
       {
         project: 'o/r',
         locale: 'fr',
@@ -40,13 +39,11 @@ describe('contributionsView', () => {
         key: 'admin.backup.run',
         value: 'Lancer',
       },
-      2,
     );
     await saveConfirms(
       store,
-      ada,
+      { user: ada, now: 2 },
       { project: 'o/r', locale: 'fr', keys: ['admin.backup.title'] },
-      2,
     );
 
     const view = await contributionsView(pageContext(store, ada));
@@ -71,13 +68,12 @@ describe('contributionsView', () => {
     const store = await seededStore();
     await saveEdit(
       store,
-      ada,
+      { user: ada, now: 2 },
       { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' },
-      2,
     );
     await store.markProposed('o/r', ada.id, 'fr');
     await store.saveProposal({ project: 'o/r', userId: ada.id, locale: 'fr', ...PR });
-    await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 4);
+    await startLanguage(store, { user: ada, now: 4 }, { project: 'o/r', locale: 'de' });
 
     const view = await contributionsView(pageContext(store, ada));
 

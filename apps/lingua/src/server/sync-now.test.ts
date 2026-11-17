@@ -6,7 +6,7 @@ import { fakeD1 } from '#site/store/test-support';
 import type { Env } from './env';
 import { syncNow } from './sync-now';
 
-const H = vi.hoisted(() => ({ store: null as Store | null }));
+const H = vi.hoisted((): { store: Store | null } => ({ store: null }));
 
 vi.mock('./env', async (importOriginal) => ({
   ...(await importOriginal<typeof import('./env')>()),
@@ -34,9 +34,11 @@ const repository = gitHubFetch({
   },
 });
 
+const at = (now: number) => ({ now, fetchFn: repository });
+
 describe('syncNow', () => {
   it('reads a listed repository that was never read, and says it is up to date', async () => {
-    const result = await syncNow(env('o/r@main'), { project: 'o/r' }, 100, repository);
+    const result = await syncNow(env('o/r@main'), { project: 'o/r' }, at(100));
 
     expect(result).toMatchObject({
       status: 200,
@@ -45,27 +47,22 @@ describe('syncNow', () => {
   });
 
   it('refuses a repository the deployment does not list', async () => {
-    const result = await syncNow(env('o/r@main'), { project: 'o/x' }, 100, repository);
+    const result = await syncNow(env('o/r@main'), { project: 'o/x' }, at(100));
 
     expect(result).toEqual({ status: 404, error: 'Lingua does not translate this repository' });
   });
 
   it('says a sync is already running when another pass holds the repository', async () => {
-    await syncNow(env('o/r@main'), { project: 'o/r' }, 100, repository);
+    await syncNow(env('o/r@main'), { project: 'o/r' }, at(100));
     await H.store?.claimSync('o/r', 200, 500);
 
-    const result = await syncNow(env('o/r@main'), { project: 'o/r' }, 210, repository);
+    const result = await syncNow(env('o/r@main'), { project: 'o/r' }, at(210));
 
     expect(result.status).toBe(409);
   });
 
   it('needs a database', async () => {
-    const result = await syncNow(
-      { LINGUA_PROJECTS: 'o/r@main' },
-      { project: 'o/r' },
-      100,
-      repository,
-    );
+    const result = await syncNow({ LINGUA_PROJECTS: 'o/r@main' }, { project: 'o/r' }, at(100));
 
     expect(result.status).toBe(503);
   });

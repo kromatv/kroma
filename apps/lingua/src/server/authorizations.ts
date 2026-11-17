@@ -8,6 +8,7 @@ import {
 } from '#site/github/oauth';
 import { returnAddress, type Returned } from '#site/lib/send-return';
 import type { User } from '#site/store/store';
+import { report } from './log';
 import { ProposalInput, type ProposalResult } from './proposals';
 import { cookie, readCookie } from './session';
 
@@ -15,7 +16,10 @@ const SEND_COOKIE = '__Host-lingua_send';
 const TEN_MINUTES = 600;
 const WRITE_SCOPES = new Set(['public_repo', 'repo']);
 
-const Pending = ProposalInput.extend({ state: z.string().min(1), to: z.string().startsWith('/') });
+const Pending = ProposalInput.extend({
+  state: z.string().nonempty(),
+  to: z.string().startsWith('/'),
+});
 
 /** A send waiting on GitHub: the state tying GitHub's answer to this browser, what to send, and the page to return to. */
 export type PendingSend = z.infer<typeof Pending>;
@@ -33,7 +37,9 @@ export function forgetPending(): string {
 /** The send this browser is waiting on GitHub for, or null. */
 export function readPending(cookieHeader: string | null | undefined): PendingSend | null {
   const raw = readCookie(cookieHeader, SEND_COOKIE);
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     const parsed = Pending.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : null;
@@ -68,7 +74,9 @@ export interface SendAnswer {
 }
 
 function returnedOf(result: ProposalResult): Returned {
-  if (result.status !== 200) return { kind: 'failed', reason: result.reason };
+  if (result.status !== 200) {
+    return { kind: 'failed', reason: result.reason };
+  }
   return result.body.kind === 'proposed'
     ? { kind: 'sent', number: result.body.number }
     : { kind: 'nothing' };
@@ -80,19 +88,29 @@ async function grant(answer: SendAnswer, code: string): Promise<Granted | null> 
     { code, redirectUri: answer.redirectUri },
     answer.fetchFn,
   ).catch((error: unknown) => {
-    console.error('lingua: GitHub did not grant the send', error);
+    report('GitHub did not grant the send', error);
     return null;
   });
 }
 
 async function settle(answer: SendAnswer): Promise<Returned> {
   const { query, viewer } = answer;
-  if (query.error === 'access_denied') return { kind: 'declined' };
-  if (!viewer || !query.code) return { kind: 'failed', reason: 'expired' };
+  if (query.error === 'access_denied') {
+    return { kind: 'declined' };
+  }
+  if (!viewer || !query.code) {
+    return { kind: 'failed', reason: 'expired' };
+  }
   const granted = await grant(answer, query.code);
-  if (!granted) return { kind: 'failed', reason: 'failed' };
-  if (!granted.scopes.some((scope) => WRITE_SCOPES.has(scope))) return { kind: 'declined' };
-  if (granted.user.id !== viewer.id) return { kind: 'failed', reason: 'other-account' };
+  if (!granted) {
+    return { kind: 'failed', reason: 'failed' };
+  }
+  if (!granted.scopes.some((scope) => WRITE_SCOPES.has(scope))) {
+    return { kind: 'declined' };
+  }
+  if (granted.user.id !== viewer.id) {
+    return { kind: 'failed', reason: 'other-account' };
+  }
   return returnedOf(await answer.send(granted.gh, viewer));
 }
 

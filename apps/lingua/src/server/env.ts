@@ -46,11 +46,17 @@ function isD1(value: unknown): value is D1Database {
 /** The bindings Lingua reads, picked off whatever the runtime handed over. */
 export function readEnv(raw: Readonly<Record<string, unknown>>): Env {
   const env: Env = {};
-  if (isD1(raw.LINGUA_DB)) env.LINGUA_DB = raw.LINGUA_DB;
-  if (isSelf(raw.SELF)) env.SELF = raw.SELF;
+  if (isD1(raw.LINGUA_DB)) {
+    env.LINGUA_DB = raw.LINGUA_DB;
+  }
+  if (isSelf(raw.SELF)) {
+    env.SELF = raw.SELF;
+  }
   for (const name of STRINGS) {
     const value = raw[name];
-    if (typeof value === 'string' && value.trim() !== '') env[name] = value;
+    if (typeof value === 'string' && value.trim() !== '') {
+      env[name] = value;
+    }
   }
   return env;
 }
@@ -86,7 +92,9 @@ export function listedProjects(env: Env): ListedProject[] {
   const listed = new Map<string, ListedProject>();
   for (const entry of (env.LINGUA_PROJECTS ?? '').split(',')) {
     const [, id, branch] = ENTRY.exec(entry.trim()) ?? [];
-    if (id && !listed.has(id)) listed.set(id, { id, branch: branch ?? null });
+    if (id && !listed.has(id)) {
+      listed.set(id, { id, branch: branch ?? null });
+    }
   }
   return [...listed.values()];
 }

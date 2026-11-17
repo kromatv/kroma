@@ -9,14 +9,15 @@ export interface Work {
   proposal: ProposalView | null;
 }
 
-/** The viewer's work in `locale` of `project`, none for a visitor. */
+/** The viewer's work in one language of a project, none for a visitor. */
 export async function viewerWork(
   store: Store,
-  project: string,
   viewer: User | null,
-  locale: string,
+  { project, locale }: { project: string; locale: string },
 ): Promise<Work> {
-  if (!viewer) return { edits: [], confirms: [], start: null, proposal: null };
+  if (!viewer) {
+    return { edits: [], confirms: [], start: null, proposal: null };
+  }
   const [edits, confirms, starts, proposal] = await Promise.all([
     store.edits(project, viewer.id, locale),
     store.confirms(project, viewer.id, locale),

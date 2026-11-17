@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { GitHubError } from '#site/github/client';
+import { type GitHub, GitHubError } from '#site/github/client';
 import {
   ada,
   type HeldWork,
@@ -8,7 +8,7 @@ import {
   rowsOf,
   storeHolding,
 } from '#site/github/fixture';
-import { reader } from '#site/github/reader';
+import { type Reader, reader } from '#site/github/reader';
 import { fakeGitHub, forkRoutes, gitHubFetch, sha } from '#site/github/test-support';
 import type { Store } from '#site/store/store';
 import { type ProposalInput, sendProposal } from './proposals';
@@ -54,20 +54,21 @@ const contributor = (over: Record<string, () => unknown> = {}) =>
 const holding = (work: HeldWork = { edits: { 'nav.count': '{count} movies' } }) =>
   storeHolding(project(), work);
 
-const sending = (
-  store: Store,
-  input: Partial<ProposalInput> = {},
-  as = contributor(),
-  read = branchAt(sha('a')),
-) =>
+interface Sent {
+  input?: Partial<ProposalInput>;
+  as?: GitHub;
+  read?: Reader;
+}
+
+const sending = (store: Store, { input, as, read }: Sent = {}) =>
   sendProposal(
     store,
     {
-      reader: read,
+      reader: read ?? branchAt(sha('a')),
       user: ada,
       input: { project: 'o/r', locale: 'en', ...input },
       origin: 'https://lingua.test',
-      as,
+      as: as ?? contributor(),
     },
     NOW,
   );
@@ -85,7 +86,7 @@ describe('sendProposal', () => {
   it('refuses to send while Lingua is still reading the branch’s latest changes', async () => {
     const store = await holding();
 
-    const result = await sending(store, {}, contributor(), branchAt(sha('b'), 2));
+    const result = await sending(store, { read: branchAt(sha('b'), 2) });
 
     expect(result).toMatchObject({ status: 503, reason: 'syncing' });
   });
@@ -124,8 +125,8 @@ describe('sendProposal', () => {
     const store = await holding();
 
     const results = await Promise.all([
-      sending(store, { project: 'x/y' }),
-      sending(store, { locale: 'de' }),
+      sending(store, { input: { project: 'x/y' } }),
+      sending(store, { input: { locale: 'de' } }),
     ]);
 
     expect(results.map((r) => r.status)).toEqual([404, 404]);
@@ -147,7 +148,7 @@ describe('sendProposal', () => {
   it('answers a branch GitHub would not move as a conflict', async () => {
     const as = contributor({ 'POST /repos/Ada/r/git/refs': fails(409) });
 
-    expect(await sending(await holding(), {}, as)).toMatchObject({
+    expect(await sending(await holding(), { as })).toMatchObject({
       status: 409,
       reason: 'conflict',
     });
@@ -156,7 +157,7 @@ describe('sendProposal', () => {
   it('answers a fork whose default branch diverged from the project’s', async () => {
     const as = contributor({ 'POST /repos/Ada/r/merge-upstream': fails(409) });
 
-    expect(await sending(await holding(), {}, as)).toMatchObject({
+    expect(await sending(await holding(), { as })).toMatchObject({
       status: 409,
       reason: 'diverged',
     });
@@ -166,7 +167,7 @@ describe('sendProposal', () => {
     const as = contributor({ 'POST /repos/Ada/r/git/trees': fails(500) });
     const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-    expect(await sending(await holding(), {}, as)).toMatchObject({ status: 502, reason: 'failed' });
+    expect(await sending(await holding(), { as })).toMatchObject({ status: 502, reason: 'failed' });
     expect(logged).toHaveBeenCalledWith('lingua: proposal failed', expect.any(GitHubError));
   });
 });

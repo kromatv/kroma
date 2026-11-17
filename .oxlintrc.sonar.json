@@ -229,6 +229,7 @@
     "**/*.template.html",
     "clients/synology",
     "server",
+    "!apps/lingua/src/server",
     "apps/www/src/styles.css",
     "clients/mobile/google-services.json",
     "**/*.test.ts",

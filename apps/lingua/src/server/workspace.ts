@@ -23,13 +23,18 @@ export interface Opened {
   error: string | null;
 }
 
-async function workspaceOf(store: Store, project: Project, viewer: User | null) {
+function configOf(project: Project): { root: string } | { root: null; error: string | null } {
   const parsed = project.config ? parseConfig(project.config) : null;
-  if (!parsed?.ok) {
-    return {
-      workspace: null,
-      error: project.configError ?? (parsed?.ok === false ? parsed.error : null),
-    };
+  if (parsed?.ok) {
+    return { root: rootOf(parsed.config) };
+  }
+  return { root: null, error: project.configError ?? parsed?.error ?? null };
+}
+
+async function workspaceOf(store: Store, project: Project, viewer: User | null) {
+  const config = configOf(project);
+  if (config.root === null) {
+    return { workspace: null, error: config.error };
   }
   const own = await store.files(project.id, ['']);
   const policy = parsePolicy(own.find((f) => f.kind === 'policy')?.body);
@@ -39,14 +44,12 @@ async function workspaceOf(store: Store, project: Project, viewer: User | null) 
   const listed = policyLocales(policy.policy);
   const starts = viewer ? await store.starts(project.id, viewer.id) : [];
   const started = starts.map((s) => s.locale).filter((locale) => !listed.includes(locale));
-  const notes = parseNotes(own.find((f) => f.kind === 'notes')?.body);
-  const root = rootOf(parsed.config);
   const workspace = {
-    root,
+    root: config.root,
     policy: policy.policy,
     locales: [...listed, ...started],
     started: new Set(started),
-    notes,
+    notes: parseNotes(own.find((f) => f.kind === 'notes')?.body),
   };
   return { workspace, error: null };
 }
