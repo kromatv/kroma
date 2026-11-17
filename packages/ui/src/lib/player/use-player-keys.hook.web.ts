@@ -23,7 +23,7 @@ function takeKey(e: KeyboardEvent): void {
 
 function letterShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
   const { nav, controller, flags } = p;
-  const letter = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const letter = e.key?.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.code === 'Space' || letter === 'k') {
     e.preventDefault();
     nav.poke();
@@ -75,12 +75,13 @@ function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): b
   if (!flags.volume || nav.overlay) {
     return false;
   }
-  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+  const key = resolveRemoteKey(e);
+  if (key !== 'Up' && key !== 'Down') {
     return false;
   }
   takeKey(e);
   keepChrome(nav, controller, flags);
-  const dir = e.key === 'ArrowUp' ? 1 : -1;
+  const dir = key === 'Up' ? 1 : -1;
   p.setVolume(volumeStep(controller.volume, dir, controller.volumeMax ?? 1));
   return true;
 }
@@ -92,7 +93,8 @@ function arrowVolumeShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): b
 // controls, and only gets the seek in immersive mode (fullscreen + chrome hidden).
 function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boolean {
   const { nav, controller, flags } = p;
-  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+  const key = resolveRemoteKey(e);
+  if (key !== 'Left' && key !== 'Right') {
     return false;
   }
   if (nav.overlay || p.credits?.active || p.resume?.active || p.postPlay?.active) {
@@ -104,7 +106,7 @@ function arrowSeekShortcut(e: KeyboardEvent, p: Readonly<PlayerKeysParams>): boo
   }
   takeKey(e);
   keepChrome(nav, controller, flags);
-  p.seekNudge(e.key === 'ArrowLeft' ? -1 : 1, pressOf(e));
+  p.seekNudge(key === 'Left' ? -1 : 1, pressOf(e));
   return true;
 }
 
