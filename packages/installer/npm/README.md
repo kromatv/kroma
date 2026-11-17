@@ -37,7 +37,7 @@ native app, use `--no-web` the same way.
 
 ## Before you begin
 
-- [Node.js](https://nodejs.org) 22 or later, on macOS, Windows or Linux.
+- [Node.js](https://nodejs.org) 22.12 or later, on macOS, Windows or Linux.
 - The computer and the TV on the same network.
 - One step on the TV itself. It is done once, and no tool can do it over the
   network:

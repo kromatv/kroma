@@ -72,7 +72,7 @@ since its 2025 update and the Google TV Streamer, may offer only
 **Wireless debugging**.
 
 You need a Mac, a Windows PC or a Linux computer on the same network as the
-TV, with [Node.js](https://nodejs.org) 22 or later. `node --version` prints the
+TV, with [Node.js](https://nodejs.org) 22.12 or later. `node --version` prints the
 version.
 
 1. On the TV, open **Settings** > **System** > **About**, select

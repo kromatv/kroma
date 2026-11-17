@@ -6,7 +6,7 @@ import { PUBLISHED_PACKAGE } from '../src/cli/published.ts';
 
 const PACKAGE = PUBLISHED_PACKAGE;
 const COMMAND = 'kroma-tv';
-const SHIPPED = ['LICENSE', 'README.md', 'cli.js', 'package.json'];
+const SHIPPED = ['LICENSE', 'README.md', 'bin.js', 'cli.js', 'package.json'];
 
 const staged = join(import.meta.dir, '..', 'dist', 'npm');
 const tarball = (await readdir(staged)).find((name) => name.endsWith('.tgz'));

@@ -10,7 +10,7 @@ import { injectUsage, renderUsage } from '../src/cli/usage.ts';
 
 const PACKAGE = PUBLISHED_PACKAGE;
 const COMMAND = 'kroma-tv';
-const NODE_SHEBANG = '#!/usr/bin/env node\n';
+const NODE_FLOOR = '22.12.0';
 const BUN_PREAMBLE = /^#!.*\n(?:\/\/ @bun\n)?/;
 const NATIVE_ADDONS = ['--external', 'cpu-features', '--external', '*.node'];
 
@@ -34,8 +34,14 @@ await $`bun build ./src/bin.ts --target=node ${NATIVE_ADDONS} --define ${stamped
   .cwd(pkgRoot)
   .quiet();
 const bundle = await readFile(cli, 'utf8');
-await writeFile(cli, `${NODE_SHEBANG}${bundle.replace(BUN_PREAMBLE, '')}`);
-await chmod(cli, 0o755);
+await writeFile(cli, bundle.replace(BUN_PREAMBLE, ''));
+
+const bin = join(out, 'bin.js');
+const floor = `process.env.KROMA_TV_NODE_FLOOR=${JSON.stringify(NODE_FLOOR)}`;
+await $`bun build ./src/npm-bin.ts --target=node --define ${floor} --outfile ${bin}`
+  .cwd(pkgRoot)
+  .quiet();
+await chmod(bin, 0o755);
 
 const workspace = Workspace.parse(
   JSON.parse(await readFile(join(pkgRoot, 'package.json'), 'utf8')),
@@ -52,9 +58,9 @@ const manifest = {
   homepage: `${site.links.installGuide}/tv`,
   bugs: site.links.issues,
   type: 'module',
-  bin: { [COMMAND]: 'cli.js' },
-  files: ['cli.js'],
-  engines: { node: '>=22.12.0' },
+  bin: { [COMMAND]: 'bin.js' },
+  files: ['bin.js', 'cli.js'],
+  engines: { node: `>=${NODE_FLOOR}` },
   os: ['darwin', 'linux', 'win32'],
   publishConfig: { access: 'public' },
 };
