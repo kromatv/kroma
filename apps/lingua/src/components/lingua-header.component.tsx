@@ -1,4 +1,4 @@
-import { useBreakpoint } from '@kromatv/ui/kit';
+import { styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
 import { Box, Row } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { Divider } from '@kromatv/ui/kit/atoms/divider';
@@ -16,6 +16,10 @@ import { signInUrl } from '#site/lib/api-client';
 import { sectionOf } from '#site/lib/sections';
 import { useSite } from '#site/lib/use-site.hook';
 import type { Viewer } from '#site/lib/views';
+
+const sDefinition = styles({
+  pinned: { position: 'sticky', top: 0, zIndex: 20 },
+});
 
 function Brand() {
   return (
@@ -103,15 +107,21 @@ function SignIn({ wide }: Readonly<{ wide: boolean }>) {
 }
 
 /**
- * Lingua's header: the mark, the sections with the current one marked, the
- * command menu, the theme, and the account menu or a way to sign in. On a
- * phone the sections take a second line.
+ * Lingua's header, pinned to the top of the window: the mark, the sections
+ * with the current one marked, the command menu, the theme, and the account
+ * menu or a way to sign in. On a phone the sections take a second line.
+ * `onHeight` hears how tall it stands each time that changes.
  */
-export function LinguaHeader() {
+export function LinguaHeader({ onHeight }: Readonly<{ onHeight: (height: number) => void }>) {
+  const s = useStyles(sDefinition);
   const viewer = useSite()?.viewer ?? null;
   const wide = useBreakpoint() !== 'base';
   return (
-    <Box bg="surface1">
+    <Box
+      style={s.pinned}
+      bg="surface1"
+      onLayout={(event) => onHeight(event.nativeEvent.layout.height)}
+    >
       <Box px={16} py={10}>
         <Box w="100%" maxW={1080} mx="auto" gap={6}>
           <Row gap={12} between align="center">
