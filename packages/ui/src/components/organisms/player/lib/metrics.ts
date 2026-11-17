@@ -21,9 +21,8 @@ export const VOLUME_RAIL = 96;
 export const TRANSPORT_GAP = 20;
 export const CLUSTER_GAP = 14;
 export const GUTTER = 34;
-// Fallback for the measured transport height: legacy TV Chromium (53-94, see
-// clients/tv-build/polyfills.legacy.ts) has no ResizeObserver polyfill for
-// `onLayout`, so a zero here would draw the skip-intro pill through the seek bar.
+// Fallback for the measured transport height until `onLayout` first answers: a
+// zero here would draw the skip-intro pill through the seek bar.
 export const TRANSPORT_HEIGHT = 164;
 export const ROW_GAP = 24;
 

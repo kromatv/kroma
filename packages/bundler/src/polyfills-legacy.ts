@@ -8,10 +8,14 @@
 //
 // What core-js does not carry stays: AbortController is Chrome 66 (this build
 // also patches fetch to honour `signal`) and IntersectionObserver is Chrome 51.
-// ResizeObserver is deliberately absent, in every tier: the player falls back
-// for a missing one on purpose.
+// react-native-web measures a view only once `Node.isConnected` (Chrome 54)
+// says it is in the document, and hears a size only through ResizeObserver
+// (Chrome 64): without both, `onLayout` and `measureLayout` never answer and
+// no page or rail scrolls.
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
 import 'intersection-observer';
+import { connectNodes } from './is-connected';
+import { provideResizeObserver } from './resize-observer';
 import { roundOutlines } from './round-outlines';
 
 if (!('BigInt' in window)) {
@@ -22,4 +26,6 @@ if (!('BigInt' in window)) {
   });
 }
 
+connectNodes(Node);
+provideResizeObserver(window);
 roundOutlines(document);
