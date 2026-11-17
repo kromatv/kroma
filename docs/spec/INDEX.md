@@ -344,7 +344,7 @@
 - **BROWSE-58** (SHIPPED) - Adding a language is adding its copy. Its words join the vocabulary
 - **BROWSE-59** (SHIPPED) - A synopsis shown on the home is cut by sentence, never by the box:
 - **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
-- **BROWSE-61** (AGREED) - While a scan runs, the home gains each title as the scan matches it,
+- **BROWSE-61** (SHIPPED) - While a scan runs, the home gains each title as the scan matches it,
 
 ## DISC - [discovery](discovery/)
 

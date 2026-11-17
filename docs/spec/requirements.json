@@ -3314,7 +3314,7 @@
     "domain": "BROWSE",
     "space": "browse",
     "number": 61,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "While a scan runs, the home gains each title as the scan matches it,",
     "file": "docs/spec/browse/README.md",
     "line": 155
