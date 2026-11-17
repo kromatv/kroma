@@ -64,20 +64,36 @@ export async function homeView({ store, viewer }: Context): Promise<HomeView> {
 }
 
 /** `/$owner/$repo`. */
-export async function projectView({ store, viewer }: Context, id: string): Promise<ProjectView | null> {
+export async function projectView(
+  { store, viewer }: Context,
+  id: string,
+): Promise<ProjectView | null> {
   const opened = await openProject(store, id, viewer);
   if (!opened) return null;
   const { workspace } = opened;
   const reading = workspace ? await readLocales(store, { id, workspace }, workspace.locales) : null;
   const locales =
     workspace && reading
-      ? await Promise.all(workspace.locales.map(async (tag) => localeSummary(workspace, languageOf(tag), await rowsByFile(reading, tag))))
+      ? await Promise.all(
+          workspace.locales.map(async (tag) =>
+            localeSummary(workspace, languageOf(tag), await rowsByFile(reading, tag)),
+          ),
+        )
       : [];
-  return { viewer: asViewer(viewer), project: summaryOf(opened), repoUrl: `https://github.com/${id}`, locales };
+  return {
+    viewer: asViewer(viewer),
+    project: summaryOf(opened),
+    repoUrl: `https://github.com/${id}`,
+    locales,
+  };
 }
 
 /** `/$owner/$repo/$locale`. */
-export async function localeView({ store, viewer }: Context, id: string, locale: string): Promise<LocaleView | null> {
+export async function localeView(
+  { store, viewer }: Context,
+  id: string,
+  locale: string,
+): Promise<LocaleView | null> {
   const found = await offered(store, id, viewer);
   if (!found?.workspace.locales.includes(locale)) return null;
   const { opened, workspace } = found;
@@ -90,7 +106,11 @@ export async function localeView({ store, viewer }: Context, id: string, locale:
     locale: localeSummary(workspace, languageOf(locale), byFile),
     namespaces: [...byFile]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([file, rows]) => ({ file, ...tally(rows), drafts: draftsIn(work, reading.source, file) })),
+      .map(([file, rows]) => ({
+        file,
+        ...tally(rows),
+        drafts: draftsIn(work, reading.source, file),
+      })),
     ...pendingOf(work),
     proposal: work.proposal,
   };
@@ -111,12 +131,18 @@ function rowView({ row, current, state }: Stood, around: Around): RowView {
   return {
     key: row.key,
     source: row.source,
-    references: around.referenced.map(({ language, messages }) => ({ language, text: messages[row.key] ?? null })),
+    references: around.referenced.map(({ language, messages }) => ({
+      language,
+      text: messages[row.key] ?? null,
+    })),
     current,
     draft: edit?.value ?? null,
     proposed: edit?.proposed ?? false,
     plural: row.plural,
-    issues: shown.trim() === '' ? [] : check(shown, { source: row.source, keys: around.keys, plural: row.plural !== null }),
+    issues:
+      shown.trim() === ''
+        ? []
+        : check(shown, { source: row.source, keys: around.keys, plural: row.plural !== null }),
     state,
     notes: notesFor(around.workspace.notes, base),
     confirmed: around.work.confirms.some((c) => c.key === base),
@@ -124,7 +150,11 @@ function rowView({ row, current, state }: Stood, around: Around): RowView {
 }
 
 /** `/$owner/$repo/$locale/$file`. */
-export async function namespaceView({ store, viewer }: Context, id: string, at: { locale: string; file: string }): Promise<NamespaceView | null> {
+export async function namespaceView(
+  { store, viewer }: Context,
+  id: string,
+  at: { locale: string; file: string },
+): Promise<NamespaceView | null> {
   const found = await offered(store, id, viewer);
   if (!found?.workspace.locales.includes(at.locale)) return null;
   const { opened, workspace } = found;
@@ -134,8 +164,17 @@ export async function namespaceView({ store, viewer }: Context, id: string, at: 
   if (!sourceFile) return null;
   const byFile = await rowsByFile(reading, at.locale);
   const work = await viewerWork(store, id, viewer, at.locale);
-  const referenced = references.map((tag) => ({ language: languageOf(tag), messages: merged(localeFiles(reading.shelf, tag)) }));
-  const around = { source: reading.source, keys: new Set(Object.keys(sourceFile)), referenced, work, workspace };
+  const referenced = references.map((tag) => ({
+    language: languageOf(tag),
+    messages: merged(localeFiles(reading.shelf, tag)),
+  }));
+  const around = {
+    source: reading.source,
+    keys: new Set(Object.keys(sourceFile)),
+    referenced,
+    work,
+    workspace,
+  };
   return {
     viewer: asViewer(viewer),
     project: summaryOf(opened),

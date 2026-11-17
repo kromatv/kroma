@@ -13,7 +13,9 @@ describe('listedProjects', () => {
   });
 
   it('skips an entry that names no repository, and keeps the first of two for one repository', () => {
-    const listed = listedProjects({ LINGUA_PROJECTS: 'nope, o/r@, @main, a/b@c d, ,o/r@next, o/r' });
+    const listed = listedProjects({
+      LINGUA_PROJECTS: 'nope, o/r@, @main, a/b@c d, ,o/r@next, o/r',
+    });
 
     expect(listed).toEqual([{ id: 'o/r', branch: 'next' }]);
   });
@@ -27,7 +29,13 @@ describe('readEnv', () => {
   it('keeps the D1 binding and every non-blank string it reads, and nothing else', () => {
     const db = fakeD1();
 
-    const env = readEnv({ LINGUA_DB: db, LINGUA_PROJECTS: 'o/r', GITHUB_OAUTH_CLIENT_ID: ' ', OTHER: 'x', LINGUA_DEV_LOGIN: 7 });
+    const env = readEnv({
+      LINGUA_DB: db,
+      LINGUA_PROJECTS: 'o/r',
+      GITHUB_OAUTH_CLIENT_ID: ' ',
+      OTHER: 'x',
+      LINGUA_DEV_LOGIN: 7,
+    });
 
     expect(env).toEqual({ LINGUA_DB: db, LINGUA_PROJECTS: 'o/r' });
   });
@@ -40,6 +48,8 @@ describe('readEnv', () => {
 describe('oauthCredentials', () => {
   it('holds the OAuth App only once its id and secret are both set', () => {
     expect(oauthCredentials({ GITHUB_OAUTH_CLIENT_ID: 'c' })).toBeNull();
-    expect(oauthCredentials({ GITHUB_OAUTH_CLIENT_ID: 'c', GITHUB_OAUTH_CLIENT_SECRET: 's' })).toEqual({ clientId: 'c', clientSecret: 's' });
+    expect(
+      oauthCredentials({ GITHUB_OAUTH_CLIENT_ID: 'c', GITHUB_OAUTH_CLIENT_SECRET: 's' }),
+    ).toEqual({ clientId: 'c', clientSecret: 's' });
   });
 });

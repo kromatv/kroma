@@ -32,7 +32,10 @@ export function cookie(name: string, value: string, maxAge: number): string {
 /** 32 random bytes, URL-safe. */
 export function randomToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCodePoint(...bytes)).replaceAll('=', '').replaceAll('+', '-').replaceAll('/', '_');
+  return btoa(String.fromCodePoint(...bytes))
+    .replaceAll('=', '')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_');
 }
 
 async function hashOf(token: string): Promise<string> {
@@ -41,7 +44,11 @@ async function hashOf(token: string): Promise<string> {
 }
 
 /** Who the session cookie on a request belongs to, or null. Only the token's hash is ever stored. */
-export async function viewerOf(store: Store, cookieHeader: string | null | undefined, now: number): Promise<User | null> {
+export async function viewerOf(
+  store: Store,
+  cookieHeader: string | null | undefined,
+  now: number,
+): Promise<User | null> {
   const token = readCookie(cookieHeader, SESSION);
   return token ? store.sessionUser(await hashOf(token), now) : null;
 }
@@ -55,7 +62,10 @@ export async function openSession(store: Store, user: User, now: number): Promis
 }
 
 /** End the session a request carries, returning the cookie that clears it. */
-export async function closeSession(store: Store, cookieHeader: string | null | undefined): Promise<string> {
+export async function closeSession(
+  store: Store,
+  cookieHeader: string | null | undefined,
+): Promise<string> {
   const token = readCookie(cookieHeader, SESSION);
   if (token) await store.deleteSession(await hashOf(token));
   return cookie(SESSION, '', 0);

@@ -23,7 +23,8 @@ const env = (projects: string): Env => ({ LINGUA_DB: fakeD1(), LINGUA_PROJECTS: 
 
 const repository = gitHubFetch({
   routes: {
-    'GET /repos/o/r/commits/main': () => new Response(sha('a'), { headers: { etag: `"${sha('a')}"` } }),
+    'GET /repos/o/r/commits/main': () =>
+      new Response(sha('a'), { headers: { etag: `"${sha('a')}"` } }),
     [`GET /repos/o/r/git/trees/${sha('a')}?recursive=1`]: () => ({
       sha: sha('0e'),
       truncated: false,
@@ -37,7 +38,10 @@ describe('syncNow', () => {
   it('reads a listed repository that was never read, and says it is up to date', async () => {
     const result = await syncNow(env('o/r@main'), { project: 'o/r' }, 100, repository);
 
-    expect(result).toMatchObject({ status: 200, repository: { id: 'o/r', branch: 'main', checkedAt: 100, sync: { kind: 'current' } } });
+    expect(result).toMatchObject({
+      status: 200,
+      repository: { id: 'o/r', branch: 'main', checkedAt: 100, sync: { kind: 'current' } },
+    });
   });
 
   it('refuses a repository the deployment does not list', async () => {
@@ -56,7 +60,12 @@ describe('syncNow', () => {
   });
 
   it('needs a database', async () => {
-    const result = await syncNow({ LINGUA_PROJECTS: 'o/r@main' }, { project: 'o/r' }, 100, repository);
+    const result = await syncNow(
+      { LINGUA_PROJECTS: 'o/r@main' },
+      { project: 'o/r' },
+      100,
+      repository,
+    );
 
     expect(result.status).toBe(503);
   });

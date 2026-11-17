@@ -13,7 +13,13 @@ describe('returnPath', () => {
   });
 
   it('refuses a path a browser would read as another site', () => {
-    const given = ['//evil.test', '/\\evil.test', '/\t/evil.test', '/\n/evil.test', '/\r\\evil.test'];
+    const given = [
+      '//evil.test',
+      '/\\evil.test',
+      '/\t/evil.test',
+      '/\n/evil.test',
+      '/\r\\evil.test',
+    ];
 
     expect(given.map(returnPath)).toEqual(['/', '/', '/', '/', '/']);
   });

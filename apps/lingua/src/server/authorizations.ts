@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import type { GitHub } from '#site/github/client';
-import { authorizeUrl, type Granted, grantFromCode, type OAuthCredentials } from '#site/github/oauth';
+import {
+  authorizeUrl,
+  type Granted,
+  grantFromCode,
+  type OAuthCredentials,
+} from '#site/github/oauth';
 import { returnAddress, type Returned } from '#site/lib/send-return';
 import type { User } from '#site/store/store';
 import { ProposalInput, type ProposalResult } from './proposals';
@@ -38,8 +43,17 @@ export function readPending(cookieHeader: string | null | undefined): PendingSen
 }
 
 /** Where to send the browser so GitHub asks `login` to let Lingua fork and open pull requests as them, `public_repo` and nothing more. */
-export function askToSend(oauth: OAuthCredentials, pending: PendingSend, at: { redirectUri: string; login: string }): string {
-  return authorizeUrl(oauth, { redirectUri: at.redirectUri, state: pending.state, scope: 'public_repo', login: at.login });
+export function askToSend(
+  oauth: OAuthCredentials,
+  pending: PendingSend,
+  at: { redirectUri: string; login: string },
+): string {
+  return authorizeUrl(oauth, {
+    redirectUri: at.redirectUri,
+    state: pending.state,
+    scope: 'public_repo',
+    login: at.login,
+  });
 }
 
 /** GitHub's answer to a send, and how to carry it out: `send` runs it as the account that granted it. */
@@ -55,11 +69,17 @@ export interface SendAnswer {
 
 function returnedOf(result: ProposalResult): Returned {
   if (result.status !== 200) return { kind: 'failed', reason: result.reason };
-  return result.body.kind === 'proposed' ? { kind: 'sent', number: result.body.number } : { kind: 'nothing' };
+  return result.body.kind === 'proposed'
+    ? { kind: 'sent', number: result.body.number }
+    : { kind: 'nothing' };
 }
 
 async function grant(answer: SendAnswer, code: string): Promise<Granted | null> {
-  return grantFromCode(answer.oauth, { code, redirectUri: answer.redirectUri }, answer.fetchFn).catch((error: unknown) => {
+  return grantFromCode(
+    answer.oauth,
+    { code, redirectUri: answer.redirectUri },
+    answer.fetchFn,
+  ).catch((error: unknown) => {
     console.error('lingua: GitHub did not grant the send', error);
     return null;
   });

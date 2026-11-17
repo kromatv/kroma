@@ -14,7 +14,11 @@ export interface MessageLink {
 
 const segments = (path: string) => path.split('/').map(encodeURIComponent).join('/');
 
-async function rowPage(store: Store, link: MessageLink, workspace: Workspace): Promise<string | null> {
+async function rowPage(
+  store: Store,
+  link: MessageLink,
+  workspace: Workspace,
+): Promise<string | null> {
   const sourceLocale = workspace.policy.source;
   const files = await store.files(`${link.owner}/${link.repo}`, [sourceLocale]);
   const source = sourceOf(sourceLocale, localeFiles(shelfOf(workspace.root, files), sourceLocale));
@@ -29,7 +33,11 @@ async function rowPage(store: Store, link: MessageLink, workspace: Workspace): P
 }
 
 /** Where a link to one message lands: its row on the page of its file, else the closest page that exists. */
-export async function messagePage(store: Store, viewer: User | null, link: MessageLink): Promise<string> {
+export async function messagePage(
+  store: Store,
+  viewer: User | null,
+  link: MessageLink,
+): Promise<string> {
   const id = `${link.owner}/${link.repo}`;
   const opened = await openProject(store, id, viewer);
   if (!opened) {

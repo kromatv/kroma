@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { answerSend, type PendingSend, pendingCookie, readPending, type SendAnswer } from './authorizations';
+import {
+  answerSend,
+  type PendingSend,
+  pendingCookie,
+  readPending,
+  type SendAnswer,
+} from './authorizations';
 import type { ProposalResult } from './proposals';
 import { ada } from './test-support';
 
@@ -35,7 +41,9 @@ describe('answerSend', () => {
   it('returns a refused permission to its page as declined, sending nothing', async () => {
     const send = vi.fn(async () => proposed);
 
-    const to = await answerSend(answer({ query: { code: undefined, error: 'access_denied' }, send }));
+    const to = await answerSend(
+      answer({ query: { code: undefined, error: 'access_denied' }, send }),
+    );
 
     expect(to).toBe('/o/r/fr?send=declined');
     expect(send).not.toHaveBeenCalled();
@@ -73,7 +81,11 @@ describe('answerSend', () => {
   });
 
   it('returns a refused send with the reason the page reads it by', async () => {
-    const send = async (): Promise<ProposalResult> => ({ status: 503, reason: 'forking', error: '' });
+    const send = async (): Promise<ProposalResult> => ({
+      status: 503,
+      reason: 'forking',
+      error: '',
+    });
 
     const to = await answerSend(
       answer({ fetchFn: gitHubGranting({ scope: 'public_repo', id: 42 }), send }),
@@ -98,7 +110,9 @@ describe('answerSend when GitHub’s answer cannot be used', () => {
   it('returns a send that found nothing left to carry', async () => {
     const send = async (): Promise<ProposalResult> => ({ status: 200, body: { kind: 'nothing' } });
 
-    const to = await answerSend(answer({ fetchFn: gitHubGranting({ scope: 'repo', id: 42 }), send }));
+    const to = await answerSend(
+      answer({ fetchFn: gitHubGranting({ scope: 'repo', id: 42 }), send }),
+    );
 
     expect(to).toBe('/o/r/fr?send=nothing');
   });
@@ -112,7 +126,11 @@ describe('readPending', () => {
   });
 
   it('reads no send from a cookie that is missing, not JSON, or not a send', () => {
-    const cookies = [undefined, '__Host-lingua_send=%7B', `__Host-lingua_send=${encodeURIComponent('{"state":""}')}`];
+    const cookies = [
+      undefined,
+      '__Host-lingua_send=%7B',
+      `__Host-lingua_send=${encodeURIComponent('{"state":""}')}`,
+    ];
 
     expect(cookies.map((header) => readPending(header))).toEqual([null, null, null]);
   });

@@ -27,11 +27,19 @@ export type EditResult =
  * for that language and the text keeps the source's placeholders and
  * references. An empty value, or the text the branch already has, drops it.
  */
-export async function saveEdit(store: Store, user: User, input: EditInput, now: number): Promise<EditResult> {
+export async function saveEdit(
+  store: Store,
+  user: User,
+  input: EditInput,
+  now: number,
+): Promise<EditResult> {
   const workspace = (await openProject(store, input.project, user))?.workspace;
   if (!workspace) return { status: 404, error: 'Lingua does not translate this project' };
-  if (!workspace.locales.includes(input.locale)) return { status: 404, error: 'This project does not offer that language' };
-  const files = await store.files(input.project, [...new Set([workspace.policy.source, input.locale])]);
+  if (!workspace.locales.includes(input.locale))
+    return { status: 404, error: 'This project does not offer that language' };
+  const files = await store.files(input.project, [
+    ...new Set([workspace.policy.source, input.locale]),
+  ]);
   const shelf = shelfOf(workspace.root, files);
   const source = localeFiles(shelf, workspace.policy.source).get(input.file);
   const row = source ? rowsFor(source, input.locale).find((r) => r.key === input.key) : undefined;
@@ -43,8 +51,19 @@ export async function saveEdit(store: Store, user: User, input: EditInput, now: 
     await store.deleteEdit(which);
     return { status: 200, draft: null, issues: [] };
   }
-  const issues = check(input.value, { source: row.source, keys: new Set(Object.keys(source)), plural: row.plural !== null });
-  if (blocks(issues)) return { status: 422, error: 'This translation would break the message', issues };
-  await store.putEdit({ ...which, file: input.file, value: input.value, proposed: false, updatedAt: now });
+  const issues = check(input.value, {
+    source: row.source,
+    keys: new Set(Object.keys(source)),
+    plural: row.plural !== null,
+  });
+  if (blocks(issues))
+    return { status: 422, error: 'This translation would break the message', issues };
+  await store.putEdit({
+    ...which,
+    file: input.file,
+    value: input.value,
+    proposed: false,
+    updatedAt: now,
+  });
   return { status: 200, draft: input.value, issues };
 }

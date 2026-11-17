@@ -23,7 +23,13 @@ async function chainKey(env: Env): Promise<CryptoKey | null> {
   if (!secret) {
     return null;
   }
-  return crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+  return crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify'],
+  );
 }
 
 function macOf(proof: string | null): Uint8Array<ArrayBuffer> | null {
@@ -44,7 +50,11 @@ export async function chainProof(env: Env, project: string): Promise<string | nu
 }
 
 /** Whether `proof` is what this deployment would have signed for `project`. The comparison is the platform's, in constant time. */
-export async function chainProven(env: Env, project: string, proof: string | null): Promise<boolean> {
+export async function chainProven(
+  env: Env,
+  project: string,
+  proof: string | null,
+): Promise<boolean> {
   const key = await chainKey(env);
   const mac = macOf(proof);
   if (!key || !mac) {
@@ -56,7 +66,12 @@ export async function chainProven(env: Env, project: string, proof: string | nul
 /** Whether project `id` has files of a newer head left to read, with nothing stopping it. */
 export async function stillReading(store: Store, id: string): Promise<boolean> {
   const project = await store.project(id);
-  return project !== null && project.syncError === null && project.branchSha !== null && project.branchSha !== project.headSha;
+  return (
+    project !== null &&
+    project.syncError === null &&
+    project.branchSha !== null &&
+    project.branchSha !== project.headSha
+  );
 }
 
 /**
@@ -64,7 +79,11 @@ export async function stillReading(store: Store, id: string): Promise<boolean> {
  * fresh budget of GitHub requests, when project `id` still has files to read.
  * Does nothing past {@link MAX_HOPS} or without the `SELF` binding.
  */
-export async function chainOn(env: Env, store: Store, at: { id: string; hop: number }): Promise<void> {
+export async function chainOn(
+  env: Env,
+  store: Store,
+  at: { id: string; hop: number },
+): Promise<void> {
   const proof = await chainProof(env, at.id);
   if (!env.SELF || proof === null || at.hop >= MAX_HOPS || !(await stillReading(store, at.id))) {
     return;

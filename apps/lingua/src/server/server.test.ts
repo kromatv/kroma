@@ -6,7 +6,13 @@ import { MAX_STARTED, startLanguage } from './locales';
 import { closeSession, openSession, readCookie, viewerOf } from './session';
 import { ada, seededStore } from './test-support';
 
-const edit = (key: string, value: string) => ({ project: 'o/r', locale: 'fr', file: 'p', key, value });
+const edit = (key: string, value: string) => ({
+  project: 'o/r',
+  locale: 'fr',
+  file: 'p',
+  key,
+  value,
+});
 
 describe('saveEdit', () => {
   it('keeps a translation that renders the same placeholders', async () => {
@@ -15,7 +21,9 @@ describe('saveEdit', () => {
     const result = await saveEdit(store, ada, edit('p.play', 'Regarder {title}'), 5);
 
     expect(result).toEqual({ status: 200, draft: 'Regarder {title}', issues: [] });
-    expect((await store.edits('o/r', ada.id, 'fr')).map((e) => [e.file, e.value])).toEqual([['p', 'Regarder {title}']]);
+    expect((await store.edits('o/r', ada.id, 'fr')).map((e) => [e.file, e.value])).toEqual([
+      ['p', 'Regarder {title}'],
+    ]);
   });
 
   it('refuses a translation that would print a placeholder nobody fills', async () => {
@@ -23,7 +31,10 @@ describe('saveEdit', () => {
 
     const result = await saveEdit(store, ada, edit('p.play', 'Lire {name}'), 5);
 
-    expect(result).toMatchObject({ status: 422, issues: [{ code: 'unknown-token', detail: 'name' }, { code: 'missing-token' }] });
+    expect(result).toMatchObject({
+      status: 422,
+      issues: [{ code: 'unknown-token', detail: 'name' }, { code: 'missing-token' }],
+    });
     expect(await store.edits('o/r', ada.id, 'fr')).toEqual([]);
   });
 
@@ -39,7 +50,12 @@ describe('saveEdit', () => {
   it('accepts a plural form the language owes even though the source file lacks it', async () => {
     const store = await seededStore();
 
-    const polish = await saveEdit(store, ada, { ...edit('p.n_many', '{count} elementów'), locale: 'pl' }, 5);
+    const polish = await saveEdit(
+      store,
+      ada,
+      { ...edit('p.n_many', '{count} elementów'), locale: 'pl' },
+      5,
+    );
     const french = await saveEdit(store, ada, edit('p.n_many', '{count} d’éléments'), 5);
 
     expect(polish.status).toBe(200);
@@ -50,13 +66,20 @@ describe('saveEdit', () => {
     const store = await seededStore();
 
     expect((await saveEdit(store, ada, edit('p.nope', 'x'), 5)).status).toBe(404);
-    expect((await saveEdit(store, ada, { ...edit('p.play', 'x'), locale: 'de' }, 5)).status).toBe(404);
+    expect((await saveEdit(store, ada, { ...edit('p.play', 'x'), locale: 'de' }, 5)).status).toBe(
+      404,
+    );
   });
 
   it('takes a message of a file in a sub-folder', async () => {
     const store = await seededStore();
 
-    const result = await saveEdit(store, ada, { ...edit('admin.backup.run', 'Lancer'), file: 'admin/backup' }, 5);
+    const result = await saveEdit(
+      store,
+      ada,
+      { ...edit('admin.backup.run', 'Lancer'), file: 'admin/backup' },
+      5,
+    );
 
     expect(result.status).toBe(200);
   });
@@ -66,17 +89,35 @@ describe('saveConfirms', () => {
   it('keeps a confirm of each message, a plural form counting as its base', async () => {
     const store = await seededStore();
 
-    const result = await saveConfirms(store, ada, { project: 'o/r', locale: 'fr', keys: ['p.play', 'p.n_one', 'p.n'] }, 5);
+    const result = await saveConfirms(
+      store,
+      ada,
+      { project: 'o/r', locale: 'fr', keys: ['p.play', 'p.n_one', 'p.n'] },
+      5,
+    );
 
     expect(result).toEqual({ status: 200, confirmed: ['p.play', 'p.n'] });
-    expect((await store.confirms('o/r', ada.id, 'fr')).map((c) => c.key)).toEqual(['p.n', 'p.play']);
+    expect((await store.confirms('o/r', ada.id, 'fr')).map((c) => c.key)).toEqual([
+      'p.n',
+      'p.play',
+    ]);
   });
 
   it('refuses the source language, and keys that are no message', async () => {
     const store = await seededStore();
 
-    const source = await saveConfirms(store, ada, { project: 'o/r', locale: 'en', keys: ['p.play'] }, 5);
-    const unknown = await saveConfirms(store, ada, { project: 'o/r', locale: 'fr', keys: ['p.nope'] }, 5);
+    const source = await saveConfirms(
+      store,
+      ada,
+      { project: 'o/r', locale: 'en', keys: ['p.play'] },
+      5,
+    );
+    const unknown = await saveConfirms(
+      store,
+      ada,
+      { project: 'o/r', locale: 'fr', keys: ['p.nope'] },
+      5,
+    );
 
     expect([source.status, unknown.status]).toEqual([404, 404]);
   });
@@ -110,7 +151,12 @@ describe('startLanguage', () => {
       await startLanguage(store, ada, { project: 'o/r', locale }, 5);
     }
 
-    const over = await startLanguage(store, ada, { project: 'o/r', locale: tags[MAX_STARTED] ?? '' }, 6);
+    const over = await startLanguage(
+      store,
+      ada,
+      { project: 'o/r', locale: tags[MAX_STARTED] ?? '' },
+      6,
+    );
 
     expect(over.status).toBe(409);
     expect((await store.starts('o/r', ada.id)).map((s) => s.locale)).toEqual([...held].sort());

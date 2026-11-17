@@ -35,7 +35,10 @@ describe('devStore', () => {
 
     const store = await devStore();
 
-    expect((await store.files('kromatv/kroma')).map((f) => f.path).sort()).toEqual(['loc/en/nav.json', 'loc/i18n.json']);
+    expect((await store.files('kromatv/kroma')).map((f) => f.path).sort()).toEqual([
+      'loc/en/nav.json',
+      'loc/i18n.json',
+    ]);
   });
 
   it('says why a checkout’s lingua.json cannot be read', async () => {
@@ -47,7 +50,9 @@ describe('devStore', () => {
   });
 
   it('holds nothing for a project folder that is not there', async () => {
-    vi.spyOn(process, 'cwd').mockReturnValue(checkout({ 'lingua.json': JSON.stringify({ projects: [{ path: 'gone' }] }) }));
+    vi.spyOn(process, 'cwd').mockReturnValue(
+      checkout({ 'lingua.json': JSON.stringify({ projects: [{ path: 'gone' }] }) }),
+    );
 
     const store = await devStore();
 

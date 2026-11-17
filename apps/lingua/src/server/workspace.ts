@@ -26,7 +26,10 @@ export interface Opened {
 async function workspaceOf(store: Store, project: Project, viewer: User | null) {
   const parsed = project.config ? parseConfig(project.config) : null;
   if (!parsed?.ok) {
-    return { workspace: null, error: project.configError ?? (parsed?.ok === false ? parsed.error : null) };
+    return {
+      workspace: null,
+      error: project.configError ?? (parsed?.ok === false ? parsed.error : null),
+    };
   }
   const own = await store.files(project.id, ['']);
   const policy = parsePolicy(own.find((f) => f.kind === 'policy')?.body);
@@ -38,12 +41,22 @@ async function workspaceOf(store: Store, project: Project, viewer: User | null) 
   const started = starts.map((s) => s.locale).filter((locale) => !listed.includes(locale));
   const notes = parseNotes(own.find((f) => f.kind === 'notes')?.body);
   const root = rootOf(parsed.config);
-  const workspace = { root, policy: policy.policy, locales: [...listed, ...started], started: new Set(started), notes };
+  const workspace = {
+    root,
+    policy: policy.policy,
+    locales: [...listed, ...started],
+    started: new Set(started),
+    notes,
+  };
   return { workspace, error: null };
 }
 
 /** The project `id` as `viewer` sees it, or null when Lingua does not know it. */
-export async function openProject(store: Store, id: string, viewer: User | null): Promise<Opened | null> {
+export async function openProject(
+  store: Store,
+  id: string,
+  viewer: User | null,
+): Promise<Opened | null> {
   const project = await store.project(id);
   return project ? { project, ...(await workspaceOf(store, project, viewer)) } : null;
 }
@@ -56,7 +69,11 @@ export interface Reading {
 }
 
 /** Read the source and `locales` of a workspace out of the store. */
-export async function readLocales(store: Store, at: { id: string; workspace: Workspace }, locales: readonly string[]): Promise<Reading> {
+export async function readLocales(
+  store: Store,
+  at: { id: string; workspace: Workspace },
+  locales: readonly string[],
+): Promise<Reading> {
   const sourceLocale = at.workspace.policy.source;
   const files = await store.files(at.id, [...new Set([sourceLocale, ...locales])]);
   const shelf = shelfOf(at.workspace.root, files);

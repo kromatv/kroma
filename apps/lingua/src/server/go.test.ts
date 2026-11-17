@@ -44,6 +44,8 @@ describe('GET /go', () => {
     const response = await api(request, {});
 
     expect(response?.status).toBe(302);
-    expect(response?.headers.get('location')).toBe('/kromatv/kroma/en/admin/ai#admin.aiAddProvider');
+    expect(response?.headers.get('location')).toBe(
+      '/kromatv/kroma/en/admin/ai#admin.aiAddProvider',
+    );
   });
 });

@@ -46,7 +46,10 @@ export async function rowsByFile(reading: Reading, locale: string): Promise<Rows
   const at = await standingIn(reading, locale);
   const stood = stoodIn(reading.source, at);
   return new Map(
-    [...reading.source.files].map(([file, messages]) => [file, rowsFor(messages, locale).map(stood)]),
+    [...reading.source.files].map(([file, messages]) => [
+      file,
+      rowsFor(messages, locale).map(stood),
+    ]),
   );
 }
 

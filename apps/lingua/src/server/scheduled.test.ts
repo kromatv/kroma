@@ -23,21 +23,36 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const env = (projects: string): Env => ({ LINGUA_DB: fakeD1(), LINGUA_PROJECTS: projects, GITHUB_OAUTH_CLIENT_ID: 'cid', GITHUB_OAUTH_CLIENT_SECRET: 'csecret' });
+const env = (projects: string): Env => ({
+  LINGUA_DB: fakeD1(),
+  LINGUA_PROJECTS: projects,
+  GITHUB_OAUTH_CLIENT_ID: 'cid',
+  GITHUB_OAUTH_CLIENT_SECRET: 'csecret',
+});
 
 const branchAt = (head: string) => () => new Response(head, { headers: { etag: `"${head}"` } });
 
 function emptyRepository(repo: string, head: string) {
   return {
     [`GET /repos/${repo}/commits/main`]: branchAt(head),
-    [`GET /repos/${repo}/git/trees/${head}?recursive=1`]: () => ({ sha: sha('0e'), truncated: false, tree: [{ path: 'lingua.json', type: 'blob', sha: sha('c') }] }),
+    [`GET /repos/${repo}/git/trees/${head}?recursive=1`]: () => ({
+      sha: sha('0e'),
+      truncated: false,
+      tree: [{ path: 'lingua.json', type: 'blob', sha: sha('c') }],
+    }),
     [`GET /${repo}/${head}/lingua.json`]: () => new Response(CONFIG),
   };
 }
 
 describe('refreshAll', () => {
   it('holds every listed repository and syncs each one', async () => {
-    const fetchFn = gitHubFetch({ routes: { 'GET /repos/o/s': () => ({ default_branch: 'main' }), ...emptyRepository('o/r', sha('a')), ...emptyRepository('o/s', sha('b')) } });
+    const fetchFn = gitHubFetch({
+      routes: {
+        'GET /repos/o/s': () => ({ default_branch: 'main' }),
+        ...emptyRepository('o/r', sha('a')),
+        ...emptyRepository('o/s', sha('b')),
+      },
+    });
 
     await refreshAll(env('o/r@main, o/s'), 100, fetchFn);
 

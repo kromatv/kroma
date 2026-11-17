@@ -35,15 +35,26 @@ export interface Sending {
 
 type Refused = Exclude<ProposalResult, { status: 200 }>;
 
-const refused = (status: Refused['status'], reason: SendFailure, error = SEND_FAILURES[reason]): Refused => ({ status, reason, error });
+const refused = (
+  status: Refused['status'],
+  reason: SendFailure,
+  error = SEND_FAILURES[reason],
+): Refused => ({ status, reason, error });
 
 function resultOf(outcome: Outcome): ProposalResult {
   if (outcome.kind === 'incomplete') {
-    return refused(422, 'incomplete', `Translate the general form of ${outcome.keys.join(', ')} before its plural forms`);
+    return refused(
+      422,
+      'incomplete',
+      `Translate the general form of ${outcome.keys.join(', ')} before its plural forms`,
+    );
   }
   return {
     status: 200,
-    body: outcome.kind === 'proposed' ? { kind: 'proposed', number: outcome.proposal.prNumber, url: outcome.proposal.prUrl } : { kind: 'nothing' },
+    body:
+      outcome.kind === 'proposed'
+        ? { kind: 'proposed', number: outcome.proposal.prNumber, url: outcome.proposal.prUrl }
+        : { kind: 'nothing' },
   };
 }
 
@@ -55,21 +66,40 @@ function failure(error: unknown): Refused {
   return refused(502, 'failed');
 }
 
-async function sendSynced(store: Store, sending: Sending & { before: Project }, now: number): Promise<ProposalResult> {
+async function sendSynced(
+  store: Store,
+  sending: Sending & { before: Project },
+  now: number,
+): Promise<ProposalResult> {
   const { before, user, input } = sending;
-  if ((await syncProject({ reader: sending.reader, store }, before, now)) === 'behind') return refused(503, 'syncing');
+  if ((await syncProject({ reader: sending.reader, store }, before, now)) === 'behind')
+    return refused(503, 'syncing');
   const workspace = (await openProject(store, before.id, user))?.workspace;
   const project = await store.project(before.id);
-  if (!project || !workspace) return refused(404, 'missing', 'This project has no usable lingua.json or i18n.json');
-  if (!workspace.locales.includes(input.locale)) return refused(404, 'missing', 'This project does not offer that language');
+  if (!project || !workspace)
+    return refused(404, 'missing', 'This project has no usable lingua.json or i18n.json');
+  if (!workspace.locales.includes(input.locale))
+    return refused(404, 'missing', 'This project does not offer that language');
   const read = ['', workspace.policy.source, input.locale, ...stableLocales(workspace.policy)];
   const files = await store.files(project.id, [...new Set(read)]);
-  const proposing = { project, root: workspace.root, files, user, locale: input.locale, origin: sending.origin, now };
+  const proposing = {
+    project,
+    root: workspace.root,
+    files,
+    user,
+    locale: input.locale,
+    origin: sending.origin,
+    now,
+  };
   return resultOf(await propose({ gh: sending.as }, store, proposing));
 }
 
 /** Bring the project level with its branch, then send the contributor's edits for the language to their pull request. Refused while the branch changed more files than one pass reads. */
-export async function sendProposal(store: Store, sending: Sending, now: number): Promise<ProposalResult> {
+export async function sendProposal(
+  store: Store,
+  sending: Sending,
+  now: number,
+): Promise<ProposalResult> {
   const { user, input } = sending;
   const before = await store.project(input.project);
   if (!before) return refused(404, 'missing', 'Lingua does not translate this project');

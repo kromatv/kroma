@@ -16,7 +16,10 @@ async function lockText(): Promise<string> {
     said('admin.backup.title', 'Backup'),
     said('admin.backup.title', 'Sauvegarde'),
   ]);
-  const messages = { 'admin.backup.title': `${title} ${sauvegarde} mt`, 'p.play': `00000000 ${play}` };
+  const messages = {
+    'admin.backup.title': `${title} ${sauvegarde} mt`,
+    'p.play': `00000000 ${play}`,
+  };
   return `${JSON.stringify({ version: 1, messages }, null, 2)}\n`;
 }
 
@@ -24,8 +27,15 @@ async function projectFiles(): Promise<Record<string, string>> {
   return {
     'i18n.json': JSON.stringify({ source: 'en', locales: { fr: { stage: 'stable' }, pl: {} } }),
     'notes.json': JSON.stringify({ '*': 'Informal.', 'p.': 'The player.', 'p.play': 'A verb.' }),
-    'en/p.json': JSON.stringify({ 'p.play': 'Play {title}', 'p.n': '{count} items', 'p.n_one': 'One item' }),
-    'en/admin/backup.json': JSON.stringify({ 'admin.backup.title': 'Backup', 'admin.backup.run': 'Run' }),
+    'en/p.json': JSON.stringify({
+      'p.play': 'Play {title}',
+      'p.n': '{count} items',
+      'p.n_one': 'One item',
+    }),
+    'en/admin/backup.json': JSON.stringify({
+      'admin.backup.title': 'Backup',
+      'admin.backup.run': 'Run',
+    }),
     'fr/p.json': JSON.stringify({ 'p.play': 'Lire {title}' }),
     'fr/admin/backup.json': JSON.stringify({ 'admin.backup.title': 'Sauvegarde' }),
     'fr/i18n.lock': await lockText(),

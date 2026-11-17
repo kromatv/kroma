@@ -9,7 +9,12 @@ import { homeView, localeView, namespaceView, projectView, siteView } from './vi
 
 async function storeWithWork(): Promise<Store> {
   const store = await seededStore();
-  await saveEdit(store, ada, { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' }, 2);
+  await saveEdit(
+    store,
+    ada,
+    { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' },
+    2,
+  );
   await saveConfirms(store, ada, { project: 'o/r', locale: 'fr', keys: ['admin.backup.title'] }, 2);
   return store;
 }
@@ -73,7 +78,13 @@ describe('projectView', () => {
 
   it('lists no language for a project whose lingua.json does not read', async () => {
     const store = await seededStore();
-    await store.setSynced('o/r', { headSha: 'h', treeSha: 't', config: null, configError: 'lingua.json is missing', at: 1 });
+    await store.setSynced('o/r', {
+      headSha: 'h',
+      treeSha: 't',
+      config: null,
+      configError: 'lingua.json is missing',
+      at: 1,
+    });
 
     const view = await projectView(pageContext(store, null), 'o/r');
 
@@ -104,7 +115,17 @@ describe('homeView', () => {
 
     expect(view).toEqual({
       viewer: { login: 'ada', name: null, avatarUrl: null },
-      projects: [{ id: 'o/r', branch: 'main', source: languageOf('en'), locales: 3, syncedAt: 1, error: null, sync: { kind: 'current' } }],
+      projects: [
+        {
+          id: 'o/r',
+          branch: 'main',
+          source: languageOf('en'),
+          locales: 3,
+          syncedAt: 1,
+          error: null,
+          sync: { kind: 'current' },
+        },
+      ],
     });
   });
 
@@ -120,11 +141,29 @@ describe('homeView', () => {
   it('says why a project cannot be translated', async () => {
     const store = await seededStore();
     await store.upsertProject({ id: 'o/broken', branch: 'main', pinned: false });
-    await store.setSynced('o/broken', { headSha: 'h', treeSha: 't', config: '{}', configError: null, at: 1 });
+    await store.setSynced('o/broken', {
+      headSha: 'h',
+      treeSha: 't',
+      config: '{}',
+      configError: null,
+      at: 1,
+    });
     await store.upsertProject({ id: 'o/missing', branch: 'main', pinned: false });
-    await store.setSynced('o/missing', { headSha: 'h', treeSha: 't', config: null, configError: 'lingua.json is missing', at: 1 });
+    await store.setSynced('o/missing', {
+      headSha: 'h',
+      treeSha: 't',
+      config: null,
+      configError: 'lingua.json is missing',
+      at: 1,
+    });
     await store.upsertProject({ id: 'o/unlisted', branch: 'main', pinned: false });
-    await store.setSynced('o/unlisted', { headSha: 'h', treeSha: 't', config: JSON.stringify({ projects: [{ path: 'loc' }] }), configError: null, at: 1 });
+    await store.setSynced('o/unlisted', {
+      headSha: 'h',
+      treeSha: 't',
+      config: JSON.stringify({ projects: [{ path: 'loc' }] }),
+      configError: null,
+      at: 1,
+    });
 
     const view = await homeView(pageContext(store, null));
 
@@ -154,17 +193,33 @@ describe('localeView', () => {
     const store = await storeWithWork();
     await startLanguage(store, ada, { project: 'o/r', locale: 'de' }, 2);
     await store.markProposed('o/r', ada.id, 'de');
-    await store.saveProposal({ project: 'o/r', userId: ada.id, locale: 'de', branch: 'b', prNumber: 9, prUrl: 'https://github.com/o/r/pull/9', headSha: 'h', updatedAt: 3 });
+    await store.saveProposal({
+      project: 'o/r',
+      userId: ada.id,
+      locale: 'de',
+      branch: 'b',
+      prNumber: 9,
+      prUrl: 'https://github.com/o/r/pull/9',
+      headSha: 'h',
+      updatedAt: 3,
+    });
 
     const view = await localeView(pageContext(store, ada), 'o/r', 'de');
 
-    expect([view?.drafts, view?.proposed, view?.proposal]).toEqual([0, 1, { number: 9, url: 'https://github.com/o/r/pull/9' }]);
+    expect([view?.drafts, view?.proposed, view?.proposal]).toEqual([
+      0,
+      1,
+      { number: 9, url: 'https://github.com/o/r/pull/9' },
+    ]);
   });
 
   it('has no page for a language the project does not offer', async () => {
     const store = await seededStore();
 
-    const views = await Promise.all([localeView(pageContext(store, null), 'o/r', 'de'), localeView(pageContext(store, null), 'x/y', 'fr')]);
+    const views = await Promise.all([
+      localeView(pageContext(store, null), 'o/r', 'de'),
+      localeView(pageContext(store, null), 'x/y', 'fr'),
+    ]);
 
     expect(views).toEqual([null, null]);
   });
@@ -179,8 +234,17 @@ describe('namespaceView for a contributor', () => {
       namespaceView(pageContext(store, ada), 'o/r', { locale: 'fr', file: 'admin/backup' }),
     ]);
 
-    expect(p?.rows[0]).toMatchObject({ key: 'p.play', draft: 'Voir {title}', proposed: false, confirmed: false });
-    expect(backup?.rows[0]).toMatchObject({ key: 'admin.backup.title', draft: null, confirmed: true });
+    expect(p?.rows[0]).toMatchObject({
+      key: 'p.play',
+      draft: 'Voir {title}',
+      proposed: false,
+      confirmed: false,
+    });
+    expect(backup?.rows[0]).toMatchObject({
+      key: 'admin.backup.title',
+      draft: null,
+      confirmed: true,
+    });
   });
 
   it('has no page for a file the source does not have, or a language the project does not offer', async () => {
@@ -205,6 +269,10 @@ describe('siteView', () => {
       signIn: true,
       viewer: { login: 'ada', name: null, avatarUrl: null },
     });
-    expect(siteView(pageContext(store, null), 'https://l.test')).toEqual({ origin: 'https://l.test', signIn: false, viewer: null });
+    expect(siteView(pageContext(store, null), 'https://l.test')).toEqual({
+      origin: 'https://l.test',
+      signIn: false,
+      viewer: null,
+    });
   });
 });

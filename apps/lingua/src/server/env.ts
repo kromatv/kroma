@@ -31,7 +31,12 @@ const STRINGS = [
 ] as const;
 
 function isSelf(value: unknown): value is SelfBinding {
-  return typeof value === 'object' && value !== null && 'fetch' in value && typeof value.fetch === 'function';
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'fetch' in value &&
+    typeof value.fetch === 'function'
+  );
 }
 
 function isD1(value: unknown): value is D1Database {

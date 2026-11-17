@@ -4,9 +4,15 @@ import { boundedText } from './body';
 const post = (body: string | null, headers: Record<string, string> = {}) =>
   new Request('https://lingua.test/api/edits', { method: 'POST', body, headers });
 
-const streamed = (body: ReadableStream<Uint8Array<ArrayBuffer>>) => ({ headers: new Headers(), body });
+const streamed = (body: ReadableStream<Uint8Array<ArrayBuffer>>) => ({
+  headers: new Headers(),
+  body,
+});
 
-function chunked(chunks: readonly string[], pulled: { count: number }): ReadableStream<Uint8Array<ArrayBuffer>> {
+function chunked(
+  chunks: readonly string[],
+  pulled: { count: number },
+): ReadableStream<Uint8Array<ArrayBuffer>> {
   const encoder = new TextEncoder();
   const left = [...chunks];
   return new ReadableStream({

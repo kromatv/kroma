@@ -20,7 +20,12 @@ export type SyncNow =
  * never was, and say where its sync stands. One call reads as much as one
  * request may; a sync still `reading` goes on with the next call.
  */
-export async function syncNow(env: Env, input: SyncInput, now: number, fetchFn: typeof fetch = fetch): Promise<SyncNow> {
+export async function syncNow(
+  env: Env,
+  input: SyncInput,
+  now: number,
+  fetchFn: typeof fetch = fetch,
+): Promise<SyncNow> {
   const listed = listedProjects(env).find((entry) => entry.id === input.project);
   if (!listed) {
     return { status: 404, error: 'Lingua does not translate this repository' };
@@ -34,5 +39,8 @@ export async function syncNow(env: Env, input: SyncInput, now: number, fetchFn: 
   if (pass.kind === 'skipped') {
     return { status: 409, error: 'A sync of this repository is already running' };
   }
-  return { status: 200, repository: statusOf(listed, (await syncing.store.project(listed.id)) ?? undefined) };
+  return {
+    status: 200,
+    repository: statusOf(listed, (await syncing.store.project(listed.id)) ?? undefined),
+  };
 }

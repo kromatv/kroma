@@ -21,10 +21,15 @@ export type DiscardResult =
  * edits, their confirms and, for a language they started and never sent, the
  * language itself. What already rides in their pull request stays there.
  */
-export async function discardDrafts(store: Store, user: User, input: DiscardInput): Promise<DiscardResult> {
+export async function discardDrafts(
+  store: Store,
+  user: User,
+  input: DiscardInput,
+): Promise<DiscardResult> {
   const workspace = (await openProject(store, input.project, user))?.workspace;
   if (!workspace) return { status: 404, error: 'Lingua does not translate this project' };
-  if (!workspace.locales.includes(input.locale)) return { status: 404, error: 'This project does not offer that language' };
+  if (!workspace.locales.includes(input.locale))
+    return { status: 404, error: 'This project does not offer that language' };
   const work = await viewerWork(store, input.project, user, input.locale);
   await store.dropUnsent(input.project, user.id, input.locale);
   const removed = workspace.started.has(input.locale) && work.start?.proposed === false;

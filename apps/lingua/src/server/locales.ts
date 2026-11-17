@@ -35,7 +35,10 @@ export async function startLanguage(
     return { status: 409, error: 'The project has that language already' };
   }
   if (workspace.started.size >= MAX_STARTED) {
-    return { status: 409, error: 'Send or discard a language you started before you start another' };
+    return {
+      status: 409,
+      error: 'Send or discard a language you started before you start another',
+    };
   }
   await store.putStart({
     project: input.project,
@@ -44,5 +47,9 @@ export async function startLanguage(
     proposed: false,
     createdAt: now,
   });
-  return { status: 200, locale: input.locale, name: nameOf(input.locale, input.locale) ?? input.locale };
+  return {
+    status: 200,
+    locale: input.locale,
+    name: nameOf(input.locale, input.locale) ?? input.locale,
+  };
 }

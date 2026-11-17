@@ -16,7 +16,11 @@ vi.mock('./env', async (importOriginal) => ({
 }));
 
 const ORIGIN = 'https://lingua.test';
-const env: Env = { GITHUB_OAUTH_CLIENT_ID: 'cid', GITHUB_OAUTH_CLIENT_SECRET: 'csecret', LINGUA_PROJECTS: 'o/r' };
+const env: Env = {
+  GITHUB_OAUTH_CLIENT_ID: 'cid',
+  GITHUB_OAUTH_CLIENT_SECRET: 'csecret',
+  LINGUA_PROJECTS: 'o/r',
+};
 
 beforeEach(async () => {
   H.store = await seededStore();
@@ -27,16 +31,26 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const get = (path: string, init: RequestInit = {}, on: Env = env) => api(new Request(`${ORIGIN}${path}`, init), on);
+const get = (path: string, init: RequestInit = {}, on: Env = env) =>
+  api(new Request(`${ORIGIN}${path}`, init), on);
 
 async function signedIn(): Promise<string> {
   const set = await openSession(H.store ?? new MemoryStore(), ada, Math.floor(Date.now() / 1000));
   return set.split(';')[0] ?? '';
 }
 
-async function send(method: string, path: string, body: unknown, on: Env = env): Promise<Response | null> {
+async function send(
+  method: string,
+  path: string,
+  body: unknown,
+  on: Env = env,
+): Promise<Response | null> {
   const headers = { origin: ORIGIN, cookie: await signedIn(), 'content-type': 'application/json' };
-  return get(path, { method, headers, body: typeof body === 'string' ? body : JSON.stringify(body) }, on);
+  return get(
+    path,
+    { method, headers, body: typeof body === 'string' ? body : JSON.stringify(body) },
+    on,
+  );
 }
 
 const cookiesOf = (response: Response | null) => response?.headers.getSetCookie() ?? [];
@@ -67,7 +81,10 @@ describe('setup', () => {
   });
 
   it('routes nothing a GitHub App would call', async () => {
-    const answers = await Promise.all([get('/setup/done?code=abcdef12'), get('/webhook', { method: 'POST', body: '{}' })]);
+    const answers = await Promise.all([
+      get('/setup/done?code=abcdef12'),
+      get('/webhook', { method: 'POST', body: '{}' }),
+    ]);
 
     expect(answers).toEqual([null, null]);
   });
@@ -75,20 +92,37 @@ describe('setup', () => {
 
 describe('editing', () => {
   it('saves an edit from a signed-in contributor', async () => {
-    const response = await send('PUT', '/api/edits', { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' });
+    const response = await send('PUT', '/api/edits', {
+      project: 'o/r',
+      locale: 'fr',
+      file: 'p',
+      key: 'p.play',
+      value: 'Voir {title}',
+    });
 
     expect(await response?.json()).toEqual({ draft: 'Voir {title}', issues: [] });
   });
 
   it('answers a refused edit with the issues that refused it', async () => {
-    const response = await send('PUT', '/api/edits', { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {name}' });
+    const response = await send('PUT', '/api/edits', {
+      project: 'o/r',
+      locale: 'fr',
+      file: 'p',
+      key: 'p.play',
+      value: 'Voir {name}',
+    });
 
     expect(response?.status).toBe(422);
-    expect(await response?.json()).toMatchObject({ issues: [{ code: 'unknown-token' }, { code: 'missing-token' }] });
+    expect(await response?.json()).toMatchObject({
+      issues: [{ code: 'unknown-token' }, { code: 'missing-token' }],
+    });
   });
 
   it('refuses a write from another site', async () => {
-    const response = await get('/api/edits', { method: 'PUT', headers: { origin: 'https://evil.test', cookie: await signedIn() } });
+    const response = await get('/api/edits', {
+      method: 'PUT',
+      headers: { origin: 'https://evil.test', cookie: await signedIn() },
+    });
 
     expect(response?.status).toBe(403);
   });
@@ -104,13 +138,21 @@ describe('editing', () => {
   it('asks a visitor who is not signed in to sign in', async () => {
     const paths = ['/api/confirm', '/api/discard', '/api/locales', '/api/proposals'];
 
-    const responses = await Promise.all(paths.map((path) => get(path, { method: 'POST', headers: { origin: ORIGIN } })));
+    const responses = await Promise.all(
+      paths.map((path) => get(path, { method: 'POST', headers: { origin: ORIGIN } })),
+    );
 
     expect(responses.map((r) => r?.status)).toEqual([401, 401, 401, 401]);
   });
 
   it('refuses an edit of a message the source does not have, with no issues to show', async () => {
-    const response = await send('PUT', '/api/edits', { project: 'o/r', locale: 'fr', file: 'p', key: 'p.nope', value: 'x' });
+    const response = await send('PUT', '/api/edits', {
+      project: 'o/r',
+      locale: 'fr',
+      file: 'p',
+      key: 'p.nope',
+      value: 'x',
+    });
 
     expect(response?.status).toBe(404);
     expect(await response?.json()).toMatchObject({ issues: [] });
@@ -119,7 +161,13 @@ describe('editing', () => {
   it('refuses a body whose declared length is past its size bound, unread', async () => {
     const headers = { origin: ORIGIN, cookie: await signedIn(), 'content-length': '70000' };
 
-    const body = JSON.stringify({ project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'Voir {title}' });
+    const body = JSON.stringify({
+      project: 'o/r',
+      locale: 'fr',
+      file: 'p',
+      key: 'p.play',
+      value: 'Voir {title}',
+    });
 
     const response = await get('/api/edits', { method: 'PUT', headers, body });
 
@@ -129,7 +177,13 @@ describe('editing', () => {
   it('refuses a body that is not JSON, or past its size bound', async () => {
     const [garbled, huge] = await Promise.all([
       send('PUT', '/api/edits', '{'),
-      send('PUT', '/api/edits', { project: 'o/r', locale: 'fr', file: 'p', key: 'p.play', value: 'x'.repeat(70_000) }),
+      send('PUT', '/api/edits', {
+        project: 'o/r',
+        locale: 'fr',
+        file: 'p',
+        key: 'p.play',
+        value: 'x'.repeat(70_000),
+      }),
     ]);
 
     expect([garbled?.status, huge?.status]).toEqual([400, 400]);
@@ -170,7 +224,9 @@ describe('editing', () => {
   it('refuses each write whose body does not parse', async () => {
     const paths = ['/api/confirm', '/api/discard', '/api/locales', '/api/proposals'];
 
-    const statuses = await Promise.all(paths.map(async (path) => (await send('POST', path, {}))?.status));
+    const statuses = await Promise.all(
+      paths.map(async (path) => (await send('POST', path, {}))?.status),
+    );
 
     expect(statuses).toEqual([400, 400, 400, 400]);
   });
@@ -200,15 +256,23 @@ describe('signing in', () => {
     const response = await get('/auth/login?to=/o/r/fr');
 
     const [token, to] = stateOf(response).split('.');
-    expect(response?.headers.get('location')).toMatch(/^https:\/\/github\.com\/login\/oauth\/authorize\?/);
+    expect(response?.headers.get('location')).toMatch(
+      /^https:\/\/github\.com\/login\/oauth\/authorize\?/,
+    );
     expect(to).toBe('/o/r/fr');
     expect(cookiesOf(response)[0]).toMatch(new RegExp(`^__Host-lingua_oauth=${token};`));
   });
 
   it('never returns a sign-in to another site', async () => {
-    const responses = await Promise.all([get('/auth/login?to=//evil.test'), get('/auth/login?to=/%09/evil.test')]);
+    const responses = await Promise.all([
+      get('/auth/login?to=//evil.test'),
+      get('/auth/login?to=/%09/evil.test'),
+    ]);
 
-    expect(responses.map(stateOf)).toEqual([expect.stringMatching(/^[\w-]+\.\/$/), expect.stringMatching(/^[\w-]+\.\/$/)]);
+    expect(responses.map(stateOf)).toEqual([
+      expect.stringMatching(/^[\w-]+\.\/$/),
+      expect.stringMatching(/^[\w-]+\.\/$/),
+    ]);
   });
 
   it('opens a session for the account GitHub confirms and returns to the page it left', async () => {
@@ -219,12 +283,17 @@ describe('signing in', () => {
     });
 
     expect(response?.headers.get('location')).toBe('/o/r/v1.2');
-    expect(cookiesOf(response).map((c) => c.split('=')[0])).toEqual(['__Host-lingua_oauth', '__Host-lingua_session']);
+    expect(cookiesOf(response).map((c) => c.split('=')[0])).toEqual([
+      '__Host-lingua_oauth',
+      '__Host-lingua_session',
+    ]);
   });
 
   it('explains a callback whose state this browser did not ask for, or that carries none', async () => {
     const [other, none] = await Promise.all([
-      get('/auth/callback?code=c&state=tok./', { headers: { cookie: '__Host-lingua_oauth=other' } }),
+      get('/auth/callback?code=c&state=tok./', {
+        headers: { cookie: '__Host-lingua_oauth=other' },
+      }),
       get('/auth/callback?code=c', { headers: { cookie: '__Host-lingua_oauth=tok' } }),
     ]);
 
@@ -254,13 +323,19 @@ describe('signing in', () => {
     const cookie = await signedIn();
 
     const out = await get('/auth/logout', { method: 'POST', headers: { origin: ORIGIN, cookie } });
-    const after = await get('/api/confirm', { method: 'POST', headers: { origin: ORIGIN, cookie } });
+    const after = await get('/api/confirm', {
+      method: 'POST',
+      headers: { origin: ORIGIN, cookie },
+    });
 
     expect([out?.status, out?.headers.get('location'), after?.status]).toEqual([303, '/', 401]);
   });
 
   it('refuses a sign-out from another site', async () => {
-    const response = await get('/auth/logout', { method: 'POST', headers: { origin: 'https://evil.test' } });
+    const response = await get('/auth/logout', {
+      method: 'POST',
+      headers: { origin: 'https://evil.test' },
+    });
 
     expect(response?.status).toBe(403);
   });
@@ -268,7 +343,11 @@ describe('signing in', () => {
 
 describe('sending', () => {
   it('asks the contributor’s GitHub for public_repo before sending from their fork', async () => {
-    const response = await send('POST', '/api/proposals', { project: 'o/r', locale: 'fr', to: '/o/r/fr' });
+    const response = await send('POST', '/api/proposals', {
+      project: 'o/r',
+      locale: 'fr',
+      to: '/o/r/fr',
+    });
 
     const { url } = await response?.json();
     expect(new URL(url).searchParams.get('scope')).toBe('public_repo');
@@ -300,12 +379,15 @@ describe('sending', () => {
 
   it('sends as the contributor once GitHub grants public_repo, saying when GitHub refused', async () => {
     const headers = { cookie: `${pendingCookie(pending).split(';')[0]}; ${await signedIn()}` };
-    vi.stubGlobal('fetch', gitHubFetch({
-      routes: {
-        'POST /login/oauth/access_token': () => ({ access_token: 'gho_x', scope: 'public_repo' }),
-        'GET /user': () => ({ id: 42, login: 'ada' }),
-      },
-    }));
+    vi.stubGlobal(
+      'fetch',
+      gitHubFetch({
+        routes: {
+          'POST /login/oauth/access_token': () => ({ access_token: 'gho_x', scope: 'public_repo' }),
+          'GET /user': () => ({ id: 42, login: 'ada' }),
+        },
+      }),
+    );
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     const response = await get('/auth/callback?state=s&code=c', { headers });
@@ -314,15 +396,24 @@ describe('sending', () => {
   });
 
   it('brings back a send that found nothing left to send, once the copy is level with the branch', async () => {
-    await H.store?.setSynced('o/r', { headSha: sha('a'), treeSha: sha('0e'), config: JSON.stringify({ projects: [{ path: 'loc' }] }), configError: null, at: 1 });
+    await H.store?.setSynced('o/r', {
+      headSha: sha('a'),
+      treeSha: sha('0e'),
+      config: JSON.stringify({ projects: [{ path: 'loc' }] }),
+      configError: null,
+      at: 1,
+    });
     const headers = { cookie: `${pendingCookie(pending).split(';')[0]}; ${await signedIn()}` };
-    vi.stubGlobal('fetch', gitHubFetch({
-      routes: {
-        'POST /login/oauth/access_token': () => ({ access_token: 'gho_x', scope: 'public_repo' }),
-        'GET /user': () => ({ id: 42, login: 'ada' }),
-        'GET /repos/o/r/commits/main': () => new Response(sha('a')),
-      },
-    }));
+    vi.stubGlobal(
+      'fetch',
+      gitHubFetch({
+        routes: {
+          'POST /login/oauth/access_token': () => ({ access_token: 'gho_x', scope: 'public_repo' }),
+          'GET /user': () => ({ id: 42, login: 'ada' }),
+          'GET /repos/o/r/commits/main': () => new Response(sha('a')),
+        },
+      }),
+    );
 
     const response = await get('/auth/callback?state=s&code=c', { headers });
 

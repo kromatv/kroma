@@ -32,19 +32,32 @@ async function passesInTurn(syncing: Syncing, ids: readonly string[], now: numbe
  * over each one in turn, the longest unchecked first, while the run's budget
  * of GitHub requests lasts.
  */
-export async function refreshAll(env: Env, now: number, fetchFn: typeof fetch = fetch): Promise<void> {
+export async function refreshAll(
+  env: Env,
+  now: number,
+  fetchFn: typeof fetch = fetch,
+): Promise<void> {
   const syncing = await syncingFor(env, fetchFn);
   if (!syncing) return;
   for (const { id, error } of await trackProjects(syncing, listedProjects(env))) {
     console.error(`lingua: ${id} could not be read`, error);
   }
   const projects = (await syncing.store.projects()).sort(oldestCheckFirst);
-  await passesInTurn(syncing, projects.map((p) => p.id), now);
+  await passesInTurn(
+    syncing,
+    projects.map((p) => p.id),
+    now,
+  );
   await Promise.all(projects.map((p) => chainOn(env, syncing.store, { id: p.id, hop: 1 })));
 }
 
 /** A page's run: pass over project `id` when its last pass ended more than two minutes ago. */
-export async function refreshStale(env: Env, id: string, now: number, fetchFn: typeof fetch = fetch): Promise<void> {
+export async function refreshStale(
+  env: Env,
+  id: string,
+  now: number,
+  fetchFn: typeof fetch = fetch,
+): Promise<void> {
   const syncing = await syncingFor(env, fetchFn);
   if (!syncing) {
     return;
@@ -58,7 +71,12 @@ export async function refreshStale(env: Env, id: string, now: number, fetchFn: t
 }
 
 /** A chained run: one more pass over project `id`, then the next link while files are left to read. */
-export async function refreshChained(env: Env, at: { id: string; hop: number }, now: number, fetchFn: typeof fetch = fetch): Promise<void> {
+export async function refreshChained(
+  env: Env,
+  at: { id: string; hop: number },
+  now: number,
+  fetchFn: typeof fetch = fetch,
+): Promise<void> {
   const syncing = await syncingFor(env, fetchFn);
   if (!syncing) {
     return;

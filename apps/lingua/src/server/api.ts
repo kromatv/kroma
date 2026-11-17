@@ -6,7 +6,14 @@ import { reader } from '#site/github/reader';
 import { type Problem, problemPath } from '#site/lib/problem';
 import { returnAddress } from '#site/lib/send-return';
 import type { Store, User } from '#site/store/store';
-import { answerSend, askToSend, forgetPending, type PendingSend, pendingCookie, readPending } from './authorizations';
+import {
+  answerSend,
+  askToSend,
+  forgetPending,
+  type PendingSend,
+  pendingCookie,
+  readPending,
+} from './authorizations';
 import { boundedText } from './body';
 import { ConfirmInput, saveConfirms } from './confirms';
 import { DiscardInput, discardDrafts } from './discard';
@@ -38,7 +45,10 @@ function sameOrigin(c: Context<Ctx>): boolean {
   return from ? from === origin(c) : c.req.header('sec-fetch-site') === 'same-origin';
 }
 
-async function jsonInput<S extends z.ZodType>(c: Context<Ctx>, schema: S): Promise<z.infer<S> | null> {
+async function jsonInput<S extends z.ZodType>(
+  c: Context<Ctx>,
+  schema: S,
+): Promise<z.infer<S> | null> {
   const text = await boundedText(c.req.raw, MAX_BODY);
   if (text === null) return null;
   try {
@@ -49,7 +59,10 @@ async function jsonInput<S extends z.ZodType>(c: Context<Ctx>, schema: S): Promi
   }
 }
 
-async function contributor(c: Context<Ctx>, refusal: string): Promise<{ store: Store; viewer: User } | Response> {
+async function contributor(
+  c: Context<Ctx>,
+  refusal: string,
+): Promise<{ store: Store; viewer: User } | Response> {
   if (!sameOrigin(c)) return c.json({ error: 'Forbidden' }, 403);
   const store = await storeFor(c.env.env);
   const viewer = await resolveViewer(c.env.env, store, c.req.header('cookie'), now());
@@ -58,9 +71,19 @@ async function contributor(c: Context<Ctx>, refusal: string): Promise<{ store: S
 
 const app = new Hono<Ctx>();
 
-app.get('/health', (c) => c.json({ ok: true, signIn: oauthCredentials(c.env.env) !== null, projects: listedProjects(c.env.env).length }));
+app.get('/health', (c) =>
+  c.json({
+    ok: true,
+    signIn: oauthCredentials(c.env.env) !== null,
+    projects: listedProjects(c.env.env).length,
+  }),
+);
 
-function toGitHub(c: Context<Ctx>, after: string, ask: (at: { redirectUri: string; state: string }) => string): Response {
+function toGitHub(
+  c: Context<Ctx>,
+  after: string,
+  ask: (at: { redirectUri: string; state: string }) => string,
+): Response {
   const token = randomToken();
   c.header('Set-Cookie', cookie(OAUTH, token, 600));
   return c.redirect(ask({ redirectUri: callbackUri(c), state: `${token}.${after}` }));
@@ -72,12 +95,19 @@ app.get('/auth/login', (c) => {
   return toGitHub(c, returnPath(c.req.query('to')), (at) => authorizeUrl(oauth, at));
 });
 
-async function signIn(c: Context<Ctx>, oauth: OAuthCredentials, code: string, to: string): Promise<Response> {
+async function signIn(
+  c: Context<Ctx>,
+  oauth: OAuthCredentials,
+  code: string,
+  to: string,
+): Promise<Response> {
   const store = await storeFor(c.env.env);
-  const user = await userFromCode(oauth, { code, redirectUri: callbackUri(c) }).catch((error: unknown) => {
-    console.error('lingua: sign-in failed', error);
-    return null;
-  });
+  const user = await userFromCode(oauth, { code, redirectUri: callbackUri(c) }).catch(
+    (error: unknown) => {
+      console.error('lingua: sign-in failed', error);
+      return null;
+    },
+  );
   if (!user) return c.redirect(problemPath('sign-in-refused'));
   c.header('Set-Cookie', await openSession(store, user, now()), { append: true });
   return c.redirect(returnPath(to));
@@ -109,14 +139,21 @@ async function returnFromSend(c: Context<Ctx>, pending: PendingSend): Promise<Re
     viewer: await resolveViewer(env, store, c.req.header('cookie'), now()),
     query: { code: c.req.query('code'), error: c.req.query('error') },
     redirectUri: callbackUri(c),
-    send: (as, user) => sendProposal(store, { reader: sendReader, user, input: pending, origin: origin(c), as }, now()),
+    send: (as, user) =>
+      sendProposal(
+        store,
+        { reader: sendReader, user, input: pending, origin: origin(c), as },
+        now(),
+      ),
   });
   return c.redirect(location);
 }
 
 app.get('/auth/callback', async (c) => {
   const pending = readPending(c.req.header('cookie'));
-  return pending && c.req.query('state') === pending.state ? returnFromSend(c, pending) : returnFromGitHub(c);
+  return pending && c.req.query('state') === pending.state
+    ? returnFromSend(c, pending)
+    : returnFromGitHub(c);
 });
 
 app.post('/auth/logout', async (c) => {
@@ -143,18 +180,23 @@ app.post('/api/confirm', async (c) => {
   const input = await jsonInput(c, ConfirmInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
   const result = await saveConfirms(signedIn.store, signedIn.viewer, input, now());
-  return result.status === 200 ? c.json({ confirmed: result.confirmed }) : c.json({ error: result.error }, result.status);
+  return result.status === 200
+    ? c.json({ confirmed: result.confirmed })
+    : c.json({ error: result.error }, result.status);
 });
 
 app.post('/internal/sync', async (c) => {
   const input = await jsonInput(c, ChainInput);
-  if (!input || !(await chainProven(c.env.env, input.project, c.req.header(CHAIN_HEADER) ?? null))) {
+  if (
+    !input ||
+    !(await chainProven(c.env.env, input.project, c.req.header(CHAIN_HEADER) ?? null))
+  ) {
     return c.json({ error: 'Forbidden' }, 403);
   }
   const { waitUntil } = await workerContext();
   waitUntil(
-    refreshChained(c.env.env, { id: input.project, hop: input.hop }, now()).catch((error: unknown) =>
-      console.error(`lingua: ${input.project} chained pass failed`, error),
+    refreshChained(c.env.env, { id: input.project, hop: input.hop }, now()).catch(
+      (error: unknown) => console.error(`lingua: ${input.project} chained pass failed`, error),
     ),
   );
   return c.json({ accepted: true }, 202);
@@ -166,7 +208,9 @@ app.post('/api/sync', async (c) => {
   const input = await jsonInput(c, SyncInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
   const result = await syncNow(c.env.env, input, now());
-  return result.status === 200 ? c.json(result.repository) : c.json({ error: result.error }, result.status);
+  return result.status === 200
+    ? c.json(result.repository)
+    : c.json({ error: result.error }, result.status);
 });
 
 app.post('/api/locales', async (c) => {
@@ -175,7 +219,9 @@ app.post('/api/locales', async (c) => {
   const input = await jsonInput(c, LocaleInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
   const result = await startLanguage(signedIn.store, signedIn.viewer, input, now());
-  return result.status === 200 ? c.json({ locale: result.locale, name: result.name }) : c.json({ error: result.error }, result.status);
+  return result.status === 200
+    ? c.json({ locale: result.locale, name: result.name })
+    : c.json({ error: result.error }, result.status);
 });
 
 app.post('/api/discard', async (c) => {
@@ -184,16 +230,26 @@ app.post('/api/discard', async (c) => {
   const input = await jsonInput(c, DiscardInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
   const result = await discardDrafts(signedIn.store, signedIn.viewer, input);
-  return result.status === 200 ? c.json({ discarded: result.discarded, removed: result.removed }) : c.json({ error: result.error }, result.status);
+  return result.status === 200
+    ? c.json({ discarded: result.discarded, removed: result.removed })
+    : c.json({ error: result.error }, result.status);
 });
 
 function authorizeSend(c: Context<Ctx>, viewer: User, input: z.infer<typeof SendInput>): Response {
   const oauth = oauthCredentials(c.env.env);
   if (!oauth) return c.json({ error: 'Sign-in is not configured on this deployment yet' }, 503);
   const { project, locale } = input;
-  const pending = { state: randomToken(), project, locale, to: returnPath(input.to ?? `/${project}/${locale}`) };
+  const pending = {
+    state: randomToken(),
+    project,
+    locale,
+    to: returnPath(input.to ?? `/${project}/${locale}`),
+  };
   c.header('Set-Cookie', pendingCookie(pending));
-  return c.json({ kind: 'authorize', url: askToSend(oauth, pending, { redirectUri: callbackUri(c), login: viewer.login }) });
+  return c.json({
+    kind: 'authorize',
+    url: askToSend(oauth, pending, { redirectUri: callbackUri(c), login: viewer.login }),
+  });
 }
 
 app.post('/api/proposals', async (c) => {
@@ -201,7 +257,8 @@ app.post('/api/proposals', async (c) => {
   if (signedIn instanceof Response) return signedIn;
   const input = await jsonInput(c, SendInput);
   if (!input) return c.json({ error: 'Malformed request' }, 400);
-  if (!(await signedIn.store.project(input.project))) return c.json({ error: 'Lingua does not translate this project' }, 404);
+  if (!(await signedIn.store.project(input.project)))
+    return c.json({ error: 'Lingua does not translate this project' }, 404);
   return authorizeSend(c, signedIn.viewer, input);
 });
 

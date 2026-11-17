@@ -30,19 +30,37 @@ async function seedFrom(store: Store, root: string): Promise<void> {
   const parsed = parseConfig(text);
   await store.upsertProject({ id: DEV_PROJECT, branch: 'main', pinned: false });
   if (!parsed.ok) {
-    await store.setSynced(DEV_PROJECT, { headSha: 'dev', treeSha: 'dev', config: null, configError: parsed.error, at: 0 });
+    await store.setSynced(DEV_PROJECT, {
+      headSha: 'dev',
+      treeSha: 'dev',
+      config: null,
+      configError: parsed.error,
+      at: 0,
+    });
     return;
   }
   const projectRoot = rootOf(parsed.config);
-  const entries = await readdir(join(root, projectRoot), { recursive: true }).catch((): string[] => []);
+  const entries = await readdir(join(root, projectRoot), { recursive: true }).catch(
+    (): string[] => [],
+  );
   const placed = entries.flatMap((entry) => {
     const path = `${projectRoot}/${entry.replaceAll('\\', '/')}`;
     const place = placeOf(projectRoot, path);
     return place ? [{ ...place, path }] : [];
   });
   const files: FileRow[] = await Promise.all(
-    placed.map(async (place) => ({ ...place, blobSha: 'dev', body: await readFile(join(root, place.path), 'utf8') })),
+    placed.map(async (place) => ({
+      ...place,
+      blobSha: 'dev',
+      body: await readFile(join(root, place.path), 'utf8'),
+    })),
   );
   await store.replaceFiles(DEV_PROJECT, files, []);
-  await store.setSynced(DEV_PROJECT, { headSha: 'dev', treeSha: 'dev', config: text, configError: null, at: Math.floor(Date.now() / 1000) });
+  await store.setSynced(DEV_PROJECT, {
+    headSha: 'dev',
+    treeSha: 'dev',
+    config: text,
+    configError: null,
+    at: Math.floor(Date.now() / 1000),
+  });
 }

@@ -4,7 +4,8 @@ import { requestContext, resolveViewer } from './request';
 import { seededStore } from './test-support';
 
 vi.mock('@tanstack/react-start/server', () => ({
-  getRequest: () => new Request('https://lingua.test/o/r', { headers: { cookie: '__Host-lingua_session=tok' } }),
+  getRequest: () =>
+    new Request('https://lingua.test/o/r', { headers: { cookie: '__Host-lingua_session=tok' } }),
 }));
 
 afterEach(() => {
@@ -20,7 +21,12 @@ describe('resolveViewer', () => {
   });
 
   it('ignores the stand-in once D1 is bound', async () => {
-    const viewer = await resolveViewer({ LINGUA_DEV_LOGIN: 'dev', LINGUA_DB: fakeD1() }, await seededStore(), null, 5);
+    const viewer = await resolveViewer(
+      { LINGUA_DEV_LOGIN: 'dev', LINGUA_DB: fakeD1() },
+      await seededStore(),
+      null,
+      5,
+    );
 
     expect(viewer).toBeNull();
   });
@@ -28,7 +34,9 @@ describe('resolveViewer', () => {
 
 describe('requestContext', () => {
   it('computes a page from the Worker’s bindings and the session on the request', async () => {
-    const db = fakeD1((sql) => (sql.includes('FROM sessions') ? [{ id: 42, login: 'ada', name: null, avatar_url: null }] : []));
+    const db = fakeD1((sql) =>
+      sql.includes('FROM sessions') ? [{ id: 42, login: 'ada', name: null, avatar_url: null }] : [],
+    );
     vi.stubGlobal('KROMA_WORKERD', { env: { LINGUA_DB: db } });
 
     const context = await requestContext();
@@ -47,7 +55,10 @@ async function requestIn(workerd: object) {
 describe('refreshAfterServing', () => {
   it('hands the project’s pass to the Worker to finish once the page is served', async () => {
     const held: Promise<unknown>[] = [];
-    const { refreshAfterServing } = await requestIn({ env: { LINGUA_DB: fakeD1() }, waitUntil: (p: Promise<unknown>) => held.push(p) });
+    const { refreshAfterServing } = await requestIn({
+      env: { LINGUA_DB: fakeD1() },
+      waitUntil: (p: Promise<unknown>) => held.push(p),
+    });
 
     await refreshAfterServing('o/r');
 
@@ -61,7 +72,10 @@ describe('refreshAfterServing', () => {
       throw new Error('D1 is down');
     });
     const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { refreshAfterServing } = await requestIn({ env: { LINGUA_DB: failing }, waitUntil: (p: Promise<unknown>) => held.push(p) });
+    const { refreshAfterServing } = await requestIn({
+      env: { LINGUA_DB: failing },
+      waitUntil: (p: Promise<unknown>) => held.push(p),
+    });
 
     await refreshAfterServing('o/r');
     await Promise.all(held);

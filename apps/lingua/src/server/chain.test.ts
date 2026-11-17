@@ -13,7 +13,11 @@ function selfBinding(): SelfBinding & { fetch: ReturnType<typeof vi.fn> } {
 async function reading(): Promise<Store> {
   const store = memoryStore();
   await store.upsertProject({ id: 'o/r', branch: 'main', pinned: true });
-  await store.setBranchHead('o/r', { sha: 'a'.repeat(40), etag: null, progress: { done: 40, total: 110 } });
+  await store.setBranchHead('o/r', {
+    sha: 'a'.repeat(40),
+    etag: null,
+    progress: { done: 40, total: 110 },
+  });
   return store;
 }
 
@@ -56,7 +60,10 @@ describe('chainOn', () => {
     const self = selfBinding();
 
     await chainOn({ GITHUB_OAUTH_CLIENT_SECRET: SECRET, SELF: self }, done, { id: 'o/r', hop: 1 });
-    await chainOn({ GITHUB_OAUTH_CLIENT_SECRET: SECRET, SELF: self }, await reading(), { id: 'o/r', hop: MAX_HOPS });
+    await chainOn({ GITHUB_OAUTH_CLIENT_SECRET: SECRET, SELF: self }, await reading(), {
+      id: 'o/r',
+      hop: MAX_HOPS,
+    });
     await chainOn({ GITHUB_OAUTH_CLIENT_SECRET: SECRET }, await reading(), { id: 'o/r', hop: 1 });
 
     expect(self.fetch).not.toHaveBeenCalled();

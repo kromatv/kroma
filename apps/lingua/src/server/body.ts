@@ -3,7 +3,10 @@
  * declared length past the limit is refused unread; a body that declares none
  * is read chunk by chunk and dropped at the first byte too many.
  */
-export async function boundedText(request: Pick<Request, 'headers' | 'body'>, limit: number): Promise<string | null> {
+export async function boundedText(
+  request: Pick<Request, 'headers' | 'body'>,
+  limit: number,
+): Promise<string | null> {
   if (Number(request.headers.get('content-length') ?? 0) > limit) {
     return null;
   }
