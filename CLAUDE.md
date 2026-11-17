@@ -179,8 +179,8 @@ separate tags.
 
 A point is named by whoever defines it: a module writes `definesPoints` for what
 it invents (`<its id>/<local name>`), `contributes` for what it answers, and
-`consumes` for what it calls. The five the CORE calls, `acquisition`,
-`transcriber`, `embedder`, `network` and `trailer`, are bare because the core has no manifest
+`consumes` for what it calls. The six the CORE calls, `acquisition`,
+`transcriber`, `embedder`, `network`, `trailer` and `importer`, are bare because the core has no manifest
 to define one in and nothing else may. See [`docs/module-plugin-model.md`](docs/module-plugin-model.md)
 for the model and what is still missing from it, and
 [`modules/README.md`](modules/README.md#calling-another-module) for how to write

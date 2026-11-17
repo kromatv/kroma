@@ -52,3 +52,36 @@ pub fn store_settings(t: &TestApp, values: &[(&str, Value)]) {
         .settings
         .set_patch(&t.state.db, BTreeMap::from_iter(patch));
 }
+
+/// A registry on loopback serving `index`, and each `(module id, record)` as
+/// that module's full record. Answers with the URL of its descriptor.
+pub async fn registry_serving(index: Value, records: &[(&str, Value)]) -> String {
+    let serve = |body: Value| {
+        axum::routing::get(move || {
+            let body = body.clone();
+            async move { axum::Json(body) }
+        })
+    };
+    let ids: Vec<Value> = index
+        .as_array()
+        .map(|rows| rows.iter().map(|row| row["id"].clone()).collect())
+        .unwrap_or_default();
+    let descriptor = json!({ "apiVersion": 1, "name": "Test", "url": "https://test", "modules": ids });
+    let mut app = axum::Router::new()
+        .route("/registry.json", serve(descriptor))
+        .route("/index.json", serve(index));
+    for (id, record) in records {
+        app = app.route(&format!("/m/{id}.json"), serve(record.clone()));
+    }
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, app).await;
+    });
+    format!("http://{addr}/registry.json")
+}
+
+/// Aim the Store's official registry at `url`.
+pub fn point_store_at(t: &TestApp, url: &str) {
+    store_settings(t, &[("moduleRegistryUrl", json!(url))]);
+}

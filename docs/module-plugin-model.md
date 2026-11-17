@@ -58,10 +58,10 @@ tv.kroma.torrents/client
 tv.kroma.indexer/engine
 ```
 
-The handful the CORE calls are bare — `acquisition`, `transcriber`, `embedder`, `trailer` —
-because the core has no manifest to define one in and nothing else may define
-one. A bare name is the core's; a name with a `/` belongs to the module before
-it.
+The handful the CORE calls are bare: `acquisition`, `transcriber`, `embedder`,
+`network`, `trailer` and `importer`. The core has no manifest to define one in
+and nothing else may define one. A bare name is the core's; a name with a `/`
+belongs to the module before it.
 
 Three manifest verbs, and every module may use all three:
 
@@ -153,7 +153,9 @@ search pipeline genuinely needs embeddings and the subtitle service genuinely
 needs transcription, and neither word names who provides it. `trailer` passes
 for the same reason: the catalog needs a title's trailer as one playable file,
 and the word names neither the site it comes from nor the module that fetches
-it. `pipeline-stage` passes. `metadata-provider` passes. `search-ranker` passes.
+it. `importer` passes: the core needs another media server's household
+described in neutral terms, and the word names neither a vendor nor a module.
+`pipeline-stage` passes. `metadata-provider` passes. `search-ranker` passes.
 
 An earlier draft of this rule failed `embedder` and `transcriber` too, on the
 grounds that they exist because a vector module and a whisper module exist. That
@@ -235,6 +237,63 @@ One consequence worth stating: with JSON on the wire and no crate to link, a
 module does not have to be Rust. It has to read the runtime env, speak
 `/api/_host/*`, and serve `/_port/*`. That was theoretically true before and
 practically false.
+
+## The `importer` point
+
+The sixth bare point, from [RFC 719](rfcs/719-guided-setup-and-import.md). An
+importer reads another media server and describes its household. The core pulls
+from it page by page, decides what each thing becomes and does every write. An
+importer holds no slice of the core database.
+
+It is the one core point whose JSON two independent modules are written
+against, so it is written out here. The core's structs are in
+`kroma-domain/src/import` (what it reads) and
+`kroma-engine/src/services/importers` (what it sends). An importer declares its
+own.
+
+| Method | The core sends | The importer answers |
+| --- | --- | --- |
+| `connect` | `{ fields }`, the sign-in form by field key, or `{ pending }` | `{ status: "ready", signIn, servers: [{ id, name, address }] }`, or `{ status: "pending", pending, url, expiresAt }`, or `{ status: "refused", reason, message }` |
+| `survey` | `{ signIn, server }` | `{ libraries: [{ id, name, kind, folders }], users: [{ id, name, email, signedIn, allLibraries, libraries, finerLimits, stateLocked, stateNeeds }], counts: { titles, states, plays }, leftBehind }` |
+| `titles` | `{ signIn, server, library, cursor, limit }` | `{ titles: [{ id, kind, paths, title, year, ids, series: { title, year, ids }, season, episode }], next }` |
+| `states` | `{ signIn, server, user, library, cursor, changedSince, limit }` | `{ states: [{ title, watched, playCount, positionMs, durationMs, lastPlayedAt, favourite }], next }` |
+| `plays` | `{ signIn, server, cursor, changedSince, limit }` | `{ plays: [{ id, user, title, playedAt, durationMs }], next }` |
+| `forget` | `{ signIn }` | nothing: the importer has deleted the sign-in |
+
+`ids` is `{ tmdb, imdb, tvdb }`. Each answer comes in the envelope every point
+uses, `{ "Ok": ... }` or `{ "Err": "why" }`. What each field means, with an
+example of every answer, is in
+[`modules/README.md`](../modules/README.md#answering-the-importer-point).
+
+Four rules keep it readable in both directions as it grows:
+
+- **An id is an opaque string of the other server.** The core sends back what
+  it was given and reads nothing into it.
+- **A name says its unit.** `Ms` is milliseconds. `At`, and `changedSince`, are
+  unix seconds.
+- **Every field but an id may be missing, and a missing one has one meaning.**
+  A boolean is false, a list is empty, a number or a string is unknown. So a
+  user with neither `allLibraries` nor `libraries` saw no library, which is the
+  safe reading. A kind or a refusal reason the core does not know reads as
+  `other`.
+- **Growth is a new optional field.** Each end ignores a field it does not
+  know.
+
+The core treats an answer as untrusted input. It reads at most the bytes the
+method allows (64 KiB for `connect`, 2 MiB for `survey`, 4 MiB for a page) and
+refuses a larger answer whole, before it parses anything. It then parses into
+its own structs and refuses an empty or oversized id, a page with more rows
+than it asked for, and a sign-in link that is not `https`.
+
+The sign-in to the other server never reaches a core table. `connect` hands
+back a reference, `signIn`, and every later call names the sign-in by it. The
+importer keeps the sign-in in its own database, so uninstalling the importer
+removes it.
+
+The owner reaches this through four routes under `/api/admin/importers`, all
+behind `settings.manage`: the list of importers (the installed ones, then the
+ones the official registry offers), `connect`, `survey` and `forget`. `titles`,
+`states` and `plays` have no route. The import job calls them.
 
 ## Points are not libraries
 
@@ -468,7 +527,7 @@ under a new id is picked up by the download module at runtime, and neither the
 core nor the download module is edited to accept it.
 
 Mechanically, today: `server/Cargo.toml` deps no crate under `modules/`; no crate
-under `server/` names a module's domain in a type, trait or function; the five
-point names the core holds, `acquisition`, `transcriber`, `embedder`, `network`
-and `trailer`, are bare capability names in its own route table and composition root. The remaining
+under `server/` names a module's domain in a type, trait or function; the six
+point names the core holds, `acquisition`, `transcriber`, `embedder`, `network`,
+`trailer` and `importer`, are bare capability names in its own route table and composition root. The remaining
 `tv.kroma.*` and point-name hits under `server/` are test fixtures and prose.

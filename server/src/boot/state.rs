@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use kroma_config::Config;
 use kroma_db as db;
+use kroma_engine::services::importers::{self, Importers};
 use kroma_engine::services::notify::types::DeclaredTypes;
 use kroma_engine::services::settings::Settings;
 use kroma_engine::{infra, state};
@@ -102,6 +103,13 @@ pub fn build(
     services.insert(
         std::any::TypeId::of::<kroma_engine::services::trailers::Trailers>(),
         Arc::new(kroma_engine::services::trailers::Trailers::in_data_dir(&config.data_dir)),
+    );
+    services.insert(
+        std::any::TypeId::of::<Importers>(),
+        Arc::new(Importers::new(kroma_engine::point::Point::new(
+            importers::POINT,
+            contributions.clone(),
+        ))),
     );
 
     // Empty job roster: modules register their own jobs over `/_host/register-job`.
