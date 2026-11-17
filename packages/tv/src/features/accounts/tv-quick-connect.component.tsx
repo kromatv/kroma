@@ -19,6 +19,7 @@ import qrcode from 'qrcode-generator';
 import { useEffect, useState } from 'react';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
+import { canPair, useServerOwner } from '#tv/app/providers/server-owner';
 import { useNav } from '#tv/app/router';
 import { AuthScreen, GATE_MARK, KromaMark } from '#tv/shared/ui';
 
@@ -35,13 +36,14 @@ export function TvQuickConnect() {
   const t = useT();
   const { client, activeServerUrl, activeServerName } = useConnection();
   const { login } = useAuth();
+  const pairable = canPair(useServerOwner().owner);
   const [info, setInfo] = useState<QuickConnectInit | null>(null);
   const [qr, setQr] = useState<string | null>(null);
   const [error, setError] = useState<MessageKey | ''>('');
   useFocusNav({ onBack: nav.back });
 
   useEffect(() => {
-    if (!client || !activeServerUrl) {
+    if (!client || !activeServerUrl || !pairable) {
       return undefined;
     }
     let cancelled = false;
@@ -138,7 +140,7 @@ export function TvQuickConnect() {
       cancelled = true;
       clearTimers();
     };
-  }, [client, activeServerUrl, login]);
+  }, [client, activeServerUrl, login, pairable]);
 
   return (
     <AuthScreen>

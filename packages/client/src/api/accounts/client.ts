@@ -90,7 +90,8 @@ export default function accountsApi(ctx: RequestContext) {
 
     /** Public login-gate config read before any credential: whether the profile
      * roster is public and whether any account exists yet. */
-    config: () => ctx.get('/auth/config', AuthConfig, { auth: 'public' }),
+    config: (opts?: { signal?: AbortSignal }) =>
+      ctx.get('/auth/config', AuthConfig, { auth: 'public', ...opts }),
 
     /** Public profile list for the "Qui regarde ?" picker (no emails). Empty when
      * the `publicUserList` setting is off. */
