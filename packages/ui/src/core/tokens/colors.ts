@@ -69,7 +69,10 @@ export const colors = {
    *  every other variant's hover brightens too. */
   dangerHover: '#EF8091',
   /** See `accentPress`. */
-  dangerPress: '#D43E55',
+  dangerPress: '#D6455B',
+  /** Text and icons on a `danger` fill, as `accentInk` is on the accent: it
+   *  clears text contrast on the fill at rest, hovered and pressed. */
+  dangerInk: '#0A0A0C',
 } as const;
 
 export const lightColors: Record<keyof typeof colors, string> = {
@@ -117,6 +120,7 @@ export const lightColors: Record<keyof typeof colors, string> = {
   danger: '#A62035',
   dangerHover: '#8C1A2C',
   dangerPress: '#711221',
+  dangerInk: '#FFFFFF',
 };
 
 /**

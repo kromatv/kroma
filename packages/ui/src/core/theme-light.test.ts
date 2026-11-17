@@ -36,6 +36,13 @@ const contrast = (a: string, b: string): number => {
   return ((hi ?? 0) + 0.05) / ((lo ?? 0) + 0.05);
 };
 
+const weakestOnDanger = (palette: Record<keyof typeof colors, string>): number =>
+  Math.min(
+    ...[palette.danger, palette.dangerHover, palette.dangerPress].map((fill) =>
+      contrast(palette.dangerInk, fill),
+    ),
+  );
+
 describe('the light palette', () => {
   it('covers every token the dark one declares', () => {
     expect(Object.keys(lightColors).sort()).toEqual(Object.keys(colors).sort());
@@ -64,6 +71,11 @@ describe('the light palette', () => {
     expect(contrast(lightColors.accentText, lightColors.bg)).toBeGreaterThan(4.5);
     expect(contrast(colors.accentInk, colors.accent)).toBeGreaterThan(4.5);
     expect(contrast(colors.accentText, colors.bg)).toBeGreaterThan(4.5);
+  });
+
+  it('keeps a label readable on the danger fill, at rest, hovered and pressed', () => {
+    expect(weakestOnDanger(lightColors)).toBeGreaterThan(4.5);
+    expect(weakestOnDanger(colors)).toBeGreaterThan(4.5);
   });
 });
 
