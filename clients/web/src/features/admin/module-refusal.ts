@@ -40,6 +40,37 @@ function updateEngineText(
     : t('admin.modulesRefusalUpdateEngineOther', { engine: refusal.engine, range, version });
 }
 
+type SchemaRefusal = Extract<StoreRefusal, { kind: 'schema' }>;
+type CoreRefusal = Extract<StoreRefusal, { kind: 'coreSchema' | 'coreTable' }>;
+
+function schemaText(refusal: SchemaRefusal, t: Translate) {
+  return refusal.built > refusal.speaks
+    ? t('admin.modulesRefusalSchemaNewer')
+    : t('admin.modulesRefusalSchema');
+}
+
+function updateSchemaText(refusal: SchemaRefusal, version: string, t: Translate) {
+  return refusal.built > refusal.speaks
+    ? t('admin.modulesRefusalUpdateSchemaNewer', { version })
+    : t('admin.modulesRefusalUpdateSchema', { version });
+}
+
+function coreText(refusal: CoreRefusal, t: Translate) {
+  return refusal.kind === 'coreSchema'
+    ? t('admin.modulesRefusalCoreSchema', { needs: refusal.needs, has: refusal.has })
+    : t('admin.modulesRefusalCoreTable', { table: refusal.table, changed: refusal.changed });
+}
+
+function updateCoreText(refusal: CoreRefusal, version: string, t: Translate) {
+  return refusal.kind === 'coreSchema'
+    ? t('admin.modulesRefusalUpdateCoreSchema', { needs: refusal.needs, has: refusal.has, version })
+    : t('admin.modulesRefusalUpdateCoreTable', {
+        table: refusal.table,
+        changed: refusal.changed,
+        version,
+      });
+}
+
 function entryText(refusal: StoreRefusal, t: Translate): string {
   switch (refusal.kind) {
     case 'engine':
@@ -47,14 +78,15 @@ function entryText(refusal: StoreRefusal, t: Translate): string {
     case 'unknownEngine':
       return t('admin.modulesRefusalUnknownEngine', { engine: refusal.engine });
     case 'schema':
-      return refusal.built > refusal.speaks
-        ? t('admin.modulesRefusalSchemaNewer')
-        : t('admin.modulesRefusalSchema');
+      return schemaText(refusal, t);
     case 'interface':
       return t('admin.modulesRefusalInterface', {
         built: refusal.built,
         implements: refusal.implements,
       });
+    case 'coreSchema':
+    case 'coreTable':
+      return coreText(refusal, t);
     case 'native':
       return t('admin.modulesRefusalNative');
   }
@@ -67,15 +99,16 @@ function updateText(refusal: StoreRefusal, version: string, t: Translate): strin
     case 'unknownEngine':
       return t('admin.modulesRefusalUpdateUnknownEngine', { engine: refusal.engine, version });
     case 'schema':
-      return refusal.built > refusal.speaks
-        ? t('admin.modulesRefusalUpdateSchemaNewer', { version })
-        : t('admin.modulesRefusalUpdateSchema', { version });
+      return updateSchemaText(refusal, version, t);
     case 'interface':
       return t('admin.modulesRefusalUpdateInterface', {
         built: refusal.built,
         implements: refusal.implements,
         version,
       });
+    case 'coreSchema':
+    case 'coreTable':
+      return updateCoreText(refusal, version, t);
     case 'native':
       return t('admin.modulesRefusalUpdateNative', { version });
   }
@@ -112,16 +145,28 @@ export function newestText(m: StoreModule | undefined, t: Translate): string | n
   if (!m || !newest) {
     return null;
   }
-  const refusal = newest.refusal;
+  return newestRefusalText(newest.refusal, { newest: newest.version, version: m.version }, t);
+}
+
+function newestRefusalText(
+  refusal: StoreRefusal | null | undefined,
+  { newest, version }: { newest: string; version: string },
+  t: Translate,
+): string {
   if (refusal?.kind === 'engine' && refusal.engine === 'server') {
+    const range = readableRange(refusal.range);
     return t('admin.modulesNewestNeedsServer', {
-      newest: newest.version,
-      range: readableRange(refusal.range),
+      newest,
+      range,
       serverVersion: refusal.serverVersion,
-      version: m.version,
+      version,
     });
   }
-  return t('admin.modulesNewestRefused', { newest: newest.version, version: m.version });
+  if (refusal?.kind === 'coreSchema') {
+    const { needs, has } = refusal;
+    return t('admin.modulesNewestNeedsCore', { newest, needs, has, version });
+  }
+  return t('admin.modulesNewestRefused', { newest, version });
 }
 
 /** {@link newestText} in the reader's language. */

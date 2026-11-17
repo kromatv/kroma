@@ -64,14 +64,15 @@ export const Manifest = z.object({
       "The module's own semver version. Bump it whenever the bundle changes: CI content-hashes each bundle and refuses a run whose bytes moved while this stood still.",
     ),
   description: z.string().nullish().describe('One line, shown on the Store card.'),
-  /** What this module needs from its host, by engine name and semver range
-   *  (`{ server: ">=0.1.4" }`). A bare version means "at least that". An engine
-   *  the host cannot check is refused, not ignored. */
+  /** What this module needs from its host, by engine name: `server` is a semver
+   *  range (`">=0.1.4"`, a bare version means "at least that"), and `host` and
+   *  `core` are recorded by `kroma build`. An engine the host cannot check is
+   *  refused, not ignored. */
   engines: z
     .record(z.string(), z.string())
     .nullish()
     .describe(
-      'What this module needs from its host, by engine name and semver range, e.g. { "server": ">=0.1.4" }. A bare version means "at least that". An engine the host cannot check is refused, not ignored.',
+      'What this module needs from its host, by engine name. "server" is a semver range, e.g. ">=0.1.4", and a bare version means "at least that". "host" is the module interface the component imports, and "core" the oldest core database schema its storage.core grant runs on; kroma build records both, never the author. An engine the host cannot check is refused, not ignored.',
     ),
   library: z
     .boolean()

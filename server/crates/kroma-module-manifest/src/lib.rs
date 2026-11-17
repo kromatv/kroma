@@ -75,3 +75,8 @@ pub trait Module: Send + Sync {
         None
     }
 }
+
+mod core_schema;
+
+pub use compat::Provides;
+pub use core_schema::{CoreSchema, TableVersions};

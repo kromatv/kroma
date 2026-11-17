@@ -70,6 +70,7 @@ impl Modules {
             data_dir: dir.path().to_path_buf(),
             reserved_ids: Vec::new(),
             server_version: "0.0.0-test".into(),
+            core_schema: Default::default(),
             log_line: Some(Arc::new(move |id: &str, line: &str| {
                 log.lock().unwrap().push(format!("{id}: {line}"));
             })),

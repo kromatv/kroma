@@ -102,6 +102,7 @@ pub fn audit(module_dir: &Path, component: &Path) -> anyhow::Result<Report> {
         data_dir: data_dir.clone(),
         reserved_ids: Vec::new(),
         server_version: "0.0.0".into(),
+        core_schema: Default::default(),
         log_line: None,
     });
     let hearing = recorder.clone();

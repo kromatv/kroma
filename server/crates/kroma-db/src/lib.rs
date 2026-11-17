@@ -103,3 +103,5 @@ pub use visibility::*;
 pub(crate) fn now_or_blank() -> String {
     kroma_primitives::now_iso8601()
 }
+
+pub use schema::CORE_TABLE_VERSIONS;
