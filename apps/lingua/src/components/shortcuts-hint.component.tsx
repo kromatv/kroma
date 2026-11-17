@@ -2,7 +2,7 @@ import { Row } from '@kromatv/ui/kit/atoms/box';
 import { Kbd } from '@kromatv/ui/kit/atoms/kbd';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import type { ReactNode } from 'react';
-import { useModifier } from '#site/lib/use-modifier.hook';
+import { useKeyLabels } from '#site/lib/use-key-labels.hook';
 
 function Shortcut({ label, children }: Readonly<{ label: string; children: ReactNode }>) {
   return (
@@ -17,7 +17,7 @@ function Shortcut({ label, children }: Readonly<{ label: string; children: React
 
 /** The editor's keyboard shortcuts, in one quiet line. */
 export function ShortcutsHint() {
-  const modifier = useModifier();
+  const { modifier, option } = useKeyLabels();
   return (
     <Row gap={16} wrap align="center" aria-label="Keyboard shortcuts">
       <Shortcut label="save and next">
@@ -30,7 +30,7 @@ export function ShortcutsHint() {
         <Kbd icon="arrow-down" />
       </Shortcut>
       <Shortcut label="insert variable">
-        <Kbd>Alt</Kbd>
+        <Kbd>{option}</Kbd>
         <Kbd>V</Kbd>
       </Shortcut>
       <Shortcut label="search">

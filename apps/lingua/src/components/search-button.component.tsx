@@ -6,7 +6,7 @@ import { IconButton } from '@kromatv/ui/kit/atoms/icon-button';
 import { Kbd } from '@kromatv/ui/kit/atoms/kbd';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import { useCommandMenu } from '#site/lib/use-command-menu.hook';
-import { useModifier } from '#site/lib/use-modifier.hook';
+import { useKeyLabels } from '#site/lib/use-key-labels.hook';
 
 const field = svFor<{ root: StyleDecl; label: StyleDecl; glyph: { color: string } }>()({
   slots: {
@@ -29,7 +29,7 @@ const field = svFor<{ root: StyleDecl; label: StyleDecl; glyph: { color: string 
 });
 
 function SearchField({ onPress }: Readonly<{ onPress: () => void }>) {
-  const modifier = useModifier();
+  const { modifier } = useKeyLabels();
   return (
     <Focusable sv={field} label={`Search and commands, ${modifier}+K`} onPress={onPress}>
       {({ slots }) => (

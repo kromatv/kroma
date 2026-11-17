@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type KeyPress, modifierLabel, neighbour, shortcutOf } from './editor-keys';
+import { type KeyPress, keyLabels, neighbour, shortcutOf } from './editor-keys';
 
 function press(key: string, over: Partial<KeyPress> = {}): KeyPress {
   return { key, code: '', ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...over };
@@ -43,13 +43,13 @@ describe('neighbour', () => {
   });
 });
 
-describe('modifierLabel', () => {
-  it('spells ⌘ on Apple platforms and Ctrl elsewhere', () => {
-    expect(['MacIntel', 'iPhone', 'Win32', 'Linux x86_64'].map(modifierLabel)).toEqual([
-      '⌘',
-      '⌘',
-      'Ctrl',
-      'Ctrl',
+describe('keyLabels', () => {
+  it('prints ⌘ and ⌥ on Apple platforms, Ctrl and Alt elsewhere', () => {
+    expect(['MacIntel', 'iPhone', 'Win32', 'Linux x86_64'].map(keyLabels)).toEqual([
+      { modifier: '⌘', option: '⌥' },
+      { modifier: '⌘', option: '⌥' },
+      { modifier: 'Ctrl', option: 'Alt' },
+      { modifier: 'Ctrl', option: 'Alt' },
     ]);
   });
 });

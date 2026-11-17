@@ -172,7 +172,7 @@ function Translation({
 /**
  * One form of a message: its source and the stable translations under it,
  * then the viewer's text, beside them on a wide screen. Placeholders show as
- * chips that insert themselves; Alt+V inserts the next one missing.
+ * chips that insert themselves; Alt+V (⌥V on a Mac) inserts the next one missing.
  */
 export function MessageForm({ form }: Readonly<{ form: FormProps }>) {
   const { row } = form;

@@ -2,7 +2,7 @@ import { createContext, useEffect } from 'react';
 import { neighbour, type Shortcut, shortcutOf } from '#site/lib/editor-keys';
 import { focusField, keyOfField, messageFields } from '#site/lib/field-dom';
 
-/** What each message field of the editor does on Alt+V, by message key. */
+/** What each message field of the editor does on Alt+V (⌥V on a Mac), by message key. */
 export type FieldActions = Map<string, () => void>;
 
 /** The editor's field actions, which each message field registers its own in. */
@@ -41,7 +41,7 @@ function onEditorKey(event: KeyboardEvent, fields: FieldActions): void {
 /**
  * The editor's keyboard, from inside a message field: Ctrl or ⌘ with Enter
  * saves and goes to the next field, with ↓ and ↑ moves between fields, and
- * Alt+V runs the field's own action. Blurring a field is what saves it.
+ * Alt+V (⌥V on a Mac) runs the field's own action. Blurring a field is what saves it.
  */
 export function useEditorKeys(fields: FieldActions): void {
   useEffect(() => {

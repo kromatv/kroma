@@ -28,8 +28,8 @@ function withModifier(press: KeyPress): Shortcut | null {
 
 /**
  * The editor's shortcut a key press spells, or null: Ctrl or ⌘ with Enter, ↓
- * or ↑, and Alt+V, read by its physical key because Alt changes the letter a
- * Mac types.
+ * or ↑, and Alt+V (⌥V on a Mac), read by its physical key because ⌥ changes
+ * the letter a Mac types.
  */
 export function shortcutOf(press: KeyPress): Shortcut | null {
   if (press.shiftKey) {
@@ -47,7 +47,18 @@ export function neighbour<T>(items: readonly T[], current: T, step: 1 | -1): T |
   return items[at + step] ?? null;
 }
 
-/** How the shortcut modifier is spelled on the platform `navigator.platform` names. */
-export function modifierLabel(platform: string): string {
-  return /mac|iphone|ipad/i.test(platform) ? '⌘' : 'Ctrl';
+/** How a keyboard prints the two modifier keys the editor's shortcuts use. */
+export interface KeyLabels {
+  modifier: string;
+  option: string;
+}
+
+const APPLE_KEYS: KeyLabels = { modifier: '⌘', option: '⌥' };
+
+/** The modifier keys of a Windows or Linux keyboard, and what the server renders before the browser says which it is. */
+export const PC_KEYS: KeyLabels = { modifier: 'Ctrl', option: 'Alt' };
+
+/** How the keyboard of the platform `navigator.platform` names prints the editor's modifier keys. */
+export function keyLabels(platform: string): KeyLabels {
+  return /mac|iphone|ipad/i.test(platform) ? APPLE_KEYS : PC_KEYS;
 }
