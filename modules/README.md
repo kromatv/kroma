@@ -521,6 +521,17 @@ install plan.
   name. `kroma build` records it in the bundled manifest as `engines.host` for a
   module whose server floor is `0.1.40` or later, so a Store can judge a version
   before downloading it, and `kroma check` refuses one written by hand.
+  The third is the core schema, for a module with a `storage.core` grant. A
+  floor cannot name it: every canary of a release reports the same version,
+  and only the ones built after a schema step carry it. `kroma build` records
+  `engines.core`, the newest core schema version that changed a table the grant
+  names, read from `server/crates/kroma-db/src/schema/table_versions.json`,
+  under the same `0.1.40` rule, and `kroma check` refuses one written by hand. A
+  server whose core schema is older refuses the module, and the Store offers
+  the newest version it runs. A server that later drops or alters a column, or
+  rewrites data, in a table the grant names refuses a module built before that
+  step, by table, until it is rebuilt. Adding a column or an index breaks no
+  module, so name the columns you select and insert.
 - **`settings`** is the core settings keys you read and write, as
   `{ "read": [...], "write": [...] }`. Absent is the same as empty: a module
   without it reaches no setting.
@@ -657,6 +668,11 @@ a channel between the core and the module (`whisper_jobs`) is shared by
 definition: it lives in the core schema, and the module holds a grant on it. A
 module cannot create a table in the core database, which is the same statement
 said in enforcement.
+
+So a core schema step that changes a table a grant names changes the module
+too: its next build records the step's version as `engines.core` (see
+[`engines`](#runtime-contract)), the bundle's bytes move, and its `version` moves in the
+same pull request as the step.
 
 Points are unaffected: a consumer holds no capability just because a provider
 does. A provider reads its OWN database and answers with what the caller needs,

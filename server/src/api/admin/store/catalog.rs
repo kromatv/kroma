@@ -9,7 +9,7 @@
 
 use kroma_module_host::HostCtx;
 use kroma_module_manifest::{
-    Declared, Helper, ModuleManifest, Permissions, SettingsScope, Storage,
+    Declared, Helper, ModuleManifest, Permissions, Provides, SettingsScope, Storage,
 };
 use serde_json::{json, Value};
 
@@ -22,6 +22,15 @@ mod versions;
 pub use parse::fetch;
 
 const SERVER_VERSION: &str = crate::VERSION;
+
+/// What this server offers a catalog row's `engines`: the version it reports
+/// and the core schema it carries.
+pub(super) fn this_server() -> Provides<'static> {
+    Provides {
+        server: SERVER_VERSION,
+        core: crate::core_schema(),
+    }
+}
 
 /// One downloadable `.kmod` build. `target = None` is a WebAssembly component or a
 /// library module, the same on every platform; a `target` names a native build.
@@ -120,7 +129,8 @@ pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
             speaks,
         });
     }
-    kroma_module_manifest::engines_satisfied(&m.engines, SERVER_VERSION).map_err(Refusal::from)?;
+    kroma_module_manifest::engines_satisfied(&m.engines, m.storage.as_ref(), this_server())
+        .map_err(Refusal::from)?;
     if pick_artifact(m).is_none() {
         return Err(Refusal::Native);
     }

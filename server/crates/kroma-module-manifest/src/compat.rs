@@ -10,12 +10,15 @@
 
 use std::collections::BTreeMap;
 
+use crate::{CoreSchema, Storage};
+
 /// The engines this build knows how to check. A module may only require what a
 /// server can verify: ignoring an unknown requirement is how a module gets
 /// installed onto a host that cannot run it, and then fails somewhere else.
-pub const KNOWN_ENGINES: &[&str] = &["host", "server"];
+pub const KNOWN_ENGINES: &[&str] = &["core", "host", "server"];
 
 const HOST_ENGINE: &str = "host";
+const CORE_ENGINE: &str = "core";
 
 /// Why a module's `engines` map refuses this build.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,6 +35,16 @@ pub enum EngineRefusal {
     /// The module was built against version `built` of the host interface, and
     /// this build implements `implements`, which does not run it.
     Interface { built: String, implements: String },
+    /// The module runs on core schema `needs` and later, and this build's core
+    /// schema is `has`.
+    CoreSchema { needs: String, has: u32 },
+    /// The module reaches `table` as core schema `built` had it, and this build
+    /// changed that table at `changed` in a way the module reads wrongly.
+    CoreTable {
+        table: String,
+        built: u32,
+        changed: u32,
+    },
 }
 
 impl std::fmt::Display for EngineRefusal {
@@ -54,34 +67,57 @@ impl std::fmt::Display for EngineRefusal {
                 f,
                 "was built against module interface {built} (this server implements {implements})"
             ),
+            Self::CoreSchema { needs, has } => write!(
+                f,
+                "requires core schema {needs} (this server's is {has})"
+            ),
+            Self::CoreTable {
+                table,
+                built,
+                changed,
+            } => write!(
+                f,
+                "reads {table} as core schema {built} had it, and this server changed that table at {changed}: it needs rebuilding"
+            ),
         }
     }
 }
 
-/// A module's `engines` map against what this build provides.
+/// What one build of the server offers a module's `engines`: the version it
+/// reports, and the core schema it carries.
+#[derive(Debug, Clone, Copy)]
+pub struct Provides<'a> {
+    pub server: &'a str,
+    pub core: &'a CoreSchema,
+}
+
+/// A module's `engines` map against what this build provides. `storage` is the
+/// module's grant, which `core` is checked against table by table.
 ///
-/// An empty map is no constraint; a range that will not parse is (like every
-/// other range here) treated as no constraint rather than a refusal.
+/// An empty map is no constraint; a server range that will not parse is (like
+/// every other range here) treated as no constraint rather than a refusal.
 pub fn engines_satisfied(
     engines: &BTreeMap<String, String>,
-    server_version: &str,
+    storage: Option<&Storage>,
+    provides: Provides<'_>,
 ) -> Result<(), EngineRefusal> {
     for (engine, range) in engines {
-        if !KNOWN_ENGINES.contains(&engine.as_str()) {
-            return Err(EngineRefusal::Unknown {
-                engine: engine.clone(),
-            });
-        }
-        if engine == HOST_ENGINE {
-            interface_satisfied(range)?;
-            continue;
-        }
-        if !version_satisfies(Some(range), server_version) {
-            return Err(EngineRefusal::Unsatisfied {
-                engine: engine.clone(),
-                range: range.clone(),
-                server_version: server_version.to_owned(),
-            });
+        match engine.as_str() {
+            HOST_ENGINE => interface_satisfied(range)?,
+            CORE_ENGINE => provides.core.runs(range, storage)?,
+            _ if !KNOWN_ENGINES.contains(&engine.as_str()) => {
+                return Err(EngineRefusal::Unknown {
+                    engine: engine.clone(),
+                });
+            }
+            _ if !version_satisfies(Some(range), provides.server) => {
+                return Err(EngineRefusal::Unsatisfied {
+                    engine: engine.clone(),
+                    range: range.clone(),
+                    server_version: provides.server.to_owned(),
+                });
+            }
+            _ => {}
         }
     }
     Ok(())
@@ -171,144 +207,4 @@ pub fn fallbacks_newest_first<'a>(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn engines(pairs: &[(&str, &str)]) -> BTreeMap<String, String> {
-        pairs
-            .iter()
-            .map(|(k, v)| ((*k).to_string(), (*v).to_string()))
-            .collect()
-    }
-
-    #[test]
-    fn an_engine_range_is_checked_against_this_server() {
-        assert!(engines_satisfied(&engines(&[("server", ">=0.1.4")]), "0.2.0").is_ok());
-        assert!(engines_satisfied(&engines(&[]), "0.1.0").is_ok());
-
-        let err = engines_satisfied(&engines(&[("server", ">=0.9")]), "0.2.0").unwrap_err();
-        assert_eq!(
-            err,
-            EngineRefusal::Unsatisfied {
-                engine: "server".into(),
-                range: ">=0.9".into(),
-                server_version: "0.2.0".into(),
-            }
-        );
-        assert_eq!(
-            err.to_string(),
-            "requires server >=0.9 (this server is 0.2.0)"
-        );
-    }
-
-    #[test]
-    fn an_engine_this_build_cannot_check_is_refused_rather_than_ignored() {
-        let err = engines_satisfied(&engines(&[("ffmpeg", ">=6")]), "0.2.0")
-            .unwrap_err()
-            .to_string();
-        assert!(err.contains("cannot check"), "{err}");
-        assert!(err.contains("ffmpeg"), "{err}");
-        assert!(err.contains("known: host, server"), "{err}");
-    }
-
-    #[test]
-    fn a_module_built_against_another_interface_is_refused_by_name() {
-        let met = engines(&[("host", crate::HOST_INTERFACE), ("server", ">=0.1.4")]);
-        let other = engines(&[("host", "9.0.0"), ("server", ">=0.1.4")]);
-
-        let refusal = engines_satisfied(&other, "0.2.0").unwrap_err();
-
-        assert!(engines_satisfied(&met, "0.2.0").is_ok());
-        assert_eq!(
-            refusal,
-            EngineRefusal::Interface {
-                built: "9.0.0".into(),
-                implements: crate::HOST_INTERFACE.into(),
-            }
-        );
-        assert_eq!(
-            refusal.to_string(),
-            format!(
-                "was built against module interface 9.0.0 (this server implements {})",
-                crate::HOST_INTERFACE
-            )
-        );
-    }
-
-    #[test]
-    fn fallbacks_are_the_older_versions_newest_first() {
-        let versions = ["0.4.29", "0.4.31", "0.4.9", "0.4.30"];
-
-        let fallbacks = fallbacks_newest_first(versions, "0.4.31");
-
-        assert_eq!(fallbacks, ["0.4.30", "0.4.29", "0.4.9"]);
-    }
-
-    #[test]
-    fn a_prerelease_is_no_fallback_for_a_stable_version() {
-        let versions = ["1.1.0-beta.2", "1.0.0"];
-
-        let fallbacks = fallbacks_newest_first(versions, "1.1.0");
-
-        assert_eq!(fallbacks, ["1.0.0"]);
-    }
-
-    #[test]
-    fn a_prerelease_newest_version_may_fall_back_to_an_older_prerelease() {
-        let versions = ["2.0.0-rc.1", "2.0.0-rc.2", "1.9.0"];
-
-        let fallbacks = fallbacks_newest_first(versions, "2.0.0-rc.3");
-
-        assert_eq!(fallbacks, ["2.0.0-rc.2", "2.0.0-rc.1", "1.9.0"]);
-    }
-
-    #[test]
-    fn a_version_that_is_not_semver_is_never_a_fallback() {
-        let fallbacks = fallbacks_newest_first(["nightly", "0.1.0"], "0.2.0");
-
-        assert_eq!(fallbacks, ["0.1.0"]);
-    }
-
-    #[test]
-    fn nothing_falls_back_from_a_newest_version_that_is_not_semver() {
-        assert!(fallbacks_newest_first(["0.1.0"], "nightly").is_empty());
-    }
-
-    #[test]
-    fn is_newer_compares_semver_then_falls_back() {
-        assert!(is_newer("0.2.0", "0.1.9"));
-        assert!(!is_newer("0.1.9", "0.2.0"));
-        assert!(!is_newer("0.2.0", "0.2.0"));
-        assert!(is_newer("nightly-2", "nightly-1"));
-    }
-
-    #[test]
-    fn bare_min_server_means_at_least() {
-        assert!(version_satisfies(Some("0.1.4"), "0.1.4"));
-        assert!(version_satisfies(Some("0.1.4"), "0.2.0"));
-        assert!(!version_satisfies(Some("0.2.0"), "0.1.4"));
-    }
-
-    #[test]
-    fn ranges_and_wildcards_work() {
-        assert!(version_satisfies(Some(">=0.1, <0.3"), "0.2.9"));
-        assert!(!version_satisfies(Some(">=0.3"), "0.2.9"));
-        assert!(version_satisfies(Some("*"), "0.0.1"));
-        assert!(version_satisfies(Some("  "), "0.0.1"));
-        assert!(version_satisfies(None, "0.0.1"));
-    }
-
-    #[test]
-    fn unparseable_declarations_never_block() {
-        assert!(version_satisfies(Some("not-a-version"), "0.1.4"));
-        assert!(version_satisfies(Some("1.0.0"), "not-a-version"));
-        assert!(range_matches("garbage", "0.1.0"));
-    }
-
-    #[test]
-    fn dependency_ranges() {
-        assert!(range_matches("^0.1.0", "0.1.9"));
-        assert!(!range_matches("^0.1.0", "0.2.0"));
-        assert!(range_matches("*", "9.9.9"));
-    }
-}
+mod tests;

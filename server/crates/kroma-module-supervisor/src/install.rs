@@ -44,8 +44,7 @@ impl Supervisor {
             return Err(native_build(&id));
         }
         check_manifest_schema(&id, &manifest)?;
-        kroma_module_manifest::engines_satisfied(&manifest.engines, &self.cfg.server_version)
-            .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))?;
+        self.engines_satisfied(&id, &manifest)?;
         let component = staging.join(MODULE_COMPONENT);
         if component.exists() {
             check_interface(&id, &std::fs::read(&component)?)?;

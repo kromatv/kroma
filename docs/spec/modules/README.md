@@ -298,6 +298,13 @@ not implement is refused by name, even when its `minServer` is met
 **MOD-93** (SHIPPED) - `minServer` is the floor for a server capability the module needs. It is
 no longer the whole compatibility contract.
 
+**MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core
+database the server carries, at install, at every start and in the Store, and its author
+declares nothing for it. A module that needs a newer core database than the server's is refused
+naming both versions, and the Store offers the newest version that runs instead. A module built
+before the server changed a table it reaches, in a way it would read wrongly, is refused naming
+the table.
+
 ## Module UI
 
 Status: **SHIPPED**

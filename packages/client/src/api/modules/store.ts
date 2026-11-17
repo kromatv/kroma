@@ -33,6 +33,13 @@ export const StoreRefusal = z.discriminatedUnion('kind', [
     serverVersion: z.string(),
   }),
   z.object({ kind: z.literal('interface'), built: z.string(), implements: z.string() }),
+  z.object({ kind: z.literal('coreSchema'), needs: z.string(), has: z.number() }),
+  z.object({
+    kind: z.literal('coreTable'),
+    table: z.string(),
+    built: z.number(),
+    changed: z.number(),
+  }),
   z.object({ kind: z.literal('native') }),
 ]);
 export type StoreRefusal = z.infer<typeof StoreRefusal>;

@@ -155,6 +155,7 @@ fn supervisor_config(config: &Config, host_token: String) -> SupervisorConfig {
         // same id (two live backends); installed-only modules are not reserved.
         reserved_ids: kroma_module_kernel::backend_ids(),
         server_version: crate::VERSION.to_string(),
+        core_schema: crate::core_schema().clone(),
         log_line: Some(Arc::new(|id: &str, line: &str| {
             println!("[{id}] {line}");
             infra::logbuf::LOG_BUFFER.push_module_line(id, line);
@@ -173,6 +174,16 @@ mod tests {
         let supervisor = supervisor_config(&config, "token".into());
 
         assert_eq!(supervisor.server_version, crate::VERSION);
+    }
+
+    #[test]
+    fn a_module_is_checked_against_the_core_schema_this_binary_carries() {
+        let config = Config::default();
+
+        let supervisor = supervisor_config(&config, "token".into());
+
+        assert_eq!(supervisor.core_schema, *crate::core_schema());
+        assert!(supervisor.core_schema.tables.contains_key("downloads"));
     }
 
     #[test]

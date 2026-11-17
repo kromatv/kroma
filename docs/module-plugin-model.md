@@ -139,6 +139,12 @@ rather than failing a request an hour later. Within a major, evolution is additi
 a new field must default, because the two ends were built at different times from
 different sources and the operator installed whichever pair they installed.
 
+The slice of the core database a module reads has a version too, the core
+schema's. `kroma build` records the one a module's grant needs as `engines.core`,
+and a server refuses a module that needs a newer one, or one built before it
+changed a table the module reads in a way the module would read wrongly (see
+`engines` in [`modules/README.md`](../modules/README.md#runtime-contract)).
+
 ## The rule that keeps the core ignorant
 
 The core does define a few points, because a host with no hooks cannot be

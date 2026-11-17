@@ -84,6 +84,7 @@ fn test_supervisor(data_dir: &Path) -> Arc<kroma_module_supervisor::Supervisor> 
         data_dir: data_dir.to_path_buf(),
         reserved_ids: Vec::new(),
         server_version: "0.0.0-test".into(),
+        core_schema: crate::core_schema().clone(),
         log_line: None,
     })
 }

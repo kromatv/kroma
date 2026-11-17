@@ -15,6 +15,10 @@ export const AuthoredManifest = Manifest.strict()
   .refine((m) => m.engines?.host === undefined, {
     message: 'engines.host is recorded by `kroma build` from the component: remove it',
     path: ['engines', 'host'],
+  })
+  .refine((m) => m.engines?.core === undefined, {
+    message: 'engines.core is recorded by `kroma build` from storage.core: remove it',
+    path: ['engines', 'core'],
   });
 
 const CargoManifest = z.object({
