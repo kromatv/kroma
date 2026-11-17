@@ -50,6 +50,7 @@
     "kroma/no-redundant-jsdoc-tags": "error",
     "kroma/no-unknown-record-assertions": "error",
     "kroma/no-em-dashes": "error",
+    "kroma/no-unresolved-color-tokens": "error",
     "jsx-a11y/aria-role": "error",
     "jsx-a11y/media-has-caption": "error",
     "jsx-a11y/no-static-element-interactions": "error",

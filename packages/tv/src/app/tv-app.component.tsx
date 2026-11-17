@@ -76,7 +76,6 @@ export interface TvAppProps {
   decoderFrameLimits?: DecoderFrameLimits;
   platform?: string;
   capabilities?: TvEnvOverrides;
-  introVideoSrc?: string;
   voiceSearch?: VoiceSearchBackend | null;
   searchShell?: SearchShell | null;
   launcher?: LauncherBackend | null;
@@ -117,7 +116,6 @@ function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
 export function TvApp({
   platform = 'TV',
   capabilities,
-  introVideoSrc,
   voiceSearch = null,
   searchShell = null,
   launcher = null,
@@ -232,7 +230,7 @@ export function TvApp({
                               </TvClientProvider>
                             </ConnectionProvider>
                           </TvNavProvider>
-                          <BrandIntro videoSrc={introVideoSrc} />
+                          <BrandIntro />
                         </EnvProvider>
                       </SearchShellProvider>
                     </VoiceSearchProvider>

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { color as tokenColor } from '#ui/core/color';
 import { KEYFRAMES } from './animations';
 import { PINNED } from './constants';
 
@@ -8,7 +9,7 @@ export interface IntroShellProps {
 }
 
 /**
- * The full-screen frame both intros render into. Framework-free (plain inline
+ * The full-screen frame the film renders into. Framework-free (plain inline
  * styles) so it renders identically on the web SSR shell and on old TV webviews.
  */
 export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
@@ -20,7 +21,7 @@ export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
         ...PINNED,
         zIndex: 9999,
         overflow: 'hidden',
-        background: 'bg',
+        background: tokenColor('bg'),
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -37,7 +38,7 @@ export function IntroShell({ exiting, children }: Readonly<IntroShellProps>) {
         style={{
           position: 'absolute',
           ...PINNED,
-          background: 'bg',
+          background: tokenColor('bg'),
           opacity: exiting ? 1 : 0,
           transition: 'opacity .8s ease',
           pointerEvents: 'none',

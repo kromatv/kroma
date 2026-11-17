@@ -12,6 +12,7 @@ import noReactForwardRef from './rules/no-react-forward-ref.mjs';
 import noRedundantJsdocTags from './rules/no-redundant-jsdoc-tags.mjs';
 import noRelativeWorkspaceImports from './rules/no-relative-workspace-imports.mjs';
 import noUnknownRecordAssertions from './rules/no-unknown-record-assertions.mjs';
+import noUnresolvedColorTokens from './rules/no-unresolved-color-tokens.mjs';
 import ownedTaskComments from './rules/owned-task-comments.mjs';
 import reExportFrom from './rules/re-export-from.mjs';
 import useStatePair from './rules/use-state-pair.mjs';
@@ -28,6 +29,7 @@ export default {
     'no-unknown-record-assertions': noUnknownRecordAssertions,
     'no-em-dashes': noEmDashes,
     'no-raw-design-values': noRawDesignValues,
+    'no-unresolved-color-tokens': noUnresolvedColorTokens,
     'no-relative-workspace-imports': noRelativeWorkspaceImports,
     'no-module-mutable-bindings': noModuleMutableBindings,
     'no-react-forward-ref': noReactForwardRef,

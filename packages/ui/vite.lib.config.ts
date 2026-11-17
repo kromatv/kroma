@@ -31,10 +31,10 @@ const NATIVE_EXTERNAL = [
 
 export default defineConfig({
   plugins: [
-    // The brand intro's 4K master and its sting are 11 MB of KROMA, and the
-    // component already falls back to its CSS scene when the video will not
-    // play. `new URL(asset, import.meta.url)` is read by Vite's asset plugin
-    // rather than through `resolve.alias`, so it is intercepted here.
+    // The brand intro's two films are 11.5 MB of KROMA, and the component
+    // hands off at once when it has no film to play. `new URL(asset,
+    // import.meta.url)` is read by Vite's asset plugin rather than through
+    // `resolve.alias`, so it is intercepted here.
     {
       name: 'kroma-ui-drop-brand-media',
       enforce: 'pre' as const,

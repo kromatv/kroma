@@ -2,13 +2,9 @@ import { KromaIntro, sessionFlag } from '@kromatv/ui/kit';
 import { NativeFilm } from '@kromatv/ui/native-film';
 import { useState } from 'react';
 
-export interface BrandIntroProps {
-  videoSrc?: string;
-}
-
 const introSeen = sessionFlag('kroma:intro-seen');
 
-export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
+export function BrandIntro() {
   const [done, setDone] = useState(() => introSeen.isSet());
   if (done) {
     return null;
@@ -19,8 +15,8 @@ export function BrandIntro({ videoSrc }: Readonly<BrandIntroProps>) {
   };
   return (
     <>
-      <KromaIntro lite videoSrc={videoSrc} onDone={finish} />
-      <NativeFilm videoSrc={videoSrc} onDone={finish} />
+      <KromaIntro onDone={finish} />
+      <NativeFilm onDone={finish} />
     </>
   );
 }

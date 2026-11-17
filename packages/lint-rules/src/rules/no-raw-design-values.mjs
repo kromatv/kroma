@@ -15,7 +15,7 @@ export default defineRule(
     scope:
       'Configured UI consumer source files: literal hex/rgb/rgba/hsl/hsla colours in known colour props/properties, plus literal fontSize, radius, and border-radius values. JSX attributes and object properties are inspected, including static template literals and unary negative numbers.',
     repair:
-      'Use a palette token such as surface2 or textDim, a named radius token, and a text variant/type role. For native style objects use the existing token resolver or styles API. Add new design decisions to core/tokens before consuming them. Keep token definitions in the excluded token layer.',
+      "Use a palette token such as surface2 or textDim, a named radius token, and a text variant/type role. Where the kit does not resolve a name (a DOM element's style or attribute, an SVG primitive, a canvas), write the token through color(): color('surface2'), never the bare name, which paints nothing there. Add new design decisions to core/tokens before consuming them. Keep token definitions in the excluded token layer.",
     exceptions:
       'Token/core implementation, icon asset data, tests, and fixture files are excluded by config. Zero is allowed as an explicit radius reset. Names like transparent/currentColor and CSS variables are allowed. Computed values, spreads, CSS text, gradients, named CSS colours, and nonliteral expressions are not inspected. No automatic nearest-token guess.',
     verification:
@@ -27,7 +27,7 @@ export default defineRule(
     meta: {
       messages: {
         violation:
-          'This raw colour, radius, or font size bypasses the design system. Use the named palette/radius/type token or add the missing token at its source. Run bun run --cwd packages/lint-rules rules no-raw-design-values for the repair guide.',
+          "This raw colour, radius, or font size bypasses the design system. Use the named palette/radius/type token, through color('name') where the kit does not resolve names (a DOM style, an SVG attribute), or add the missing token at its source. Run bun run --cwd packages/lint-rules rules no-raw-design-values for the repair guide.",
       },
     },
     create(context) {

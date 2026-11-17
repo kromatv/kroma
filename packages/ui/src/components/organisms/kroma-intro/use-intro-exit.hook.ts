@@ -10,16 +10,19 @@ export interface IntroExit {
   /** Drops the safety timer without exiting (a looping intro never stalls out). */
   disarmSafety: () => void;
   exit: () => void;
+  /** Hands off to the app now, with no fade: for a film that cannot play at all. */
+  handOff: () => void;
   reopen: () => void;
   clearTimers: () => void;
 }
 
 /**
  * Single-shot end-of-intro lifecycle: `exit()` fades to black and hands off to
- * `onDone` one {@link EXIT_MS} later, at most once per run. The hand-off is a
- * timer rather than a transition callback because TV webviews drop
- * `transitionend`; `onDone` is read through a ref so mount-only effects in the
- * caller never re-run and restart the intro.
+ * `onDone` one {@link EXIT_MS} later, `handOff()` hands off at once, and either
+ * runs at most once per run. The fade's hand-off is a timer rather than a
+ * transition callback because TV webviews drop `transitionend`; `onDone` is read
+ * through a ref so mount-only effects in the caller never re-run and restart the
+ * intro.
  */
 export function useIntroExit(onDone: () => void): IntroExit {
   const [exiting, setExiting] = useState(false);
@@ -41,6 +44,15 @@ export function useIntroExit(onDone: () => void): IntroExit {
     exitRef.current = setTimeout(() => onDoneRef.current(), EXIT_MS);
   }, []);
 
+  const handOff = useCallback(() => {
+    if (exitedRef.current) {
+      return;
+    }
+    exitedRef.current = true;
+    clearTimeout(safetyRef.current);
+    onDoneRef.current();
+  }, []);
+
   const reopen = useCallback(() => {
     exitedRef.current = false;
     clearTimeout(safetyRef.current);
@@ -60,5 +72,5 @@ export function useIntroExit(onDone: () => void): IntroExit {
 
   const disarmSafety = useCallback(() => clearTimeout(safetyRef.current), []);
 
-  return { exiting, exitedRef, armSafety, disarmSafety, exit, reopen, clearTimers };
+  return { exiting, exitedRef, armSafety, disarmSafety, exit, handOff, reopen, clearTimers };
 }
