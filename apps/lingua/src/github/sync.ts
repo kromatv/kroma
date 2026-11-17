@@ -14,8 +14,8 @@ export interface Syncing {
 export type SyncOutcome = 'unchanged' | 'moved' | 'behind';
 
 async function configAt(reader: Reader, repo: string, at: { sha: string; tree: TreeEntry[] }) {
-  const entry = at.tree.find((e) => e.path === CONFIG_PATH && e.type === 'blob');
-  if (!entry) {
+  const held = at.tree.some((e) => e.path === CONFIG_PATH && e.type === 'blob');
+  if (!held) {
     return { config: null, text: null, error: `${CONFIG_PATH} is missing` };
   }
   const text = await reader.text(repo, at.sha, CONFIG_PATH);
