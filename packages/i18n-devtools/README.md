@@ -73,9 +73,11 @@ to a KROMA app alone. Everything below is absent for any other engine.
 - **Open a message in Lingua.** Point at a string and press `Ctrl+Alt+L`, or
   follow the editor's link, to open its page on the repository's translation
   site in a new tab, in the rendered locale. The dev server reads the site off a
-  `lingua.json` at or above its root (`url`, https only) and the project off
-  `git remote get-url origin`. Without either there is no link and no chord. Only
-  the app's own messages get one: Lingua does not keep a module's.
+  `lingua.json` at or above its root, no higher than the top of the checkout
+  (`url`, https only), and the project off the `upstream` remote, or `origin`
+  where there is none: a fork's `origin` is the fork, which Lingua does not
+  list. Without either there is no link and no chord. Only the app's own
+  messages get one: Lingua does not keep a module's.
 
 The server refuses what it cannot vouch for: a key that is no message of the
 set, a locale the set keeps no catalog for, a placeholder the source message

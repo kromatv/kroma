@@ -90,6 +90,13 @@ describe('where a repository translates', () => {
     expect(await findLingua(root, ORIGIN)).toBeNull();
   });
 
+  it('reads no lingua.json from above the top of the checkout', async () => {
+    const root = repository({ url: 'https://lingua.kroma.tv' });
+    mkdirSync(join(root, '..', '.git'));
+
+    expect(await findLingua(root, ORIGIN)).toBeNull();
+  });
+
   it('says nothing for a repository with no remote', async () => {
     const root = repository({ url: 'https://lingua.kroma.tv' });
 
@@ -124,6 +131,20 @@ describe('answering the page', () => {
       at: 1,
       lingua: { url: 'https://lingua.kroma.tv', project: 'kromatv/kroma' },
     });
+  });
+
+  it('reads the project a fork was made from off its upstream', async () => {
+    const root = repository({ url: 'https://lingua.kroma.tv' });
+    const top = join(root, '..', '..');
+    execFileSync('git', ['init', '-q'], { cwd: top });
+    execFileSync('git', ['remote', 'add', 'origin', 'git@github.com:ada/kroma.git'], { cwd: top });
+    execFileSync('git', ['remote', 'add', 'upstream', 'https://github.com/kromatv/kroma.git'], {
+      cwd: top,
+    });
+
+    const said = await linguaAnswers(root)({ at: 1 });
+
+    expect(said?.lingua?.project).toBe('kromatv/kroma');
   });
 
   it('works nothing out for an ask with nothing to answer under', async () => {

@@ -5,8 +5,9 @@ import { ask, type Lingua } from './host';
 
 /** Where the repository translates, asked of the dev server the first time
  *  the page is `inspected`: `null` until it answers, and for good without a
- *  `lingua.json` or a git remote. Never asked of an engine that is not
- *  `writable`, whose catalogs the dev server does not know. */
+ *  `lingua.json` or a git remote. A dev server that does not answer in time
+ *  is asked again the next time inspecting starts. Never asked of an engine
+ *  that is not `writable`, whose catalogs the dev server does not know. */
 export function useLingua(inspected: boolean): Lingua | null {
   const [lingua, setLingua] = useState<Lingua | null>(null);
   const asked = useRef(false);
@@ -15,7 +16,10 @@ export function useLingua(inspected: boolean): Lingua | null {
       return;
     }
     asked.current = true;
-    void ask('kroma:i18n:lingua', {}).then((answer) => setLingua(answer?.lingua ?? null));
+    void ask('kroma:i18n:lingua', {}).then((answer) => {
+      asked.current = answer !== null;
+      setLingua(answer?.lingua ?? null);
+    });
   }, [inspected]);
   return lingua;
 }

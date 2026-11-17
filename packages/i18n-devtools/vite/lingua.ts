@@ -14,6 +14,7 @@ type RemoteOf = (repository: string) => Promise<string | null>;
 
 const ASK = 'kroma:i18n:lingua';
 const CONFIG = 'lingua.json';
+const CHECKOUT = '.git';
 const SCP = /^[^@/\s]+@[^:/\s]+:/;
 const SEGMENT = /^[\w.-]+$/;
 const REMOTES = new Set(['https:', 'ssh:']);
@@ -23,13 +24,17 @@ const Asked = z.object({ at: z.number() });
 
 const run = promisify(execFile);
 
-async function originOf(repository: string): Promise<string | null> {
+async function urlOf(repository: string, remote: string): Promise<string | null> {
   try {
-    const { stdout } = await run('git', ['remote', 'get-url', 'origin'], { cwd: repository });
+    const { stdout } = await run('git', ['remote', 'get-url', remote], { cwd: repository });
     return stdout;
   } catch {
     return null;
   }
+}
+
+async function canonicalRemote(repository: string): Promise<string | null> {
+  return (await urlOf(repository, 'upstream')) ?? urlOf(repository, 'origin');
 }
 
 function pathOf(remote: string): string | null {
@@ -70,7 +75,7 @@ function configAbove(from: string): string | null {
   let dir = from;
   while (!existsSync(join(dir, CONFIG))) {
     const parent = dirname(dir);
-    if (parent === dir) {
+    if (parent === dir || existsSync(join(dir, CHECKOUT))) {
       return null;
     }
     dir = parent;
@@ -87,11 +92,13 @@ function readJson(file: string): unknown {
 }
 
 /** Where the repository holding `root` translates: the `lingua.json` nearest
- *  above it, and the project the remote of the directory it sits in names.
- *  `null` where either is missing. */
+ *  above it, no higher than the top of its checkout, and the project the
+ *  remote of the directory it sits in names. That remote is `upstream` where
+ *  the checkout has one, which is how a fork names the repository Lingua
+ *  reads, else `origin`. `null` where either is missing. */
 export async function findLingua(
   root: string,
-  remoteOf: RemoteOf = originOf,
+  remoteOf: RemoteOf = canonicalRemote,
 ): Promise<Lingua | null> {
   const config = configAbove(root);
   const url = config && linguaUrl(readJson(config));
@@ -108,7 +115,7 @@ export async function findLingua(
  *  on the first ask, and kept. */
 export function linguaAnswers(
   root: string,
-  remoteOf: RemoteOf = originOf,
+  remoteOf: RemoteOf = canonicalRemote,
 ): (ask: unknown) => Promise<{ at: number; lingua: Lingua | null } | null> {
   let known: Promise<Lingua | null> | null = null;
   return async (ask) => {

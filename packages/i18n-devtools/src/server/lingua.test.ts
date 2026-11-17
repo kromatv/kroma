@@ -17,6 +17,7 @@ function serving(writable: boolean) {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   setEngine(null);
   openChannel(null);
   vi.restoreAllMocks();
@@ -103,5 +104,19 @@ describe('where the repository translates', () => {
     rerender({ inspected: true });
 
     expect(server.sent).toHaveLength(1);
+  });
+
+  it('is asked again once a dev server did not answer in time', async () => {
+    vi.useFakeTimers();
+    const server = serving(true);
+    const { rerender } = renderHook(({ inspected }) => useLingua(inspected), {
+      initialProps: { inspected: true },
+    });
+    await act(() => vi.advanceTimersByTimeAsync(3000));
+
+    rerender({ inspected: false });
+    rerender({ inspected: true });
+
+    expect(server.sent).toHaveLength(2);
   });
 });
