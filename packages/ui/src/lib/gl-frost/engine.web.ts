@@ -33,6 +33,9 @@ const nodeOf = (scroller: unknown): HTMLElement | null => {
   return node instanceof HTMLElement ? node : null;
 };
 
+const observeSizes = (onResize: () => void): ResizeObserver | null =>
+  typeof ResizeObserver === 'function' ? new ResizeObserver(onResize) : null;
+
 /** Draws a screen's backdrop into `canvas` and the frost of every registered
  *  surface over it, in the same frame those surfaces move. `onReady` hears
  *  whether the canvas now carries the backdrop. */
@@ -162,7 +165,7 @@ export function createFrostEngine(
     (handle) => cancelAnimationFrame(handle),
   );
 
-  const sizes = new ResizeObserver(() => {
+  const sizes = observeSizes(() => {
     for (const entry of entries.values()) {
       if (entry.top) {
         entry.radius = Number.parseFloat(getComputedStyle(entry.surface).borderTopLeftRadius) || 0;
@@ -170,7 +173,7 @@ export function createFrostEngine(
     }
     loop.request();
   });
-  sizes.observe(canvas);
+  sizes?.observe(canvas);
 
   const changes = new MutationObserver((records) => {
     const now = performance.now();
@@ -217,12 +220,12 @@ export function createFrostEngine(
       surface.setAttribute(MARK, '');
       const entry: Entry = { surface, top: null, radius: 0, follow: null };
       entries.set(mark, entry);
-      sizes.observe(surface);
+      sizes?.observe(surface);
       loop.request();
       return () => {
         entry.follow?.release();
         surface.removeAttribute(MARK);
-        sizes.unobserve(surface);
+        sizes?.unobserve(surface);
         entries.delete(mark);
         loop.request();
       };
@@ -256,7 +259,7 @@ export function createFrostEngine(
     },
     dispose() {
       loop.stop();
-      sizes.disconnect();
+      sizes?.disconnect();
       changes.disconnect();
       root.removeEventListener('scroll', onScroll, true);
       canvas.removeEventListener('webglcontextlost', onLost);
