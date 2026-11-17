@@ -44,7 +44,7 @@ export function EditorToolbar({
           <Box grow={1} shrink={1} basis={260} minW={0}>
             <SearchField
               label="Search this section"
-              placeholder="Search keys, source and translations"
+              placeholder={wide ? 'Search keys, source and translations' : 'Search messages'}
               value={list.query}
               onValueChange={list.onQueryChange}
             />

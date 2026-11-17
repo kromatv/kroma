@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { LinguaPage } from '#site/components/lingua-page.component';
 import { RouteLink } from '#site/components/route-link.component';
 import { signInUrl } from '#site/lib/api-client';
+import { titled } from '#site/lib/page-title';
 import { Problem } from '#site/lib/problem';
 
 type Way = 'sign-in' | 'setup' | 'home';
@@ -52,6 +53,7 @@ const ROUTED = {
 
 export const Route = createFileRoute('/problem')({
   validateSearch: z.object({ reason: Problem.optional().catch(undefined) }),
+  head: () => titled('Sign-in'),
   component: ProblemPage,
 });
 

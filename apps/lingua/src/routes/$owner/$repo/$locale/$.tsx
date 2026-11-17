@@ -15,6 +15,7 @@ import { Trail } from '#site/components/trail.component';
 import { completion } from '#site/lib/completion';
 import { counted } from '#site/lib/counted';
 import { getNamespace } from '#site/lib/loaders';
+import { titled } from '#site/lib/page-title';
 import { projectId } from '#site/lib/project-id';
 import { groupRows, isUntranslated, type MessageGroup, sharedNotes } from '#site/lib/row-filter';
 import { useConfirmMessage } from '#site/lib/use-confirm-message.hook';
@@ -30,6 +31,10 @@ export const Route = createFileRoute('/$owner/$repo/$locale/$')({
     return getNamespace({
       data: { id: projectId(params), locale: params.locale, file: _splat ?? '' },
     });
+  },
+  head: ({ loaderData, params }) => {
+    const { _splat: file = '' } = params;
+    return titled(file, loaderData?.locale.language.name ?? params.locale, projectId(params));
   },
   component: NamespacePage,
 });
@@ -121,12 +126,13 @@ function Heading({ view }: Readonly<{ view: NamespaceView }>) {
   const { language } = view.locale;
   const done = view.rows.filter((row) => !isUntranslated(row)).length;
   const { percent } = completion({ done, total: view.rows.length });
+  const messages = groupRows(view.rows).length;
   return (
     <Column gap={12}>
       <Trail project={view.project.id} language={language} section={view.file} />
       <PageHeader.Root>
         <PageHeader.Title>{view.file}</PageHeader.Title>
-        <PageHeader.Subtitle>{`${language.name} · ${counted(view.rows.length, 'message')} · ${percent}% translated`}</PageHeader.Subtitle>
+        <PageHeader.Subtitle>{`${language.name} · ${counted(messages, 'message')} · ${percent}% translated`}</PageHeader.Subtitle>
       </PageHeader.Root>
     </Column>
   );

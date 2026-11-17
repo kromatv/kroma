@@ -12,12 +12,14 @@ import { RouteLink } from '#site/components/route-link.component';
 import { SetupStep } from '#site/components/setup-step.component';
 import { counted } from '#site/lib/counted';
 import { getSetup } from '#site/lib/loaders';
+import { titled } from '#site/lib/page-title';
 import { repositoriesState } from '#site/lib/sync-facts';
 import { usePollWhileReading } from '#site/lib/use-poll-while-reading.hook';
 import type { SetupView } from '#site/lib/views';
 
 export const Route = createFileRoute('/setup')({
   loader: () => getSetup(),
+  head: () => titled('Status'),
   component: SetupPage,
 });
 

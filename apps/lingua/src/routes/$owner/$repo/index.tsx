@@ -20,6 +20,7 @@ import { workSummary } from '#site/lib/completion';
 import { counted } from '#site/lib/counted';
 import { repositoryUrl } from '#site/lib/github-links';
 import { getProject } from '#site/lib/loaders';
+import { titled } from '#site/lib/page-title';
 import { projectId } from '#site/lib/project-id';
 import { whileDriven } from '#site/lib/sync-facts';
 import { useCommands } from '#site/lib/use-command-menu.hook';
@@ -29,6 +30,7 @@ import type { LocaleSummary, ProjectSummary, ProjectView } from '#site/lib/views
 
 export const Route = createFileRoute('/$owner/$repo/')({
   loader: ({ params }) => getProject({ data: { id: projectId(params) } }),
+  head: ({ params }) => titled(projectId(params)),
   component: ProjectPage,
 });
 

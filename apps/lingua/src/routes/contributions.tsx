@@ -12,12 +12,14 @@ import { RouteLink } from '#site/components/route-link.component';
 import { signInUrl } from '#site/lib/api-client';
 import { counted } from '#site/lib/counted';
 import { getContributions } from '#site/lib/loaders';
+import { titled } from '#site/lib/page-title';
 import { projectParams } from '#site/lib/project-id';
 import { useDiscard } from '#site/lib/use-discard.hook';
 import type { Contribution } from '#site/lib/views';
 
 export const Route = createFileRoute('/contributions')({
   loader: () => getContributions(),
+  head: () => titled('My contributions'),
   component: ContributionsPage,
 });
 

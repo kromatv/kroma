@@ -27,12 +27,15 @@ import {
   namespaceCounts,
   nextNamespace,
 } from '#site/lib/namespace-filter';
+import { titled } from '#site/lib/page-title';
 import { projectId } from '#site/lib/project-id';
 import { useLanguageWork } from '#site/lib/use-language-work.hook';
 import type { LocaleView, NamespaceSummary, Stage } from '#site/lib/views';
 
 export const Route = createFileRoute('/$owner/$repo/$locale/')({
   loader: ({ params }) => getLocale({ data: { id: projectId(params), locale: params.locale } }),
+  head: ({ loaderData, params }) =>
+    titled(loaderData?.locale.language.name ?? params.locale, projectId(params)),
   component: LocalePage,
 });
 
