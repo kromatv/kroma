@@ -13,12 +13,17 @@ mod rank;
 mod refusals;
 mod shapes;
 mod tags;
+mod terms;
 mod upgrades;
 
 const GB: u64 = 1_073_741_824;
 
 fn p(name: &str) -> ParsedRelease {
     parse_release_name(name)
+}
+
+fn rule(result: Result<Judged, Reject>) -> String {
+    result.unwrap_err().rule
 }
 
 fn legacy() -> LegacySettings {

@@ -31,7 +31,7 @@ fn a_refusal_on_a_forbidden_term_names_the_term_the_admin_wrote() {
     let f = fixture();
 
     let refusal = f
-        .judge("Movie.2020.1080p.HDCAM.x264", 2, 50, movie())
+        .judge("Movie.2020.1080p.CAM.x264", 2, 50, movie())
         .unwrap_err();
 
     assert_eq!(refusal.params["term"], "cam");

@@ -230,7 +230,7 @@
   "acq.tabTrial": "Trial",
   "acq.tabs": "Acquisition sections",
   "acq.termExample": "e.g. {term}",
-  "acq.termsHint": "One term per line, matched whole in the release name.",
+  "acq.termsHint": "One term per line, matched as whole words of the release name: TS does not match DTS. Between slashes, a term is a regular expression.",
   "acq.testName": "Release name",
   "acq.testNoFormats": "No format matched.",
   "acq.testOriginal": "Original language",

@@ -230,7 +230,7 @@
   "acq.tabTrial": "Essai",
   "acq.tabs": "Sections de l'acquisition",
   "acq.termExample": "ex. {term}",
-  "acq.termsHint": "Un mot-clé par ligne, cherché en entier dans le nom de la version.",
+  "acq.termsHint": "Un terme par ligne, cherché en mots entiers dans le nom de la version : TS ne trouve pas DTS. Entre barres obliques, un terme est une expression régulière.",
   "acq.testName": "Nom de la version",
   "acq.testNoFormats": "Aucun format ne correspond.",
   "acq.testOriginal": "Langue d'origine",

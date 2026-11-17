@@ -164,6 +164,19 @@ fn source_codec_and_group_edge_branches() {
 }
 
 #[test]
+fn every_spelling_of_a_cam_tag_is_a_cam_source() {
+    let tags = "CAM HDCAM HD-CAM HQCAM HQ-CAM CAMRip CAM-Rip HDCAMRip TS HDTS HD-TS TSRip TS-Rip \
+                HDTSRip HDTS-Rip TELESYNC HDTELESYNC TELECINE SCREENER DVDSCR DVDSCREENER WORKPRINT";
+
+    let sources: Vec<Option<Source>> = tags
+        .split_whitespace()
+        .map(|tag| p(&format!("Movie.2020.1080p.{tag}.x264-GRP")).source)
+        .collect();
+
+    assert_eq!(sources, [Some(Source::Cam); 22]);
+}
+
+#[test]
 fn dolby_vision_spelled_out_across_two_tokens_is_still_dolby_vision() {
     let r = p("Movie.2024.2160p.WEB-DL.Dolby.Vision.HEVC");
     assert!(r.dolby_vision);

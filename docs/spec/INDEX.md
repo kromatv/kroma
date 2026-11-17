@@ -596,7 +596,7 @@
 - **MOD-78** (AGREED) - A release outside the profile's qualities, below its minimum format score, <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-79** (AGREED) - A file an upgrade replaces goes to the recycle bin when one is set, and is <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-80** (AGREED) - A release name says what it covers: one episode, a span of episodes, one <sub>[acquisition.md](modules/acquisition.md)</sub>
-- **MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-81** (AGREED) - A term matches whole words of the release name, ignoring case. Dots, <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the <sub>[README.md](modules/README.md)</sub>
 - **MOD-84** (AGREED) - A module that ships as a native program is refused at install and never <sub>[README.md](modules/README.md)</sub>
