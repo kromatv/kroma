@@ -1,7 +1,3 @@
-// Chromium draws an outline square below 94: the rounded one landed for
-// crbug.com/81556 at main #906586, after the M93 branch point. This is the same
-// ring as the declarations of a pseudo-element, whose corners can be rounded.
-
 const UNPSEUDOED = new Set(['IMG', 'INPUT', 'TEXTAREA', 'SELECT', 'VIDEO', 'IFRAME', 'CANVAS']);
 
 type Four<T> = readonly [T, T, T, T];

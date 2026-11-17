@@ -29,8 +29,6 @@ function drawsOutline(rule: CSSRule): rule is CSSStyleRule {
   return style !== '' && style !== 'none';
 }
 
-// Rescanned only when a sheet's rule count moves: this runs on every DOM commit,
-// and the sheets change only when a style registers.
 function outlineSelector(doc: Document): () => string {
   let counted = '';
   let selector = '';
