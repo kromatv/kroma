@@ -378,6 +378,28 @@ a curated library has no need to carry any of it.
   modules link, rather than a module of its own, because it sits on a hot path that must
   not become a network hop.
 
+## Importers
+
+Status: **AGREED**, from [RFC 719](../../rfcs/719-guided-setup-and-import.md).
+
+Bringing a household over from another media server is [`admin/import.md`](../admin/import.md).
+The part that speaks to the other server is a module, because an owner runs it once and the
+other server changes on its own schedule.
+
+**MOD-103** (AGREED) - Each importer is a module, one per kind of server, and a server that
+never imports carries none. The guided setup and the admin console install the one the owner
+chose from the official registry.
+
+**MOD-104** (AGREED) - The servers KROMA can import from are the importers the official
+registry lists. A new importer appears in the choice without a server release.
+
+**MOD-105** (AGREED) - An importer reads the other server and describes what it found. The
+core decides what becomes of it and does every write. An importer has no access to accounts,
+invitations, visibility, watch state or watch history.
+
+**MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its
+own data. The core never holds it, and removing the importer removes it.
+
 ## Not in scope
 
 Status: **AGREED**

@@ -3,7 +3,7 @@
 
 # Requirement index
 
-628 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+715 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -100,6 +100,13 @@
 - **ACCT-91** (SHIPPED) - The device list puts the device in hand first, then the others by most <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-92** (SHIPPED) - One action signs out every device except the one in hand. <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-93** (SHIPPED) - An account holder who no longer knows their profile PIN turns the lock <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-94** (AGREED) - An account can exist before its person has signed in. It **waits on <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-95** (AGREED) - Nobody can sign in to a waiting account, by any means. Its invitation <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-96** (AGREED) - Redeeming the invitation gives the account its credential, and the <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-97** (AGREED) - The person may correct the account's name and address when they <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-98** (AGREED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-99** (AGREED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
@@ -198,6 +205,78 @@
 - **ADMIN-93** (AGREED) - The rule above is identical on every host. Only the delivery vehicle <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-94** (AGREED) - A server speaks to the relay under an identity of its own: a key it <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-95** (AGREED) - The relay carries a server's mail only after a person allowed that <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-96** (AGREED) - A server with no account opens the guided setup on the web surface. <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-97** (AGREED) - The first screen asks the language and one choice: start fresh, or <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-98** (AGREED) - The owner account is the second screen, and the only one the owner <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-99** (AGREED) - Every screen after the owner account can be skipped. A skipped <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-100** (AGREED) - Every screen after the owner account offers "Finish later". It <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-101** (AGREED) - A playing title is three screens away: the first one, the owner <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-102** (AGREED) - Once the owner account exists, the setup remembers where the owner <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-103** (AGREED) - Only the owner is led through the setup. Anyone else who signs in <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-104** (AGREED) - A server that already has its owner when it is updated to a version <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-105** (AGREED) - On the media step the owner picks folders in the folder picker. <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-106** (AGREED) - The server proposes a kind for each folder from what the folder <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-107** (AGREED) - The scan starts when the owner confirms the media step, and keeps <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-108** (AGREED) - A source the server already has when the setup starts appears on <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-109** (AGREED) - On the modules step each module is offered by what it does for the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-110** (AGREED) - Which modules the setup offers, and in what order, comes from the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-111** (AGREED) - Each offer shows the module's size, the permissions it asks for and <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-112** (AGREED) - No module is selected by default. <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-113** (AGREED) - The modules the owner selects install in the background while the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-114** (AGREED) - On the people step the owner creates invitations, under the rule of <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-115** (AGREED) - On the devices step the owner can pair a television <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-116** (AGREED) - The devices step gives a link to each KROMA app. <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-117** (AGREED) - The being-counted step says in one sentence what a counted server <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-118** (AGREED) - The last step is the home. <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-119** (AGREED) - No step holds the catalogue back. A title is playable as soon as <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-120** (AGREED) - While a scan runs, every screen after the media step shows the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-121** (AGREED) - A setup that ended before its last step leaves a checklist on the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-122** (AGREED) - A line leaves the checklist when its step is done, in the setup or <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-123** (AGREED) - The owner can dismiss any line, and a dismissed line does not come <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-124** (AGREED) - When no line is left the checklist is gone, and it does not come <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-125** (AGREED) - The whole setup works on a phone held upright. Nothing scrolls <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-126** (AGREED) - The whole setup works by keyboard alone, from the first screen to <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-127** (AGREED) - No step sends the owner to documentation. What a step needs to say, <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-128** (AGREED) - The owner can bring a household over from another media server. <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-129** (AGREED) - The import is the same in the guided setup ([`setup.md`](setup.md)) <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-130** (AGREED) - The import reads the other server and changes nothing on it. The <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-131** (AGREED) - The owner signs in to the other server as its owner or one of its <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-132** (AGREED) - That sign-in is kept to run the import again (MOD-106), and <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-133** (AGREED) - The owner types the other server's address only when KROMA cannot <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-134** (AGREED) - A Plex account lists its own servers once the owner has signed in <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-135** (AGREED) - A Jellyfin server on the machine KROMA runs on is found at its <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-136** (AGREED) - Before the import writes anything, one review screen lists what <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-137** (AGREED) - The owner can leave any library or any user out on the review <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-138** (AGREED) - The review screen lists what does not come over, so nobody finds <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-139** (AGREED) - One action on the review screen starts the import. <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-140** (AGREED) - Each library of films or shows the owner kept becomes a source with <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-141** (AGREED) - Where KROMA already has a source over the same folders, the import <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-142** (AGREED) - A folder that does not exist on this machine under the name the <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-143** (AGREED) - The translation is kept, so a later import asks nothing again. <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-144** (AGREED) - Each user the owner kept becomes an account that waits on an <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-145** (AGREED) - That account sees the libraries its user could see on the other <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-146** (AGREED) - The person who signed in to the other server is the owner running <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-147** (AGREED) - The owner can attach a user of the other server to an account <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-148** (AGREED) - A user brought over once is found again by a later import, which <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-149** (AGREED) - A user the other server limited more finely than by library, by <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-150** (AGREED) - A user whose watch state the other server gives only against that <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-151** (AGREED) - Each person's watched flags come over (ACCT-24). <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-152** (AGREED) - Each person's resume points come over, and a resume point lands at <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-153** (AGREED) - A title on the other server is matched to a KROMA title by its file <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-154** (AGREED) - A title whose file matches nothing is matched by the external <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-155** (AGREED) - Watch state for a file the scan has not reached yet shows on its <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-156** (AGREED) - A title a person marked as a favourite on the other server is saved <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-157** (AGREED) - When the import ends, a report lists what matched nothing, each <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-158** (AGREED) - The plays the other server recorded come into watch history <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-159** (AGREED) - A row that came from an import says so and names the server it came <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-160** (AGREED) - An imported row leaves blank what the other server did not record: <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-161** (AGREED) - An imported play that carries no duration counts for its title's <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-162** (AGREED) - A play brought over once is not brought again by a later import. <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-163** (AGREED) - The import runs in the background as a job with progress <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-164** (AGREED) - The owner can cancel the import, and a cancelled import keeps what <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-165** (AGREED) - A second import, run when nothing changed on the other server, <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-166** (AGREED) - Where KROMA and the other server both hold watch state for one <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-167** (AGREED) - An import only adds watch state or moves it forward. It removes <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
@@ -261,6 +340,7 @@
 - **BROWSE-58** (SHIPPED) - Adding a language is adding its copy. Its words join the vocabulary
 - **BROWSE-59** (SHIPPED) - A synopsis shown on the home is cut by sentence, never by the box:
 - **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
+- **BROWSE-61** (AGREED) - While a scan runs, the home gains each title as the scan matches it,
 
 ## DISC - [discovery](discovery/)
 
@@ -378,6 +458,7 @@
 - **LIB-75** (AGREED) - What is still coming is the missing list read forwards: a monitored <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-76** (AGREED) - Whoever decides what the library monitors sees every title of it in one <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-77** (AGREED) - Asking for a title's missing units to be searched now reaches whatever <sub>[monitoring.md](library/monitoring.md)</sub>
+- **LIB-78** (AGREED) - **A match that came from another server.** An import <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 
@@ -533,6 +614,10 @@
 - **MOD-100** (AGREED) - A profile can name a preferred protocol. Between two releases of the same <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-101** (AGREED) - The VPN kill switch holds torrent grabs only. While it is closed, a release <sub>[acquisition.md](modules/acquisition.md)</sub>
 - **MOD-102** (AGREED) - A manual add says which protocol its link is when the enabled download <sub>[acquisition.md](modules/acquisition.md)</sub>
+- **MOD-103** (AGREED) - Each importer is a module, one per kind of server, and a server that <sub>[README.md](modules/README.md)</sub>
+- **MOD-104** (AGREED) - The servers KROMA can import from are the importers the official <sub>[README.md](modules/README.md)</sub>
+- **MOD-105** (AGREED) - An importer reads the other server and describes what it found. The <sub>[README.md](modules/README.md)</sub>
+- **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 
@@ -659,3 +744,5 @@
 - **SURF-58** (SHIPPED) - An app never reports being too old as a playback or feature error.
 - **SURF-59** (SHIPPED) - A server treats a request that names no app version as coming from an
 - **SURF-60** (SHIPPED) - An app that needs a newer server than the one it reached shows one
+- **SURF-61** (AGREED) - A television or the desktop app that reaches a server nobody owns yet
+- **SURF-62** (AGREED) - Setting a server up is the web surface's job
