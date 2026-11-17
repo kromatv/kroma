@@ -1,18 +1,30 @@
 import type { Store, User } from '#site/store/store';
 
-const SESSION = 'lingua_session';
+const SESSION = '__Host-lingua_session';
 const DAYS_30 = 30 * 24 * 60 * 60;
 
-/** One cookie's value off a `Cookie` header, or null. */
+function decoded(value: string): string | null {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return null;
+  }
+}
+
+/** One cookie's value off a `Cookie` header, or null when it is absent or not percent-encoded text. */
 export function readCookie(header: string | null | undefined, name: string): string | null {
   for (const part of (header ?? '').split(';')) {
     const [key, ...rest] = part.trim().split('=');
-    if (key === name) return decodeURIComponent(rest.join('='));
+    if (key === name) return decoded(rest.join('='));
   }
   return null;
 }
 
-/** A `Set-Cookie` value, always HttpOnly, Secure and same-site. `maxAge` 0 clears it. */
+/**
+ * A `Set-Cookie` value, always HttpOnly, Secure and same-site. `maxAge` 0
+ * clears it. Name it `__Host-…`: with `Path=/` and no `Domain`, a browser then
+ * only takes it from this host, never from a sibling subdomain.
+ */
 export function cookie(name: string, value: string, maxAge: number): string {
   return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
 }

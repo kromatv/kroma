@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ProjectId } from '#site/core/config';
 import { passOver, trackProjects } from '#site/github/pass';
 import type { RepositoryStatus } from '#site/lib/views';
 import { type Env, listedProjects } from './env';
@@ -6,7 +7,7 @@ import { syncingFor } from './scheduled';
 import { statusOf } from './setup';
 
 /** `POST /api/sync`: which repository to read now. */
-export const SyncInput = z.object({ project: z.string().regex(/^[\w.-]+\/[\w.-]+$/) });
+export const SyncInput = z.object({ project: ProjectId });
 export type SyncInput = z.infer<typeof SyncInput>;
 
 /** What a sync asked for by hand came to: where the repository stands now, or why nothing ran. */

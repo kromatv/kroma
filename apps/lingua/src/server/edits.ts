@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { blocks, check, type Issue, MAX_MESSAGE } from '#site/core/checks';
-import { LocaleTag } from '#site/core/config';
+import { LocaleTag, ProjectId } from '#site/core/config';
 import { rowsFor } from '#site/core/rows';
 import { localeFiles, shelfOf } from '#site/core/shelf';
 import { merged } from '#site/core/source';
@@ -9,7 +9,7 @@ import { openProject } from './workspace';
 
 /** `PUT /api/edits`: one message, as the contributor wants it to read. */
 export const EditInput = z.object({
-  project: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
+  project: ProjectId,
   locale: LocaleTag,
   file: z.string().min(1).max(256),
   key: z.string().min(1).max(256),

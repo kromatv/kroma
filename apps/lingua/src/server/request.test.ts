@@ -4,7 +4,7 @@ import { requestContext, resolveViewer } from './request';
 import { seededStore } from './test-support';
 
 vi.mock('@tanstack/react-start/server', () => ({
-  getRequest: () => new Request('https://lingua.test/o/r', { headers: { cookie: 'lingua_session=tok' } }),
+  getRequest: () => new Request('https://lingua.test/o/r', { headers: { cookie: '__Host-lingua_session=tok' } }),
 }));
 
 afterEach(() => {

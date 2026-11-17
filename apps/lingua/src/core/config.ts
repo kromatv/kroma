@@ -2,8 +2,17 @@ import { z } from 'zod';
 
 const LOCALE = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
 
-/** A BCP 47 tag as a locale folder is named: `fr`, `pt-BR`, `zh-Hant`. */
-export const LocaleTag = z.string().regex(LOCALE, 'must be a language tag, like de or pt-BR');
+/** A BCP 47 tag as a locale folder is named: `fr`, `pt-BR`, `zh-Hant`. At most 35 characters, the longest a registered tag runs. */
+export const LocaleTag = z
+  .string()
+  .max(35)
+  .regex(LOCALE, 'must be a language tag, like de or pt-BR');
+
+/** A repository as GitHub names it, `owner/repo`: the id of a project. */
+export const ProjectId = z
+  .string()
+  .max(140)
+  .regex(/^[\w.-]+\/[\w.-]+$/, 'must be a repository, like owner/repo');
 
 const FolderPath = z
   .string()

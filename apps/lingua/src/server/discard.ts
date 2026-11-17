@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { LocaleTag } from '#site/core/config';
+import { LocaleTag, ProjectId } from '#site/core/config';
 import type { Store, User } from '#site/store/store';
 import { pendingOf, viewerWork } from './work';
 import { openProject } from './workspace';
 
 /** `POST /api/discard`: the language whose unsent changes the contributor throws away. */
 export const DiscardInput = z.object({
-  project: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
+  project: ProjectId,
   locale: LocaleTag,
 });
 export type DiscardInput = z.infer<typeof DiscardInput>;

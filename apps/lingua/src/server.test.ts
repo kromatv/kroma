@@ -38,6 +38,21 @@ describe('the worker entry', () => {
     expect(rendered).toEqual(['/o/r']);
   });
 
+  it('forbids framing and content sniffing on a page and on a route alike', async () => {
+    vi.stubGlobal('KROMA_WORKERD', { env: {} });
+
+    const answers = await Promise.all([
+      server.fetch(new Request('https://lingua.test/o/r')),
+      server.fetch(new Request('https://lingua.test/health'), {}),
+    ]);
+
+    for (const { headers } of answers) {
+      expect(headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+      expect(headers.get('x-frame-options')).toBe('DENY');
+      expect(headers.get('x-content-type-options')).toBe('nosniff');
+    }
+  });
+
   it('runs the cron’s sync pass past the scheduled event', async () => {
     const held: Promise<unknown>[] = [];
 

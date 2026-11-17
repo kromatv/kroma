@@ -7,6 +7,7 @@ import { type Problem, problemPath } from '#site/lib/problem';
 import { returnAddress } from '#site/lib/send-return';
 import type { Store, User } from '#site/store/store';
 import { answerSend, askToSend, forgetPending, type PendingSend, pendingCookie, readPending } from './authorizations';
+import { boundedText } from './body';
 import { ConfirmInput, saveConfirms } from './confirms';
 import { DiscardInput, discardDrafts } from './discard';
 import { EditInput, saveEdit } from './edits';
@@ -16,6 +17,7 @@ import { LocaleInput, startLanguage } from './locales';
 import { sendProposal, SendInput } from './proposals';
 import { ChainInput, CHAIN_HEADER, chainProven } from './chain';
 import { resolveViewer } from './request';
+import { returnPath } from './return-path';
 import { refreshChained } from './scheduled';
 import { SyncInput, syncNow } from './sync-now';
 import { closeSession, cookie, openSession, randomToken, readCookie } from './session';
@@ -23,7 +25,7 @@ import { closeSession, cookie, openSession, randomToken, readCookie } from './se
 type Ctx = { Bindings: { env: Env } };
 
 const FALL_THROUGH = 'x-lingua-fall-through';
-const OAUTH = 'lingua_oauth';
+const OAUTH = '__Host-lingua_oauth';
 const MAX_BODY = 64 * 1024;
 const SEND_READS = 20;
 
@@ -36,18 +38,8 @@ function sameOrigin(c: Context<Ctx>): boolean {
   return from ? from === origin(c) : c.req.header('sec-fetch-site') === 'same-origin';
 }
 
-function safeReturn(to: string | undefined): string {
-  return to?.startsWith('/') && !to.startsWith('//') && !to.startsWith('/\\') ? to : '/';
-}
-
-async function boundedBody(c: Context<Ctx>, limit: number): Promise<string | null> {
-  if (Number(c.req.header('content-length') ?? 0) > limit) return null;
-  const text = await c.req.text();
-  return text.length > limit ? null : text;
-}
-
 async function jsonInput<S extends z.ZodType>(c: Context<Ctx>, schema: S): Promise<z.infer<S> | null> {
-  const text = await boundedBody(c, MAX_BODY);
+  const text = await boundedText(c.req.raw, MAX_BODY);
   if (text === null) return null;
   try {
     const parsed = schema.safeParse(JSON.parse(text));
@@ -77,7 +69,7 @@ function toGitHub(c: Context<Ctx>, after: string, ask: (at: { redirectUri: strin
 app.get('/auth/login', (c) => {
   const oauth = oauthCredentials(c.env.env);
   if (!oauth) return c.redirect(problemPath('sign-in-unavailable'));
-  return toGitHub(c, safeReturn(c.req.query('to')), (at) => authorizeUrl(oauth, at));
+  return toGitHub(c, returnPath(c.req.query('to')), (at) => authorizeUrl(oauth, at));
 });
 
 async function signIn(c: Context<Ctx>, oauth: OAuthCredentials, code: string, to: string): Promise<Response> {
@@ -88,7 +80,7 @@ async function signIn(c: Context<Ctx>, oauth: OAuthCredentials, code: string, to
   });
   if (!user) return c.redirect(problemPath('sign-in-refused'));
   c.header('Set-Cookie', await openSession(store, user, now()), { append: true });
-  return c.redirect(safeReturn(to));
+  return c.redirect(returnPath(to));
 }
 
 async function returnFromGitHub(c: Context<Ctx>): Promise<Response> {
@@ -199,7 +191,7 @@ function authorizeSend(c: Context<Ctx>, viewer: User, input: z.infer<typeof Send
   const oauth = oauthCredentials(c.env.env);
   if (!oauth) return c.json({ error: 'Sign-in is not configured on this deployment yet' }, 503);
   const { project, locale } = input;
-  const pending = { state: randomToken(), project, locale, to: safeReturn(input.to ?? `/${project}/${locale}`) };
+  const pending = { state: randomToken(), project, locale, to: returnPath(input.to ?? `/${project}/${locale}`) };
   c.header('Set-Cookie', pendingCookie(pending));
   return c.json({ kind: 'authorize', url: askToSend(oauth, pending, { redirectUri: callbackUri(c), login: viewer.login }) });
 }

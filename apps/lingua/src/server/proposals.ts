@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LocaleTag } from '#site/core/config';
+import { LocaleTag, ProjectId } from '#site/core/config';
 import { stableLocales } from '#site/core/policy';
 import { type GitHub, GitHubError } from '#site/github/client';
 import { ForkDiverged, ForkPending } from '#site/github/fork';
@@ -11,7 +11,7 @@ import type { Project, Store, User } from '#site/store/store';
 import { openProject } from './workspace';
 
 /** Which language's edits to send. */
-export const ProposalInput = z.object({ project: z.string().regex(/^[\w.-]+\/[\w.-]+$/), locale: LocaleTag });
+export const ProposalInput = z.object({ project: ProjectId, locale: LocaleTag });
 export type ProposalInput = z.infer<typeof ProposalInput>;
 
 /** `POST /api/proposals`: what to send, and the page to come back to. */

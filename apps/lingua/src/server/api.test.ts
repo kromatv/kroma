@@ -202,30 +202,30 @@ describe('signing in', () => {
     const [token, to] = stateOf(response).split('.');
     expect(response?.headers.get('location')).toMatch(/^https:\/\/github\.com\/login\/oauth\/authorize\?/);
     expect(to).toBe('/o/r/fr');
-    expect(cookiesOf(response)[0]).toMatch(new RegExp(`^lingua_oauth=${token};`));
+    expect(cookiesOf(response)[0]).toMatch(new RegExp(`^__Host-lingua_oauth=${token};`));
   });
 
   it('never returns a sign-in to another site', async () => {
-    const response = await get('/auth/login?to=//evil.test');
+    const responses = await Promise.all([get('/auth/login?to=//evil.test'), get('/auth/login?to=/%09/evil.test')]);
 
-    expect(stateOf(response)).toMatch(/^[\w-]+\.\/$/);
+    expect(responses.map(stateOf)).toEqual([expect.stringMatching(/^[\w-]+\.\/$/), expect.stringMatching(/^[\w-]+\.\/$/)]);
   });
 
   it('opens a session for the account GitHub confirms and returns to the page it left', async () => {
     vi.stubGlobal('fetch', gitHubSigningIn({ access_token: 'gho_x' }));
 
     const response = await get('/auth/callback?code=c&state=tok./o/r/v1.2', {
-      headers: { cookie: 'lingua_oauth=tok' },
+      headers: { cookie: '__Host-lingua_oauth=tok' },
     });
 
     expect(response?.headers.get('location')).toBe('/o/r/v1.2');
-    expect(cookiesOf(response).map((c) => c.split('=')[0])).toEqual(['lingua_oauth', 'lingua_session']);
+    expect(cookiesOf(response).map((c) => c.split('=')[0])).toEqual(['__Host-lingua_oauth', '__Host-lingua_session']);
   });
 
   it('explains a callback whose state this browser did not ask for, or that carries none', async () => {
     const [other, none] = await Promise.all([
-      get('/auth/callback?code=c&state=tok./', { headers: { cookie: 'lingua_oauth=other' } }),
-      get('/auth/callback?code=c', { headers: { cookie: 'lingua_oauth=tok' } }),
+      get('/auth/callback?code=c&state=tok./', { headers: { cookie: '__Host-lingua_oauth=other' } }),
+      get('/auth/callback?code=c', { headers: { cookie: '__Host-lingua_oauth=tok' } }),
     ]);
 
     expect([other, none].map((response) => response?.headers.get('location'))).toEqual([
@@ -237,7 +237,7 @@ describe('signing in', () => {
   it('explains a sign-in GitHub does not confirm, or sends back without a code', async () => {
     vi.stubGlobal('fetch', gitHubSigningIn({ error: 'bad_verification_code' }));
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const headers = { cookie: 'lingua_oauth=tok' };
+    const headers = { cookie: '__Host-lingua_oauth=tok' };
 
     const [refused, cancelled] = await Promise.all([
       get('/auth/callback?code=c&state=tok./', { headers }),
@@ -273,7 +273,7 @@ describe('sending', () => {
     const { url } = await response?.json();
     expect(new URL(url).searchParams.get('scope')).toBe('public_repo');
     expect(new URL(url).searchParams.get('login')).toBe('ada');
-    expect(cookiesOf(response)[0]).toMatch(/^lingua_send=/);
+    expect(cookiesOf(response)[0]).toMatch(/^__Host-lingua_send=/);
   });
 
   it('cannot send before sign-in is configured', async () => {
@@ -295,7 +295,7 @@ describe('sending', () => {
     const response = await get('/auth/callback?state=s&error=access_denied', { headers });
 
     expect(response?.headers.get('location')).toBe('/o/r/fr?send=declined');
-    expect(cookiesOf(response)[0]).toMatch(/^lingua_send=;/);
+    expect(cookiesOf(response)[0]).toMatch(/^__Host-lingua_send=;/);
   });
 
   it('sends as the contributor once GitHub grants public_repo, saying when GitHub refused', async () => {

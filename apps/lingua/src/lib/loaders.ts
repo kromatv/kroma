@@ -1,4 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
+import { z } from 'zod';
+import { LocaleTag, ProjectId } from '#site/core/config';
 import type {
   ContributionsView,
   HomeView,
@@ -11,26 +13,28 @@ import type {
   SiteView,
 } from '#site/lib/views';
 
-/** What crosses the wire for a project page: the `owner/repo` id, and nothing else a caller hung off it. */
-export const projectInput = ({ id }: { id: string }) => ({ id });
+/** A project page's input: the `owner/repo` id. */
+export const ProjectInput = z.object({ id: ProjectId });
 
 /** A language page's input. */
-export const localeInput = ({ id, locale }: { id: string; locale: string }) => ({ id, locale });
+export const LocaleInput = ProjectInput.extend({ locale: LocaleTag });
 
 /** A catalog file page's input. */
-export const namespaceInput = ({
-  id,
-  locale,
-  file,
-}: {
-  id: string;
-  locale: string;
-  file: string;
-}) => ({
-  id,
-  locale,
-  file,
+export const NamespaceInput = LocaleInput.extend({ file: z.string().max(256) });
+
+/** A search's input: the language to look in and what was typed, cut at 200 characters. */
+export const SearchInput = LocaleInput.extend({
+  query: z.string().transform((query) => query.slice(0, 200)),
 });
+
+/**
+ * What a server function reads its input through: `schema`'s output, or null
+ * for anything else, so an address that names no project, language or file
+ * finds nothing instead of failing.
+ */
+export function readAs<S extends z.ZodType>(schema: S) {
+  return (input: z.input<S>): z.output<S> | null => schema.safeParse(input).data ?? null;
+}
 
 /** `/`. */
 export const getHome = createServerFn().handler(async (): Promise<HomeView> => {
@@ -41,8 +45,11 @@ export const getHome = createServerFn().handler(async (): Promise<HomeView> => {
 
 /** `/$owner/$repo`, or null for a project Lingua does not translate. */
 export const getProject = createServerFn()
-  .validator(projectInput)
+  .validator(readAs(ProjectInput))
   .handler(async ({ data }): Promise<ProjectView | null> => {
+    if (!data) {
+      return null;
+    }
     const { refreshAfterServing, requestContext } = await import('#site/server/request');
     const { projectView } = await import('#site/server/views');
     await refreshAfterServing(data.id);
@@ -51,8 +58,11 @@ export const getProject = createServerFn()
 
 /** `/$owner/$repo/$locale`, or null for a language the project does not offer. */
 export const getLocale = createServerFn()
-  .validator(localeInput)
+  .validator(readAs(LocaleInput))
   .handler(async ({ data }): Promise<LocaleView | null> => {
+    if (!data) {
+      return null;
+    }
     const { refreshAfterServing, requestContext } = await import('#site/server/request');
     const { localeView } = await import('#site/server/views');
     await refreshAfterServing(data.id);
@@ -61,8 +71,11 @@ export const getLocale = createServerFn()
 
 /** `/$owner/$repo/$locale/$file`, or null for a file the source does not have. */
 export const getNamespace = createServerFn()
-  .validator(namespaceInput)
+  .validator(readAs(NamespaceInput))
   .handler(async ({ data }): Promise<NamespaceView | null> => {
+    if (!data) {
+      return null;
+    }
     const { refreshAfterServing, requestContext } = await import('#site/server/request');
     const { namespaceView } = await import('#site/server/views');
     await refreshAfterServing(data.id);
@@ -83,25 +96,13 @@ export const getProjectIndex = createServerFn().handler(async (): Promise<Indexe
   return projectIndex(await requestContext());
 });
 
-/** A search's input: the language to look in and what was typed, at most 200 characters. */
-export const searchInput = ({
-  id,
-  locale,
-  query,
-}: {
-  id: string;
-  locale: string;
-  query: string;
-}) => ({
-  id,
-  locale,
-  query: query.slice(0, 200),
-});
-
 /** The messages of a language that mention a query, for the command menu. */
 export const findMessages = createServerFn()
-  .validator(searchInput)
+  .validator(readAs(SearchInput))
   .handler(async ({ data }): Promise<MessageHit[]> => {
+    if (!data) {
+      return [];
+    }
     const { requestContext } = await import('#site/server/request');
     const { messageSearch } = await import('#site/server/search');
     return messageSearch(await requestContext(), data.id, {

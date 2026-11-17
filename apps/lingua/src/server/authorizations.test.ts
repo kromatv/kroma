@@ -112,7 +112,7 @@ describe('readPending', () => {
   });
 
   it('reads no send from a cookie that is missing, not JSON, or not a send', () => {
-    const cookies = [undefined, 'lingua_send=%7B', `lingua_send=${encodeURIComponent('{"state":""}')}`];
+    const cookies = [undefined, '__Host-lingua_send=%7B', `__Host-lingua_send=${encodeURIComponent('{"state":""}')}`];
 
     expect(cookies.map((header) => readPending(header))).toEqual([null, null, null]);
   });

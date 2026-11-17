@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { memoryStore } from '#site/store/memory-store';
 import { saveConfirms } from './confirms';
 import { saveEdit } from './edits';
-import { startLanguage } from './locales';
+import { MAX_STARTED, startLanguage } from './locales';
 import { closeSession, openSession, readCookie, viewerOf } from './session';
 import { ada, seededStore } from './test-support';
 
@@ -101,6 +101,20 @@ describe('startLanguage', () => {
 
     expect([listed.status, again.status]).toEqual([409, 409]);
   });
+
+  it('refuses one language more than a contributor may hold started', async () => {
+    const store = await seededStore();
+    const tags = ['de', 'es', 'it', 'nl', 'sv', 'da', 'fi', 'nb', 'cs'];
+    const held = tags.slice(0, MAX_STARTED);
+    for (const locale of held) {
+      await startLanguage(store, ada, { project: 'o/r', locale }, 5);
+    }
+
+    const over = await startLanguage(store, ada, { project: 'o/r', locale: tags[MAX_STARTED] ?? '' }, 6);
+
+    expect(over.status).toBe(409);
+    expect((await store.starts('o/r', ada.id)).map((s) => s.locale)).toEqual([...held].sort());
+  });
 });
 
 describe('sessions', () => {
@@ -111,6 +125,7 @@ describe('sessions', () => {
 
     expect(await viewerOf(store, header, 101)).toEqual(ada);
     expect(set).toContain('HttpOnly; Secure; SameSite=Lax');
+    expect(set).toMatch(/^__Host-lingua_session=[\w-]+; Path=\/;/);
 
     await closeSession(store, header);
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LocaleTag } from '#site/core/config';
+import { LocaleTag, ProjectId } from '#site/core/config';
 import { localeFiles, shelfOf } from '#site/core/shelf';
 import { baseOf, sourceOf } from '#site/core/source';
 import type { Store, User } from '#site/store/store';
@@ -7,7 +7,7 @@ import { openProject } from './workspace';
 
 /** `POST /api/confirm`: messages of one language the contributor says read right as they are. */
 export const ConfirmInput = z.object({
-  project: z.string().regex(/^[\w.-]+\/[\w.-]+$/),
+  project: ProjectId,
   locale: LocaleTag,
   keys: z.array(z.string().min(1).max(256)).min(1).max(200),
 });

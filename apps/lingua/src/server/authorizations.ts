@@ -6,7 +6,7 @@ import type { User } from '#site/store/store';
 import { ProposalInput, type ProposalResult } from './proposals';
 import { cookie, readCookie } from './session';
 
-const SEND_COOKIE = 'lingua_send';
+const SEND_COOKIE = '__Host-lingua_send';
 const TEN_MINUTES = 600;
 const WRITE_SCOPES = new Set(['public_repo', 'repo']);
 
