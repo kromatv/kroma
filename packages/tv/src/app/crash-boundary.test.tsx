@@ -11,6 +11,8 @@ import { createDevicePreferences, DevicePreferencesProvider } from '#tv/app/devi
 const preferences = createDevicePreferences();
 const crashReportingPrefStore = preferences.crashReporting;
 
+const fallback = () => <span>fallback shown</span>;
+
 function Boom(): ReactNode {
   throw new Error('kaboom');
 }
@@ -35,6 +37,16 @@ function mount(client: KromaClient | null) {
         <Boom />
       </CrashBoundary>
     </DevicePreferencesProvider>,
+  );
+}
+
+function routed(route: string, child: ReactNode) {
+  return (
+    <DevicePreferencesProvider value={preferences}>
+      <CrashBoundary client={null} platform="Tizen" fallback={fallback} resetKey={route}>
+        {child}
+      </CrashBoundary>
+    </DevicePreferencesProvider>
   );
 }
 
@@ -82,6 +94,22 @@ describe('CrashBoundary', () => {
     mount(fakeClient({ diagnostics: { crash: reportCrash } }));
     await Promise.resolve();
     expect(reportCrash).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('fallback shown')).toBeTruthy();
+  });
+
+  it('renders the tree again once the route moves on', () => {
+    const { rerender } = render(routed('detail', <Boom />));
+
+    rerender(routed('home', <span>home screen</span>));
+
+    expect(screen.getByText('home screen')).toBeTruthy();
+  });
+
+  it('keeps the fallback while the route stays where it crashed', () => {
+    const { rerender } = render(routed('detail', <Boom />));
+
+    rerender(routed('detail', <span>detail screen</span>));
+
     expect(screen.getByText('fallback shown')).toBeTruthy();
   });
 });

@@ -37,6 +37,15 @@ describe('CrashScreen', () => {
     expect(onBack).toHaveBeenCalledOnce();
   });
 
+  it('goes back on the remote Back key as well', () => {
+    const onBack = vi.fn();
+    mount(onBack);
+
+    fireEvent.keyDown(window, { key: '', keyCode: 10009 });
+
+    expect(onBack).toHaveBeenCalledOnce();
+  });
+
   it('drops Back where there is nowhere to go', () => {
     mount();
     expect(screen.queryByText('Back')).toBeNull();

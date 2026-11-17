@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Box, Button, FocusScope, Icon, Text } from '@kromatv/ui/kit';
+import { Box, Button, FocusScope, Icon, Text, useFocusNav } from '@kromatv/ui/kit';
 
 interface CrashScreenProps {
   /** Clears the boundary and renders the tree again. */
@@ -16,6 +16,7 @@ interface CrashScreenProps {
  */
 export function CrashScreen({ onRetry, onBack }: Readonly<CrashScreenProps>) {
   const t = useT();
+  useFocusNav({ onBack });
   return (
     <FocusScope>
       <Box fill center gap={16} px={64} bg="surface1">
