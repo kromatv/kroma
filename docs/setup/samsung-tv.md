@@ -18,7 +18,7 @@ can run:
 
 - A Samsung smart TV from 2017 or later.
 - A Mac, a Windows PC or a Linux computer on the same network as the TV, with
-  [Node.js](https://nodejs.org) 22 or later. `node --version` prints the
+  [Node.js](https://nodejs.org) 22.12 or later. `node --version` prints the
   version.
 - A Samsung account, the same kind you use on the TV. It is free.
 - The address of your computer on the network, such as `192.168.1.20`. On a
