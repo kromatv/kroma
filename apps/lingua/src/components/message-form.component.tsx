@@ -6,14 +6,13 @@ import { MessageIssues } from '#site/components/message-issues.component';
 import { PlaceableText, VariablesLine } from '#site/components/placeable.component';
 import { SaveState } from '#site/components/save-state.component';
 import { fieldOf, focusField } from '#site/lib/field-dom';
+import { fieldIssues } from '#site/lib/field-issues';
 import { nextMissing, type Variable, variablesOf } from '#site/lib/placeables';
 import { pluralExamples } from '#site/lib/plural-examples';
 import { EditorFields } from '#site/lib/use-editor-keys.hook';
 import { useFieldInsert } from '#site/lib/use-field-insert.hook';
 import { type MessageTarget, useMessageSave } from '#site/lib/use-message-save.hook';
 import type { RowView } from '#site/lib/views';
-
-const TOKEN_ISSUES = new Set(['unknown-token', 'missing-token']);
 
 const variablesId = (key: string) => `variables:${key}`;
 
@@ -164,7 +163,7 @@ function Translation({
         <ReadOnly row={form.row} value={message.value} />
       )}
       <FieldStatus form={form} message={message} variables={variables} onInsert={entry.insert} />
-      <MessageIssues issues={message.issues.filter((issue) => !TOKEN_ISSUES.has(issue.code))} />
+      <MessageIssues issues={fieldIssues(variables, message.issues)} />
     </Column>
   );
 }

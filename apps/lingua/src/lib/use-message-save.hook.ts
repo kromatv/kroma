@@ -20,7 +20,7 @@ function failureOf(error: unknown): string {
   if (error.status === 401) {
     return 'You are signed out. Sign in again to save this edit.';
   }
-  return error.message;
+  return error.status === 422 ? 'Not saved' : error.message;
 }
 
 interface Saving {

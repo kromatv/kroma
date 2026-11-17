@@ -90,6 +90,7 @@ export interface WebStyle {
   margin?: Wide<'margin'>;
   padding?: Wide<'padding'>;
   accentColor?: string;
+  caretColor?: string;
   gridTemplateColumns?: string;
   gridColumn?: string;
   columnGap?: number | string;

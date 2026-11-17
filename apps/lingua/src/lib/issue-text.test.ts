@@ -4,19 +4,19 @@ import { issueText } from './issue-text';
 describe('issueText', () => {
   it('names a placeholder the source does not have', () => {
     expect(issueText({ level: 'error', code: 'unknown-token', detail: 'name' })).toBe(
-      '`{name}` is not in the source',
+      '{name} is not in the source',
     );
   });
 
   it('names a placeholder the translation dropped', () => {
     expect(issueText({ level: 'warning', code: 'missing-token', detail: 'count' })).toBe(
-      '`{count}` from the source is missing',
+      '{count} from the source is missing',
     );
   });
 
   it('names a reference to a message that does not exist', () => {
     expect(issueText({ level: 'error', code: 'unknown-ref', detail: 'common.ok' })).toBe(
-      '`$t(common.ok)` names no message of this project',
+      '$t(common.ok) names no message of this project',
     );
   });
 
@@ -35,7 +35,7 @@ describe('issueText', () => {
 
     expect(codes.map((code) => issueText({ level: 'error', code }))).toEqual([
       'A placeholder from the source is missing',
-      'A `$t()` names no message of this project',
+      'A $t() names no message of this project',
       'Contains an invisible control character',
     ]);
   });

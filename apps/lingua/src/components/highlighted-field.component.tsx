@@ -7,14 +7,24 @@ import { fieldMarks, type Mark } from '#site/lib/field-marks';
 import { useFieldMirror } from '#site/lib/use-field-mirror.hook';
 import type { RowView } from '#site/lib/views';
 
+const CHIP = { borderWidth: 1, radius: 5, px: 2, py: 1, mx: -3 } as const;
+const BLEED = 4;
+const WORD_SPACING = 2;
+
 const sDefinition = styles({
   host: { position: 'relative' },
-  entry: { font: 'ui' },
+  entry: { font: 'ui', wordSpacing: WORD_SPACING },
+  traced: { font: 'ui', wordSpacing: WORD_SPACING, color: 'transparent', caretColor: 'text' },
   layer: { position: 'absolute', overflow: 'hidden', pointerEvents: 'none' },
-  ink: { color: 'transparent', whiteSpace: 'pre-wrap', wordWrap: 'break-word' },
-  placeholder: { bg: 'accent/30', radius: 3 },
-  ref: { bg: 'info/30', radius: 3 },
-  unknown: { bg: 'danger/40', radius: 3 },
+  ink: {
+    color: 'text',
+    whiteSpace: 'pre-wrap',
+    wordWrap: 'break-word',
+    wordSpacing: WORD_SPACING,
+  },
+  placeholder: { ...CHIP, color: 'accentText', bg: 'accentSoft', border: 'accent/35' },
+  ref: { ...CHIP, color: 'info', bg: 'info/12', border: 'info/35' },
+  unknown: { ...CHIP, color: 'danger', bg: 'danger/12', border: 'danger/40' },
 });
 
 /** What the field is for and what it does as it is typed in and left. */
@@ -33,18 +43,27 @@ const WEIGHTS = ['100', '200', '300', '400', '500', '600', '700', '800', '900'] 
 const weightOf = (weight: string) => WEIGHTS.find((known) => known === weight) ?? '400';
 
 function geometryOf(box: FieldBox) {
+  const type = {
+    fontFamily: box.fontFamily,
+    fontSize: box.fontSize,
+    fontWeight: weightOf(box.fontWeight),
+    lineHeight: box.lineHeight,
+    letterSpacing: box.letterSpacing,
+  };
   return {
-    layer: { top: box.top, left: box.left, width: box.width, height: box.height },
+    layer: {
+      top: box.top,
+      left: box.left - BLEED,
+      width: box.width + 2 * BLEED,
+      height: box.height,
+    },
+    type,
     text: {
-      fontFamily: box.fontFamily,
-      fontSize: box.fontSize,
-      fontWeight: weightOf(box.fontWeight),
-      lineHeight: box.lineHeight,
-      letterSpacing: box.letterSpacing,
+      ...type,
       paddingTop: box.padding.top,
-      paddingRight: box.padding.right,
+      paddingRight: box.padding.right + BLEED,
       paddingBottom: box.padding.bottom,
-      paddingLeft: box.padding.left,
+      paddingLeft: box.padding.left + BLEED,
       transform: [{ translateY: -box.scrollTop }],
     },
   };
@@ -60,7 +79,7 @@ function Mirror({ box, marks }: Readonly<{ box: FieldBox; marks: readonly Mark[]
           mark.tone === 'plain' ? (
             mark.text
           ) : (
-            <Text key={mark.at} style={s[mark.tone]}>
+            <Text key={mark.at} style={[s[mark.tone], geometry.type]}>
               {mark.text}
             </Text>
           ),
@@ -71,10 +90,15 @@ function Mirror({ box, marks }: Readonly<{ box: FieldBox; marks: readonly Mark[]
 }
 
 /**
- * The translation field, its placeholders and references tinted in place as
- * they are typed: a layer over the kit's field draws the same text in
- * transparent ink, measured off the field itself, so only the tints show and
- * the field keeps its caret, selection, undo and input methods.
+ * The translation field, its placeholders and references drawn as the chips
+ * the source shows, in place, as they are typed. A layer over the kit's field
+ * draws the text, measured off the field itself, and the field under it keeps
+ * its caret, selection, undo and input methods with its own ink transparent.
+ * A chip's padding and border hang over its neighbours instead of pushing
+ * them, so every character stays where the field put it; the field sets its
+ * words a little apart to leave them room, and the layer runs past the
+ * field's sides so a chip at the edge of a line is drawn whole. Until the
+ * layer is measured the field shows its own text.
  */
 export function HighlightedField({ wiring }: Readonly<{ wiring: FieldWiring }>) {
   const s = useStyles(sDefinition);
@@ -90,7 +114,7 @@ export function HighlightedField({ wiring }: Readonly<{ wiring: FieldWiring }>) 
         onBlur={wiring.onBlur}
         rows={1}
         maxRows={8}
-        textStyle={s.entry}
+        textStyle={box ? s.traced : s.entry}
         placeholder="Not translated yet"
         label={`Translation of ${row.key}`}
         invalid={wiring.invalid}
