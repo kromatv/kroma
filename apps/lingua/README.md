@@ -59,6 +59,13 @@ and reads who they are once. A send uses its `public_repo` token for that one
 send, then drops it. Every write stays inside the project folder, for languages
 `i18n.json` lists or the contributor started, for keys the source has.
 
+The session, and the state of a trip through GitHub, are `__Host-` cookies:
+HttpOnly, Secure, `SameSite=Lax`, and set by this host alone, so a sibling
+subdomain cannot plant one. A browser only keeps them over HTTPS, or on
+`localhost`. Every write must come from the same origin and carries at most
+64 KB. No answer can be framed by another site, and a trip through GitHub only
+returns to a page of this site.
+
 ## `lingua.json`
 
 ```json
@@ -104,7 +111,8 @@ request passes `bun run i18n check`:
   send records those messages against the current source without ` mt`, which
   is a pull request that may touch the lock alone.
 - `POST /api/locales { project, locale }` starts a language. Until the
-  contributor sends it, only they see it. Their first send does what `i18n add`
+  contributor sends it, only they see it, and they hold at most eight started
+  languages in a project at once. Their first send does what `i18n add`
   does (the language's folder with its own name under `lang.<locale>`, that name
   added to the source and to every stable language), lists it in `i18n.json` as
   `{ "stage": "draft" }`, and writes the locks.
