@@ -12,7 +12,7 @@ const DEFAULT_FORBIDDEN_WORDS: [&str; 8] = [
 ];
 
 fn owned(terms: &[&str]) -> Vec<String> {
-    terms.iter().map(|term| term.to_string()).collect()
+    terms.iter().map(ToString::to_string).collect()
 }
 
 fn with_the_default_forbidden_words() -> Fixture {
