@@ -1,5 +1,10 @@
 import type { PlaybackMode } from '@kromatv/client/playback';
-import { audioTracksOf, type EngineDecision, preferredAudioIndex } from '@kromatv/core';
+import {
+  audioTracksOf,
+  type EngineDecision,
+  preferredAudioIndex,
+  streamRefusal,
+} from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebEnginePref, type WebEnginePref } from '#web/features/playback/engine-pref';
 import { useFullscreenFrame } from '#web/features/playback/fullscreen-frame.component';
@@ -8,6 +13,7 @@ import { useEngineDecision } from '#web/features/playback/use-engine-decision.ho
 import { useResumeAnchor } from '#web/features/playback/use-resume-anchor.hook';
 import { useStallRecovery } from '#web/features/playback/use-stall-recovery.hook';
 import { useStreamProbe } from '#web/features/playback/use-stream-probe.hook';
+import { useTitleAsOpened } from '#web/features/playback/use-title-as-opened.hook';
 import { useVideoTransport } from '#web/features/playback/use-video-transport.hook';
 import { useWaitReason } from '#web/features/playback/use-wait-reason.hook';
 import { attachMediaSource, type VideoPlayback } from '#web/features/playback/video-engine';
@@ -29,7 +35,8 @@ function modeOf(decision: EngineDecision): PlaybackMode {
 /** Owns the `<video>` element: playback state, source decision (direct-play vs
  * HLS remux), fullscreen, and every transport action. The underlying HLS clock
  * is anchor-relative; positions reported by the hook are always absolute. */
-export function useVideoPlayback(item: MovieView): VideoPlayback {
+export function useVideoPlayback(latest: MovieView): VideoPlayback {
+  const item = useTitleAsOpened(latest);
   const webRuntime = useWebRuntime();
   const videoRef = useRef<HTMLVideoElement>(null);
   const frame = useFullscreenFrame();
@@ -50,7 +57,7 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
     return (tracks.find((t) => t.default) ?? tracks[0])?.index ?? 0;
   });
   const { client, user } = useAuth();
-  const { anchor, setAnchor, bootAnchor } = useResumeAnchor(item, client, user);
+  const { anchor, setAnchor, bootAnchor } = useResumeAnchor(item, client, user?.id ?? null);
   const wantPlay = useRef(true);
   const giveUps = useRef(0);
 
@@ -126,7 +133,6 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
   }, [item, anchor, audioIndex, baseSec, knownDurationMs]);
 
   const absNow = useCallback(() => baseSec + (videoRef.current?.currentTime ?? 0), [baseSec]);
-  const onRefused = useCallback((status: number) => refused(status, absNow()), [refused, absNow]);
   const giveUp = useCallback(() => {
     giveUps.current += 1;
     if (giveUps.current > MAX_GIVE_UPS) {
@@ -135,6 +141,11 @@ export function useVideoPlayback(item: MovieView): VideoPlayback {
       restartAt(absNow());
     }
   }, [absNow, restartAt, fail]);
+  const onRefused = useCallback(
+    (status: number) =>
+      streamRefusal(status) === 'missing' ? giveUp() : refused(status, absNow()),
+    [refused, absNow, giveUp],
+  );
 
   // The chosen audio is muxed into the stream URL, so a language change remounts
   // the element rather than switching renditions in place.

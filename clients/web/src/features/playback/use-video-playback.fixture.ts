@@ -9,7 +9,7 @@ const itemProgress = vi.fn();
 export const H = {
   decision: { kind: 'direct' } as { kind: string; aacMaster?: boolean },
   tracks: [] as { index: number; default?: boolean; language?: string | null }[],
-  user: null as { audioLanguage?: string | null } | null,
+  user: null as { id: string; audioLanguage?: string | null } | null,
   itemProgress,
   masterNeedsAac: vi.fn(),
   refreshSession: vi.fn((): Promise<string | undefined> => Promise.resolve('fresh')),

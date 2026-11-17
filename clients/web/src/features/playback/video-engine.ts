@@ -18,7 +18,11 @@ import {
   type WaitReason,
 } from '@kromatv/core';
 import type { WebEnginePref } from '#web/features/playback/engine-pref';
-import { type StreamFailure, shakaHttpStatus } from '#web/features/playback/stream-failure';
+import {
+  routeShakaFailure,
+  type StreamFailure,
+  shakaHttpStatus,
+} from '#web/features/playback/stream-failure';
 
 export type HlsInstance = import('hls.js').default;
 
@@ -45,8 +49,14 @@ export interface ShakaPlayerLike {
   configure(config: Record<string, unknown>): boolean;
   retryStreaming(retryDelaySeconds?: number): boolean;
 }
+interface ShakaErrorEvent {
+  detail?: unknown;
+}
+interface ShakaEvents {
+  addEventListener(type: 'error', listener: (event: ShakaErrorEvent) => void): void;
+}
 interface ShakaStatic {
-  Player: { new (): ShakaPlayerLike; isBrowserSupported(): boolean };
+  Player: { new (): ShakaPlayerLike & ShakaEvents; isBrowserSupported(): boolean };
   polyfill: { installAll(): void };
 }
 
@@ -213,6 +223,11 @@ export function attachMediaSource(
       const player = new shaka.Player();
       shakaRef.current = player;
       player.configure(shakaConfig(plan));
+      player.addEventListener('error', (event) => {
+        if (!destroyed) {
+          routeShakaFailure(event.detail, opts);
+        }
+      });
       v.addEventListener('error', onMediaError);
       try {
         await player.attach(v);

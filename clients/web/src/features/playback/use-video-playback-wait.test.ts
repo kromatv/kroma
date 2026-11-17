@@ -172,6 +172,20 @@ describe('useVideoPlayback when the server refuses the stream', () => {
     expect(result.current.failure).toBeNull();
   });
 
+  it('picks up where the picture was when an engine finds its session gone', async () => {
+    H.decision = { kind: 'web-mse', aacMaster: false };
+    const { result, v } = render();
+    await settle();
+    v.currentTime = 42;
+
+    act(() => vi.mocked(attachMediaSource).mock.calls.at(-1)?.[0].onRefused(404));
+    await settle();
+
+    expect(H.refreshSession).not.toHaveBeenCalled();
+    expect(result.current.anchor).toBe(42);
+    expect(result.current.failure).toBeNull();
+  });
+
   it('calls a title the server no longer has missing, and renews nothing', async () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
     vi.stubGlobal('fetch', refusing(404));
