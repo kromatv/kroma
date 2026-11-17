@@ -53,17 +53,28 @@ export async function deployTo(tv: Television, options: DeployOptions): Promise<
     log: options.log,
     launch: options.launch ?? true,
     options: platformOptions,
+    source: options.source,
   });
-  if (tv.identifier === undefined) {
-    await rememberSet({
-      host: tv.host,
-      platform: tv.platform,
-      name: tv.name,
-      model: tv.model,
-      package: basename(artifact),
-      source: options.source,
-      options: repeated(module, { ...platformOptions, ...settled }),
-      installedAt: new Date().toISOString(),
-    }).catch(() => undefined);
+  await remember(tv, {
+    package: basename(artifact),
+    source: options.source,
+    options: repeated(module, { ...platformOptions, ...settled }),
+  });
+}
+
+async function remember(
+  tv: Television,
+  installed: Pick<RememberedSet, 'package' | 'source' | 'options'>,
+): Promise<void> {
+  if (tv.identifier !== undefined) {
+    return;
   }
+  await rememberSet({
+    host: tv.host,
+    platform: tv.platform,
+    name: tv.name,
+    model: tv.model,
+    ...installed,
+    installedAt: new Date().toISOString(),
+  }).catch(() => undefined);
 }

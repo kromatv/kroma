@@ -283,6 +283,18 @@ downloaded, or with a profile whose distributor certificate does not list the
 TV. Sign it again with your Samsung profile, as in
 [Sign and install KROMA](#sign-and-install-kroma).
 
+### The TV runs an older Tizen than this KROMA needs
+
+The version of KROMA you chose asks for a newer Tizen than the TV runs, so the
+TV would refuse it. Install the canary version: choose **Canary** when the
+installer asks which version of KROMA, or run:
+
+```bash
+npx @kromatv/installer install 192.168.1.62 --source canary
+```
+
+Replace `192.168.1.62` with the address of your TV.
+
 ### The TV refuses the `.tpk`
 
 A TV from 2020 or earlier cannot run the native app. The installer sends it

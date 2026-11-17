@@ -31,6 +31,15 @@ describe('an install result', () => {
     expect(parseResult(output).verdict).toBe('success');
   });
 
+  it('reads a set that ends its lines with a carriage return', () => {
+    const output = 'app_id[KromaTV001] install failed[118]\r\ncmd_ret:0\r\n';
+
+    expect(parseResult(output)).toMatchObject({
+      verdict: 'failure',
+      output: 'app_id[KromaTV001] install failed[118]\ncmd_ret:0',
+    });
+  });
+
   it('calls a rejected command a failure', () => {
     expect(parseResult('sh: 0: command not found\n').verdict).toBe('failure');
   });

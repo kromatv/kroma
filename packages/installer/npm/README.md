@@ -101,6 +101,12 @@ A KROMA signed with another certificate is already on the TV. Delete it: in
 **Apps**, hold the select button on the KROMA tile, then choose **Delete**.
 Install again.
 
+### A Samsung TV runs an older Tizen than this KROMA needs
+
+The version of KROMA you chose asks for a newer Tizen than the TV runs. Choose
+**Canary** when the installer asks which version, or install with
+`--source canary`.
+
 ### A Samsung TV from 2020 or earlier refuses the app
 
 The installer could not find the year of the TV, so it sent the native app,

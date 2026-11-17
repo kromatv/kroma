@@ -37,6 +37,7 @@ describe('readTizenPackage', () => {
       type: 'tpk',
       packageId: 'tv.kroma.app',
       appId: 'tv.kroma.app',
+      requiredVersion: '6.0',
     });
   });
 
@@ -47,7 +48,17 @@ describe('readTizenPackage', () => {
       type: 'wgt',
       packageId: 'KromaTV001',
       appId: 'KromaTV001.KROMA',
+      requiredVersion: '3.0',
     });
+  });
+
+  it('names no floor when the manifest gives none it can read', async () => {
+    await writeFile(
+      join(stage, 'config.xml'),
+      CONFIG_XML.replace('required_version="3.0"', 'required_version="latest"'),
+    );
+
+    expect(readTizenPackage(stage).requiredVersion).toBeUndefined();
   });
 
   it('refuses a directory that carries neither manifest', () => {

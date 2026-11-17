@@ -14,7 +14,7 @@ const lines: string[] = [];
 const widget: TizenPackage = { type: 'wgt', packageId: 'KromaTV001', appId: 'KromaTV001.KROMA' };
 const native: TizenPackage = { type: 'tpk', packageId: 'tv.kroma.app', appId: 'tv.kroma.app' };
 
-const context = (launch = true): InstallContext => ({
+const context = (launch = true, runtimeVersion?: string): InstallContext => ({
   tv: {
     host: '192.168.1.31',
     platform: 'tizen',
@@ -24,7 +24,9 @@ const context = (launch = true): InstallContext => ({
     developerMode: 'on',
     sideloadable: true,
     note: '',
-    runtime: null,
+    runtime: runtimeVersion
+      ? { name: 'Tizen', version: runtimeVersion, engine: null, learned: 'derived' }
+      : null,
   },
   artifact: '/out/KROMA.wgt',
   log: (line) => lines.push(line),
@@ -40,7 +42,7 @@ beforeEach(() => {
     host: '192.168.1.31',
     port: 26101,
     banner: 'sdbd::UE50AU7172',
-    capability: vi.fn(),
+    capability: vi.fn().mockResolvedValue({}),
     shell: vi.fn(),
     push: vi.fn(),
     install: vi
@@ -97,6 +99,47 @@ describe('installOverSdb', () => {
     await installOverSdb(context(false), '/out/KROMA.wgt', widget, 'kroma');
 
     expect(vi.mocked(device.launch)).not.toHaveBeenCalled();
+  });
+
+  it('refuses a package that needs a newer Tizen than the set reports, before pushing it', async () => {
+    vi.mocked(device.capability).mockResolvedValue({ platform_version: '5.5' });
+
+    const installed = installOverSdb(
+      context(),
+      '/out/KROMA.wgt',
+      { ...widget, requiredVersion: '6.0' },
+      'kroma',
+    );
+
+    await expect(installed).rejects.toThrow(
+      'this set runs Tizen 5.5, and this KROMA needs Tizen 6.0 or later, so the set would refuse it.',
+    );
+    expect(vi.mocked(device.install)).not.toHaveBeenCalled();
+  });
+
+  it('trusts the version the set reports over the one its model year suggests', async () => {
+    vi.mocked(device.capability).mockResolvedValue({ platform_version: '6.5' });
+
+    await installOverSdb(
+      context(true, '5.5'),
+      '/out/KROMA.wgt',
+      { ...widget, requiredVersion: '6.0' },
+      'kroma',
+    );
+
+    expect(vi.mocked(device.install)).toHaveBeenCalled();
+  });
+
+  it('falls back on the model year when the set reports no version', async () => {
+    const installed = installOverSdb(
+      context(true, '5.0'),
+      '/out/KROMA.wgt',
+      { ...widget, requiredVersion: '6.0' },
+      'kroma',
+    );
+
+    await expect(installed).rejects.toThrow('this set runs Tizen 5.0');
+    expect(vi.mocked(device.install)).not.toHaveBeenCalled();
   });
 
   it('quotes what the set said when it refused the package', async () => {

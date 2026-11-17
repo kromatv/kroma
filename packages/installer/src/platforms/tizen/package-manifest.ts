@@ -7,12 +7,15 @@ const WEB_MANIFEST = 'config.xml';
 const MAX_MANIFEST_BYTES = 256 * 1024;
 
 const Identifier = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/);
+const Version = z.string().regex(/^\d{1,3}(\.\d{1,3}){0,3}$/);
 
 /** What a Samsung package is and what it installs, as its own manifest says. */
 export interface TizenPackage {
   type: 'tpk' | 'wgt';
   packageId: string;
   appId: string;
+  /** The oldest Tizen the package installs on, when its manifest names one. */
+  requiredVersion?: string;
 }
 
 /**
@@ -28,6 +31,7 @@ export function readTizenPackage(directory: string): TizenPackage {
       type: 'tpk',
       packageId: identifier(xml, 'manifest', 'package', NATIVE_MANIFEST),
       appId: identifier(xml, 'ui-application', 'appid', NATIVE_MANIFEST),
+      ...floor(xml, 'manifest', 'api-version'),
     };
   }
   const web = join(directory, WEB_MANIFEST);
@@ -39,6 +43,7 @@ export function readTizenPackage(directory: string): TizenPackage {
     type: 'wgt',
     packageId: identifier(xml, 'tizen:application', 'package', WEB_MANIFEST),
     appId: identifier(xml, 'tizen:application', 'id', WEB_MANIFEST),
+    ...floor(xml, 'tizen:application', 'required_version'),
   };
 }
 
@@ -49,11 +54,18 @@ function readManifest(path: string): string {
   return readFileSync(path, 'utf8');
 }
 
-function identifier(xml: string, element: string, name: string, file: string): string {
+function attribute(xml: string, element: string, name: string): string | undefined {
   const tag = new RegExp(String.raw`<${element}\s[^>]*>`).exec(xml)?.[0];
-  const value =
-    tag === undefined ? undefined : new RegExp(String.raw`\s${name}="([^"]*)"`).exec(tag)?.[1];
-  const parsed = Identifier.safeParse(value);
+  return tag === undefined ? undefined : new RegExp(String.raw`\s${name}="([^"]*)"`).exec(tag)?.[1];
+}
+
+function floor(xml: string, element: string, name: string): { requiredVersion?: string } {
+  const parsed = Version.safeParse(attribute(xml, element, name));
+  return parsed.success ? { requiredVersion: parsed.data } : {};
+}
+
+function identifier(xml: string, element: string, name: string, file: string): string {
+  const parsed = Identifier.safeParse(attribute(xml, element, name));
   if (!parsed.success) {
     throw new Error(`${file} names no usable ${name} on <${element}>`);
   }
