@@ -5,6 +5,7 @@ import { HeadContent, Scripts } from '@tanstack/react-router';
 import { type JSX, type ReactNode, useMemo } from 'react';
 import { preload } from 'react-dom';
 import { visitorGround } from './site-ground';
+import { visitorWidth } from './site-width';
 
 const SITE_KIT = { formFactor: 'browser', entry: { size: 'md' } } as const;
 
@@ -54,7 +55,11 @@ export function SiteDocument({ children }: Readonly<{ children: ReactNode }>) {
     preload(href, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   }
   const ground = visitorGround();
-  const kit = useMemo(() => ({ ...SITE_KIT, ground }), [ground]);
+  const width = visitorWidth();
+  const kit = useMemo(
+    () => ({ ...SITE_KIT, ground, ...(width === undefined ? {} : { designWidth: width }) }),
+    [ground, width],
+  );
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

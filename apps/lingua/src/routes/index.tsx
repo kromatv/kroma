@@ -78,18 +78,16 @@ function NoProject() {
   );
 }
 
-function SignInAction() {
+function SignInButton() {
   const here = useLocation({ select: (location) => location.href });
   return (
-    <PageHeader.Actions>
-      <Button
-        size="sm"
-        icon="brand-github"
-        label="Sign in to translate"
-        href={signInUrl(here)}
-        role="link"
-      />
-    </PageHeader.Actions>
+    <Button
+      size="sm"
+      icon="brand-github"
+      label="Sign in to translate"
+      href={signInUrl(here)}
+      role="link"
+    />
   );
 }
 
@@ -119,7 +117,11 @@ function Home() {
         <PageHeader.Subtitle>
           Pick a project and a language, fix or add messages, and send them as one pull request.
         </PageHeader.Subtitle>
-        {viewer === null && signIn ? <SignInAction /> : null}
+        {viewer === null && signIn ? (
+          <PageHeader.Actions>
+            <SignInButton />
+          </PageHeader.Actions>
+        ) : null}
       </PageHeader.Root>
       <Projects projects={projects} />
       <Column gap={12}>
