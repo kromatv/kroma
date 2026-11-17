@@ -99,7 +99,7 @@ function useFieldActions(form: FormProps, insertMissing: () => void): void {
 }
 
 function ReadOnly({ row, value }: Readonly<{ row: RowView; value: string }>) {
-  const look = { plural: row.plural !== null, color: value ? 'text' : 'textDim' } as const;
+  const look = { plural: row.plural !== null, color: value ? 'textMuted' : 'textDim' } as const;
   return <PlaceableText text={value || 'Not translated yet'} look={look} />;
 }
 
