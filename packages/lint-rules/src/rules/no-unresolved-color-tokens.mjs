@@ -5,8 +5,8 @@ const PALETTE = new URL('../../../ui/src/core/tokens/colors.ts', import.meta.url
 const RAW_SOURCES =
   /^(?:react-native|react-native-svg|react-native-web|#ui\/lib\/svg(?:\.component)?)$/;
 const COLOUR_ATTRIBUTE = /^(?:color|fill|stroke|bgcolor)$|Color$|-color$/;
-const COLOUR_KEY =
-  /^(?:color|background|fill|stroke|boxShadow|textShadow)$|Color$|^(?:border|outline)(?:Top|Right|Bottom|Left|Block|Inline)?(?:Start|End)?$/;
+const COLOUR_KEYS = new Set(['color', 'background', 'fill', 'stroke', 'boxShadow', 'textShadow']);
+const EDGE_KEY = /^(?:border|outline)(?:Top|Right|Bottom|Left|Block|Inline)?(?:Start|End)?$/;
 const CANVAS_PAINT = new Set(['fillStyle', 'strokeStyle', 'shadowColor']);
 const TOKEN_WORD = /^([A-Za-z][A-Za-z0-9]*)(\/\d+(?:\.\d+)?)?$/;
 const CSS_KEYWORDS = new Set(['text']);
@@ -32,6 +32,10 @@ export function paletteNames(source = readFileSync(PALETTE, 'utf8')) {
 function kitNames() {
   palette.names ??= paletteNames();
   return palette.names;
+}
+
+function isColourKey(key) {
+  return COLOUR_KEYS.has(key) || key.endsWith('Color') || EDGE_KEY.test(key);
 }
 
 function camel(property) {
@@ -158,7 +162,7 @@ function checkValue(scan, node) {
 function checkProperty(scan, property, walk) {
   if (property.type === 'SpreadElement') {
     checkStyle(scan, property.argument, walk);
-  } else if (COLOUR_KEY.test(camel(keyName(property)))) {
+  } else if (isColourKey(camel(keyName(property)))) {
     checkValue(scan, property.value);
   } else if (walk.deep) {
     checkStyle(scan, property.value, walk);
@@ -247,14 +251,14 @@ function scriptVisitors(scan) {
       const target = node.left;
       const name =
         target.type === 'MemberExpression' && !target.computed ? target.property.name : '';
-      if (CANVAS_PAINT.has(name) || (isStyleOf(target.object) && COLOUR_KEY.test(name))) {
+      if (CANVAS_PAINT.has(name) || (isStyleOf(target.object) && isColourKey(name))) {
         checkValue(scan, node.right);
       }
     },
     CallExpression(node) {
       const [property, value] = node.arguments;
       if (setsStyle(node.callee) && property?.type === 'Literal' && value) {
-        if (COLOUR_KEY.test(camel(String(property.value)))) {
+        if (isColourKey(camel(String(property.value)))) {
           checkValue(scan, value);
         }
       }
