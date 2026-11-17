@@ -9,17 +9,23 @@
 //!   * **Anthropic** `POST {base}/v1/messages` (`x-api-key` +
 //!     `anthropic-version`) Claude.
 
+mod ask;
+mod cut_short;
 mod providers;
 mod request;
+mod tool_loop;
 
-use anyhow::{anyhow, bail, Result};
-use serde_json::{json, Value};
+use anyhow::{anyhow, Result};
+use serde_json::Value;
 
 use super::tools::{ToolBox, ToolDef};
 use super::LlmClient;
 
+use ask::{Ask, Reasoning};
+use cut_short::CutShort;
 use providers::{provider_for, Provider};
-use request::{check_error, get_json, post_json, resolve_base};
+use request::{get_json, post_json, resolve_base, ApiError};
+use tool_loop::ToolRun;
 
 /// A configured HTTP LLM endpoint (provider + resolved base + model + params).
 pub struct HttpLlm {
@@ -28,7 +34,7 @@ pub struct HttpLlm {
     model: String,
     api_key: String,
     temperature: f32,
-    reasoning: bool,
+    reasoning: Reasoning,
 }
 
 impl HttpLlm {
@@ -54,80 +60,62 @@ impl HttpLlm {
             model: model.to_string(),
             api_key: api_key.trim().to_string(),
             temperature,
-            reasoning,
+            reasoning: Reasoning::from_setting(reasoning),
         })
     }
 
-    fn run(&self, system: &str, user: &str, max_tokens: u32, reasoning: bool) -> Result<String> {
-        let body = self.provider.chat_body(
-            &self.model,
+    fn ask<'a>(&'a self, system: &'a str, answer_tokens: u32, reasoning: Reasoning) -> Ask<'a> {
+        Ask {
+            model: &self.model,
             system,
-            user,
-            max_tokens,
-            self.temperature,
+            answer_tokens,
+            temperature: self.temperature,
             reasoning,
-        );
-        let headers = self.provider.headers(&self.api_key);
-        let v = post_json(&self.provider.chat_url(&self.base), &headers, &body)?;
-        check_error(&v)?;
-        self.provider.parse_reply(&v)
+        }
     }
 
-    // A tool that errors is reported to the model as a JSON `{"error":…}`
-    // result (it can recover or pick another tool) rather than aborting the loop.
-    #[allow(clippy::too_many_arguments)]
-    fn run_tools_loop(
+    fn headers(&self) -> Vec<(&'static str, String)> {
+        self.provider.headers(&self.api_key)
+    }
+
+    fn chat_url(&self) -> String {
+        self.provider.chat_url(&self.base)
+    }
+
+    fn run(
         &self,
         system: &str,
         user: &str,
-        tools: &[ToolDef],
-        toolbox: &dyn ToolBox,
         max_tokens: u32,
-        max_steps: usize,
-        reasoning: bool,
+        reasoning: Reasoning,
     ) -> Result<String> {
-        let url = self.provider.chat_url(&self.base);
-        let headers = self.provider.headers(&self.api_key);
-        let mut messages: Vec<Value> = vec![json!({ "role": "user", "content": user })];
-        let mut last_text = String::new();
-        for step in 0..max_steps {
-            let body = self.provider.tools_request(
-                &self.model,
-                system,
-                &messages,
-                tools,
-                max_tokens,
-                self.temperature,
-                reasoning,
-            );
-            let v = post_json(&url, &headers, &body)?;
-            check_error(&v)?;
-            let turn = self.provider.parse_turn(&v)?;
-            if let Some(t) = &turn.text {
-                last_text = t.clone();
-            }
-            if turn.tool_calls.is_empty() {
-                return Ok(last_text);
-            }
-            messages.push(turn.assistant_msg);
-            let mut results = Vec::with_capacity(turn.tool_calls.len());
-            for call in turn.tool_calls {
-                let out = match toolbox.call(&call.name, &call.args) {
-                    Ok(s) => {
-                        tracing::debug!(step, tool = %call.name, args = %call.args, bytes = s.len(), "llm tool call");
-                        s
-                    }
-                    Err(e) => {
-                        tracing::debug!(step, tool = %call.name, args = %call.args, error = %e, "llm tool call failed");
-                        json!({ "error": e.to_string() }).to_string()
-                    }
-                };
-                results.push((call, out));
-            }
-            messages.extend(self.provider.tool_result_messages(&results));
-        }
-        bail!("LLM tool loop exhausted {max_steps} steps without a final answer")
+        let body = self
+            .provider
+            .chat_body(&self.ask(system, max_tokens, reasoning), user);
+        let v = post_json(&self.chat_url(), &self.headers(), &body)?;
+        self.provider.parse_reply(&v)
     }
+
+    // Catalog tools are read-only, so replaying a tool run is safe.
+    fn with_reasoning_retry(
+        &self,
+        attempt: impl Fn(Reasoning) -> Result<String>,
+    ) -> Result<String> {
+        match attempt(self.reasoning) {
+            Err(e) if self.provider.controls_reasoning() && setting_may_be_why(&e) => {
+                let flipped = self.reasoning.flipped();
+                tracing::warn!(error = %e, reasoning = %flipped, "LLM request failed; retrying with reasoning flipped");
+                attempt(flipped)
+            }
+            outcome => outcome,
+        }
+    }
+}
+
+fn setting_may_be_why(e: &anyhow::Error) -> bool {
+    e.downcast_ref::<CutShort>().is_some()
+        || e.downcast_ref::<ApiError>()
+            .is_some_and(ApiError::rejected_the_request)
 }
 
 impl LlmClient for HttpLlm {
@@ -136,16 +124,7 @@ impl LlmClient for HttpLlm {
     }
 
     fn complete(&self, system: &str, user: &str, max_tokens: u32) -> Result<String> {
-        match self.run(system, user, max_tokens, self.reasoning) {
-            Ok(text) => Ok(text),
-            // Reasoning is unsupported on some models (e.g. Claude Haiku) and 400s
-            // there retry once without it so enabling it degrades gracefully.
-            Err(e) if self.reasoning && self.provider.reasoning_applies() => {
-                tracing::warn!(error = %e, "LLM reasoning request failed; retrying without it");
-                self.run(system, user, max_tokens, false)
-            }
-            Err(e) => Err(e),
-        }
+        self.with_reasoning_retry(|reasoning| self.run(system, user, max_tokens, reasoning))
     }
 
     fn supports_tools(&self) -> bool {
@@ -161,24 +140,15 @@ impl LlmClient for HttpLlm {
         max_tokens: u32,
         max_steps: usize,
     ) -> Result<String> {
-        match self.run_tools_loop(
-            system,
+        let run = ToolRun {
             user,
             tools,
             toolbox,
-            max_tokens,
             max_steps,
-            self.reasoning,
-        ) {
-            Ok(s) => Ok(s),
-            // Some models 400 on `thinking` (e.g. Claude Haiku) retry the whole
-            // loop without it. Catalog tools are read-only, so a replay is safe.
-            Err(e) if self.reasoning && self.provider.reasoning_applies() => {
-                tracing::warn!(error = %e, "LLM tool run failed; retrying without reasoning");
-                self.run_tools_loop(system, user, tools, toolbox, max_tokens, max_steps, false)
-            }
-            Err(e) => Err(e),
-        }
+        };
+        self.with_reasoning_retry(|reasoning| {
+            self.run_tools_loop(&run, &self.ask(system, max_tokens, reasoning))
+        })
     }
 
     fn describe(&self) -> String {
@@ -201,7 +171,6 @@ pub fn list_models(provider: &str, base_url: &str, api_key: &str) -> Result<Vec<
         &provider.models_url(&base),
         &provider.headers(api_key.trim()),
     )?;
-    check_error(&v)?;
     let mut ids: Vec<String> = v
         .get("data")
         .and_then(Value::as_array)
@@ -216,3 +185,6 @@ pub fn list_models(provider: &str, base_url: &str, api_key: &str) -> Result<Vec<
     ids.dedup();
     Ok(ids)
 }
+
+#[cfg(test)]
+mod tests;

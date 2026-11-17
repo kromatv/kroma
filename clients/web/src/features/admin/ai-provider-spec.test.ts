@@ -36,10 +36,16 @@ describe('what each provider asks the form for', () => {
     expect(SPEC.anthropic?.baseUrl).toBe('advanced');
   });
 
-  it('offers temperature everywhere but Anthropic, and reasoning only there', () => {
-    expect(SPEC.anthropic).toMatchObject({ temperature: false, reasoning: true });
-    expect(SPEC.openai).toMatchObject({ temperature: true, reasoning: false });
-    expect(SPEC.openrouter).toMatchObject({ temperature: true, reasoning: false });
+  it('offers temperature everywhere but Anthropic', () => {
+    expect(SPEC.anthropic?.temperature).toBe(false);
+    expect(SPEC.openai?.temperature).toBe(true);
+    expect(SPEC.openrouter?.temperature).toBe(true);
+  });
+
+  it("offers reasoning where the server can tell the provider about it, with that provider's hint", () => {
+    expect(SPEC.anthropic?.reasoningHint).toBe('admin.aiReasoningHintAnthropic');
+    expect(SPEC.openrouter?.reasoningHint).toBe('admin.aiReasoningHintOpenrouter');
+    expect(SPEC.openai?.reasoningHint).toBeNull();
   });
 
   it('lays an unknown provider out the way OpenAI is laid out', () => {

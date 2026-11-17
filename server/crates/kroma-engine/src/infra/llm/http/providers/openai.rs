@@ -2,16 +2,26 @@ use anyhow::{anyhow, Result};
 use serde_json::{json, Value};
 
 use super::super::super::tools::{ToolCall, ToolDef, Turn};
-use super::{openai_tool, Provider};
+use super::super::ask::{Ask, ToolChoice};
+use super::super::cut_short::CutShort;
+use super::{openai_tool, openrouter, Provider};
 
 // The OpenAI chat-completions wire protocol also serves every compatible
 // server (Ollama, llama.cpp, LM Studio, vLLM) and OpenRouter, which is the
-// same wire format save for its default base URL and an optional `X-Title`
-// ranking header - hence config of this one `impl` rather than a near-duplicate.
+// same wire format save for its default base URL, an optional `X-Title`
+// ranking header and its reasoning control - hence config of this one `impl`
+// rather than a near-duplicate.
 pub(super) struct OpenAi {
     id: &'static str,
     default_base: Option<&'static str>,
     extra_header: Option<(&'static str, &'static str)>,
+    reasoning: ReasoningControl,
+}
+
+#[derive(PartialEq, Eq)]
+enum ReasoningControl {
+    Unsent,
+    OpenRouter,
 }
 
 // `openai()` deliberately mirrors the variant name alongside `openrouter()`.
@@ -22,6 +32,7 @@ impl OpenAi {
             id: "openai",
             default_base: None,
             extra_header: None,
+            reasoning: ReasoningControl::Unsent,
         }
     }
     // OpenRouter (<https://openrouter.ai>): identifies KROMA on its usage
@@ -31,6 +42,14 @@ impl OpenAi {
             id: "openrouter",
             default_base: Some("https://openrouter.ai/api/v1"),
             extra_header: Some(("x-title", "KROMA")),
+            reasoning: ReasoningControl::OpenRouter,
+        }
+    }
+
+    fn set_budget(&self, body: &mut Value, ask: &Ask<'_>) {
+        match self.reasoning {
+            ReasoningControl::Unsent => body["max_tokens"] = json!(ask.answer_tokens),
+            ReasoningControl::OpenRouter => openrouter::set_budget(body, ask),
         }
     }
 }
@@ -58,57 +77,61 @@ impl Provider for OpenAi {
         }
         h
     }
-    fn chat_body(
-        &self,
-        model: &str,
-        system: &str,
-        user: &str,
-        max_tokens: u32,
-        temperature: f32,
-        _reasoning: bool,
-    ) -> Value {
-        json!({
-            "model": model,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
+    fn chat_body(&self, ask: &Ask<'_>, user: &str) -> Value {
+        let mut body = json!({
+            "model": ask.model,
+            "temperature": ask.temperature,
             "stream": false,
             "messages": [
-                {"role": "system", "content": system},
+                {"role": "system", "content": ask.system},
                 {"role": "user", "content": user},
             ],
-        })
+        });
+        self.set_budget(&mut body, ask);
+        body
     }
     fn parse_reply(&self, v: &Value) -> Result<String> {
-        v.pointer("/choices/0/message/content")
-            .and_then(Value::as_str)
+        let content = v
+            .pointer("/choices/0/message/content")
+            .and_then(Value::as_str);
+        if content.is_none_or(|text| text.trim().is_empty()) {
+            if let Some(cut) = CutShort::openai(v) {
+                return Err(cut.into());
+            }
+        }
+        content
             .map(str::to_string)
             .ok_or_else(|| anyhow!("OpenAI response missing choices[0].message.content"))
+    }
+    fn controls_reasoning(&self) -> bool {
+        self.reasoning != ReasoningControl::Unsent
     }
     fn supports_tools(&self) -> bool {
         true
     }
     fn tools_request(
         &self,
-        model: &str,
-        system: &str,
+        ask: &Ask<'_>,
         messages: &[Value],
         tools: &[ToolDef],
-        max_tokens: u32,
-        temperature: f32,
-        _reasoning: bool,
+        choice: ToolChoice,
     ) -> Value {
         // System is a leading message; the running turns follow.
         let mut msgs = Vec::with_capacity(messages.len() + 1);
-        msgs.push(json!({ "role": "system", "content": system }));
+        msgs.push(json!({ "role": "system", "content": ask.system }));
         msgs.extend(messages.iter().cloned());
-        json!({
-            "model": model,
-            "max_tokens": max_tokens,
-            "temperature": temperature,
+        let mut body = json!({
+            "model": ask.model,
+            "temperature": ask.temperature,
             "stream": false,
             "messages": msgs,
             "tools": tools.iter().map(openai_tool).collect::<Vec<_>>(),
-        })
+        });
+        if choice == ToolChoice::None {
+            body["tool_choice"] = json!("none");
+        }
+        self.set_budget(&mut body, ask);
+        body
     }
     fn parse_turn(&self, v: &Value) -> Result<Turn> {
         let msg = v
@@ -117,7 +140,7 @@ impl Provider for OpenAi {
         let text = msg
             .get("content")
             .and_then(Value::as_str)
-            .filter(|s| !s.is_empty())
+            .filter(|s| !s.trim().is_empty())
             .map(str::to_string);
         let mut calls = Vec::new();
         if let Some(tcs) = msg.get("tool_calls").and_then(Value::as_array) {
@@ -148,6 +171,11 @@ impl Provider for OpenAi {
                 calls.push(ToolCall { id, name, args });
             }
         }
+        if text.is_none() && calls.is_empty() {
+            if let Some(cut) = CutShort::openai(v) {
+                return Err(cut.into());
+            }
+        }
         Ok(Turn {
             text,
             tool_calls: calls,
@@ -163,86 +191,4 @@ impl Provider for OpenAi {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::infra::llm::http::providers::test_support::{defs, EchoBox};
-    use crate::infra::llm::tools::ToolBox;
-
-    #[test]
-    fn openai_request_prepends_system_and_maps_tools() {
-        let messages = vec![json!({ "role": "user", "content": "hi" })];
-        let body = OpenAi::openai().tools_request("m", "SYS", &messages, &defs(), 100, 0.5, false);
-        assert_eq!(body["messages"][0]["role"], "system");
-        assert_eq!(body["messages"][0]["content"], "SYS");
-        assert_eq!(body["messages"][1]["content"], "hi");
-        assert_eq!(body["tools"][0]["type"], "function");
-        assert_eq!(body["tools"][0]["function"]["name"], "find_titles");
-        assert!(body["tools"][0]["function"]["parameters"]["properties"]["genre"].is_object());
-    }
-
-    #[test]
-    fn openai_parse_turn_reads_tool_calls_then_results() {
-        let resp = json!({ "choices": [{ "message": {
-            "role": "assistant", "content": null,
-            "tool_calls": [{ "id": "call_1", "type": "function",
-                "function": { "name": "find_titles", "arguments": "{\"genre\":\"Horror\"}" } }],
-        } }] });
-        let turn = OpenAi::openai().parse_turn(&resp).unwrap();
-        assert!(turn.text.is_none());
-        assert_eq!(turn.tool_calls.len(), 1);
-        assert_eq!(turn.tool_calls[0].id, "call_1");
-        assert_eq!(turn.tool_calls[0].name, "find_titles");
-        assert_eq!(turn.tool_calls[0].args["genre"], "Horror");
-        // The raw assistant message is echoed back as the next turn's history.
-        assert_eq!(turn.assistant_msg["tool_calls"][0]["id"], "call_1");
-
-        let results = vec![(turn.tool_calls[0].clone(), "ok".to_string())];
-        let msgs = OpenAi::openai().tool_result_messages(&results);
-        assert_eq!(msgs.len(), 1);
-        assert_eq!(msgs[0]["role"], "tool");
-        assert_eq!(msgs[0]["tool_call_id"], "call_1");
-        assert_eq!(msgs[0]["content"], "ok");
-    }
-
-    #[test]
-    fn openai_parse_turn_accepts_object_form_arguments() {
-        // Ollama / llama.cpp / LM Studio hand back `arguments` as an object, not
-        // a JSON string must still parse, not silently drop the args.
-        let resp = json!({ "choices": [{ "message": {
-            "role": "assistant",
-            "tool_calls": [{ "id": "c1", "type": "function",
-                "function": { "name": "find_titles", "arguments": { "genre": "Horror" } } }],
-        } }] });
-        let turn = OpenAi::openai().parse_turn(&resp).unwrap();
-        assert_eq!(turn.tool_calls.len(), 1);
-        assert_eq!(turn.tool_calls[0].args["genre"], "Horror");
-    }
-
-    #[test]
-    fn openai_parse_turn_final_text_stops_loop() {
-        let resp =
-            json!({ "choices": [{ "message": { "role": "assistant", "content": "done" } }] });
-        let turn = OpenAi::openai().parse_turn(&resp).unwrap();
-        assert!(turn.tool_calls.is_empty());
-        assert_eq!(turn.text.as_deref(), Some("done"));
-    }
-
-    // Simulates the inner round-trip `run_tools_loop` performs, minus the HTTP call.
-    #[test]
-    fn simulated_round_trip_dispatches_through_toolbox() {
-        let tb = EchoBox;
-        let resp = json!({ "choices": [{ "message": { "role": "assistant",
-            "tool_calls": [{ "id": "c1", "function": { "name": "find_titles", "arguments": "{\"genre\":\"Horror\"}" } }],
-        } }] });
-        let turn = OpenAi::openai().parse_turn(&resp).unwrap();
-        let mut results = Vec::new();
-        for call in turn.tool_calls {
-            let out = tb.call(&call.name, &call.args).unwrap();
-            results.push((call, out));
-        }
-        let msgs = OpenAi::openai().tool_result_messages(&results);
-        let content = msgs[0]["content"].as_str().unwrap();
-        assert!(content.contains("\"echo\":\"find_titles\""));
-        assert!(content.contains("Horror"));
-    }
-}
+mod tests;

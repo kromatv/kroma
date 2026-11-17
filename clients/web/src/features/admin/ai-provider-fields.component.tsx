@@ -128,12 +128,12 @@ function AdvancedSection({
         />
         <Field.Hint>{t('admin.aiMaxTokensHint')}</Field.Hint>
       </Field.Root>
-      {spec.reasoning ? (
+      {spec.reasoningHint ? (
         <Row between gap={16} mb={16}>
           <Box>
             <Text variant="label">{t('admin.aiReasoning')}</Text>
             <Text variant="meta" color="textDim" mt={2}>
-              {t('admin.aiReasoningHint')}
+              {t(spec.reasoningHint)}
             </Text>
           </Box>
           <Switch

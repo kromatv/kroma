@@ -9,6 +9,7 @@ use crate::config::{header_line, option_line};
 use crate::multipart::FormPart;
 use crate::response::Response;
 
+use super::render::body_line;
 use super::send::Call;
 use super::Fetch;
 
@@ -24,25 +25,16 @@ impl Fetch {
         url: &str,
         body: &[u8],
     ) -> Result<Response> {
-        use std::io::Write;
-
         let mut config = self.base_config();
         config.push_str(&super::render::gateway_lines(gateway, username));
         config.push_str(&option_line("request", method));
-        let mut file = None;
-        if !body.is_empty() {
-            let mut held = tempfile::Builder::new()
-                .prefix("kroma-http-body-")
-                .tempfile()
-                .context("create the curl request body")?;
-            held.write_all(body).context("write the curl request body")?;
-            held.flush().context("write the curl request body")?;
-            config.push_str(&option_line(
-                "data-binary",
-                &format!("@{}", held.path().display()),
-            ));
-            file = Some(held);
-        }
+        let file = if body.is_empty() {
+            None
+        } else {
+            let held = body_file(body)?;
+            config.push_str(&body_line(held.path()));
+            Some(held)
+        };
         config.push_str(&option_line("url", url));
         let outcome = crate::curl::run(config);
         drop(file);
@@ -88,19 +80,15 @@ impl Fetch {
     }
 
     pub fn post_json(&self, url: &str, body: &serde_json::Value) -> Result<Response> {
-        let body = serde_json::to_string(body)?;
-        let mut config = self.base_config();
-        config.push_str(&header_line("content-type", "application/json"));
-        config.push_str(&option_line("data-binary", &body));
-        config.push_str(&option_line("url", url));
-        self.send(Call::post(body.len() as u64), url, config)
+        self.post_bytes(url, "application/json", &serde_json::to_vec(body)?)
     }
 
     /// PUT a JSON body.
     pub fn put_json(&self, url: &str, body: &serde_json::Value) -> Result<Response> {
-        let body = serde_json::to_string(body)?;
-        let sent = body.len() as u64;
-        self.send(Call::put(sent), url, self.put_json_config(url, &body))
+        let body = serde_json::to_vec(body)?;
+        let file = body_file(&body)?;
+        let config = self.put_json_config(url, file.path());
+        self.send(Call::put(body.len() as u64), url, config)
     }
 
     /// DELETE `url`, with no body.
@@ -114,22 +102,10 @@ impl Fetch {
     /// arbitrary binary, and a command-line argument cannot carry a NUL and
     /// would be mangled by any non-UTF-8 byte.
     pub fn post_bytes(&self, url: &str, content_type: &str, body: &[u8]) -> Result<Response> {
-        use std::io::Write;
-
-        let mut file = tempfile::Builder::new()
-            .prefix("kroma-http-body-")
-            .tempfile()
-            .context("create the curl request body")?;
-        file.write_all(body)
-            .context("write the curl request body")?;
-        file.flush().context("write the curl request body")?;
-
+        let file = body_file(body)?;
         let mut config = self.base_config();
         config.push_str(&header_line("content-type", content_type));
-        config.push_str(&option_line(
-            "data-binary",
-            &format!("@{}", file.path().display()),
-        ));
+        config.push_str(&body_line(file.path()));
         config.push_str(&option_line("url", url));
         self.send(Call::post(body.len() as u64), url, config)
     }
@@ -156,4 +132,19 @@ impl Fetch {
     pub fn get_json<T: DeserializeOwned>(&self, url: &str) -> Result<T> {
         self.get(url)?.ensure_ok()?.json()
     }
+}
+
+// curl before 8.2 refuses a config line over 100 KiB, so a body never rides in
+// the config: curl reads it from this file, which lives until the call returns.
+fn body_file(body: &[u8]) -> Result<tempfile::NamedTempFile> {
+    use std::io::Write;
+
+    let mut file = tempfile::Builder::new()
+        .prefix("kroma-http-body-")
+        .tempfile()
+        .context("create the curl request body")?;
+    file.write_all(body)
+        .context("write the curl request body")?;
+    file.flush().context("write the curl request body")?;
+    Ok(file)
 }
