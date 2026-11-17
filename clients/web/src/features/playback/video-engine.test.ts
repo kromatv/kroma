@@ -42,6 +42,7 @@ const H = vi.hoisted(() => {
     load: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
     configure: ReturnType<typeof vi.fn>;
+    fail: (detail: unknown) => void;
   }> = [];
   class FakeShakaPlayer {
     static supported = true;
@@ -56,6 +57,15 @@ const H = vi.hoisted(() => {
     destroy = vi.fn(() => Promise.resolve());
     configure = vi.fn(() => true);
     retryStreaming = vi.fn(() => true);
+    errorListeners: Array<(event: { detail: unknown }) => void> = [];
+    addEventListener = vi.fn((_type: string, listener: (event: { detail: unknown }) => void) => {
+      this.errorListeners.push(listener);
+    });
+    fail = (detail: unknown) => {
+      for (const listener of this.errorListeners) {
+        listener({ detail });
+      }
+    };
     constructor() {
       shakaInstances.push(this);
     }
@@ -306,6 +316,28 @@ describe('attachMediaSource HLS master via Shaka', () => {
 
     fv.set('error', { code: 1 });
     fv.fire('error');
+
+    expect(opts.onGiveUp).not.toHaveBeenCalled();
+  });
+
+  it('reports a segment the server no longer holds as refused', async () => {
+    const opts = shakaOpts();
+    attachMediaSource(opts);
+    await tick();
+
+    H.shakaInstances[0]?.fail({ code: 1001, severity: 2, data: ['seg_00023.m4s', 404] });
+
+    expect(opts.onRefused).toHaveBeenCalledWith(404);
+    expect(opts.onGiveUp).not.toHaveBeenCalled();
+  });
+
+  it('ignores what Shaka reports once the source is detached', async () => {
+    const opts = shakaOpts();
+    const cleanup = attachMediaSource(opts);
+    await tick();
+
+    cleanup();
+    H.shakaInstances[0]?.fail({ code: 1001, severity: 2, data: ['seg_00023.m4s', 404] });
 
     expect(opts.onGiveUp).not.toHaveBeenCalled();
   });

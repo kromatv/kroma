@@ -16,11 +16,12 @@ export function useResumeProgress(
   position?: { getPosition: () => number },
 ): number | null {
   const { client, user } = useAuth();
+  const viewer = user?.id ?? null;
   const { setWatched, noteWatched } = useWatched();
   const [resumeAt, setResumeAt] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!viewer) {
       return undefined;
     }
     let cancelled = false;
@@ -40,11 +41,11 @@ export function useResumeProgress(
     return () => {
       cancelled = true;
     };
-  }, [client, user, item.id, item.durationMs]);
+  }, [client, viewer, item.id, item.durationMs]);
 
   const saveProgress = useCallback(() => {
     const v = videoRef.current;
-    if (!v || !user) {
+    if (!v || !viewer) {
       return;
     }
     // ABSOLUTE position + catalogue runtime the seamless stream's own
@@ -62,10 +63,10 @@ export function useResumeProgress(
         }
       })
       .catch(() => undefined);
-  }, [videoRef, client, user, item.id, item.durationMs, position, noteWatched]);
+  }, [videoRef, client, viewer, item.id, item.durationMs, position, noteWatched]);
 
   useEffect(() => {
-    if (!user) {
+    if (!viewer) {
       return undefined;
     }
     const v = videoRef.current;
@@ -82,7 +83,7 @@ export function useResumeProgress(
       v?.removeEventListener('ended', onEnded);
       saveProgress(); // final save when leaving the player
     };
-  }, [videoRef, user, saveProgress, setWatched, item.id]);
+  }, [videoRef, viewer, saveProgress, setWatched, item.id]);
 
   return resumeAt;
 }
