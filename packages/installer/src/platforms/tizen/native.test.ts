@@ -107,6 +107,16 @@ describe('installOverSdb', () => {
     );
   });
 
+  it('quotes a launch refusal that is not an error object', async () => {
+    vi.mocked(device.launch).mockRejectedValue('socket hang up');
+
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
+
+    expect(lines.at(-1)).toBe(
+      'KROMA is installed, but the set did not start it: open it from Apps (socket hang up)',
+    );
+  });
+
   it('says nothing more when the set answered the launch in words it does not know', async () => {
     vi.mocked(device.launch).mockResolvedValue({ verdict: 'unknown', code: null, output: '' });
 
