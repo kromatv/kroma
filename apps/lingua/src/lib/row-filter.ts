@@ -24,7 +24,11 @@ export function isUntranslated(row: RowView): boolean {
   return (row.draft ?? row.current ?? '').trim() === '';
 }
 
-/** The rows of one catalog file, each plural form kept with the message it is a form of. */
+const FORM_ORDER = ['zero', 'one', 'two', 'few', 'many', 'other'];
+
+const formRank = (row: RowView) => FORM_ORDER.indexOf(row.plural ?? 'other');
+
+/** The rows of one catalog file, each plural form kept with the message it is a form of, in CLDR order: `one` before `other`. */
 export function groupRows(rows: readonly RowView[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
   for (const row of rows) {
@@ -35,6 +39,9 @@ export function groupRows(rows: readonly RowView[]): MessageGroup[] {
     } else {
       groups.push({ key: row.key, rows: [row] });
     }
+  }
+  for (const group of groups) {
+    group.rows.sort((a, b) => formRank(a) - formRank(b));
   }
   return groups;
 }

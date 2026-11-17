@@ -82,11 +82,7 @@ function PrimaryAction({ viewer }: Readonly<{ viewer: Viewer | null }>) {
   const here = useLocation({ select: (location) => location.href });
   const signIn = useSite()?.signIn ?? false;
   if (viewer) {
-    return (
-      <Button variant="glass" size="sm" icon="git-pull-request" label="My contributions" asChild>
-        <RouteLink to="/contributions" />
-      </Button>
-    );
+    return null;
   }
   return signIn ? (
     <Button

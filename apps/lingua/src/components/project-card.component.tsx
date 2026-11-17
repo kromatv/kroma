@@ -14,6 +14,7 @@ import type { ProjectSummary } from '#site/lib/views';
 const card = svFor<{ root: StyleDecl; glyph: { color: string } }>()({
   slots: {
     root: {
+      w: '100%',
       gap: 12,
       p: 20,
       radius: 'xl',

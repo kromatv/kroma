@@ -36,7 +36,7 @@ const done = (over: Partial<RowView> = {}) =>
   row({ current: 'Titre', state: 'translated', ...over });
 
 describe('groupRows', () => {
-  it('keeps each plural form with the message it is a form of', () => {
+  it('keeps each plural form with the message it is a form of, in CLDR order', () => {
     const rows = [
       row({ key: 'a' }),
       row({ key: 'n', plural: 'other' }),
@@ -47,7 +47,7 @@ describe('groupRows', () => {
 
     expect(groupRows(rows).map((g) => [g.key, g.rows.map((r) => r.key)])).toEqual([
       ['a', ['a']],
-      ['n', ['n', 'n_one', 'n_few']],
+      ['n', ['n_one', 'n_few', 'n']],
       ['b', ['b']],
     ]);
   });

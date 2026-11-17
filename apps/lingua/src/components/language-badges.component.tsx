@@ -41,7 +41,7 @@ export function StageLegend() {
   return (
     <Column gap={6}>
       {(['draft', 'beta', 'stable'] as const).map((stage) => (
-        <Row key={stage} gap={8} align="flex-start">
+        <Row key={stage} gap={8} align="center">
           <Box w={56} shrink={0}>
             <Badge tone={TONE[stage]}>{STAGES[stage].label}</Badge>
           </Box>

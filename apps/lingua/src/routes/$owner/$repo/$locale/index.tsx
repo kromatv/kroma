@@ -2,7 +2,6 @@ import { Badge } from '@kromatv/ui/kit/atoms/badge';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { Text } from '@kromatv/ui/kit/atoms/text';
-import { TextField } from '@kromatv/ui/kit/atoms/text-field';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
 import { ListRow } from '@kromatv/ui/kit/molecules/list-row';
 import { PageHeader } from '@kromatv/ui/kit/molecules/page-header';
@@ -17,6 +16,7 @@ import { RouteLink } from '#site/components/route-link.component';
 import { SendBar } from '#site/components/send-bar.component';
 import { SignInPrompt } from '#site/components/sign-in-prompt.component';
 import { Trail } from '#site/components/trail.component';
+import { SearchField } from '#site/components/search-field.component';
 import { workSummary } from '#site/lib/completion';
 import { counted } from '#site/lib/counted';
 import { sectionFilters } from '#site/lib/filter-choices';
@@ -87,10 +87,7 @@ function SectionsHeading({
     <Row gap={12} wrap align="center" between>
       <Text variant="h2">{counted(count, 'section')}</Text>
       <Box w={{ base: '100%', md: 280 }}>
-        <TextField
-          type="search"
-          icon="search"
-          size="sm"
+        <SearchField
           label="Find a section"
           placeholder="Find a section"
           value={list.query}

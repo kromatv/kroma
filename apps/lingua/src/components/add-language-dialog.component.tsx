@@ -1,11 +1,11 @@
 import { Box, Column } from '@kromatv/ui/kit/atoms/box';
 import { Spinner } from '@kromatv/ui/kit/atoms/spinner';
 import { Text } from '@kromatv/ui/kit/atoms/text';
-import { TextField } from '@kromatv/ui/kit/atoms/text-field';
 import { Callout } from '@kromatv/ui/kit/molecules/callout';
 import { ListRow } from '@kromatv/ui/kit/molecules/list-row';
 import { Dialog } from '@kromatv/ui/kit/organisms/dialog';
 import { useState } from 'react';
+import { SearchField } from '#site/components/search-field.component';
 import { languageChoices } from '#site/lib/language';
 import { type Starting, useStartLanguage } from '#site/lib/use-start-language.hook';
 import type { Language } from '#site/lib/views';
@@ -67,9 +67,7 @@ function Finder({
   onQueryChange,
 }: Readonly<{ query: string; onQueryChange: (next: string) => void }>) {
   return (
-    <TextField
-      type="search"
-      icon="search"
+    <SearchField
       label="Find a language"
       placeholder="Name or tag, like German or pt-BR"
       value={query}
@@ -114,11 +112,11 @@ export function AddLanguageDialog({
       width="sm"
       fullHeight
     >
-      <Dialog.Header>
-        <Finder query={query} onQueryChange={setQuery} />
-      </Dialog.Header>
       <Dialog.Panel>
-        <Results query={query} taken={taken} project={project} />
+        <Column gap={12}>
+          <Finder query={query} onQueryChange={setQuery} />
+          <Results query={query} taken={taken} project={project} />
+        </Column>
       </Dialog.Panel>
     </Dialog.Root>
   );

@@ -1,6 +1,6 @@
 import { styles, useBreakpoint, useStyles } from '@kromatv/ui/kit';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
-import { TextField } from '@kromatv/ui/kit/atoms/text-field';
+import { SearchField } from '#site/components/search-field.component';
 import { FilterChips } from '#site/components/filter-chips.component';
 import { ShortcutsHint } from '#site/components/shortcuts-hint.component';
 import { messageFilters } from '#site/lib/filter-choices';
@@ -28,10 +28,7 @@ export function EditorToolbar({ list }: Readonly<{ list: MessageQuery }>) {
       <Column gap={10}>
         <Row gap={12} wrap align="center">
           <Box grow={1} shrink={1} basis={260} minW={0}>
-            <TextField
-              type="search"
-              icon="search"
-              size="sm"
+            <SearchField
               label="Search this section"
               placeholder="Search keys, source and translations"
               value={list.query}
