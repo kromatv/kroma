@@ -220,8 +220,10 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
     }
     seen.set(p.manifest.id, p.dir);
   }
-  problems.push(...unsatisfiableRanges(projects));
-  problems.push(...releaseProblems(projects, versions(cwd).server));
+  problems.push(
+    ...unsatisfiableRanges(projects),
+    ...releaseProblems(projects, versions(cwd).server),
+  );
 
   for (const project of projects) {
     console.log(`\n${style.bold(project.manifest.id)}`);
