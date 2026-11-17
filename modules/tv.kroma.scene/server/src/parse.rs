@@ -10,14 +10,17 @@ use self::markers::{
 };
 use crate::{ParsedRelease, Source};
 
-pub fn parse_release_name(name: &str) -> ParsedRelease {
-    let (body, group) = split_group(name);
-    let tokens: Vec<String> = body
-        .split(['.', ' ', '_', '[', ']', '(', ')', '{', '}', ','])
+const SEPARATORS: [char; 10] = ['.', ' ', '_', '[', ']', '(', ')', '{', '}', ','];
+
+pub(crate) fn tokenize(name: &str) -> impl Iterator<Item = &str> {
+    name.split(SEPARATORS)
         .map(str::trim)
         .filter(|t| !t.is_empty())
-        .map(str::to_string)
-        .collect();
+}
+
+pub fn parse_release_name(name: &str) -> ParsedRelease {
+    let (body, group) = split_group(name);
+    let tokens: Vec<String> = tokenize(&body).map(str::to_string).collect();
 
     let mut out = ParsedRelease {
         group,

@@ -49,8 +49,11 @@ format upgrade must clear.
 minimum number of seeders. A release is kept when it carries at least one of the must-contain
 terms and none of the must-not ones.
 
-**MOD-81** (AGREED) - A term is found anywhere in the release name, ignoring case. Written
-between slashes it is a regular expression, searched the same way and as case-insensitively.
+**MOD-81** (AGREED) - A term matches whole words of the release name, ignoring case. Dots,
+dashes, underscores, spaces, brackets and commas separate the words, so `TS` refuses
+`Film.2020.HD-TS` but not a release with DTS audio. A term of several words matches them side
+by side, however the name separates them. Written between slashes a term is a regular
+expression, searched anywhere in the name, also ignoring case.
 
 **MOD-82** (AGREED) - A term that is empty, or an expression that does not compile, refuses
 nothing and requires nothing.

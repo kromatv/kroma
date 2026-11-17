@@ -1,11 +1,25 @@
 use regex::{Regex, RegexBuilder};
 
+use crate::parse::tokenize;
 use crate::shape::reject;
 use crate::{QualityProfile, Reject};
 
 enum Term {
-    Text(String),
+    Words(Vec<String>),
     Pattern(Regex),
+}
+
+struct Name<'a> {
+    text: &'a str,
+    words: Vec<String>,
+}
+
+fn words(text: &str) -> Vec<String> {
+    tokenize(text)
+        .flat_map(|token| token.split('-'))
+        .filter(|word| !word.is_empty())
+        .map(str::to_lowercase)
+        .collect()
 }
 
 impl Term {
@@ -22,13 +36,17 @@ impl Term {
                 .ok()
                 .map(Term::Pattern);
         }
-        (!term.is_empty()).then(|| Term::Text(term.to_lowercase()))
+        let words = words(term);
+        (!words.is_empty()).then_some(Term::Words(words))
     }
 
-    fn matches(&self, name: &str) -> bool {
+    fn matches(&self, name: &Name) -> bool {
         match self {
-            Term::Text(text) => name.to_lowercase().contains(text),
-            Term::Pattern(regex) => regex.is_match(name),
+            Term::Words(words) => name
+                .words
+                .windows(words.len())
+                .any(|run| run == words.as_slice()),
+            Term::Pattern(regex) => regex.is_match(name.text),
         }
     }
 }
@@ -40,8 +58,12 @@ fn readable(terms: &[String]) -> impl Iterator<Item = (&String, Term)> {
 }
 
 pub(crate) fn check_terms(profile: &QualityProfile, name: &str) -> Result<(), Reject> {
+    let name = Name {
+        text: name,
+        words: words(name),
+    };
     if let Some((written, _)) =
-        readable(&profile.must_not_contain).find(|(_, term)| term.matches(name))
+        readable(&profile.must_not_contain).find(|(_, term)| term.matches(&name))
     {
         return Err(reject(
             "forbidden-keyword",
@@ -50,7 +72,7 @@ pub(crate) fn check_terms(profile: &QualityProfile, name: &str) -> Result<(), Re
         ));
     }
     let required: Vec<(&String, Term)> = readable(&profile.must_contain).collect();
-    if !required.is_empty() && !required.iter().any(|(_, term)| term.matches(name)) {
+    if !required.is_empty() && !required.iter().any(|(_, term)| term.matches(&name)) {
         let wanted: Vec<&str> = required
             .iter()
             .map(|(written, _)| written.as_str())

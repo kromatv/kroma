@@ -9,6 +9,7 @@ import { HeroCarousel } from '#web/features/catalog/home/hero-carousel.component
 import { HomeSections, SectionsSkeleton } from '#web/features/catalog/home/home-sections.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
+import { useHomeLiveRefresh } from '#web/shared/lib/use-live-refresh.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { PageFrame } from '#web/shared/ui';
 
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/_app/')({
 });
 
 function HomePage() {
+  useHomeLiveRefresh();
   return (
     <PageFrame>
       <SignedIn fallback={<HeroSkeleton />}>

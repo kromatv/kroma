@@ -331,6 +331,13 @@ Developer mode accepts one computer: the one whose address you entered. Check
 that the address in the TV's **Developer mode** window is your computer's
 current address, and restart the TV after you change it.
 
+### `No server answered at this address` on a TV from 2017 to 2020
+
+The address of your server starts with `https://`, and the server accepts
+only TLS 1.3. These TVs run the web app, and their built-in browser cannot use
+TLS 1.3. Allow TLS 1.2 on the server: see
+[HTTPS, reverse proxies and remote access](network.md#with-the-remote-access-module).
+
 ### KROMA disappeared from the TV
 
 A firmware update of the TV can remove apps installed in developer mode.

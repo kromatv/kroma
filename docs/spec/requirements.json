@@ -3314,7 +3314,7 @@
     "domain": "BROWSE",
     "space": "browse",
     "number": 61,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "While a scan runs, the home gains each title as the scan matches it,",
     "file": "docs/spec/browse/README.md",
     "line": 155
@@ -5507,7 +5507,7 @@
     "status": "AGREED",
     "text": "One profile is the default. Any title may be judged by another.",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 58
+    "line": 61
   },
   {
     "id": "MOD-61",
@@ -5517,7 +5517,7 @@
     "status": "AGREED",
     "text": "The rules can be tested against a release name: the editor shows what was",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 60
+    "line": 63
   },
   {
     "id": "MOD-62",
@@ -5527,7 +5527,7 @@
     "status": "AGREED",
     "text": "One set of rules judges a release and a file on disk. A file's facts come",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 67
+    "line": 70
   },
   {
     "id": "MOD-63",
@@ -5537,7 +5537,7 @@
     "status": "AGREED",
     "text": "A release name says which French dub it carries (a file says it as",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 72
+    "line": 75
   },
   {
     "id": "MOD-64",
@@ -5547,7 +5547,7 @@
     "status": "AGREED",
     "text": "Releases are ranked by their quality's rank in the profile, then their",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 85
+    "line": 88
   },
   {
     "id": "MOD-65",
@@ -5557,7 +5557,7 @@
     "status": "AGREED",
     "text": "With upgrades on, a release **upgrades** a file in three cases, and in no",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 93
+    "line": 96
   },
   {
     "id": "MOD-66",
@@ -5567,7 +5567,7 @@
     "status": "AGREED",
     "text": "A film or an episode is **cutoff unmet** when the best file holding it is",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 104
+    "line": 107
   },
   {
     "id": "MOD-67",
@@ -5577,7 +5577,7 @@
     "status": "AGREED",
     "text": "With **add beside** on, a release that wins on formats and loses on",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 108
+    "line": 111
   },
   {
     "id": "MOD-68",
@@ -5587,7 +5587,7 @@
     "status": "AGREED",
     "text": "Missing units are searched first, each title under its own profile. A unit",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 118
+    "line": 121
   },
   {
     "id": "MOD-69",
@@ -5597,7 +5597,7 @@
     "status": "AGREED",
     "text": "Titles that are cutoff unmet are searched for a better copy with what the",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 123
+    "line": 126
   },
   {
     "id": "MOD-70",
@@ -5607,7 +5607,7 @@
     "status": "AGREED",
     "text": "Every indexer's latest releases are read on an interval, fifteen minutes",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 127
+    "line": 130
   },
   {
     "id": "MOD-71",
@@ -5617,7 +5617,7 @@
     "status": "AGREED",
     "text": "Any title can be searched by hand from its page, monitored or not. Each",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 132
+    "line": 135
   },
   {
     "id": "MOD-72",
@@ -5627,7 +5627,7 @@
     "status": "AGREED",
     "text": "A download that fails, stalls past a limit, or is removed puts the units",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 140
+    "line": 143
   },
   {
     "id": "MOD-73",
@@ -5637,7 +5637,7 @@
     "status": "AGREED",
     "text": "A release whose download failed is blocklisted for its title, so the next",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 143
+    "line": 146
   },
   {
     "id": "MOD-74",
@@ -5647,7 +5647,7 @@
     "status": "AGREED",
     "text": "The library never deletes (LIB-48). Replacing a file is acquisition acting",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 146
+    "line": 149
   },
   {
     "id": "MOD-75",
@@ -5687,7 +5687,7 @@
     "status": "AGREED",
     "text": "A release outside the profile's qualities, below its minimum format score,",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 89
+    "line": 92
   },
   {
     "id": "MOD-79",
@@ -5697,7 +5697,7 @@
     "status": "AGREED",
     "text": "A file an upgrade replaces goes to the recycle bin when one is set, and is",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 150
+    "line": 153
   },
   {
     "id": "MOD-80",
@@ -5707,7 +5707,7 @@
     "status": "AGREED",
     "text": "A release name says what it covers: one episode, a span of episodes, one",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 79
+    "line": 82
   },
   {
     "id": "MOD-81",
@@ -5715,7 +5715,7 @@
     "space": "modules",
     "number": 81,
     "status": "AGREED",
-    "text": "A term is found anywhere in the release name, ignoring case. Written",
+    "text": "A term matches whole words of the release name, ignoring case. Dots,",
     "file": "docs/spec/modules/acquisition.md",
     "line": 52
   },
@@ -5727,7 +5727,7 @@
     "status": "AGREED",
     "text": "A term that is empty, or an expression that does not compile, refuses",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 55
+    "line": 58
   },
   {
     "id": "MOD-83",
@@ -5857,7 +5857,7 @@
     "status": "AGREED",
     "text": "A release names the protocol that downloads it. A release that names",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 160
+    "line": 163
   },
   {
     "id": "MOD-96",
@@ -5867,7 +5867,7 @@
     "status": "AGREED",
     "text": "The minimum number of seeders, and seeders as a tie-break, apply only to",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 163
+    "line": 166
   },
   {
     "id": "MOD-97",
@@ -5877,7 +5877,7 @@
     "status": "AGREED",
     "text": "A grab goes to the enabled download client ranked first among those that",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 167
+    "line": 170
   },
   {
     "id": "MOD-98",
@@ -5887,7 +5887,7 @@
     "status": "AGREED",
     "text": "A download whose client is still verifying, repairing or unpacking it is",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 171
+    "line": 174
   },
   {
     "id": "MOD-99",
@@ -5897,7 +5897,7 @@
     "status": "AGREED",
     "text": "A download its client gave up on fails at once (MOD-72), without waiting",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 174
+    "line": 177
   },
   {
     "id": "MOD-100",
@@ -5907,7 +5907,7 @@
     "status": "AGREED",
     "text": "A profile can name a preferred protocol. Between two releases of the same",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 177
+    "line": 180
   },
   {
     "id": "MOD-101",
@@ -5917,7 +5917,7 @@
     "status": "AGREED",
     "text": "The VPN kill switch holds torrent grabs only. While it is closed, a release",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 180
+    "line": 183
   },
   {
     "id": "MOD-102",
@@ -5927,7 +5927,7 @@
     "status": "AGREED",
     "text": "A manual add says which protocol its link is when the enabled download",
     "file": "docs/spec/modules/acquisition.md",
-    "line": 184
+    "line": 187
   },
   {
     "id": "MOD-103",
