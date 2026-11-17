@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { webDocument } from './dom';
+import { resolveRemoteKey } from './remote-keys';
 
 const KEY_GRACE_MS = 400;
-
-const DIRECTIONS = new Set(['ArrowLeft', 'ArrowRight', 'Left', 'Right']);
 
 /** Whether the last focus move came from a direction key. Native focus only moves by key. */
 export function useKeyGrace(scoped: boolean): () => boolean {
@@ -15,7 +14,8 @@ export function useKeyGrace(scoped: boolean): () => boolean {
       return undefined;
     }
     const onKey = (e: KeyboardEvent) => {
-      if (DIRECTIONS.has(e.key)) {
+      const key = resolveRemoteKey(e);
+      if (key === 'Left' || key === 'Right') {
         keyAt.current = Date.now();
       }
     };

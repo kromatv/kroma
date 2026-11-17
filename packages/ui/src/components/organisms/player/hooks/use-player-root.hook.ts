@@ -185,9 +185,8 @@ function usePlayerRoot({
   );
   const settings = usePanelSlide(settingsOpen);
   const initialView = initialSettingsView(nav.overlay);
-  // Measured rather than assumed, and it falls back to the design height:
-  // `onLayout` is a ResizeObserver under react-native-web, and the legacy TV tier
-  // has none, so there the measurement never arrives at all.
+  // Measured rather than assumed, and it falls back to the design height until
+  // the first `onLayout` arrives.
   const [transportHeight, setTransportHeight] = useState(0);
   const onTransportLayout = useCallback((e: LayoutChangeEvent) => {
     const height = Math.round(e.nativeEvent.layout.height);
