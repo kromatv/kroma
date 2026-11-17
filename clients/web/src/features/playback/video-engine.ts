@@ -14,15 +14,12 @@ import {
   type EngineDecision,
   hlsBufferConfig,
   itemBufferPlan,
-  shakaConfig,
+  type ShakaPlayable,
+  startShakaMaster,
   type WaitReason,
 } from '@kromatv/core';
 import type { WebEnginePref } from '#web/features/playback/engine-pref';
-import {
-  routeShakaFailure,
-  type StreamFailure,
-  shakaHttpStatus,
-} from '#web/features/playback/stream-failure';
+import type { StreamFailure } from '#web/features/playback/stream-failure';
 
 export type HlsInstance = import('hls.js').default;
 
@@ -49,14 +46,8 @@ export interface ShakaPlayerLike {
   configure(config: Record<string, unknown>): boolean;
   retryStreaming(retryDelaySeconds?: number): boolean;
 }
-interface ShakaErrorEvent {
-  detail?: unknown;
-}
-interface ShakaEvents {
-  addEventListener(type: 'error', listener: (event: ShakaErrorEvent) => void): void;
-}
 interface ShakaStatic {
-  Player: { new (): ShakaPlayerLike & ShakaEvents; isBrowserSupported(): boolean };
+  Player: { new (): ShakaPlayerLike & ShakaPlayable; isBrowserSupported(): boolean };
   polyfill: { installAll(): void };
 }
 
@@ -222,22 +213,15 @@ export function attachMediaSource(
       }
       const player = new shaka.Player();
       shakaRef.current = player;
-      player.configure(shakaConfig(plan));
-      player.addEventListener('error', (event) => {
-        if (!destroyed) {
-          routeShakaFailure(event.detail, opts);
-        }
-      });
       v.addEventListener('error', onMediaError);
-      try {
-        await player.attach(v);
-        await player.load(url, 0);
-      } catch (e: unknown) {
-        const status = shakaHttpStatus(e);
-        if (!destroyed && status !== null) {
-          onRefused(status);
-        }
-      }
+      await startShakaMaster(player, {
+        media: v,
+        url,
+        startSec: 0,
+        plan,
+        route: opts,
+        stale: () => destroyed,
+      });
     });
     return () => {
       destroyed = true;

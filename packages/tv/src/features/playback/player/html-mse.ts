@@ -1,4 +1,11 @@
-import { attachHlsRecovery, type BufferPlan, hlsBufferConfig, shakaConfig } from '@kromatv/core';
+import {
+  attachHlsRecovery,
+  type BufferPlan,
+  type FailureRoute,
+  hlsBufferConfig,
+  type ShakaPlayable,
+  startShakaMaster,
+} from '@kromatv/core';
 
 type HlsInstance = import('hls.js').default;
 
@@ -14,11 +21,11 @@ export interface ShakaPlayerLike {
 }
 
 interface ShakaStatic {
-  Player: { new (): ShakaPlayerLike; isBrowserSupported(): boolean };
+  Player: { new (): ShakaPlayerLike & ShakaPlayable; isBrowserSupported(): boolean };
   polyfill: { installAll(): void };
 }
 
-export interface MseMasterOptions {
+export interface MseMasterOptions extends FailureRoute {
   video: HTMLVideoElement;
   url: string;
   fromSec: number;
@@ -27,14 +34,14 @@ export interface MseMasterOptions {
   stale(): boolean;
   onShaka(player: ShakaPlayerLike): void;
   onHls(hls: HlsInstance): void;
-  onGiveUp(): void;
   onNative(): void;
 }
 
 /**
  * Play an anchored master through MSE and hand the instance back, so the engine
  * can drive and destroy it. `fromSec` is the stream's own clock, not the film's.
- * An engine that ships neither library is handed back to `onNative`.
+ * What either library stops streaming on goes to the options' failure route. An
+ * engine that ships neither library is handed back to `onNative`.
  */
 export function attachMseMaster(opts: Readonly<MseMasterOptions>): void {
   if (opts.shaka) {
@@ -71,11 +78,14 @@ function attachShaka(opts: Readonly<MseMasterOptions>): void {
 function startShaka(shaka: ShakaStatic, opts: Readonly<MseMasterOptions>): void {
   const player = new shaka.Player();
   opts.onShaka(player);
-  player.configure(shakaConfig(opts.plan));
-  player
-    .attach(opts.video)
-    .then(() => player.load(opts.url, opts.fromSec))
-    .catch(() => undefined);
+  void startShakaMaster(player, {
+    media: opts.video,
+    url: opts.url,
+    startSec: opts.fromSec,
+    plan: opts.plan,
+    route: opts,
+    stale: () => opts.stale(),
+  });
 }
 
 function attachHls(opts: Readonly<MseMasterOptions>): void {
@@ -94,7 +104,7 @@ function attachHls(opts: Readonly<MseMasterOptions>): void {
       ...hlsBufferConfig(opts.plan),
     });
     opts.onHls(hls);
-    attachHlsRecovery(Hls, hls, opts.onGiveUp);
+    attachHlsRecovery(Hls, hls, opts.onGiveUp, opts.onRefused);
     hls.loadSource(opts.url);
     hls.attachMedia(opts.video);
   });

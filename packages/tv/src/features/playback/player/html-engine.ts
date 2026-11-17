@@ -15,7 +15,9 @@ import {
   itemBufferPlan,
   reachableBufferEnd,
   recoverMse,
+  rescueRoute,
   resolveMasterStart,
+  restartBudget,
   STALL_NUDGE_SEC,
 } from '@kromatv/core';
 import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
@@ -63,6 +65,12 @@ export class HtmlEngine implements TvEngine {
   private attachSeq = 0;
   private landing: (() => void) | null = null;
   private resumeOnCanPlay: (() => void) | null = null;
+  private readonly restarts = restartBudget();
+  private readonly rescue = rescueRoute(this.restarts, {
+    restart: () => this.reanchor(this.position()),
+    renew: () => this.renew(),
+    broken: () => this.opts.listeners.onError(),
+  });
   private readonly cleanupEvents: () => void;
 
   constructor(opts: HtmlOptions) {
@@ -75,7 +83,7 @@ export class HtmlEngine implements TvEngine {
     this.baseSec = opts.startSec;
     this.rendition = opts.initialRendition;
     const v = this.v;
-    this.cleanupEvents = bindMediaEvents(v, opts.listeners, opts.durationSec, () => this.baseSec);
+    this.cleanupEvents = this.bindEvents();
 
     if (opts.direct) {
       attachDirectPlay(v, opts.client, opts.item, { autoplay: false });
@@ -90,6 +98,15 @@ export class HtmlEngine implements TvEngine {
       return;
     }
     this.attachMaster();
+  }
+
+  private bindEvents(): () => void {
+    const { listeners, durationSec } = this.opts;
+    const onPlaying = () => {
+      this.restarts.refill();
+      listeners.onPlaying();
+    };
+    return bindMediaEvents(this.v, { ...listeners, onPlaying }, durationSec, () => this.baseSec);
   }
 
   private playsHlsItself(): boolean {
@@ -127,7 +144,8 @@ export class HtmlEngine implements TvEngine {
       onHls: (hls) => {
         this.hls = hls;
       },
-      onGiveUp: () => this.reanchor(this.position()),
+      onGiveUp: this.rescue.onGiveUp,
+      onRefused: this.rescue.onRefused,
       onNative: () => this.attachNative(url, fromSec),
     });
   }
@@ -186,6 +204,20 @@ export class HtmlEngine implements TvEngine {
     };
     this.resumeOnCanPlay = resume;
     this.v.addEventListener('canplay', resume, { once: true });
+  }
+
+  private renew(): void {
+    const resume = (token: string | undefined) => {
+      if (this.destroyed) {
+        return;
+      }
+      if (token) {
+        this.rescue.onGiveUp();
+      } else {
+        this.opts.listeners.onError();
+      }
+    };
+    this.opts.client.refreshSession().then(resume, () => resume(undefined));
   }
 
   private reanchor(absSec: number): void {
