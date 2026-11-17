@@ -1,9 +1,33 @@
 import { describe, expect, it, vi } from 'vitest';
-import { rescueRoute, restartBudget } from './stream-rescue';
+import { rescueRoute, restartBudget, routeHttpStatus } from './stream-rescue';
 
 function rescue() {
   return { restart: vi.fn(), renew: vi.fn(), broken: vi.fn() };
 }
+
+function failureRoute() {
+  return { onGiveUp: vi.fn(), onRefused: vi.fn() };
+}
+
+describe('routeHttpStatus', () => {
+  it('hands a refusal on as one', () => {
+    const to = failureRoute();
+
+    routeHttpStatus(410, to);
+
+    expect(to.onRefused).toHaveBeenCalledWith(410);
+    expect(to.onGiveUp).not.toHaveBeenCalled();
+  });
+
+  it('gives up on a status that refuses nothing', () => {
+    const to = failureRoute();
+
+    routeHttpStatus(503, to);
+
+    expect(to.onGiveUp).toHaveBeenCalledTimes(1);
+    expect(to.onRefused).not.toHaveBeenCalled();
+  });
+});
 
 describe('rescueRoute', () => {
   it('rebuilds a stream the server no longer holds', () => {

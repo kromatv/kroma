@@ -15,7 +15,6 @@ import {
   itemBufferPlan,
   reachableBufferEnd,
   recoverMse,
-  rescueRoute,
   resolveMasterStart,
   restartBudget,
   STALL_NUDGE_SEC,
@@ -27,6 +26,7 @@ import {
   startStreamAt,
 } from '#tv/features/playback/player/html-events';
 import { attachMseMaster, type ShakaPlayerLike } from '#tv/features/playback/player/html-mse';
+import { engineRescue } from '#tv/features/playback/player/engine-rescue';
 
 type HlsInstance = import('hls.js').default;
 
@@ -66,10 +66,11 @@ export class HtmlEngine implements TvEngine {
   private landing: (() => void) | null = null;
   private resumeOnCanPlay: (() => void) | null = null;
   private readonly restarts = restartBudget();
-  private readonly rescue = rescueRoute(this.restarts, {
+  private readonly rescue = engineRescue(this.restarts, {
+    refreshSession: () => this.opts.client.refreshSession(),
     restart: () => this.reanchor(this.position()),
-    renew: () => this.renew(),
     broken: () => this.opts.listeners.onError(),
+    gone: () => this.destroyed,
   });
   private readonly cleanupEvents: () => void;
 
@@ -204,20 +205,6 @@ export class HtmlEngine implements TvEngine {
     };
     this.resumeOnCanPlay = resume;
     this.v.addEventListener('canplay', resume, { once: true });
-  }
-
-  private renew(): void {
-    const resume = (token: string | undefined) => {
-      if (this.destroyed) {
-        return;
-      }
-      if (token) {
-        this.rescue.onGiveUp();
-      } else {
-        this.opts.listeners.onError();
-      }
-    };
-    this.opts.client.refreshSession().then(resume, () => resume(undefined));
   }
 
   private reanchor(absSec: number): void {

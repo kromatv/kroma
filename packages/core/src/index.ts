@@ -30,6 +30,7 @@ export * from './playback-buffer';
 export * from './playback-stall';
 export * from './playback-wait';
 export * from './player';
+export * from './player-error-status';
 export * from './progress-queue';
 export * from './push-labels';
 export * from './shaka-master';

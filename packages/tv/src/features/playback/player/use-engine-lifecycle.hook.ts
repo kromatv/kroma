@@ -2,7 +2,6 @@ import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
 import {
   audioTracksOf,
-  beyondDecoder,
   canDirectPlay,
   type DirectPlayVerdict,
   preferredAudioIndex,
@@ -23,7 +22,7 @@ import {
 } from '#tv/features/playback/player/engine';
 import { useResolvedStart } from '#tv/features/playback/player/use-resolved-start.hook';
 import { useStallGuard } from '#tv/features/playback/player/use-stall-guard.hook';
-import { vlcAvailable } from '#tv/features/playback/player/vlc-plane';
+import { useVlcFallback } from '#tv/features/playback/player/use-vlc-fallback.hook';
 
 export interface EngineLifecycle {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -118,33 +117,13 @@ export function useEngineLifecycle(
   // cannot decode AC3/EAC3, so it runs hls.js on the AAC master.
   const [env] = useState(detectTvEnv);
   const [enginePref, setEnginePref] = useState<EnginePref>(getEnginePref);
-  // The last resort under `auto`: a title the platform player cannot decode goes to
-  // the engine that carries its own decoders. Held as the item it applies to, so a
-  // new title resets it by construction and one bad file cannot pin the session.
-  const [vlcFallbackFor, setVlcFallbackFor] = useState<string | null>(null);
-  const fellBackToVlc = vlcFallbackFor === item.id;
-  // A picture over this device's decoder ceiling. The server's master is the one
-  // route that can shrink it, so `planEngine` sends it there; VLC is excluded
-  // from the fallback below because it would answer the frame the hardware
-  // refused with its own software decoder, which on a set that HAS a ceiling is a
-  // slideshow rather than a film.
-  const overrun = beyondDecoder(item, playbackCapabilities) !== null;
-  // Both ways a title can die end here: the engine reporting an error, and the load
-  // watchdog giving up on one that never errors and never becomes ready - which is
-  // precisely the silently-undecodable case this engine exists for. Only from
-  // `auto`, and only once: an explicit choice is the viewer's, and a VLC failure
-  // has nowhere left to fall.
-  const giveUp = useEffectEvent(() => {
-    if (!overrun && enginePref === 'auto' && !fellBackToVlc && vlcAvailable()) {
-      setVlcFallbackFor(item.id);
-      return;
-    }
-    setError(failure);
-  });
+  const vlcFallback = useVlcFallback(item, enginePref, playbackCapabilities);
+  const clearVlcFallback = vlcFallback.clear;
+  const { startSec, resumedAt, setStartSec } = useResolvedStart(client, item);
   const plan = backend.planEngine(
     item,
     env,
-    fellBackToVlc ? 'vlc' : enginePref,
+    vlcFallback.active ? 'vlc' : enginePref,
     playbackCapabilities,
   );
   const { surface, playbackMode, deviceLabel, rebuildKey } = plan;
@@ -158,8 +137,19 @@ export function useEngineLifecycle(
     surface === 'video' && !playVerdict.canDirectPlay
       ? playVerdict
       : { messageKey: 'player.cantPlay', hintKey: 'player.cantPlayHint' };
-
-  const { startSec, resumedAt, setStartSec } = useResolvedStart(client, item);
+  // Both ways a title can die end here: the engine reporting an error, and the load
+  // watchdog giving up on one that never errors and never becomes ready - which is
+  // precisely the silently-undecodable case this engine exists for.
+  const giveUp = useEffectEvent(() => {
+    if (!vlcFallback.take()) {
+      setError(failure);
+      return;
+    }
+    const engine = engineRef.current;
+    if (engine && startedRef.current) {
+      setStartSec(engine.position());
+    }
+  });
 
   // Audio switches do NOT re-create the engine; they call setAudioRendition in place.
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- env.nativeHls is a session-constant capability; the dep list is intentionally curated to rebuild only on item/engine changes.
@@ -310,10 +300,10 @@ export function useEngineLifecycle(
       setStartSec(pos);
       // Clears any automatic fallback: once the viewer names an engine, that is the
       // choice, and the plan must stop overriding it for the rest of the title.
-      setVlcFallbackFor(null);
+      clearVlcFallback();
       setEnginePref(p);
     },
-    [enginePref, setStartSec, persistEnginePref],
+    [enginePref, setStartSec, persistEnginePref, clearVlcFallback],
   );
 
   return {
