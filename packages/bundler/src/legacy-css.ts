@@ -2,9 +2,10 @@
 // rewrites the modern CSS the design system emits into equivalents those
 // engines execute:
 //
-//  - flex `gap` (Chrome 84) -> the negative-margin technique: the container
-//    pulls -gap/2 per axis, every child pushes +gap/2, so spacing, wrapping and
-//    edge alignment all match real gap.
+//  - flex `gap` (Chrome 84) -> a one-class rule keeps its gap and gains a
+//    marker the runtime shim (flex-gaps.ts) lays out by flex direction, which
+//    a stylesheet cannot know. Any other selector gets the negative-margin
+//    technique: the container pulls -gap/2 per axis, every child pushes +gap/2.
 //  - `aspect-ratio` (Chrome 88) -> a `::before` strut with percentage
 //    padding-bottom (resolves against width), which also centres in-flow
 //    children of flex tiles the way aspect-ratio does.
@@ -15,6 +16,7 @@
 //    picture (the player stage, an up-next card) came out zero wide.
 
 import { type Declaration, type Plugin, type Root, type Rule, rule as cssRule } from 'postcss';
+import { GAP_MARKER } from './gap-marker.ts';
 
 const RATIO = /(?=(\d+(?:\.\d+)?))\1\s*\/\s*(\d+(?:\.\d+)?)/;
 
@@ -99,7 +101,51 @@ function shimAspect(root: Root, ratios: Map<string, string>): void {
   }
 }
 
-// flex `gap` -> container -gap/2 margins + a `S > *` child rule with +gap/2.
+const ONE_CLASS = /^\.[\w-]+$/;
+
+// The marker matches nothing, and its one declaration keeps a minifier from
+// dropping it.
+function markGap(rule: Rule, row: string, column: string): void {
+  const marker = rule.cloneAfter({
+    selectors: [`${rule.selector}[${GAP_MARKER}="${row}|${column}"]`],
+  });
+  marker.removeAll();
+  marker.append({ prop: 'order', value: '0' });
+}
+
+type Margins = Array<{ prop: string; value: string }>;
+
+function marginsFor(prop: string, rowV: string, colV: string): [Margins, Margins] {
+  const container: Margins = [];
+  const child: Margins = [];
+  const axes = [
+    { skip: 'column-gap', value: rowV, sides: ['top', 'bottom'] },
+    { skip: 'row-gap', value: colV, sides: ['left', 'right'] },
+  ];
+  for (const { skip, value, sides } of axes) {
+    if (prop === skip) {
+      continue;
+    }
+    for (const side of sides) {
+      container.push({ prop: `margin-${side}`, value: half(value, '-') });
+      child.push({ prop: `margin-${side}`, value: half(value, '') });
+    }
+  }
+  return [container, child];
+}
+
+// flex `gap` on any other selector -> container -gap/2 margins + a `S > *`
+// child rule with +gap/2.
+function marginGap(rule: Rule, decl: Declaration, [rowV, colV]: [string, string]): void {
+  const [container, child] = marginsFor(decl.prop, rowV, colV);
+  const childRule = rule.cloneAfter({
+    selectors: rule.selectors.map((s) => `${s} > *`),
+  });
+  childRule.removeAll();
+  childRule.append(...child);
+  decl.replaceWith(...container);
+}
+
 function shimGap(root: Root): void {
   const decls: Declaration[] = [];
   root.walkDecls(/^(gap|column-gap|row-gap)$/, (d) => {
@@ -113,34 +159,11 @@ function shimGap(root: Root): void {
     const parts = splitSpace(decl.value);
     const rowV = parts[0] ?? decl.value;
     const colV = decl.prop === 'gap' ? (parts[1] ?? rowV) : rowV;
-    const container: Array<{ prop: string; value: string }> = [];
-    const child: Array<{ prop: string; value: string }> = [];
-    if (decl.prop !== 'column-gap') {
-      container.push(
-        { prop: 'margin-top', value: half(rowV, '-') },
-        { prop: 'margin-bottom', value: half(rowV, '-') },
-      );
-      child.push(
-        { prop: 'margin-top', value: half(rowV, '') },
-        { prop: 'margin-bottom', value: half(rowV, '') },
-      );
+    if (ONE_CLASS.test(rule.selector)) {
+      markGap(rule, decl.prop === 'column-gap' ? '' : rowV, decl.prop === 'row-gap' ? '' : colV);
+    } else {
+      marginGap(rule, decl, [rowV, colV]);
     }
-    if (decl.prop !== 'row-gap') {
-      container.push(
-        { prop: 'margin-left', value: half(colV, '-') },
-        { prop: 'margin-right', value: half(colV, '-') },
-      );
-      child.push(
-        { prop: 'margin-left', value: half(colV, '') },
-        { prop: 'margin-right', value: half(colV, '') },
-      );
-    }
-    const childRule = rule.cloneAfter({
-      selectors: rule.selectors.map((s) => `${s} > *`),
-    });
-    childRule.removeAll();
-    childRule.append(...child);
-    decl.replaceWith(...container);
   }
 }
 

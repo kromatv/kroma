@@ -14,6 +14,8 @@
 // no page or rail scrolls.
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
 import 'intersection-observer';
+import { clipAsHidden } from './clip-as-hidden';
+import { flexGaps } from './flex-gaps';
 import { connectNodes } from './is-connected';
 import { provideResizeObserver } from './resize-observer';
 import { roundOutlines } from './round-outlines';
@@ -29,3 +31,5 @@ if (!('BigInt' in window)) {
 connectNodes(Node);
 provideResizeObserver(window);
 roundOutlines(document);
+flexGaps(document);
+clipAsHidden();

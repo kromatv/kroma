@@ -31,7 +31,7 @@ const CSS_CHECKS: Check[] = [
   [/aspect-ratio\s*:/, 'aspect-ratio survives (Chrome 88) - the ::before shim did not run'],
   [
     /(^|[;{])\s*(gap|row-gap|column-gap)\s*:/,
-    'flex gap survives (Chrome 84) - the margin shim did not run',
+    'flex gap survives (Chrome 84) - neither marked for flex-gaps.ts nor shimmed with margins',
   ],
   [
     /(^|[;{])\s*(scale|translate|rotate)\s*:/,
@@ -51,10 +51,20 @@ const DEEP_CSS_CHECKS: Check[] = [
   [/var\(--/, 'custom properties survive (Chrome 49) - the flatten pass did not run'],
 ];
 
+const MARKED_GAP = /\.([\w-]+)\[data-kroma-gap-static=/g;
+const GAP_DECLARATION = /(^|;)\s*(gap|row-gap|column-gap)\s*:[^;}]*/g;
+
+function withoutMarkedGaps(css: string): string {
+  const marked = new Set(Array.from(css.matchAll(MARKED_GAP), (found) => found[1]));
+  return css.replace(/\.([\w-]+)\{([^}]*)\}/g, (rule, name: string, body: string) =>
+    marked.has(name) ? `.${name}{${body.replace(GAP_DECLARATION, '$1')}}` : rule,
+  );
+}
+
 let failed = false;
 
-function check(path: string, checks: Check[]): void {
-  const text = readFileSync(dist(path), 'utf8');
+function check(path: string, checks: Check[], prepare = (text: string) => text): void {
+  const text = prepare(readFileSync(dist(path), 'utf8'));
   for (const [re, why] of checks) {
     const m = re.exec(text);
     if (!m) {
@@ -68,13 +78,13 @@ function check(path: string, checks: Check[]): void {
 }
 
 check(join('legacy', 'index.js'), JS_CHECKS);
-check(join('legacy', 'style.css'), CSS_CHECKS);
+check(join('legacy', 'style.css'), CSS_CHECKS, withoutMarkedGaps);
 
 // Only the shells whose tv.target sets `deepLegacyChrome` emit this tier.
 const hasDeep = existsSync(dist('deep'));
 if (hasDeep) {
   check(join('deep', 'index.js'), JS_CHECKS);
-  check(join('deep', 'style.css'), [...CSS_CHECKS, ...DEEP_CSS_CHECKS]);
+  check(join('deep', 'style.css'), [...CSS_CHECKS, ...DEEP_CSS_CHECKS], withoutMarkedGaps);
   const above = syntaxAboveDeepFloor(readFileSync(dist(join('deep', 'index.js')), 'utf8'));
   if (above.length > 0) {
     console.error(
