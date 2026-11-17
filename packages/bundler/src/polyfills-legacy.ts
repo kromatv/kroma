@@ -12,6 +12,7 @@
 // for a missing one on purpose.
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch';
 import 'intersection-observer';
+import { roundOutlines } from './round-outlines';
 
 if (!('BigInt' in window)) {
   Object.defineProperty(window, 'BigInt', {
@@ -20,3 +21,5 @@ if (!('BigInt' in window)) {
     writable: true,
   });
 }
+
+roundOutlines(document);
