@@ -48,8 +48,11 @@ pub(super) fn parse_source(t: &str, next: Option<&str>) -> Option<Source> {
             _ => Some(Source::WebDl),
         },
         "hdtv" | "pdtv" | "dsr" => Some(Source::Hdtv),
-        "cam" | "hdcam" | "camrip" | "ts" | "telesync" | "hdts" | "telecine" | "screener"
-        | "dvdscr" | "workprint" => Some(Source::Cam),
+        "cam" | "hdcam" | "hd-cam" | "hqcam" | "hq-cam" | "camrip" | "cam-rip" | "hdcamrip"
+        | "ts" | "hdts" | "hd-ts" | "tsrip" | "ts-rip" | "hdtsrip" | "hdts-rip" | "telesync"
+        | "hdtelesync" | "telecine" | "screener" | "dvdscr" | "dvdscreener" | "workprint" => {
+            Some(Source::Cam)
+        }
         "dvd" | "dvdrip" | "dvd-rip" | "dvdr" | "dvd5" | "dvd9" => Some(Source::Dvd),
         _ => None,
     }
