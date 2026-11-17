@@ -126,14 +126,15 @@ const STATE_HINT: Record<VariableState, string> = {
 
 /** The source's placeholders as the translation being typed uses them, and any it names that the source does not. */
 export function VariablesLine({
+  id,
   variables,
   onInsert,
-}: Readonly<{ variables: readonly Variable[]; onInsert?: (value: string) => void }>) {
+}: Readonly<{ id: string; variables: readonly Variable[]; onInsert?: (value: string) => void }>) {
   if (variables.length === 0) {
     return null;
   }
   return (
-    <Row gap={6} wrap align="center" accessibilityLiveRegion="polite">
+    <Row nativeID={id} gap={6} wrap align="center" accessibilityLiveRegion="polite">
       <Text variant="meta" color="textDim">
         Variables
       </Text>

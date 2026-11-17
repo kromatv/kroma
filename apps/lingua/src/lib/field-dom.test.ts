@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fieldOf, focusField, keyOfField, messageFields, selectionOf } from './field-dom';
+import {
+  fieldOf,
+  focusField,
+  keyOfField,
+  measureField,
+  messageFields,
+  selectionOf,
+} from './field-dom';
 
 function page(): void {
   document.body.innerHTML = `
@@ -69,5 +76,34 @@ describe('focusField', () => {
     focusField(field);
 
     expect(selectionOf(field)).toEqual({ start: 1, end: 3 });
+  });
+});
+
+describe('measureField', () => {
+  it('reads the padding and the type a field is set in', () => {
+    page();
+    const field = present(fieldOf('a.one'));
+    field.style.cssText =
+      'padding: 4px 6px 8px 10px; font-family: Hanken; font-size: 16px; font-weight: 500; line-height: 24px; letter-spacing: 0.5px';
+
+    const box = measureField(field, document.body);
+
+    expect(box).toMatchObject({
+      padding: { top: 4, right: 6, bottom: 8, left: 10 },
+      fontFamily: 'Hanken',
+      fontSize: 16,
+      fontWeight: '500',
+      lineHeight: 24,
+      letterSpacing: 0.5,
+      scrollTop: 0,
+    });
+  });
+
+  it('falls back to the font size for a line height it cannot read', () => {
+    page();
+    const field = present(fieldOf('a.two'));
+    field.style.cssText = 'font-size: 10px; line-height: normal';
+
+    expect(measureField(field, document.body).lineHeight).toBe(12);
   });
 });

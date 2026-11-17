@@ -1,13 +1,12 @@
-import { styles, useStyles } from '@kromatv/ui/kit';
 import { Box, Column, Row } from '@kromatv/ui/kit/atoms/box';
 import { Text } from '@kromatv/ui/kit/atoms/text';
-import { TextArea } from '@kromatv/ui/kit/atoms/text-area';
 import { useContext, useEffect } from 'react';
+import { HighlightedField } from '#site/components/highlighted-field.component';
 import { MessageIssues } from '#site/components/message-issues.component';
 import { PlaceableText, VariablesLine } from '#site/components/placeable.component';
 import { SaveState } from '#site/components/save-state.component';
 import { fieldOf, focusField } from '#site/lib/field-dom';
-import { nextMissing, variablesOf } from '#site/lib/placeables';
+import { nextMissing, type Variable, variablesOf } from '#site/lib/placeables';
 import { pluralExamples } from '#site/lib/plural-examples';
 import { EditorFields } from '#site/lib/use-editor-keys.hook';
 import { useFieldInsert } from '#site/lib/use-field-insert.hook';
@@ -16,7 +15,7 @@ import type { RowView } from '#site/lib/views';
 
 const TOKEN_ISSUES = new Set(['unknown-token', 'missing-token']);
 
-const sDefinition = styles({ entry: { font: 'ui' } });
+const variablesId = (key: string) => `variables:${key}`;
 
 type Insert = ((value: string) => void) | undefined;
 type Message = ReturnType<typeof useMessageSave>;
@@ -109,26 +108,41 @@ function Field({
   message,
   entry,
 }: Readonly<{ form: FormProps; message: Message; entry: Entry }>) {
-  const s = useStyles(sDefinition);
   const { row, onFocusChange } = form;
-  const leave = () => {
-    entry.remember();
-    onFocusChange(false);
-    void message.commit();
+  const wiring = {
+    row,
+    value: message.value,
+    invalid: message.issues.some((issue) => issue.level === 'error'),
+    describedBy: variablesId(row.key),
+    onValueChange: message.setValue,
+    onFocus: () => onFocusChange(true),
+    onBlur: () => {
+      entry.remember();
+      onFocusChange(false);
+      void message.commit();
+    },
   };
+  return <HighlightedField wiring={wiring} />;
+}
+
+function FieldStatus({
+  form,
+  message,
+  variables,
+  onInsert,
+}: Readonly<{
+  form: FormProps;
+  message: Message;
+  variables: Variable[];
+  onInsert: (value: string) => void;
+}>) {
   return (
-    <TextArea
-      value={message.value}
-      onValueChange={message.setValue}
-      onFocus={() => onFocusChange(true)}
-      onBlur={leave}
-      rows={1}
-      maxRows={8}
-      textStyle={s.entry}
-      placeholder="Not translated yet"
-      label={`Translation of ${row.key}`}
-      invalid={message.issues.some((issue) => issue.level === 'error')}
-    />
+    <Row gap={10} wrap between align="center">
+      {form.editable ? (
+        <VariablesLine id={variablesId(form.row.key)} variables={variables} onInsert={onInsert} />
+      ) : null}
+      <SaveState status={message.status} />
+    </Row>
   );
 }
 
@@ -149,10 +163,7 @@ function Translation({
       ) : (
         <ReadOnly row={form.row} value={message.value} />
       )}
-      <Row gap={10} wrap between align="center">
-        {form.editable ? <VariablesLine variables={variables} onInsert={entry.insert} /> : null}
-        <SaveState status={message.status} />
-      </Row>
+      <FieldStatus form={form} message={message} variables={variables} onInsert={entry.insert} />
       <MessageIssues issues={message.issues.filter((issue) => !TOKEN_ISSUES.has(issue.code))} />
     </Column>
   );

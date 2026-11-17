@@ -33,3 +33,45 @@ export function focusField(field: HTMLTextAreaElement, caret?: number): void {
   }
   field.scrollIntoView?.({ block: 'center' });
 }
+
+/** Where a field's text sits inside the box that holds it, and the type it is set in, for a layer drawn over it. */
+export interface FieldBox {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  scrollTop: number;
+  padding: { top: number; right: number; bottom: number; left: number };
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  lineHeight: number;
+  letterSpacing: number;
+}
+
+const px = (value: string) => Number.parseFloat(value) || 0;
+
+/** Measure `field` as it is drawn inside `host`: its inner box, its scroll, its padding and its type. */
+export function measureField(field: HTMLTextAreaElement, host: Element): FieldBox {
+  const style = getComputedStyle(field);
+  const at = field.getBoundingClientRect();
+  const origin = host.getBoundingClientRect();
+  return {
+    top: at.top - origin.top + field.clientTop,
+    left: at.left - origin.left + field.clientLeft,
+    width: field.clientWidth,
+    height: field.clientHeight,
+    scrollTop: field.scrollTop,
+    padding: {
+      top: px(style.paddingTop),
+      right: px(style.paddingRight),
+      bottom: px(style.paddingBottom),
+      left: px(style.paddingLeft),
+    },
+    fontFamily: style.fontFamily,
+    fontSize: px(style.fontSize),
+    fontWeight: style.fontWeight,
+    lineHeight: px(style.lineHeight) || px(style.fontSize) * 1.2,
+    letterSpacing: px(style.letterSpacing),
+  };
+}
