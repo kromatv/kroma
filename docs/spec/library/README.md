@@ -178,6 +178,14 @@ later rescan does not undo it.
 automatically on the next rescan and leaves the Unmatched view. Neither repair is privileged
 over the other.
 
+**LIB-78** (AGREED) - **A match that came from another server.** An import
+([`admin/import.md`](../admin/import.md)) brings the identity the other server held for a
+file. KROMA takes it as that file's match ahead of its own reading of the name, and behind a
+match a person made by hand in KROMA (LIB-33).
+
+Neither Plex nor Jellyfin records which matches a person fixed, so there is no fixed set to
+bring. Every identity comes over, and the ones somebody fixed come with them.
+
 **Matches two things.**
 
 **LIB-35** (AGREED) - A file that could be more than one identity, a title shared by a remake

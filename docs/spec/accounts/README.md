@@ -41,6 +41,38 @@ The honest cost: a genuinely shared device, one television with several viewers,
 everyone's watch state under whichever account it holds. We accept that. The fix is switching
 accounts on the device, not inventing passwordless sub-identities to avoid it.
 
+### An account that waits
+
+Status: **AGREED**, from [RFC 719](../../rfcs/719-guided-setup-and-import.md).
+
+An import brings a person's watch state before that person has ever opened KROMA
+([`admin/import.md`](../admin/import.md)). The state needs an account to belong to.
+
+**ACCT-94** (AGREED) - An account can exist before its person has signed in. It **waits on
+an invitation**: it has a name, its library visibility and its watch state, and no
+credential.
+
+**ACCT-95** (AGREED) - Nobody can sign in to a waiting account, by any means. Its invitation
+is the only way into it.
+
+**ACCT-96** (AGREED) - Redeeming the invitation gives the account its credential, and the
+person chooses their own secret.
+
+**ACCT-97** (AGREED) - The person may correct the account's name and address when they
+redeem the invitation.
+
+**ACCT-98** (AGREED) - It is the same account before and after the invitation is redeemed,
+so everything it held is still there.
+
+**ACCT-99** (AGREED) - The invitation of a waiting account is single-use and expires like
+any other.
+
+**ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids
+the one before, and the account goes on waiting until one is redeemed.
+
+A waiting account is not a profile (ACCT-4). It is a real account whose owner has not
+arrived yet, and once they arrive nothing tells it apart from any other.
+
 ## Authentication
 
 Status: **SHIPPED**

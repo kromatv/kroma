@@ -152,6 +152,9 @@ latest save first.
 
 **BROWSE-33** (SHIPPED) - An admin can turn the recently added rows off ([`admin/`](../admin/)).
 
+**BROWSE-61** (AGREED) - While a scan runs, the home gains each title as the scan matches it,
+without a reload. A new owner watches the library arrive ([`admin/setup.md`](../admin/setup.md)).
+
 ## Search
 
 Status: **SHIPPED**

@@ -25,16 +25,18 @@ must do; this file stays the landing page for running a server at all.
 | [`dashboard-most-watched.md`](dashboard-most-watched.md) | Which titles the household actually uses the server for |
 | [`watch-history.md`](watch-history.md) | The full record, its own screen, and what the log keeps |
 | [`watch-history-item.md`](watch-history-item.md) | The same record narrowed to one title |
+| [`setup.md`](setup.md) | The guided setup a new owner is led through, and the checklist it leaves |
+| [`import.md`](import.md) | Bringing a household over from Plex or Jellyfin |
 
 ## First-run
 
 Status: **AGREED**
 
-First-run does the least that gets to a playing title, and defers the rest to a running
-server the owner can explore at leisure. The minimum path, in exact order:
+First-run requires the least that gets to a playing title, and offers the rest without
+asking for it. The minimum path, in exact order:
 
 1. **Open the server.** The owner reaches the web surface on their own network. No account
-   exists yet, so the server presents the owner-creation step and nothing else.
+   exists yet, so nothing on the server can be reached or changed until the owner exists.
 2. **Create the owner.** One account: a name and a credential. This account is the owner
    from the moment it exists. There is no separate "make me admin" step, and roles are
    [`accounts/`](../accounts/), not asked here.
@@ -44,12 +46,14 @@ server the owner can explore at leisure. The minimum path, in exact order:
 4. **Play.** As soon as the first title matches, it is playable. First-run is over. The
    owner did not wait for the whole scan to finish.
 
-Everything else is deferred to the running server: more sources, more users, module
-installs, metadata providers, schedules, backups. First-run asks three things, who owns
-this and where is the media and nothing more, because a first-time operator should reach a
-playing title before they are asked to make a single reversible decision. Deferred choices
-all have sane defaults, so a server that only ever completes first-run is a complete,
-correct server.
+Everything else is offered and nothing else is required: more sources, more users, module
+installs, metadata providers, schedules, backups. A playing title takes two things, who owns
+this and where the media is, because a first-time operator should reach one before they have
+to make a single reversible decision. The guided setup
+([`setup.md`](setup.md)) walks the owner through the rest, one skippable screen at a time,
+and can begin by bringing another server over ([`import.md`](import.md)). Every choice it
+offers has a sane default, so a server that only ever completes the minimum path is a
+complete, correct server.
 
 ## Settings philosophy
 
