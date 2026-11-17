@@ -85,6 +85,28 @@ describe('refusalText', () => {
     );
   });
 
+  it('names the database version a module needs and the one this server is at', () => {
+    const refusal = { kind: 'coreSchema', needs: '19', has: 18 } as const;
+
+    expect(refusalText(entry({ refusal }), t)).toBe(
+      'admin.modulesRefusalCoreSchema {"needs":"19","has":18}',
+    );
+    expect(
+      refusalText(entry({ installedVersion: '0.3.13', updateBlocked: true, refusal }), t),
+    ).toBe('admin.modulesRefusalUpdateCoreSchema {"needs":"19","has":18,"version":"0.4.1"}');
+  });
+
+  it('names the table this server changed after the module was built', () => {
+    const refusal = { kind: 'coreTable', table: 'items', built: 4, changed: 5 } as const;
+
+    expect(refusalText(entry({ refusal }), t)).toBe(
+      'admin.modulesRefusalCoreTable {"table":"items","changed":5}',
+    );
+    expect(
+      refusalText(entry({ installedVersion: '0.3.13', updateBlocked: true, refusal }), t),
+    ).toBe('admin.modulesRefusalUpdateCoreTable {"table":"items","changed":5,"version":"0.4.1"}');
+  });
+
   it('tells a module made for a newer KROMA from one that needs rebuilding', () => {
     const newer = entry({ refusal: { kind: 'schema', built: 3, speaks: 2 } });
 
@@ -156,6 +178,14 @@ describe('newestText', () => {
 
     expect(newestText(older({ version: '0.4.2', refusal }), t)).toBe(
       'admin.modulesNewestNeedsServer {"newest":"0.4.2","range":"≥ 0.1.39","serverVersion":"0.1.38","version":"0.4.1"}',
+    );
+  });
+
+  it('names the newer version, the database version it needs, and the version that runs here', () => {
+    const refusal = { kind: 'coreSchema', needs: '19', has: 18 } as const;
+
+    expect(newestText(older({ version: '0.7.0', refusal }), t)).toBe(
+      'admin.modulesNewestNeedsCore {"newest":"0.7.0","needs":"19","has":18,"version":"0.4.1"}',
     );
   });
 

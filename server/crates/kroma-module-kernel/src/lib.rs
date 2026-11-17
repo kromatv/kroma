@@ -473,6 +473,7 @@ mod gate_tests {
                     data_dir: data_dir.to_path_buf(),
                     reserved_ids: Vec::new(),
                     server_version: "0.0.0".into(),
+                    core_schema: Default::default(),
                     log_line: None,
                 },
             );

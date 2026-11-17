@@ -390,3 +390,13 @@ mod tests {
         assert_eq!(series.as_deref(), Some("House of the Dragon"));
     }
 }
+
+/// For each core table, the versions of the schema that last changed it and
+/// last changed it in a way a module built before reads wrongly, as JSON. The
+/// tests derive it from the baseline and the steps, and fail while it is stale.
+pub const CORE_TABLE_VERSIONS: &str = include_str!("schema/table_versions.json");
+
+#[cfg(test)]
+mod shape;
+#[cfg(test)]
+mod table_versions;

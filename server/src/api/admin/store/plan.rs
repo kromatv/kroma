@@ -15,9 +15,6 @@ use super::catalog::{self, CatalogModule};
 use super::registries;
 use crate::state::SharedState;
 
-// This server's version, checked against each entry's `engines.server` range.
-pub(super) const SERVER_VERSION: &str = crate::VERSION;
-
 pub(super) struct Planned<'a> {
     pub entry: &'a CatalogModule,
     installed: Option<String>,
@@ -103,9 +100,11 @@ impl<'a> Planner<'a> {
             }
         })?;
         // Fail fast with the precise blocker instead of a partial install.
-        if let Err(reason) =
-            kroma_module_manifest::engines_satisfied(&entry.engines, SERVER_VERSION)
-        {
+        if let Err(reason) = kroma_module_manifest::engines_satisfied(
+            &entry.engines,
+            entry.storage.as_ref(),
+            catalog::this_server(),
+        ) {
             bail!("'{id}' {reason}");
         }
         if catalog::pick_artifact(entry).is_none() {
@@ -540,8 +539,26 @@ mod tests {
             .to_string();
         assert!(err.contains("requires server >=999.0.0"), "{err}");
         assert!(
-            err.contains(&format!("(this server is {SERVER_VERSION})")),
+            err.contains(&format!("(this server is {})", crate::VERSION)),
             "{err}"
+        );
+    }
+
+    #[test]
+    fn a_module_that_needs_a_newer_core_schema_blocks_the_plan_up_front() {
+        let mut root = module("tv.x.app", "1.0.0");
+        let has = crate::core_schema().version;
+        root.engines.insert("core".into(), (has + 1).to_string());
+        let modules = vec![root];
+
+        let err = planner(&modules).roots(&["tv.x.app"]).unwrap_err();
+
+        assert_eq!(
+            err.to_string(),
+            format!(
+                "'tv.x.app' requires core schema {} (this server's is {has})",
+                has + 1
+            )
         );
     }
 

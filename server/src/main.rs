@@ -21,6 +21,17 @@ pub const VERSION: &str = env!("KROMA_VERSION");
 /// The CI build number this binary carries, `0` for a local build.
 pub const BUILD: &str = env!("KROMA_BUILD");
 
+/// The core schema this binary carries, which a module's `engines.core` is
+/// checked against.
+pub fn core_schema() -> &'static kroma_module_manifest::CoreSchema {
+    static CORE: std::sync::LazyLock<kroma_module_manifest::CoreSchema> =
+        std::sync::LazyLock::new(|| {
+            serde_json::from_str(kroma_db::CORE_TABLE_VERSIONS)
+                .expect("the table_versions.json kroma-db's own tests derive")
+        });
+    &CORE
+}
+
 mod api;
 mod boot;
 mod tls;

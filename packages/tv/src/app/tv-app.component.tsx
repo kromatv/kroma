@@ -14,8 +14,6 @@ import { canExitOnBack, exitOnBack } from '#tv/app/app-quit';
 import { BrandIntro } from '#tv/app/brand-intro.component';
 import { CompatBanner } from '#tv/app/compat-banner.component';
 import { ClientOutdatedScreen } from '#tv/app/client-outdated-screen.component';
-import { CrashBoundary } from '#tv/app/crash-boundary.component';
-import { CrashScreen } from '#tv/app/crash-screen.component';
 import { type DeviceNameSource, useDeviceName } from '#tv/app/device-name';
 import { createEnginePref, EnginePrefProvider } from '#tv/app/engine-pref';
 import { resolveRedirect } from '#tv/app/guard';
@@ -30,6 +28,7 @@ import { MyListProvider } from '#tv/app/providers/mylist';
 import { PlaybackCapabilitiesProvider } from '#tv/app/providers/playback-capabilities';
 import { RecommendProvider } from '#tv/app/providers/recommend';
 import { WatchedProvider } from '#tv/app/providers/watched';
+import { RouteCrashBoundary } from '#tv/app/route-crash-boundary.component';
 import { TvClientProvider, TvNavProvider, TvOutlet, type TvScreens, useNav } from '#tv/app/router';
 import {
   createSearchRequests,
@@ -77,7 +76,6 @@ export interface TvAppProps {
   decoderFrameLimits?: DecoderFrameLimits;
   platform?: string;
   capabilities?: TvEnvOverrides;
-  introVideoSrc?: string;
   voiceSearch?: VoiceSearchBackend | null;
   searchShell?: SearchShell | null;
   launcher?: LauncherBackend | null;
@@ -108,15 +106,6 @@ const LAYERS = [BROWSE_CHROME, AUTH_BACKDROP] as const;
 
 const TOAST_INSET = { x: 64, y: 132 } as const;
 
-// Rendered inside <TvNavProvider>, which is what lets it offer Back: TvApp is
-// the component that MOUNTS that provider, so it cannot read the nav itself.
-function CrashFallback({ onRetry }: Readonly<{ onRetry: () => void }>) {
-  const nav = useNav();
-  return <CrashScreen onRetry={onRetry} onBack={nav.canGoBack ? nav.back : undefined} />;
-}
-
-const crashFallback = (retry: () => void) => <CrashFallback onRetry={retry} />;
-
 // Rendered inside <ConnectionProvider>, which TvApp mounts, so TvApp cannot
 // read the verdict itself.
 function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
@@ -127,7 +116,6 @@ function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
 export function TvApp({
   platform = 'TV',
   capabilities,
-  introVideoSrc,
   voiceSearch = null,
   searchShell = null,
   launcher = null,
@@ -194,11 +182,7 @@ export function TvApp({
                                   onSignedInChange={setSignedIn}
                                 >
                                   <LocaleProvider client={client}>
-                                    <CrashBoundary
-                                      client={client}
-                                      platform={platform}
-                                      fallback={crashFallback}
-                                    >
+                                    <RouteCrashBoundary client={client} platform={platform}>
                                       <CompatBanner />
                                       <CompatGate>
                                         <ContinueProvider>
@@ -240,13 +224,13 @@ export function TvApp({
                                           </RecommendProvider>
                                         </ContinueProvider>
                                       </CompatGate>
-                                    </CrashBoundary>
+                                    </RouteCrashBoundary>
                                   </LocaleProvider>
                                 </AuthProvider>
                               </TvClientProvider>
                             </ConnectionProvider>
                           </TvNavProvider>
-                          <BrandIntro videoSrc={introVideoSrc} />
+                          <BrandIntro />
                         </EnvProvider>
                       </SearchShellProvider>
                     </VoiceSearchProvider>

@@ -1,0 +1,221 @@
+{
+  "tables": {
+    "access_tokens": {
+      "broke": 13,
+      "changed": 17
+    },
+    "acq_file_tmdb": {
+      "broke": 1,
+      "changed": 1
+    },
+    "audio_analysis": {
+      "broke": 1,
+      "changed": 1
+    },
+    "credential_resets": {
+      "broke": 1,
+      "changed": 1
+    },
+    "curated_sections": {
+      "broke": 1,
+      "changed": 1
+    },
+    "downloaded_subtitles": {
+      "broke": 1,
+      "changed": 1
+    },
+    "downloads": {
+      "broke": 1,
+      "changed": 19
+    },
+    "email_verifications": {
+      "broke": 1,
+      "changed": 1
+    },
+    "episode_guide": {
+      "broke": 1,
+      "changed": 1
+    },
+    "file_segments": {
+      "broke": 1,
+      "changed": 1
+    },
+    "files": {
+      "broke": 1,
+      "changed": 1
+    },
+    "identities": {
+      "broke": 15,
+      "changed": 15
+    },
+    "invites": {
+      "broke": 1,
+      "changed": 1
+    },
+    "item_suggestions": {
+      "broke": 1,
+      "changed": 18
+    },
+    "item_vectors": {
+      "broke": 1,
+      "changed": 12
+    },
+    "items": {
+      "broke": 5,
+      "changed": 5
+    },
+    "job_logs": {
+      "broke": 1,
+      "changed": 1
+    },
+    "job_runs": {
+      "broke": 1,
+      "changed": 1
+    },
+    "job_schedules": {
+      "broke": 1,
+      "changed": 1
+    },
+    "join_requests": {
+      "broke": 15,
+      "changed": 15
+    },
+    "libraries": {
+      "broke": 1,
+      "changed": 1
+    },
+    "library_gaps": {
+      "broke": 1,
+      "changed": 1
+    },
+    "markers": {
+      "broke": 1,
+      "changed": 1
+    },
+    "metadata_core": {
+      "broke": 1,
+      "changed": 1
+    },
+    "metric_samples": {
+      "broke": 1,
+      "changed": 1
+    },
+    "monitored": {
+      "broke": 1,
+      "changed": 1
+    },
+    "my_list": {
+      "broke": 1,
+      "changed": 1
+    },
+    "network_flows_daily": {
+      "broke": 9,
+      "changed": 9
+    },
+    "network_inbound_daily": {
+      "broke": 11,
+      "changed": 11
+    },
+    "notification_deliveries": {
+      "broke": 8,
+      "changed": 8
+    },
+    "notification_prefs": {
+      "broke": 1,
+      "changed": 1
+    },
+    "notification_type_prefs": {
+      "broke": 10,
+      "changed": 10
+    },
+    "notifications": {
+      "broke": 1,
+      "changed": 14
+    },
+    "passkeys": {
+      "broke": 1,
+      "changed": 1
+    },
+    "pin_attempts": {
+      "broke": 1,
+      "changed": 1
+    },
+    "pipeline_tasks": {
+      "broke": 1,
+      "changed": 1
+    },
+    "play_history": {
+      "broke": 1,
+      "changed": 1
+    },
+    "progress": {
+      "broke": 1,
+      "changed": 1
+    },
+    "push_subscriptions": {
+      "broke": 1,
+      "changed": 1
+    },
+    "reports": {
+      "broke": 1,
+      "changed": 1
+    },
+    "requests": {
+      "broke": 1,
+      "changed": 1
+    },
+    "reset_requests": {
+      "broke": 1,
+      "changed": 1
+    },
+    "season_meta": {
+      "broke": 1,
+      "changed": 1
+    },
+    "sessions": {
+      "broke": 13,
+      "changed": 13
+    },
+    "settings": {
+      "broke": 1,
+      "changed": 1
+    },
+    "shows": {
+      "broke": 1,
+      "changed": 1
+    },
+    "tmdb_pin": {
+      "broke": 1,
+      "changed": 1
+    },
+    "translations": {
+      "broke": 1,
+      "changed": 1
+    },
+    "upgrade_tasks": {
+      "broke": 2,
+      "changed": 2
+    },
+    "user_taste": {
+      "broke": 1,
+      "changed": 1
+    },
+    "users": {
+      "broke": 1,
+      "changed": 1
+    },
+    "wanted": {
+      "broke": 1,
+      "changed": 1
+    },
+    "watched": {
+      "broke": 1,
+      "changed": 1
+    },
+    "whisper_jobs": {
+      "broke": 1,
+      "changed": 1
+    }
+  },
+  "version": 19
+}

@@ -1,7 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { buildCrashReport } from '#tv/app/crash-report';
-import { useNav } from '#tv/app/router';
 import { useDevicePreferences } from './device-preferences';
 
 interface Props {
@@ -10,32 +9,28 @@ interface Props {
   /** Rendered instead of the broken tree. Given the reset, so the screen can
    *  offer to try again rather than only telling the viewer to. */
   fallback: (retry: () => void) => ReactNode;
+  /** A new value clears the crash and renders the tree again. */
+  resetKey?: unknown;
   children: ReactNode;
-}
-
-interface Owned {
-  reporting: () => boolean;
-  screen: unknown;
 }
 
 interface State {
   crashed: boolean;
-  screen: unknown;
+  resetKey: unknown;
 }
 
 /** App-level error boundary: on a render-time crash it shows `fallback` instead
  * of the broken tree, and, only when the user opted in, posts a
- * [`CrashReport`] to the connected server (best-effort, never rethrown). A new
- * screen on top clears it, so leaving the fallback lands on that screen. */
-class OwnedCrashBoundary extends Component<Props & Owned, State> {
-  state: State = { crashed: false, screen: null };
-
-  static getDerivedStateFromProps(props: Owned, state: State): Partial<State> | null {
-    return props.screen === state.screen ? null : { crashed: false, screen: props.screen };
-  }
+ * [`CrashReport`] to the connected server (best-effort, never rethrown). */
+class OwnedCrashBoundary extends Component<Props & { reporting: () => boolean }, State> {
+  state: State = { crashed: false, resetKey: this.props.resetKey };
 
   static getDerivedStateFromError(): Partial<State> {
     return { crashed: true };
+  }
+
+  static getDerivedStateFromProps(props: Props, state: State): Partial<State> | null {
+    return props.resetKey === state.resetKey ? null : { crashed: false, resetKey: props.resetKey };
   }
 
   componentDidCatch(error: unknown, info: ErrorInfo): void {
@@ -61,8 +56,5 @@ class OwnedCrashBoundary extends Component<Props & Owned, State> {
 
 export function CrashBoundary(props: Readonly<Props>) {
   const { crashReporting } = useDevicePreferences();
-  const { route } = useNav();
-  return (
-    <OwnedCrashBoundary {...props} screen={route} reporting={() => crashReporting.get() === 'on'} />
-  );
+  return <OwnedCrashBoundary {...props} reporting={() => crashReporting.get() === 'on'} />;
 }

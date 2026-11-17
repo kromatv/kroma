@@ -97,8 +97,7 @@ impl Supervisor {
             return Err(native_build(id));
         }
         check_manifest_schema(id, &manifest)?;
-        kroma_module_manifest::engines_satisfied(&manifest.engines, &self.cfg.server_version)
-            .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))?;
+        self.engines_satisfied(id, &manifest)?;
         if !self.has_component(id) {
             return Ok(());
         }

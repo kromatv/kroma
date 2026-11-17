@@ -66,10 +66,10 @@ that must not be `any`.
 
 ## What the staged package deliberately drops
 
-The brand intro's 4K master and its sting are 11 MB, and `<KromaIntro>` already
-falls back to its CSS scene when the video will not play. A design system
-shipping someone else's logo reel is 11 MB nobody asked for, so the build
-strips both. That is the difference between 1.2 MB and 9.2 MB on npm.
+The brand intro's two films are 11.5 MB, and `<KromaIntro>` hands off at once
+when it has no film to play. A design system shipping someone else's logo reel
+is 11.5 MB nobody asked for, so the build strips both. A consumer who wants a
+film passes its own through `videoSrc`.
 
 ## Icons
 
@@ -132,9 +132,8 @@ sites across web, tv and mobile.
 - **The native half is built but unproven.** `kit:smoke` installs the tarball
   into a Vite app, so the web build is exercised on every push; nothing yet
   mounts the native one under Metro.
-- **`<KromaIntro>` is drawn from CSS.** Its 4K master and sting are stripped, so
-  the component falls back to the scene it already falls back to on a decoder
-  that cannot play HEVC.
+- **`<KromaIntro>` ships without a film.** Both encodes are stripped, so the
+  component hands off at once unless the consumer passes `videoSrc`.
 
 ## Root defaults
 

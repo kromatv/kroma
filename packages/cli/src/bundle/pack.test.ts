@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { Project } from '../project';
+import { readTableVersions } from './core-engine';
 import { bundleName, type PackInput, packBundle, packForDev } from './pack';
 import { tarNames, tarRead, toTar } from './tar';
 
@@ -63,6 +64,30 @@ describe('packBundle', () => {
       server: '>=0.1.40',
       host: '0.2.0',
     });
+  });
+
+  it('records the core schema a module with a core grant needs', () => {
+    const input = fixture();
+    const grant = { core: { read: ['downloads', 'users.username'] } };
+    const authored = { ...input.project.manifest, engines: { server: '>=0.1.40' }, storage: grant };
+    writeFileSync(join(input.project.dir, 'module.json'), JSON.stringify(authored));
+    input.project.manifest = authored;
+
+    const packed = packBundle(input);
+
+    const carried = JSON.parse(textOf(toTar(bytesOf(packed.path)), 'module.json'));
+    expect(carried.engines.core).toBe(String(readTableVersions().tables.downloads?.changed));
+  });
+
+  it('records no core schema for a module without a core grant', () => {
+    const input = fixture();
+    const authored = { ...input.project.manifest, engines: { server: '>=0.1.40' } };
+    writeFileSync(join(input.project.dir, 'module.json'), JSON.stringify(authored));
+
+    const packed = packBundle(input);
+
+    const carried = JSON.parse(textOf(toTar(bytesOf(packed.path)), 'module.json'));
+    expect(carried.engines).toEqual({ server: '>=0.1.40' });
   });
 
   it('holds the manifest, the component, the icon and the frontend', () => {

@@ -133,7 +133,9 @@ processes, declared in the manifest. See
   uninstall a module other enabled modules depend on. Manifests may declare
   `engines` (bare version or semver range); the supervisor enforces it at install
   AND at spawn, so a stale `.kmod` fails with a clear message instead of runtime
-  proxy errors. When this server refuses a module's newest version, the Store
+  proxy errors. `kroma build` adds two the author never writes: `engines.host`,
+  the module interface the component imports, and `engines.core`, the core
+  schema a `storage.core` grant needs. When this server refuses a module's newest version, the Store
   reads the module's record (`/m/{id}.json`) and offers the newest older version
   it runs instead, naming the newer one and what it needs; install, update and
   automatic updates all take that version, and none of them downgrades an

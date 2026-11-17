@@ -2,16 +2,16 @@
 
 import type { KromaClient } from '@kromatv/client';
 import { fakeClient } from '@kromatv/client/test';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CrashBoundary } from '#tv/app/crash-boundary.component';
 import { createDevicePreferences, DevicePreferencesProvider } from '#tv/app/device-preferences';
-import { TvNavProvider, useNav } from '#tv/app/router';
-import { stubScreens } from '#tv/app/router.fixtures';
 
 const preferences = createDevicePreferences();
 const crashReportingPrefStore = preferences.crashReporting;
+
+const fallback = () => <span>fallback shown</span>;
 
 function Boom(): ReactNode {
   throw new Error('kaboom');
@@ -24,67 +24,30 @@ function crashClient() {
 
 function mount(client: KromaClient | null) {
   return render(
-    <TvNavProvider screens={stubScreens()}>
-      <DevicePreferencesProvider value={preferences}>
-        <CrashBoundary
-          client={client}
-          platform="Android TV"
-          fallback={(retry) => (
-            <button type="button" onClick={retry}>
-              fallback shown
-            </button>
-          )}
-        >
-          <Boom />
-        </CrashBoundary>
-      </DevicePreferencesProvider>
-    </TvNavProvider>,
+    <DevicePreferencesProvider value={preferences}>
+      <CrashBoundary
+        client={client}
+        platform="Android TV"
+        fallback={(retry) => (
+          <button type="button" onClick={retry}>
+            fallback shown
+          </button>
+        )}
+      >
+        <Boom />
+      </CrashBoundary>
+    </DevicePreferencesProvider>,
   );
 }
 
-function CrashesOnGenres(): ReactNode {
-  const { route } = useNav();
-  if (route.name === 'genres') {
-    throw new Error('kaboom');
-  }
-  return <p>{`on ${route.name}`}</p>;
-}
-
-function Leave() {
-  const nav = useNav();
+function routed(route: string, child: ReactNode) {
   return (
-    <button type="button" onClick={nav.back}>
-      leave
-    </button>
+    <DevicePreferencesProvider value={preferences}>
+      <CrashBoundary client={null} platform="Tizen" fallback={fallback} resetKey={route}>
+        {child}
+      </CrashBoundary>
+    </DevicePreferencesProvider>
   );
-}
-
-function OpenGenres() {
-  const nav = useNav();
-  return (
-    <button type="button" onClick={() => nav.go('genres')}>
-      open genres
-    </button>
-  );
-}
-
-function mountRoutes() {
-  render(
-    <TvNavProvider screens={stubScreens()}>
-      <DevicePreferencesProvider value={preferences}>
-        <OpenGenres />
-        <CrashBoundary client={null} platform="Tizen" fallback={() => <Leave />}>
-          <CrashesOnGenres />
-        </CrashBoundary>
-      </DevicePreferencesProvider>
-    </TvNavProvider>,
-  );
-}
-
-async function click(label: string) {
-  await act(async () => {
-    fireEvent.click(screen.getByText(label));
-  });
 }
 
 beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}));
@@ -134,20 +97,19 @@ describe('CrashBoundary', () => {
     expect(screen.getByText('fallback shown')).toBeTruthy();
   });
 
-  it('shows the screen underneath once the viewer leaves the crashed one', async () => {
-    mountRoutes();
-    await click('open genres');
+  it('renders the tree again once the route moves on', () => {
+    const { rerender } = render(routed('detail', <Boom />));
 
-    await click('leave');
+    rerender(routed('home', <span>home screen</span>));
 
-    expect(screen.getByText('on profiles')).toBeTruthy();
+    expect(screen.getByText('home screen')).toBeTruthy();
   });
 
-  it('keeps the fallback while the crashed screen is still on top', async () => {
-    mountRoutes();
+  it('keeps the fallback while the route stays where it crashed', () => {
+    const { rerender } = render(routed('detail', <Boom />));
 
-    await click('open genres');
+    rerender(routed('detail', <span>detail screen</span>));
 
-    expect(screen.getByText('leave')).toBeTruthy();
+    expect(screen.getByText('fallback shown')).toBeTruthy();
   });
 });
