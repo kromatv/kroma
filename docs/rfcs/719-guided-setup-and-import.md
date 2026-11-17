@@ -1,7 +1,7 @@
 # RFC 719: a first run that guides, and a household that comes over from Plex or Jellyfin
 
-- Status: **DRAFT**
-- PR: #719 (the issue)
+- Status: **ACCEPTED**
+- PR: #729, for issue #719
 - Affects: `docs/spec/admin/README.md` (First-run), two new chapters,
   `docs/spec/admin/setup.md` (ADMIN-96 to ADMIN-127) and `docs/spec/admin/import.md`
   (ADMIN-128 to ADMIN-167), `docs/spec/accounts/README.md` (ACCT-94 to ACCT-100),
@@ -264,6 +264,11 @@ Two decisions the issue did not ask for, because they could hurt someone:
 
 ## Unresolved
 
+- Whether the import should run before the owner exists after all, as the issue has it. It
+  would bring back the prefilled owner form. It needs a grant the server gives the first
+  visitor of an empty server, good for installing an importer and signing in to the old
+  server, and gone when the owner exists. Only ADMIN-98 would change. The author of the
+  issue decides.
 - Whether a managed Plex Home user without a PIN appears in the owner's shared list with a
   token, like a friend does. The sources read for this RFC do not say. The Plex importer's
   first story checks it against a real server. The fallback is the Home switch call, which
