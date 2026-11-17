@@ -72,7 +72,11 @@ export function devModeKeys(): DevModeKeys {
   return keys;
 }
 
-const HOST_KEY = utils.generateKeyPairSync('ed25519').private;
+const HOST_KEY = generateKeyPairSync('rsa', {
+  modulusLength: 2048,
+  publicKeyEncoding: { type: 'spki', format: 'pem' },
+  privateKeyEncoding: { type: 'pkcs1', format: 'pem' },
+}).privateKey;
 
 const DEFAULT_INSTALL: readonly Reply[] = [
   { returnValue: true, subscribed: true },
