@@ -2565,7 +2565,6 @@
         "clients/web/src/features/playback/use-web-subtitles.hook.ts",
         "clients/web/src/features/releases/use-mark-release-seen.hook.ts",
         "clients/web/src/features/requests/my-requests.component.tsx",
-        "clients/web/src/shared/lib/use-live-refresh.hook.ts",
         "packages/ui/src/components/organisms/splash-backdrop/splash-backdrop.component.tsx",
         "packages/ui/src/lib/focus-remote.ts",
         "packages/ui/src/services/direct-connection.hook.ts"

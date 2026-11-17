@@ -61,17 +61,40 @@ const section = (id: string, layout: string, items: unknown[]) => ({
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   session.signedIn = true;
 });
 
+interface EventSocket {
+  onmessage: ((event: MessageEvent) => void) | null;
+}
+
+function openedSockets(): EventSocket[] {
+  const sockets: EventSocket[] = [];
+  class Socket implements EventSocket {
+    onmessage: ((event: MessageEvent) => void) | null = null;
+    close = vi.fn();
+    constructor() {
+      sockets.push(this);
+    }
+  }
+  vi.stubGlobal('WebSocket', Socket);
+  return sockets;
+}
+
+const announce = (socket: EventSocket | undefined, frame: object) =>
+  socket?.onmessage?.(new MessageEvent('message', { data: JSON.stringify(frame) }));
+
 async function mount(
   home: unknown[] | Promise<never>,
   media: { featured?: () => Promise<unknown>; movieCards?: () => Promise<unknown> } = {},
+  credentials: { sessionToken?: string } = {},
 ) {
   const fetched = vi.fn(async () => Response.json(await home));
   vi.stubGlobal('fetch', fetched);
   const runtime = createWebTestRuntime({
+    ...credentials,
     media: {
       showCards: async () => [],
       movieCards: async () => [],
@@ -137,4 +160,19 @@ it('asks for nothing of the home before somebody is signed in', async () => {
   expect(screen.getByText('hero pending')).toBeTruthy();
   expect(screen.getByText('sections pending')).toBeTruthy();
   expect(fetched).not.toHaveBeenCalled();
+});
+
+it('replaces the empty library with the first title a scan found, without a reload', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  const sockets = openedSockets();
+  const movies: unknown[] = [];
+  await mount([], { movieCards: async () => movies }, { sessionToken: 'bearer' });
+  expect(await screen.findByText('Your library is empty.')).toBeTruthy();
+
+  movies.push({ id: 'm1' });
+  announce(sockets[0], { type: 'scan.completed', items: 1, shows: 0, libraries: 1 });
+  await act(() => vi.advanceTimersByTimeAsync(2500));
+
+  expect(await screen.findByText('hero m1')).toBeTruthy();
+  expect(screen.queryByText('Your library is empty.')).toBeNull();
 });
