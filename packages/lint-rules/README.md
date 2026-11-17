@@ -130,6 +130,20 @@ Consumer styles and JSX props use named colour, radius, and type tokens. Reject
 literal hex/rgb/hsl colours in known colour properties, literal font sizes, and
 literal radii. Zero radius resets are allowed. The token/core layer, icon data,
 tests, and fixtures are excluded. Computed values and CSS strings are not checked.
+Where the kit does not resolve a name (a DOM element's style, an SVG primitive, a
+canvas), the token is written through `color()`; see `no-unresolved-color-tokens`.
+
+### no-unresolved-color-tokens
+
+A kit colour token (`'accent'`, `'text/52'`) means something only where the kit
+resolves it: `styles()`, `sv()`, `sharedStyle()`, a kit component's colour prop,
+`color()`. Reject one written into a value nothing resolves: the style or a
+colour attribute of a DOM element, an SVG primitive or a React Native primitive,
+an object typed `CSSProperties`, a canvas paint, an `element.style` colour. The
+browser takes the name verbatim, rejects it, and paints nothing. Resolve it with
+`color()` from `#ui/core/color`. The names are read from
+`packages/ui/src/core/tokens/colors.ts`, so a new token is covered without
+touching the rule. Values computed at runtime are not followed.
 
 ### re-export-from
 
