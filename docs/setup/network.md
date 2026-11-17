@@ -41,6 +41,14 @@ choice through a Cloudflare Tunnel, which needs no open port on your router.
 KROMA starts the connector and shows **Connected**. If you already run a tunnel
 yourself, leave **Enable remote access** off and only fill **Custom URL**.
 
+> [!IMPORTANT]
+> Keep TLS 1.2 allowed on your domain. Samsung TVs from 2017 to 2020 run the
+> KROMA web app, and their built-in browser cannot use TLS 1.3. If Cloudflare
+> accepts only TLS 1.3, those TVs say **No server answered at this address**.
+> In the Cloudflare dashboard, open the **Edge Certificates** page of your
+> domain and set **Minimum TLS Version** to **TLS 1.2**, as in
+> [Cloudflare's guide](https://developers.cloudflare.com/ssl/edge-certificates/additional-options/minimum-tls/).
+
 ### Behind your own reverse proxy
 
 Point the proxy at `http://SERVER_IP:4040`. Then tell KROMA its public
@@ -76,6 +84,10 @@ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
 KROMA also reads `CF-Connecting-IP`, from Cloudflare, when no
 `X-Forwarded-For` header came with the request.
+
+If you choose the TLS versions your proxy accepts, keep TLS 1.2 in the list.
+Samsung TVs from 2017 to 2020 cannot use TLS 1.3, and cannot reach a proxy
+that accepts only TLS 1.3.
 
 ### Over IPv6
 
