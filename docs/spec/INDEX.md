@@ -3,7 +3,7 @@
 
 # Requirement index
 
-719 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+720 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -622,6 +622,7 @@
 - **MOD-104** (AGREED) - The servers KROMA can import from are the importers the official <sub>[README.md](modules/README.md)</sub>
 - **MOD-105** (AGREED) - An importer reads the other server and describes what it found. The <sub>[README.md](modules/README.md)</sub>
 - **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
+- **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 
