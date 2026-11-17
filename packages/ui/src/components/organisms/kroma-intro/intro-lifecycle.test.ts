@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { EXIT_MS } from './constants';
 import { useIntroExit } from './use-intro-exit.hook';
 import { useIntroKeys } from './use-intro-keys.hook';
@@ -13,6 +13,16 @@ afterEach(cleanup);
 // document listeners.
 function press(key: string) {
   const e = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+  act(() => {
+    document.body.dispatchEvent(e);
+  });
+  return e;
+}
+
+function pressCode(key: string | undefined, keyCode: number) {
+  const e = new KeyboardEvent('keydown', { bubbles: true, cancelable: true });
+  Object.defineProperty(e, 'key', { value: key });
+  Object.defineProperty(e, 'keyCode', { value: keyCode });
   act(() => {
     document.body.dispatchEvent(e);
   });
@@ -107,6 +117,30 @@ describe('useIntroKeys', () => {
       expect(e.defaultPrevented).toBe(true);
     },
   );
+
+  it.each([
+    ['a Tizen remote Back', 'XF86Back', 10009],
+    ['a Back from an engine without KeyboardEvent.key', undefined, 10009],
+    ['an OK from an engine without KeyboardEvent.key', undefined, 13],
+  ])('skips on %s', (_name, key, keyCode) => {
+    const { exit } = keys();
+
+    const e = pressCode(key, keyCode);
+
+    expect(exit).toHaveBeenCalledTimes(1);
+    expect(e.defaultPrevented).toBe(true);
+  });
+
+  it('keeps a remote Back that skips from reaching the screen underneath', () => {
+    keys();
+    const screen = vi.fn();
+    document.addEventListener('keydown', screen);
+    onTestFinished(() => document.removeEventListener('keydown', screen));
+
+    pressCode('XF86Back', 10009);
+
+    expect(screen).not.toHaveBeenCalled();
+  });
 
   it('replays on r / R', () => {
     const { exit, replay, unblock } = keys();

@@ -2,7 +2,7 @@ import { color as tokenColor } from '#ui/core/color';
 import { CIRCLE_PERCENT as circleRadius } from '#ui/core/tokens';
 import { KROMA_KR_PATH, KROMA_LOCKUP, KROMA_MA_PATH } from '#ui/lib/lockup-paths';
 import { KROMA_WHEEL_COLORS, KROMA_WHEEL_SEGMENTS } from '#ui/lib/wheel-paths';
-import { EMBERS, GRAIN } from './constants';
+import { EMBERS, GRAIN, PINNED } from './constants';
 
 export interface IntroSceneProps {
   /** React key bump restarts every CSS animation from frame 0 on replay. */
@@ -51,7 +51,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
       key={runId}
       style={{
         position: 'absolute',
-        inset: 0,
+        ...PINNED,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -61,7 +61,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
       <div
         style={{
           position: 'absolute',
-          inset: 0,
+          ...PINNED,
           background: 'bg',
           zIndex: 40,
           pointerEvents: 'none',
@@ -219,7 +219,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
       <div
         style={{
           position: 'absolute',
-          inset: 0,
+          ...PINNED,
           pointerEvents: 'none',
           background: 'radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.62))',
         }}
@@ -228,7 +228,7 @@ export function IntroScene({ runId, lite, showTagline, tagline }: Readonly<Intro
         <div
           style={{
             position: 'absolute',
-            inset: 0,
+            ...PINNED,
             pointerEvents: 'none',
             opacity: 0.05,
             mixBlendMode: 'overlay',

@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { HIDDEN_RECHECKS, SAFETY_MS, SAFETY_SLACK_MS, VIDEO_SOURCES } from './constants';
+import { HIDDEN_RECHECKS, PINNED, SAFETY_MS, SAFETY_SLACK_MS, VIDEO_SOURCES } from './constants';
 import { CssIntro } from './css-intro.component';
 import { IntroShell } from './intro-shell.component';
 import { useIntroExit } from './use-intro-exit.hook';
@@ -288,7 +288,7 @@ function VideoIntro({
         poster={POSTER}
         style={{
           position: 'absolute',
-          inset: 0,
+          ...PINNED,
           width: '100%',
           height: '100%',
           objectFit: 'cover',
