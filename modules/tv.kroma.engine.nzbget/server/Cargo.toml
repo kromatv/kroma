@@ -1,0 +1,68 @@
+# This module is its own cargo workspace: it builds standalone, outside the
+# server tree, and is packed into a `.kmod` on its own. Package metadata and
+# dependency versions are explicit here rather than inherited.
+[workspace]
+
+[package]
+name = "kroma-nzbget"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.100"
+description = "KROMA NZBGet download engine: a module answering the download-client point over the NZBGet JSON-RPC."
+license = "AGPL-3.0-or-later"
+
+[[bin]]
+# This module's `.kmod` entrypoint: a point-provider-only module serving the
+# NZBGet engine over HTTP (see src/bin/module.rs).
+name = "kroma-module-nzbget"
+path = "src/bin/module.rs"
+
+[dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk" }
+# The out-of-process runtime + axum for the point's routes.
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime" }
+serde = { version = "1", features = ["derive"] }
+anyhow = "1"
+serde_json = "1"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+
+[dev-dependencies]
+# `oneshot`, to drive the point's routes without binding a port.
+tower = { version = "0.5", features = ["util"] }
+# The shared HostCtx double, for the routes' state.
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+
+# The profile `kroma build` builds this component with: release + `panic =
+# "abort"`, which drops the unwinding tables at no speed cost (opt-level stays
+# 3). Safe for a component: a panic traps its instance, and the host starts a
+# fresh one. Defined per module because a profile is only honoured at a
+# workspace root, and each module is its own workspace.
+# Mirrors server/Cargo.toml's [profile.release]. A profile is only honoured at a
+# workspace root, and this module is its own workspace, so `inherits = "release"`
+# below would otherwise pick up cargo's DEFAULT release: no LTO, 16 codegen
+# units, unstripped.
+[profile.release]
+opt-level = 3
+# ThinLTO, not fat: measured at 1116 vs 1117 ns/pair on the parse+score hot path
+# (i.e. no difference) for 3.4x faster links, because fat LTO + one codegen unit
+# is whole-program and single-threaded. It costs ~100 KB per compressed .kmod.
+lto = "thin"
+codegen-units = 16
+strip = true
+
+[profile.release-kmod]
+inherits = "release"
+panic = "abort"
+
+[profile.dev]
+# No debug info. On macOS any level keeps every codegen unit's object file in
+# debug/deps, and they piled up past 20 GB a day. A panic still names its
+# file:line; backtrace frames name the function only.
+debug = false

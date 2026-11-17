@@ -154,6 +154,22 @@ mod tests {
     }
 
     #[test]
+    fn a_release_that_reports_no_seeders_is_judged_on_everything_else() {
+        let usenet = Release {
+            protocol: "usenet".into(),
+            magnet: None,
+            link: Some("https://indexer.example/42.nzb".into()),
+            ..release("Show.S01E01.1080p.WEB-DL.x265-GRP", None)
+        };
+
+        let view = score_release(&usenet, &indexer(0), &episode_target(), &TestRules::new());
+
+        assert_eq!(view.protocol, "usenet");
+        assert!(view.rejected.is_none(), "{:?}", view.rejected);
+        assert!(view.grabbable);
+    }
+
+    #[test]
     fn a_release_the_profile_refuses_keeps_its_reason_instead_of_a_score() {
         let view = score_release(
             &release("Show.S01E01.1080p", Some(0)),

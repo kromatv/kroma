@@ -1,7 +1,6 @@
-//! `/download-clients` torrent engine management: the seeded
-//! embedded engine row plus external Transmission / qBittorrent connectors,
-//! with a live connection test. Gated on `settings.manage`; passwords are
-//! write-only.
+//! `/download-clients` management: the seeded embedded engine row plus every
+//! client an installed engine module answers for, with a live connection test.
+//! Gated on `settings.manage`; passwords and settings are write-only.
 
 use std::sync::Arc;
 
@@ -40,6 +39,7 @@ fn view_of(
     row: &DownloadClientRow,
     state: crate::EngineState,
     starting_for_ms: Option<i64>,
+    protocols: Vec<String>,
 ) -> DownloadClientView {
     DownloadClientView {
         state,
@@ -50,6 +50,13 @@ fn view_of(
         url: row.url.clone(),
         username: row.username.clone(),
         has_password: !row.password.is_empty(),
+        configured_settings: row
+            .settings
+            .iter()
+            .filter(|(_, value)| !value.is_empty())
+            .map(|(key, _)| key.clone())
+            .collect(),
+        protocols,
         enabled: row.enabled,
         priority: row.priority,
         created_at: row.created_at,
@@ -76,7 +83,7 @@ pub async fn list<S: HostStorage + Clone + Send + Sync + 'static>(
                 let starting = (state == crate::EngineState::Starting)
                     .then(|| manager.starting_for())
                     .flatten();
-                view_of(row, state, starting)
+                view_of(row, state, starting, manager.protocols_of(row))
             })
             .collect();
         Ok(DownloadClientsView {
@@ -95,10 +102,21 @@ pub async fn create<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Result<Response, Response> {
     state.require(&user, Permission::SettingsManage)?;
     let kind = body.kind.as_deref().unwrap_or_default().trim().to_string();
-    if !matches!(kind.as_str(), "transmission" | "qbittorrent") {
+    let probe = (state.clone(), kind.clone());
+    let answered = blocking(move || {
+        let (host, kind) = probe;
+        Ok(kroma_module_sdk::host::pinned_resolver(
+            &host,
+            crate::engine::remote::DOWNLOAD_CLIENT,
+            Some(&kind),
+        )
+        .is_some())
+    })
+    .await?;
+    if kind == crate::engine::EMBEDDED_KIND || !answered {
         return Err(json_error(
             StatusCode::BAD_REQUEST,
-            "kind must be transmission or qbittorrent",
+            &format!("no installed engine module answers for the {kind:?} client"),
         ));
     }
     let url = body
@@ -123,13 +141,21 @@ pub async fn create<S: HostStorage + Clone + Send + Sync + 'static>(
         url,
         username: body.username.unwrap_or_default().trim().to_string(),
         password: body.password.unwrap_or_default(),
+        settings: body
+            .settings
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|(_, value)| !value.is_empty())
+            .collect(),
         enabled: body.enabled.unwrap_or(true),
         priority: body.priority.unwrap_or(0),
         created_at: now_ms(),
     };
-    let view = view_of(&row, crate::EngineState::Unknown, None);
-    query(state.store(), move |pool| {
-        db::insert_download_client(&pool, &row)
+    let manager = dm(&state);
+    let view = query(state.store(), move |pool| {
+        db::insert_download_client(&pool, &row)?;
+        let protocols = manager.protocols_of(&row);
+        Ok(view_of(&row, crate::EngineState::Unknown, None, protocols))
     })
     .await?;
     Ok(Json(view).into_response())
@@ -146,19 +172,20 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
     state.require(&user, Permission::SettingsManage)?;
     let id2 = id.clone();
     let updated = query(state.store(), move |pool| {
-        db::update_download_client(
-            &pool,
-            &id2,
-            body.name
+        let changes = db::ClientChanges {
+            name: body
+                .name
                 .as_deref()
                 .map(str::trim)
                 .filter(|s| !s.is_empty()),
-            body.url.as_deref().map(str::trim).filter(|s| !s.is_empty()),
-            body.username.as_deref().map(str::trim),
-            body.password.as_deref().filter(|s| !s.is_empty()),
-            body.enabled,
-            body.priority,
-        )
+            url: body.url.as_deref().map(str::trim).filter(|s| !s.is_empty()),
+            username: body.username.as_deref().map(str::trim),
+            password: body.password.as_deref().filter(|s| !s.is_empty()),
+            settings: body.settings.as_ref(),
+            enabled: body.enabled,
+            priority: body.priority,
+        };
+        db::update_download_client(&pool, &id2, &changes)
     })
     .await?;
     if !updated {
@@ -184,13 +211,17 @@ pub async fn update<S: HostStorage + Clone + Send + Sync + 'static>(
         }
     }
     let id3 = id.clone();
-    let row = query(state.store(), move |pool| {
+    let manager = dm(&state);
+    let view = query(state.store(), move |pool| {
         let conn = pool.get()?;
-        Ok(db::get_download_client(&conn, &id3)?)
+        Ok(db::get_download_client(&conn, &id3)?.map(|row| {
+            let protocols = manager.protocols_of(&row);
+            view_of(&row, crate::EngineState::Unknown, None, protocols)
+        }))
     })
     .await?;
-    match row {
-        Some(r) => Ok(Json(view_of(&r, crate::EngineState::Unknown, None)).into_response()),
+    match view {
+        Some(view) => Ok(Json(view).into_response()),
         None => Err(state.lerr(&user, StatusCode::NOT_FOUND, "error.clientNotFound")),
     }
 }

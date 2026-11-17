@@ -8,6 +8,7 @@ import {
   RowStatusCell,
   RowTitleCell,
 } from './download-cells.component';
+import { joinsSwarm } from './protocol';
 import type { DownloadView } from './schemas';
 
 /** Live per-download overlay fed by `download.progress` WS frames. */
@@ -163,7 +164,7 @@ function RowActionsMenu({
   const pausable = active;
   const resumable = status === 'paused';
   // Only meaningful while the torrent is live in the engine.
-  const canAskPeers = active || status === 'seeding';
+  const canAskPeers = joinsSwarm(dl) && (active || status === 'seeding');
   const openInKroma = useOpenInKroma(dl);
   const openTracker = openTrackerPage(dl.detailsUrl);
 

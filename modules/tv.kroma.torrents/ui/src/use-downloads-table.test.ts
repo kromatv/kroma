@@ -40,6 +40,7 @@ function download(id: string): DownloadView {
     matchSource: null,
     lifetimeDownloadedBytes: 0,
     lifetimeUploadedBytes: 0,
+    protocol: 'torrent',
   };
 }
 

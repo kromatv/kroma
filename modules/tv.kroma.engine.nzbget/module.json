@@ -1,0 +1,51 @@
+{
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
+  "id": "tv.kroma.engine.nzbget",
+  "name": "NZBGet engine",
+  "version": "0.1.0",
+  "description": "NZBGet JSON-RPC as a Usenet download engine for the Downloads module. Toggle it to add/remove NZBGet from the download-client picker.",
+  "engines": {
+    "server": ">=0.1.39"
+  },
+  "dependencies": {
+    "tv.kroma.torrents": ">=0.7.0"
+  },
+  "contributes": [
+    {
+      "point": "tv.kroma.torrents/client",
+      "id": "nzbget",
+      "label": "NZBGet",
+      "fields": [
+        {
+          "key": "url",
+          "label": "field.url",
+          "type": "string",
+          "placeholder": "http://nas:6789",
+          "required": true
+        },
+        {
+          "key": "username",
+          "label": "field.username",
+          "type": "string"
+        },
+        {
+          "key": "password",
+          "label": "field.password",
+          "type": "string",
+          "secret": true
+        }
+      ]
+    }
+  ],
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "download-client",
+          "to": ["public", "lan"]
+        }
+      ]
+    }
+  }
+}

@@ -217,6 +217,17 @@ mod tests {
     }
 
     #[test]
+    fn a_save_path_that_is_the_file_itself_is_that_one_file() {
+        let scratch = kroma_module_sdk::testing::temp_dir("content-one-file");
+        let file = scratch.path().join("Kroma.Test.2026.1080p.WEB-DL.x264-GRP.mkv");
+        write(&file, "xx");
+
+        let content = Content::under(&file, &[]);
+
+        assert_eq!(content.videos(), vec![file]);
+    }
+
+    #[test]
     fn a_download_folder_removed_from_a_folder_still_there_is_gone() {
         let downloads = kroma_module_sdk::testing::temp_dir("content-gone");
 

@@ -21,8 +21,10 @@ These are the acceptance tests for the whole design. A module can:
    one being installed when the other was built.
 5. **Define an extension point of its own, and be extended by modules that did
    not exist when it shipped.** The download manager defines
-   `tv.kroma.torrents/client`; qBittorrent and Transmission answer it. Neither
-   the core nor the download manager was edited to add the second one.
+   `tv.kroma.torrents/client`; qBittorrent, Transmission, SABnzbd and NZBGet
+   answer it. Neither the core nor the download manager was edited to add the
+   second one, and a client says which protocols it downloads through the point
+   itself (RFC 721).
 6. Ship, version and release on its own tag, with no core release.
 
 And the constraint that shapes everything: **the core knows the mechanism and
@@ -126,7 +128,7 @@ what resolution hands it or names the instance it wants:
 Resolution therefore returns a list, always. `Supervisor::port_endpoint`
 returning the first manifest that matched was silently wrong the moment two
 modules answered the same name, which is already true of
-`tv.kroma.torrents/client` (three answers) and `tv.kroma.indexer/engine` (two).
+`tv.kroma.torrents/client` (five answers) and `tv.kroma.indexer/engine` (two).
 
 ### Versions
 

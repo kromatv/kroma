@@ -1,13 +1,15 @@
 import { useAcquisitionApi } from '@kromatv/module-acquisition/api';
-import type { TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
+import type { ManualAddBody, TorrentAnalysis } from '@kromatv/module-acquisition/schemas';
 import { apiErrorText, useAsyncAction, useT } from '@kromatv/module-sdk';
-import { Box, Button, Callout, Dialog, Row, Stepper, Text, useStepper } from '@kromatv/ui/kit';
+import { Button, Callout, Dialog, Row, Stepper, useStepper } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { detect } from './manual-grab-content';
+import { FilesPanel } from './manual-grab-files.component';
 import { useIndexerSearch } from './manual-grab-search';
-import { SourceStep, type TorrentSource } from './manual-grab-source.component';
+import { type ReleaseSource, SourceStep } from './manual-grab-source.component';
 import { type GrabTarget, type Kind, TargetStep } from './manual-grab-target.component';
-import { TorrentContents } from './torrent-contents.component';
+import { joinsSwarm } from './protocol';
+import { useClientProtocols } from './use-client-protocols.hook';
 import { useEpisodeNames } from './use-episode-names.hook';
 
 const FLOW = { gap: 22 } as const;
@@ -25,7 +27,7 @@ const EMPTY_TARGET: GrabTarget = {
   episode: '',
 };
 
-function targetFrom(source: TorrentSource): GrabTarget {
+function targetFrom(source: ReleaseSource): GrabTarget {
   return {
     kind: (source.kind as Kind) || 'movie',
     tmdbId: null,
@@ -33,6 +35,30 @@ function targetFrom(source: TorrentSource): GrabTarget {
     year: source.year ? String(source.year) : '',
     season: source.season ? String(source.season) : '',
     episode: source.episodes?.[0] ? String(source.episodes[0]) : '',
+  };
+}
+
+function numberOf(text: string): number | null {
+  return text ? Number.parseInt(text, 10) : null;
+}
+
+function addBody(
+  source: ReleaseSource,
+  target: GrabTarget,
+  onlyFiles: number[] | null,
+): ManualAddBody {
+  return {
+    magnetOrUrl: source.magnet,
+    protocol: source.protocol,
+    releaseTitle: source.releaseTitle || null,
+    kind: target.kind,
+    title: target.title.trim() || null,
+    year: numberOf(target.year),
+    season: target.kind === 'movie' ? null : numberOf(target.season),
+    episode: target.kind === 'episode' ? numberOf(target.episode) : null,
+    tmdbId: target.tmdbId,
+    onlyFiles,
+    detailsUrl: source.detailsUrl,
   };
 }
 
@@ -45,7 +71,7 @@ export function ManualGrabModal({
   const { busy, error, run } = useAsyncAction();
 
   const [step, setStep] = useState<Step>('source');
-  const [source, setSource] = useState<TorrentSource | null>(null);
+  const [source, setSource] = useState<ReleaseSource | null>(null);
   const [target, setTarget] = useState<GrabTarget>(EMPTY_TARGET);
 
   const [analyzing, setAnalyzing] = useState(false);
@@ -53,20 +79,26 @@ export function ManualGrabModal({
   const [analyzeErr, setAnalyzeErr] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
+  const protocols = useClientProtocols();
+  const hasFiles = source === null || joinsSwarm(source);
   const search = useIndexerSearch(target.kind, target.season, target.episode);
   const episodeNames = useEpisodeNames(
     target.tmdbId,
     target.season ? Number.parseInt(target.season, 10) : null,
   );
 
-  const takeSource = (picked: TorrentSource) => {
+  const takeSource = (picked: ReleaseSource) => {
     setSource(picked);
     setTarget((current) => {
       const seeded = targetFrom(picked);
       return current.tmdbId ? { ...seeded, ...current } : seeded;
     });
     setStep('target');
-    analyze(picked.magnet);
+    setAnalysis(null);
+    setAnalyzeErr(null);
+    if (joinsSwarm(picked)) {
+      analyze(picked.magnet);
+    }
   };
 
   const analyze = (magnet: string) => {
@@ -107,21 +139,7 @@ export function ManualGrabModal({
           analysis && selected.size > 0 && selected.size < videoFiles.length
             ? [...selected].sort((a, b) => a - b)
             : null;
-        await acquisition.add({
-          magnetOrUrl: source.magnet,
-          kind: target.kind,
-          title: target.title.trim() || null,
-          year: target.year ? Number.parseInt(target.year, 10) : null,
-          season:
-            target.kind !== 'movie' && target.season ? Number.parseInt(target.season, 10) : null,
-          episode:
-            target.kind === 'episode' && target.episode
-              ? Number.parseInt(target.episode, 10)
-              : null,
-          tmdbId: target.tmdbId,
-          onlyFiles,
-          detailsUrl: source.detailsUrl,
-        });
+        await acquisition.add(addBody(source, target, onlyFiles));
         onAdded();
         onClose();
       },
@@ -143,13 +161,15 @@ export function ManualGrabModal({
           <Stepper.Item value="target" icon="movie" disabled={source === null}>
             <Stepper.Label>{t('manual.step.target')}</Stepper.Label>
           </Stepper.Item>
-          <Stepper.Item value="files" icon="file-text" disabled={source === null}>
-            <Stepper.Label>{t('manual.step.files')}</Stepper.Label>
-          </Stepper.Item>
+          {hasFiles ? (
+            <Stepper.Item value="files" icon="file-text" disabled={source === null}>
+              <Stepper.Label>{t('manual.step.files')}</Stepper.Label>
+            </Stepper.Item>
+          ) : null}
         </Stepper.List>
 
         <Stepper.Panel value="source">
-          <SourceStep search={search} onPicked={takeSource} />
+          <SourceStep search={search} protocols={protocols} onPicked={takeSource} />
         </Stepper.Panel>
 
         <Stepper.Panel value="target">
@@ -166,38 +186,18 @@ export function ManualGrabModal({
           ) : null}
         </Stepper.Panel>
 
-        <Stepper.Panel value="files">
-          {source ? (
-            <Box gap={12}>
-              {analyzeErr ? (
-                <Callout.Root size="sm" tone="danger" icon="alert-triangle">
-                  <Callout.Title>{analyzeErr}</Callout.Title>
-                  <Callout.Actions>
-                    <Button
-                      variant="glass"
-                      size="sm"
-                      label={t('manual.analyze')}
-                      onPress={() => analyze(source.magnet)}
-                      loading={analyzing}
-                    />
-                  </Callout.Actions>
-                </Callout.Root>
-              ) : null}
-              {analyzing ? (
-                <Text variant="meta" color="text/45">
-                  {t('manual.analyzing')}
-                </Text>
-              ) : null}
-              {analysis ? (
-                <TorrentContents
-                  analysis={analysis}
-                  episodes={episodeNames}
-                  selection={{ selected, onSelectedChange: setSelected }}
-                />
-              ) : null}
-            </Box>
-          ) : null}
-        </Stepper.Panel>
+        {hasFiles ? (
+          <Stepper.Panel value="files">
+            {source ? (
+              <FilesPanel
+                state={{ analysis, analyzing, analyzeErr }}
+                onRetry={() => analyze(source.magnet)}
+                episodes={episodeNames}
+                selection={{ selected, onSelectedChange: setSelected }}
+              />
+            ) : null}
+          </Stepper.Panel>
+        ) : null}
 
         {error ? (
           <Callout.Root size="sm" tone="danger" icon="alert-triangle">

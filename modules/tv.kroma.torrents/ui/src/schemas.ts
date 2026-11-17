@@ -19,6 +19,8 @@ export const DownloadClientView = z.object({
   url: z.string(),
   username: z.string(),
   hasPassword: z.boolean(),
+  configuredSettings: z.array(z.string()).catch([]),
+  protocols: z.array(z.string()).catch([]),
   enabled: z.boolean(),
   priority: z.number(),
   createdAt: z.number(),
@@ -49,6 +51,7 @@ export const SaveDownloadClientBody = z.object({
   url: z.string().nullable(),
   username: z.string().nullable(),
   password: z.string().nullable(),
+  settings: z.record(z.string(), z.string()).nullable(),
   enabled: z.boolean().nullable(),
   priority: z.number().nullable(),
 });
@@ -97,6 +100,7 @@ export const DownloadView = z.object({
   matchSource: MatchSource.nullable(),
   lifetimeDownloadedBytes: z.number(),
   lifetimeUploadedBytes: z.number(),
+  protocol: z.string().catch('torrent'),
 });
 export type DownloadView = z.infer<typeof DownloadView>;
 

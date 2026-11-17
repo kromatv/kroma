@@ -67,3 +67,34 @@ fn a_save_path_only_counts_once_the_engine_reports_one() {
     assert!(!progress_moved(&row, &silent, "downloading"));
     assert!(progress_moved(&row, &moved, "downloading"));
 }
+
+#[test]
+fn a_transfer_the_client_is_still_unpacking_is_not_finished() {
+    let unpacking = status(TorrentState::Processing, 1.0);
+
+    assert!(!is_finished("usenet", &unpacking));
+    assert_eq!(ledger_status(&unpacking, false), "downloading");
+}
+
+#[test]
+fn a_download_the_client_gave_up_on_is_failed_not_finished() {
+    let mut given_up = status(TorrentState::Failed, 0.4);
+    given_up.error = Some("missing articles".into());
+
+    assert!(!is_finished("usenet", &given_up));
+    assert_eq!(ledger_status(&given_up, false), "failed");
+}
+
+#[test]
+fn a_torrent_at_full_progress_is_finished_whatever_it_calls_itself() {
+    assert!(is_finished("torrent", &status(TorrentState::Downloading, 1.0)));
+    assert!(is_finished("", &status(TorrentState::Downloading, 1.0)));
+    assert!(is_finished("torrent", &status(TorrentState::Seeding, 0.2)));
+    assert!(!is_finished("torrent", &status(TorrentState::Downloading, 0.99)));
+}
+
+#[test]
+fn any_other_protocol_is_finished_only_when_its_client_says_so() {
+    assert!(!is_finished("usenet", &status(TorrentState::Downloading, 1.0)));
+    assert!(is_finished("usenet", &status(TorrentState::Completed, 1.0)));
+}

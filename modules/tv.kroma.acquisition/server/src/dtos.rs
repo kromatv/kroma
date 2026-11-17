@@ -71,6 +71,8 @@ pub struct FormatScoreView {
 pub struct ScoredReleaseView {
     pub title: String,
     pub guid: String,
+    #[serde(default)]
+    pub protocol: String,
     pub indexer_id: String,
     pub indexer_name: String,
     pub size_bytes: Option<u64>,
@@ -127,6 +129,7 @@ pub struct InteractiveSearchView {
 pub struct ManualReleaseView {
     pub title: String,
     pub guid: String,
+    pub protocol: String,
     pub indexer_id: String,
     pub indexer_name: String,
     pub download_url: Option<String>,
@@ -174,6 +177,10 @@ pub struct ManualSearchBody {
 #[serde(rename_all = "camelCase")]
 pub struct ManualAddBody {
     pub magnet_or_url: String,
+    #[serde(default)]
+    pub protocol: Option<String>,
+    #[serde(default)]
+    pub release_title: Option<String>,
     pub kind: String,
     pub title: Option<String>,
     pub year: Option<u32>,

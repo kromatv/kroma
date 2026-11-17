@@ -2,7 +2,7 @@
   "admin.acqAutoApprove": "Auto-approve every request",
   "admin.acqAutoApproveHint": "Otherwise only requests.auto accounts skip approval.",
   "admin.acqDeleteAfterImport": "Delete after import",
-  "admin.acqDeleteAfterImportHint": "Removes the torrent and stops seeding. The library copy stays.",
+  "admin.acqDeleteAfterImportHint": "Removes the download from its client and deletes its files, which also stops seeding a torrent. The library copy stays.",
   "admin.acqEnabled": "Background acquisition",
   "admin.acqEnabledHint": "Searches on its own for what is missing, then for better versions.",
   "admin.acqEngine": "Embedded engine",

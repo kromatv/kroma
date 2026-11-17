@@ -124,7 +124,7 @@
     "acq.minFormatScore": "05d31d23 c2f8f373",
     "acq.minFormatScoreHint": "edc99b9a 2e4ee3dd",
     "acq.minSeeders": "2c1ad589 596425fd",
-    "acq.minSeedersHint": "e1ff1414 85345634",
+    "acq.minSeedersHint": "9f180a54 af8726bd",
     "acq.minUpgradeIncrement": "34ee5fa9 8c99181d",
     "acq.minUpgradeIncrementHint": "47cce817 d2c35fe8",
     "acq.modeExcluded": "454963cf 859fac4e",
@@ -148,6 +148,8 @@
     "acq.preferredNoFormats": "d8d7bc34 bf53de86",
     "acq.preferredNoFormatsHint": "78ef5d14 9342b0c4",
     "acq.preferredPropose": "41bb7224 a3ad743c",
+    "acq.preferredProtocol": "915c415e b81947fd",
+    "acq.preferredProtocolHint": "af3b9061 1801b2a7",
     "acq.preferredRecompute": "bc6d1219 8adc39e6",
     "acq.profileActionsOf": "94f3eb36 030edbd8",
     "acq.profileChanged": "47d5f317 c04cc767",
@@ -167,6 +169,7 @@
     "acq.profileRules": "690321f3 d1afd644",
     "acq.profileSaved": "3e519ce4 9b2bad83",
     "acq.profileSections": "9a83876f 93d76375",
+    "acq.protocolAny": "fae9e9ce 6bee8479",
     "acq.publishedOn": "9727f51c 13793a95",
     "acq.qualityUnknown": "c56a2905 28bc66c6",
     "acq.rangeBetween": "99fe7f36 b28543e2",
@@ -283,6 +286,8 @@
     "acq.verdict.reached": "0b50f1ab 4ac7d398",
     "acq.verdict.upgrade": "85e660e3 e14c10c8",
     "downloads.viewOnTracker": "d806b270 eb8843d4",
-    "nav.acquisition": "acbccfa7 acbccfa7"
+    "nav.acquisition": "acbccfa7 acbccfa7",
+    "protocol.torrent": "19d75f68 19d75f68",
+    "protocol.usenet": "db918956 db918956"
   }
 }

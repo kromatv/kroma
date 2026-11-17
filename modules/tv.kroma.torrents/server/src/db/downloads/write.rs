@@ -12,8 +12,8 @@ pub fn insert_download(pool: &Pool, d: &DownloadRow) -> Result<()> {
         "INSERT INTO downloads (id, client_id, client_ref, request_id, kind, tmdb_id, title, year, \
             season, episodes, release_title, indexer_id, info_hash, magnet_or_url, size_bytes, \
             score, score_breakdown, status, progress, save_path, grabbed_at, details_url, only_files, \
-            upgrade, match_source) \
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)",
+            upgrade, match_source, protocol) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
         params![
             d.id,
             d.client_id,
@@ -39,7 +39,8 @@ pub fn insert_download(pool: &Pool, d: &DownloadRow) -> Result<()> {
             d.details_url,
             d.only_files.as_ref().map(|f| serde_json::to_string(f).unwrap_or_default()),
             d.upgrade,
-            d.match_source.map(MatchSource::as_str)
+            d.match_source.map(MatchSource::as_str),
+            crate::engine::protocol_or_torrent(&d.protocol)
         ],
     )?;
     Ok(())

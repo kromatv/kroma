@@ -14,6 +14,12 @@ use serde::{Deserialize, Serialize};
 pub const CAT_MOVIES: u32 = 2000;
 pub const CAT_TV: u32 = 5000;
 
+/// The protocol of a release a magnet or a `.torrent` downloads.
+pub const TORRENT: &str = "torrent";
+
+/// The protocol of a release an `.nzb` downloads.
+pub const USENET: &str = "usenet";
+
 /// A configured Torznab endpoint, as a consumer sends it with each call.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -47,7 +53,9 @@ pub enum Query {
     },
 }
 
-/// A normalized Torznab result item.
+/// A normalized Torznab or Newznab result item. `protocol` is [`TORRENT`] or
+/// [`USENET`], read off the item; a torrent always reports `seeders`, 0 when the
+/// tracker does not say, and a Usenet release never does.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Release {
@@ -65,6 +73,8 @@ pub struct Release {
     pub details_url: Option<String>,
     pub download_volume_factor: Option<f64>,
     pub upload_volume_factor: Option<f64>,
+    pub protocol: String,
+    pub grabs: Option<u32>,
 }
 
 /// What an indexer advertises via `t=caps`: which query parameters its backing

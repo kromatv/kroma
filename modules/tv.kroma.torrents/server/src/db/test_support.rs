@@ -1,18 +1,24 @@
-use rusqlite::params;
+use rusqlite::{params, Connection};
 
 use kroma_module_sdk::db::testing::TempPool;
 
-use super::{apply_migrations, DownloadClientRow, DownloadRow, Pool, MIGRATIONS};
+use super::{apply_migrations, DownloadClientRow, DownloadRow, Pool, Run, MIGRATIONS, STEPS};
 
 // A fresh temp DB with the core schema (via `temp_pool`, so the `requests`
 // table the downloads FK points at exists) plus this module's own tables.
 pub(crate) fn test_db() -> TempPool {
     let pool = kroma_module_sdk::db::testing::temp_pool("torrents-test");
-    {
-        let conn = pool.get().unwrap();
-        apply_migrations(&conn, MIGRATIONS).unwrap();
-    }
+    own_schema(&pool.get().unwrap());
     pool
+}
+
+pub(crate) fn own_schema(conn: &Connection) {
+    apply_migrations(conn, MIGRATIONS).unwrap();
+    for step in STEPS {
+        if let Run::Sql(sql) = step.run {
+            apply_migrations(conn, sql).unwrap();
+        }
+    }
 }
 
 pub(crate) fn client(id: &str, priority: i32, enabled: bool, created_at: i64) -> DownloadClientRow {
@@ -23,6 +29,7 @@ pub(crate) fn client(id: &str, priority: i32, enabled: bool, created_at: i64) ->
         url: "http://host".into(),
         username: "user".into(),
         password: "secret".into(),
+        settings: Default::default(),
         enabled,
         priority,
         created_at,
@@ -62,6 +69,7 @@ pub(crate) fn download(id: &str, status: &str, grabbed_at: i64) -> DownloadRow {
         lifetime_downloaded_bytes: 0,
         lifetime_uploaded_bytes: 0,
         match_source: None,
+        protocol: "torrent".into(),
     }
 }
 

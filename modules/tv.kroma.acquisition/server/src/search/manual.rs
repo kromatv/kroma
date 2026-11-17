@@ -95,6 +95,7 @@ fn to_view(
     ManualReleaseView {
         title: r.title.clone(),
         guid: r.guid.clone(),
+        protocol: r.protocol.clone(),
         indexer_id: indexer_id.to_string(),
         indexer_name: indexer_name.to_string(),
         download_url: r.magnet.clone().or_else(|| r.link.clone()),

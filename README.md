@@ -101,7 +101,7 @@ independently of the server.
 | --- | --- |
 | Indexers | a native engine running the community-maintained tracker definitions directly |
 | Torznab | external Torznab and Newznab indexers |
-| Torrent downloads | an embedded torrent engine, or an external download client you already run |
+| Downloads | an embedded torrent engine, or an external client you already run: qBittorrent, Transmission, SABnzbd or NZBGet |
 | Acquisition | request a title, score the releases, grab the best one, import and rename it |
 | VPN | a managed WireGuard bridge with a live seal test and a kill switch |
 | Embeddings | the rows picked for you, themed rows and search by meaning |

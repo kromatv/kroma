@@ -21,6 +21,7 @@ import {
   Tooltip,
   useStyles,
 } from '@kromatv/ui/kit';
+import { joinsSwarm } from './protocol';
 import type { DownloadView } from './schemas';
 
 const POSTER_WIDTH = 34;
@@ -164,6 +165,15 @@ export function RowSpeedCell({
 
   const t = useT();
   const fmt = useFormat();
+  if (!joinsSwarm(dl)) {
+    return active ? (
+      <Rate icon="arrow-down" tone="success" value={`${fmt.bytes(stat.downBps)}/s`} />
+    ) : (
+      <Text variant="meta" color="text/25">
+        -
+      </Text>
+    );
+  }
   if (!active) {
     return dl.lifetimeUploadedBytes > 0 ? (
       <Box gap={3}>

@@ -143,13 +143,13 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .map(str::to_string);
-    let release_title = magnet_display_name(&magnet)
-        .or_else(|| title.clone())
-        .unwrap_or_else(|| "manual".to_string());
+    let release_title =
+        release_title_of(body.release_title.as_deref(), &magnet, title.as_deref());
     let episodes = body.episode.map(|e| vec![e]);
     let only_files = body.only_files.filter(|f| !f.is_empty());
     let spec = crate::peers::downloads::GrabSpec {
         magnet_or_url: magnet,
+        protocol: body.protocol.unwrap_or_default(),
         kind: body.kind,
         tmdb_id: body.tmdb_id.unwrap_or(0),
         title,
@@ -177,6 +177,16 @@ pub async fn manual_add<S: HostStorage + Clone + Send + Sync + 'static>(
     }
 }
 
+fn release_title_of(named: Option<&str>, magnet: &str, title: Option<&str>) -> String {
+    named
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(str::to_string)
+        .or_else(|| magnet_display_name(magnet))
+        .or_else(|| title.map(str::to_string))
+        .unwrap_or_else(|| "manual".to_string())
+}
+
 fn magnet_display_name(magnet: &str) -> Option<String> {
     let idx = magnet.find("dn=")?;
     let raw: String = magnet[idx + 3..]
@@ -186,4 +196,43 @@ fn magnet_display_name(magnet: &str) -> Option<String> {
     let decoded = raw.replace('+', " ").replace("%20", " ");
     let trimmed = decoded.trim();
     (!trimmed.is_empty()).then(|| trimmed.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_release_name_sent_with_the_link_names_the_download() {
+        let name = release_title_of(
+            Some("Kroma.Test.2026.1080p.WEB-DL.x264-GRP"),
+            "https://indexer.example/42.nzb",
+            Some("Kroma Test"),
+        );
+
+        assert_eq!(name, "Kroma.Test.2026.1080p.WEB-DL.x264-GRP");
+    }
+
+    #[test]
+    fn a_magnet_names_the_download_when_nothing_else_does() {
+        let name = release_title_of(
+            None,
+            "magnet:?xt=urn:btih:AB&dn=The.Matrix.1999",
+            Some("The Matrix"),
+        );
+
+        assert_eq!(name, "The.Matrix.1999");
+    }
+
+    #[test]
+    fn a_link_with_no_name_falls_back_to_the_title() {
+        assert_eq!(
+            release_title_of(Some("  "), "https://indexer.example/42.nzb", Some("Kroma Test")),
+            "Kroma Test"
+        );
+        assert_eq!(
+            release_title_of(None, "https://indexer.example/42.nzb", None),
+            "manual"
+        );
+    }
 }

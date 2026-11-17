@@ -30,6 +30,7 @@ pub struct Aim<'a> {
     pub files: &'a [JudgedFile],
     pub blocked: &'a [Blocked],
     pub accept: fn(Verdict) -> bool,
+    pub held: &'a [String],
 }
 
 pub fn best_release<S: HostStorage>(
@@ -74,7 +75,7 @@ fn consider(
         }
         return;
     };
-    if blocked(aim, release) {
+    if blocked(aim, release) || aim.held.contains(&release.protocol) {
         return;
     }
     let verdict = verdict_for(
@@ -150,6 +151,14 @@ mod tests {
     }
 
     async fn sweep(fakes: Fakes, blocked: Vec<Blocked>) -> (Outcome, Vec<String>) {
+        sweep_holding(fakes, blocked, Vec::new()).await
+    }
+
+    async fn sweep_holding(
+        fakes: Fakes,
+        blocked: Vec<Blocked>,
+        held: Vec<String>,
+    ) -> (Outcome, Vec<String>) {
         let host = host(&fakes).await;
         blocking(move || {
             let rules = TestRules::new();
@@ -162,6 +171,7 @@ mod tests {
                 files: &[],
                 blocked: &blocked,
                 accept: fills,
+                held: &held,
             };
             let mut errors = Vec::new();
             let out = best_release(&host, &[indexer(1)], &aim, &mut errors);
@@ -186,6 +196,17 @@ mod tests {
         let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
 
         let (out, _) = sweep(fakes, vec![blocked(DUNE_1080)]).await;
+
+        assert_eq!(out.best.unwrap().view.title, DUNE_720);
+    }
+
+    #[tokio::test]
+    async fn a_release_the_kill_switch_holds_gives_way_to_one_it_does_not() {
+        let mut fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
+        fakes.releases[0]["protocol"] = "usenet".into();
+        fakes.releases[1]["protocol"] = "torrent".into();
+
+        let (out, _) = sweep_holding(fakes, Vec::new(), vec!["torrent".into()]).await;
 
         assert_eq!(out.best.unwrap().view.title, DUNE_720);
     }

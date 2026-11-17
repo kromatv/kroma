@@ -128,6 +128,7 @@ fn upgrade_title<S: HostStorage>(
             files: &files,
             blocked: &blocked,
             accept: upgrades,
+            held: pass.held,
         };
         let Some(candidate) = best_release(state, pass.indexers, &aim, &mut summary.errors).best
         else {
@@ -200,6 +201,7 @@ mod tests {
                 log: &log,
                 cancelled: &stop,
                 searching: &|| {},
+                held: &[],
             };
             upgrade_pass(&pass, &mut summary, sweep).unwrap();
             summary

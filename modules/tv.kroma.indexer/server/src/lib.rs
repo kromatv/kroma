@@ -39,6 +39,10 @@ pub use module::MODULE;
 
 pub const MODULE_ID: &str = "tv.kroma.indexer";
 
+/// The protocol of a release a magnet or a `.torrent` downloads, and of any
+/// release that names none.
+pub const TORRENT: &str = "torrent";
+
 /// The Indexers sub-module: exposes the native-engine admin routes over the
 /// HostCtx seam, and the daily job that keeps the definition catalog current.
 pub struct IndexersModule;
@@ -153,7 +157,8 @@ impl Query {
 }
 
 /// A normalized release: the fields every engine reports plus the richer
-/// attributes Cardigann exposes (categories, freeleech factors).
+/// attributes Cardigann exposes (categories, freeleech factors). `protocol` is
+/// the name the engine gave the way it downloads, carried and never read here.
 ///
 /// Tolerant on purpose. It carries answers from the `torznab` point, whose
 /// provider is a separately released module that knows nothing of the extra
@@ -163,6 +168,7 @@ impl Query {
 pub struct Release {
     pub title: String,
     pub guid: String,
+    pub protocol: String,
     pub link: Option<String>,
     pub magnet: Option<String>,
     pub info_hash: Option<String>,
@@ -177,6 +183,21 @@ pub struct Release {
     pub categories: Vec<u32>,
     pub download_volume_factor: Option<f64>,
     pub upload_volume_factor: Option<f64>,
+}
+
+impl Release {
+    /// The release as a consumer reads it: one that names no protocol is a
+    /// torrent, the only kind before releases named theirs, and a torrent always
+    /// reports its seeders, 0 when the tracker does not say.
+    pub fn settled(mut self) -> Self {
+        if self.protocol.is_empty() {
+            self.protocol = TORRENT.to_string();
+        }
+        if self.protocol == TORRENT {
+            self.seeders.get_or_insert(0);
+        }
+        self
+    }
 }
 
 /// What an indexer advertises it can do: derived from `caps.modes` for a

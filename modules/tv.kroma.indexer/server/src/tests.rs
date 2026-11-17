@@ -145,3 +145,30 @@ fn the_module_hands_the_host_every_schema_step() {
     assert_eq!(steps, declared);
     assert!(steps.contains(&"indexer_pace"));
 }
+
+#[test]
+fn a_release_that_names_no_protocol_is_a_torrent_with_its_seeders_counted() {
+    let release = Release {
+        title: "R".into(),
+        ..Default::default()
+    };
+
+    let settled = release.settled();
+
+    assert_eq!(settled.protocol, TORRENT);
+    assert_eq!(settled.seeders, Some(0));
+}
+
+#[test]
+fn a_release_of_another_protocol_keeps_its_name_and_reports_no_seeders() {
+    let release = Release {
+        title: "R".into(),
+        protocol: "usenet".into(),
+        ..Default::default()
+    };
+
+    let settled = release.settled();
+
+    assert_eq!(settled.protocol, "usenet");
+    assert_eq!(settled.seeders, None);
+}

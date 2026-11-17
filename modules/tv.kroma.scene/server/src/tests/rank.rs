@@ -134,6 +134,23 @@ fn many_seeders_outrank_a_few() {
 }
 
 #[test]
+fn seeders_do_not_rank_a_release_that_reports_none_against_one_that_does() {
+    let f = fixture();
+    let swarmless = Candidate {
+        seeders: None,
+        ..cand(6, 0)
+    };
+
+    let order = better(
+        &f,
+        ("Movie.2020.1080p.WEB-DL.x265", swarmless),
+        ("Movie.2020.1080p.WEB-DL.x265", cand(6, 300)),
+    );
+
+    assert_eq!(order, Ordering::Equal);
+}
+
+#[test]
 fn a_size_near_the_preferred_one_outranks_an_outlier() {
     let f = fixture();
 
@@ -175,4 +192,40 @@ fn a_season_pack_outranks_the_same_quality_one_episode_at_a_time() {
     let order = rank(&pack, &single);
 
     assert_eq!(order, Ordering::Greater);
+}
+
+fn usenet(size_gb: u64) -> Candidate<'static> {
+    Candidate {
+        seeders: None,
+        protocol: "usenet",
+        ..cand(size_gb, 0)
+    }
+}
+
+#[test]
+fn the_preferred_protocol_wins_a_tie_on_quality_and_formats() {
+    let mut f = fixture();
+    f.profile.preferred_protocol = "usenet".into();
+
+    let order = better(
+        &f,
+        ("Movie.2020.1080p.WEB-DL.x265", usenet(6)),
+        ("Movie.2020.1080p.WEB-DL.x265", cand(6, 300)),
+    );
+
+    assert_eq!(order, Ordering::Greater);
+}
+
+#[test]
+fn a_better_quality_beats_the_preferred_protocol() {
+    let mut f = fixture();
+    f.profile.preferred_protocol = "usenet".into();
+
+    let order = better(
+        &f,
+        ("Movie.2020.720p.WEB-DL.x265", usenet(3)),
+        ("Movie.2020.1080p.WEB-DL.x265", cand(6, 300)),
+    );
+
+    assert_eq!(order, Ordering::Less);
 }

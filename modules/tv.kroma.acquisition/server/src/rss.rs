@@ -43,6 +43,7 @@ pub fn rss_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<RssSu
         return Ok(RssSummary::default());
     }
     crate::rules::store::set_setting(state.store(), LAST_RUN, &now.to_string())?;
+    let held = crate::peers::downloads::held_protocols(state);
     let indexers = crate::peers::indexers::enabled(state)?;
     let conn = state.db().get()?;
     let titles = db::list_monitored(&conn)?;
@@ -72,6 +73,9 @@ pub fn rss_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<RssSu
                 continue;
             };
             summary.matched += 1;
+            if held.contains(&release.protocol) {
+                continue;
+            }
             if let Some((pick, rows)) = judge_for(state, &book, title, &release, indexer)? {
                 keep_best(&mut picks, title, pick, rows);
             }

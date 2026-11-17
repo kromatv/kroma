@@ -28,6 +28,7 @@ pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
             "/_port/tv.kroma.torrents/grab/gate-open",
             post(gate_open::<S>),
         )
+        .route("/_port/tv.kroma.torrents/grab/held", post(held::<S>))
         .route(
             "/_port/tv.kroma.torrents/grab/activate",
             post(activate::<S>),
@@ -77,7 +78,18 @@ async fn list_files<S: HostStorage + Clone + Send + Sync + 'static>(
 async fn gate_open<S: HostStorage + Clone + Send + Sync + 'static>(
     State(host): State<S>,
 ) -> Json<bool> {
-    Json(manager(&host).map(|m| m.gate_open()).unwrap_or(false))
+    let open = kroma_module_sdk::host::run_blocking(move || {
+        manager(&host).is_ok_and(|m| m.takes_grabs())
+    })
+    .await
+    .unwrap_or(false);
+    Json(open)
+}
+
+async fn held<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(host): State<S>,
+) -> Json<Vec<String>> {
+    Json(manager(&host).map(|m| m.held_protocols()).unwrap_or_default())
 }
 
 #[derive(Deserialize)]

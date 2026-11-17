@@ -110,12 +110,10 @@ async fn while_the_embedded_client_is_disabled_the_helper_does_not_start() {
     crate::db::update_download_client(
         manager.store(),
         crate::db::EMBEDDED_CLIENT_ID,
-        None,
-        None,
-        None,
-        None,
-        Some(false),
-        None,
+        &crate::db::ClientChanges {
+            enabled: Some(false),
+            ..Default::default()
+        },
     )
     .unwrap();
 

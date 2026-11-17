@@ -5,7 +5,7 @@ import acquisitionModule from './module';
 describe('acquisitionModule', () => {
   it('takes its identity and its dependency from the shared manifest', () => {
     expect(acquisitionModule.id).toBe('tv.kroma.acquisition');
-    expect(acquisitionModule.dependencies).toEqual({ 'tv.kroma.torrents': '>=0.6.10' });
+    expect(acquisitionModule.dependencies).toEqual({ 'tv.kroma.torrents': '>=0.7.0' });
   });
 
   it('fills every core slot only this module can answer', () => {

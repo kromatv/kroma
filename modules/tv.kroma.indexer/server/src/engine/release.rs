@@ -50,6 +50,7 @@ pub fn to_release(def: &Definition, cfg: &IndexerConfig, r: &HashMap<String, Str
             .or_else(|| details_url.clone())
             .unwrap_or_else(|| title.clone()),
         title,
+        protocol: crate::TORRENT.to_string(),
         link,
         magnet,
         info_hash: get("infohash").map(str::to_string),

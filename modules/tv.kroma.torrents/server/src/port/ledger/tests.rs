@@ -14,7 +14,7 @@ type DbHost = kroma_module_sdk::host::testing::StubHost;
 fn migrated_host() -> DbHost {
     let host = DbHost::with_core(kroma_module_sdk::db::testing::temp_pool("torrents-ledger"));
     let conn = host.store().get().unwrap();
-    kroma_module_sdk::db::apply_migrations(&conn, crate::db::MIGRATIONS).unwrap();
+    crate::db::test_support::own_schema(&conn);
     drop(conn);
     host
 }
@@ -90,6 +90,7 @@ fn row() -> DownloadRow {
         lifetime_downloaded_bytes: 0,
         lifetime_uploaded_bytes: 0,
         match_source: None,
+        protocol: "torrent".into(),
     }
 }
 

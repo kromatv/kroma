@@ -29,15 +29,19 @@ impl DownloadManager {
         Ok(())
     }
 
+    /// A download whose client was deleted since is removed from the ledger
+    /// alone: no engine is left to tell.
     pub fn remove(&self, id: &str, delete_data: bool) -> Result<()> {
-        let (row, client) = self.row_and_client(id)?;
+        let row = self.row(id)?;
         if row.client_ref.is_empty() {
             self.cancel_add(&row);
-        } else {
-            if let Ok(engine) = self.engine_for(&client) {
-                if let Err(e) = engine.remove(&row.client_ref, delete_data) {
-                    tracing::warn!(id, error = %format!("{e:#}"), "engine remove failed");
-                }
+        } else if let Some(engine) = self
+            .client_of(&row)
+            .ok()
+            .and_then(|c| self.engine_for(&c).ok())
+        {
+            if let Err(e) = engine.remove(&row.client_ref, delete_data) {
+                tracing::warn!(id, error = %format!("{e:#}"), "engine remove failed");
             }
         }
         db::delete_download_row(self.core(), id)?;
@@ -121,12 +125,22 @@ impl DownloadManager {
     }
 
     pub(super) fn row_and_client(&self, id: &str) -> Result<(DownloadRow, DownloadClientRow)> {
-        let ledger = self.core().get()?;
-        let row = db::get_download(&ledger, id)?.ok_or_else(|| anyhow!("download not found"))?;
-        drop(ledger);
-        let clients = self.store().get()?;
-        let client = db::get_download_client(&clients, &row.client_id)?
-            .ok_or_else(|| anyhow!("download client no longer configured"))?;
+        let row = self.row(id)?;
+        let client = self.client_of(&row)?;
         Ok((row, client))
     }
+
+    fn row(&self, id: &str) -> Result<DownloadRow> {
+        let ledger = self.core().get()?;
+        db::get_download(&ledger, id)?.ok_or_else(|| anyhow!("download not found"))
+    }
+
+    fn client_of(&self, row: &DownloadRow) -> Result<DownloadClientRow> {
+        let clients = self.store().get()?;
+        db::get_download_client(&clients, &row.client_id)?
+            .ok_or_else(|| anyhow!("download client no longer configured"))
+    }
 }
+
+#[cfg(test)]
+mod tests;

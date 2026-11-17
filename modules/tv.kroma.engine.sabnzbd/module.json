@@ -1,0 +1,47 @@
+{
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
+  "id": "tv.kroma.engine.sabnzbd",
+  "name": "SABnzbd engine",
+  "version": "0.1.0",
+  "description": "SABnzbd as a Usenet download sub-engine for the Downloads module. Toggle it to add/remove SABnzbd from the download-client picker.",
+  "engines": {
+    "server": ">=0.1.39"
+  },
+  "dependencies": {
+    "tv.kroma.torrents": ">=0.7.0"
+  },
+  "contributes": [
+    {
+      "point": "tv.kroma.torrents/client",
+      "id": "sabnzbd",
+      "label": "SABnzbd",
+      "fields": [
+        {
+          "key": "url",
+          "label": "field.url",
+          "type": "string",
+          "placeholder": "http://nas:8080",
+          "required": true
+        },
+        {
+          "key": "apiKey",
+          "label": "field.apiKey",
+          "type": "string",
+          "secret": true,
+          "required": true
+        }
+      ]
+    }
+  ],
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "download-client",
+          "to": ["public", "lan"]
+        }
+      ]
+    }
+  }
+}

@@ -30,7 +30,7 @@ pub fn run<S: HostStorage>(
         let session = admin::builtin_session(host, host.store(), row)?;
         let outcome = session.search(query, categories);
         return Ok(SearchOutcome {
-            releases: outcome.releases,
+            releases: settled(outcome.releases),
             errors: outcome.errors,
         });
     }
@@ -39,9 +39,13 @@ pub fn run<S: HostStorage>(
     let releases = peers::search(host, &row.kind, &endpoint, query, &caps)?;
     tracing::info!(indexer = %row.name, releases = releases.len(), "engine answered");
     Ok(SearchOutcome {
-        releases,
+        releases: settled(releases),
         errors: Vec::new(),
     })
+}
+
+fn settled(releases: Vec<Release>) -> Vec<Release> {
+    releases.into_iter().map(Release::settled).collect()
 }
 
 /// The link to hand a download engine for one release. A magnet needs no

@@ -20,6 +20,7 @@ export function profile(over: Partial<QualityProfile> = {}): QualityProfile {
     mustNotContain: [],
     minSeeders: 0,
     addBeside: false,
+    preferredProtocol: '',
     ...over,
   };
 }

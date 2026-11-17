@@ -130,10 +130,11 @@ fn single(spec: Spec) -> FormatSet {
     .unwrap()
 }
 
-fn cand(size_gb: u64, seeders: u32) -> Candidate {
+fn cand(size_gb: u64, seeders: u32) -> Candidate<'static> {
     Candidate {
         size_bytes: Some(size_gb * GB),
         seeders: Some(seeders),
         indexer_priority: 0,
+        protocol: "torrent",
     }
 }

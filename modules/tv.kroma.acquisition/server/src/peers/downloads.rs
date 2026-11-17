@@ -10,11 +10,14 @@ pub const DOWNLOAD_GRAB: &str = "tv.kroma.torrents/grab";
 pub const DOWNLOAD_DB: &str = "tv.kroma.torrents/db";
 
 /// Everything the queue needs to grab a release and let it be imported.
-/// `upgrade` means it replaces media already on disk, so the import takes the
-/// destination and clears what it superseded instead of landing beside it.
+/// `protocol` is the name the indexer engine gave the release, which picks the
+/// download client; empty reads as a torrent. `upgrade` means it replaces media
+/// already on disk, so the import takes the destination and clears what it
+/// superseded instead of landing beside it.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct GrabSpec {
     pub magnet_or_url: String,
+    pub protocol: String,
     pub kind: String,
     pub tmdb_id: u64,
     pub title: Option<String>,
@@ -86,8 +89,23 @@ pub fn list_files(
     )
 }
 
-/// Whether the kill switch currently allows new grabs. A missing engine reads as
-/// closed, because a grab that cannot be handed anywhere is not a grab.
+/// The protocols the kill switch holds right now. A release of one is skipped
+/// until it opens; nothing held reads as an empty list.
+pub fn held_protocols(host: &dyn HostCtx) -> Vec<String> {
+    let Ok(resolve) = grabber(host) else {
+        return Vec::new();
+    };
+    call_raw(
+        &resolve,
+        &format!("{DOWNLOAD_GRAB}/held"),
+        &serde_json::json!({}),
+    )
+    .unwrap_or_default()
+}
+
+/// Whether any grab can go out right now, the kill switch holding only the
+/// protocols it guards. A missing engine reads as closed, because a grab that
+/// cannot be handed anywhere is not a grab.
 pub fn gate_open(host: &dyn HostCtx) -> bool {
     let Ok(resolve) = grabber(host) else {
         return false;

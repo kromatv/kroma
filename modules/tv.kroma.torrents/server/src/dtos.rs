@@ -23,6 +23,8 @@ pub struct DownloadClientView {
     pub url: String,
     pub username: String,
     pub has_password: bool,
+    pub configured_settings: Vec<String>,
+    pub protocols: Vec<String>,
     pub enabled: bool,
     pub priority: i32,
     pub created_at: i64,
@@ -86,6 +88,7 @@ pub struct SaveDownloadClientBody {
     pub url: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
+    pub settings: Option<std::collections::BTreeMap<String, String>>,
     pub enabled: Option<bool>,
     pub priority: Option<i32>,
 }
@@ -135,6 +138,7 @@ pub struct DownloadView {
     pub match_source: Option<MatchSource>,
     pub lifetime_downloaded_bytes: u64,
     pub lifetime_uploaded_bytes: u64,
+    pub protocol: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
