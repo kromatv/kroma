@@ -13,6 +13,7 @@ export interface InstallContext {
   log: LogLine;
   launch: boolean;
   options: PlatformOptions;
+  source?: Source;
 }
 
 export interface PlatformPorts {

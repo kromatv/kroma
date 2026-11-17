@@ -2,9 +2,10 @@ import { basename } from 'node:path';
 import type { LogLine } from '../../shared/run';
 import type { InstallContext } from '../platform';
 import { duidOf } from './duid';
-import { installFailure, refusedChain } from './install-failure';
+import { belowPackageFloor, installFailure, refusedChain } from './install-failure';
 import type { TizenPackage } from './package-manifest';
 import { reach } from './reach';
+import type { SdbDevice } from './sdb';
 
 /**
  * Installs over this tool's own sdb client, so nothing from Tizen Studio has to
@@ -21,6 +22,7 @@ export async function installOverSdb(
 
   try {
     log(`${device.banner} on ${tv.host}`);
+    await refuseOlderSet(device, context, tizenPackage);
     const result = await device.install(artifact, {
       appId: tizenPackage.appId,
       packageId: tizenPackage.packageId,
@@ -37,6 +39,18 @@ export async function installOverSdb(
     }
   } finally {
     device.close();
+  }
+}
+
+async function refuseOlderSet(
+  device: SdbDevice,
+  { tv, source }: InstallContext,
+  tizenPackage: TizenPackage,
+): Promise<void> {
+  const platform = (await device.capability()).platform_version || tv.runtime?.version;
+  const refusal = belowPackageFloor(platform, tizenPackage, source);
+  if (refusal) {
+    throw refusal;
   }
 }
 

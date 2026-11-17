@@ -19,7 +19,7 @@ const FAILURE =
  * next command shape rather than to report a failure.
  */
 export function parseResult(output: string): SdbResult {
-  const text = output.trim();
+  const text = output.replaceAll(/\r\n?/g, '\n').trim();
 
   const exit = APPCMD_EXIT.exec(text);
   if (exit?.[1]) {
