@@ -129,4 +129,68 @@ describe('roundOutlines', () => {
     expect(pill.hasAttribute('data-kroma-ring')).toBe(false);
     expect(ringRule(pill)).toBe('');
   });
+
+  it('gives two controls that need the same ring one rule', async () => {
+    const first = control('ring pill');
+    const second = control('ring pill');
+
+    install();
+    await flush();
+
+    expect(second.getAttribute('data-kroma-ring')).toBe(first.getAttribute('data-kroma-ring'));
+  });
+
+  it('leaves the page alone when no style draws an outline', async () => {
+    const pill = control('pill');
+    const dispose = roundOutlines(document, readStub);
+    undo.push(dispose);
+
+    pill.style.borderRadius = '30px';
+    await flush();
+
+    expect(pill.hasAttribute('data-kroma-ring')).toBe(false);
+  });
+
+  it('rings the controls of the sheets it can read beside one it cannot', async () => {
+    const foreign = document.createElement('style');
+    document.head.appendChild(foreign);
+    undo.push(() => foreign.remove());
+    Object.defineProperty(foreign.sheet, 'cssRules', {
+      get() {
+        throw new DOMException('cross-origin', 'SecurityError');
+      },
+    });
+    const pill = control('ring pill');
+
+    install();
+    await flush();
+
+    expect(pill.hasAttribute('data-kroma-ring')).toBe(true);
+  });
+
+  it('does nothing in a document that has no window', () => {
+    const detached = document.implementation.createHTMLDocument('');
+
+    const dispose = roundOutlines(detached);
+
+    expect(() => dispose()).not.toThrow();
+    expect(detached.head.querySelector('style')).toBeNull();
+  });
+
+  it('reads the computed style when no reader is given', async () => {
+    const sheet = document.createElement('style');
+    sheet.textContent = '.ring{outline-style:solid;outline-width:4px;outline-offset:6px}';
+    document.head.appendChild(sheet);
+    const pill = control('ring');
+    pill.setAttribute(
+      'style',
+      'position:relative;border-top-left-radius:22px;border-top-right-radius:22px;' +
+        'border-bottom-right-radius:22px;border-bottom-left-radius:22px',
+    );
+
+    undo.push(() => sheet.remove(), roundOutlines(document));
+    await flush();
+
+    expect(ringRule(pill)).toContain('border-top-left-radius: 32px');
+  });
 });

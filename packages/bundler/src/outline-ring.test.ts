@@ -1,5 +1,6 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { type OutlineBox, ringDeclarations } from './outline-ring';
+import { type OutlineBox, readOutlineBox, ringDeclarations } from './outline-ring';
 
 const PILL: OutlineBox = {
   outlineStyle: 'solid',
@@ -91,5 +92,52 @@ describe('ringDeclarations', () => {
 
   it('keeps the outline where no pseudo-element can stand outside the control', () => {
     expect(ringDeclarations({ ...PILL, hostsPseudo: false })).toBeNull();
+  });
+});
+
+function styled(tag: string, css: string): Element {
+  const element = document.createElement(tag);
+  element.setAttribute('style', css);
+  document.body.appendChild(element);
+  return element;
+}
+
+const RING_CSS =
+  'outline-style:solid;outline-width:4px;outline-offset:6px;outline-color:rgb(244, 182, 66);' +
+  'border-top-left-radius:22px;border-top-right-radius:13px;' +
+  'border-bottom-right-radius:0px;border-bottom-left-radius:8px;' +
+  'border-style:solid;border-width:2px;position:relative';
+
+describe('readOutlineBox', () => {
+  it('reads the outline, the four corners and the four borders from the computed style', () => {
+    const element = styled('div', RING_CSS);
+
+    const box = readOutlineBox(element, getComputedStyle(element));
+
+    expect(box).toEqual({
+      outlineStyle: 'solid',
+      outlineWidth: 4,
+      outlineOffset: 6,
+      outlineColor: 'rgb(244, 182, 66)',
+      cornerRadii: ['22px', '13px', '0px', '8px'],
+      borderWidths: [2, 2, 2, 2],
+      hostsPseudo: true,
+    });
+  });
+
+  it.each([
+    ['a replaced element', 'img', RING_CSS],
+    ['a static element', 'div', `${RING_CSS};position:static`],
+    [
+      'an element that clips its overflow',
+      'div',
+      `${RING_CSS};overflow-x:hidden;overflow-y:hidden`,
+    ],
+  ])('cannot host a ring outside %s', (_name, tag, css) => {
+    const element = styled(tag, css);
+
+    const box = readOutlineBox(element, getComputedStyle(element));
+
+    expect(box.hostsPseudo).toBe(false);
   });
 });
