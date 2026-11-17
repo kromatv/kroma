@@ -1,6 +1,7 @@
 import type { KromaClient } from '@kromatv/client';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { buildCrashReport } from '#tv/app/crash-report';
+import { useNav } from '#tv/app/router';
 import { useDevicePreferences } from './device-preferences';
 
 interface Props {
@@ -12,17 +13,28 @@ interface Props {
   children: ReactNode;
 }
 
+interface Owned {
+  reporting: () => boolean;
+  screen: unknown;
+}
+
 interface State {
   crashed: boolean;
+  screen: unknown;
 }
 
 /** App-level error boundary: on a render-time crash it shows `fallback` instead
  * of the broken tree, and, only when the user opted in, posts a
- * [`CrashReport`] to the connected server (best-effort, never rethrown). */
-class OwnedCrashBoundary extends Component<Props & { reporting: () => boolean }, State> {
-  state: State = { crashed: false };
+ * [`CrashReport`] to the connected server (best-effort, never rethrown). A new
+ * screen on top clears it, so leaving the fallback lands on that screen. */
+class OwnedCrashBoundary extends Component<Props & Owned, State> {
+  state: State = { crashed: false, screen: null };
 
-  static getDerivedStateFromError(): State {
+  static getDerivedStateFromProps(props: Owned, state: State): Partial<State> | null {
+    return props.screen === state.screen ? null : { crashed: false, screen: props.screen };
+  }
+
+  static getDerivedStateFromError(): Partial<State> {
     return { crashed: true };
   }
 
@@ -49,5 +61,8 @@ class OwnedCrashBoundary extends Component<Props & { reporting: () => boolean },
 
 export function CrashBoundary(props: Readonly<Props>) {
   const { crashReporting } = useDevicePreferences();
-  return <OwnedCrashBoundary {...props} reporting={() => crashReporting.get() === 'on'} />;
+  const { route } = useNav();
+  return (
+    <OwnedCrashBoundary {...props} screen={route} reporting={() => crashReporting.get() === 'on'} />
+  );
 }

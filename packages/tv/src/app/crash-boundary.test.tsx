@@ -2,11 +2,13 @@
 
 import type { KromaClient } from '@kromatv/client';
 import { fakeClient } from '@kromatv/client/test';
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CrashBoundary } from '#tv/app/crash-boundary.component';
 import { createDevicePreferences, DevicePreferencesProvider } from '#tv/app/device-preferences';
+import { TvNavProvider, useNav } from '#tv/app/router';
+import { stubScreens } from '#tv/app/router.fixtures';
 
 const preferences = createDevicePreferences();
 const crashReportingPrefStore = preferences.crashReporting;
@@ -22,20 +24,67 @@ function crashClient() {
 
 function mount(client: KromaClient | null) {
   return render(
-    <DevicePreferencesProvider value={preferences}>
-      <CrashBoundary
-        client={client}
-        platform="Android TV"
-        fallback={(retry) => (
-          <button type="button" onClick={retry}>
-            fallback shown
-          </button>
-        )}
-      >
-        <Boom />
-      </CrashBoundary>
-    </DevicePreferencesProvider>,
+    <TvNavProvider screens={stubScreens()}>
+      <DevicePreferencesProvider value={preferences}>
+        <CrashBoundary
+          client={client}
+          platform="Android TV"
+          fallback={(retry) => (
+            <button type="button" onClick={retry}>
+              fallback shown
+            </button>
+          )}
+        >
+          <Boom />
+        </CrashBoundary>
+      </DevicePreferencesProvider>
+    </TvNavProvider>,
   );
+}
+
+function CrashesOnGenres(): ReactNode {
+  const { route } = useNav();
+  if (route.name === 'genres') {
+    throw new Error('kaboom');
+  }
+  return <p>{`on ${route.name}`}</p>;
+}
+
+function Leave() {
+  const nav = useNav();
+  return (
+    <button type="button" onClick={nav.back}>
+      leave
+    </button>
+  );
+}
+
+function OpenGenres() {
+  const nav = useNav();
+  return (
+    <button type="button" onClick={() => nav.go('genres')}>
+      open genres
+    </button>
+  );
+}
+
+function mountRoutes() {
+  render(
+    <TvNavProvider screens={stubScreens()}>
+      <DevicePreferencesProvider value={preferences}>
+        <OpenGenres />
+        <CrashBoundary client={null} platform="Tizen" fallback={() => <Leave />}>
+          <CrashesOnGenres />
+        </CrashBoundary>
+      </DevicePreferencesProvider>
+    </TvNavProvider>,
+  );
+}
+
+async function click(label: string) {
+  await act(async () => {
+    fireEvent.click(screen.getByText(label));
+  });
 }
 
 beforeEach(() => vi.spyOn(console, 'error').mockImplementation(() => {}));
@@ -83,5 +132,22 @@ describe('CrashBoundary', () => {
     await Promise.resolve();
     expect(reportCrash).toHaveBeenCalledTimes(1);
     expect(screen.getByText('fallback shown')).toBeTruthy();
+  });
+
+  it('shows the screen underneath once the viewer leaves the crashed one', async () => {
+    mountRoutes();
+    await click('open genres');
+
+    await click('leave');
+
+    expect(screen.getByText('on profiles')).toBeTruthy();
+  });
+
+  it('keeps the fallback while the crashed screen is still on top', async () => {
+    mountRoutes();
+
+    await click('open genres');
+
+    expect(screen.getByText('leave')).toBeTruthy();
   });
 });
