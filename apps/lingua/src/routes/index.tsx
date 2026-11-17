@@ -12,7 +12,7 @@ import { signInUrl } from '#site/lib/api-client';
 import { getHome } from '#site/lib/loaders';
 import { usePollWhileReading } from '#site/lib/use-poll-while-reading.hook';
 import { useSite } from '#site/lib/use-site.hook';
-import type { ProjectSummary, Viewer } from '#site/lib/views';
+import type { ProjectSummary } from '#site/lib/views';
 
 export const Route = createFileRoute('/')({
   loader: () => getHome(),
@@ -78,21 +78,19 @@ function NoProject() {
   );
 }
 
-function PrimaryAction({ viewer }: Readonly<{ viewer: Viewer | null }>) {
+function SignInAction() {
   const here = useLocation({ select: (location) => location.href });
-  const signIn = useSite()?.signIn ?? false;
-  if (viewer) {
-    return null;
-  }
-  return signIn ? (
-    <Button
-      size="sm"
-      icon="brand-github"
-      label="Sign in to translate"
-      href={signInUrl(here)}
-      role="link"
-    />
-  ) : null;
+  return (
+    <PageHeader.Actions>
+      <Button
+        size="sm"
+        icon="brand-github"
+        label="Sign in to translate"
+        href={signInUrl(here)}
+        role="link"
+      />
+    </PageHeader.Actions>
+  );
 }
 
 function Projects({ projects }: Readonly<{ projects: readonly ProjectSummary[] }>) {
@@ -100,7 +98,7 @@ function Projects({ projects }: Readonly<{ projects: readonly ProjectSummary[] }
     return <NoProject />;
   }
   return (
-    <Box gap={16} row={{ base: false, md: true }} wrap align="stretch">
+    <Box gap={16} row={{ base: false, md: true }} wrap={{ base: false, md: true }} align="stretch">
       {projects.map((project) => (
         <Box key={project.id} grow={1} shrink={1} basis={{ base: 'auto', md: 360 }}>
           <ProjectCard project={project} />
@@ -112,6 +110,7 @@ function Projects({ projects }: Readonly<{ projects: readonly ProjectSummary[] }
 
 function Home() {
   const { viewer, projects } = Route.useLoaderData();
+  const signIn = useSite()?.signIn ?? false;
   usePollWhileReading(projects.map((project) => project.sync));
   return (
     <LinguaPage>
@@ -120,9 +119,7 @@ function Home() {
         <PageHeader.Subtitle>
           Pick a project and a language, fix or add messages, and send them as one pull request.
         </PageHeader.Subtitle>
-        <PageHeader.Actions>
-          <PrimaryAction viewer={viewer} />
-        </PageHeader.Actions>
+        {viewer === null && signIn ? <SignInAction /> : null}
       </PageHeader.Root>
       <Projects projects={projects} />
       <Column gap={12}>

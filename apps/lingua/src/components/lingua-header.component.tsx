@@ -9,6 +9,7 @@ import { Text } from '@kromatv/ui/kit/atoms/text';
 import { useLocation } from '@tanstack/react-router';
 import { AccountMenu } from '#site/components/account-menu.component';
 import { SearchButton } from '#site/components/search-button.component';
+import { ThemeMenu } from '#site/components/theme-menu.component';
 import { NavItem } from '#site/components/nav-item.component';
 import { RouteLink } from '#site/components/route-link.component';
 import { signInUrl } from '#site/lib/api-client';
@@ -103,8 +104,8 @@ function SignIn({ wide }: Readonly<{ wide: boolean }>) {
 
 /**
  * Lingua's header: the mark, the sections with the current one marked, the
- * command menu, and the account menu or a way to sign in. On a phone the
- * sections take a second line.
+ * command menu, the theme, and the account menu or a way to sign in. On a
+ * phone the sections take a second line.
  */
 export function LinguaHeader() {
   const viewer = useSite()?.viewer ?? null;
@@ -120,6 +121,7 @@ export function LinguaHeader() {
             </Row>
             <Row gap={8} align="center" shrink={0}>
               <SearchButton wide={wide} />
+              <ThemeMenu />
               {viewer ? <AccountMenu viewer={viewer} /> : <SignIn wide={wide} />}
             </Row>
           </Row>
