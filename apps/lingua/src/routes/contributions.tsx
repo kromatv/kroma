@@ -13,6 +13,7 @@ import { signInUrl } from '#site/lib/api-client';
 import { counted } from '#site/lib/counted';
 import { getContributions } from '#site/lib/loaders';
 import { projectParams } from '#site/lib/project-id';
+import { useDiscard } from '#site/lib/use-discard.hook';
 import type { Contribution } from '#site/lib/views';
 
 export const Route = createFileRoute('/contributions')({
@@ -51,11 +52,34 @@ function Files({ contribution }: Readonly<{ contribution: Contribution }>) {
   );
 }
 
+function DiscardButton({ contribution }: Readonly<{ contribution: Contribution }>) {
+  const { project, language, drafts, started, proposal } = contribution;
+  const discarding = useDiscard({
+    project,
+    locale: language.tag,
+    language: language.name,
+    drafts,
+    started,
+    proposal,
+  });
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      icon="trash"
+      label="Discard"
+      loading={discarding.busy}
+      onPress={() => void discarding.discard()}
+    />
+  );
+}
+
 function Actions({ contribution }: Readonly<{ contribution: Contribution }>) {
   const { proposal } = contribution;
   const params = { ...projectParams(contribution.project), locale: contribution.language.tag };
   return (
     <Row gap={8} wrap>
+      {contribution.drafts > 0 ? <DiscardButton contribution={contribution} /> : null}
       {proposal ? (
         <Button
           variant="ghost"

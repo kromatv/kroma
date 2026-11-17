@@ -134,3 +134,21 @@ export function sendCommands(language: string, drafts: number, run: Run): Lingua
     },
   ];
 }
+
+/** The row that throws away the viewer's unsent `drafts` in `language`, none while there are none. */
+export function discardCommands(language: string, drafts: number, run: Run): LinguaCommand[] {
+  if (drafts === 0) {
+    return [];
+  }
+  return [
+    {
+      id: 'discard',
+      label: `Discard ${counted(drafts, 'change')} in ${language}`,
+      group: GROUPS.page,
+      icon: 'trash',
+      keywords: 'delete remove cancel revert undo drop draft',
+      verb: 'Discard',
+      run,
+    },
+  ];
+}

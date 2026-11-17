@@ -2,6 +2,7 @@ import { SiteDocument, siteHead } from '@kromatv/site-kit/site-document';
 import appCss from '@kromatv/ui/css?url';
 import { Button } from '@kromatv/ui/kit/atoms/button';
 import { EmptyState } from '@kromatv/ui/kit/molecules/empty-state';
+import { ConfirmHost } from '@kromatv/ui/kit/organisms/dialog';
 import { Toaster } from '@kromatv/ui/kit/organisms/toast';
 import {
   createRootRoute,
@@ -58,10 +59,12 @@ function Failed({ reset }: Readonly<ErrorComponentProps>) {
 
 function Shell() {
   return (
-    <CommandMenuProvider>
-      <Outlet />
-      <Toaster position="bottom-right" />
-    </CommandMenuProvider>
+    <ConfirmHost>
+      <CommandMenuProvider>
+        <Outlet />
+        <Toaster position="bottom-right" />
+      </CommandMenuProvider>
+    </ConfirmHost>
   );
 }
 

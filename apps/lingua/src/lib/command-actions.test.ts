@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   accountCommands,
   addLanguageCommand,
+  discardCommands,
   sendCommands,
   setupCommand,
   syncCommand,
@@ -69,6 +70,15 @@ describe('page commands', () => {
     expect(sendCommands('French', 0, run)).toEqual([]);
     expect(sendCommands('French', 2, run).map((row) => row.label)).toEqual([
       'Send 2 changes in French',
+    ]);
+  });
+
+  it('offer to discard only while there is something unsent', () => {
+    const run = vi.fn();
+
+    expect(discardCommands('French', 0, run)).toEqual([]);
+    expect(discardCommands('French', 1, run).map((row) => row.label)).toEqual([
+      'Discard 1 change in French',
     ]);
   });
 });

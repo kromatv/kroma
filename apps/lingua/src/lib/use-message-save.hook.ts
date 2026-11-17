@@ -35,19 +35,34 @@ function refusal(before: Saving, error: unknown): Saving {
   return { ...before, issues, status: { kind: 'failed', message: failureOf(error) } };
 }
 
-/**
- * One message's field. `commit` shows a changed value saved at once and saves
- * it behind; a refusal keeps the text, says why, and lets the next commit try
- * again. A dropped edit puts the branch's text back.
- */
-export function useMessageSave(row: RowView, target: MessageTarget) {
-  const router = useRouter();
+function useFieldText(row: RowView) {
   const [value, setValue] = useState(row.draft ?? row.current ?? '');
   const [saving, setSaving] = useState<Saving>({
     kept: value,
     issues: row.issues,
     status: { kind: 'idle' },
   });
+  const [draft, setDraft] = useState(row.draft);
+  if (row.draft !== draft) {
+    setDraft(row.draft);
+    if (row.draft === null && value === saving.kept) {
+      const text = row.current ?? '';
+      setValue(text);
+      setSaving({ kept: text, issues: row.issues, status: { kind: 'idle' } });
+    }
+  }
+  return { value, setValue, saving, setSaving };
+}
+
+/**
+ * One message's field. `commit` shows a changed value saved at once and saves
+ * it behind; a refusal keeps the text, says why, and lets the next commit try
+ * again. A dropped edit puts the branch's text back, and so does one the
+ * page learns is gone, unless the field was typed in since.
+ */
+export function useMessageSave(row: RowView, target: MessageTarget) {
+  const router = useRouter();
+  const { value, setValue, saving, setSaving } = useFieldText(row);
 
   const commit = async () => {
     if (value === saving.kept) {

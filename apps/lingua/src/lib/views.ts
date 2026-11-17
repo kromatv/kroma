@@ -143,11 +143,12 @@ export interface ContributedFile {
 /**
  * One language of one project the viewer has work in: changes not sent yet
  * (`drafts`, with the files their edits are in), or changes waiting in their
- * open pull request (`proposed`).
+ * open pull request (`proposed`). `started` is a language only the viewer has.
  */
 export interface Contribution {
   project: string;
   language: Language;
+  started: boolean;
   drafts: number;
   proposed: number;
   proposal: ProposalView | null;

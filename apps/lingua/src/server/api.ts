@@ -8,6 +8,7 @@ import { returnAddress } from '#site/lib/send-return';
 import type { Store, User } from '#site/store/store';
 import { answerSend, askToSend, forgetPending, type PendingSend, pendingCookie, readPending } from './authorizations';
 import { ConfirmInput, saveConfirms } from './confirms';
+import { DiscardInput, discardDrafts } from './discard';
 import { EditInput, saveEdit } from './edits';
 import { type Env, listedProjects, oauthCredentials, storeFor } from './env';
 import { messagePage } from './go';
@@ -185,6 +186,15 @@ app.post('/api/locales', async (c) => {
   return result.status === 200 ? c.json({ locale: result.locale, name: result.name }) : c.json({ error: result.error }, result.status);
 });
 
+app.post('/api/discard', async (c) => {
+  const signedIn = await contributor(c, 'Sign in with GitHub to discard changes');
+  if (signedIn instanceof Response) return signedIn;
+  const input = await jsonInput(c, DiscardInput);
+  if (!input) return c.json({ error: 'Malformed request' }, 400);
+  const result = await discardDrafts(signedIn.store, signedIn.viewer, input);
+  return result.status === 200 ? c.json({ discarded: result.discarded, removed: result.removed }) : c.json({ error: result.error }, result.status);
+});
+
 function authorizeSend(c: Context<Ctx>, viewer: User, input: z.infer<typeof SendInput>): Response {
   const oauth = oauthCredentials(c.env.env);
   if (!oauth) return c.json({ error: 'Sign-in is not configured on this deployment yet' }, 503);
@@ -211,7 +221,7 @@ app.get('/go/:owner/:repo/:locale/:key', async (c) => {
 
 app.notFound((c) => c.text('', 404, { [FALL_THROUGH]: '1' }));
 
-/** Answer a request Lingua routes itself (sign-in, edits, confirms, languages, proposals, links), or null for a page. */
+/** Answer a request Lingua routes itself (sign-in, edits, confirms, discards, languages, proposals, links), or null for a page. */
 export async function api(request: Request, env: Env): Promise<Response | null> {
   const response = await app.fetch(request, { env });
   return response.headers.has(FALL_THROUGH) ? null : response;

@@ -25,6 +25,7 @@ describe('contributionsView', () => {
       {
         project: 'o/r',
         language: languageOf('fr'),
+        started: false,
         drafts: 3,
         proposed: 0,
         proposal: null,
@@ -45,9 +46,9 @@ describe('contributionsView', () => {
 
     const view = await contributionsView(pageContext(store, ada));
 
-    expect(view.contributions.map((c) => [c.language.tag, c.drafts, c.proposed, c.proposal?.number ?? null, c.files])).toEqual([
-      ['fr', 0, 1, 7, []],
-      ['de', 1, 0, null, []],
+    expect(view.contributions.map((c) => [c.language.tag, c.started, c.drafts, c.proposed, c.proposal?.number ?? null, c.files])).toEqual([
+      ['fr', false, 0, 1, 7, []],
+      ['de', true, 1, 0, null, []],
     ]);
   });
 

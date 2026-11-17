@@ -102,11 +102,11 @@ describe('editing', () => {
   });
 
   it('asks a visitor who is not signed in to sign in', async () => {
-    const paths = ['/api/confirm', '/api/locales', '/api/proposals'];
+    const paths = ['/api/confirm', '/api/discard', '/api/locales', '/api/proposals'];
 
     const responses = await Promise.all(paths.map((path) => get(path, { method: 'POST', headers: { origin: ORIGIN } })));
 
-    expect(responses.map((r) => r?.status)).toEqual([401, 401, 401]);
+    expect(responses.map((r) => r?.status)).toEqual([401, 401, 401, 401]);
   });
 
   it('refuses an edit of a message the source does not have, with no issues to show', async () => {
@@ -155,10 +155,24 @@ describe('editing', () => {
     expect(listed?.status).toBe(409);
   });
 
-  it('refuses each write whose body does not parse', async () => {
-    const statuses = await Promise.all(['/api/confirm', '/api/locales', '/api/proposals'].map(async (path) => (await send('POST', path, {}))?.status));
+  it('discards a language the contributor started, and refuses one the project does not offer', async () => {
+    await send('POST', '/api/locales', { project: 'o/r', locale: 'de' });
 
-    expect(statuses).toEqual([400, 400, 400]);
+    const [started, unknown] = await Promise.all([
+      send('POST', '/api/discard', { project: 'o/r', locale: 'de' }),
+      send('POST', '/api/discard', { project: 'o/r', locale: 'it' }),
+    ]);
+
+    expect(await started?.json()).toEqual({ discarded: 1, removed: true });
+    expect(unknown?.status).toBe(404);
+  });
+
+  it('refuses each write whose body does not parse', async () => {
+    const paths = ['/api/confirm', '/api/discard', '/api/locales', '/api/proposals'];
+
+    const statuses = await Promise.all(paths.map(async (path) => (await send('POST', path, {}))?.status));
+
+    expect(statuses).toEqual([400, 400, 400, 400]);
   });
 });
 

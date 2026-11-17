@@ -18,7 +18,7 @@ async function contributionsIn(store: Store, id: string, viewer: User): Promise<
   return worked.flatMap(({ locale, work }) => {
     const pending = pendingOf(work);
     if (pending.drafts === 0 && pending.proposed === 0 && work.proposal === null) return [];
-    return [{ project: id, language: languageOf(locale), ...pending, proposal: work.proposal, files: unsentFiles(work.edits) }];
+    return [{ project: id, language: languageOf(locale), started: workspace.started.has(locale), ...pending, proposal: work.proposal, files: unsentFiles(work.edits) }];
   });
 }
 

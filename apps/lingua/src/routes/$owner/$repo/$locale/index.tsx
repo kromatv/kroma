@@ -28,8 +28,7 @@ import {
   nextNamespace,
 } from '#site/lib/namespace-filter';
 import { projectId } from '#site/lib/project-id';
-import { useLanguageCommands } from '#site/lib/use-language-commands.hook';
-import { useSending } from '#site/lib/use-sending.hook';
+import { useLanguageWork } from '#site/lib/use-language-work.hook';
 import type { LocaleView, NamespaceSummary, Stage } from '#site/lib/views';
 
 export const Route = createFileRoute('/$owner/$repo/$locale/')({
@@ -184,14 +183,7 @@ function Heading({ view }: Readonly<{ view: LocaleView }>) {
 
 function Language({ view }: Readonly<{ view: LocaleView }>) {
   const { language, progress, stage } = view.locale;
-  const sending = useSending({ project: view.project.id, locale: language.tag });
-  useLanguageCommands(view, sending);
-  const work = {
-    sending: sending.sending,
-    drafts: view.drafts,
-    proposed: view.proposed,
-    proposal: view.proposal,
-  };
+  const { work, act } = useLanguageWork(view);
   return (
     <LinguaPage>
       <Heading view={view} />
@@ -200,7 +192,7 @@ function Language({ view }: Readonly<{ view: LocaleView }>) {
       </Box>
       {view.viewer ? null : <SignInPrompt />}
       <SectionList view={view} />
-      {view.viewer ? <SendBar work={work} onSend={() => void sending.send()} /> : null}
+      {view.viewer ? <SendBar work={work} act={act} /> : null}
     </LinguaPage>
   );
 }

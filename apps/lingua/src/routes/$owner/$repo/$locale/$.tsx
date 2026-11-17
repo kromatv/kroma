@@ -19,10 +19,9 @@ import { projectId } from '#site/lib/project-id';
 import { groupRows, isUntranslated, type MessageGroup, sharedNotes } from '#site/lib/row-filter';
 import { useConfirmMessage } from '#site/lib/use-confirm-message.hook';
 import { EditorFields, type FieldActions, useEditorKeys } from '#site/lib/use-editor-keys.hook';
-import { useLanguageCommands } from '#site/lib/use-language-commands.hook';
+import { useLanguageWork } from '#site/lib/use-language-work.hook';
 import { useLinkedKey } from '#site/lib/use-linked-key.hook';
 import { useMessageList } from '#site/lib/use-message-list.hook';
-import { useSending } from '#site/lib/use-sending.hook';
 import type { NamespaceView } from '#site/lib/views';
 
 export const Route = createFileRoute('/$owner/$repo/$locale/$')({
@@ -134,20 +133,13 @@ function Heading({ view }: Readonly<{ view: NamespaceView }>) {
 }
 
 function Editor({ view }: Readonly<{ view: NamespaceView }>) {
-  const sending = useSending({ project: view.project.id, locale: view.locale.language.tag });
-  useLanguageCommands(view, sending);
-  const work = {
-    sending: sending.sending,
-    drafts: view.drafts,
-    proposed: view.proposed,
-    proposal: view.proposal,
-  };
+  const { work, act } = useLanguageWork(view);
   return (
     <LinguaPage>
       <Heading view={view} />
       {view.viewer ? null : <SignInPrompt />}
       <Messages key={`${view.locale.language.tag}/${view.file}`} view={view} />
-      {view.viewer ? <SendBar work={work} onSend={() => void sending.send()} /> : null}
+      {view.viewer ? <SendBar work={work} act={act} /> : null}
     </LinguaPage>
   );
 }

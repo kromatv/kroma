@@ -21,6 +21,8 @@ const ConfirmedSchema = z.object({ confirmed: z.array(z.string()) });
 
 const StartedSchema = z.object({ locale: z.string(), name: z.string() });
 
+const DiscardedSchema = z.object({ discarded: z.number(), removed: z.boolean() });
+
 const FailureSchema = z.object({ error: z.string(), issues: z.array(IssueSchema).optional() });
 
 /** What the server answered a save with: the draft it now holds (null when the edit was dropped) and what it found. */
@@ -114,6 +116,14 @@ export function startLanguage(target: {
   locale: string;
 }): Promise<z.infer<typeof StartedSchema>> {
   return call({ method: 'POST', path: '/api/locales', body: target, schema: StartedSchema });
+}
+
+/** What a discard came to: how many changes went, and whether the language the viewer started went with them. */
+export type Discarded = z.infer<typeof DiscardedSchema>;
+
+/** Throw away the viewer's unsent changes in a language. */
+export function discardDrafts(target: { project: string; locale: string }): Promise<Discarded> {
+  return call({ method: 'POST', path: '/api/discard', body: target, schema: DiscardedSchema });
 }
 
 /** Where to send the browser to sign in with GitHub and come back to `returnTo`. */

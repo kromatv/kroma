@@ -5,7 +5,13 @@ import { IconWell } from '@kromatv/ui/kit/atoms/icon-well';
 import { Text } from '@kromatv/ui/kit/atoms/text';
 import type { ReactNode } from 'react';
 import { OutsideLink } from '#site/components/outside-link.component';
-import { sendLabel, sendStatus, type Work, worthShowing } from '#site/lib/send-status';
+import {
+  type SendBarActions,
+  sendLabel,
+  sendStatus,
+  type Work,
+  worthShowing,
+} from '#site/lib/send-status';
 
 const sDefinition = styles({
   dock: { position: 'sticky', bottom: 0, zIndex: 10, paddingBottom: 12, paddingTop: 4 },
@@ -49,19 +55,36 @@ function Status({ work }: Readonly<{ work: Work }>) {
   );
 }
 
-function Actions({ work, onSend }: Readonly<{ work: Work; onSend: () => void }>) {
+function PullRequestLink({ work }: Readonly<{ work: Work }>) {
+  if (!work.proposal) {
+    return null;
+  }
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      icon="external-link"
+      label={`#${work.proposal.number}`}
+      asChild
+    >
+      <OutsideLink to={work.proposal.url} />
+    </Button>
+  );
+}
+
+function Actions({ work, act }: Readonly<{ work: Work; act: SendBarActions }>) {
   return (
     <Row gap={8} wrap ml="auto">
-      {work.proposal ? (
+      <PullRequestLink work={work} />
+      {work.drafts > 0 ? (
         <Button
           variant="ghost"
           size="sm"
-          icon="external-link"
-          label={`#${work.proposal.number}`}
-          asChild
-        >
-          <OutsideLink to={work.proposal.url} />
-        </Button>
+          icon="trash"
+          label="Discard"
+          loading={act.discarding}
+          onPress={act.onDiscard}
+        />
       ) : null}
       <Button
         size="sm"
@@ -69,21 +92,21 @@ function Actions({ work, onSend }: Readonly<{ work: Work; onSend: () => void }>)
         label={sendLabel(work)}
         disabled={work.drafts === 0}
         loading={work.sending.kind === 'sending'}
-        onPress={onSend}
+        onPress={act.onSend}
       />
     </Row>
   );
 }
 
-/** The viewer's work in one language, pinned under the page once there is any: how much is unsent, the pull request it rides in, and the button that sends it. */
-export function SendBar({ work, onSend }: Readonly<{ work: Work; onSend: () => void }>) {
+/** The viewer's work in one language, pinned under the page once there is any: how much is unsent, the pull request it rides in, and the buttons that send it or throw it away. */
+export function SendBar({ work, act }: Readonly<{ work: Work; act: SendBarActions }>) {
   if (!worthShowing(work)) {
     return null;
   }
   return (
     <Dock>
       <Status work={work} />
-      <Actions work={work} onSend={onSend} />
+      <Actions work={work} act={act} />
     </Dock>
   );
 }

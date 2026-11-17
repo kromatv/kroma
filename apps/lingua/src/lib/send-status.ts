@@ -17,6 +17,13 @@ export interface Work {
   proposal: ProposalView | null;
 }
 
+/** What the send bar does: send the viewer's changes, or throw them away. */
+export interface SendBarActions {
+  onSend: () => void;
+  onDiscard: () => void;
+  discarding: boolean;
+}
+
 const HOW = 'Sending opens a pull request from your fork, under your name.';
 
 const DECLINED: SendStatus = {
