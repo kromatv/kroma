@@ -8,6 +8,7 @@ import { confirmTarget, editTarget, type MessageTarget } from '../overlay/messag
 import { installProbe, probed } from '../overlay/probe';
 import { ProbeCard } from '../overlay/probe-card.component';
 import { onCatalogSaved } from '../server/host';
+import { openInLingua, useLingua } from '../server/lingua';
 import { confirmMessage, loadStatus } from '../server/status';
 import { type DevtoolsSession, readSession, writeSession } from '../session';
 import { anchor, place } from './drag';
@@ -21,6 +22,7 @@ const OUTLINE_CODE = 'KeyO';
 const PANEL_CODE = 'KeyI';
 const EDIT_CODE = 'KeyE';
 const CONFIRM_CODE = 'KeyC';
+const LINGUA_CODE = 'KeyL';
 
 const NEXT_OUTLINE: Record<Outline, Outline> = { off: 'problems', problems: 'all', all: 'off' };
 
@@ -30,6 +32,7 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
   const [editing, setEditing] = useState<MessageTarget | null>(null);
   const rendered = useRenderedLocale();
   const watching = open || outline !== 'off';
+  const lingua = useLingua(watching);
 
   const patch = (fields: Partial<DevtoolsSession>) => {
     setSession((current) => ({ ...current, ...fields }));
@@ -80,6 +83,7 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
       { code: PANEL_CODE, run: () => patch({ open: !open }) },
       { code: EDIT_CODE, run: () => setEditing(editTarget(probed()) ?? editing) },
       { code: CONFIRM_CODE, run: confirm },
+      { code: LINGUA_CODE, run: () => openInLingua(lingua, editTarget(probed()) ?? editing) },
     ],
     () => {
       if (editing) {
@@ -90,7 +94,14 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
     },
   );
 
-  const card = <ProbeCard editKey={letterOf(EDIT_CODE)} confirmKey={letterOf(CONFIRM_CODE)} />;
+  const card = (
+    <ProbeCard
+      editKey={letterOf(EDIT_CODE)}
+      confirmKey={letterOf(CONFIRM_CODE)}
+      linguaKey={letterOf(LINGUA_CODE)}
+      lingua={lingua}
+    />
+  );
 
   if (editing) {
     return (
@@ -98,6 +109,7 @@ export function Devtools({ host }: Readonly<{ host: HTMLElement }>) {
         <MessageEditor
           key={`${editing.scope}@${editing.locale}/${editing.key}`}
           target={editing}
+          lingua={lingua}
           onClose={() => setEditing(null)}
           onSaved={() => setEditing(null)}
         />

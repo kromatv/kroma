@@ -9,6 +9,8 @@ import { MessageEditor } from './message-editor.component';
 
 const HOME: MessageTarget = { scope: null, locale: 'en', key: 'nav.home' };
 
+const LINGUA = { url: 'https://lingua.kroma.tv', project: 'kromatv/kroma' };
+
 let server = testChannel();
 
 function message(over: Partial<CatalogMessage> = {}): CatalogMessage {
@@ -186,5 +188,19 @@ describe('the message editor', () => {
     });
 
     expect(screen.getByText('Could not reach the dev server.')).toBeDefined();
+  });
+
+  it('links the message to its Lingua page, in a new tab', () => {
+    render(<MessageEditor target={HOME} lingua={LINGUA} onClose={vi.fn()} onSaved={vi.fn()} />);
+
+    const link = screen.getByRole('link', { name: 'Open in Lingua' });
+    expect(link.getAttribute('href')).toBe('https://lingua.kroma.tv/go/kromatv/kroma/en/nav.home');
+    expect(link.getAttribute('target')).toBe('_blank');
+  });
+
+  it('offers no Lingua link where the repository has none', () => {
+    render(<MessageEditor target={HOME} lingua={null} onClose={vi.fn()} onSaved={vi.fn()} />);
+
+    expect(screen.queryByRole('link', { name: 'Open in Lingua' })).toBeNull();
   });
 });

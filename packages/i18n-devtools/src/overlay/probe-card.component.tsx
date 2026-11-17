@@ -3,6 +3,8 @@ import { useSyncExternalStore } from 'react';
 import { categoryOf } from '../engine/plural';
 import { Chord, HOLD } from '../panel/chord.component';
 import type { Modifier } from '../panel/shortcut';
+import type { Lingua } from '../server/host';
+import { linguaLink } from '../server/lingua';
 import { confirmTarget, editTarget } from './message-target';
 import { GRADE_PAINT } from './highlight';
 import type { Grade } from './mark';
@@ -42,12 +44,16 @@ export interface ProbeCardProps {
   editKey: string;
   /** The letter that confirms its translation as it reads, held with `HOLD`. */
   confirmKey: string;
+  /** The letter that opens its page in Lingua, held with `HOLD`. */
+  linguaKey: string;
+  /** Where the repository translates, `null` where it has no Lingua. */
+  lingua: Lingua | null;
 }
 
 /** The card naming what drew the string under the pointer, in its own fixed
  *  layer beside it: below where there is room, above where there is not, so it
  *  never leaves the viewport. */
-export function ProbeCard({ editKey, confirmKey }: Readonly<ProbeCardProps>) {
+export function ProbeCard({ editKey, confirmKey, linguaKey, lingua }: Readonly<ProbeCardProps>) {
   const probe = useSyncExternalStore(onProbe, probed, probed);
   const origin = useOrigin(probe?.origin ?? null);
   if (!probe) {
@@ -93,6 +99,9 @@ export function ProbeCard({ editKey, confirmKey }: Readonly<ProbeCardProps>) {
             {probe.origin && <Chord hold={ALT_SHIFT} does="open" />}
             {editTarget(probe) && <Chord hold={HOLD} press={editKey} does="edit" />}
             {confirmTarget(probe) && <Chord hold={HOLD} press={confirmKey} does="confirm" />}
+            {linguaLink(lingua, editTarget(probe)) && (
+              <Chord hold={HOLD} press={linguaKey} does="Lingua" />
+            )}
           </Row>
         )}
       </Surface>

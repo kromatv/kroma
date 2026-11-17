@@ -1,4 +1,5 @@
 import {
+  Button,
   Callout,
   Column,
   Icon,
@@ -10,12 +11,15 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import type { MessageTarget } from '../overlay/message-target';
+import type { Lingua } from '../server/host';
+import { linguaLink } from '../server/lingua';
 import { useMessage } from '../server/message';
 import { GRIP_DATA } from './drag';
 import { MessageForm } from './message-form.component';
 
 export interface MessageEditorProps {
   target: MessageTarget;
+  lingua?: Lingua | null;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -23,9 +27,15 @@ export interface MessageEditorProps {
 /** The window a message is rewritten in: its key, where it is kept, and the
  *  form once the dev server has read it off the catalogs. It takes the panel's
  *  place and drags by the same grip. */
-export function MessageEditor({ target, onClose, onSaved }: Readonly<MessageEditorProps>) {
+export function MessageEditor({
+  target,
+  lingua = null,
+  onClose,
+  onSaved,
+}: Readonly<MessageEditorProps>) {
   const s = useStyles(editorStyles);
   const loaded = useMessage(target);
+  const link = linguaLink(lingua, target);
   return (
     <Surface tone="raised" pad="none" p={16} elevated gap={12} style={s.editor}>
       <Row between gap={8}>
@@ -43,6 +53,20 @@ export function MessageEditor({ target, onClose, onSaved }: Readonly<MessageEdit
           {`${target.scope ?? 'core'}@${target.locale}`}
         </Text>
       </Column>
+      {link && (
+        <Row>
+          <Button
+            label="Open in Lingua"
+            icon="external-link"
+            variant="ghost"
+            size="sm"
+            focusScale={1}
+            asChild
+          >
+            <a href={link} target="_blank" rel="noopener noreferrer" aria-label="Open in Lingua" />
+          </Button>
+        </Row>
+      )}
       {loaded.state === 'loading' && (
         <Text variant="meta" color="textMuted">
           Reading the catalog…
