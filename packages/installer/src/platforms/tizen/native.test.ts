@@ -95,6 +95,26 @@ describe('installOverSdb', () => {
     expect(vi.mocked(device.launch)).toHaveBeenCalledWith('KromaTV001.KROMA');
   });
 
+  it('calls the install done when the set refuses to start the app, and says to open it', async () => {
+    vi.mocked(device.launch).mockRejectedValue(
+      new Error('sdb: the device refused shell:0 execute KromaTV001.KROMA'),
+    );
+
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
+
+    expect(lines.at(-1)).toBe(
+      'KROMA is installed, but the set did not start it: open it from Apps (sdb: the device refused shell:0 execute KromaTV001.KROMA)',
+    );
+  });
+
+  it('says nothing more when the set answered the launch in words it does not know', async () => {
+    vi.mocked(device.launch).mockResolvedValue({ verdict: 'unknown', code: null, output: '' });
+
+    await installOverSdb(context(), '/out/KROMA.wgt', widget, 'kroma');
+
+    expect(lines.some((line) => line.includes('did not start it'))).toBe(false);
+  });
+
   it('leaves the app alone when it was told to install without starting it', async () => {
     await installOverSdb(context(false), '/out/KROMA.wgt', widget, 'kroma');
 
