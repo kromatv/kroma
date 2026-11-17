@@ -35,7 +35,7 @@ export async function installOverSdb(
       throw installFailure(result.output, profile, duid);
     }
     if (launch) {
-      await device.launch(tizenPackage.appId);
+      await start(device, tizenPackage.appId, log);
     }
   } finally {
     device.close();
@@ -51,6 +51,16 @@ async function refuseOlderSet(
   const refusal = belowPackageFloor(platform, tizenPackage, source);
   if (refusal) {
     throw refusal;
+  }
+}
+
+async function start(device: SdbDevice, appId: string, log: LogLine): Promise<void> {
+  const started = await device.launch(appId).catch((error: unknown) => ({
+    verdict: 'failure' as const,
+    output: error instanceof Error ? error.message : String(error),
+  }));
+  if (started.verdict === 'failure') {
+    log(`KROMA is installed, but the set did not start it: open it from Apps (${started.output})`);
   }
 }
 

@@ -14,10 +14,12 @@ import {
 import { type ConnectionOptions, SDB_PORT, SdbConnection } from './connection';
 import { describeResult, parseResult, type SdbResult } from './result';
 import { type ShellOptions, shell } from './shell';
+import { ServiceRefused } from './stream';
 import { type PushOptions, pushFile } from './sync';
 
 const ABSOLUTE_PATH = /^\/[A-Za-z0-9._/-]+$/;
-const UNSUPPORTED = /(command not found|unknown command|not supported|invalid command|usage:)/i;
+const UNSUPPORTED =
+  /(command not found|unknown command|not supported|invalid command|usage:|the device refused)/i;
 const NOTHING_RAN: SdbResult = {
   verdict: 'failure',
   code: null,
@@ -72,7 +74,7 @@ export async function connect(
     let fallback: SdbResult | null = null;
     for (const command of commands) {
       log?.(`> ${command}`);
-      const result = parseResult(await shell(connection, command));
+      const result = await shell(connection, command).then(parseResult, refusedAs);
       log?.(describeResult(command, result));
       if (result.verdict === 'success') {
         return result;
@@ -154,6 +156,13 @@ async function describe(
   } catch {
     return blank;
   }
+}
+
+function refusedAs(error: unknown): SdbResult {
+  if (error instanceof ServiceRefused) {
+    return { verdict: 'failure', code: null, output: error.message };
+  }
+  throw error;
 }
 
 async function temporaryDirectory(

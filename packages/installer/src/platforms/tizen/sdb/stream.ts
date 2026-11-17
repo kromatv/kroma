@@ -22,6 +22,9 @@ const DEFAULT_LIMIT = 256 * 1024;
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 /** One multiplexed service on an open connection: `shell:…`, `sync:`, `capability:`. */
+/** A set that closed a service as it was opened, the way a retail sdbd turns down a command it does not allow. */
+export class ServiceRefused extends Error {}
+
 export class SdbStream {
   remoteId = 0;
   private readonly pending: Buffer[] = [];
@@ -76,7 +79,7 @@ export class SdbStream {
       this.transport.send(SDB_COMMAND.CLSE, this.localId, this.remoteId, EMPTY);
     }
     this.transport.release(this.localId);
-    this.opened?.reject(new Error(`sdb: the device refused ${this.service}`));
+    this.opened?.reject(new ServiceRefused(`sdb: the device refused ${this.service}`));
     this.opened = null;
     for (const reader of this.readers.splice(0)) {
       reader.resolve(null);
