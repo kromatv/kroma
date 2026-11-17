@@ -54,6 +54,8 @@ const buttonVariants = svFor<{
           _press: { bg: 'dangerPress' },
           _disabled: { bg: 'danger/50' },
         },
+        label: { color: 'dangerInk' },
+        icon: { color: 'dangerInk' },
       },
       /** Red ink, no fill: the destructive action that is an exit rather than
        *  the screen's purpose (a dialog's "Delete" beside its primary pair). */

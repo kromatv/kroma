@@ -276,6 +276,8 @@ apps/      the web properties, deployed to Cloudflare
   kit/      @kromatv/kit: the workbench, as a site and as a phone/TV app
   modules/  @kromatv/modules-site: the official .kmod catalog
   packages/ @kromatv/package-source: the release listing DSM downloads from
+  lingua/   @kromatv/lingua: lingua.kroma.tv, translate the catalogs and send
+            each contributor's edits as a pull request (`lingua.json` at the root)
 ```
 
 A client ships the product; an app is a website about it. The two never import

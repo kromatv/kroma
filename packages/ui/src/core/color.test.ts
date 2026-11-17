@@ -93,6 +93,10 @@ describe('COLOR_KEYS', () => {
     }
   });
 
+  it('covers the caret of an entry, which a browser otherwise draws in the text’s ink', () => {
+    expect(COLOR_KEYS.has('caretColor')).toBe(true);
+  });
+
   it('does not claim keys whose value is not a colour', () => {
     for (const key of ['borderWidth', 'opacity', 'fontSize']) {
       expect(COLOR_KEYS.has(key)).toBe(false);

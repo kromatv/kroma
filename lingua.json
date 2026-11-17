@@ -1,0 +1,4 @@
+{
+  "url": "https://lingua.kroma.tv",
+  "projects": [{ "path": "packages/core/src/locales" }]
+}

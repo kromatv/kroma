@@ -20,6 +20,9 @@ function Probe({ capture }: Readonly<{ capture: (controls: ThemeRuntime) => void
   );
 }
 
+const steps = (root: { container: HTMLElement }) =>
+  root.container.querySelector('[data-kroma-bp]')?.getAttribute('data-kroma-bp');
+
 describe('owned styling roots', () => {
   it('isolates palettes, responsive declarations and subsequent theme swaps', () => {
     const a = { controls: undefined as ThemeRuntime | undefined };
@@ -81,5 +84,29 @@ describe('owned styling roots', () => {
     expect(getComputedStyle(view.getByTestId('panel')).paddingLeft).toBe('8px');
     view.unmount();
     expect(document.querySelectorAll('style[id^="kroma-theme-"]')).toHaveLength(0);
+  });
+
+  it('measures the surface again once a root drops the width it was pinned at', () => {
+    const measured = render(
+      <KitProvider config={{}}>
+        <Probe capture={() => {}} />
+      </KitProvider>,
+    );
+    const view = render(
+      <KitProvider config={{ designWidth: 1920 }}>
+        <Probe capture={() => {}} />
+      </KitProvider>,
+    );
+
+    expect(steps(view)).toBe('base md lg tv');
+
+    view.rerender(
+      <KitProvider config={{}}>
+        <Probe capture={() => {}} />
+      </KitProvider>,
+    );
+
+    expect(steps(view)).toBe(steps(measured));
+    expect(steps(view)).not.toBe('base md lg tv');
   });
 });

@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kroma-lingua",
+  "main": "./worker.js",
+  "compatibility_date": "2026-06-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+  },
+  "d1_databases": [
+    {
+      "binding": "LINGUA_DB",
+      "database_name": "kroma-lingua",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "vars": { "LINGUA_PROJECTS": "kromatv/kroma" },
+  "services": [{ "binding": "SELF", "service": "kroma-lingua" }],
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "routes": [{ "pattern": "lingua.kroma.tv", "custom_domain": true }],
+}

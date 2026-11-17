@@ -6,6 +6,7 @@ import {
   type ReactNode,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import type { FrostBackdropProps } from './components/atoms/frost';
@@ -69,6 +70,8 @@ const FORM_FACTOR: Readonly<
 
 export interface KitConfig<P extends FrostBackdropProps = FrostBackdropProps> {
   formFactor?: FormFactor;
+  /** Lays the tree out at this width instead of the surface's own. A root that
+   *  drops it measures the surface again. */
   designWidth?: number;
   remote?: boolean;
   deviceStore?: DeviceStore | null;
@@ -178,6 +181,19 @@ function KitStyleProvider({
     children,
   );
 }
+function usePinnedWidth(runtime: StyleRuntime, width: number | undefined): void {
+  const placed = useRef(false);
+  useEffect(() => {
+    if (width !== undefined) {
+      runtime.breakpoints.pinDesignWidth(width);
+      placed.current = true;
+    } else if (placed.current) {
+      runtime.breakpoints.pinDesignWidth();
+      placed.current = false;
+    }
+  }, [width, runtime]);
+}
+
 function OwnedKitStyleProvider({
   config,
   parent,
@@ -199,11 +215,7 @@ function OwnedKitStyleProvider({
       runtime.theme.setTheme(config.theme);
     }
   }, [config.theme, runtime]);
-  useEffect(() => {
-    if (config.designWidth !== undefined) {
-      runtime.breakpoints.pinDesignWidth(config.designWidth);
-    }
-  }, [config.designWidth, runtime]);
+  usePinnedWidth(runtime, config.designWidth);
   return createElement(
     StyleRuntimeProvider,
     { runtime },

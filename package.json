@@ -64,6 +64,7 @@
     "deploy:site": "bun run --filter '@kromatv/site' deploy",
     "deploy:modules": "bun run --filter '@kromatv/modules-site' deploy",
     "deploy:packages": "bun run --filter '@kromatv/package-source' deploy",
+    "deploy:lingua": "bun run --filter '@kromatv/lingua' deploy",
     "build": "bun run --filter '*' build",
     "build:web": "bun run --filter '@kromatv/web' build",
     "build:site": "bun run --filter '@kromatv/site' build",

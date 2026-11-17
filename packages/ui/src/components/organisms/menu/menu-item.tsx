@@ -200,6 +200,16 @@ function Item(props: Readonly<MenuItemProps>) {
   return <DialogRow {...shared} />;
 }
 
+/** What the menu acts for, above its items: the account a profile menu
+ *  belongs to. Nothing in it is pressable, and the keys pass over it. */
+function Header({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <Box px={CONTROL.sm.px} pt={8} pb={4}>
+      {children}
+    </Box>
+  );
+}
+
 /** A rule between two groups of actions. */
 function Separator() {
   return (
@@ -220,4 +230,4 @@ const sDefinition = styles({
 });
 
 export type { MenuItemProps, MenuTone };
-export { Item, labelOf, menuItemVariants, Separator };
+export { Header, Item, labelOf, menuItemVariants, Separator };

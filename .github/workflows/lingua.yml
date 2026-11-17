@@ -1,0 +1,85 @@
+name: Lingua
+
+# Deploys apps/lingua to lingua.kroma.tv: creates its D1 database the first
+# time, applies migrations/ before the code that needs them, then publishes the
+# Worker. The repositories it translates are LINGUA_PROJECTS in wrangler.jsonc.
+#
+# Needs CLOUDFLARE_API_TOKEN in the `sites` environment (Workers Scripts and
+# D1: Edit). Without it the job skips with a notice. When LINGUA_OAUTH_CLIENT_ID
+# and LINGUA_OAUTH_CLIENT_SECRET are both set there, every run stores them as
+# the Worker's GITHUB_OAUTH_CLIENT_ID and GITHUB_OAUTH_CLIENT_SECRET.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/lingua/**'
+      - '.github/workflows/lingua.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lingua
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'sites' || '' }}
+      deployment: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Check for the Cloudflare token
+        id: guard
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN not set; skipping the Lingua deploy."
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_token=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        if: steps.guard.outputs.has_token == 'true'
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+
+      - name: Install dependencies
+        if: steps.guard.outputs.has_token == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Create the database the first time
+        if: steps.guard.outputs.has_token == 'true'
+        working-directory: apps/lingua
+        run: bun run wrangler d1 info kroma-lingua > /dev/null 2>&1 || bun run wrangler d1 create kroma-lingua --location weur
+
+      - name: Apply migrations
+        if: steps.guard.outputs.has_token == 'true'
+        working-directory: apps/lingua
+        run: bun run migrate
+
+      - name: Deploy (lingua.kroma.tv)
+        if: steps.guard.outputs.has_token == 'true'
+        run: bun run deploy:lingua
+
+      - name: Store the OAuth App's client id and secret
+        if: steps.guard.outputs.has_token == 'true'
+        working-directory: apps/lingua
+        env:
+          OAUTH_CLIENT_ID: ${{ secrets.LINGUA_OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.LINGUA_OAUTH_CLIENT_SECRET }}
+        run: |
+          if [ -z "$OAUTH_CLIENT_ID" ] || [ -z "$OAUTH_CLIENT_SECRET" ]; then
+            echo "::notice::LINGUA_OAUTH_CLIENT_ID and LINGUA_OAUTH_CLIENT_SECRET are not both set; the Worker keeps the OAuth App it has."
+            exit 0
+          fi
+          jq -n --arg id "$OAUTH_CLIENT_ID" --arg secret "$OAUTH_CLIENT_SECRET" \
+            '{GITHUB_OAUTH_CLIENT_ID: $id, GITHUB_OAUTH_CLIENT_SECRET: $secret}' \
+            | bun run wrangler secret bulk

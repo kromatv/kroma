@@ -68,9 +68,11 @@ function CommandRow({ item, query, open, cursor, onHover, onPress }: Readonly<Co
             ) : null}
           </Box>
           {trailing ? (
-            <Text variant="meta" color="textDim" style={s.meta} lines={1}>
-              {trailing}
-            </Text>
+            <Box shrink={1} minW={0} maxW="50%">
+              <Text variant="meta" color="textDim" style={s.meta} lines={1}>
+                {trailing}
+              </Text>
+            </Box>
           ) : null}
           {item.status ? (
             <Box shrink={0}>

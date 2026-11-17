@@ -2,11 +2,14 @@ import { KitProvider } from '@kromatv/ui/kit';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
 import { HeadContent, Scripts } from '@tanstack/react-router';
-import { type JSX, type ReactNode, useMemo } from 'react';
+import { type JSX, type ReactNode, useMemo, useSyncExternalStore } from 'react';
 import { preload } from 'react-dom';
 import { visitorGround } from './site-ground';
+import { visitorWidth, widthStamp } from './site-width';
 
 const SITE_KIT = { formFactor: 'browser', entry: { size: 'md' } } as const;
+
+const unchanging = () => () => {};
 
 /**
  * The `<head>` every KROMA site shares - font preloads, stylesheet and favicon -
@@ -54,9 +57,18 @@ export function SiteDocument({ children }: Readonly<{ children: ReactNode }>) {
     preload(href, { as: 'font', type: 'font/woff2', crossOrigin: 'anonymous' });
   }
   const ground = visitorGround();
-  const kit = useMemo(() => ({ ...SITE_KIT, ground }), [ground]);
+  const hydrated = useSyncExternalStore(
+    unchanging,
+    () => true,
+    () => false,
+  );
+  const width = hydrated ? undefined : visitorWidth();
+  const kit = useMemo(
+    () => ({ ...SITE_KIT, ground, ...(width === undefined ? {} : { designWidth: width }) }),
+    [ground, width],
+  );
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning {...widthStamp(width)}>
       <head>
         <HeadContent />
       </head>

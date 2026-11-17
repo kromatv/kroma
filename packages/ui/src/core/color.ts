@@ -69,6 +69,7 @@ export const COLOR_KEYS: ReadonlySet<string> = new Set([
   'textDecorationColor',
   'textShadowColor',
   'tintColor',
+  'caretColor',
   'overlayColor',
   'placeholderTextColor',
 ]);
