@@ -1489,7 +1489,7 @@
     "packages/ui/src/components/organisms/virtual/virtual-grid/virtual-grid.component.tsx": 1,
     "packages/ui/src/components/organisms/virtual/virtual-rail/rail-edge.component.tsx": 1,
     "packages/ui/src/components/organisms/virtual/virtual-rail/virtual-rail.component.tsx": 1,
-    "packages/ui/src/configure.ts": 2,
+    "packages/ui/src/configure.ts": 1,
     "packages/ui/src/core/breakpoint.ts": 1,
     "packages/ui/src/core/normalize.ts": 1,
     "packages/ui/src/core/recipe.ts": 3,
