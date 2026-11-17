@@ -9,6 +9,7 @@ import {
   AuthConfig,
   AuthResult,
   Invite,
+  InviteCheck,
   InviteCreated,
   type Permission,
   PublicUser,
@@ -19,7 +20,6 @@ import {
 } from './schemas';
 
 const Me = z.object({ user: User });
-const InviteCheck = z.object({ valid: z.boolean(), expiresAt: z.number().optional() });
 const AvatarUploaded = z.object({ avatarUrl: z.string() });
 
 /** Accounts, sessions, invitations and profile/PIN. */
@@ -153,7 +153,8 @@ export default function accountsApi(ctx: RequestContext) {
     createInvite: (opts?: { permissions?: Permission[]; expiresInDays?: number }) =>
       ctx.post('/invites', InviteCreated, { body: opts ?? {} }),
 
-    /** Check an invite token's validity (public, used by the join page). */
+    /** Check an invite token's validity (public, used by the join page). The
+     * invitation of an account that waits also names that account. */
     checkInvite: (token: InviteToken) =>
       ctx.get('/invites/:token', InviteCheck, { params: { token } }),
 

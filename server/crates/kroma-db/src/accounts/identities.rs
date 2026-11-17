@@ -1,12 +1,12 @@
 //! Provider identities: the (issuer, subject) pairs an account can sign in as.
 
 use anyhow::Result;
-use rusqlite::{params, OptionalExtension, TransactionBehavior};
+use rusqlite::{params, Connection, OptionalExtension, TransactionBehavior};
 
 use kroma_domain::{LibraryScope, Permission, User};
 
 use super::{minted_user, permissions_json};
-use crate::rows::row_to_user;
+use crate::rows::{row_to_user, stored_library_scope};
 use crate::{now_or_blank, Pool};
 
 pub struct IdentityRow {
@@ -70,6 +70,7 @@ pub fn link_identity(pool: &Pool, user_id: &str, identity: &ProviderIdentity) ->
 }
 
 /// The account a provider identity signs in as, stamping the identity used.
+/// Never an account that waits on an invitation (ACCT-95).
 pub fn identity_user(pool: &Pool, issuer: &str, subject: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let user = conn
@@ -77,7 +78,7 @@ pub fn identity_user(pool: &Pool, issuer: &str, subject: &str) -> Result<Option<
             "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,\
              (u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries \
              FROM identities i JOIN users u ON u.id = i.user_id \
-             WHERE i.issuer = ?1 AND i.subject = ?2",
+             WHERE i.issuer = ?1 AND i.subject = ?2 AND u.waiting = 0",
             params![issuer, subject],
             row_to_user,
         )
@@ -164,10 +165,6 @@ pub fn create_member_with_identity(
     }
     let mut user = minted_user(member.email, member.username, member.permissions);
     user.libraries = member.libraries.clone();
-    let libraries: Option<String> = match member.libraries {
-        LibraryScope::All => None,
-        LibraryScope::Only(ids) => Some(serde_json::to_string(ids)?),
-    };
     tx.execute(
         "INSERT INTO users (id,email,username,password_hash,avatar_url,permissions,created_at,libraries) \
          VALUES (?1,?2,?3,'',NULL,?4,?5,?6)",
@@ -177,23 +174,33 @@ pub fn create_member_with_identity(
             user.username,
             permissions_json(&user.permissions),
             user.created_at,
-            libraries
+            stored_library_scope(member.libraries)?
         ],
     )?;
-    tx.execute(
+    sign_in_as(&tx, &user.id, identity, &user.created_at)?;
+    tx.commit()?;
+    Ok(Some(user))
+}
+
+pub(super) fn sign_in_as(
+    conn: &Connection,
+    user_id: &str,
+    identity: &ProviderIdentity,
+    at: &str,
+) -> rusqlite::Result<()> {
+    conn.execute(
         "INSERT INTO identities (id,user_id,issuer,subject,label,created_at,last_used) \
          VALUES (?1,?2,?3,?4,?5,?6,?6)",
         params![
             identity_id(),
-            user.id,
+            user_id,
             identity.issuer,
             identity.subject,
             identity.label,
-            user.created_at
+            at
         ],
     )?;
-    tx.commit()?;
-    Ok(Some(user))
+    Ok(())
 }
 
 #[cfg(test)]

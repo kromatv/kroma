@@ -12,6 +12,7 @@ mod migrations;
 mod steps;
 mod stored_tokens;
 mod titled_wanted;
+mod waiting_accounts;
 
 pub(crate) use ddl::{FILE_COLS, ITEM_COLS, SCHEMA};
 pub(crate) use migrations::MIGRATIONS;

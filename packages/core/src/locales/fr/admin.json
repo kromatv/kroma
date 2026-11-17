@@ -1,5 +1,7 @@
 {
   "admin.accessSection": "Accès",
+  "admin.accountNotWaiting": "Quelqu'un se connecte déjà à ce compte : il ne reçoit pas d'invitation",
+  "admin.accountWaiting": "Personne ne s'est encore connecté à ce compte. Créez plutôt son invitation",
   "admin.addFolder": "Ajouter un dossier",
   "admin.addLibrary": "Ajouter une bibliothèque",
   "admin.allLibraries": "Toutes les bibliothèques",

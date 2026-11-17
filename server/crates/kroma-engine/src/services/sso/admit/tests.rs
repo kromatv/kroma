@@ -6,11 +6,11 @@ use crate::db::testing::TempPool;
 const ISSUER: &str = "https://id.test";
 const NOW: i64 = 1_800_000_000;
 
-fn pool() -> TempPool {
+pub(super) fn pool() -> TempPool {
     crate::db::testing::temp_pool("sso-admit")
 }
 
-fn provider() -> Provider {
+pub(super) fn provider() -> Provider {
     Provider {
         id: "p0".into(),
         new_people: NewPeople::Ask,
@@ -18,7 +18,7 @@ fn provider() -> Provider {
     }
 }
 
-fn lea() -> Identity {
+pub(super) fn lea() -> Identity {
     Identity {
         issuer: ISSUER.into(),
         person: Person {
@@ -35,13 +35,18 @@ fn signing_in() -> Intent {
     Intent::SignIn { invite: None }
 }
 
-fn member(pool: &Pool, email: &str, username: &str) -> String {
+pub(super) fn member(pool: &Pool, email: &str, username: &str) -> String {
     db::create_user(pool, email, username, "hash", &[Permission::Playback])
         .unwrap()
         .id
 }
 
-fn admitted(pool: &Pool, provider: &Provider, identity: Identity, intent: &Intent) -> Outcome {
+pub(super) fn admitted(
+    pool: &Pool,
+    provider: &Provider,
+    identity: Identity,
+    intent: &Intent,
+) -> Outcome {
     admit(pool, provider, identity, intent, NOW).unwrap()
 }
 

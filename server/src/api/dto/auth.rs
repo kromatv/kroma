@@ -85,6 +85,20 @@ pub struct InviteCreated {
     pub expires_at: i64,
 }
 
+/// `GET /api/invites/:token`, the public check before the join form. `username`
+/// and `email` are what the account that waits on the invitation is known by.
+#[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct InviteCheck {
+    pub valid: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub username: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+}
+
 /// `POST /api/admin/users/:id/reset` result the reset link plus the one-time
 /// code the owner reads to the user. `delivered` is `manual` | `smtp`.
 #[derive(Serialize)]

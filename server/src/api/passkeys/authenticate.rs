@@ -120,3 +120,25 @@ pub async fn authenticate_finish(
     };
     issue_tokens(state, user, device.clone()).await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::api::test_support::{put_to_wait, seed_session, test_app};
+    use crate::model::Permission;
+
+    #[tokio::test]
+    async fn a_passkey_finds_its_account_until_that_account_waits() {
+        let t = test_app();
+        let (ana, _) = seed_session(&t.state, "ana@test.dev", "ana", &[Permission::Playback]);
+        db::insert_passkey(&t.state.db, "key", &ana, "Phone", "{}").unwrap();
+        let handle = user_uuid(&ana);
+
+        let before = account_for_handle(&t.state, handle).await;
+        put_to_wait(&t.state, &ana);
+        let after = account_for_handle(&t.state, handle).await;
+
+        assert_eq!(before, Some(ana));
+        assert_eq!(after, None);
+    }
+}

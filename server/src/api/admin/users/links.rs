@@ -1,12 +1,17 @@
-//! The two links an owner mints for a member: a credential reset and an address
-//! verification. Both are single-use and both try the configured delivery
-//! before falling back to the owner copying the link by hand.
+//! The links an owner mints for a member: a credential reset and an address
+//! verification, which both try the configured delivery before falling back to
+//! the owner copying the link by hand, and the invitation of an account that
+//! waits. Each is single-use.
 
 use axum::extract::{Path as AxPath, State};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
+use serde::Deserialize;
 
+use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
+use crate::api::invites::{expires_at, join_url};
 use crate::api::util::query;
 use crate::db;
 use crate::model::{Permission, User};
@@ -64,14 +69,15 @@ async fn deliver(
 }
 
 /// `POST /api/admin/users/:id/reset` → mint a credential reset. The link alone
-/// is not enough; the owner reads the returned code to the user.
+/// is not enough; the owner reads the returned code to the user. `409` for an
+/// account that waits on an invitation: a reset is not a way into it.
 pub async fn reset_user(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     super::super::require(&user, Permission::UsersManage)?;
-    let target = super::target_or_404(&state, &user, &id).await?;
+    let target = super::target_that_does_not_wait(&state, &user, &id).await?;
     let token = auth::random_token();
     let code = auth::random_code();
     let code_hash = auth::hash_password(&code);
@@ -110,14 +116,15 @@ pub async fn reset_user(
 
 /// `POST /api/admin/users/:id/email-verification` → mint a verification link
 /// for the account's current address and try to deliver it. No code: reaching
-/// the mailbox is itself the proof.
+/// the mailbox is itself the proof. `409` for an account that waits on an
+/// invitation: nobody holds it yet, and it may have no address.
 pub async fn send_email_verification(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     super::super::require(&user, Permission::UsersManage)?;
-    let target = super::target_or_404(&state, &user, &id).await?;
+    let target = super::target_that_does_not_wait(&state, &user, &id).await?;
     let token = auth::random_token();
     let expires_at = now_unix() + VERIFY_TTL;
     let (row_token, owner_id, target_id) = (token.clone(), user.id.clone(), id.clone());
@@ -148,6 +155,56 @@ pub async fn send_email_verification(
         url,
         expires_at,
         delivered: delivered.as_str().to_string(),
+    })
+    .into_response())
+}
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InviteUserBody {
+    #[serde(default)]
+    pub expires_in_days: Option<i64>,
+}
+
+/// `POST /api/admin/users/:id/invitation` `{ expiresInDays? }` → mint the
+/// invitation of an account that waits, which is the only way into it. The
+/// one before stops working and the account goes on waiting (ACCT-100). `409`
+/// for an account somebody already signs in to.
+pub async fn invite_user(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    AxPath(id): AxPath<String>,
+    body: Option<Json<InviteUserBody>>,
+) -> Result<Response, Response> {
+    super::super::require(&user, Permission::UsersManage)?;
+    let target = super::target_or_404(&state, &user, &id).await?;
+    let token = auth::random_token();
+    let expires_at = expires_at(body.and_then(|Json(body)| body.expires_in_days));
+    let (row_token, admin_id, target_id) = (token.clone(), user.id.clone(), id.clone());
+    let minted = query(&state.db, move |pool| {
+        db::invite_waiting_account(
+            &pool,
+            &db::AccountInvite {
+                token: &row_token,
+                user_id: &target_id,
+                created_by: &admin_id,
+                expires_at,
+            },
+        )
+    })
+    .await?;
+    if !minted {
+        return Err(lerr(
+            super::super::user_locale(&user),
+            StatusCode::CONFLICT,
+            "admin.accountNotWaiting",
+        ));
+    }
+    Ok(Json(crate::api::dto::InviteCreated {
+        url: join_url(&state, &token),
+        token,
+        permissions: target.permissions,
+        expires_at,
     })
     .into_response())
 }

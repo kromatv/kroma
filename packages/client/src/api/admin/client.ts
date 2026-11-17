@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
-import { ResetCreated, type UserId, VerificationCreated } from '../accounts';
+import { InviteCreated, ResetCreated, type UserId, VerificationCreated } from '../accounts';
 import { ServerInfo } from '../media';
 import type { PlaybackSessionId } from '../playback';
 import { backupApi } from './backup';
@@ -82,8 +82,15 @@ export default function adminApi(ctx: RequestContext) {
     deleteUser: (id: UserId) => ctx.delete('/admin/users/:id', { params: { id } }),
 
     /** Mint a credential reset (requires `users.manage`). The returned `code` is
-     * the one-time code the owner reads to the user; it is never stored in clear. */
+     * the one-time code the owner reads to the user; it is never stored in clear.
+     * Throws `KromaApiError` 409 for an account that waits on an invitation. */
     resetUser: (id: UserId) => ctx.post('/admin/users/:id/reset', ResetCreated, { params: { id } }),
+
+    /** Mint the invitation of an account that waits, the only way into it
+     * (requires `users.manage`). The one before stops working. Throws
+     * `KromaApiError` 409 for an account somebody already signs in to. */
+    inviteUser: (id: UserId, opts?: { expiresInDays?: number }) =>
+      ctx.post('/admin/users/:id/invitation', InviteCreated, { params: { id }, body: opts ?? {} }),
 
     /** Clear a user's profile PIN (requires `users.manage`). Remembered devices
      * re-lock and ask for the account credential on the next switch-in. */
@@ -91,7 +98,8 @@ export default function adminApi(ctx: RequestContext) {
 
     /** Mint an email-verification link for the account's current address and try
      * to deliver it (requires `users.manage`). No code: reaching the mailbox is
-     * itself the proof. */
+     * itself the proof. Throws `KromaApiError` 409 for an account that waits on
+     * an invitation. */
     sendEmailVerification: (id: UserId) =>
       ctx.post('/admin/users/:id/email-verification', VerificationCreated, { params: { id } }),
 

@@ -1,5 +1,7 @@
 {
   "admin.accessSection": "Access",
+  "admin.accountNotWaiting": "Someone already signs in to this account, so it takes no invitation",
+  "admin.accountWaiting": "Nobody has signed in to this account yet. Create its invitation instead",
   "admin.addFolder": "Add a folder",
   "admin.addLibrary": "Add a library",
   "admin.allLibraries": "All libraries",

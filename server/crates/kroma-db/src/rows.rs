@@ -23,7 +23,7 @@ pub(crate) fn parse_metadata(json: Option<String>) -> Option<Metadata> {
 pub(crate) fn row_to_user(r: &Row) -> rusqlite::Result<User> {
     Ok(User {
         id: r.get(0)?,
-        email: r.get(1)?,
+        email: r.get::<_, Option<String>>(1)?.unwrap_or_default(),
         username: r.get(2)?,
         avatar_url: r.get(3)?,
         created_at: r.get(4)?,
@@ -45,6 +45,13 @@ pub(crate) fn parse_library_scope(json: Option<String>) -> LibraryScope {
             .map(LibraryScope::Only)
             .unwrap_or(LibraryScope::All),
         None => LibraryScope::All,
+    }
+}
+
+pub(crate) fn stored_library_scope(scope: &LibraryScope) -> serde_json::Result<Option<String>> {
+    match scope {
+        LibraryScope::All => Ok(None),
+        LibraryScope::Only(ids) => serde_json::to_string(ids).map(Some),
     }
 }
 

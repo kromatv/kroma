@@ -96,6 +96,20 @@ describe('the admin console endpoints', () => {
       path: '/admin/users/u1/reset',
     },
     {
+      name: 'inviteUser',
+      call: (c) => c.admin.inviteUser(user, { expiresInDays: 3 }),
+      method: 'POST',
+      path: '/admin/users/u1/invitation',
+      body: { expiresInDays: 3 },
+    },
+    {
+      name: 'inviteUser with nothing to say',
+      call: (c) => c.admin.inviteUser(user),
+      method: 'POST',
+      path: '/admin/users/u1/invitation',
+      body: {},
+    },
+    {
       name: 'clearUserPin',
       call: (c) => c.admin.clearUserPin(user),
       method: 'DELETE',

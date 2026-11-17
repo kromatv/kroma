@@ -23,6 +23,7 @@ mod quick_connect;
 mod reset;
 mod session;
 mod verify_email;
+mod waiting;
 
 use credentials::{change_password, login, register};
 use profile::{update_me, upload_avatar};

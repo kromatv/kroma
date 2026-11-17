@@ -14,6 +14,7 @@ use crate::{now_or_blank, Pool};
 /// `access_token` records the device credential this session was minted from,
 /// so the account's session list can flag the current device. The user's
 /// expired sessions go in the same call, so renewing never piles them up.
+/// An error for an account that waits on an invitation (ACCT-95).
 pub fn create_session(
     pool: &Pool,
     token: &str,
@@ -56,10 +57,13 @@ fn insert_session(
         "DELETE FROM sessions WHERE user_id = ?1 AND expires_at <= ?2",
         params![user_id, time::OffsetDateTime::now_utc().unix_timestamp()],
     )?;
-    conn.execute(
-        "INSERT INTO sessions (token,user_id,created_at,expires_at,access_token) VALUES (?1,?2,?3,?4,?5)",
+    let written = conn.execute(
+        "INSERT INTO sessions (token,user_id,created_at,expires_at,access_token) \
+         SELECT ?1,?2,?3,?4,?5 \
+         WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?2 AND waiting = 1)",
         params![stored(token), user_id, now_or_blank(), expires_at, access_token.map(stored)],
     )?;
+    anyhow::ensure!(written == 1, "an account that waits holds no session");
     Ok(())
 }
 
@@ -79,14 +83,15 @@ pub fn session_device_id(pool: &Pool, token: &str) -> Result<Option<String>> {
     Ok(access.map(|kept| device_id(&kept)))
 }
 
-/// Resolve a session token to its user; expired sessions resolve to `None`.
+/// Resolve a session token to its user; expired sessions resolve to `None`,
+/// and so does any session of an account that waits on an invitation.
 pub fn session_user(pool: &Pool, token: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut stmt = conn.prepare(
         "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries \
          FROM sessions s JOIN users u ON u.id = s.user_id \
-         WHERE s.token = ?1 AND s.expires_at > ?2",
+         WHERE s.token = ?1 AND s.expires_at > ?2 AND u.waiting = 0",
     )?;
     let mut rows = stmt.query_map(params![stored(token), now], row_to_user)?;
     match rows.next() {

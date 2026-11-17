@@ -18,6 +18,7 @@ use crate::services::auth;
 use crate::services::loginguard;
 use crate::state::SharedState;
 
+use super::waiting::{claim, invited_account, Joining};
 use super::{issue_tokens, ThisDevice};
 
 pub(crate) const MIN_PASSWORD_LEN: usize = 8;
@@ -34,9 +35,11 @@ pub struct RegisterBody {
 /// `POST /api/auth/register` → `{ token, user }`. The first account ever created is
 /// the owner, granted in the insert itself so that two registrations in flight
 /// against an empty server cannot both claim it; after that a valid `inviteToken`
-/// is required and grants its permissions. The owner can only be claimed from a
-/// loopback or private address, so a server exposed before first run is not
-/// handed to whoever reaches it first.
+/// is required and grants its permissions. The invitation of an account that
+/// waits creates nobody: that account takes the password, the name and the
+/// address sent here, and keeps its id (ACCT-96 to ACCT-98). The owner can only
+/// be claimed from a loopback or private address, so a server exposed before
+/// first run is not handed to whoever reaches it first.
 pub async fn register(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
@@ -76,24 +79,29 @@ pub async fn register(
         }
     }
 
+    let waiting = match invited_account(&state, body.invite_token.as_deref()).await {
+        Ok(account) => account,
+        Err(resp) => return resp,
+    };
+
     // Reject a duplicate email before consuming any invite, or a retry spends the
     // single-use invite. `create_user`'s UNIQUE constraint is the atomic backstop.
-    let email_check = email.clone();
+    let (email_check, own) = (email.clone(), waiting.clone());
     match query(&state.db, move |pool| {
-        db::find_user_by_email(&pool, &email_check)
+        db::email_taken(&pool, &email_check, own.as_deref())
     })
     .await
     {
-        Ok(Some(_)) => return lerr(loc, StatusCode::CONFLICT, "auth.emailTaken"),
-        Ok(None) => {}
+        Ok(true) => return lerr(loc, StatusCode::CONFLICT, "auth.emailTaken"),
+        Ok(false) => {}
         Err(resp) => return resp,
     }
 
     // Same for the username, and before the invite too: a duplicate would make
     // username login ambiguous.
-    let username_check = username.clone();
+    let (username_check, own) = (username.clone(), waiting.clone());
     match query(&state.db, move |pool| {
-        db::username_taken(&pool, &username_check, None)
+        db::username_taken(&pool, &username_check, own.as_deref())
     })
     .await
     {
@@ -130,6 +138,15 @@ pub async fn register(
     let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
         return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
     };
+    if waiting.is_some() {
+        let joining = Joining {
+            token,
+            email,
+            username,
+            password: body.password,
+        };
+        return claim(state, loc, device, joining).await;
+    }
     let permissions = match query(&state.db, move |pool| {
         db::consume_invite(&pool, token.trim())
     })
