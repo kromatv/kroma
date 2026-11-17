@@ -26,8 +26,6 @@ pub(super) trait Provider: Send + Sync {
     fn headers(&self, api_key: &str) -> Vec<(&'static str, String)>;
     fn chat_body(&self, ask: &Ask<'_>, user: &str) -> Value;
     fn parse_reply(&self, v: &Value) -> Result<String>;
-    // Whether the request carries a reasoning control, so a request that
-    // failed with it can be worth trying with the other setting.
     fn controls_reasoning(&self) -> bool {
         false
     }

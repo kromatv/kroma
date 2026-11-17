@@ -31,9 +31,6 @@ export const MODEL_PLACEHOLDER: Record<string, string> = {
   openrouter: 'qwen/qwen-2.5-7b-instruct',
 };
 
-// Temperature is everywhere but Anthropic. The reasoning toggle, with its hint,
-// is offered where the server sends the provider a reasoning control; unknown
-// providers fall back to the openai layout.
 export type Spec = {
   baseUrl: 'required' | 'advanced';
   apiKey: 'required' | 'optional';

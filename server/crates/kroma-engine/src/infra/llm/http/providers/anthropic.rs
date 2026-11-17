@@ -142,7 +142,6 @@ impl Provider for Anthropic {
     }
 }
 
-// Off sends no `thinking`: `{"type":"disabled"}` is a 400 on Opus 5.5, Sonnet 5.5 and Fable.
 fn set_budget(body: &mut Value, ask: &Ask<'_>) {
     match ask.reasoning {
         Reasoning::Off => body["max_tokens"] = json!(ask.answer_tokens),

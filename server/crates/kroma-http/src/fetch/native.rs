@@ -134,8 +134,6 @@ impl Fetch {
     }
 }
 
-// curl before 8.2 refuses a config line over 100 KiB, so a body never rides in
-// the config: curl reads it from this file, which lives until the call returns.
 fn body_file(body: &[u8]) -> Result<tempfile::NamedTempFile> {
     use std::io::Write;
 
