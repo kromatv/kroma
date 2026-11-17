@@ -188,6 +188,31 @@ title and one person, the newer one wins. KROMA's wins a tie.
 **ADMIN-167** (AGREED) - An import only adds watch state or moves it forward. It removes
 none: a title someone marked unwatched on the other server stays as KROMA has it.
 
+## After the import
+
+Status: **AGREED**
+
+The importer is installed when the owner chooses to bring a server over (MOD-103). What it
+brought belongs to KROMA from then on. What the importer still holds is the sign-in to the
+other server, and for Plex that sign-in is the owner's own account.
+
+**ADMIN-168** (AGREED) - The importer stays installed after an import, so the owner can run
+the import again. Nothing removes it on its own.
+
+**ADMIN-169** (AGREED) - The report at the end of an import, and the import screen of the
+admin console, offer to remove the importer.
+
+**ADMIN-170** (AGREED) - Removing the importer forgets the sign-in to the other server
+(MOD-106). Everything the import brought stays: sources, accounts, watch state, plays and the
+path translation.
+
+**ADMIN-171** (AGREED) - An import after the importer was removed installs it again and asks
+the owner to sign in again. It still brings only what changed since the last import
+(ADMIN-165).
+
+A household that tried KROMA for a week and left Plex for good removes the importer, and no
+KROMA server keeps a key to an account it no longer uses.
+
 ## Deliberately not done
 
 Status: **DESIGN, NOT IMPLEMENTED**

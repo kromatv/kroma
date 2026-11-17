@@ -3,7 +3,7 @@
 
 # Requirement index
 
-715 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+719 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -277,6 +277,10 @@
 - **ADMIN-165** (AGREED) - A second import, run when nothing changed on the other server, <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-166** (AGREED) - Where KROMA and the other server both hold watch state for one <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-167** (AGREED) - An import only adds watch state or moves it forward. It removes <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-168** (AGREED) - The importer stays installed after an import, so the owner can run <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-169** (AGREED) - The report at the end of an import, and the import screen of the <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-170** (AGREED) - Removing the importer forgets the sign-in to the other server <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-171** (AGREED) - An import after the importer was removed installs it again and asks <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 

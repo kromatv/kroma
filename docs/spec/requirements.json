@@ -2670,6 +2670,46 @@
     "line": 188
   },
   {
+    "id": "ADMIN-168",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 168,
+    "status": "AGREED",
+    "text": "The importer stays installed after an import, so the owner can run",
+    "file": "docs/spec/admin/import.md",
+    "line": 199
+  },
+  {
+    "id": "ADMIN-169",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 169,
+    "status": "AGREED",
+    "text": "The report at the end of an import, and the import screen of the",
+    "file": "docs/spec/admin/import.md",
+    "line": 202
+  },
+  {
+    "id": "ADMIN-170",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 170,
+    "status": "AGREED",
+    "text": "Removing the importer forgets the sign-in to the other server",
+    "file": "docs/spec/admin/import.md",
+    "line": 205
+  },
+  {
+    "id": "ADMIN-171",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 171,
+    "status": "AGREED",
+    "text": "An import after the importer was removed installs it again and asks",
+    "file": "docs/spec/admin/import.md",
+    "line": 209
+  },
+  {
     "id": "BROWSE-1",
     "domain": "BROWSE",
     "space": "browse",
