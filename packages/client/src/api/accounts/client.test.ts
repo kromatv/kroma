@@ -1,5 +1,6 @@
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { checkEndpoint, type Endpoint } from '../../endpoints.fixture';
+import { recordingClient } from '../../kroma-client.fixture';
 import { CeremonyId, InviteToken, PasskeyId, SessionId } from './ids';
 
 const ceremonyId = CeremonyId.parse('cer1');
@@ -176,6 +177,22 @@ describe('the accounts endpoints', () => {
       path: '/invites/t%201',
     },
   ])('$name', checkEndpoint);
+});
+
+describe('config', () => {
+  it('hands the signal of the caller to the request, so a timed ask can be cut short', async () => {
+    const signals: unknown[] = [];
+    const { client } = recordingClient((_url, init) => {
+      signals.push(init?.signal);
+      return { json: { publicUserList: true, hasAccounts: false } };
+    });
+    const ctrl = new AbortController();
+
+    const config = await client.accounts.config({ signal: ctrl.signal });
+
+    expect(signals).toEqual([ctrl.signal]);
+    expect(config.hasAccounts).toBe(false);
+  });
 });
 
 describe('the passkey ceremonies', () => {

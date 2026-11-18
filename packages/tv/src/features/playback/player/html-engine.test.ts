@@ -25,6 +25,7 @@ const shakaMock = vi.hoisted(() => ({
   configure: vi.fn(),
   destroy: vi.fn(() => Promise.resolve()),
   retryStreaming: vi.fn(() => true),
+  addEventListener: vi.fn(),
 }));
 vi.mock('shaka-player/dist/shaka-player.compiled.js', () => ({
   default: {
@@ -38,6 +39,7 @@ vi.mock('shaka-player/dist/shaka-player.compiled.js', () => ({
       configure = shakaMock.configure;
       destroy = shakaMock.destroy;
       retryStreaming = shakaMock.retryStreaming;
+      addEventListener = shakaMock.addEventListener;
     },
   },
 }));

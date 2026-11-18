@@ -79,7 +79,7 @@ describe('useVideoPlayback seeking (HLS remux)', () => {
 
   it('maps an absolute target onto the stream base, not the requested anchor', async () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
-    H.user = {};
+    H.user = { id: 'u1' };
     H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: 100_000 });
     vi.stubGlobal(
       'fetch',
@@ -113,7 +113,7 @@ describe('useVideoPlayback seeking (HLS remux)', () => {
 
 describe('useVideoPlayback resume', () => {
   it('anchors at the stored position once it is past the 15s floor', async () => {
-    H.user = {};
+    H.user = { id: 'u1' };
     H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: 100_000 });
     const { result } = render();
     await settle();
@@ -121,7 +121,7 @@ describe('useVideoPlayback resume', () => {
   });
 
   it('starts over below the floor and past the 95% credits mark', async () => {
-    H.user = {};
+    H.user = { id: 'u1' };
     H.itemProgress.mockResolvedValue({ positionMs: 10_000, durationMs: 100_000 });
     const early = render();
     await settle();
@@ -135,7 +135,7 @@ describe('useVideoPlayback resume', () => {
   });
 
   it('resumes a progress row whose duration nobody knows', async () => {
-    H.user = {};
+    H.user = { id: 'u1' };
     H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: null });
     const { result } = render(movie({ durationMs: undefined }));
     await settle();
@@ -144,7 +144,7 @@ describe('useVideoPlayback resume', () => {
   });
 
   it('starts at zero when the progress lookup fails', async () => {
-    H.user = {};
+    H.user = { id: 'u1' };
     H.itemProgress.mockRejectedValue(new Error('offline'));
     const { result } = render();
     await settle();
@@ -152,7 +152,7 @@ describe('useVideoPlayback resume', () => {
   });
 
   it('ignores a progress reply that lands after unmount', async () => {
-    H.user = {};
+    H.user = { id: 'u1' };
     let resolveProgress: (p: unknown) => void = unsettled;
     H.itemProgress.mockReturnValue(
       new Promise((resolve) => {
@@ -169,7 +169,7 @@ describe('useVideoPlayback resume', () => {
   });
 
   it('ignores a failed progress lookup that lands after unmount', async () => {
-    H.user = {};
+    H.user = { id: 'u1' };
     let rejectProgress: (e: unknown) => void = unsettled;
     H.itemProgress.mockReturnValue(
       new Promise((_resolve, reject) => {
@@ -203,7 +203,7 @@ describe('useVideoPlayback HLS master headers', () => {
 
   it('keeps the requested anchor when the headers are unusable', async () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
-    H.user = {};
+    H.user = { id: 'u1' };
     H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: 100_000 });
     vi.stubGlobal(
       'fetch',
@@ -259,7 +259,7 @@ describe('useVideoPlayback HLS master headers', () => {
 
   it('keeps the requested anchor when the master fetch fails', async () => {
     H.decision = { kind: 'web-mse', aacMaster: false };
-    H.user = {};
+    H.user = { id: 'u1' };
     H.itemProgress.mockResolvedValue({ positionMs: 40_000, durationMs: 100_000 });
     vi.stubGlobal(
       'fetch',

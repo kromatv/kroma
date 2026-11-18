@@ -45,6 +45,10 @@ trust grant. Every install still goes through the same gate:
   registry it came from and for an upload too,
 - the module's `engines` are enforced at install **and** at spawn, and an engine
   the server cannot check is refused rather than ignored,
+- a module with a core grant carries `engines.core`, the oldest core schema it
+  runs on. One that needs a newer schema than the server's is refused, and so is
+  one built before the server changed a table it reaches in a way it would read
+  wrongly, by table,
 - the component imports a version of the `kroma:module` interface this server
   implements, read from the component's own bytes at install **and** at spawn,
   so a module built against another interface is refused by name whatever its

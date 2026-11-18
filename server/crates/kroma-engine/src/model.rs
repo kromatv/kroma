@@ -10,6 +10,7 @@ pub use crate::domain::admin::*;
 pub use crate::domain::app_version::*;
 pub use crate::domain::cast::*;
 pub use crate::domain::crash::*;
+pub use crate::domain::import;
 pub use crate::domain::jobs::*;
 pub use crate::domain::library::*;
 pub use crate::domain::media::*;

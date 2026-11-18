@@ -98,6 +98,10 @@ mod it_host_settings;
 #[cfg(test)]
 mod it_images;
 #[cfg(test)]
+mod it_importer_calls;
+#[cfg(test)]
+mod it_importers;
+#[cfg(test)]
 mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;

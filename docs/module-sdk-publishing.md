@@ -13,6 +13,7 @@ it is too.
 | `tsconfig.module.json` | `packages/cli/tsconfig.module.json` plus `paths` mapping every `@kromatv/*` specifier and `react-native` onto `types/` |
 | `rust/` | the thirteen crates a module links and the four `kroma audit` runs it on, out of `server/crates` (the SDK's own, not the server's) |
 | `templates/` | what `kroma create` renders |
+| `table_versions.json` | the core schema's history per table, out of `server/crates/kroma-db`, which `kroma build` reads a module's `engines.core` from |
 
 Every workspace package stays `private: true`; `bun run ci sdk stage` assembles
 the package under another name from their output.

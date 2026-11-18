@@ -18,6 +18,7 @@ fn supervisor(data_dir: &Path) -> Arc<Supervisor> {
         data_dir: data_dir.to_path_buf(),
         reserved_ids: Vec::new(),
         server_version: "0.1.4".into(),
+        core_schema: Default::default(),
         log_line: None,
     })
 }

@@ -81,14 +81,14 @@ async function attached() {
 
 describe('useVideoPlayback preferred audio', () => {
   it('applies the account audio language once the session hydrates', async () => {
-    H.user = { audioLanguage: 'fr' };
+    H.user = { id: 'u1', audioLanguage: 'fr' };
     const { result } = render();
     await settle();
     expect(result.current.audioIndex).toBe(1); // the 'fra' track
   });
 
   it('leaves the default track alone when no track speaks the preferred language', async () => {
-    H.user = { audioLanguage: 'de' };
+    H.user = { id: 'u1', audioLanguage: 'de' };
     const { result } = render();
     await settle();
     expect(result.current.audioIndex).toBe(0);

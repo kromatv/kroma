@@ -1,10 +1,13 @@
 mod support;
 
+use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::thread::JoinHandle;
 
-use kroma_http::egress::{self, Decision, Exchange, Outgoing, Route, Ruling, BLOCKED};
+use kroma_http::egress::{self, Decision, Exchange, Gateway, Outgoing, Route, Ruling, BLOCKED};
 use kroma_http::Fetch;
-use support::{one_shot_server, text};
+use support::{one_shot_server, read_request, text};
 
 fn recorded() -> &'static Mutex<Vec<Exchange>> {
     static RECORDED: OnceLock<Mutex<Vec<Exchange>>> = OnceLock::new();
@@ -144,4 +147,98 @@ fn a_download_lands_in_its_file_and_records_the_file_size() {
     assert!(response.body.is_empty());
     assert_eq!(std::fs::read(&dest).unwrap(), b"ID3-not-really-audio");
     assert_eq!(exchange_for("test-download").bytes_in, 20);
+}
+
+struct Tunnel {
+    username: String,
+    password: String,
+    target: String,
+    request: Vec<u8>,
+}
+
+fn read_exactly(stream: &mut TcpStream, len: usize) -> Vec<u8> {
+    let mut bytes = vec![0; len];
+    stream.read_exact(&mut bytes).unwrap();
+    bytes
+}
+
+fn read_prefixed(stream: &mut TcpStream) -> String {
+    let len = read_exactly(stream, 1)[0];
+    String::from_utf8(read_exactly(stream, usize::from(len))).unwrap()
+}
+
+fn socks_gateway(response: &'static str) -> (Gateway, JoinHandle<Tunnel>) {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let gateway = Gateway {
+        address: listener.local_addr().unwrap().to_string(),
+        credential: "module-token".into(),
+    };
+    let tunnel = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let greeting = read_exactly(&mut stream, 2);
+        read_exactly(&mut stream, usize::from(greeting[1]));
+        stream.write_all(&[5, 2]).unwrap();
+        read_exactly(&mut stream, 1);
+        let username = read_prefixed(&mut stream);
+        let password = read_prefixed(&mut stream);
+        stream.write_all(&[1, 0]).unwrap();
+        read_exactly(&mut stream, 4);
+        let host = read_prefixed(&mut stream);
+        let port = read_exactly(&mut stream, 2);
+        stream.write_all(&[5, 0, 0, 1, 127, 0, 0, 1, 0, 0]).unwrap();
+        let request = read_request(&mut stream);
+        stream.write_all(response.as_bytes()).unwrap();
+        Tunnel {
+            username,
+            password,
+            target: format!("{host}:{}", u16::from_be_bytes([port[0], port[1]])),
+            request,
+        }
+    });
+    (gateway, tunnel)
+}
+
+#[test]
+fn a_carried_call_reaches_its_server_through_the_gateway_with_its_body() {
+    let (gateway, tunnel) = socks_gateway("HTTP/1.1 201 Created\r\ncontent-length: 2\r\n\r\n{}");
+    let body = br#"{"title":"Dune"}"#;
+
+    let response = Fetch::new()
+        .carry(
+            &gateway,
+            "indexer.public",
+            "POST",
+            "http://catalog.test/notes",
+            body,
+        )
+        .unwrap();
+
+    let tunnel = tunnel.join().unwrap();
+    assert_eq!(response.status, 201);
+    assert_eq!(tunnel.username, "indexer.public");
+    assert_eq!(tunnel.password, "module-token");
+    assert_eq!(tunnel.target, "catalog.test:80");
+    assert!(text(&tunnel.request).starts_with("POST /notes "));
+    assert!(tunnel.request.ends_with(body));
+}
+
+#[test]
+fn a_carried_call_without_a_body_sends_none() {
+    let (gateway, tunnel) = socks_gateway("HTTP/1.1 204 No Content\r\n\r\n");
+
+    let response = Fetch::new()
+        .carry(
+            &gateway,
+            "indexer",
+            "DELETE",
+            "http://catalog.test/notes/1",
+            b"",
+        )
+        .unwrap();
+
+    let request = text(&tunnel.join().unwrap().request);
+    assert_eq!(response.status, 204);
+    assert!(request.starts_with("DELETE /notes/1 "));
+    assert!(request.ends_with("\r\n\r\n"));
+    assert!(!request.to_ascii_lowercase().contains("content-length"));
 }

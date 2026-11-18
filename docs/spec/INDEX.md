@@ -3,7 +3,7 @@
 
 # Requirement index
 
-719 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+720 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -622,6 +622,7 @@
 - **MOD-104** (AGREED) - The servers KROMA can import from are the importers the official <sub>[README.md](modules/README.md)</sub>
 - **MOD-105** (AGREED) - An importer reads the other server and describes what it found. The <sub>[README.md](modules/README.md)</sub>
 - **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
+- **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 
@@ -748,5 +749,5 @@
 - **SURF-58** (SHIPPED) - An app never reports being too old as a playback or feature error.
 - **SURF-59** (SHIPPED) - A server treats a request that names no app version as coming from an
 - **SURF-60** (SHIPPED) - An app that needs a newer server than the one it reached shows one
-- **SURF-61** (AGREED) - A television or the desktop app that reaches a server nobody owns yet
+- **SURF-61** (SHIPPED) - A television or the desktop app that reaches a server nobody owns yet
 - **SURF-62** (AGREED) - Setting a server up is the web surface's job

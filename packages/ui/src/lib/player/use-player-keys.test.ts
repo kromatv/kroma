@@ -93,6 +93,15 @@ const pressKey = (init: KeyboardEventInit) => {
   return notPrevented;
 };
 
+const pressKeyCode = (keyCode: number) => {
+  const event = new KeyboardEvent('keydown', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'key', { value: undefined });
+  Object.defineProperty(event, 'keyCode', { value: keyCode });
+  act(() => {
+    window.dispatchEvent(event);
+  });
+};
+
 function setup(over: Partial<Params> = {}) {
   const params: Params = {
     nav: makeNav(),
@@ -391,6 +400,38 @@ describe('usePlayerKeys arrow volume', () => {
     expect(nav.rearmHide).toHaveBeenCalled();
     expect(nav.poke).not.toHaveBeenCalled();
     expect(params.seekNudge).not.toHaveBeenCalled();
+  });
+});
+
+describe('usePlayerKeys on an engine with no KeyboardEvent.key', () => {
+  it("hands a Samsung remote's Back, a keyCode alone, to the player", () => {
+    const { params } = setup({ flags: TV_BROWSER_FLAGS });
+
+    pressKeyCode(10009);
+
+    expect(params.nav.handleKey).toHaveBeenCalledWith('Back');
+  });
+
+  it('seeks in immersive mode on an arrow reported by keyCode alone', () => {
+    const nav = makeNav();
+    nav.revealed = false;
+    const controller = makeController();
+    controller.fullscreen = true;
+    const { params } = setup({ nav, controller, flags: TV_BROWSER_FLAGS });
+
+    pressKeyCode(37);
+
+    expect(params.seekNudge).toHaveBeenCalledWith(-1, 'tap');
+  });
+
+  it('steps the volume on an arrow reported by keyCode alone', () => {
+    const controller = makeController();
+    controller.volume = 0.5;
+    const { params } = setup({ controller });
+
+    pressKeyCode(40);
+
+    expect(params.setVolume).toHaveBeenCalledWith(0.45);
   });
 });
 

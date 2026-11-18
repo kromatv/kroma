@@ -16,6 +16,7 @@ database takes the same steps through `ServerModule::steps()`; see
 | `steps/NNNN_name.sql` | One step's SQL, compiled into the binary with `include_str!` |
 | `legacy.rs` | The pre-versioning schema and migration list, run once on an old database |
 | `fixtures/vX.Y.Z.sql` | The schema real releases left behind, for the upgrade tests |
+| `table_versions.json` | Per table, the version that last changed it and the one that last broke a module built before, generated |
 
 ## Adding a change
 
@@ -27,6 +28,27 @@ This creates `steps/0002_users_theme.sql` and appends it to `steps.rs`. Write
 the SQL, then run `cargo test -p kroma-db schema::`. The tests build a new
 database and upgrade every fixture release, and fail if the two disagree on any
 table, column, index or foreign key.
+
+They also fail until `table_versions.json` says what the step did:
+
+```bash
+KROMA_BLESS_SCHEMA=1 cargo test -p kroma-db table_versions
+```
+
+The test applies the baseline and every step to an empty database and records,
+for each table, the last step that changed it and the last one that broke it:
+a column dropped or altered, an index, foreign key or trigger removed, a
+NOT NULL column added without a default, or a column that existed before the
+step rewritten. A `Run::Code` step prepares none of its writes on an empty
+database, so it names the tables it rewrites in `CODE_STEP_TABLES`, and the test
+fails until it does.
+
+That file is what a module's `engines.core` is read from (see
+[`modules/README.md`](../modules/README.md#runtime-contract)). A step that changes a
+table a module's `storage.core` grant names moves that module's bundle, so bump
+its `version` in the same pull request. One that breaks such a table makes every
+server from this step on refuse the module's older builds, by table, until it is
+rebuilt.
 
 A step runs once, in its own transaction, and records its version in the same
 commit. If it fails, the database stays at the version before it and the server
@@ -89,3 +111,8 @@ raise `baseline_version` to the last step's version, then delete those steps.
 While `legacy.rs` still describes the baseline,
 `KROMA_BLESS_SCHEMA=1 cargo test -p kroma-db the_baseline_is` rewrites
 `baseline.sql` from it.
+
+A squash also rewrites `table_versions.json`: the history before the baseline is
+gone, so every table reads as changed at the new baseline version. Every module
+with a core grant then needs a server at that version from its next build, so
+squash only past the oldest server the modules still support.

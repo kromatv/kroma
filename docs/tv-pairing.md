@@ -16,6 +16,12 @@ screens, which is slow and is exactly why it works everywhere: across subnets,
 over a tunnel, from a phone on cellular, on a television that cannot do anything
 else. It is never removed.
 
+A server with no account has nobody to approve a request, so no road opens on it:
+the television says that the server is not set up, shows the address to open in a
+browser, and asks again every five seconds until the owner exists, when the code
+takes the place of the notice. A server that does not answer is never read as an
+empty one.
+
 ## What "the same network" means
 
 The handoff lists a television only to a caller the server can place beside it.

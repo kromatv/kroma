@@ -17,7 +17,7 @@ import { RegistryUrl } from '#site/components/registry-url.component';
 import { SiteFooter } from '#site/components/site-footer.component';
 import { SiteHeader } from '#site/components/site-header.component';
 import { download } from '#site/lib/artifacts';
-import { depEntries } from '#site/lib/deps';
+import { depEntries, engineLabel } from '#site/lib/deps';
 import { getCatalog } from '#site/lib/get-catalog';
 import { getModuleHistory } from '#site/lib/get-module';
 
@@ -90,7 +90,7 @@ function Hero({ module: m }: Readonly<{ module: ModuleEntry }>) {
               <Row gap={6} key={engine}>
                 <Icon name="server" size={14} color="textDim" />
                 <Text color="textDim" variant="meta">
-                  {engine === 'server' ? 'KROMA' : engine} {range}
+                  {engineLabel(engine, range)}
                 </Text>
               </Row>
             ))}

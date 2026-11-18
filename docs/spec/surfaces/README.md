@@ -66,7 +66,7 @@ surface that lacks one records the absence in the capability matrix. The six run
 are never optional, so "not on TV yet" is answered either by naming the missing capability in
 the matrix or, for a rung, by admitting the build is a preview.
 
-**SURF-61** (AGREED) - A television or the desktop app that reaches a server nobody owns yet
+**SURF-61** (SHIPPED) - A television or the desktop app that reaches a server nobody owns yet
 says so and shows the address to open in a browser.
 
 **SURF-62** (AGREED) - Setting a server up is the web surface's job

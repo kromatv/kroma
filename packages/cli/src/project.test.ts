@@ -76,6 +76,13 @@ describe('openProject', () => {
     expect(() => openProject(dir)).toThrow(/engines\.host/);
   });
 
+  it('refuses a core schema written by hand, which the build records', () => {
+    const engines = { server: '>=0.1.40', core: '19' };
+    const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, engines }) });
+
+    expect(() => openProject(dir)).toThrow(/engines\.core/);
+  });
+
   it('refuses the seam a native module recorded, which no component has', () => {
     const dir = tree({ 'module.json': JSON.stringify({ ...MANIFEST, seam: 'unix' }) });
 

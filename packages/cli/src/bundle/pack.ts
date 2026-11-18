@@ -13,7 +13,9 @@ import { constants, zstdCompressSync } from 'node:zlib';
 import { catalogLayout } from '@kromatv/i18n/vite';
 import { readCatalogs } from '@kromatv/i18n-tools';
 import type { Project } from '../project';
-import { bundledManifest, interfaceOf } from './host-engine';
+import { coreSchemaOf } from './core-engine';
+import { interfaceOf } from './host-engine';
+import { bundledManifest } from './recorded-engines';
 import { deterministicTar } from './tar';
 
 export interface PackInput {
@@ -59,8 +61,12 @@ function stage(input: PackInput): { staging: string; entries: string[] } {
   mkdirSync(staging, { recursive: true });
   const entries = ['module.json'];
   const host = binPath ? interfaceOf(readFileSync(binPath)) : null;
+  const core = coreSchemaOf(project.manifest.storage?.core);
   const authored = readFileSync(join(project.dir, 'module.json'), 'utf8');
-  writeFileSync(join(staging, 'module.json'), bundledManifest(authored, host));
+  writeFileSync(
+    join(staging, 'module.json'),
+    bundledManifest(authored, { host, core: core === null ? null : String(core) }),
+  );
   if (binPath) {
     copyFileSync(binPath, join(staging, 'module.wasm'));
     entries.push('module.wasm');

@@ -5317,7 +5317,7 @@
     "status": "SHIPPED",
     "text": "A module **may** ship UI, and the position is deliberate: a module's",
     "file": "docs/spec/modules/README.md",
-    "line": 305
+    "line": 312
   },
   {
     "id": "MOD-42",
@@ -5327,7 +5327,7 @@
     "status": "AGREED",
     "text": "A module renders **its own admin surface**: configuration, status and",
     "file": "docs/spec/modules/README.md",
-    "line": 309
+    "line": 316
   },
   {
     "id": "MOD-43",
@@ -5337,7 +5337,7 @@
     "status": "SHIPPED",
     "text": "A module's UI is served through the same reverse proxy as its backend",
     "file": "docs/spec/modules/README.md",
-    "line": 312
+    "line": 319
   },
   {
     "id": "MOD-44",
@@ -5347,7 +5347,7 @@
     "status": "AGREED",
     "text": "**The compatibility gate is the early warning.** As the server moves",
     "file": "docs/spec/modules/README.md",
-    "line": 326
+    "line": 333
   },
   {
     "id": "MOD-45",
@@ -5357,7 +5357,7 @@
     "status": "AGREED",
     "text": "**Data is retained.** An incompatible or abandoned module is not",
     "file": "docs/spec/modules/README.md",
-    "line": 330
+    "line": 337
   },
   {
     "id": "MOD-46",
@@ -5367,7 +5367,7 @@
     "status": "AGREED",
     "text": "**The signal is honest.** The person is told the module has not kept",
     "file": "docs/spec/modules/README.md",
-    "line": 333
+    "line": 340
   },
   {
     "id": "MOD-47",
@@ -5377,7 +5377,7 @@
     "status": "SHIPPED",
     "text": "Every capability below could have been core and is a module instead,",
     "file": "docs/spec/modules/README.md",
-    "line": 353
+    "line": 360
   },
   {
     "id": "MOD-48",
@@ -5407,7 +5407,7 @@
     "status": "AGREED",
     "text": "A module that has disappeared from every configured registry is flagged",
     "file": "docs/spec/modules/README.md",
-    "line": 338
+    "line": 345
   },
   {
     "id": "MOD-51",
@@ -5937,7 +5937,7 @@
     "status": "AGREED",
     "text": "Each importer is a module, one per kind of server, and a server that",
     "file": "docs/spec/modules/README.md",
-    "line": 389
+    "line": 396
   },
   {
     "id": "MOD-104",
@@ -5947,7 +5947,7 @@
     "status": "AGREED",
     "text": "The servers KROMA can import from are the importers the official",
     "file": "docs/spec/modules/README.md",
-    "line": 393
+    "line": 400
   },
   {
     "id": "MOD-105",
@@ -5957,7 +5957,7 @@
     "status": "AGREED",
     "text": "An importer reads the other server and describes what it found. The",
     "file": "docs/spec/modules/README.md",
-    "line": 396
+    "line": 403
   },
   {
     "id": "MOD-106",
@@ -5967,7 +5967,17 @@
     "status": "AGREED",
     "text": "The sign-in to the other server is the importer's to keep, among its",
     "file": "docs/spec/modules/README.md",
-    "line": 400
+    "line": 407
+  },
+  {
+    "id": "MOD-107",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 107,
+    "status": "SHIPPED",
+    "text": "A module that reaches the core database is checked against the core",
+    "file": "docs/spec/modules/README.md",
+    "line": 301
   },
   {
     "id": "PLAY-1",
@@ -7174,7 +7184,7 @@
     "domain": "SURF",
     "space": "surfaces",
     "number": 61,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A television or the desktop app that reaches a server nobody owns yet",
     "file": "docs/spec/surfaces/README.md",
     "line": 69

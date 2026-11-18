@@ -84,6 +84,8 @@ function shipMessageKeys(from: string, typesDir: string): void {
   }
 }
 
+const CORE_TABLE_VERSIONS = 'server/crates/kroma-db/src/schema/table_versions.json';
+
 /** The one thing the CLI cannot carry: Vite's bundler is a native binary. */
 const CLI_EXTERNAL = ['vite'];
 
@@ -185,6 +187,7 @@ export async function stage(options: StageOptions): Promise<string> {
   const cliDir = join(root, 'packages', 'cli');
   await bundleCli(cliDir, to);
   vendorRust({ serverDir: join(root, 'server'), outDir: join(to, 'rust'), version });
+  copyFileSync(join(root, CORE_TABLE_VERSIONS), join(to, 'table_versions.json'));
 
   const sdk = readManifest(join(root, 'packages', 'module-sdk'));
   writeFileSync(

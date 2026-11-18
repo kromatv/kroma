@@ -1,10 +1,29 @@
 //! What is installed on disk: the manifests, their icons and the cached listing.
 
-use kroma_module_manifest::ModuleManifest;
+use kroma_module_manifest::{ModuleManifest, Provides};
 
 use super::{Supervisor, MODULE_COMPONENT, STAGING_PREFIX};
 
 impl Supervisor {
+    /// Refuses a module whose `engines` this server does not provide: its
+    /// version, its module interface, its core schema.
+    pub(crate) fn engines_satisfied(
+        &self,
+        id: &str,
+        manifest: &ModuleManifest,
+    ) -> anyhow::Result<()> {
+        let provides = Provides {
+            server: &self.cfg.server_version,
+            core: &self.cfg.core_schema,
+        };
+        kroma_module_manifest::engines_satisfied(
+            &manifest.engines,
+            manifest.storage.as_ref(),
+            provides,
+        )
+        .map_err(|reason| anyhow::anyhow!("'{id}' {reason}"))
+    }
+
     /// `id`'s manifest as it is on disk, which is what its component starts
     /// from: the storage grant, and the permissions.
     ///

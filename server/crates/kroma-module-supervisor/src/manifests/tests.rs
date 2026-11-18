@@ -49,6 +49,7 @@ fn a_module_token_names_its_holder_and_nothing_else_does() {
         data_dir: dir.path().to_path_buf(),
         reserved_ids: Vec::new(),
         server_version: "0.1.4".into(),
+        core_schema: Default::default(),
         log_line: None,
     });
 
@@ -86,6 +87,7 @@ fn a_modules_settings_declaration_is_what_its_manifest_says() {
         data_dir: dir.path().to_path_buf(),
         reserved_ids: Vec::new(),
         server_version: "0.1.4".into(),
+        core_schema: Default::default(),
         log_line: None,
     });
     let v = kroma_module_manifest::MODULE_SCHEMA_VERSION;
@@ -130,6 +132,7 @@ fn a_modules_grant_comes_off_disk_even_when_the_listing_cache_is_stale() {
         data_dir: dir.path().to_path_buf(),
         reserved_ids: Vec::new(),
         server_version: "0.1.4".into(),
+        core_schema: Default::default(),
         log_line: None,
     });
 
@@ -185,6 +188,7 @@ fn an_icon_is_never_read_from_outside_the_modules_dir() {
         data_dir: dir.path().to_path_buf(),
         reserved_ids: Vec::new(),
         server_version: "0.1.4".into(),
+        core_schema: Default::default(),
         log_line: None,
     });
     let absolute = dir.path().join("outside").to_string_lossy().into_owned();

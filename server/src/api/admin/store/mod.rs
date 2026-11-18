@@ -12,6 +12,7 @@
 mod catalog;
 mod events;
 pub mod install;
+pub mod offers;
 mod plan;
 mod refusal;
 mod registries;

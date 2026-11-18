@@ -22,6 +22,15 @@ pub enum Refusal {
         built: String,
         implements: String,
     },
+    CoreSchema {
+        needs: String,
+        has: u32,
+    },
+    CoreTable {
+        table: String,
+        built: u32,
+        changed: u32,
+    },
     Native,
 }
 
@@ -39,6 +48,16 @@ impl From<EngineRefusal> for Refusal {
                 server_version,
             },
             EngineRefusal::Interface { built, implements } => Self::Interface { built, implements },
+            EngineRefusal::CoreSchema { needs, has } => Self::CoreSchema { needs, has },
+            EngineRefusal::CoreTable {
+                table,
+                built,
+                changed,
+            } => Self::CoreTable {
+                table,
+                built,
+                changed,
+            },
         }
     }
 }
@@ -66,6 +85,21 @@ impl Refusal {
             Self::Interface { built, implements } => EngineRefusal::Interface {
                 built: built.clone(),
                 implements: implements.clone(),
+            }
+            .to_string(),
+            Self::CoreSchema { needs, has } => EngineRefusal::CoreSchema {
+                needs: needs.clone(),
+                has: *has,
+            }
+            .to_string(),
+            Self::CoreTable {
+                table,
+                built,
+                changed,
+            } => EngineRefusal::CoreTable {
+                table: table.clone(),
+                built: *built,
+                changed: *changed,
             }
             .to_string(),
             Self::Native => "a native build, which this server no longer runs".to_string(),

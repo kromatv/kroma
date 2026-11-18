@@ -1,5 +1,5 @@
 import type { KromaClient } from '@kromatv/client';
-import type { User } from '@kromatv/client/accounts';
+import type { UserId } from '@kromatv/client/accounts';
 import { useEffect, useState } from 'react';
 import type { MovieView } from '#web/shared/lib/api';
 
@@ -14,7 +14,7 @@ export interface ResumeAnchor {
 export function useResumeAnchor(
   item: MovieView,
   client: KromaClient,
-  user: User | null,
+  viewer: UserId | null,
 ): ResumeAnchor {
   // The HLS master starts at `?t=anchor`; a resume/far/backward seek changes it,
   // remounting the <video>. `bootAnchor === null` means resume hasn't resolved
@@ -22,20 +22,21 @@ export function useResumeAnchor(
   const [anchor, setAnchor] = useState(0);
   const [resolved, setResolved] = useState<{
     id: MovieView['id'];
-    user: User;
+    viewer: UserId;
     value: number;
   } | null>(null);
-  const [seen, setSeen] = useState({ id: item.id, user });
-  if (seen.id !== item.id || seen.user !== user) {
-    setSeen({ id: item.id, user });
-    if (!user) {
+  const [seen, setSeen] = useState({ id: item.id, viewer });
+  if (seen.id !== item.id || seen.viewer !== viewer) {
+    setSeen({ id: item.id, viewer });
+    if (!viewer) {
       setAnchor(0);
     }
   }
-  const resolvedHere = resolved?.id === item.id && resolved.user === user ? resolved.value : null;
-  const bootAnchor = user ? resolvedHere : 0;
+  const resolvedHere =
+    resolved?.id === item.id && resolved.viewer === viewer ? resolved.value : null;
+  const bootAnchor = viewer ? resolvedHere : 0;
   useEffect(() => {
-    if (!user) {
+    if (!viewer) {
       return undefined;
     }
     let cancelled = false;
@@ -49,18 +50,18 @@ export function useResumeAnchor(
         const posSec = (p?.positionMs ?? 0) / 1000;
         const resume = p && posSec > 15 && (!durMs || p.positionMs < durMs * 0.95) ? posSec : 0;
         setAnchor(resume);
-        setResolved({ id: item.id, user, value: resume });
+        setResolved({ id: item.id, viewer, value: resume });
       })
       .catch(() => {
         if (!cancelled) {
           setAnchor(0);
-          setResolved({ id: item.id, user, value: 0 });
+          setResolved({ id: item.id, viewer, value: 0 });
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [client, user, item.id, item.durationMs]);
+  }, [client, viewer, item.id, item.durationMs]);
 
   return { anchor, setAnchor, bootAnchor };
 }

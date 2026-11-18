@@ -6,6 +6,7 @@
 //! [`tower::ServiceExt::oneshot`]: no socket, no network, no module.
 
 mod direct;
+mod importers;
 mod media;
 mod modules;
 mod requests;
@@ -18,6 +19,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
 use axum::Router;
+use kroma_engine::point::Point;
 use tempfile::TempDir;
 
 use crate::config::Config;
@@ -27,10 +29,14 @@ use crate::services::settings::{self, LibraryDef, Settings};
 use crate::state::{AppState, SharedState};
 
 pub use direct::{offer, offer_through_the_tunnel, proof_of, HOUSEHOLD_PUBLIC_IP, NEIGHBOUR};
+pub use importers::{importer_answering, IMPORTER};
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
-pub use modules::{installed_module, read_setting, store_settings, write_settings};
+pub use modules::{
+    installed_module, point_store_at, read_setting, registry_serving, store_settings,
+    write_settings,
+};
 pub use requests::{get, get_from, raw, send, text, upload};
 pub use sso::{at_provider, ProviderRound, ORIGIN};
 pub use waiting::{join, mint_invitation, put_to_wait, seed_waiting};
@@ -86,6 +92,7 @@ fn test_supervisor(data_dir: &Path) -> Arc<kroma_module_supervisor::Supervisor> 
         data_dir: data_dir.to_path_buf(),
         reserved_ids: Vec::new(),
         server_version: "0.0.0-test".into(),
+        core_schema: crate::core_schema().clone(),
         log_line: None,
     })
 }
@@ -156,10 +163,26 @@ fn build_app(tmdb_api_key: Option<&str>, web: &[(&str, &str)], relay_url: Option
     })
 }
 
+/// Like [`test_app`] but with `importers` answering the `importer` point, each
+/// under the module id it was stubbed with.
+pub fn test_app_with_importers(importers: Point) -> TestApp {
+    build_app_answering(None, &[], |_| {}, importers)
+}
+
 fn build_app_with(
     tmdb_api_key: Option<&str>,
     web: &[(&str, &str)],
     configure: impl FnOnce(&mut Config),
+) -> TestApp {
+    let nobody = Point::absent(kroma_engine::services::importers::POINT);
+    build_app_answering(tmdb_api_key, web, configure, nobody)
+}
+
+fn build_app_answering(
+    tmdb_api_key: Option<&str>,
+    web: &[(&str, &str)],
+    configure: impl FnOnce(&mut Config),
+    importers: Point,
 ) -> TestApp {
     let tmp = unique_data_dir();
     let data_dir = tmp.path().to_path_buf();
@@ -202,13 +225,17 @@ fn build_app_with(
                 std::any::TypeId::of::<kroma_engine::services::trailers::Trailers>(),
                 Arc::new(kroma_engine::services::trailers::Trailers::in_data_dir(&data_dir)) as Arc<_>,
             ),
+            (
+                std::any::TypeId::of::<kroma_engine::services::importers::Importers>(),
+                Arc::new(kroma_engine::services::importers::Importers::new(importers)) as Arc<_>,
+            ),
         ]);
     let state = AppState::new(
         config,
         false,
         db.clone(),
         settings,
-        kroma_engine::point::Point::absent("embedder"),
+        Point::absent("embedder"),
         kroma_engine::state::ModuleWiring {
             services,
             jobs: &[],

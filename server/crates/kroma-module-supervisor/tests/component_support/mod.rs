@@ -106,6 +106,7 @@ impl Server {
             data_dir: data_dir.clone(),
             reserved_ids: Vec::new(),
             server_version: "0.1.4".into(),
+            core_schema: Default::default(),
             log_line: Some(Arc::new(move |_, line| {
                 log.lock().unwrap().push(line.to_string());
             })),
