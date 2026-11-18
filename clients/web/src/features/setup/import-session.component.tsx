@@ -1,5 +1,5 @@
 import type { ImportServer, ImportServerId, ImportSignInId } from '@kromatv/client/importers';
-import type { ImportId } from '@kromatv/client/imports';
+import type { ImportId, KeptFolder } from '@kromatv/client/imports';
 import type { ModuleId } from '@kromatv/client/modules';
 import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 
@@ -17,6 +17,8 @@ export interface ImportChoices {
   skippedLibraries: readonly string[];
   /** The users the owner leaves out, by id. */
   skippedUsers: readonly string[];
+  /** Where the owner said a folder of the other server is on this machine. */
+  folders: readonly KeptFolder[];
   /** The import the owner started. */
   running: ImportId | null;
 }
@@ -34,6 +36,7 @@ const EMPTY: ImportChoices = {
   server: null,
   skippedLibraries: [],
   skippedUsers: [],
+  folders: [],
   running: null,
 };
 

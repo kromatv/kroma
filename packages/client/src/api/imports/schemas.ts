@@ -69,11 +69,41 @@ export type ImportStarted = z.infer<typeof ImportStarted>;
 export const ImportList = z.object({ imports: z.array(Import) });
 export type ImportList = z.infer<typeof ImportList>;
 
+/** One folder of the other server, and where it is on this machine. A folder
+ * with no `here` is one the server did not find: the owner is asked for it. */
+export const ImportFolder = z.object({ folder: z.string(), here: z.string().optional() });
+export type ImportFolder = z.infer<typeof ImportFolder>;
+
+export const ImportFolderList = z.object({ folders: z.array(ImportFolder) });
+export type ImportFolderList = z.infer<typeof ImportFolderList>;
+
+/** The folders a review is about to show for one server, as that server names
+ * them. */
+export interface ImportFolderAsk {
+  importer: ModuleId;
+  server: ImportServerId;
+  folders: string[];
+}
+
+/** One folder the owner confirmed: `folder` as the other server names it,
+ * `here` as this machine does. */
+export interface KeptFolder {
+  folder: string;
+  here: string;
+}
+
+/** One library the owner kept, with the folders they confirmed for it. A
+ * library is made over no other folder. */
+export interface KeptLibrary {
+  id: string;
+  folders: KeptFolder[];
+}
+
 /** What the owner asks an import to bring: the server, and the libraries and
  * the users they kept on the review. */
 export interface ImportRequest {
   importer: ModuleId;
   signIn: ImportSignInId;
   server: { id: ImportServerId; name: string };
-  selection: { libraries: { id: string }[]; users: { id: string }[] };
+  selection: { libraries: KeptLibrary[]; users: { id: string }[] };
 }

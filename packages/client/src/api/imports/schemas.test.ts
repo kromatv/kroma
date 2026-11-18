@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { Import } from './schemas';
+import { Import, ImportFolderList } from './schemas';
 
 const tally = { read: 3, brought: 2, unmatched: 1 };
 
@@ -30,4 +30,12 @@ it('reads a failure for a reason it does not know as internal', () => {
   const parsed = Import.parse({ ...wire, status: 'failed', failure: { reason: 'somethingNew' } });
 
   expect(parsed.failure?.reason).toBe('internal');
+});
+
+it('reads a folder the server did not find as one with no place here', () => {
+  const parsed = ImportFolderList.parse({
+    folders: [{ folder: '/data/films', here: '/volume1/films' }, { folder: '/data/shows' }],
+  });
+
+  expect(parsed.folders.map((folder) => folder.here)).toEqual(['/volume1/films', undefined]);
 });

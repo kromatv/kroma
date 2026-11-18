@@ -7,7 +7,15 @@ import {
 } from '@kromatv/client/importers';
 import { ModuleId } from '@kromatv/client/modules';
 import { expect, it } from 'vitest';
-import { cautions, importable, importRequest, keptIds, sight, skippedIds } from './import-review';
+import {
+  cautions,
+  importable,
+  importRequest,
+  keptIds,
+  keptLibraries,
+  sight,
+  skippedIds,
+} from './import-review';
 
 const user = (over: Record<string, unknown>) =>
   ImportUser.parse({
@@ -86,6 +94,8 @@ const survey = ImportSurvey.parse({
   leftBehind: [],
 });
 
+const PLACES = [{ folder: '/m/films', here: '/volume1/films' }, { folder: '/m/shows' }];
+
 it('asks for the libraries and the users the owner kept, and never for a kind it cannot take', () => {
   const choices = {
     servers: [{ id: target.server, name: 'Home' }],
@@ -93,17 +103,37 @@ it('asks for the libraries and the users the owner kept, and never for a kind it
     skippedUsers: ['u2'],
   };
 
-  const request = importRequest(target, choices, survey);
+  const request = importRequest(target, { survey, choices, places: PLACES });
 
   expect(request.server).toEqual({ id: 'srv', name: 'Home' });
-  expect(request.selection).toEqual({ libraries: [{ id: 'films' }], users: [{ id: 'u1' }] });
+  expect(request.selection).toEqual({
+    libraries: [{ id: 'films', folders: [{ folder: '/m/films', here: '/volume1/films' }] }],
+    users: [{ id: 'u1' }],
+  });
 });
 
 it('asks for everything KROMA can take when the owner left nothing out', () => {
   const choices = { servers: [], skippedLibraries: [], skippedUsers: [] };
 
-  const request = importRequest(target, choices, survey);
+  const request = importRequest(target, { survey, choices, places: PLACES });
 
-  expect(request.selection.libraries).toEqual([{ id: 'films' }, { id: 'shows' }]);
+  expect(request.selection.libraries.map((asked) => asked.id)).toEqual(['films', 'shows']);
   expect(request.selection.users).toEqual([{ id: 'u1' }, { id: 'u2' }]);
+});
+
+it('sends for a library only the folders that have a place on this machine', () => {
+  const choices = { servers: [], skippedLibraries: [], skippedUsers: [] };
+
+  const request = importRequest(target, { survey, choices, places: PLACES });
+
+  expect(request.selection.libraries).toEqual([
+    { id: 'films', folders: [{ folder: '/m/films', here: '/volume1/films' }] },
+    { id: 'shows', folders: [] },
+  ]);
+});
+
+it('brings the libraries KROMA can take, less the ones the owner left out', () => {
+  const kept = keptLibraries(survey.libraries, ['films']);
+
+  expect(kept.map((held) => held.id)).toEqual(['shows']);
 });

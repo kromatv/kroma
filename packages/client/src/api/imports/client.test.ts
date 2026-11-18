@@ -8,7 +8,10 @@ const REQUEST = {
   importer: ModuleId.parse('tv.x.import'),
   signIn: ImportSignInId.parse('s-1'),
   server: { id: ImportServerId.parse('srv'), name: 'Home' },
-  selection: { libraries: [{ id: 'l1' }], users: [{ id: 'u1' }] },
+  selection: {
+    libraries: [{ id: 'l1', folders: [{ folder: '/data/films', here: '/volume1/films' }] }],
+    users: [{ id: 'u1' }],
+  },
 };
 
 describe('the import endpoints', () => {
@@ -22,8 +25,23 @@ describe('the import endpoints', () => {
         importer: 'tv.x.import',
         signIn: 's-1',
         server: { id: 'srv', name: 'Home' },
-        selection: { libraries: [{ id: 'l1' }], users: [{ id: 'u1' }] },
+        selection: {
+          libraries: [{ id: 'l1', folders: [{ folder: '/data/films', here: '/volume1/films' }] }],
+          users: [{ id: 'u1' }],
+        },
       },
+    },
+    {
+      name: 'folders',
+      call: (c) =>
+        c.imports.folders({
+          importer: REQUEST.importer,
+          server: REQUEST.server.id,
+          folders: ['/data/films'],
+        }),
+      method: 'POST',
+      path: '/admin/imports/folders',
+      body: { importer: 'tv.x.import', server: 'srv', folders: ['/data/films'] },
     },
     { name: 'list', call: (c) => c.imports.list(), method: 'GET', path: '/admin/imports' },
     {
