@@ -1,4 +1,28 @@
-import type { ImportLibrary, ImportUser } from '@kromatv/client/importers';
+import type {
+  ImportLibrary,
+  ImportServer,
+  ImportServerId,
+  ImportSignInId,
+  ImportSurvey,
+  ImportUser,
+} from '@kromatv/client/importers';
+import type { ImportRequest } from '@kromatv/client/imports';
+import type { ModuleId } from '@kromatv/client/modules';
+
+/** The server an import reads: through which importer, with which sign-in. */
+export interface ImportTarget {
+  importer: ModuleId;
+  signIn: ImportSignInId;
+  server: ImportServerId;
+}
+
+/** What the owner left out on the review, and the servers their sign-in
+ * reaches. */
+export interface ReviewChoices {
+  servers: readonly ImportServer[];
+  skippedLibraries: readonly string[];
+  skippedUsers: readonly string[];
+}
 
 /** Whether KROMA can take a library: one of films, of shows, or of both. */
 export function importable(library: ImportLibrary): boolean {
@@ -37,4 +61,26 @@ export function cautions(user: ImportUser): ('you' | 'limited' | 'locked')[] {
     notes.push('locked');
   }
   return notes;
+}
+
+/** What the server is asked to import: the server the owner chose, and the
+ * libraries and the users they kept. A library KROMA cannot take is never
+ * asked for. */
+export function importRequest(
+  target: ImportTarget,
+  choices: ReviewChoices,
+  survey: ImportSurvey,
+): ImportRequest {
+  const libraries = survey.libraries.filter(importable).map((library) => library.id);
+  const users = survey.users.map((user) => user.id);
+  const name = choices.servers.find((server) => server.id === target.server)?.name ?? '';
+  return {
+    importer: target.importer,
+    signIn: target.signIn,
+    server: { id: target.server, name },
+    selection: {
+      libraries: keptIds(libraries, choices.skippedLibraries).map((id) => ({ id })),
+      users: keptIds(users, choices.skippedUsers).map((id) => ({ id })),
+    },
+  };
 }

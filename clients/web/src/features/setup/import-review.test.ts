@@ -1,6 +1,13 @@
-import { ImportLibrary, ImportUser } from '@kromatv/client/importers';
+import {
+  ImportLibrary,
+  ImportServerId,
+  ImportSignInId,
+  ImportSurvey,
+  ImportUser,
+} from '@kromatv/client/importers';
+import { ModuleId } from '@kromatv/client/modules';
 import { expect, it } from 'vitest';
-import { cautions, importable, keptIds, sight, skippedIds } from './import-review';
+import { cautions, importable, importRequest, keptIds, sight, skippedIds } from './import-review';
 
 const user = (over: Record<string, unknown>) =>
   ImportUser.parse({
@@ -41,4 +48,62 @@ it('warns about the owner themselves, a finer limit and a locked history', () =>
     'limited',
     'locked',
   ]);
+});
+
+const target = {
+  importer: ModuleId.parse('tv.x.import'),
+  signIn: ImportSignInId.parse('s-1'),
+  server: ImportServerId.parse('srv'),
+};
+
+const survey = ImportSurvey.parse({
+  libraries: [
+    { id: 'films', name: 'Films', kind: 'movies', folders: ['/m/films'] },
+    { id: 'music', name: 'Music', kind: 'music', folders: ['/m/music'] },
+    { id: 'shows', name: 'Shows', kind: 'shows', folders: ['/m/shows'] },
+  ],
+  users: [
+    {
+      id: 'u1',
+      name: 'Alex',
+      signedIn: true,
+      allLibraries: true,
+      libraries: [],
+      finerLimits: [],
+      stateLocked: false,
+    },
+    {
+      id: 'u2',
+      name: 'Sam',
+      signedIn: false,
+      allLibraries: false,
+      libraries: ['films'],
+      finerLimits: [],
+      stateLocked: false,
+    },
+  ],
+  counts: {},
+  leftBehind: [],
+});
+
+it('asks for the libraries and the users the owner kept, and never for a kind it cannot take', () => {
+  const choices = {
+    servers: [{ id: target.server, name: 'Home' }],
+    skippedLibraries: ['shows'],
+    skippedUsers: ['u2'],
+  };
+
+  const request = importRequest(target, choices, survey);
+
+  expect(request.server).toEqual({ id: 'srv', name: 'Home' });
+  expect(request.selection).toEqual({ libraries: [{ id: 'films' }], users: [{ id: 'u1' }] });
+});
+
+it('asks for everything KROMA can take when the owner left nothing out', () => {
+  const choices = { servers: [], skippedLibraries: [], skippedUsers: [] };
+
+  const request = importRequest(target, choices, survey);
+
+  expect(request.selection.libraries).toEqual([{ id: 'films' }, { id: 'shows' }]);
+  expect(request.selection.users).toEqual([{ id: 'u1' }, { id: 'u2' }]);
 });
