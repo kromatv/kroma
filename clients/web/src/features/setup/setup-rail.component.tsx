@@ -3,6 +3,7 @@ import { Box, Progress, Stepper, Text } from '@kromatv/ui/kit';
 import {
   answeredSteps,
   isSetupStep,
+  type SetupStart,
   type SetupStep,
   stepsBehind,
 } from '#web/features/setup/setup-steps';
@@ -11,6 +12,7 @@ const STEP_NAME = {
   language: 'setup.stepLanguage',
   start: 'setup.stepStart',
   owner: 'setup.stepOwner',
+  import: 'setup.stepImport',
   media: 'setup.stepMedia',
   modules: 'setup.stepModules',
   people: 'setup.stepPeople',
@@ -22,6 +24,7 @@ const STEP_ICON = {
   language: 'world',
   start: 'sparkles',
   owner: 'user',
+  import: 'arrows-exchange',
   media: 'folder',
   modules: 'download',
   people: 'users',
@@ -35,6 +38,8 @@ interface RailProps {
   reached: SetupStep;
   /** The steps a press may go to. */
   open: readonly SetupStep[];
+  /** How the setup began, which decides its steps. */
+  start: SetupStart;
   onStep: (step: SetupStep) => void;
 }
 
@@ -50,7 +55,7 @@ function RailStep({ name, disabled }: Readonly<{ name: SetupStep; disabled: bool
 /** Every step by name, down the side of a wide screen: what is done, where the
  * owner is, and what comes next. Every step the owner has been to is one press
  * away, whichever one they are on. */
-export function SetupRail({ step, reached, open, onStep }: Readonly<RailProps>) {
+export function SetupRail({ step, reached, open, start, onStep }: Readonly<RailProps>) {
   const t = useT();
   const go = (next: string) => {
     if (isSetupStep(next)) {
@@ -59,16 +64,17 @@ export function SetupRail({ step, reached, open, onStep }: Readonly<RailProps>) 
   };
   return (
     <Stepper.Root
+      key={start}
       label={t('setup.railLabel')}
       orientation="vertical"
       size="sm"
       value={step}
-      complete={stepsBehind(reached)}
+      complete={stepsBehind(reached, start)}
       open={[reached]}
       onValueChange={go}
     >
       <Stepper.List>
-        {answeredSteps().map((name) => (
+        {answeredSteps(start).map((name) => (
           <RailStep key={name} name={name} disabled={name !== step && !open.includes(name)} />
         ))}
       </Stepper.List>
@@ -77,9 +83,9 @@ export function SetupRail({ step, reached, open, onStep }: Readonly<RailProps>) 
 }
 
 /** The same position on a narrow screen, where a list of steps has no room. */
-export function SetupProgress({ step }: Readonly<{ step: SetupStep }>) {
+export function SetupProgress({ step, start }: Readonly<{ step: SetupStep; start: SetupStart }>) {
   const t = useT();
-  const steps = answeredSteps();
+  const steps = answeredSteps(start);
   const position = steps.indexOf(step) + 1;
   const where = t('setup.stepOf', {
     step: position,

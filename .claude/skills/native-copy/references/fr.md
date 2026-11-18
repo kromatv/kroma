@@ -79,6 +79,17 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Regarder le catalogue + reprise | a symbol for a word, and a noun pile | Regarder les films et les séries, et reprendre une lecture |
 | Départ (a step name) | too short to mean anything | Point de départ |
 
+## One screen, one thing to know
+
+A hint that carries two or three facts reads as a legal notice, in any language,
+and French makes it longer. Keep the one fact the reader needs to act now, and
+move the rest to the screen where it matters.
+
+| Written | Write |
+|---|---|
+| Utilisez le compte du propriétaire ou d'un administrateur de ce serveur. KROMA garde cette connexion pour relancer l'import, et l'oublie dès que vous le demandez. | Connectez-vous avec un compte administrateur de ce serveur. |
+| KROMA se contente de le lire : rien n'est modifié sur votre autre serveur, et vous pouvez continuer à l'utiliser. | Choisissez le serveur que vous utilisez aujourd'hui. |
+
 ## Turns that make French sound French
 
 - *À chacun son compte.* The distributive, where English says *one each*.

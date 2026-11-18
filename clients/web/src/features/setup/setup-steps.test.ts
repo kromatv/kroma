@@ -10,6 +10,7 @@ import {
   stepBefore,
   stepOpenTo,
   stepsBehind,
+  stepsFor,
   stepsUpTo,
 } from './setup-steps';
 
@@ -81,4 +82,23 @@ it('remembers the furthest step a person reached when they go back', () => {
 it('keeps every step up to the furthest one open, that one included', () => {
   expect(stepsUpTo('language')).toEqual(['language']);
   expect(stepsUpTo('media')).toEqual(['language', 'start', 'owner', 'media']);
+});
+
+it('leads an owner who brings a server over through the import, after their account', () => {
+  expect(stepAfter('owner', 'bring')).toBe('import');
+  expect(stepAfter('import', 'bring')).toBe('media');
+  expect(stepBefore('media', 'bring')).toBe('import');
+});
+
+it('has no import step for an owner who starts fresh', () => {
+  expect(stepsFor('fresh')).not.toContain('import');
+  expect(stepAfter('owner', 'fresh')).toBe('media');
+  expect(stepOpenTo('import', 'owner', 'fresh')).toBe('media');
+  expect(stepOpenTo('import', 'owner', 'bring')).toBe('import');
+});
+
+it('counts the import among the steps of an owner who brings a server over', () => {
+  expect(answeredSteps('bring')).toHaveLength(8);
+  expect(stepsBehind('media', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
+  expect(stepsUpTo('import', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
 });

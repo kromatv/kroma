@@ -2,6 +2,7 @@ export const SETUP_STEPS = [
   'language',
   'start',
   'owner',
+  'import',
   'media',
   'modules',
   'people',
@@ -38,24 +39,22 @@ export function readSetupStart(value: unknown): SetupStart {
   return isSetupStart(value) ? value : 'fresh';
 }
 
+/** The steps of a setup that began with `start`. The import is a step only for
+ * an owner who brings another server over. */
+export function stepsFor(start: SetupStart): readonly SetupStep[] {
+  return start === 'bring' ? SETUP_STEPS : SETUP_STEPS.filter((step) => step !== 'import');
+}
+
 /** The step after `step`, or `step` itself at the end of the setup. */
-export function stepAfter(step: SetupStep): SetupStep {
-  return SETUP_STEPS[SETUP_STEPS.indexOf(step) + 1] ?? step;
+export function stepAfter(step: SetupStep, start: SetupStart = 'fresh'): SetupStep {
+  const steps = stepsFor(start);
+  return steps[steps.indexOf(step) + 1] ?? step;
 }
 
 /** The step before `step`, or none at the first one. */
-export function stepBefore(step: SetupStep): SetupStep | null {
-  return SETUP_STEPS[SETUP_STEPS.indexOf(step) - 1] ?? null;
-}
-
-/** Whether a person may leave `step` without answering it. */
-export function canSkip(step: SetupStep): boolean {
-  return SETUP_STEPS.indexOf(step) > OWNER_AT && step !== 'done';
-}
-
-/** The steps a person answers, which is every step but the last screen. */
-export function answeredSteps(): readonly SetupStep[] {
-  return SETUP_STEPS.filter((step) => step !== 'done');
+export function stepBefore(step: SetupStep, start: SetupStart = 'fresh'): SetupStep | null {
+  const steps = stepsFor(start);
+  return steps[steps.indexOf(step) - 1] ?? null;
 }
 
 /** The one of two steps that comes later in the setup. */
@@ -65,19 +64,39 @@ export function laterStep(one: SetupStep, other: SetupStep): SetupStep {
 
 /** The steps a person has been to once they have reached `reached`: it, and
  * every step before it. */
-export function stepsUpTo(reached: SetupStep): readonly SetupStep[] {
-  return SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(reached) + 1);
+export function stepsUpTo(reached: SetupStep, start: SetupStart = 'fresh'): readonly SetupStep[] {
+  return stepsFor(start).filter(
+    (step) => SETUP_STEPS.indexOf(step) <= SETUP_STEPS.indexOf(reached),
+  );
+}
+
+/** Whether a person may leave `step` without answering it. */
+export function canSkip(step: SetupStep): boolean {
+  return SETUP_STEPS.indexOf(step) > OWNER_AT && step !== 'done';
+}
+
+/** The steps a person answers, which is every step but the last screen. */
+export function answeredSteps(start: SetupStart = 'fresh'): readonly SetupStep[] {
+  return stepsFor(start).filter((step) => step !== 'done');
 }
 
 /** The steps already behind `step`. */
-export function stepsBehind(step: SetupStep): readonly SetupStep[] {
-  return SETUP_STEPS.slice(0, SETUP_STEPS.indexOf(step));
+export function stepsBehind(step: SetupStep, start: SetupStart = 'fresh'): readonly SetupStep[] {
+  return stepsFor(start).filter((held) => SETUP_STEPS.indexOf(held) < SETUP_STEPS.indexOf(step));
 }
 
 /** The step `visitor` may see when the address asks for `step`. Nothing after
- * the owner account opens before it exists. The owner may open any step, the
- * earlier ones included, to change an answer. */
-export function stepOpenTo(step: SetupStep, visitor: SetupVisitor): SetupStep {
+ * the owner account opens before it exists. The owner may open any step of
+ * their setup, the earlier ones included, to change an answer. A step that is
+ * not part of a setup that began with `start` gives way to the one after it. */
+export function stepOpenTo(
+  step: SetupStep,
+  visitor: SetupVisitor,
+  start: SetupStart = 'fresh',
+): SetupStep {
   const afterOwner = SETUP_STEPS.indexOf(step) > OWNER_AT;
-  return visitor === 'stranger' && afterOwner ? 'language' : step;
+  if (visitor === 'stranger' && afterOwner) {
+    return 'language';
+  }
+  return stepsFor(start).includes(step) ? step : 'media';
 }

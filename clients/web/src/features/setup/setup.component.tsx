@@ -1,6 +1,8 @@
 import { Navigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DoneStep } from '#web/features/setup/done-step.component';
+import { ImportSession } from '#web/features/setup/import-session.component';
+import { ImportStep } from '#web/features/setup/import-step.component';
 import { LanguageStep } from '#web/features/setup/language-step.component';
 import { MediaStep } from '#web/features/setup/media-step.component';
 import { ModulesStep } from '#web/features/setup/modules-step.component';
@@ -52,6 +54,7 @@ const VIEWS: Record<SetupStep, (moves: Moves) => ReactNode> = {
     <StartStep start={start} onStart={onStart} onBack={back} onContinue={next} />
   ),
   owner: ({ next, back }) => <OwnerStep onBack={back} onCreated={next} />,
+  import: ({ next, back }) => <ImportStep onBack={back} onContinue={next} />,
   media: ({ feed, next, back }) => <MediaStep feed={feed} onBack={back} onContinue={next} />,
   modules: ({ next, back }) => <ModulesStep onBack={back} onContinue={next} />,
   people: ({ next, back }) => <PeopleStep onBack={back} onContinue={next} />,
@@ -59,8 +62,10 @@ const VIEWS: Record<SetupStep, (moves: Moves) => ReactNode> = {
   done: ({ leave }) => <DoneStep onOpen={leave} />,
 };
 
-function openSteps(reached: SetupStep, visitor: SetupVisitor): SetupStep[] {
-  return stepsUpTo(reached).filter((visited) => stepOpenTo(visited, visitor) === visited);
+function openSteps({ reached, visitor, start }: FlowProps): SetupStep[] {
+  return stepsUpTo(reached, start).filter(
+    (visited) => stepOpenTo(visited, visitor, start) === visited,
+  );
 }
 
 /** The guided setup a new owner is led through, one decision per screen. A
@@ -76,7 +81,9 @@ export function Setup(props: Readonly<SetupProps>) {
   }
   return (
     <SetupPicks>
-      <SetupFlow {...props} visitor={user ? 'owner' : 'stranger'} />
+      <ImportSession>
+        <SetupFlow {...props} visitor={user ? 'owner' : 'stranger'} />
+      </ImportSession>
     </SetupPicks>
   );
 }
@@ -90,25 +97,26 @@ function useMoves({ step, start, onStep, onStart, onLeave }: FlowProps & { step:
     }
   };
   const next = () => {
-    ends(stepAfter(step));
-    onStep(stepAfter(step));
+    ends(stepAfter(step, start));
+    onStep(stepAfter(step, start));
   };
   const leave = () => {
     ends('done');
     onLeave();
   };
-  const back = () => onStep(stepBefore(step) ?? step);
+  const back = () => onStep(stepBefore(step, start) ?? step);
   return { feed, start, onStart, next, back, leave };
 }
 
 function SetupFlow(props: Readonly<FlowProps>) {
-  const step = stepOpenTo(props.step, props.visitor);
+  const step = stepOpenTo(props.step, props.visitor, props.start);
   const moves = useMoves({ ...props, step });
   return (
     <SetupShell
       step={step}
+      start={props.start}
       reached={props.reached}
-      open={openSteps(props.reached, props.visitor)}
+      open={openSteps(props)}
       posters={moves.feed.posters}
       onStep={props.onStep}
       onFinishLater={moves.leave}

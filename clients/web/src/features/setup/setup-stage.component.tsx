@@ -6,6 +6,7 @@ const STAGE_LINE = {
   language: 'setup.stageLanguage',
   start: 'setup.stageStart',
   owner: 'setup.stageOwner',
+  import: 'setup.stageImport',
   media: 'setup.stageMedia',
   modules: 'setup.stageModules',
   people: 'setup.stagePeople',

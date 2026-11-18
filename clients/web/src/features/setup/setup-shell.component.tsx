@@ -15,7 +15,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { SetupProgress, SetupRail } from '#web/features/setup/setup-rail.component';
 import { SetupStage } from '#web/features/setup/setup-stage.component';
-import { canSkip, type SetupStep } from '#web/features/setup/setup-steps';
+import { canSkip, type SetupStart, type SetupStep } from '#web/features/setup/setup-steps';
 import { useWallPosters } from '#web/features/setup/use-wall-posters.hook';
 import { PosterWall } from '#web/shared/ui/poster-wall.component';
 
@@ -91,6 +91,8 @@ const sDefinition = styles({
 
 interface ShellProps {
   step: SetupStep;
+  /** How the setup began, which decides its steps. */
+  start: SetupStart;
   /** The furthest step the owner has been to. */
   reached: SetupStep;
   /** The steps the list down the side may go to. */
@@ -102,7 +104,7 @@ interface ShellProps {
   children: ReactNode;
 }
 
-type CardProps = Pick<ShellProps, 'step' | 'reached' | 'open' | 'onStep' | 'children'>;
+type CardProps = Pick<ShellProps, 'step' | 'start' | 'reached' | 'open' | 'onStep' | 'children'>;
 
 function ShellHeader({
   step,
@@ -119,14 +121,14 @@ function ShellHeader({
   );
 }
 
-function NarrowCard({ step, children }: Readonly<Pick<CardProps, 'step' | 'children'>>) {
+function NarrowCard({ step, start, children }: Readonly<CardProps>) {
   const s = useStyles(sDefinition);
   return (
     <Box flex minH={0} px={12} pb={12}>
       <Surface elevated pad="none" flex minH={0} overflow="hidden">
         {step === 'done' ? null : (
           <Box px={PAD.base} pt={PAD.base}>
-            <SetupProgress step={step} />
+            <SetupProgress step={step} start={start} />
           </Box>
         )}
         <div key={step} className={classes(s.step)}>
@@ -137,21 +139,21 @@ function NarrowCard({ step, children }: Readonly<Pick<CardProps, 'step' | 'child
   );
 }
 
-function RailSide({ step, reached, open, onStep }: Readonly<Omit<CardProps, 'children'>>) {
+function RailSide(rail: Readonly<Omit<CardProps, 'children'>>) {
   const s = useStyles(sDefinition);
   return (
     <>
       <div className={classes(s.rail)}>
-        <SetupRail step={step} reached={reached} open={open} onStep={onStep} />
+        <SetupRail {...rail} />
       </div>
       <Box w={1} bg="border" />
     </>
   );
 }
 
-function WideCard({ step, reached, open, onStep, children }: Readonly<CardProps>) {
+function WideCard({ children, ...rail }: Readonly<CardProps>) {
   const s = useStyles(sDefinition);
-  const railed = step !== 'done';
+  const railed = rail.step !== 'done';
   return (
     <Row flex minH={0} px={GUTTER} pb={GUTTER}>
       <Surface
@@ -165,8 +167,8 @@ function WideCard({ step, reached, open, onStep, children }: Readonly<CardProps>
         my="auto"
         overflow="hidden"
       >
-        {railed ? <RailSide step={step} reached={reached} open={open} onStep={onStep} /> : null}
-        <div key={step} className={classes(s.step)}>
+        {railed ? <RailSide {...rail} /> : null}
+        <div key={rail.step} className={classes(s.step)}>
           {children}
         </div>
       </Surface>
@@ -192,48 +194,39 @@ function ShellBackdrop({ step, posters }: Readonly<Pick<ShellProps, 'step' | 'po
  * steps, and the question the owner is on. The page never scrolls. A step is
  * a <StepHeading>, a <StepBody> and a <StepActions>, and only the body
  * scrolls, between the other two. */
-export function SetupShell({
-  step,
-  reached,
-  open,
-  posters,
-  onStep,
-  onFinishLater,
-  children,
-}: Readonly<ShellProps>) {
+export function SetupShell({ posters, onFinishLater, children, ...card }: Readonly<ShellProps>) {
   const s = useStyles(sDefinition);
-  const narrow = useBreakpoint() === 'base';
+  const Card = useBreakpoint() === 'base' ? NarrowCard : WideCard;
   return (
     <main className={classes(s.screen)}>
-      <ShellBackdrop step={step} posters={posters} />
+      <ShellBackdrop step={card.step} posters={posters} />
       <div className={classes(s.layer)}>
-        <ShellHeader step={step} onFinishLater={onFinishLater} />
-        {narrow ? (
-          <NarrowCard step={step}>{children}</NarrowCard>
-        ) : (
-          <WideCard step={step} reached={reached} open={open} onStep={onStep}>
-            {children}
-          </WideCard>
-        )}
+        <ShellHeader step={card.step} onFinishLater={onFinishLater} />
+        <Card {...card}>{children}</Card>
       </div>
     </main>
   );
 }
 
-/** What a step asks: its title and the one sentence under it. It stays at the
- * head of the card. Its children stay there with it: a search field over a
- * long list. */
+function usePad(): number {
+  return useBreakpoint() === 'base' ? PAD.base : PAD.md;
+}
+
+/** What a step asks: its title and, where the title is not enough, one
+ * sentence under it. It stays at the head of the card. Its children stay
+ * there with it: a search field over a long list. */
 export function StepHeading({
   title,
   sub,
   children,
-}: Readonly<{ title: string; sub: string; children?: ReactNode }>) {
+}: Readonly<{ title: string; sub?: string; children?: ReactNode }>) {
+  const pad = usePad();
   return (
-    <Box gap={12} px={PAD} pt={{ base: 20, md: 36 }} pb={8} shrink={0}>
+    <Box gap={12} px={pad} pt={pad} pb={8} shrink={0}>
       <Text variant="h1" accessibilityRole="header">
         {title}
       </Text>
-      <Text color="textMuted">{sub}</Text>
+      {sub ? <Text color="textMuted">{sub}</Text> : null}
       {children}
     </Box>
   );
@@ -278,8 +271,9 @@ function BackAction({ onBack }: Readonly<Pick<ActionsProps, 'onBack'>>) {
  * the right. They stay at the foot of the card. */
 export function StepActions({ onBack, note, children }: Readonly<ActionsProps>) {
   const s = useStyles(sDefinition);
+  const pad = usePad();
   return (
-    <Box gap={12} px={PAD} py={16} shrink={0} style={s.foot}>
+    <Box gap={12} px={pad} py={16} shrink={0} style={s.foot}>
       {note}
       <Row between align="center" gap={12}>
         <BackAction onBack={onBack} />
