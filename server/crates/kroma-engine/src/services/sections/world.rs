@@ -8,8 +8,9 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
+use std::thread::JoinHandle;
 
-use crate::infra::metadata::discover::{self, DiscoverHit, DiscoverScope};
+use crate::infra::metadata::discover::{self, DiscoverHit, DiscoverPage, DiscoverScope};
 use crate::model::{RequestKind, SplashEntry};
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
@@ -65,25 +66,25 @@ impl WorldTrending {
         world
     }
 
-    fn refresh(&self, state: &SharedState) {
-        let Some(key) = state.config.tmdb_api_key.clone() else {
-            return;
-        };
+    fn refresh(&self, state: &SharedState) -> Option<JoinHandle<()>> {
+        let key = state.config.tmdb_api_key.clone()?;
         if self.fetching.swap(true, Ordering::AcqRel) {
-            return;
+            return None;
         }
         let state = state.clone();
-        std::thread::spawn(move || {
-            let world = &state.home.world;
-            let fetched = fetch(&key);
-            let mut held = world.held.lock().unwrap_or_else(PoisonError::into_inner);
-            let previous = held.take().map(|(_, world)| world).unwrap_or_default();
-            *held = Some(match fetched {
-                Some(read) => (now_ms() + FRESH_FOR_MS, read),
-                None => (now_ms() + RETRY_AFTER_MS, previous),
-            });
-            world.fetching.store(false, Ordering::Release);
+        Some(std::thread::spawn(move || {
+            state.home.world.settle(fetch(&key), now_ms());
+        }))
+    }
+
+    fn settle(&self, fetched: Option<World>, now: i64) {
+        let mut held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
+        let previous = held.take().map(|(_, world)| world).unwrap_or_default();
+        *held = Some(match fetched {
+            Some(read) => (now + FRESH_FOR_MS, read),
+            None => (now + RETRY_AFTER_MS, previous),
         });
+        self.fetching.store(false, Ordering::Release);
     }
 
     #[cfg(test)]
@@ -117,6 +118,10 @@ pub fn with_world(state: &SharedState, mut held: Vec<SplashEntry>, cap: usize) -
 fn fetch(key: &str) -> Option<World> {
     let films = fetch_scope(key, DiscoverScope::Movies);
     let shows = fetch_scope(key, DiscoverScope::Shows);
+    world_of(films, shows)
+}
+
+fn world_of(films: Vec<DiscoverHit>, shows: Vec<DiscoverHit>) -> Option<World> {
     let hits = interleave(films, shows);
     if hits.is_empty() {
         return None;
@@ -146,9 +151,13 @@ fn cover(hit: DiscoverHit) -> Option<SplashEntry> {
 }
 
 fn fetch_scope(key: &str, scope: DiscoverScope) -> Vec<DiscoverHit> {
+    read_pages(|page| discover::trending(key, ANY_LANGUAGE, scope, page))
+}
+
+fn read_pages(mut read: impl FnMut(u32) -> Result<DiscoverPage, ()>) -> Vec<DiscoverHit> {
     let mut hits: Vec<DiscoverHit> = Vec::new();
     for page in 1..=PAGES {
-        let Ok(found) = discover::trending(key, ANY_LANGUAGE, scope, page) else {
+        let Ok(found) = read(page) else {
             tracing::warn!(target: "sections", page, "reading the provider's trending list failed");
             break;
         };
@@ -192,57 +201,4 @@ pub fn blend(household: Vec<String>, viewers: usize, world: &[String], cap: usiz
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn ids(list: &[&str]) -> Vec<String> {
-        list.iter().map(ToString::to_string).collect()
-    }
-
-    #[test]
-    fn a_household_of_several_leads_with_its_own_plays_and_the_world_fills_the_rest() {
-        let row = blend(ids(&["home1", "home2"]), 3, &ids(&["home2", "world1", "world2"]), 4);
-
-        assert_eq!(row, ["home1", "home2", "world1", "world2"]);
-    }
-
-    #[test]
-    fn a_household_of_one_is_given_the_world_s_ranking_and_not_its_own_history() {
-        let row = blend(ids(&["mine1", "mine2"]), 1, &ids(&["world1", "world2"]), 10);
-
-        assert_eq!(row, ["world1", "world2"]);
-    }
-
-    #[test]
-    fn the_row_stops_at_its_cap_whichever_side_fills_it() {
-        let world = ids(&["w1", "w2", "w3"]);
-
-        assert_eq!(blend(ids(&["h1", "h2", "h3"]), 2, &world, 2), ["h1", "h2"]);
-        assert_eq!(blend(Vec::new(), 2, &world, 2), ["w1", "w2"]);
-    }
-
-    #[test]
-    fn films_and_shows_of_the_same_place_stand_together() {
-        let ranked = interleave(vec![(false, 1), (false, 2), (false, 3)], vec![(true, 7)]);
-
-        assert_eq!(ranked, [(false, 1), (true, 7), (false, 2), (false, 3)]);
-    }
-
-    #[test]
-    fn a_server_with_no_provider_key_holds_nothing_and_asks_nobody() {
-        let state = crate::test_support::test_state();
-
-        let ranked = state.home.world.ranked(&state);
-
-        assert!(ranked.is_empty());
-        assert!(!state.home.world.fetching.load(Ordering::Acquire));
-    }
-
-    #[test]
-    fn what_is_held_is_answered_as_it_is() {
-        let state = crate::test_support::test_state();
-        state.home.world.hold(vec![(false, 603), (true, 1396)]);
-
-        assert_eq!(*state.home.world.ranked(&state), [(false, 603), (true, 1396)]);
-    }
-}
+mod tests;

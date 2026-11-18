@@ -240,3 +240,15 @@ async fn a_request_for_an_idle_job_runs_it_once() {
     wait_idle(&state.jobs).await;
     assert_eq!(db::list_job_runs(&state.db, key, 10).unwrap().len(), 1);
 }
+
+#[test]
+fn a_request_for_a_job_nobody_registered_is_refused_and_asks_for_no_later_run() {
+    let state = test_support::test_state();
+
+    let asked = state
+        .jobs
+        .trigger_after(state.clone(), JobKey("does.not.exist"), "edit");
+
+    assert_eq!(asked, Err(TriggerError::Unknown));
+    assert!(state.jobs.asked_again().is_empty());
+}
