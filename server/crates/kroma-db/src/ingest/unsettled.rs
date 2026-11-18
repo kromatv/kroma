@@ -21,7 +21,7 @@ pub fn unsettled_shows(pool: &Pool) -> Result<HashSet<String>> {
 pub(super) fn note_unsettled(tx: &rusqlite::Transaction, shows: &BTreeSet<&str>) -> Result<()> {
     let mut unsettled = stored(tx)?;
     let known = unsettled.len();
-    unsettled.extend(shows.iter().map(|show| show.to_string()));
+    unsettled.extend(shows.iter().copied().map(str::to_owned));
     if unsettled.len() == known {
         return Ok(());
     }
