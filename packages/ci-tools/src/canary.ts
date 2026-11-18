@@ -44,30 +44,54 @@ interface Retention {
   keepDays: number;
   /** Newest assets of a family that are kept no matter how old. */
   keepMin: number;
+  /** The most assets the release holds once an upload lands. GitHub refuses
+   *  an upload past 1000, and two workflows publish at once. */
+  capacity: number;
 }
 
-export const RETENTION: Retention = { keepDays: 14, keepMin: 5 };
+export const RETENTION: Retention = { keepDays: 14, keepMin: 5, capacity: 950 };
+
+const newestFirst = (assets: readonly Asset[]) =>
+  [...assets].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
+
+function pastNewest(assets: readonly Asset[], keepMin: number): Asset[] {
+  const families = new Map<string, Asset[]>();
+  for (const asset of assets) {
+    const key = familyOf(asset.name);
+    families.set(key, [...(families.get(key) ?? []), asset]);
+  }
+  return [...families.values()].flatMap((family) => newestFirst(family).slice(keepMin));
+}
 
 /**
  * The assets a channel can let go of: within each family, everything past the
  * newest `keepMin` that is also older than `keepDays`. Age, not count: a live
  * catalog may still point at a build a newer one has not displaced yet.
  */
-export function expired(assets: readonly Asset[], now: Date, retention = RETENTION): Asset[] {
+export function expired(
+  assets: readonly Asset[],
+  now: Date,
+  retention: Omit<Retention, 'capacity'> = RETENTION,
+): Asset[] {
   const cutoff = now.getTime() - retention.keepDays * 86_400_000;
-  const families = new Map<string, Asset[]>();
-  for (const asset of assets) {
-    const key = familyOf(asset.name);
-    families.set(key, [...(families.get(key) ?? []), asset]);
+  return pastNewest(assets, retention.keepMin).filter(
+    (asset) => Date.parse(asset.createdAt) < cutoff,
+  );
+}
+
+/**
+ * What else has to go for `incoming` more assets to fit under `capacity`: the
+ * oldest of what is past the newest `keepMin` of each family, oldest first. A
+ * push rate that fills the release inside `keepDays` lands here.
+ */
+export function crowdedOut(
+  assets: readonly Asset[],
+  incoming: number,
+  retention: Omit<Retention, 'keepDays'> = RETENTION,
+): Asset[] {
+  const over = assets.length + incoming - retention.capacity;
+  if (over <= 0) {
+    return [];
   }
-  const out: Asset[] = [];
-  for (const family of families.values()) {
-    const byAge = [...family].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
-    for (const asset of byAge.slice(retention.keepMin)) {
-      if (Date.parse(asset.createdAt) < cutoff) {
-        out.push(asset);
-      }
-    }
-  }
-  return out;
+  return newestFirst(pastNewest(assets, retention.keepMin)).reverse().slice(0, over);
 }

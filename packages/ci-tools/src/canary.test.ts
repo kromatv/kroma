@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { type Asset, canaryName, expired, familyOf, versionOf } from './canary';
+import { type Asset, canaryName, crowdedOut, expired, familyOf, versionOf } from './canary';
 
 const CANARY = '0.1.39-canary.3493975';
+
+const spkOfDay = (day: number): Asset => ({
+  name: `kroma-0.1.39.${day}-x86_64.spk`,
+  createdAt: new Date(Date.UTC(2026, 10, day)).toISOString(),
+});
+
+const names = (assets: Asset[]) => assets.map((a) => a.name);
 
 describe('canaryName', () => {
   it('dates the version in every installer the fleet produces', () => {
@@ -69,5 +76,28 @@ describe('expired', () => {
     expect(expired(assets, now, { keepDays: 14, keepMin: 1 }).map((a) => a.name)).toEqual([
       'KROMA-tizen-0.1.39-canary.1.wgt',
     ]);
+  });
+});
+
+describe('crowdedOut', () => {
+  it('retires the oldest builds past the newest few to make room for what is coming', () => {
+    const assets = [spkOfDay(3), spkOfDay(1), spkOfDay(4), spkOfDay(2)];
+
+    expect(names(crowdedOut(assets, 2, { keepMin: 1, capacity: 4 }))).toEqual([
+      'kroma-0.1.39.1-x86_64.spk',
+      'kroma-0.1.39.2-x86_64.spk',
+    ]);
+  });
+
+  it('retires nothing while the release has room', () => {
+    expect(crowdedOut([spkOfDay(1), spkOfDay(2)], 2, { keepMin: 1, capacity: 4 })).toEqual([]);
+  });
+
+  it('keeps the newest few of every family even when the release stays full', () => {
+    const tizen = { name: 'KROMA-tizen-0.1.39-canary.1.wgt', createdAt: spkOfDay(0).createdAt };
+
+    expect(
+      names(crowdedOut([tizen, spkOfDay(1), spkOfDay(2)], 9, { keepMin: 1, capacity: 3 })),
+    ).toEqual(['kroma-0.1.39.1-x86_64.spk']);
   });
 });
