@@ -1,6 +1,28 @@
-import { MediaItem } from '@kromatv/client/media';
+import { type AudioTrack, MediaItem } from '@kromatv/client/media';
 import { vi } from 'vitest';
 import type { EngineListeners } from '#tv/features/playback/player/engine';
+
+const ENGLISH: AudioTrack = {
+  index: 0,
+  codec: 'eac3',
+  channels: 2,
+  language: 'eng',
+  title: 'English',
+  default: false,
+};
+
+const FRENCH: AudioTrack = {
+  index: 1,
+  codec: 'eac3',
+  channels: 2,
+  language: 'fra',
+  title: 'Français',
+  default: true,
+};
+
+export function bilingual(item: MediaItem): MediaItem {
+  return { ...item, audioTracks: [ENGLISH, FRENCH] };
+}
 
 export function fakeListeners(): EngineListeners {
   return {

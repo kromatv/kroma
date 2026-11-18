@@ -9,7 +9,7 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf } from '@kromatv/core';
-import type { VideoPlayer } from 'expo-video';
+import type { VideoPlayer, VideoPlayerEvents } from 'expo-video';
 import {
   BaseTvEngine,
   type EngineOptions,
@@ -17,6 +17,7 @@ import {
 } from '#tv/features/playback/player/base-engine';
 import type { TvEngine } from '#tv/features/playback/player/engine';
 import { MasterRescue } from '#tv/features/playback/player/engine-rescue';
+import { ExpoDirectAudio } from '#tv/features/playback/player/expo-direct-audio';
 import {
   createPlayer,
   playerDebugRows,
@@ -31,7 +32,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   private bufSec: number | null = null;
   private subscriptions: { remove(): void }[] = [];
   private pendingSeek: number | null = null;
-  private pendingAudio = false;
+  private readonly audio = new ExpoDirectAudio(audioTracksOf(this.item));
   private clockSettled = true;
   private readonly rescue = new MasterRescue({
     refreshSession: () => this.client.refreshSession(),
@@ -61,7 +62,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     const player = createPlayer(url);
     // Only direct mode needs a seek: master's clock already starts at baseSec.
     this.pendingSeek = this.mode === 'direct' && seekSec > 0 ? seekSec : null;
-    this.pendingAudio = this.mode === 'direct';
+    this.audio.opened(this.mode);
     this.clockSettled = true;
     this.player = player;
     this.subscribe(player);
@@ -75,8 +76,8 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   }
 
   private subscribe(player: VideoPlayer): void {
-    const add = <K extends 'statusChange' | 'playingChange' | 'timeUpdate' | 'playToEnd'>(
-      event: K,
+    const add = (
+      event: keyof VideoPlayerEvents,
       handler: Parameters<VideoPlayer['addListener']>[1],
     ) => {
       // Guard against a stale player: a failed direct attempt's in-flight
@@ -88,7 +89,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         }
         handler(payload);
       };
-      this.subscriptions.push(player.addListener(event, guarded as never));
+      this.subscriptions.push(player.addListener(event, guarded));
     };
 
     add('timeUpdate', (payload: { currentTime: number; bufferedPosition?: number }) => {
@@ -130,7 +131,9 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         return;
       }
       if (payload.status === 'readyToPlay') {
-        this.applyPending();
+        if (!this.applyPending()) {
+          return;
+        }
         this.listeners.onPlaying();
         this.listeners.onReady();
         return;
@@ -143,6 +146,12 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     add('playToEnd', () => {
       this.listeners.onEnded();
     });
+
+    add('availableAudioTracksChange', () => {
+      if (!this.audio.listed(player, this.rendition)) {
+        this.playTrackFromServer();
+      }
+    });
   }
 
   private failed(error: unknown): void {
@@ -151,22 +160,29 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     }
   }
 
-  private applyPending(): void {
-    const { player, pendingSeek: seek, pendingAudio: audio } = this;
-    this.pendingSeek = null;
-    this.pendingAudio = false;
+  private applyPending(): boolean {
+    const player = this.player;
     if (!player) {
-      return;
+      return false;
     }
-    const track = audio ? player.availableAudioTracks[this.rendition] : undefined;
-    if (track && player.audioTrack?.id !== track.id) {
-      player.audioTrack = track;
+    if (!this.audio.ready(player, this.rendition)) {
+      this.playTrackFromServer();
+      return false;
     }
-    if (seek == null) {
-      return;
+    const seek = this.pendingSeek;
+    this.pendingSeek = null;
+    if (seek != null) {
+      player.currentTime = seek;
+      this.elSec = seek;
     }
-    player.currentTime = seek;
-    this.elSec = seek;
+    return true;
+  }
+
+  private playTrackFromServer(): void {
+    const at = this.pendingSeek ?? this.position();
+    this.mode = 'master';
+    this.listeners.onWaiting();
+    this.reanchor(at);
   }
 
   private teardown(release: (player: VideoPlayer) => void = retirePlayer): void {
@@ -190,7 +206,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       this.elSec = 0;
     }
     this.pendingSeek = this.mode === 'direct' && absSec > 0 ? absSec : null;
-    this.pendingAudio = this.mode === 'direct';
+    this.audio.opened(this.mode);
     this.bufSec = null;
     this.clockSettled = false;
   }
@@ -262,9 +278,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   }
 
   setAudioRendition(rendition: number): void {
-    if (rendition === this.rendition) {
-      return;
-    }
+    const changed = rendition !== this.rendition;
     this.rendition = rendition;
     const player = this.player;
     if (!player) {
@@ -273,15 +287,16 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     // Direct mode exposes the file's own audio tracks: switch in place, no
     // server round trip.
     if (this.mode === 'direct') {
-      const track = player.availableAudioTracks[rendition];
-      if (track) {
-        player.audioTrack = track;
-        return;
+      if (!this.audio.picked(player, rendition)) {
+        this.playTrackFromServer();
       }
+      return;
     }
     // The master carries one audio rendition, so changing track means a new
     // master at the current position.
-    this.reanchor(this.position());
+    if (changed) {
+      this.reanchor(this.position());
+    }
   }
 
   hasMultipleAudioTracks(item: MediaItem): boolean {
