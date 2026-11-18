@@ -12,6 +12,7 @@ pub mod email;
 pub mod embeddings;
 pub mod enrich;
 pub mod importers;
+pub mod imports;
 pub mod jobs;
 pub mod library_counts;
 pub mod library_missing;

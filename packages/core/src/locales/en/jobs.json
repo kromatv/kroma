@@ -29,6 +29,8 @@
   "jobs.editSchedule": "Edit schedule",
   "jobs.empty": "No jobs registered.",
   "jobs.history": "History",
+  "jobs.household.import.desc": "Brings libraries, people, watch state and plays over from another media server. It starts from the import screen, and running it again brings only what changed.",
+  "jobs.household.import.name": "Import from another server",
   "jobs.indexer.definitions.desc": "Downloads the current tracker definitions each night, so the list of built-in indexers stays complete.",
   "jobs.indexer.definitions.name": "Tracker catalog",
   "jobs.last": "Last",

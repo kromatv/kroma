@@ -11,6 +11,7 @@
 mod backup;
 mod diagnostics;
 mod importers;
+mod imports;
 mod jobs;
 mod join_requests;
 mod libraries;
@@ -82,6 +83,7 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(network::routes())
         .merge(diagnostics::routes())
         .merge(importers::routes())
+        .merge(imports::routes())
         .merge(modules::routes())
         .merge(notifications::routes())
         .merge(store::routes())
