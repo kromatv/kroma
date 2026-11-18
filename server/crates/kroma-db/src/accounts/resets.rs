@@ -70,13 +70,15 @@ pub fn request_reset(pool: &Pool, user_id: &str) -> Result<()> {
     Ok(())
 }
 
-/// Fetch one reset by token, whatever its state.
+/// Fetch one reset by token, whatever its state. A reset of an account that
+/// waits on an invitation is never found: a reset is not a way into it.
 pub fn get_reset(pool: &Pool, token: &str) -> Result<Option<CredentialReset>> {
     let conn = pool.get()?;
     let reset = conn
         .query_row(
-            "SELECT token,user_id,code_hash,attempts,created_by,created_at,expires_at,used_at \
-             FROM credential_resets WHERE token = ?1",
+            "SELECT r.token,r.user_id,r.code_hash,r.attempts,r.created_by,r.created_at,r.expires_at,r.used_at \
+             FROM credential_resets r JOIN users u ON u.id = r.user_id \
+             WHERE r.token = ?1 AND u.waiting = 0",
             params![token],
             row_to_reset,
         )

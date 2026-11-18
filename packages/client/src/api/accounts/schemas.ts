@@ -261,6 +261,18 @@ export const InviteCreated = Invite.pick({
 }).extend({ url: z.string().nullable() });
 export type InviteCreated = z.infer<typeof InviteCreated>;
 
+/** `GET /api/invites/:token` the public check before the join form. `username`
+ * and `email` are set for the invitation of an account that waits: what that
+ * account is known by, for the person to keep or correct. Redeeming it gives
+ * that same account its credential instead of creating one. */
+export const InviteCheck = z.object({
+  valid: z.boolean(),
+  expiresAt: z.number().optional(),
+  username: z.string().optional(),
+  email: z.string().optional(),
+});
+export type InviteCheck = z.infer<typeof InviteCheck>;
+
 /** A patch of the signed-in account's own profile. Omitted keys are left
  * unchanged; a `null` clears the field (only the language prefs are clearable
  * server-side, username and email must be non-empty). */

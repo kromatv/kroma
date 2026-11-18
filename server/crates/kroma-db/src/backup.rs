@@ -30,6 +30,8 @@ mod rows;
 mod left_out;
 #[cfg(test)]
 mod test_support;
+#[cfg(test)]
+mod waiting;
 
 use module_stores::{dump_store, module_stores, restore_modules};
 use rows::{dump_query, restore_rows};

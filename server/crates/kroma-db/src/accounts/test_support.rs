@@ -1,9 +1,26 @@
-use super::{create_user, DeviceHints};
+use super::{create_user, create_waiting_account, Awaited, DeviceHints, WaitingAccount};
 use crate::testing::TempPool;
 use crate::Pool;
-use kroma_domain::{Permission, User};
+use kroma_domain::{LibraryScope, Permission, User};
 
 pub(super) const FUTURE: i64 = 9_999_999_999;
+pub(super) const FILMS: &str = "films";
+
+pub(super) fn films() -> LibraryScope {
+    LibraryScope::Only(vec![FILMS.into()])
+}
+
+pub(super) fn waiting(pool: &Pool, username: &str, email: Option<&str>) -> User {
+    let account = WaitingAccount {
+        username,
+        email,
+        libraries: &films(),
+    };
+    match create_waiting_account(pool, &account).unwrap() {
+        Awaited::Account(user) => *user,
+        other => panic!("{username} should wait, got {other:?}"),
+    }
+}
 
 pub(super) fn pool() -> TempPool {
     crate::testing::temp_pool("acct")

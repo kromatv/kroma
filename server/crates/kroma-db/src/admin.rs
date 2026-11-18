@@ -62,45 +62,51 @@ fn row_to_admin_user(r: &Row) -> rusqlite::Result<User> {
 /// All accounts for the admin "Membres & partage" table, oldest first (owner is
 /// account 0). `online` is left false here the handler fills it from the live
 /// playback registry. A reset request counts for [`RESET_REQUEST_FRESH_DAYS`],
-/// then goes stale and stops showing.
+/// then goes stale and stops showing. An account that waits on an invitation
+/// says where that invitation stands.
 pub fn admin_users(pool: &Pool) -> Result<Vec<kroma_domain::AdminUser>> {
     let conn = pool.get()?;
-    let cutoff = (time::OffsetDateTime::now_utc()
-        - time::Duration::days(RESET_REQUEST_FRESH_DAYS))
-    .format(&time::format_description::well_known::Rfc3339)
-    .unwrap_or_default();
+    let now = time::OffsetDateTime::now_utc();
+    let cutoff = (now - time::Duration::days(RESET_REQUEST_FRESH_DAYS))
+        .format(&time::format_description::well_known::Rfc3339)
+        .unwrap_or_default();
     let mut stmt = conn.prepare(
-        "SELECT users.id,email,username,avatar_url,users.created_at,permissions,last_seen,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,(email_verified_at IS NOT NULL),(rr.created_at IS NOT NULL) \
+        "SELECT users.id,email,username,avatar_url,users.created_at,permissions,last_seen,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,(email_verified_at IS NOT NULL),(rr.created_at IS NOT NULL),waiting,\
+         (SELECT expires_at FROM invites WHERE user_id = users.id AND used_at IS NULL) \
          FROM users LEFT JOIN reset_requests rr ON rr.user_id = users.id AND rr.created_at > ?1 \
          ORDER BY users.created_at",
     )?;
     let rows = stmt.query_map([cutoff], |r| {
-        let user = row_to_admin_user(r)?;
-        let last_seen: Option<String> = r.get(6)?;
-        let email_verified: bool = r.get(11)?;
-        let reset_requested: bool = r.get(12)?;
-        Ok((user, last_seen, email_verified, reset_requested))
+        let invitation = r
+            .get::<_, bool>(13)?
+            .then_some(r.get::<_, Option<i64>>(14)?)
+            .map(|lapses| kroma_domain::InvitationState::at(lapses, now.unix_timestamp()));
+        admin_user(row_to_admin_user(r)?, r, invitation)
     })?;
-    let mut out = Vec::new();
-    for row in rows {
-        let (u, last_seen, email_verified, reset_requested) = row?;
-        out.push(kroma_domain::AdminUser {
-            role: kroma_domain::role_label(&u.permissions).to_string(),
-            id: u.id,
-            email: u.email,
-            username: u.username,
-            avatar_url: u.avatar_url,
-            permissions: u.permissions,
-            libraries: u.libraries,
-            created_at: u.created_at,
-            last_seen,
-            online: false,
-            email_verified,
-            has_pin: u.has_pin,
-            reset_requested,
-        });
-    }
-    Ok(out)
+    Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+}
+
+fn admin_user(
+    u: User,
+    r: &Row,
+    invitation: Option<kroma_domain::InvitationState>,
+) -> rusqlite::Result<kroma_domain::AdminUser> {
+    Ok(kroma_domain::AdminUser {
+        role: kroma_domain::role_label(&u.permissions).to_string(),
+        id: u.id,
+        email: r.get(1)?,
+        username: u.username,
+        avatar_url: u.avatar_url,
+        permissions: u.permissions,
+        libraries: u.libraries,
+        created_at: u.created_at,
+        last_seen: r.get(6)?,
+        online: false,
+        email_verified: r.get(11)?,
+        has_pin: u.has_pin,
+        reset_requested: r.get(12)?,
+        invitation,
+    })
 }
 
 /// Days a sign-in-screen reset request stays on the member row before it is
@@ -226,5 +232,44 @@ mod tests {
 
         delete_user(&p, &member.id).unwrap();
         assert_eq!(admin_users(&p).unwrap().len(), 1);
+    }
+
+    fn waiting(pool: &Pool, username: &str) -> String {
+        let account = crate::WaitingAccount {
+            username,
+            email: None,
+            libraries: &kroma_domain::LibraryScope::All,
+        };
+        match crate::create_waiting_account(pool, &account).unwrap() {
+            crate::Awaited::Account(user) => user.id,
+            other => panic!("{username} should wait, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn an_account_that_waits_says_where_its_invitation_stands() {
+        use kroma_domain::InvitationState::{Absent, Expired, Pending};
+        let p = pool();
+        let owner = crate::create_user(&p, "o@b.c", "owner", "h", &Permission::all()).unwrap();
+        let invite = |token, user_id, expires_at| crate::AccountInvite {
+            token,
+            user_id,
+            created_by: &owner.id,
+            expires_at,
+        };
+        let (ana, bo, cy) = (waiting(&p, "ana"), waiting(&p, "bo"), waiting(&p, "cy"));
+        crate::invite_waiting_account(&p, &invite("live", &ana, 9_999_999_999)).unwrap();
+        crate::invite_waiting_account(&p, &invite("lapsed", &bo, 1)).unwrap();
+
+        let listed = admin_users(&p).unwrap();
+
+        let state = |id: &str| listed.iter().find(|u| u.id == id).unwrap().invitation;
+        assert_eq!(state(&owner.id), None);
+        assert_eq!(state(&ana), Some(Pending));
+        assert_eq!(state(&bo), Some(Expired));
+        assert_eq!(state(&cy), Some(Absent));
+        let address = |id: &str| listed.iter().find(|u| u.id == id).unwrap().email.clone();
+        assert_eq!(address(&owner.id).as_deref(), Some("o@b.c"));
+        assert_eq!(address(&cy), None);
     }
 }

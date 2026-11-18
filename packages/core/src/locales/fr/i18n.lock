@@ -140,6 +140,8 @@
     "addProfile.title": "3cbb7617 06b788e0",
     "addProfile.unreachable": "ec3a38f6 b5cf90ef",
     "admin.accessSection": "6bca5f78 b24f42b6",
+    "admin.accountNotWaiting": "5f1f8879 3638926e",
+    "admin.accountWaiting": "68abd976 810d9e2a",
     "admin.acqAutoApprove": "3c0724c6 be445c7b",
     "admin.acqAutoApproveHint": "88597b0a 593f50c2",
     "admin.acqDeleteAfterImport": "02775e08 8ce62516",

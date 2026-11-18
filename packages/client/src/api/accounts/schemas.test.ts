@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasPermission, PairingStatus, ResetCreated, User } from './schemas';
+import { hasPermission, InviteCheck, PairingStatus, ResetCreated, User } from './schemas';
 
 const user = {
   id: 'u1',
@@ -62,5 +62,24 @@ describe('a minted reset', () => {
     const reset = { token: 't', code: '123456', url: null, expiresAt: 1, delivered: 'pigeon' };
 
     expect(ResetCreated.parse(reset).delivered).toBe('manual');
+  });
+});
+
+describe('the check of an invitation', () => {
+  it('names the account that waits on it, for the join form to start from', () => {
+    const checked = InviteCheck.parse({
+      valid: true,
+      expiresAt: 1,
+      username: 'ana',
+      email: 'ana@old.test',
+    });
+
+    expect(checked.username).toBe('ana');
+    expect(checked.email).toBe('ana@old.test');
+  });
+
+  it('names nobody for an invitation that creates an account, and for a dead one', () => {
+    expect(InviteCheck.parse({ valid: true, expiresAt: 1 }).username).toBeUndefined();
+    expect(InviteCheck.parse({ valid: false })).toEqual({ valid: false });
   });
 });
