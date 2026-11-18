@@ -167,12 +167,12 @@ jobs:
       name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
       deployment: false
     if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","mobile"]'), github.event.inputs.targets)) }}
-    # macos-26, NOT macos-15: Expo SDK 57 pulls Swift packages built with Swift
-    # tools 6.2 (expo-modules-jsi), and the macos-15 image tops out at Xcode 16.4
-    # / Swift 6.1. That mismatch fails as "Could not resolve package
-    # dependencies: package 'apple' is using Swift tools version 6.2.0" thousands
-    # of lines into an xcodebuild log, so the guard step below states it plainly.
-    runs-on: macos-26
+    # xcode-27, NOT macos-26: from April 2027 App Store Connect refuses a build
+    # made with an SDK older than iOS 27 (ITMS-90725), and the macos-26 image
+    # tops out at Xcode 26.6 / iOS 26.5. Expo's Swift packages also need Swift
+    # tools 6.2 (expo-modules-jsi); the guard step below states that in one line
+    # instead of a package-resolution error deep in an xcodebuild log.
+    runs-on: xcode-27
     permissions:
       contents: read # only reads the repo and uploads run artifacts
       actions: write # retires the previous DerivedData cache entry

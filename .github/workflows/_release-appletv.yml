@@ -58,12 +58,10 @@ jobs:
       name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
       deployment: false
     if: ${{ (contains(fromJSON('["stable","candidate"]'), inputs.channel) || github.event_name == 'workflow_dispatch') && (github.event_name != 'workflow_dispatch' || contains(fromJSON('["all","tv"]'), github.event.inputs.targets)) }}
-    # macos-26, NOT macos-15, for the reason the phone job spells out: Expo SDK
-    # 57 pulls Swift packages built with Swift tools 6.2 (expo-modules-jsi), and
-    # the macos-15 image tops out at Xcode 16.4 / Swift 6.1. The guard step below
-    # states that in one line instead of letting it surface as a package
-    # resolution error thousands of lines into an xcodebuild log.
-    runs-on: macos-26
+    # xcode-27, NOT macos-26, for the reason the phone job spells out: App Store
+    # Connect refuses a tvOS build made with an SDK older than 27 from April
+    # 2027, and the macos-26 image tops out at Xcode 26.6.
+    runs-on: xcode-27
     permissions:
       contents: read # only reads the repo and uploads run artifacts
       actions: write # retires the previous DerivedData cache entry
