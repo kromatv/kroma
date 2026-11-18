@@ -749,5 +749,5 @@
 - **SURF-58** (SHIPPED) - An app never reports being too old as a playback or feature error.
 - **SURF-59** (SHIPPED) - A server treats a request that names no app version as coming from an
 - **SURF-60** (SHIPPED) - An app that needs a newer server than the one it reached shows one
-- **SURF-61** (AGREED) - A television or the desktop app that reaches a server nobody owns yet
+- **SURF-61** (SHIPPED) - A television or the desktop app that reaches a server nobody owns yet
 - **SURF-62** (AGREED) - Setting a server up is the web surface's job

@@ -28,6 +28,7 @@ export interface TvRoutes {
   profiles: undefined;
   addProfile: undefined;
   quick: undefined;
+  unowned: undefined;
   deviceSettings: undefined;
   pin: { account: StoredSession };
   profileMenu: undefined;

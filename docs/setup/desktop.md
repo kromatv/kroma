@@ -90,6 +90,11 @@ When KROMA opens, it looks for a server on your network. If it finds none,
 enter the server's address, for example `http://192.168.1.50:4040`, then sign
 in with your account.
 
+If the server has no account yet, KROMA shows **This server is not set up
+yet** and the server's address. Open that address in a web browser and create
+the owner account, as in [First run](first-run.md). KROMA goes on to the
+sign-in by itself once the account exists.
+
 ## Web browser
 
 Nothing to install: open `http://SERVER_IP:4040` in Chrome, Edge, Firefox or
