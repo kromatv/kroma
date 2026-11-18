@@ -1,0 +1,33 @@
+{
+  "Items": [
+    {
+      "Name": "Heat",
+      "Id": "c0000000000000000000000000000001",
+      "RunTimeTicks": 102000000000,
+      "Type": "Movie",
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 3,
+        "IsFavorite": true,
+        "LastPlayedDate": "2023-11-14T22:13:20.0000000Z",
+        "Played": true,
+        "Key": "949",
+        "ItemId": "c0000000000000000000000000000001"
+      }
+    },
+    {
+      "Name": "Marked by hand",
+      "Id": "c0000000000000000000000000000005",
+      "Type": "Movie",
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 1,
+        "IsFavorite": false,
+        "Played": true,
+        "Key": "1",
+        "ItemId": "c0000000000000000000000000000005"
+      }
+    }
+  ],
+  "StartIndex": 0
+}

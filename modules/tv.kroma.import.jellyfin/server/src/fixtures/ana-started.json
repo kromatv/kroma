@@ -1,0 +1,20 @@
+{
+  "Items": [
+    {
+      "Name": "Alien",
+      "Id": "c0000000000000000000000000000002",
+      "RunTimeTicks": 70200000000,
+      "Type": "Movie",
+      "UserData": {
+        "PlaybackPositionTicks": 12340000000,
+        "PlayCount": 1,
+        "IsFavorite": false,
+        "LastPlayedDate": "2023-11-15T22:13:20.1234567Z",
+        "Played": false,
+        "Key": "348",
+        "ItemId": "c0000000000000000000000000000002"
+      }
+    }
+  ],
+  "StartIndex": 0
+}

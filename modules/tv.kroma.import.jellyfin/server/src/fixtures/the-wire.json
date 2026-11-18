@@ -1,0 +1,14 @@
+{
+  "Items": [
+    {
+      "Name": "The Wire",
+      "Id": "e0000000000000000000000000000001",
+      "ProviderIds": { "Tmdb": "1438", "Imdb": "tt0306414", "Tvdb": "79126" },
+      "ProductionYear": 2002,
+      "IsFolder": true,
+      "Type": "Series"
+    }
+  ],
+  "TotalRecordCount": 1,
+  "StartIndex": 0
+}
