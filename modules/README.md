@@ -338,7 +338,9 @@ of the importer itself.
 - A library's `kind` is `movies`, `shows`, `mixed` (films and shows together) or
   `other`. `other` is every kind KROMA does not play, and the core reads a kind
   it does not know as `other`. `folders` are the paths as the other server sees
-  them.
+  them. The core takes none of them as a path of its own machine: the owner
+  confirms where each one is, and the core reads a title's `paths` through the
+  folder that holds them.
 - `signedIn` marks the one user the sign-in belongs to.
 - `allLibraries` says the user could see every library. Otherwise `libraries`
   lists the ids of the ones they could see. A user with neither saw none, which

@@ -8,7 +8,7 @@
 use axum::extract::{DefaultBodyLimit, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::Response;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +20,7 @@ use crate::db::imports::Window;
 use crate::model::import::Title;
 use crate::model::imports::{Import, Origin, Selection};
 use crate::model::{Permission, User};
-use crate::services::imports::{self, Request, StartError};
+use crate::services::imports::{self, FoldersAsk, Request, StartError};
 use crate::state::SharedState;
 
 const MAX_START_BYTES: usize = 256 * 1024;
@@ -30,13 +30,15 @@ const UNMATCHED_PER_PAGE: usize = 100;
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/imports", get(list).post(start))
+        .route("/imports/folders", post(folders))
         .route("/imports/{id}", get(one))
         .route("/imports/{id}/unmatched", get(unmatched))
         .layer(DefaultBodyLimit::max(MAX_START_BYTES))
 }
 
 /// What starts an import: the importer and the server to read, the reference
-/// `connect` gave for the sign-in, and what the owner kept.
+/// `connect` gave for the sign-in, and what the owner kept. A kept library
+/// names the folders the owner confirmed for it.
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StartBody {
@@ -67,6 +69,31 @@ pub struct ImportList {
 pub struct Unmatched {
     total: u64,
     titles: Vec<Title>,
+}
+
+/// The folders a review screen is about to show for one server, as the other
+/// server names them.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FoldersBody {
+    importer: String,
+    server: String,
+    #[serde(default)]
+    folders: Vec<String>,
+}
+
+/// One folder of the other server and where it is on this machine. No `here`
+/// is a folder the review screen asks the owner for.
+#[derive(Debug, Serialize)]
+pub struct Folder {
+    folder: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    here: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FolderList {
+    folders: Vec<Folder>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -118,6 +145,33 @@ pub async fn start(
         id: started.id,
         run_id: started.run_id,
     }))
+}
+
+/// `POST /api/admin/imports/folders` where each folder of the other server is
+/// on this machine, in the order asked: where an earlier import kept it, else
+/// under the same name when this machine has that folder. The review screen
+/// sends back each one the owner confirms as a `folders` entry of the library
+/// it kept, and a source is made over no folder it did not send.
+pub async fn folders(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Json(body): Json<FoldersBody>,
+) -> Result<Json<FolderList>, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let ask = FoldersAsk {
+        importer: body.importer,
+        server: body.server,
+        folders: body.folders,
+    };
+    let folders = blocking(move || {
+        let here = imports::folders_here(&state, &ask)?;
+        let placed = ask.folders.into_iter().zip(here);
+        Ok(placed
+            .map(|(folder, here)| Folder { folder, here })
+            .collect())
+    })
+    .await?;
+    Ok(Json(FolderList { folders }))
 }
 
 /// `GET /api/admin/imports` the imports this server ran, newest first.
