@@ -12,10 +12,7 @@ use kroma_domain::{LibraryScope, RequestKind};
 /// Replace an account's library grant. [`LibraryScope::All`] clears the column,
 /// which is also how every account reads before an admin has ever set one.
 pub fn set_user_libraries(pool: &Pool, user_id: &str, scope: &LibraryScope) -> Result<()> {
-    let stored: Option<String> = match scope {
-        LibraryScope::All => None,
-        LibraryScope::Only(ids) => Some(serde_json::to_string(ids)?),
-    };
+    let stored = crate::rows::stored_library_scope(scope)?;
     let conn = pool.get()?;
     conn.execute(
         "UPDATE users SET libraries = ?2 WHERE id = ?1",

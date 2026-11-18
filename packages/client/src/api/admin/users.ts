@@ -2,19 +2,29 @@ import { z } from 'zod';
 import { Permission, User } from '../accounts';
 import { LibraryId } from '../media';
 
+/** Where the invitation of an account that waits stands: one is `pending`, the
+ * last one `expired`, or there is `none` to redeem. */
+export const InvitationState = z.enum(['pending', 'expired', 'none']);
+export type InvitationState = z.infer<typeof InvitationState>;
+
 /** One account in the admin "Membres & partage" table carries email, a derived
  * role, last-activity and a live `online` flag. `resetRequested` marks a user
  * who asked for a credential reset from the sign-in screen and for whom the
  * owner has not minted one since. `libraries` is the grant: the library ids this
- * account may see, or `null` for every library. */
+ * account may see, or `null` for every library.
+ *
+ * `invitation` is set for an account that waits on an invitation: nobody has
+ * signed in to it yet, and nobody can until its invitation is redeemed. Only
+ * such an account may have no `email`. */
 export const AdminUser = User.pick({
   id: true,
-  email: true,
   username: true,
   avatarUrl: true,
   hasPin: true,
   createdAt: true,
 }).extend({
+  email: z.string().nullable(),
+  invitation: InvitationState.nullish(),
   permissions: z.array(Permission),
   libraries: z.array(LibraryId).nullable(),
   role: z.string(),

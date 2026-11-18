@@ -100,12 +100,12 @@
 - **ACCT-91** (SHIPPED) - The device list puts the device in hand first, then the others by most <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-92** (SHIPPED) - One action signs out every device except the one in hand. <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-93** (SHIPPED) - An account holder who no longer knows their profile PIN turns the lock <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-94** (AGREED) - An account can exist before its person has signed in. It **waits on <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-95** (AGREED) - Nobody can sign in to a waiting account, by any means. Its invitation <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-96** (AGREED) - Redeeming the invitation gives the account its credential, and the <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-97** (AGREED) - The person may correct the account's name and address when they <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-98** (AGREED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-99** (AGREED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-94** (SHIPPED) - An account can exist before its person has signed in. It **waits on <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-95** (SHIPPED) - Nobody can sign in to a waiting account, by any means. Its invitation <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-96** (SHIPPED) - Redeeming the invitation gives the account its credential, and the <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-97** (SHIPPED) - The person may correct the account's name and address when they <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-98** (SHIPPED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)

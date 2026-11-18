@@ -61,6 +61,8 @@ A step that has shipped is never edited. A fix is a new step.
 - **A table rebuild** (dropping NOT NULL, changing a type or a key, the
   12-step procedure from the SQLite docs): set `rebuilds: true`. Foreign keys go
   off around the step, and it is refused if any row points at one it removed.
+  Rows that pointed at nothing before the step do not count against it: a
+  restored backup leaves some until the library is scanned again.
 - **Data that needs Rust**: `run: Run::Code(fn)`. The function gets the step's
   transaction.
 - **Long backfills** do not belong in a step: a step blocks the boot. Queue them

@@ -1,6 +1,7 @@
 //! Member management: the full account list plus permission, username and
 //! library-grant edits and account removal (the "Membres & partage" table). The
-//! reset and verification links the owner mints live in `users/links.rs`.
+//! reset and verification links the owner mints live in `users/links.rs`, with
+//! the invitation of an account that waits.
 
 pub(super) mod links;
 
@@ -28,6 +29,7 @@ pub fn routes() -> Router<SharedState> {
         .route("/users", get(list_users))
         .route("/users/{id}", patch(update_user).delete(delete_user))
         .route("/users/{id}/reset", post(links::reset_user))
+        .route("/users/{id}/invitation", post(links::invite_user))
         .route(
             "/users/{id}/email-verification",
             post(links::send_email_verification),
@@ -48,7 +50,25 @@ async fn target_or_404(state: &SharedState, user: &User, id: &str) -> Result<Use
         })
 }
 
+async fn target_that_does_not_wait(
+    state: &SharedState,
+    user: &User,
+    id: &str,
+) -> Result<User, Response> {
+    let target = target_or_404(state, user, id).await?;
+    let waiting = id.to_string();
+    if query(&state.db, move |pool| db::account_waits(&pool, &waiting)).await? {
+        return Err(lerr(
+            super::user_locale(user),
+            StatusCode::CONFLICT,
+            "admin.accountWaiting",
+        ));
+    }
+    Ok(target)
+}
+
 /// `GET /api/admin/users` → full member list (the "Membres & partage" table).
+/// An account that waits on an invitation says so, with where it stands.
 pub async fn list_users(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -110,11 +130,8 @@ pub async fn update_user(
 
     if let Some(perms) = body.permissions.clone() {
         // Don't strip the last owner of its management rights.
-        let owners = all
-            .iter()
-            .filter(|u| u.permissions.contains(&Permission::UsersManage))
-            .count();
-        let target_is_owner = target.permissions.contains(&Permission::UsersManage);
+        let owners = all.iter().filter(|u| manages_users(u)).count();
+        let target_is_owner = manages_users(target);
         let removes_owner = !perms.contains(&Permission::UsersManage);
         if target_is_owner && removes_owner && owners <= 1 {
             return Err(lerr(
@@ -170,6 +187,10 @@ pub async fn update_user(
     }
     state.events.publish(ServerEvent::LibraryUpdated);
     Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+fn manages_users(member: &crate::model::AdminUser) -> bool {
+    member.invitation.is_none() && member.permissions.contains(&Permission::UsersManage)
 }
 
 pub(super) fn library_scope(granted: Option<Vec<String>>) -> Option<LibraryScope> {
