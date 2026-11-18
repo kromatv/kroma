@@ -1,0 +1,39 @@
+{
+  "Items": [
+    {
+      "Name": "The Buys",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "d0000000000000000000000000000001",
+      "Path": "/data/shows/The Wire/Season 01/The Wire - S01E03.mkv",
+      "ProviderIds": { "Tvdb": "127396", "Imdb": "tt0749431" },
+      "RunTimeTicks": 33000000000,
+      "ProductionYear": 2002,
+      "IndexNumber": 3,
+      "ParentIndexNumber": 1,
+      "IsFolder": false,
+      "Type": "Episode",
+      "SeriesName": "The Wire",
+      "SeriesId": "e0000000000000000000000000000001",
+      "SeasonId": "e0000000000000000000000000000011",
+      "MediaType": "Video"
+    },
+    {
+      "Name": "Old Cases",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "d0000000000000000000000000000002",
+      "Path": "/data/shows/The Wire/Season 01/The Wire - S01E04.mkv",
+      "ProviderIds": {},
+      "RunTimeTicks": 34200000000,
+      "IndexNumber": 4,
+      "ParentIndexNumber": 1,
+      "IsFolder": false,
+      "Type": "Episode",
+      "SeriesName": "The Wire",
+      "SeriesId": "e0000000000000000000000000000001",
+      "SeasonId": "e0000000000000000000000000000011",
+      "MediaType": "Video"
+    }
+  ],
+  "TotalRecordCount": 2,
+  "StartIndex": 0
+}

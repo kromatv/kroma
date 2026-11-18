@@ -1,0 +1,47 @@
+[
+  {
+    "Name": "Films",
+    "Locations": ["/data/movies", "/data/movies-4k"],
+    "CollectionType": "movies",
+    "LibraryOptions": { "Enabled": true, "EnableRealtimeMonitor": true },
+    "ItemId": "b0000000000000000000000000000001",
+    "PrimaryImageItemId": "b0000000000000000000000000000001",
+    "RefreshStatus": "Idle"
+  },
+  {
+    "Name": "Shows",
+    "Locations": ["/data/shows"],
+    "CollectionType": "tvshows",
+    "LibraryOptions": { "Enabled": true },
+    "ItemId": "b0000000000000000000000000000002",
+    "RefreshStatus": "Idle"
+  },
+  {
+    "Name": "Everything",
+    "Locations": ["/data/mixed"],
+    "LibraryOptions": { "Enabled": true },
+    "ItemId": "b0000000000000000000000000000003",
+    "RefreshStatus": "Idle"
+  },
+  {
+    "Name": "Music",
+    "Locations": ["/data/music"],
+    "CollectionType": "music",
+    "LibraryOptions": { "Enabled": true },
+    "ItemId": "b0000000000000000000000000000004",
+    "RefreshStatus": "Idle"
+  },
+  {
+    "Name": "Collections",
+    "Locations": ["/config/data/collections"],
+    "CollectionType": "boxsets",
+    "LibraryOptions": { "Enabled": true },
+    "ItemId": "b0000000000000000000000000000005",
+    "RefreshStatus": "Idle"
+  },
+  {
+    "Name": "Unscanned",
+    "Locations": ["/data/new"],
+    "CollectionType": "movies"
+  }
+]
