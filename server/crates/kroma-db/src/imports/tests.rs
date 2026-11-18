@@ -1,5 +1,6 @@
 mod catalogue;
 mod folders;
+mod identities;
 mod newcomers;
 mod records;
 mod runs;

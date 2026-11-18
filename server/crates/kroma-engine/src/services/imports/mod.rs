@@ -14,10 +14,11 @@ mod paths;
 mod pull;
 mod review;
 mod run;
+mod scan_paths;
 mod settle;
 #[expect(
     dead_code,
-    reason = "the titles and plays stages read nothing of what they are given yet"
+    reason = "the plays stage reads nothing of what it is given yet"
 )]
 mod stages;
 mod start;

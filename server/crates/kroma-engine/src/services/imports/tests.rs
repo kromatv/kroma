@@ -1,6 +1,7 @@
 mod cancelling;
 mod confirming;
 mod failing;
+mod identifying;
 mod other_server;
 mod people;
 mod placing;

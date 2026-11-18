@@ -56,6 +56,10 @@
       "broke": 23,
       "changed": 23
     },
+    "import_identities": {
+      "broke": 24,
+      "changed": 24
+    },
     "import_passes": {
       "broke": 21,
       "changed": 21
@@ -249,5 +253,5 @@
       "changed": 1
     }
   },
-  "version": 23
+  "version": 24
 }
