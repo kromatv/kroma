@@ -63,6 +63,7 @@ const TABLES: &[&str] = &[
     "import_servers",
     "import_records",
     "import_passes",
+    "import_folders",
 ];
 
 // Settings that name this machine at the statistics collector rather than

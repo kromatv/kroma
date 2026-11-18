@@ -6,7 +6,7 @@ use super::super::start::claimed_or_withdrawn;
 use super::super::{Request, StartError, Started, start};
 use super::*;
 use crate::infra::events::Envelope;
-use crate::model::imports::Status;
+use crate::model::imports::{KeptFolder, Status};
 use crate::test_support::test_state;
 
 fn owner_of(state: &SharedState) -> String {
@@ -135,6 +135,33 @@ fn an_id_the_other_server_could_not_have_given_is_refused_and_nothing_is_queued(
         start(&state, endless_server),
         start(&state, request("owner", kept(&[""], &[]))),
         start(&state, request("owner", kept(&[], &[""]))),
+    ];
+
+    assert!(
+        refused
+            .iter()
+            .all(|refusal| matches!(refusal, Err(StartError::Invalid(_))))
+    );
+    assert!(db::imports::list(&state.db, 10).unwrap().is_empty());
+}
+
+#[test]
+fn a_folder_no_review_screen_could_have_confirmed_is_refused_and_nothing_is_queued() {
+    let state = importing_from(&household());
+    let confirming = |folder: &str, here: &str| {
+        let mut selection = kept(&["1"], &[]);
+        selection.libraries[0].folders = vec![KeptFolder {
+            folder: folder.into(),
+            here: here.into(),
+        }];
+        request("owner", selection)
+    };
+
+    let refused = [
+        start(&state, confirming("", "/volume1/video")),
+        start(&state, confirming("/data/movies", "")),
+        start(&state, confirming("/data/movies", &"v".repeat(5000))),
+        start(&state, confirming("/data/movies", "video/movies")),
     ];
 
     assert!(

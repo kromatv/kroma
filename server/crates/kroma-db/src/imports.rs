@@ -2,6 +2,7 @@
 //! import's own row, and the record of what was brought from which server. A
 //! time is epoch milliseconds unless its name says otherwise.
 
+mod folders;
 mod passes;
 mod records;
 mod titles;
@@ -9,6 +10,7 @@ mod titles;
 #[cfg(test)]
 mod tests;
 
+pub use folders::*;
 pub use passes::*;
 pub use records::*;
 pub use titles::*;
