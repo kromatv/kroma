@@ -77,6 +77,10 @@ impl JobContext {
         )
     }
 
+    pub fn run_id(&self) -> &str {
+        &self.handle.run_id
+    }
+
     /// Long jobs should poll this between units of work and return early;
     /// returning `Ok(())` records the run as `cancelled`.
     pub fn cancelled(&self) -> bool {

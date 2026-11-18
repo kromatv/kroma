@@ -48,6 +48,30 @@
       "broke": 15,
       "changed": 15
     },
+    "import_passes": {
+      "broke": 21,
+      "changed": 21
+    },
+    "import_records": {
+      "broke": 21,
+      "changed": 21
+    },
+    "import_servers": {
+      "broke": 21,
+      "changed": 21
+    },
+    "import_titles": {
+      "broke": 21,
+      "changed": 21
+    },
+    "import_unmatched": {
+      "broke": 21,
+      "changed": 21
+    },
+    "imports": {
+      "broke": 21,
+      "changed": 21
+    },
     "invites": {
       "broke": 1,
       "changed": 20
@@ -217,5 +241,5 @@
       "changed": 1
     }
   },
-  "version": 20
+  "version": 21
 }

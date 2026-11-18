@@ -10,7 +10,7 @@ bun run ci lanes [--json] [--lane rust]   which jobs a change can reach
 bun run ci typecheck [--jobs N]           every workspace's typecheck, N at a time (the root `typecheck` script)
 bun run ci test --shard 2/4 | --merge     vitest shards (blob + coverage), then one report
 bun run ci rust clippy | test [--part P]  every cargo workspace; `test` runs under cargo llvm-cov
-bun run ci lcov merge <out> <report...>   one lcov from several, a file two reports carry counted once
+bun run ci lcov merge <out> <report or folder...>   one lcov from several, a file two reports carry counted once
 bun run ci build <target> [--slice]       a fleet build, with its dist path as a step output
 bun run ci version                        version, triplet, channel, build number, canary name
 bun run ci canary publish [--rename] ...  files onto the rolling `canary` prerelease, with retention

@@ -389,6 +389,8 @@ refuses a page with more, and a page has to fit a module call's own limits.
   it (`"949"`, `"tt0113277"`).
 - `next` is the cursor of the next page. Leave it out on the last one. A page
   may be empty and still carry `next`.
+- A cursor names one page. When a read gives a `next` it already gave, the core
+  ends the import with an error instead of reading the same pages again.
 
 #### `states`
 
@@ -413,6 +415,11 @@ title as the other server knows it. `changedSince` asks only for the states that
 changed at or after that time. An importer that cannot filter answers every
 state, and the core's merge makes a repeat harmless. The paging is the same as
 for `titles`.
+
+The core sends `changedSince` once it has read the same states to their last
+page. It is the time that read began, less a day, so a server whose clock runs
+behind the core's loses no change. The core skips a row that comes back as it
+was.
 
 #### `plays`
 

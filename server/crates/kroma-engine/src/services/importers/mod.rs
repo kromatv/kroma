@@ -17,6 +17,7 @@ use crate::domain::import::{Connected, PlayPage, StatePage, Survey, TitlePage};
 use crate::point::{Allowance, Point, Silence};
 
 pub use asks::*;
+pub(crate) use bounds::id as bounded_id;
 pub use bounds::MAX_PAGE_ROWS;
 
 pub const POINT: &str = "importer";
