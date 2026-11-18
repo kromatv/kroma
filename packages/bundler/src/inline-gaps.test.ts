@@ -153,6 +153,50 @@ describe('inlineGaps', () => {
     expect(row.hasAttribute('data-kroma-gap')).toBe(true);
   });
 
+  it('reads back each axis of the gap it was given', () => {
+    undo.push(install(readers(ROW)));
+    const row = container(['a', 'b']);
+
+    row.style.gap = '8px 12px';
+
+    expect(row.style.rowGap).toBe('8px');
+    expect(row.style.columnGap).toBe('12px');
+  });
+
+  it('takes a number as pixels already written and ignores anything else', () => {
+    undo.push(install(readers(ROW)));
+    const row = container(['a', 'b']);
+
+    Reflect.set(row.style, 'gap', 16);
+    const sized = row.style.gap;
+    Reflect.set(row.style, 'gap', {});
+
+    expect(sized).toBe('16');
+    expect(row.style.gap).toBe('');
+  });
+
+  it('reads no gap from a style no element owns', () => {
+    undo.push(install(readers(ROW)));
+    const row = container(['a']);
+    row.style.gap = '8px';
+
+    expect(getComputedStyle(row).columnGap).toBe('');
+  });
+
+  it('installs nothing in a document without a window', () => {
+    const detached = document.implementation.createHTMLDocument('');
+    const layout = createGapLayout(detached, readers(ROW));
+
+    const before = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style');
+
+    const restore = inlineGaps(detached, layout);
+    const after = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style');
+    restore();
+    layout.dispose();
+
+    expect(after).toEqual(before);
+  });
+
   it('puts the engine back as it found it once disposed', () => {
     const before = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style');
 

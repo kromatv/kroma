@@ -1,7 +1,7 @@
 import { type GapLayout, type Gaps, NO_GAPS } from './gap-layout';
 import { GAP_MARKER } from './gap-marker';
 
-const MARKED = new RegExp(`\\.([\\w-]+)\\[${GAP_MARKER}="([^"|]*)\\|([^"]*)"\\]`, 'g');
+const MARKED = new RegExp(String.raw`\.([\w-]+)\[${GAP_MARKER}="([^"|]*)\|([^"]*)"\]`, 'g');
 
 function rulesOf(sheet: CSSStyleSheet): CSSRule[] {
   try {

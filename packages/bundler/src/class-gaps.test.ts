@@ -96,4 +96,55 @@ describe('classGaps', () => {
 
     expect(plain.hasAttribute('data-kroma-gap')).toBe(false);
   });
+
+  it('spaces an element mounted after the first one, once the classes are known', async () => {
+    install('.row{gap:16px}.row[data-kroma-gap-static="16px|16px"]{order:0}');
+    document.body.appendChild(element('row'));
+    await settled();
+    const later = element('row');
+
+    document.body.append('a text node', later);
+    await settled();
+
+    expect(later.hasAttribute('data-kroma-gap')).toBe(true);
+  });
+
+  it('skips the rules that are not style rules', async () => {
+    install('@media screen{.wide{gap:4px}}.row[data-kroma-gap-static="16px|16px"]{order:0}');
+    const row = element('row');
+
+    document.body.appendChild(row);
+    await settled();
+
+    expect(row.hasAttribute('data-kroma-gap')).toBe(true);
+  });
+
+  it('leaves alone an SVG element wearing a marked class', async () => {
+    install('.row[data-kroma-gap-static="16px|16px"]{order:0}');
+    const drawing = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    drawing.setAttribute('class', 'row');
+
+    document.body.appendChild(drawing);
+    await settled();
+
+    expect(drawing.hasAttribute('data-kroma-gap')).toBe(false);
+  });
+
+  it('reads only linked stylesheets unless told otherwise', async () => {
+    const style = document.createElement('style');
+    style.textContent = '.row[data-kroma-gap-static="16px|16px"]{order:0}';
+    document.head.appendChild(style);
+    const layout = createGapLayout(document, ROW);
+    undo.push(
+      classGaps(document, layout),
+      () => layout.dispose(),
+      () => style.remove(),
+    );
+    const row = element('row');
+
+    document.body.appendChild(row);
+    await settled();
+
+    expect(row.hasAttribute('data-kroma-gap')).toBe(false);
+  });
 });

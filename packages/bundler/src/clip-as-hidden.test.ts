@@ -31,4 +31,12 @@ describe('clipAsHidden', () => {
 
     expect(style.sheet?.cssRules[0]?.cssText).toBe('.clamp { overflow: hidden; }');
   });
+
+  it('leaves alone a prototype that has no insertRule of its own', () => {
+    const bare: CSSStyleSheet = Object.create(CSSStyleSheet.prototype);
+
+    clipAsHidden(bare)();
+
+    expect(Object.getOwnPropertyDescriptor(bare, 'insertRule')).toBeUndefined();
+  });
 });
