@@ -19,6 +19,7 @@ For this repository that means [`CLAUDE.md`](../../CLAUDE.md),
 | `unslop` | Cuts AI tells from prose before it ships: puffery, "not just X but Y", em dashes, rule of three, chatbot filler. For docs, commit messages, PR descriptions and copy. |
 | `spec-writing` | Writing a product spec: what belongs there rather than in architecture, the status vocabulary, requirement IDs and keeping them stable, sizing one so it becomes one story. |
 | `ticket-writing` | Issues and PR descriptions: the epic and sub-issue structure, linking a requirement instead of copying spec text, reading the project's labels and templates rather than guessing them. |
+| `native-copy` | Interface copy outside English, written from the screen's intent and not from the English string: the method, the signs a sentence was translated, and one reference per language for register, typography, fixed vocabulary and known calques. |
 | `release-notes` | A short release note: the few changes a user notices, named by what they can now do, inside a length budget, every language written from the intent, every line traced to a PR. |
 
 ## Code

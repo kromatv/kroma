@@ -3,7 +3,7 @@
 
 # Requirement index
 
-719 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+726 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -206,11 +206,11 @@
 - **ADMIN-94** (AGREED) - A server speaks to the relay under an identity of its own: a key it <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-95** (AGREED) - The relay carries a server's mail only after a person allowed that <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-96** (AGREED) - A server with no account opens the guided setup on the web surface. <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-97** (AGREED) - The first screen asks the language and one choice: start fresh, or <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-98** (AGREED) - The owner account is the second screen, and the only one the owner <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-97** (AGREED) - The first screen asks the language, and nothing else. It opens in the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-98** (AGREED) - The owner account is the third screen, and the only one the owner <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-99** (AGREED) - Every screen after the owner account can be skipped. A skipped <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-100** (AGREED) - Every screen after the owner account offers "Finish later". It <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-101** (AGREED) - A playing title is three screens away: the first one, the owner <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-101** (AGREED) - A playing title is four screens away: the language, the choice, the <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-102** (AGREED) - Once the owner account exists, the setup remembers where the owner <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-103** (AGREED) - Only the owner is led through the setup. Anyone else who signs in <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-104** (AGREED) - A server that already has its owner when it is updated to a version <sub>[setup.md](admin/setup.md)</sub>
@@ -222,10 +222,8 @@
 - **ADMIN-110** (AGREED) - Which modules the setup offers, and in what order, comes from the <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-111** (AGREED) - Each offer shows the module's size, the permissions it asks for and <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-112** (AGREED) - No module is selected by default. <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-113** (AGREED) - The modules the owner selects install in the background while the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-113** (AGREED) - A selection is only a selection until the owner leaves the setup, at <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-114** (AGREED) - On the people step the owner creates invitations, under the rule of <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-115** (AGREED) - On the devices step the owner can pair a television <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-116** (AGREED) - The devices step gives a link to each KROMA app. <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-117** (AGREED) - The being-counted step says in one sentence what a counted server <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-118** (AGREED) - The last step is the home. <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-119** (AGREED) - No step holds the catalogue back. A title is playable as soon as <sub>[setup.md](admin/setup.md)</sub>
@@ -281,6 +279,15 @@
 - **ADMIN-169** (AGREED) - The report at the end of an import, and the import screen of the <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-170** (AGREED) - Removing the importer forgets the sign-in to the other server <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-171** (AGREED) - An import after the importer was removed installs it again and asks <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-172** (AGREED) - The second screen asks one choice: start fresh, or bring another <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-173** (AGREED) - The words that offer a module are the module's own, in each language <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-174** (AGREED) - A module the server already holds appears on the modules step as <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-175** (AGREED) - An invitation says what its account may do. A new one lets its <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-176** (AGREED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-177** (AGREED) - The owner deletes an invitation on the people step, and its link <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-178** (AGREED) - The owner opens any step they have been to, from any other step, in <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
