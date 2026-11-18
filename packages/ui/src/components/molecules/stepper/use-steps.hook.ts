@@ -17,6 +17,9 @@ interface StepperFlowOptions {
   /** The steps that are done, when the caller keeps that itself. Left out, a
    *  step counts as done once the flow has been past it. */
   complete?: readonly string[];
+  /** The steps a press may go to besides the done ones, when the caller keeps
+   *  `complete` itself: a step the flow has been to and has not finished. */
+  open?: readonly string[];
   /** Steps nothing may enter: skipped by `next`, `previous` and the arrow keys
    *  rather than stopped on. */
   disabled?: readonly string[];
@@ -44,7 +47,7 @@ interface StepperFlow {
 /** The wizard state machine, with no component around it: hand it the step ids
  *  in order. */
 function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): StepperFlow {
-  const { value, defaultValue, onValueChange, complete, disabled } = options;
+  const { value, defaultValue, onValueChange, complete, open, disabled } = options;
   const [held, setHeld] = useControllable(value, defaultValue ?? steps[0] ?? '');
   const seat = steps.indexOf(held);
   const index = seat === -1 ? 0 : seat;
@@ -58,6 +61,7 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
 
   const off = useMemo(() => new Set(disabled), [disabled]);
   const done = useMemo(() => (complete ? new Set(complete) : null), [complete]);
+  const ajar = useMemo(() => new Set(open), [open]);
 
   const seek = (from: number, delta: 1 | -1) => {
     for (let at = from + delta; at >= 0 && at < steps.length; at += delta) {
@@ -113,11 +117,11 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
         return false;
       }
       if (done) {
-        return step === current || done.has(step);
+        return step === current || done.has(step) || ajar.has(step);
       }
       return at <= reached;
     },
-    [done, off, steps, reached, current],
+    [done, ajar, off, steps, reached, current],
   );
 
   return {

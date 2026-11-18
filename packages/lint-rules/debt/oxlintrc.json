@@ -90,7 +90,6 @@
         "clients/web/src/features/admin/dashboard-now-playing.component.tsx",
         "clients/web/src/features/admin/dashboard-transcoding.component.tsx",
         "clients/web/src/features/admin/dashboard.component.tsx",
-        "clients/web/src/features/admin/folder-picker.component.tsx",
         "clients/web/src/features/admin/history-query.ts",
         "clients/web/src/features/admin/history.component.tsx",
         "clients/web/src/features/admin/job-card.component.tsx",
@@ -774,8 +773,6 @@
         "clients/web/src/features/admin/dashboard-top-viewers.component.tsx",
         "clients/web/src/features/admin/dashboard-transcoding.component.tsx",
         "clients/web/src/features/admin/dashboard.component.tsx",
-        "clients/web/src/features/admin/folder-field.component.tsx",
-        "clients/web/src/features/admin/folder-picker.component.tsx",
         "clients/web/src/features/admin/history-filters.component.tsx",
         "clients/web/src/features/admin/history-table.component.tsx",
         "clients/web/src/features/admin/history.component.tsx",
@@ -2099,7 +2096,9 @@
       }
     },
     {
-      "files": ["packages/ci-tools/src/notes-model.ts"],
+      "files": [
+        "packages/ci-tools/src/notes-model.ts"
+      ],
       "rules": {
         "import/no-named-as-default-member": "off"
       }
@@ -2492,7 +2491,6 @@
         "clients/mobile/src/lib/session/boot.hook.ts",
         "clients/mobile/src/player/engine/engine.hook.ts",
         "clients/mobile/src/player/heartbeat.ts",
-        "clients/web/src/features/admin/folder-picker.component.tsx",
         "clients/web/src/features/admin/jobs.component.tsx",
         "clients/web/src/features/admin/notification-image-field.component.tsx",
         "clients/web/src/features/admin/pipeline-actions.ts",
@@ -2555,7 +2553,6 @@
       "files": [
         "clients/mobile/src/player/player-body.component.tsx",
         "clients/web/src/features/accounts/account/account-page.component.tsx",
-        "clients/web/src/features/admin/folder-picker.component.tsx",
         "clients/web/src/features/admin/jobs.component.tsx",
         "clients/web/src/features/admin/notification-image-field.component.tsx",
         "clients/web/src/features/admin/pipeline-actions.ts",
@@ -2680,7 +2677,9 @@
       }
     },
     {
-      "files": ["packages/workbench/src/workbench.component.tsx"],
+      "files": [
+        "packages/workbench/src/workbench.component.tsx"
+      ],
       "rules": {
         "sonarjs/cognitive-complexity": "off"
       }
@@ -3686,7 +3685,9 @@
       }
     },
     {
-      "files": ["packages/i18n/src/registry.ts"],
+      "files": [
+        "packages/i18n/src/registry.ts"
+      ],
       "rules": {
         "typescript/no-duplicate-type-constituents": "off"
       }
@@ -3747,7 +3748,10 @@
       }
     },
     {
-      "files": ["packages/i18n-tools/src/status.test.ts", "packages/i18n/src/messages.test.ts"],
+      "files": [
+        "packages/i18n-tools/src/status.test.ts",
+        "packages/i18n/src/messages.test.ts"
+      ],
       "rules": {
         "typescript/no-non-null-assertion": "off"
       }
@@ -4713,13 +4717,17 @@
       }
     },
     {
-      "files": ["packages/ui/src/testing-style.tsx"],
+      "files": [
+        "packages/ui/src/testing-style.tsx"
+      ],
       "rules": {
         "typescript/no-useless-default-assignment": "off"
       }
     },
     {
-      "files": ["packages/i18n/vite/folder.test.ts"],
+      "files": [
+        "packages/i18n/vite/folder.test.ts"
+      ],
       "rules": {
         "typescript/require-array-sort-compare": "off"
       }
@@ -4788,13 +4796,17 @@
       }
     },
     {
-      "files": ["packages/ci-tools/src/npm/registry.test.ts"],
+      "files": [
+        "packages/ci-tools/src/npm/registry.test.ts"
+      ],
       "rules": {
         "unicorn/no-thenable": "off"
       }
     },
     {
-      "files": ["packages/core/src/player.test.ts"],
+      "files": [
+        "packages/core/src/player.test.ts"
+      ],
       "rules": {
         "unicorn/no-useless-spread": "off"
       }
@@ -4815,7 +4827,9 @@
       }
     },
     {
-      "files": ["packages/ci-tools/src/cli.ts"],
+      "files": [
+        "packages/ci-tools/src/cli.ts"
+      ],
       "rules": {
         "unicorn/require-module-specifiers": "off"
       }

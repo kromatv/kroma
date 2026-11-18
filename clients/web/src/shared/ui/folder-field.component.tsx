@@ -4,41 +4,41 @@
 import { useT } from '@kromatv/ui';
 import { Box, IconButton, ListRow } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { FolderPicker } from '#web/features/admin/folder-picker.component';
+import { FolderPicker } from '#web/shared/ui/folder-picker.component';
 
-function FolderRow({
-  path,
-  browsing,
-  onEdit,
-  onRemove,
-}: Readonly<{
+interface FolderRowProps {
   path: string;
   browsing: boolean;
   onEdit: () => void;
   onRemove?: () => void;
-}>) {
+}
+
+function RowAction({
+  icon,
+  label,
+  onPress,
+}: Readonly<{ icon: 'pencil' | 'x'; label: string; onPress: () => void }>) {
+  return (
+    <IconButton
+      variant="ghost"
+      diameter={32}
+      glyph={16}
+      icon={icon}
+      label={label}
+      onPress={onPress}
+    />
+  );
+}
+
+function FolderRow({ path, browsing, onEdit, onRemove }: Readonly<FolderRowProps>) {
   const t = useT();
   return (
     <ListRow.Root icon="folder" label={path} selected={browsing || undefined}>
       <ListRow.Label>{path}</ListRow.Label>
       <ListRow.Trailing>
-        <IconButton
-          variant="ghost"
-          diameter={32}
-          glyph={16}
-          icon="pencil"
-          label={t('admin.changeFolder')}
-          onPress={onEdit}
-        />
+        <RowAction icon="pencil" label={t('admin.changeFolder')} onPress={onEdit} />
         {onRemove ? (
-          <IconButton
-            variant="ghost"
-            diameter={32}
-            glyph={16}
-            icon="x"
-            label={t('admin.removeFolder')}
-            onPress={onRemove}
-          />
+          <RowAction icon="x" label={t('admin.removeFolder')} onPress={onRemove} />
         ) : null}
       </ListRow.Trailing>
     </ListRow.Root>
@@ -53,19 +53,20 @@ function AddFolderRow({ label, onPress }: Readonly<{ label: string; onPress: () 
   );
 }
 
-/** A single folder: one row saying what is committed, or offering to choose. */
-export function FolderField({
-  value,
-  onChange,
-  placeholder,
-  onClear,
-}: Readonly<{
+interface FolderFieldProps {
   value: string;
   onChange: (path: string) => void;
   placeholder: string;
   onClear?: () => void;
-}>) {
+}
+
+/** A single folder: one row saying what is committed, or offering to choose. */
+export function FolderField({ value, onChange, placeholder, onClear }: Readonly<FolderFieldProps>) {
   const [open, setOpen] = useState(false);
+  const choose = (path: string) => {
+    onChange(path);
+    setOpen(false);
+  };
   return (
     <Box gap={10}>
       <ListRow.Group>
@@ -76,44 +77,46 @@ export function FolderField({
         )}
       </ListRow.Group>
       {open ? (
-        <FolderPicker
-          value={value}
-          onChange={(path) => {
-            onChange(path);
-            setOpen(false);
-          }}
-          onCancel={() => setOpen(false)}
-        />
+        <FolderPicker value={value} onChange={choose} onCancel={() => setOpen(false)} />
       ) : null}
     </Box>
   );
+}
+
+interface FolderListProps {
+  folders: string[];
+  onChange: (folders: string[]) => void;
+}
+
+function withFolderAt(folders: readonly string[], at: number, path: string): string[] {
+  const next = folders.slice();
+  if (at < next.length) {
+    next[at] = path;
+  } else {
+    next.push(path);
+  }
+  return next.filter((held, index) => next.indexOf(held) === index);
+}
+
+function useFolderEdit({ folders, onChange }: FolderListProps) {
+  const [at, setAt] = useState<number | null>(null);
+  const commit = (path: string) => {
+    if (at !== null) {
+      onChange(withFolderAt(folders, at, path));
+      setAt(null);
+    }
+  };
+  const remove = (index: number) => onChange(folders.filter((_, held) => held !== index));
+  return { at, setAt, commit, remove };
 }
 
 /** The folders a library scans, as one card ending in the row that adds
  * another. A committed list holds each path once, so a path is the row's
  * identity; the handlers still address it by position, which is what makes
  * editing a row a replacement rather than an append. */
-export function FolderListEditor({
-  folders,
-  onChange,
-}: Readonly<{ folders: string[]; onChange: (folders: string[]) => void }>) {
+export function FolderListEditor({ folders, onChange }: Readonly<FolderListProps>) {
   const t = useT();
-  const [at, setAt] = useState<number | null>(null);
-
-  const commit = (path: string) => {
-    if (at === null) {
-      return;
-    }
-    const next = folders.slice();
-    if (at < next.length) {
-      next[at] = path;
-    } else {
-      next.push(path);
-    }
-    onChange(next.filter((p, i) => next.indexOf(p) === i));
-    setAt(null);
-  };
-
+  const { at, setAt, commit, remove } = useFolderEdit({ folders, onChange });
   return (
     <Box gap={10}>
       <ListRow.Group>
@@ -123,7 +126,7 @@ export function FolderListEditor({
             path={path}
             browsing={at === index}
             onEdit={() => setAt(index)}
-            onRemove={() => onChange(folders.filter((_, i) => i !== index))}
+            onRemove={() => remove(index)}
           />
         ))}
         <AddFolderRow label={t('admin.addFolder')} onPress={() => setAt(folders.length)} />

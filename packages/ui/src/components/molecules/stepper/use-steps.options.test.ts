@@ -62,6 +62,13 @@ describe('useSteps when its owner says which steps are done', () => {
     expect(result.current.reachable('library')).toBe(false);
   });
 
+  it('also opens a step it was told the flow has been to, and does not call it done', () => {
+    const { result } = renderHook(() => useSteps(steps, { complete: [], open: ['library'] }));
+
+    expect(result.current.reachable('library')).toBe(true);
+    expect(result.current.complete('library')).toBe(false);
+  });
+
   it('re-reads which steps are done when its owner changes them', () => {
     const { result, rerender } = renderHook(({ complete }) => useSteps(steps, { complete }), {
       initialProps: { complete: [] as readonly string[] },
