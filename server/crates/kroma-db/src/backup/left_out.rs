@@ -26,6 +26,8 @@ const SIGNED_IN_DEVICES: &[&str] = &["access_tokens", "push_subscriptions", "ses
 const SHORT_LIVED: &[&str] = &[
     "credential_resets",
     "email_verifications",
+    "import_unmatched",
+    "imports",
     "job_logs",
     "job_runs",
     "network_flows_daily",
@@ -39,9 +41,12 @@ const SHORT_LIVED: &[&str] = &[
 
 const THIS_MACHINE_ONLY: &[&str] = &["downloads", "metric_samples", "upgrade_tasks"];
 
-const LEFT_OUT: [&[&str]; 5] = [
+const READ_AGAIN_BY_THE_NEXT_IMPORT: &[&str] = &["import_titles"];
+
+const LEFT_OUT: [&[&str]; 6] = [
     REBUILT_BY_A_SCAN,
     REBUILT_FROM_THE_MEDIA_AND_ITS_PROVIDERS,
+    READ_AGAIN_BY_THE_NEXT_IMPORT,
     SIGNED_IN_DEVICES,
     SHORT_LIVED,
     THIS_MACHINE_ONLY,

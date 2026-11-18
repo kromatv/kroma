@@ -7,7 +7,6 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
-use serde_json::json;
 
 use crate::api::extract::AuthUser;
 use crate::api::permission::require;
@@ -26,6 +25,22 @@ pub fn routes() -> Router<SharedState> {
 }
 
 const INVITE_TTL_DAYS_DEFAULT: i64 = 7;
+
+/// When an invitation minted now lapses, in Unix seconds: after `days`, held
+/// between one day and a year, or after a week when none is given.
+pub(crate) fn expires_at(days: Option<i64>) -> i64 {
+    let days = days.unwrap_or(INVITE_TTL_DAYS_DEFAULT).clamp(1, 365);
+    time::OffsetDateTime::now_utc().unix_timestamp() + days * 24 * 3600
+}
+
+/// The join page's address for an invitation, when the server knows its own.
+pub(crate) fn join_url(state: &SharedState, token: &str) -> Option<String> {
+    state
+        .config
+        .web_url
+        .as_ref()
+        .map(|w| format!("{w}/join?invite={token}"))
+}
 
 #[derive(Debug, Deserialize)]
 pub struct CreateInviteBody {
@@ -46,11 +61,7 @@ pub async fn create_invite(
     let permissions = body
         .permissions
         .unwrap_or_else(|| vec![Permission::Playback]);
-    let days = body
-        .expires_in_days
-        .unwrap_or(INVITE_TTL_DAYS_DEFAULT)
-        .clamp(1, 365);
-    let expires_at = time::OffsetDateTime::now_utc().unix_timestamp() + days * 24 * 3600;
+    let expires_at = expires_at(body.expires_in_days);
 
     let token_db = token.clone();
     let perms = permissions.clone();
@@ -59,21 +70,17 @@ pub async fn create_invite(
         db::create_invite(&pool, &token_db, &perms, &uid, expires_at)
     })
     .await?;
-    let url = state
-        .config
-        .web_url
-        .as_ref()
-        .map(|w| format!("{w}/join?invite={token}"));
     Ok(Json(super::dto::InviteCreated {
+        url: join_url(&state, &token),
         token,
-        url,
         permissions,
         expires_at,
     })
     .into_response())
 }
 
-/// `GET /api/invites` (Bearer + `users.manage`) → pending invites.
+/// `GET /api/invites` (Bearer + `users.manage`) → pending invites that create
+/// an account. The invitation of an account that waits is on the member list.
 pub async fn list_invites(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
@@ -83,16 +90,28 @@ pub async fn list_invites(
     Ok(Json(invites).into_response())
 }
 
-/// `GET /api/invites/:token` (public) → `{ valid, expiresAt? }`, so the join page
-/// can validate before showing the form (the invitee isn't a user yet).
+/// `GET /api/invites/:token` (public) → `{ valid, expiresAt?, username?, email? }`,
+/// so the join page can validate before showing the form (the invitee isn't a
+/// user yet). A live invitation of an account that waits also says the name and
+/// the address that account waits under, for the person to keep or correct.
 pub async fn check_invite(State(state): State<SharedState>, Path(token): Path<String>) -> Response {
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
-    match query(&state.db, move |pool| db::get_invite(&pool, &token)).await {
-        Ok(Some(inv)) => {
-            Json(json!({ "valid": !inv.used && inv.expires_at > now, "expiresAt": inv.expires_at }))
-                .into_response()
+    let found = query(&state.db, move |pool| {
+        Ok((db::get_invite(&pool, &token)?, db::invitee(&pool, &token)?))
+    })
+    .await;
+    match found {
+        Ok((Some(inv), invitee)) => {
+            let (username, email) = invitee.map(|i| (i.username, i.email)).unzip();
+            Json(super::dto::InviteCheck {
+                valid: !inv.used && inv.expires_at > now,
+                expires_at: Some(inv.expires_at),
+                username,
+                email: email.flatten(),
+            })
+            .into_response()
         }
-        Ok(None) => Json(json!({ "valid": false })).into_response(),
+        Ok((None, _)) => Json(super::dto::InviteCheck::default()).into_response(),
         Err(resp) => resp,
     }
 }

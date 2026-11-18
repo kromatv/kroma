@@ -129,3 +129,20 @@ pub async fn text(
         .expect("read body");
     (status, String::from_utf8_lossy(&bytes).into_owned())
 }
+
+/// `POST` raw bytes as the whole body, the way a file upload arrives, as the
+/// session `token`. Returns the status alone.
+pub async fn upload(app: &Router, uri: &str, token: &str, bytes: Vec<u8>) -> StatusCode {
+    let mut req = Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header("authorization", format!("Bearer {token}"))
+        .body(Body::from(bytes))
+        .expect("build request");
+    req.extensions_mut().insert(ConnectInfo(LOOPBACK_PEER));
+    app.clone()
+        .oneshot(req)
+        .await
+        .expect("router response")
+        .status()
+}

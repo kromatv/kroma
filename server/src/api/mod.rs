@@ -102,6 +102,8 @@ mod it_importer_calls;
 #[cfg(test)]
 mod it_importers;
 #[cfg(test)]
+mod it_imports;
+#[cfg(test)]
 mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;
@@ -191,6 +193,12 @@ mod it_trailers;
 mod it_updates;
 #[cfg(test)]
 mod it_verify_email;
+#[cfg(test)]
+mod it_waiting_account;
+#[cfg(test)]
+mod it_waiting_doors;
+#[cfg(test)]
+mod it_waiting_reset;
 #[cfg(test)]
 pub(crate) mod test_support;
 

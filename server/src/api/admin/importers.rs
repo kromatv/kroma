@@ -173,14 +173,18 @@ pub async fn survey(
     asked(&state, &user, move |importers| importers.survey(&id, &ask)).await
 }
 
-/// `POST /api/admin/importers/:id/forget` has the importer delete a sign-in.
+/// `POST /api/admin/importers/:id/forget` has the importer delete a sign-in,
+/// then drops the reference to it from the imports that hold it.
 pub async fn forget(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
     Path(id): Path<String>,
     Json(ask): Json<ForgetAsk>,
 ) -> Result<Json<Value>, Response> {
+    let (importer, sign_in) = (id.clone(), ask.sign_in.clone());
     let forgotten =
         move |importers: &Importers| importers.forget(&id, &ask).map(|()| json!({ "ok": true }));
-    asked(&state, &user, forgotten).await
+    let answer = asked(&state, &user, forgotten).await?;
+    blocking(move || crate::db::imports::forget_sign_in(&state.db, &importer, &sign_in)).await?;
+    Ok(answer)
 }

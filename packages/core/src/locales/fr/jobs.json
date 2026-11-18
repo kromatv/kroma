@@ -29,6 +29,8 @@
   "jobs.editSchedule": "Modifier la planification",
   "jobs.empty": "Aucune tâche enregistrée.",
   "jobs.history": "Historique",
+  "jobs.household.import.desc": "Importe les bibliothèques, les utilisateurs et leur historique depuis un autre serveur multimédia. Une relance n'importe que ce qui a changé.",
+  "jobs.household.import.name": "Import d'un autre serveur",
   "jobs.indexer.definitions.desc": "Télécharge chaque nuit les définitions de trackers à jour, pour que la liste des indexeurs intégrés reste complète.",
   "jobs.indexer.definitions.name": "Catalogue des trackers",
   "jobs.last": "Dernière",

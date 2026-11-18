@@ -16,7 +16,9 @@ mod preferences;
 mod resets;
 mod sessions;
 mod stored_token;
+mod taken;
 mod verifications;
+mod waiting;
 
 #[cfg(test)]
 mod test_support;
@@ -30,7 +32,9 @@ pub use pin_attempts::*;
 pub use preferences::*;
 pub use resets::*;
 pub use sessions::*;
+pub use taken::*;
 pub use verifications::*;
+pub use waiting::*;
 
 /// The id is random rather than derived from the email, so it isn't guessable.
 /// The caller should pre-check the email to surface a clean 409; the `UNIQUE`
@@ -134,12 +138,13 @@ pub fn find_user_by_email(pool: &Pool, email: &str) -> Result<Option<(User, Stri
 
 /// `identifier` is either an email (case-insensitive) or a username, so the
 /// profile picker, which only knows usernames, can log in. The second tuple
-/// field is the stored password hash.
+/// field is the stored password hash. An account that waits on an invitation
+/// is never found: nobody signs in to it (ACCT-95).
 pub fn find_user_by_login(pool: &Pool, identifier: &str) -> Result<Option<(User, String)>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
         "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,password_hash FROM users \
-         WHERE email = ?1 COLLATE NOCASE OR username = ?1 LIMIT 1",
+         WHERE (email = ?1 COLLATE NOCASE OR username = ?1) AND waiting = 0 LIMIT 1",
     )?;
     let mut rows = stmt.query_map(params![identifier], |r| {
         Ok((row_to_user(r)?, r.get::<_, String>(11)?))
@@ -162,10 +167,13 @@ pub fn user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
     Ok(user)
 }
 
+/// The accounts a person can sign in to, oldest first. One that waits on an
+/// invitation is not among them.
 pub fn list_users(pool: &Pool) -> Result<Vec<PublicUser>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
-        "SELECT id,username,avatar_url,(pin_hash IS NOT NULL) FROM users ORDER BY created_at",
+        "SELECT id,username,avatar_url,(pin_hash IS NOT NULL) FROM users \
+         WHERE waiting = 0 ORDER BY created_at",
     )?;
     let rows = stmt.query_map([], |r| {
         Ok(PublicUser {
@@ -176,28 +184,6 @@ pub fn list_users(pool: &Pool) -> Result<Vec<PublicUser>> {
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
-}
-
-/// Checks the username column (case-sensitive, as username login resolves) AND
-/// the email column (case-insensitive): a username equal to someone's email
-/// would otherwise shadow that victim's email login through the
-/// `email = ?1 OR username = ?1` in `find_user_by_login`. `exclude_id` skips the
-/// caller's own row.
-pub fn username_taken(pool: &Pool, username: &str, exclude_id: Option<&str>) -> Result<bool> {
-    let conn = pool.get()?;
-    let taken: i64 = match exclude_id {
-        Some(id) => conn.query_row(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE (username = ?1 OR email = ?1 COLLATE NOCASE) AND id <> ?2)",
-            params![username, id],
-            |r| r.get(0),
-        )?,
-        None => conn.query_row(
-            "SELECT EXISTS(SELECT 1 FROM users WHERE username = ?1 OR email = ?1 COLLATE NOCASE)",
-            params![username],
-            |r| r.get(0),
-        )?,
-    };
-    Ok(taken != 0)
 }
 
 /// The caller must pre-check for a duplicate to surface a clean 409; the
@@ -309,25 +295,5 @@ mod tests {
         assert_eq!(granted.len(), 1, "{granted:?}");
         assert_eq!(granted[0].permissions, Permission::all());
         assert_eq!(user_count(&p).unwrap(), 1);
-    }
-
-    #[test]
-    fn username_taken_checks_username_and_email() {
-        let p = pool();
-        let u = mk_user(&p, "a@b.c", "alice");
-        assert!(username_taken(&p, "alice", None).unwrap());
-        assert!(username_taken(&p, "a@b.c", None).unwrap());
-        assert!(!username_taken(&p, "bob", None).unwrap());
-        assert!(!username_taken(&p, "alice", Some(&u.id)).unwrap());
-        assert!(username_taken(&p, "alice", Some("other-id")).unwrap());
-    }
-
-    #[test]
-    fn a_name_check_that_cannot_read_the_table_refuses_rather_than_reporting_free() {
-        let p = pool();
-        p.get().unwrap().execute_batch("DROP TABLE users").unwrap();
-
-        assert!(username_taken(&p, "alice", None).is_err());
-        assert!(username_taken(&p, "alice", Some("u1")).is_err());
     }
 }

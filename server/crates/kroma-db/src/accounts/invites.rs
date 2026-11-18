@@ -51,7 +51,9 @@ pub fn get_invite(pool: &Pool, token: &str) -> Result<Option<Invite>> {
 }
 
 /// Atomically consume a valid (unused, unexpired) invite → its granted
-/// permissions. `None` if the token is unknown / used / expired.
+/// permissions. `None` if the token is unknown / used / expired, and for the
+/// invitation of an account that waits: that one creates nobody, it is
+/// redeemed with [`super::claim_account`].
 pub fn consume_invite(pool: &Pool, token: &str) -> Result<Option<Vec<Permission>>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -61,7 +63,7 @@ pub fn consume_invite(pool: &Pool, token: &str) -> Result<Option<Vec<Permission>
     let perms: Option<String> = conn
         .query_row(
             "UPDATE invites SET used_at = ?2 \
-             WHERE token = ?1 AND used_at IS NULL AND expires_at > ?3 \
+             WHERE token = ?1 AND used_at IS NULL AND expires_at > ?3 AND user_id IS NULL \
              RETURNING permissions",
             params![token, now_or_blank(), now],
             |r| r.get(0),
@@ -70,13 +72,15 @@ pub fn consume_invite(pool: &Pool, token: &str) -> Result<Option<Vec<Permission>
     Ok(perms.map(|json| parse_permissions(&json)))
 }
 
-/// Pending invites (unused, unexpired), newest first.
+/// Pending invites (unused, unexpired) that create an account, newest first.
+/// The invitation of an account that waits is reported on that account.
 pub fn list_invites(pool: &Pool) -> Result<Vec<Invite>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut stmt = conn.prepare(
         "SELECT token,permissions,created_by,created_at,expires_at,used_at FROM invites \
-         WHERE used_at IS NULL AND expires_at > ?1 ORDER BY created_at DESC",
+         WHERE used_at IS NULL AND expires_at > ?1 AND user_id IS NULL \
+         ORDER BY created_at DESC",
     )?;
     let rows = stmt.query_map(params![now], row_to_invite)?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)

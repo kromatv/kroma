@@ -11,7 +11,8 @@ use crate::accounts::Permission;
 #[derive(Debug, Clone, Serialize)]
 pub struct AdminUser {
     pub id: String,
-    pub email: String,
+    /// `None` only for an account that waits and was given no address.
+    pub email: Option<String>,
     pub username: String,
     #[serde(rename = "avatarUrl", skip_serializing_if = "Option::is_none")]
     pub avatar_url: Option<String>,
@@ -31,6 +32,32 @@ pub struct AdminUser {
     /// owner has not minted one since.
     #[serde(rename = "resetRequested")]
     pub reset_requested: bool,
+    /// Set for an account that waits on an invitation (ACCT-94), and says
+    /// where that invitation stands. `None` for an account its person holds.
+    pub invitation: Option<InvitationState>,
+}
+
+/// Where the invitation of a waiting account stands.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum InvitationState {
+    Pending,
+    Expired,
+    /// No unused invitation: none was minted yet, or the last one was revoked.
+    #[serde(rename = "none")]
+    Absent,
+}
+
+impl InvitationState {
+    /// The state of an unused invitation that lapses at `expires_at` (Unix
+    /// seconds), or of there being none.
+    pub fn at(expires_at: Option<i64>, now: i64) -> InvitationState {
+        match expires_at {
+            Some(lapses) if lapses > now => InvitationState::Pending,
+            Some(_) => InvitationState::Expired,
+            None => InvitationState::Absent,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -195,4 +222,28 @@ pub struct LibraryStat {
     pub id: String,
     pub item_count: i64,
     pub total_bytes: i64,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_invitation_is_pending_until_the_second_it_lapses() {
+        assert_eq!(InvitationState::at(Some(101), 100), InvitationState::Pending);
+        assert_eq!(InvitationState::at(Some(100), 100), InvitationState::Expired);
+        assert_eq!(InvitationState::at(None, 100), InvitationState::Absent);
+    }
+
+    #[test]
+    fn having_no_invitation_is_spelled_none_on_the_wire() {
+        let spelled = [
+            InvitationState::Pending,
+            InvitationState::Expired,
+            InvitationState::Absent,
+        ]
+        .map(|state| serde_json::to_string(&state).unwrap());
+
+        assert_eq!(spelled, ["\"pending\"", "\"expired\"", "\"none\""]);
+    }
 }

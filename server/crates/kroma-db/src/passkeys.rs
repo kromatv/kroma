@@ -58,10 +58,14 @@ pub fn passkey_credentials(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
 }
 
 /// Distinct account ids that have at least one passkey; discoverable sign-in
-/// matches the assertion's user handle against these.
+/// matches the assertion's user handle against these. An account that waits on
+/// an invitation is left out, whatever it holds.
 pub fn passkey_user_ids(pool: &Pool) -> Result<Vec<String>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare("SELECT DISTINCT user_id FROM passkeys")?;
+    let mut stmt = conn.prepare(
+        "SELECT DISTINCT p.user_id FROM passkeys p JOIN users u ON u.id = p.user_id \
+         WHERE u.waiting = 0",
+    )?;
     let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
