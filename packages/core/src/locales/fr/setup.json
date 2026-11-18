@@ -4,6 +4,7 @@
   "setup.doneSub": "Votre bibliothèque vous attend. Les étapes que vous avez passées restent accessibles dans l'administration.",
   "setup.doneTitle": "Tout est prêt",
   "setup.finishLater": "Terminer plus tard",
+  "setup.importConnectElsewhere": "La connexion se fait sur le site de {name}. KROMA ne voit jamais votre mot de passe.",
   "setup.importConnectSub": "Connectez-vous avec un compte administrateur de ce serveur.",
   "setup.importConnectTitle": "Connectez-vous à {name}",
   "setup.importCountPlays": "Lectures",

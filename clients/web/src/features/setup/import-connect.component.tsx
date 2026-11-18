@@ -57,21 +57,29 @@ function Refused({ answer }: Readonly<{ answer: ImportSignIn | null }>) {
   );
 }
 
+function hostOf(url: string): string {
+  return new URL(url).host;
+}
+
 function Waiting({ url }: Readonly<{ url: string }>) {
   const t = useT();
-  const host = new URL(url).host;
   return (
     <Callout.Root tone="accent" icon="external-link">
-      <Callout.Title>{t('setup.importPendingTitle', { host })}</Callout.Title>
+      <Callout.Title>{t('setup.importPendingTitle', { host: hostOf(url) })}</Callout.Title>
       <Callout.Detail>{t('setup.importPendingDetail')}</Callout.Detail>
-      <Callout.Actions>
-        <Button
-          size="sm"
-          label={t('setup.importPendingOpen', { host })}
-          onPress={() => window.open(url, '_blank', 'noopener')}
-        />
-      </Callout.Actions>
     </Callout.Root>
+  );
+}
+
+function OpenPage({ url }: Readonly<{ url: string }>) {
+  const t = useT();
+  return (
+    <Button
+      size="md"
+      icon="external-link"
+      label={t('setup.importPendingOpen', { host: hostOf(url) })}
+      onPress={() => window.open(url, '_blank', 'noopener')}
+    />
   );
 }
 
@@ -93,8 +101,30 @@ function Answer({ answer }: Readonly<{ answer: ImportSignIn | null }>) {
   );
 }
 
-function SignInForm({ importer, onBack }: Readonly<ConnectProps>) {
+interface ForwardProps {
+  answer: ImportSignIn | null;
+  busy: boolean;
+  missing: boolean;
+  onConnect: () => void;
+}
+
+function Forward({ answer, busy, missing, onConnect }: Readonly<ForwardProps>) {
   const t = useT();
+  if (answer?.status === 'pending') {
+    return <OpenPage url={answer.url} />;
+  }
+  return (
+    <Button
+      size="md"
+      label={t('setup.importSignIn')}
+      loading={busy}
+      disabled={missing}
+      onPress={onConnect}
+    />
+  );
+}
+
+function SignInForm({ importer, onBack }: Readonly<ConnectProps>) {
   const [values, setValues] = useState<Record<string, string>>({});
   const { answer, busy, connect } = useImportSignIn(importer);
   const missing = importer.fields.some((field) => field.required && !values[field.key]);
@@ -109,12 +139,11 @@ function SignInForm({ importer, onBack }: Readonly<ConnectProps>) {
         <Answer answer={answer} />
       </StepBody>
       <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.importSignIn')}
-          loading={busy}
-          disabled={missing || answer?.status === 'pending'}
-          onPress={() => void connect(values)}
+        <Forward
+          answer={answer}
+          busy={busy}
+          missing={missing}
+          onConnect={() => void connect(values)}
         />
       </StepActions>
     </>
@@ -126,12 +155,13 @@ function SignInForm({ importer, onBack }: Readonly<ConnectProps>) {
 export function ImportConnect({ importer, onBack }: Readonly<ConnectProps>) {
   const t = useT();
   const name = importer.label ?? importer.name;
+  const sub =
+    importer.fields.length > 0
+      ? t('setup.importConnectSub')
+      : t('setup.importConnectElsewhere', { name });
   return (
     <>
-      <StepHeading
-        title={t('setup.importConnectTitle', { name })}
-        sub={t('setup.importConnectSub')}
-      />
+      <StepHeading title={t('setup.importConnectTitle', { name })} sub={sub} />
       {importer.running ? (
         <SignInForm importer={importer} onBack={onBack} />
       ) : (

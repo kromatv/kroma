@@ -4,6 +4,7 @@
   "setup.doneSub": "Open your library whenever you like. Anything you skipped waits for you under Admin.",
   "setup.doneTitle": "You are all set",
   "setup.finishLater": "Finish later",
+  "setup.importConnectElsewhere": "You sign in on {name}'s own site. KROMA never sees your password.",
   "setup.importConnectSub": "Sign in with an administrator account of that server.",
   "setup.importConnectTitle": "Sign in to {name}",
   "setup.importCountPlays": "Plays",
