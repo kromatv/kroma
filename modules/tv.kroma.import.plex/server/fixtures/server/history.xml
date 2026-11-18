@@ -1,0 +1,6 @@
+<MediaContainer size="4" totalSize="4" offset="0">
+  <Video historyKey="/status/sessions/history/9004" key="/library/metadata/212" ratingKey="212" librarySectionID="2" type="episode" title="The Buys" grandparentTitle="The Wire" viewedAt="1700300000" accountID="7002" deviceID="3"/>
+  <Video historyKey="/status/sessions/history/9003" librarySectionID="1" type="movie" title="A film since deleted" viewedAt="1700200000" accountID="7003" deviceID="4"/>
+  <Track historyKey="/status/sessions/history/9002" key="/library/metadata/900" ratingKey="900" librarySectionID="3" type="track" title="So What" viewedAt="1700100000" accountID="1" deviceID="1"/>
+  <Video historyKey="/status/sessions/history/9001" key="/library/metadata/101" ratingKey="101" librarySectionID="1" type="movie" title="Heat" viewedAt="1700000000" accountID="1" deviceID="1"/>
+</MediaContainer>

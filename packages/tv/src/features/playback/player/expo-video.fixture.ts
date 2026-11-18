@@ -9,8 +9,9 @@ export class FakeVideoPlayer {
   uri: string;
   currentTime = 0;
   timeUpdateEventInterval = 0;
-  availableAudioTracks: { id: string }[] = [];
-  audioTrack: unknown = null;
+  availableAudioTracks: { id: string; language?: string | null }[] = [];
+  claimed: unknown = null;
+  asked: unknown[] = [];
   bufferOptions: unknown = null;
   plays = 0;
   pauses = 0;
@@ -26,6 +27,13 @@ export class FakeVideoPlayer {
     this.uri = uri;
   }
 
+  get audioTrack(): unknown {
+    return this.claimed;
+  }
+  set audioTrack(value: unknown) {
+    this.claimed = value;
+    this.asked.push(value);
+  }
   get duration(): number {
     if (this.throwOnRead) {
       throw new Error('native shared object released');

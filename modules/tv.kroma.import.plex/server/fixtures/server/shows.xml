@@ -1,0 +1,7 @@
+<MediaContainer size="1">
+  <Directory ratingKey="200" key="/library/metadata/200/children" guid="plex://show/example-wire" type="show" title="The Wire" year="2002" childCount="5" leafCount="60">
+    <Guid id="imdb://tt0306414"/>
+    <Guid id="tmdb://1438"/>
+    <Guid id="tvdb://79126"/>
+  </Directory>
+</MediaContainer>

@@ -1,0 +1,32 @@
+{
+  "User": {
+    "Name": "sam",
+    "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+    "Id": "a0000000000000000000000000000001",
+    "HasPassword": true,
+    "HasConfiguredPassword": true,
+    "EnableAutoLogin": false,
+    "LastLoginDate": "2026-11-01T19:02:11.1234567Z",
+    "Configuration": { "PlayDefaultAudioTrack": true, "SubtitleMode": "Default" },
+    "Policy": {
+      "IsAdministrator": true,
+      "IsHidden": true,
+      "IsDisabled": false,
+      "BlockedTags": [],
+      "AllowedTags": [],
+      "AccessSchedules": [],
+      "BlockUnratedItems": [],
+      "EnabledFolders": [],
+      "EnableAllFolders": true,
+      "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider"
+    }
+  },
+  "SessionInfo": {
+    "Id": "f0000000000000000000000000000001",
+    "UserId": "a0000000000000000000000000000001",
+    "UserName": "sam",
+    "Client": "KROMA",
+    "DeviceName": "KROMA"
+  },
+  "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f"
+}
