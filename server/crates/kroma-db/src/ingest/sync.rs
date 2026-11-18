@@ -45,6 +45,7 @@ pub fn sync_all(
     sync_shows(&tx, shows)?;
     sync_items(&tx, items)?;
     sync_files(&tx, items, mtimes)?;
+    crate::imports::release_held_states(&tx)?;
     prune_orphans(&tx)?;
 
     tx.commit()?;

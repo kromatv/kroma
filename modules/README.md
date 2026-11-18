@@ -418,6 +418,14 @@ changed at or after that time. An importer that cannot filter answers every
 state, and the core's merge makes a repeat harmless. The paging is the same as
 for `titles`.
 
+`lastPlayedAt` is what the merge compares. A state newer than the one KROMA
+holds for the same person and title comes over, and KROMA's wins a tie. A state
+with no `lastPlayedAt` only fills what KROMA does not hold, so give the time
+wherever the other server records one. The core reads a time more than a day
+ahead of its own clock as no time, and drops a `positionMs` past `durationMs`.
+Nothing a state says removes anything: `watched: false` leaves a title KROMA has
+as watched alone.
+
 The core sends `changedSince` once it has read the same states to their last
 page. It is the time that read began, less a day, so a server whose clock runs
 behind the core's loses no change. The core skips a row that comes back as it

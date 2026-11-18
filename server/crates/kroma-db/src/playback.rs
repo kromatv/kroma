@@ -12,6 +12,7 @@ use rusqlite::OptionalExtension;
 mod continue_watching;
 mod on_deck;
 mod show_progress;
+mod stamped;
 mod up_next;
 mod watch_state;
 
@@ -20,6 +21,7 @@ mod test_support;
 
 pub use continue_watching::*;
 pub use show_progress::*;
+pub(crate) use stamped::{write_listed, write_progress, write_watched, Stopped};
 pub use up_next::*;
 pub use watch_state::*;
 
@@ -83,14 +85,12 @@ pub fn upsert_progress(
     duration_ms: Option<i64>,
 ) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
-        "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
-         VALUES (?1,?2,?3,?4,?5) \
-         ON CONFLICT(user_id,item_id) DO UPDATE SET \
-            position_ms=excluded.position_ms, duration_ms=excluded.duration_ms, \
-            updated_at=excluded.updated_at",
-        params![user_id, item_id, position_ms, duration_ms, now_or_blank()],
-    )?;
+    let stopped = Stopped {
+        position_ms,
+        duration_ms,
+        updated_at: &now_or_blank(),
+    };
+    write_progress(&conn, user_id, item_id, &stopped)?;
     Ok(())
 }
 

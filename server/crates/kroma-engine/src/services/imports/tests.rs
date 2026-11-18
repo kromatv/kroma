@@ -10,6 +10,7 @@ mod reporting;
 mod running_again;
 mod starting;
 mod this_machine;
+mod watching;
 
 use std::sync::{Arc, Mutex};
 

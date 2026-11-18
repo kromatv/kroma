@@ -6,6 +6,7 @@
 //! A stage is offered a row again when a run ended between its write and the
 //! record, so bringing the same row twice must leave one copy.
 
+mod found;
 mod identities;
 mod libraries;
 mod plays;

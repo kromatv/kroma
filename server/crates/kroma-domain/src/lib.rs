@@ -28,6 +28,7 @@ pub mod reports;
 pub mod requests;
 pub mod section;
 pub mod slug;
+pub mod watching;
 
 // Flat re-export (mirrors the server's former `model.rs`). `import`, `imports`, `naming`,
 // `matching`, `people` and `slug` are intentionally not globbed here; reach them via their

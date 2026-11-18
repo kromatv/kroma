@@ -37,6 +37,15 @@ pub fn now_iso8601() -> String {
         .unwrap_or_else(|_| "1970-01-01T00:00:00Z".to_string())
 }
 
+/// `secs`, epoch seconds, as the RFC3339 string [`now_iso8601`] writes. A time
+/// no calendar holds is the epoch.
+pub fn iso8601_of_secs(secs: i64) -> String {
+    OffsetDateTime::from_unix_timestamp(secs)
+        .ok()
+        .and_then(|at| at.format(&Rfc3339).ok())
+        .unwrap_or_else(|| "1970-01-01T00:00:00Z".to_string())
+}
+
 /// Lowercase hex SHA-256 of `input`, all 64 characters.
 pub fn sha256_hex(input: &str) -> String {
     let mut hasher = Sha256::new();
@@ -133,6 +142,20 @@ mod tests {
         let at = UNIX_EPOCH - Duration::from_secs(1);
 
         assert_eq!(epoch_ms(at), 0);
+    }
+
+    #[test]
+    fn a_time_in_seconds_is_written_as_its_instant() {
+        let written = iso8601_of_secs(1_700_000_000);
+
+        assert_eq!(written, "2023-11-14T22:13:20Z");
+    }
+
+    #[test]
+    fn a_time_no_calendar_holds_is_written_as_the_epoch() {
+        let written = iso8601_of_secs(i64::MAX);
+
+        assert_eq!(written, "1970-01-01T00:00:00Z");
     }
 
     #[test]
