@@ -201,7 +201,7 @@ describe('splash', () => {
 
     const entries = await client.media.splash();
 
-    expect(entries[0]).toEqual(absolute);
+    expect(entries[0]).toEqual({ ...absolute, trending: false });
   });
 
   it('keeps an entry whose backdrop resolves to nothing as the server sent it', async () => {
