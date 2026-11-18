@@ -60,6 +60,9 @@ const TABLES: &[&str] = &[
     "tmdb_pin",
     "acq_file_tmdb",
     "downloaded_subtitles",
+    "import_servers",
+    "import_records",
+    "import_passes",
 ];
 
 // Settings that name this machine at the statistics collector rather than

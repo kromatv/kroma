@@ -102,6 +102,8 @@ mod it_importer_calls;
 #[cfg(test)]
 mod it_importers;
 #[cfg(test)]
+mod it_imports;
+#[cfg(test)]
 mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;
