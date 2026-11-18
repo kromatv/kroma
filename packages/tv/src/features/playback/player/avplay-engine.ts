@@ -9,6 +9,7 @@
 
 import {
   AT_FILM_START_SEC,
+  audioTracksOf,
   AVPLAY_HLS_CAPS,
   decodableAudioCodecs,
   decodableVideoCodecs,
@@ -57,7 +58,7 @@ export class AvplayEngine extends BaseTvEngine {
       throw new Error('AVPlay unavailable');
     }
     this.api = api;
-    this.direct = new AvplayDirectSource(api);
+    this.direct = new AvplayDirectSource(api, audioTracksOf(opts.item));
     if (this.filter !== 'off' && this.mode === 'direct') {
       // The filter runs server-side, so a filtered start opens the remux (at the
       // same position) instead of the original file.

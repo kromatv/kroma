@@ -1,15 +1,31 @@
-import { AT_FILM_START_SEC } from '@kromatv/core';
+import type { AudioTrack } from '@kromatv/client/media';
+import { AT_FILM_START_SEC, nativeAudioPosition, type NativeAudioTrack } from '@kromatv/core';
+import { z } from 'zod';
 import { bestEffort } from '#tv/features/playback/player/avplay-calls';
-import type { AvplayApi } from '#tv/features/playback/player/engine';
+import type { AvplayApi, AvplayTrack } from '#tv/features/playback/player/engine';
 
 const AUDIO_RETRY_REPORTS = 3;
+
+const AudioExtraInfo = z.object({ language: z.string().nullish() });
+
+function spokenIn(track: AvplayTrack): NativeAudioTrack {
+  try {
+    const info = AudioExtraInfo.safeParse(JSON.parse(track.extra_info ?? '{}'));
+    return { language: info.success ? info.data.language : null };
+  } catch {
+    return { language: null };
+  }
+}
 
 export class AvplayDirectSource {
   private pendingSeek: number | null = null;
   private pendingAudio: number | null = null;
   private audioRetriesLeft = 0;
 
-  constructor(private readonly api: AvplayApi) {}
+  constructor(
+    private readonly api: AvplayApi,
+    private readonly tracks: readonly AudioTrack[],
+  ) {}
 
   /** Hold the second to land on once the source is READY. */
   wantsStart(absSec: number): void {
@@ -80,7 +96,8 @@ export class AvplayDirectSource {
   selectAudio(rendition: number): boolean {
     try {
       const audios = this.api.getTotalTrackInfo().filter((t) => t.type === 'AUDIO');
-      const track = audios[rendition];
+      const at = nativeAudioPosition(this.tracks, rendition, audios.map(spokenIn));
+      const track = at === null ? undefined : audios[at];
       if (!track) {
         return false;
       }

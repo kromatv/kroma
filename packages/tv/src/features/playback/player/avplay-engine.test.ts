@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AvplayEngine } from './avplay-engine';
 import type { EngineOptions } from './base-engine';
 import type { AvplayApi, AvplayListeners, AvplayTrack, EngineListeners } from './engine';
+import { bilingual } from './engine.fixture';
 
 const noop = () => undefined;
 
@@ -158,6 +159,11 @@ function masterArrivedTo(arrivedSec: number) {
 }
 
 const track = (index: number, type: string): AvplayTrack => ({ index, type });
+const spoken = (index: number, language: string): AvplayTrack => ({
+  index,
+  type: 'AUDIO',
+  extra_info: JSON.stringify({ language, channels: '2', sample_rate: '48000', fourCC: 'EAC3' }),
+});
 
 function opts(over: Partial<EngineOptions> = {}): EngineOptions {
   return {
@@ -527,6 +533,27 @@ describe('AvplayEngine audio switching', () => {
     e.setAudioRendition(1);
     expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 4]);
     expect(names()).not.toContain('stop');
+  });
+
+  it('a direct pick finds the language where AVPlay lists the tracks its own way', () => {
+    const { e, a, lastArgs } = make({ direct: true, item: bilingual(item), initialRendition: 1 });
+    a.setTracks([spoken(1, 'fr'), spoken(4, 'en')]);
+
+    e.setAudioRendition(0);
+
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 4]);
+  });
+
+  it('a direct pick reads an extra_info it cannot parse as no language', () => {
+    const { e, a, lastArgs } = make({ direct: true, item: bilingual(item), initialRendition: 0 });
+    a.setTracks([
+      { index: 1, type: 'AUDIO', extra_info: '{"language":7}' },
+      { index: 4, type: 'AUDIO', extra_info: 'not json' },
+    ]);
+
+    e.setAudioRendition(1);
+
+    expect(lastArgs('setSelectTrack')).toEqual(['AUDIO', 4]);
   });
 
   it('falls back to a re-anchor when the track cannot be selected', async () => {
