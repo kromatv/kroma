@@ -48,6 +48,10 @@
       "broke": 15,
       "changed": 15
     },
+    "import_folders": {
+      "broke": 22,
+      "changed": 22
+    },
     "import_passes": {
       "broke": 21,
       "changed": 21
@@ -241,5 +245,5 @@
       "changed": 1
     }
   },
-  "version": 21
+  "version": 22
 }

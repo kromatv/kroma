@@ -4,6 +4,7 @@
 use std::collections::HashSet;
 
 use super::JOB;
+use super::review::confirmable;
 use crate::db;
 use crate::db::imports::NewImport;
 use crate::model::imports::{AccountChoice, Origin, Selection};
@@ -63,6 +64,7 @@ fn once_each<T>(what: &str, kept: Vec<T>, id: impl Fn(&T) -> &str) -> Result<Vec
 fn checked(request: Request) -> Result<Request, StartError> {
     bounded_id("sign-in", &request.sign_in).map_err(StartError::Invalid)?;
     bounded_id("server", &request.server.id).map_err(StartError::Invalid)?;
+    confirmable(&request.selection.libraries).map_err(StartError::Invalid)?;
     Ok(Request {
         server: Origin {
             name: kroma_primitives::clean_label(&request.server.name, MAX_NAME_CHARS),

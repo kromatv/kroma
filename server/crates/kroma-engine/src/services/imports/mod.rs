@@ -10,7 +10,9 @@ mod halt;
 mod kept;
 mod passage;
 mod passes;
+mod paths;
 mod pull;
+mod review;
 mod run;
 mod settle;
 #[expect(
@@ -23,6 +25,7 @@ mod start;
 #[cfg(test)]
 mod tests;
 
+pub use review::{FoldersAsk, folders_here};
 pub(crate) use run::run;
 pub use start::{Request, StartError, Started, start};
 

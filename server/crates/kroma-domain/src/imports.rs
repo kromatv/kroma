@@ -17,11 +17,25 @@ pub struct Selection {
     pub users: Vec<KeptUser>,
 }
 
-/// One library the owner kept, by the other server's id for it.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// One library the owner kept, by the other server's id for it. `folders` are
+/// the folders of that library the owner confirmed. A source is made over no
+/// other.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeptLibrary {
     pub id: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub folders: Vec<KeptFolder>,
+}
+
+/// Where one folder of the other server is on this machine: `folder` as that
+/// server names it, `here` as this machine does. The two are equal for a
+/// folder that has the same name on both.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KeptFolder {
+    pub folder: String,
+    pub here: String,
 }
 
 /// One user the owner kept, by the other server's id for them, and the account
@@ -226,9 +240,37 @@ mod tests {
         assert_eq!(
             selection,
             Selection {
-                libraries: vec![KeptLibrary { id: "1".into() }],
+                libraries: vec![KeptLibrary {
+                    id: "1".into(),
+                    folders: Vec::new(),
+                }],
                 users: Vec::new(),
             }
+        );
+    }
+
+    #[test]
+    fn a_kept_library_carries_where_the_owner_said_each_of_its_folders_is() {
+        let kept: KeptLibrary = serde_json::from_value(json!({
+            "id": "1",
+            "folders": [{ "folder": "/data/movies", "here": "/volume1/video/movies" }],
+        }))
+        .unwrap();
+
+        assert_eq!(
+            kept.folders,
+            vec![KeptFolder {
+                folder: "/data/movies".into(),
+                here: "/volume1/video/movies".into(),
+            }]
+        );
+        assert_eq!(
+            serde_json::to_value(KeptLibrary {
+                id: "1".into(),
+                folders: Vec::new(),
+            })
+            .unwrap(),
+            json!({ "id": "1" })
         );
     }
 

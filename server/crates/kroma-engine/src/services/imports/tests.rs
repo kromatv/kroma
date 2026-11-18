@@ -1,12 +1,15 @@
 mod cancelling;
+mod confirming;
 mod failing;
 mod other_server;
 mod people;
+mod placing;
 mod reading;
 mod recording;
 mod reporting;
 mod running_again;
 mod starting;
+mod this_machine;
 
 use std::sync::{Arc, Mutex};
 
@@ -34,7 +37,10 @@ fn kept(libraries: &[&str], users: &[&str]) -> Selection {
     Selection {
         libraries: libraries
             .iter()
-            .map(|id| KeptLibrary { id: (*id).into() })
+            .map(|id| KeptLibrary {
+                id: (*id).into(),
+                ..Default::default()
+            })
             .collect(),
         users: users
             .iter()
