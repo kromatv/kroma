@@ -1,14 +1,11 @@
-import type { Importer, ImportSignIn } from '@kromatv/client/importers';
-import { FieldForm } from '@kromatv/module-sdk';
+import type { Importer } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, Row, Spinner, Text } from '@kromatv/ui/kit';
+import { Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
-import { REFUSAL_LINE } from '#web/features/setup/import-words';
-import { ImporterIcon } from '#web/features/setup/importer-icon.component';
+import { ImportSignInElsewhere } from '#web/features/setup/import-sign-in-elsewhere.component';
+import { ImportSignInForm } from '#web/features/setup/import-sign-in-form.component';
 import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { StepFailure } from '#web/features/setup/step-failure.component';
-import { useImportSignIn } from '#web/features/setup/use-import-sign-in.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 interface ConnectProps {
@@ -30,128 +27,40 @@ function useInstalled(importer: Importer) {
   });
 }
 
-function Starting({ importer }: Readonly<{ importer: Importer }>) {
+function Starting({ importer, onBack }: Readonly<ConnectProps>) {
   const t = useT();
   const install = useInstalled(importer);
-  if (install.error) {
-    return <StepFailure error={t('setup.importInstallFailed')} />;
-  }
-  return (
-    <Row align="center" gap={12}>
-      <Spinner size={22} />
-      <Text color="textMuted">{t('setup.importInstalling')}</Text>
-    </Row>
-  );
-}
-
-function Refused({ answer }: Readonly<{ answer: ImportSignIn | null }>) {
-  const t = useT();
-  if (answer?.status !== 'refused') {
-    return null;
-  }
-  return (
-    <Callout.Root tone="danger" icon="alert-triangle">
-      <Callout.Title>{t(REFUSAL_LINE[answer.reason])}</Callout.Title>
-      {answer.message ? <Callout.Detail>{answer.message}</Callout.Detail> : null}
-    </Callout.Root>
-  );
-}
-
-function hostOf(url: string): string {
-  return new URL(url).host;
-}
-
-function Waiting({ url }: Readonly<{ url: string }>) {
-  const t = useT();
-  return (
-    <Callout.Root tone="accent" icon="external-link">
-      <Callout.Title>{t('setup.importPendingTitle', { host: hostOf(url) })}</Callout.Title>
-      <Callout.Detail>{t('setup.importPendingDetail')}</Callout.Detail>
-    </Callout.Root>
-  );
-}
-
-function OpenPage({ url }: Readonly<{ url: string }>) {
-  const t = useT();
-  return (
-    <Button
-      size="md"
-      icon="external-link"
-      label={t('setup.importPendingOpen', { host: hostOf(url) })}
-      onPress={() => window.open(url, '_blank', 'noopener')}
-    />
-  );
-}
-
-function Who({ importer }: Readonly<{ importer: Importer }>) {
-  return (
-    <Row align="center" gap={12}>
-      <ImporterIcon importer={importer} />
-      <Text variant="label">{importer.label ?? importer.name}</Text>
-    </Row>
-  );
-}
-
-function Answer({ answer }: Readonly<{ answer: ImportSignIn | null }>) {
-  return (
-    <>
-      {answer?.status === 'pending' ? <Waiting url={answer.url} /> : null}
-      <Refused answer={answer} />
-    </>
-  );
-}
-
-interface ForwardProps {
-  answer: ImportSignIn | null;
-  busy: boolean;
-  missing: boolean;
-  onConnect: () => void;
-}
-
-function Forward({ answer, busy, missing, onConnect }: Readonly<ForwardProps>) {
-  const t = useT();
-  if (answer?.status === 'pending') {
-    return <OpenPage url={answer.url} />;
-  }
-  return (
-    <Button
-      size="md"
-      label={t('setup.importSignIn')}
-      loading={busy}
-      disabled={missing}
-      onPress={onConnect}
-    />
-  );
-}
-
-function SignInForm({ importer, onBack }: Readonly<ConnectProps>) {
-  const [values, setValues] = useState<Record<string, string>>({});
-  const { answer, busy, connect } = useImportSignIn(importer);
-  const missing = importer.fields.some((field) => field.required && !values[field.key]);
-  const type = (key: string, value: string) => setValues((before) => ({ ...before, [key]: value }));
   return (
     <>
       <StepBody>
-        <Who importer={importer} />
-        <Box gap={16}>
-          <FieldForm fields={importer.fields} values={values} onChange={type} />
-        </Box>
-        <Answer answer={answer} />
+        {install.error ? (
+          <StepFailure error={t('setup.importInstallFailed')} />
+        ) : (
+          <Row align="center" gap={12}>
+            <Spinner size={22} />
+            <Text color="textMuted">{t('setup.importInstalling')}</Text>
+          </Row>
+        )}
       </StepBody>
-      <StepActions onBack={onBack}>
-        <Forward
-          answer={answer}
-          busy={busy}
-          missing={missing}
-          onConnect={() => void connect(values)}
-        />
-      </StepActions>
+      <StepActions onBack={onBack}>{null}</StepActions>
     </>
   );
 }
 
-/** The sign-in to the other server, with the form its importer asks for. An
- * importer the server does not hold yet installs first. */
+function SignIn({ importer, onBack }: Readonly<ConnectProps>) {
+  if (!importer.running) {
+    return <Starting importer={importer} onBack={onBack} />;
+  }
+  return importer.fields.length > 0 ? (
+    <ImportSignInForm importer={importer} onBack={onBack} />
+  ) : (
+    <ImportSignInElsewhere importer={importer} onBack={onBack} />
+  );
+}
+
+/** The sign-in to the other server: the form its importer asks for, or the
+ * way to the page that server wants the owner on. An importer the server does
+ * not hold yet installs first. */
 export function ImportConnect({ importer, onBack }: Readonly<ConnectProps>) {
   const t = useT();
   const name = importer.label ?? importer.name;
@@ -162,16 +71,7 @@ export function ImportConnect({ importer, onBack }: Readonly<ConnectProps>) {
   return (
     <>
       <StepHeading title={t('setup.importConnectTitle', { name })} sub={sub} />
-      {importer.running ? (
-        <SignInForm importer={importer} onBack={onBack} />
-      ) : (
-        <>
-          <StepBody>
-            <Starting importer={importer} />
-          </StepBody>
-          <StepActions onBack={onBack}>{null}</StepActions>
-        </>
-      )}
+      <SignIn importer={importer} onBack={onBack} />
     </>
   );
 }
