@@ -23,7 +23,8 @@ pub struct DeviceHints {
 
 /// `pin_verified` is true when the token was minted through a strong check
 /// (password login / correct PIN), so the exchange can skip the PIN on
-/// subsequent silent refreshes.
+/// subsequent silent refreshes. An error for an account that waits on an
+/// invitation (ACCT-95).
 pub fn create_access_token(
     pool: &Pool,
     token: &str,
@@ -33,9 +34,10 @@ pub fn create_access_token(
     hints: &DeviceHints,
 ) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
+    let written = conn.execute(
         "INSERT INTO access_tokens (token,user_id,created_at,expires_at,pin_verified,last_seen,user_agent,language,app,address,via) \
-         VALUES (?1,?2,?3,?4,?5,?3,?6,?7,?8,?9,?10)",
+         SELECT ?1,?2,?3,?4,?5,?3,?6,?7,?8,?9,?10 \
+         WHERE NOT EXISTS (SELECT 1 FROM users WHERE id = ?2 AND waiting = 1)",
         params![
             stored(token),
             user_id,
@@ -49,6 +51,7 @@ pub fn create_access_token(
             hints.via
         ],
     )?;
+    anyhow::ensure!(written == 1, "an account that waits holds no device credential");
     Ok(())
 }
 
@@ -133,13 +136,14 @@ pub fn delete_access_token_by_id(pool: &Pool, user_id: &str, id: &str) -> Result
 }
 
 /// The user behind a non-expired access token, plus its `pin_verified` flag.
+/// Never an account that waits on an invitation.
 pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut stmt = conn.prepare(
         "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries,a.pin_verified \
          FROM access_tokens a JOIN users u ON u.id = a.user_id \
-         WHERE a.token = ?1 AND a.expires_at > ?2",
+         WHERE a.token = ?1 AND a.expires_at > ?2 AND u.waiting = 0",
     )?;
     let mut rows = stmt.query_map(params![stored(token), now], |r| {
         Ok((row_to_user(r)?, r.get::<_, i64>(11)? != 0))
@@ -153,8 +157,8 @@ pub fn access_token_user(pool: &Pool, token: &str) -> Result<Option<(User, bool)
 /// The user behind a live device credential named by its non-secret
 /// `short_hash(token)` id, the form a credential carried in a URL can spell.
 /// `None` once the device is revoked, its credential has lapsed, or the account
-/// is gone, so a URL-borne ticket stops working the moment the device does.
-///
+/// is gone or waits on an invitation, so a URL-borne ticket stops working the
+/// moment the device does.
 pub fn access_token_user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
     let conn = pool.get()?;
     let now = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -162,7 +166,7 @@ pub fn access_token_user_by_id(pool: &Pool, id: &str) -> Result<Option<User>> {
         .query_row(
             "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,(u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries \
              FROM access_tokens a JOIN users u ON u.id = a.user_id \
-             WHERE a.expires_at > ?1 AND substr(a.token, 1, 16) = ?2",
+             WHERE a.expires_at > ?1 AND substr(a.token, 1, 16) = ?2 AND u.waiting = 0",
             params![now, id],
             row_to_user,
         )

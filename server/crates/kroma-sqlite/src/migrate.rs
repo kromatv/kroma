@@ -19,7 +19,8 @@ pub struct Step {
     pub run: Run,
     /// Turns foreign keys off around the step and checks them before it
     /// commits: SQLite ignores the pragma inside a transaction, and rebuilding a
-    /// table drops it while other tables still point at it.
+    /// table drops it while other tables still point at it. Rows that pointed
+    /// at nothing before the step do not count against it.
     pub rebuilds: bool,
 }
 
@@ -212,19 +213,22 @@ fn apply(conn: &mut Connection, step: &impl Change, version: u32) -> Result<()> 
 
 fn run(conn: &mut Connection, step: &impl Change, version: u32) -> Result<()> {
     let tx = conn.transaction()?;
+    let dangling = dangling_rows(&tx, step)?;
     step.apply(&tx)?;
-    if step.rebuilds() {
-        let broken: i64 =
-            tx.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |r| {
-                r.get(0)
-            })?;
-        if broken > 0 {
-            bail!("{broken} rows point at a row the step removed");
-        }
+    let broken = dangling_rows(&tx, step)? - dangling;
+    if broken > 0 {
+        bail!("{broken} rows point at a row the step removed");
     }
     tx.pragma_update(None, "user_version", version)?;
     tx.commit()?;
     Ok(())
+}
+
+fn dangling_rows(conn: &Connection, step: &impl Change) -> rusqlite::Result<i64> {
+    if !step.rebuilds() {
+        return Ok(0);
+    }
+    conn.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |r| r.get(0))
 }
 
 #[cfg(target_family = "wasm")]

@@ -11,6 +11,7 @@ mod media;
 mod modules;
 mod requests;
 mod sso;
+mod waiting;
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -28,7 +29,7 @@ use crate::services::settings::{self, LibraryDef, Settings};
 use crate::state::{AppState, SharedState};
 
 pub use direct::{offer, offer_through_the_tunnel, proof_of, HOUSEHOLD_PUBLIC_IP, NEIGHBOUR};
-pub use importers::{importer_answering, IMPORTER};
+pub use importers::{import_job_ended, importer_answering, importer_held, IMPORTER};
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
@@ -36,8 +37,9 @@ pub use modules::{
     installed_module, point_store_at, read_setting, registry_serving, store_settings,
     write_settings,
 };
-pub use requests::{get, get_from, raw, send, text};
+pub use requests::{get, get_from, raw, send, text, upload};
 pub use sso::{at_provider, ProviderRound, ORIGIN};
+pub use waiting::{join, mint_invitation, put_to_wait, seed_waiting};
 
 static SEQ: AtomicU32 = AtomicU32::new(0);
 

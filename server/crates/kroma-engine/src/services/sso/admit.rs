@@ -9,6 +9,8 @@ use super::person::Person;
 use crate::db::{self, Applicant, Filed, NewMember, Pool, ProviderIdentity};
 use crate::services::settings::{NewPeople, Provider};
 
+mod invited;
+
 pub const MAX_WAITING_REQUESTS: i64 = 20;
 pub const REQUEST_TTL_SECS: i64 = 30 * 24 * 3600;
 
@@ -66,6 +68,8 @@ pub struct TestReport {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Outcome {
+    /// `created` is true the first time the person comes in: the account was
+    /// made for them now, or it waited on the invitation they just redeemed.
     SignedIn { user_id: String, created: bool },
     Waiting(Waiting, Identity),
     Refused(Refusal),
@@ -165,15 +169,14 @@ fn sign_in(
     let Some(email) = identity.person.email.clone() else {
         return Ok(Outcome::Refused(Refusal::NoEmail));
     };
-    if db::find_user_by_email(pool, &email)?.is_some() {
+    let waiting = invited::waiting_account(pool, invite)?;
+    if db::email_taken(pool, &email, waiting.as_deref())? {
         return Ok(Outcome::Waiting(Waiting::EmailTaken, identity));
     }
     if let Some(invite) = invite {
-        return match db::consume_invite(pool, invite)? {
-            Some(permissions) => {
-                create(pool, &identity, &email, &permissions, &LibraryScope::All)
-            }
-            None => Ok(Outcome::Refused(Refusal::InviteInvalid)),
+        return match waiting {
+            Some(_) => invited::claim(pool, &identity, &email, invite),
+            None => invited::join(pool, &identity, &email, invite),
         };
     }
     match provider.new_people {

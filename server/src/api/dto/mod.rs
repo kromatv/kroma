@@ -15,8 +15,8 @@ pub use admin::{
     SettingsView, StorageInfo,
 };
 pub use auth::{
-    AuthConfig, AuthResult, InviteCreated, PasskeyInfo, ResetCheck, ResetCreated, SessionInfo,
-    SessionResult, VerificationCreated,
+    AuthConfig, AuthResult, InviteCheck, InviteCreated, PasskeyInfo, ResetCheck, ResetCreated,
+    SessionInfo, SessionResult, VerificationCreated,
 };
 pub use pairing::{PairingPoll, QuickConnectInit};
 pub use sso::{

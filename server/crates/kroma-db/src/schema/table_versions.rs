@@ -12,7 +12,10 @@ use super::{CORE, CORE_TABLE_VERSIONS};
 type CodeSteps = [(&'static str, &'static [&'static str])];
 
 // Run on an empty database, a code step prepares none of the writes it makes.
-const CODE_STEP_TABLES: &CodeSteps = &[("0013_stored_tokens", &["access_tokens", "sessions"])];
+const CODE_STEP_TABLES: &CodeSteps = &[
+    ("0013_stored_tokens", &["access_tokens", "sessions"]),
+    ("0020_waiting_accounts", &["users"]),
+];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Versions {
@@ -68,10 +71,20 @@ fn run_watched(conn: &Connection, step: &kroma_sqlite::Step) -> Vec<Touch> {
         Authorization::Allow
     }))
     .unwrap();
-    step.apply(conn).unwrap();
+    apply_as_the_runner_does(conn, step);
     conn.authorizer(None::<fn(AuthContext<'_>) -> Authorization>)
         .unwrap();
     Arc::try_unwrap(seen).ok().unwrap().into_inner().unwrap()
+}
+
+fn apply_as_the_runner_does(conn: &Connection, step: &kroma_sqlite::Step) {
+    if step.rebuilds {
+        conn.execute_batch("PRAGMA foreign_keys = OFF").unwrap();
+    }
+    step.apply(conn).unwrap();
+    if step.rebuilds {
+        conn.execute_batch("PRAGMA foreign_keys = ON").unwrap();
+    }
 }
 
 fn required_without_default(column: &Column) -> bool {

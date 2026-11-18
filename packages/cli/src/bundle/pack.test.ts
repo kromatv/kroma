@@ -76,7 +76,9 @@ describe('packBundle', () => {
     const packed = packBundle(input);
 
     const carried = JSON.parse(textOf(toTar(bytesOf(packed.path)), 'module.json'));
-    expect(carried.engines.core).toBe(String(readTableVersions().tables.downloads?.changed));
+    const { tables } = readTableVersions();
+    const newest = Math.max(tables.downloads?.changed ?? 0, tables.users?.changed ?? 0);
+    expect(carried.engines.core).toBe(String(newest));
   });
 
   it('records no core schema for a module without a core grant', () => {

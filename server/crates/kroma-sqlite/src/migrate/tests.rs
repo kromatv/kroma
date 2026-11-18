@@ -181,6 +181,43 @@ fn a_rebuild_runs_without_foreign_keys_and_refuses_to_leave_a_row_dangling() {
 }
 
 #[test]
+fn a_rebuild_is_not_refused_for_a_row_that_dangled_before_it() {
+    fn rebuild_notes(conn: &Connection) -> rusqlite::Result<()> {
+        conn.execute_batch(
+            "CREATE TABLE notes_new (id TEXT PRIMARY KEY, body TEXT);
+             INSERT INTO notes_new SELECT id, body FROM notes;
+             DROP TABLE notes;
+             ALTER TABLE notes_new RENAME TO notes;",
+        )
+    }
+    let rebuild = Schema {
+        baseline: "CREATE TABLE notes (id TEXT PRIMARY KEY, body TEXT NOT NULL);
+                   CREATE TABLE links (note TEXT REFERENCES notes(id));",
+        steps: &[Step {
+            name: "rebuild_notes",
+            run: Run::Code(rebuild_notes),
+            rebuilds: true,
+        }],
+        ..SCHEMA
+    };
+    let mut conn = Connection::open_in_memory().unwrap();
+    create(&mut conn, &rebuild).unwrap();
+    conn.execute_batch(
+        "PRAGMA foreign_keys = OFF;
+         INSERT INTO notes VALUES ('kept', 'a');
+         INSERT INTO links VALUES ('kept'), ('never-there');
+         PRAGMA foreign_keys = ON;",
+    )
+    .unwrap();
+
+    migrate(&mut conn, &rebuild, None).unwrap();
+
+    assert_eq!(user_version(&conn).unwrap(), 2);
+    assert_eq!(count(&conn, "SELECT COUNT(*) FROM links"), 2);
+    assert_eq!(count(&conn, "PRAGMA foreign_keys"), 1);
+}
+
+#[test]
 fn an_upgrade_keeps_a_copy_of_the_file_and_only_the_last_two() {
     let dir = kroma_testing::temp_dir("migrate-snapshots");
     let path = dir.path().join("notes.db");
