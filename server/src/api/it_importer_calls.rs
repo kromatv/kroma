@@ -16,6 +16,10 @@ fn on_disk(t: &TestApp, text: &str) -> bool {
         })
 }
 
+fn typed() -> String {
+    crate::services::auth::random_token()
+}
+
 async fn ask(t: &TestApp, path: &str, body: Value) -> (StatusCode, Value) {
     let uri = format!("/api/admin/importers/{IMPORTER}/{path}");
     send(&t.app, "POST", &uri, Some(&t.token), Some(body)).await
@@ -28,7 +32,7 @@ async fn connect_passes_the_form_through_and_hands_back_the_reference_the_import
         "signIn": "s-1",
         "servers": [{ "id": "srv", "name": "Living room", "address": "http://nas:8096" }],
     }}));
-    let form = json!({ "fields": { "url": "http://nas:8096", "password": "hunter2" } });
+    let form = json!({ "fields": { "url": "http://nas:8096", "password": typed() } });
 
     let (status, body) = ask(&t, "connect", form.clone()).await;
 
@@ -48,12 +52,13 @@ async fn connect_passes_the_form_through_and_hands_back_the_reference_the_import
 async fn the_core_stores_nothing_of_a_sign_in_it_passed_through() {
     let (t, _) =
         importer_answering(json!({ "Ok": { "status": "ready", "signIn": "reference-s-1" } }));
-    let form = json!({ "fields": { "password": "hunter2-the-secret" } });
+    let secret = typed();
+    let form = json!({ "fields": { "password": secret } });
 
     ask(&t, "connect", form).await;
 
     assert!(on_disk(&t, "owner@test.dev"));
-    assert!(!on_disk(&t, "hunter2-the-secret"));
+    assert!(!on_disk(&t, &secret));
     assert!(!on_disk(&t, "reference-s-1"));
 }
 
