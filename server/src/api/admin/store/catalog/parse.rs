@@ -75,6 +75,7 @@ pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
     let dependencies = parse_deps(m, "dependencies");
     let optional_dependencies = parse_deps(m, "optionalDependencies");
     let contributes = parse_points(m, "contributes");
+    let forms = super::forms::parse(m);
     let consumes = parse_points(m, "consumes");
     // Only an inline data image of a sane size may reach the admin page's
     // <img>; anything else from a third-party catalog is dropped.
@@ -104,6 +105,7 @@ pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
         dependencies,
         optional_dependencies,
         contributes,
+        forms,
         consumes,
         artifacts,
         permissions: declared(m, "permissions"),

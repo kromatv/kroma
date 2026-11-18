@@ -292,3 +292,57 @@ fn an_update_that_reads_more_account_data_widens_what_was_granted() {
     assert!(!widens_access(&silent, Some(&installed)));
     assert!(!widens_access(&offered, None));
 }
+
+fn reading(tables: &[&str], core: &str) -> CatalogModule {
+    let mut m = CatalogModule {
+        artifacts: vec![artifact(None)],
+        storage: Some(Storage {
+            core: kroma_module_manifest::CoreScope {
+                read: tables.iter().map(|t| (*t).to_string()).collect(),
+                write: Vec::new(),
+            },
+            adopt: Vec::new(),
+        }),
+        ..test_module("tv.x.ledger", "1.0.0")
+    };
+    m.engines.insert("core".into(), core.into());
+    m
+}
+
+#[test]
+fn a_module_that_needs_a_newer_core_schema_is_listed_with_both_versions() {
+    let has = crate::core_schema().version;
+    let needs = (has + 1).to_string();
+    let entry = reading(&["downloads"], &needs);
+
+    let refusal = compat_verdict(&entry).unwrap_err();
+
+    assert_eq!(
+        serde_json::to_value(&refusal).unwrap(),
+        json!({ "kind": "coreSchema", "needs": needs, "has": has })
+    );
+    assert_eq!(
+        refusal.reason(),
+        format!("requires core schema {needs} (this server's is {has})")
+    );
+}
+
+#[test]
+fn a_module_built_before_this_server_dropped_item_columns_names_the_table() {
+    let entry = reading(&["items", "users.username"], "1");
+
+    let refusal = compat_verdict(&entry).unwrap_err();
+
+    assert_eq!(
+        serde_json::to_value(&refusal).unwrap(),
+        json!({ "kind": "coreTable", "table": "items", "built": 1, "changed": 5 })
+    );
+}
+
+#[test]
+fn a_module_built_against_this_core_schema_is_offered() {
+    let current = crate::core_schema().version.to_string();
+    let entry = reading(&["downloads", "items"], &current);
+
+    assert_eq!(compat_verdict(&entry), Ok(()));
+}

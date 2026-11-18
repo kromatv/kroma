@@ -52,7 +52,7 @@ src/
   foundations/              stories for what has no component: the palette, the type ramp
   services/                 React contexts the shells share (auth, cast, i18n, playback)
   styles/                   the CSS the web targets import, expanded by `kromaUI()`
-  assets/                   the fonts and the intro sting
+  assets/                   the fonts and the intro film
 
 Every component is a FOLDER holding its code, its story, its demos and its tests.
 See src/components/README.md for the hierarchy and the three ways to import from it.

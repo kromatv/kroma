@@ -8,6 +8,7 @@ import {
   optionalDependenciesOf,
   satisfies,
 } from '@kromatv/registry';
+import { coreGrantProblem } from '../bundle/core-engine';
 import { COMPONENT_TARGET, cargo, targetDir } from '../cargo';
 import { exec } from '../exec';
 import { findProjects, type Project } from '../project';
@@ -187,6 +188,21 @@ export function notificationProblems(
   return problems;
 }
 
+function releaseProblems(projects: readonly Project[], release: string): string[] {
+  const problems: string[] = [];
+  for (const p of projects) {
+    const beyond = floorBeyondRelease(p.manifest, release);
+    const grant = coreGrantProblem(p.manifest.storage?.core);
+    if (beyond) {
+      problems.push(beyond);
+    }
+    if (grant) {
+      problems.push(`${p.manifest.id}: ${grant}`);
+    }
+  }
+  return problems;
+}
+
 /** `kroma check`: every manifest valid and unique, its notification types
  *  worded in every catalog, the frontend typed and its imports in bounds, the
  *  crate clean under clippy here and for the component target. */
@@ -204,14 +220,10 @@ export async function checkCommand(options: CheckOptions): Promise<number> {
     }
     seen.set(p.manifest.id, p.dir);
   }
-  problems.push(...unsatisfiableRanges(projects));
-  const release = versions(cwd).server;
-  for (const p of projects) {
-    const beyond = floorBeyondRelease(p.manifest, release);
-    if (beyond) {
-      problems.push(beyond);
-    }
-  }
+  problems.push(
+    ...unsatisfiableRanges(projects),
+    ...releaseProblems(projects, versions(cwd).server),
+  );
 
   for (const project of projects) {
     console.log(`\n${style.bold(project.manifest.id)}`);

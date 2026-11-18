@@ -3,11 +3,15 @@
 //! Nothing answering is not an error. `call` returns `None`, and the core's own
 //! features degrade: no recommendations rather than a failed request.
 
+mod bounded;
+
 use std::sync::Arc;
 
 use serde_json::Value;
 
 use crate::state::Contributions;
+
+pub use bounded::{Allowance, Silence};
 
 /// One point the core calls, resolved per call so a module installed or
 /// restarted later is picked up with nothing re-wired.

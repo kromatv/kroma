@@ -10,7 +10,7 @@ import type { ModuleEntry } from '#site/catalog';
 import { ModuleChecksum } from '#site/components/module-checksum.component';
 import { ModuleDownload } from '#site/components/module-download.component';
 import { download } from '#site/lib/artifacts';
-import { type Dependency, depEntries } from '#site/lib/deps';
+import { type Dependency, depEntries, engineLabel } from '#site/lib/deps';
 
 const ICON = 60;
 const ICON_RADIUS = 15;
@@ -39,7 +39,7 @@ function Requirements({
       </Text>
       {Object.entries(engines ?? {}).map(([engine, range]) => (
         <Requirement key={engine} icon="server">
-          {engine === 'server' ? 'KROMA' : engine} {range}
+          {engineLabel(engine, range)}
         </Requirement>
       ))}
       {deps.map((dep) => (

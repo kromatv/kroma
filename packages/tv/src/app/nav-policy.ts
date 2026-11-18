@@ -7,6 +7,7 @@
 // bounces back to home a tick later.
 
 import type { RedirectRule } from '#tv/app/guard';
+import type { OwnerState } from '#tv/app/providers/server-owner';
 import type { RouteName } from '#tv/app/router';
 
 // `both` covers screens that serve either session (the PIN pad unlocks a
@@ -21,6 +22,7 @@ const ACCESS: Record<RouteName, Access> = {
   addProfile: 'signedOut',
   connect: 'signedOut',
   quick: 'signedOut',
+  unowned: 'signedOut',
   deviceSettings: 'signedOut',
   pin: 'both',
   home: 'signedIn',
@@ -59,3 +61,35 @@ export const GUARD: readonly RedirectRule<GuardState, RouteName, GuardTarget>[] 
   { when: (s) => !s.signedIn, to: 'profiles', allow: AUTH_SCREENS },
   { when: () => true, to: 'home', allow: APP_SCREENS },
 ];
+
+export interface OwnerRoad {
+  route: RouteName;
+  owner: OwnerState;
+  profiles: number;
+  noticed: boolean;
+}
+
+export interface OwnerMove {
+  via: 'swap' | 'go';
+  to: 'quick' | 'unowned';
+}
+
+/**
+ * The step a signed-out television takes for the owner state of its server.
+ * The notice stands in for the pairing code while the server has no account,
+ * and the code comes back when it has one. A television with no profile opens
+ * the notice by itself, once, so Back still leads to the picker.
+ */
+export function ownerMove({ route, owner, profiles, noticed }: OwnerRoad): OwnerMove | null {
+  if (route === 'unowned') {
+    return owner === 'missing' ? null : { via: 'swap', to: 'quick' };
+  }
+  if (owner !== 'missing') {
+    return null;
+  }
+  if (route === 'quick') {
+    return { via: 'swap', to: 'unowned' };
+  }
+  const firstRun = route === 'profiles' && profiles === 0 && !noticed;
+  return firstRun ? { via: 'go', to: 'unowned' } : null;
+}

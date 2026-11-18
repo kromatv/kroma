@@ -31,24 +31,32 @@ export const MODEL_PLACEHOLDER: Record<string, string> = {
   openrouter: 'qwen/qwen-2.5-7b-instruct',
 };
 
-// Temperature is OpenAI-only, reasoning is Anthropic-only; unknown providers
-// fall back to the openai layout.
 export type Spec = {
   baseUrl: 'required' | 'advanced';
   apiKey: 'required' | 'optional';
   temperature: boolean;
-  reasoning: boolean;
+  reasoningHint: MessageKey | null;
 };
 export const SPEC_OPENAI: Spec = {
   baseUrl: 'required',
   apiKey: 'optional',
   temperature: true,
-  reasoning: false,
+  reasoningHint: null,
 };
 export const SPEC: Record<string, Spec> = {
   openai: SPEC_OPENAI,
-  openrouter: { baseUrl: 'advanced', apiKey: 'required', temperature: true, reasoning: false },
-  anthropic: { baseUrl: 'advanced', apiKey: 'required', temperature: false, reasoning: true },
+  openrouter: {
+    baseUrl: 'advanced',
+    apiKey: 'required',
+    temperature: true,
+    reasoningHint: 'admin.aiReasoningHintOpenrouter',
+  },
+  anthropic: {
+    baseUrl: 'advanced',
+    apiKey: 'required',
+    temperature: false,
+    reasoningHint: 'admin.aiReasoningHintAnthropic',
+  },
 };
 
 export function hostOf(baseUrl: string, isAnthropic: boolean): string {

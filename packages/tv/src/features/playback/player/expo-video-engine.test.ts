@@ -6,112 +6,19 @@ import { NATIVE_SEEK_AHEAD } from './base-engine';
 import { nativeBufferBudget } from '@kromatv/ui/native-player';
 import type { EngineListeners } from './engine';
 import { ExpoVideoEngine } from './expo-video-engine';
+import { type FakeVideoPlayer, players } from './expo-video.fixture';
 
 // The native expo-video backend (AVPlayer on Apple TV, Media3 on Android TV),
 // driven against a fake `createVideoPlayer` recording the players it hands out.
 
-const { players, FakePlayer } = vi.hoisted(() => {
-  interface Sub {
-    event: string;
-    handler: (payload: unknown) => void;
-    removed: boolean;
-  }
-
-  class RecordedPlayer {
-    uri: string;
-    currentTime = 0;
-    timeUpdateEventInterval = 0;
-    availableAudioTracks: { id: string }[] = [];
-    audioTrack: unknown = null;
-    bufferOptions: unknown = null;
-    plays = 0;
-    pauses = 0;
-    released = false;
-    replaced: string[] = [];
-    replaceThrows = false;
-    throwOnRead = false;
-    subs: Sub[] = [];
-    private durationValue = 0;
-    private bufferedValue = 0;
-
-    constructor(uri: string) {
-      this.uri = uri;
-    }
-
-    get duration(): number {
-      if (this.throwOnRead) {
-        throw new Error('native shared object released');
-      }
-      return this.durationValue;
-    }
-    set duration(value: number) {
-      this.durationValue = value;
-    }
-    get bufferedPosition(): number {
-      if (this.throwOnRead) {
-        throw new Error('native shared object released');
-      }
-      return this.bufferedValue;
-    }
-    set bufferedPosition(value: number) {
-      this.bufferedValue = value;
-    }
-
-    play(): void {
-      this.plays += 1;
-    }
-    pause(): void {
-      this.pauses += 1;
-    }
-    release(): void {
-      this.released = true;
-    }
-    replace(source: { uri: string }): void {
-      if (this.replaceThrows) {
-        throw new Error('will not take a new source');
-      }
-      this.uri = source.uri;
-      this.replaced.push(source.uri);
-    }
-    addListener(event: string, handler: (payload: unknown) => void): { remove(): void } {
-      const sub: Sub = { event, handler, removed: false };
-      this.subs.push(sub);
-      return {
-        remove: () => {
-          sub.removed = true;
-        },
-      };
-    }
-    emit(event: string, payload: unknown = {}): void {
-      for (const sub of this.subs) {
-        if (sub.event === event && !sub.removed) {
-          sub.handler(payload);
-        }
-      }
-    }
-    emitStale(event: string, payload: unknown = {}): void {
-      for (const sub of this.subs) {
-        if (sub.event === event) {
-          sub.handler(payload);
-        }
-      }
-    }
-  }
-
-  return { players: [] as RecordedPlayer[], FakePlayer: RecordedPlayer };
+vi.mock('expo-video', async () => {
+  const { fakeCreateVideoPlayer } = await import('./expo-video.fixture');
+  return { createVideoPlayer: fakeCreateVideoPlayer };
 });
-
-vi.mock('expo-video', () => ({
-  createVideoPlayer: (source: { uri: string }) => {
-    const player = new FakePlayer(source.uri);
-    players.push(player);
-    return player;
-  },
-}));
 
 vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
 
-type Fake = InstanceType<typeof FakePlayer>;
+type Fake = FakeVideoPlayer;
 
 const client = fakeClient({
   media: {

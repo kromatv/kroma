@@ -4,6 +4,7 @@ import { createFrameLoop } from './loop';
 import { coverMap, type GlRect, glRect } from './rect';
 import { createFrostRenderer, type FrostArt, type FrostRenderer } from './renderer';
 import { followScale, type ScaleFollow } from './scale.web';
+import { watchSizes } from './size-watch.web';
 import { glideDuration, type Tween, tweenAt } from './tween';
 
 const MARK = 'data-kroma-frost';
@@ -162,7 +163,7 @@ export function createFrostEngine(
     (handle) => cancelAnimationFrame(handle),
   );
 
-  const sizes = new ResizeObserver(() => {
+  const sizes = watchSizes(() => {
     for (const entry of entries.values()) {
       if (entry.top) {
         entry.radius = Number.parseFloat(getComputedStyle(entry.surface).borderTopLeftRadius) || 0;

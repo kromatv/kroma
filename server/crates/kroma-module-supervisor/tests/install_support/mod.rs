@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use kroma_module_manifest::CoreSchema;
 use kroma_module_supervisor::{Accept, Source, Supervisor, SupervisorConfig};
 
 // The contract THIS build speaks, so a bump to it does not read as four broken
@@ -29,8 +30,8 @@ pub fn temp_modules_dir(tag: &str) -> kroma_testing::TempDir {
     kroma_testing::temp_dir(&format!("sup-{tag}"))
 }
 
-pub fn supervisor(dir: &std::path::Path, server_version: &str) -> std::sync::Arc<Supervisor> {
-    Supervisor::new(SupervisorConfig {
+fn config(dir: &std::path::Path, server_version: &str) -> SupervisorConfig {
+    SupervisorConfig {
         modules_dir: dir.to_path_buf(),
         core_port: 0,
         host_token: "t".into(),
@@ -38,7 +39,22 @@ pub fn supervisor(dir: &std::path::Path, server_version: &str) -> std::sync::Arc
         data_dir: dir.to_path_buf(),
         reserved_ids: vec!["tv.kroma.reserved".into()],
         server_version: server_version.into(),
+        core_schema: CoreSchema::default(),
         log_line: None,
+    }
+}
+
+pub fn supervisor(dir: &std::path::Path, server_version: &str) -> std::sync::Arc<Supervisor> {
+    Supervisor::new(config(dir, server_version))
+}
+
+pub fn supervisor_on_core(
+    dir: &std::path::Path,
+    core_schema: CoreSchema,
+) -> std::sync::Arc<Supervisor> {
+    Supervisor::new(SupervisorConfig {
+        core_schema,
+        ..config(dir, "0.1.4")
     })
 }
 
@@ -67,7 +83,10 @@ pub fn tar_with_files(files: &[(&str, &str)]) -> Vec<u8> {
 
 pub fn tar_with_component(manifest: &str, component: &[u8]) -> Vec<u8> {
     let mut builder = tar::Builder::new(Vec::new());
-    for (path, body) in [("module.json", manifest.as_bytes()), ("module.wasm", component)] {
+    for (path, body) in [
+        ("module.json", manifest.as_bytes()),
+        ("module.wasm", component),
+    ] {
         let mut header = tar::Header::new_gnu();
         header.set_size(body.len() as u64);
         header.set_mode(0o600);

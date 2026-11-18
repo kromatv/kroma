@@ -1,4 +1,6 @@
-use anyhow::{anyhow, bail, Result};
+use std::fmt;
+
+use anyhow::{anyhow, Result};
 use kroma_http::{Fetch, Response};
 use serde_json::Value;
 
@@ -17,12 +19,12 @@ pub(super) fn resolve_base(base_url: &str, default: Option<&str>) -> Option<Stri
 
 pub(super) fn post_json(url: &str, headers: &[(&str, String)], body: &Value) -> Result<Value> {
     let response = fetch_with(headers, COMPLETION_MAX_TIME_SECS).post_json(url, body)?;
-    parse_reply(&response, "LLM request")
+    answer(&response, "LLM request")
 }
 
 pub(super) fn get_json(url: &str, headers: &[(&str, String)]) -> Result<Value> {
     let response = fetch_with(headers, MODEL_LIST_MAX_TIME_SECS).get(url)?;
-    parse_reply(&response, "model list")
+    answer(&response, "model list")
 }
 
 fn fetch_with(headers: &[(&str, String)], max_time_secs: u32) -> Fetch {
@@ -32,23 +34,53 @@ fn fetch_with(headers: &[(&str, String)], max_time_secs: u32) -> Fetch {
     )
 }
 
-fn parse_reply(response: &Response, what: &str) -> Result<Value> {
-    response
+fn answer(response: &Response, what: &str) -> Result<Value> {
+    let v: Value = response
         .json()
-        .map_err(|e| anyhow!("{what} (HTTP {}): {e}", response.status))
+        .map_err(|e| anyhow!("{what} (HTTP {}): {e}", response.status))?;
+    check_error(response.status, &v)?;
+    Ok(v)
 }
+
+/// An error the provider answered with. `status` is the error's own `code`
+/// when it carries one, since OpenRouter can report a failure inside a 200.
+#[derive(Debug)]
+pub(super) struct ApiError {
+    pub(super) status: u16,
+    message: String,
+}
+
+impl ApiError {
+    pub(super) fn rejected_the_request(&self) -> bool {
+        self.status == 400
+    }
+}
+
+impl fmt::Display for ApiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "LLM API error: {}", self.message)
+    }
+}
+
+impl std::error::Error for ApiError {}
 
 // A present-but-`null` `error` field (some OpenAI-compatible servers include
 // it on success) is not an error.
-pub(super) fn check_error(v: &Value) -> Result<()> {
-    if let Some(err) = v.get("error").filter(|e| !e.is_null()) {
-        let msg = err
-            .get("message")
-            .and_then(Value::as_str)
-            .unwrap_or_else(|| err.as_str().unwrap_or("unknown error"));
-        bail!("LLM API error: {msg}");
-    }
-    Ok(())
+fn check_error(http_status: u16, v: &Value) -> Result<(), ApiError> {
+    let Some(err) = v.get("error").filter(|e| !e.is_null()) else {
+        return Ok(());
+    };
+    let message = err
+        .get("message")
+        .and_then(Value::as_str)
+        .unwrap_or_else(|| err.as_str().unwrap_or("unknown error"))
+        .to_string();
+    let status = err
+        .get("code")
+        .and_then(Value::as_u64)
+        .and_then(|code| u16::try_from(code).ok())
+        .unwrap_or(http_status);
+    Err(ApiError { status, message })
 }
 
 #[cfg(test)]
@@ -121,10 +153,33 @@ mod tests {
     fn an_error_status_with_a_json_body_reaches_the_error_check() {
         let server = RecordingServer::replying(401, r#"{"error":{"message":"bad key"}}"#);
 
-        let reply = get_json(&format!("{}/models", server.base()), &[]).unwrap();
+        let err = get_json(&format!("{}/models", server.base()), &[]).unwrap_err();
 
-        let err = check_error(&reply).unwrap_err().to_string();
-        assert!(err.contains("bad key"), "{err}");
+        let api = err.downcast_ref::<ApiError>().unwrap();
+        assert_eq!(api.status, 401);
+        assert_eq!(err.to_string(), "LLM API error: bad key");
+    }
+
+    #[test]
+    fn an_error_inside_a_success_status_keeps_the_code_it_names() {
+        let server = RecordingServer::replying(
+            200,
+            r#"{"error":{"code":400,"message":"Reasoning is mandatory"}}"#,
+        );
+
+        let err = post_json(server.base(), &[], &json!({})).unwrap_err();
+
+        let api = err.downcast_ref::<ApiError>().unwrap();
+        assert!(api.rejected_the_request());
+    }
+
+    #[test]
+    fn a_null_error_field_on_a_success_is_no_error() {
+        let server = RecordingServer::replying(200, r#"{"error":null,"ok":true}"#);
+
+        let reply = post_json(server.base(), &[], &json!({})).unwrap();
+
+        assert_eq!(reply["ok"], true);
     }
 
     #[test]

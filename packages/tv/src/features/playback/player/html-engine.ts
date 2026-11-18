@@ -16,6 +16,7 @@ import {
   reachableBufferEnd,
   recoverMse,
   resolveMasterStart,
+  restartBudget,
   STALL_NUDGE_SEC,
 } from '@kromatv/core';
 import type { EngineListeners, TvEngine } from '#tv/features/playback/player/engine';
@@ -25,6 +26,7 @@ import {
   startStreamAt,
 } from '#tv/features/playback/player/html-events';
 import { attachMseMaster, type ShakaPlayerLike } from '#tv/features/playback/player/html-mse';
+import { engineRescue } from '#tv/features/playback/player/engine-rescue';
 
 type HlsInstance = import('hls.js').default;
 
@@ -63,6 +65,13 @@ export class HtmlEngine implements TvEngine {
   private attachSeq = 0;
   private landing: (() => void) | null = null;
   private resumeOnCanPlay: (() => void) | null = null;
+  private readonly restarts = restartBudget();
+  private readonly rescue = engineRescue(this.restarts, {
+    refreshSession: () => this.opts.client.refreshSession(),
+    restart: () => this.reanchor(this.position()),
+    broken: () => this.opts.listeners.onError(),
+    gone: () => this.destroyed,
+  });
   private readonly cleanupEvents: () => void;
 
   constructor(opts: HtmlOptions) {
@@ -75,7 +84,7 @@ export class HtmlEngine implements TvEngine {
     this.baseSec = opts.startSec;
     this.rendition = opts.initialRendition;
     const v = this.v;
-    this.cleanupEvents = bindMediaEvents(v, opts.listeners, opts.durationSec, () => this.baseSec);
+    this.cleanupEvents = this.bindEvents();
 
     if (opts.direct) {
       attachDirectPlay(v, opts.client, opts.item, { autoplay: false });
@@ -90,6 +99,15 @@ export class HtmlEngine implements TvEngine {
       return;
     }
     this.attachMaster();
+  }
+
+  private bindEvents(): () => void {
+    const { listeners, durationSec } = this.opts;
+    const onPlaying = () => {
+      this.restarts.refill();
+      listeners.onPlaying();
+    };
+    return bindMediaEvents(this.v, { ...listeners, onPlaying }, durationSec, () => this.baseSec);
   }
 
   private playsHlsItself(): boolean {
@@ -127,7 +145,8 @@ export class HtmlEngine implements TvEngine {
       onHls: (hls) => {
         this.hls = hls;
       },
-      onGiveUp: () => this.reanchor(this.position()),
+      onGiveUp: this.rescue.onGiveUp,
+      onRefused: this.rescue.onRefused,
       onNative: () => this.attachNative(url, fromSec),
     });
   }

@@ -9,19 +9,30 @@
 
 use kroma_module_host::HostCtx;
 use kroma_module_manifest::{
-    Declared, Helper, ModuleManifest, Permissions, SettingsScope, Storage,
+    Declared, Helper, ModuleManifest, Permissions, Provides, SettingsScope, Storage,
 };
 use serde_json::{json, Value};
 
 use super::refusal::Refusal;
 use crate::state::SharedState;
 
+mod forms;
 mod parse;
 mod versions;
 
+pub use forms::Form;
 pub use parse::fetch;
 
 const SERVER_VERSION: &str = crate::VERSION;
+
+/// What this server offers a catalog row's `engines`: the version it reports
+/// and the core schema it carries.
+pub(super) fn this_server() -> Provides<'static> {
+    Provides {
+        server: SERVER_VERSION,
+        core: crate::core_schema(),
+    }
+}
 
 /// One downloadable `.kmod` build. `target = None` is a WebAssembly component or a
 /// library module, the same on every platform; a `target` names a native build.
@@ -51,6 +62,7 @@ pub struct CatalogModule {
     // `(point, instance)` this module answers. The instance is absent for a
     // point that takes one answer.
     pub contributes: Vec<(String, Option<String>)>,
+    pub forms: Vec<Form>,
     // `(kind, optional provider id)` capabilities it needs SOMEONE to provide;
     // the install planner suggests providers for the unsatisfied ones.
     pub consumes: Vec<(String, Option<String>)>,
@@ -120,7 +132,8 @@ pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
             speaks,
         });
     }
-    kroma_module_manifest::engines_satisfied(&m.engines, SERVER_VERSION).map_err(Refusal::from)?;
+    kroma_module_manifest::engines_satisfied(&m.engines, m.storage.as_ref(), this_server())
+        .map_err(Refusal::from)?;
     if pick_artifact(m).is_none() {
         return Err(Refusal::Native);
     }
@@ -211,6 +224,7 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         dependencies: Vec::new(),
         optional_dependencies: Vec::new(),
         contributes: Vec::new(),
+        forms: Vec::new(),
         consumes: Vec::new(),
         artifacts: Vec::new(),
         permissions: None,

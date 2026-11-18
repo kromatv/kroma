@@ -3,7 +3,8 @@ import {
   audioTracksOf,
   type EngineDecision,
   preferredAudioIndex,
-  streamRefusal,
+  rescueRoute,
+  restartBudget,
 } from '@kromatv/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setWebEnginePref, type WebEnginePref } from '#web/features/playback/engine-pref';
@@ -22,8 +23,6 @@ import { useAuth } from '#web/shared/lib/auth';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 export type { VideoPlayback } from '#web/features/playback/video-engine';
-
-const MAX_GIVE_UPS = 2;
 
 function modeOf(decision: EngineDecision): PlaybackMode {
   if (decision.kind === 'direct') {
@@ -59,7 +58,7 @@ export function useVideoPlayback(latest: MovieView): VideoPlayback {
   const { client, user } = useAuth();
   const { anchor, setAnchor, bootAnchor } = useResumeAnchor(item, client, user?.id ?? null);
   const wantPlay = useRef(true);
-  const giveUps = useRef(0);
+  const [restarts] = useState(restartBudget);
 
   const audioTracks = audioTracksOf(item);
 
@@ -118,9 +117,7 @@ export function useVideoPlayback(latest: MovieView): VideoPlayback {
           wantPlay.current = on;
           setPlaying(on);
         },
-        onPlaying: () => {
-          giveUps.current = 0;
-        },
+        onPlaying: restarts.refill,
         setVolume,
         setMuted,
         setRate,
@@ -130,21 +127,17 @@ export function useVideoPlayback(latest: MovieView): VideoPlayback {
       knownDurationMs,
       wantPlay.current,
     );
-  }, [item, anchor, audioIndex, baseSec, knownDurationMs]);
+  }, [item, anchor, audioIndex, baseSec, knownDurationMs, restarts]);
 
   const absNow = useCallback(() => baseSec + (videoRef.current?.currentTime ?? 0), [baseSec]);
-  const giveUp = useCallback(() => {
-    giveUps.current += 1;
-    if (giveUps.current > MAX_GIVE_UPS) {
-      fail('broken');
-    } else {
-      restartAt(absNow());
-    }
-  }, [absNow, restartAt, fail]);
-  const onRefused = useCallback(
-    (status: number) =>
-      streamRefusal(status) === 'missing' ? giveUp() : refused(status, absNow()),
-    [refused, absNow, giveUp],
+  const routeFailures = useCallback(
+    () =>
+      rescueRoute(restarts, {
+        restart: () => restartAt(absNow()),
+        renew: (status) => refused(status, absNow()),
+        broken: () => fail('broken'),
+      }),
+    [restarts, restartAt, absNow, refused, fail],
   );
 
   // The chosen audio is muxed into the stream URL, so a language change remounts
@@ -170,8 +163,7 @@ export function useVideoPlayback(latest: MovieView): VideoPlayback {
         shakaRef,
         setUseHls,
         setReady,
-        onGiveUp: giveUp,
-        onRefused,
+        ...routeFailures(),
       },
       webRuntime,
     );
@@ -185,8 +177,7 @@ export function useVideoPlayback(latest: MovieView): VideoPlayback {
     audioIndex,
     bootAnchor,
     srcReady,
-    giveUp,
-    onRefused,
+    routeFailures,
   ]);
 
   const stalled = useStallRecovery({

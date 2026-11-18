@@ -464,6 +464,15 @@ mod tests {
     }
 
     #[test]
+    fn a_newer_version_that_needs_a_newer_core_schema_is_skipped() {
+        let mut blocked = offered("0.7.0");
+        let newer = crate::core_schema().version + 1;
+        blocked.engines.insert("core".into(), newer.to_string());
+
+        assert!(!takes_update(&blocked, "0.6.44"));
+    }
+
+    #[test]
     fn a_newer_version_built_for_another_manifest_schema_is_skipped() {
         let blocked = CatalogModule {
             schema_version: 0,

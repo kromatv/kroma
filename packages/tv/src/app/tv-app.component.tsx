@@ -14,8 +14,6 @@ import { canExitOnBack, exitOnBack } from '#tv/app/app-quit';
 import { BrandIntro } from '#tv/app/brand-intro.component';
 import { CompatBanner } from '#tv/app/compat-banner.component';
 import { ClientOutdatedScreen } from '#tv/app/client-outdated-screen.component';
-import { CrashBoundary } from '#tv/app/crash-boundary.component';
-import { CrashScreen } from '#tv/app/crash-screen.component';
 import { type DeviceNameSource, useDeviceName } from '#tv/app/device-name';
 import { createEnginePref, EnginePrefProvider } from '#tv/app/engine-pref';
 import { resolveRedirect } from '#tv/app/guard';
@@ -29,8 +27,11 @@ import { LocaleProvider } from '#tv/app/providers/locale.component';
 import { MyListProvider } from '#tv/app/providers/mylist';
 import { PlaybackCapabilitiesProvider } from '#tv/app/providers/playback-capabilities';
 import { RecommendProvider } from '#tv/app/providers/recommend';
+import { ServerOwnerProvider } from '#tv/app/providers/server-owner';
 import { WatchedProvider } from '#tv/app/providers/watched';
-import { TvClientProvider, TvNavProvider, TvOutlet, type TvScreens, useNav } from '#tv/app/router';
+import { RouteCrashBoundary } from '#tv/app/route-crash-boundary.component';
+import { TvClientProvider, TvNavProvider, TvOutlet, useNav } from '#tv/app/router';
+import { SCREENS } from '#tv/app/screens';
 import {
   createSearchRequests,
   type SearchRequests,
@@ -41,29 +42,12 @@ import { type SearchShell, SearchShellProvider } from '#tv/app/search-shell';
 import type { ServerBrowse } from '#tv/app/server-browse';
 import { ARTWORK_SCALE, ArtworkPrefProvider, createArtworkPref } from '#tv/app/settings/store';
 import { useCatalogue } from '#tv/app/use-catalogue.hook';
+import { useOwnerRoad } from '#tv/app/use-owner-road.hook';
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voice-search';
 import { HandoffBeaconProvider } from '#tv/features/accounts/handoff-beacon-provider.component';
-import { TvAddProfile } from '#tv/features/accounts/tv-add-profile.component';
-import { TvConnect } from '#tv/features/accounts/tv-connect.component';
-import { TvDeviceSettings } from '#tv/features/accounts/tv-device-settings.component';
-import { TvPin } from '#tv/features/accounts/tv-pin.component';
-import { TvProfileMenu } from '#tv/features/accounts/tv-profile-menu.component';
-import { TvProfiles } from '#tv/features/accounts/tv-profiles.component';
-import { TvQuickConnect } from '#tv/features/accounts/tv-quick-connect.component';
 import { CastReceiverProvider } from '#tv/features/cast/cast-receiver-provider.component';
-import { TvDiscoverDetail } from '#tv/features/catalog/discover/tv-discover-detail.component';
 import { BROWSE_CHROME } from '#tv/features/catalog/home/chrome';
-import { TvGenreGrid } from '#tv/features/catalog/tv-genre-grid.component';
-import { TvGenres } from '#tv/features/catalog/tv-genres.component';
-import { TvGrid } from '#tv/features/catalog/tv-grid.component';
-import { TvHome } from '#tv/features/catalog/tv-home.component';
-import { TvMovieDetail } from '#tv/features/catalog/tv-movie-detail.component';
-import { TvPerson } from '#tv/features/catalog/tv-person.component';
-import { TvSearch } from '#tv/features/catalog/tv-search.component';
-import { TvShowDetail } from '#tv/features/catalog/tv-show-detail.component';
 import type { PlaybackPlatform } from '#tv/features/playback/player/playback-backend';
-import { TvReleases } from '#tv/features/releases/tv-releases.component';
-import { TvReport } from '#tv/features/reports/tv-report.component';
 import { createDeviceIdentity } from '#tv/shared/device';
 import type { DeepLinks } from '#tv/shared/preview';
 import { AUTH_BACKDROP } from '#tv/shared/ui';
@@ -77,7 +61,6 @@ export interface TvAppProps {
   decoderFrameLimits?: DecoderFrameLimits;
   platform?: string;
   capabilities?: TvEnvOverrides;
-  introVideoSrc?: string;
   voiceSearch?: VoiceSearchBackend | null;
   searchShell?: SearchShell | null;
   launcher?: LauncherBackend | null;
@@ -108,15 +91,6 @@ const LAYERS = [BROWSE_CHROME, AUTH_BACKDROP] as const;
 
 const TOAST_INSET = { x: 64, y: 132 } as const;
 
-// Rendered inside <TvNavProvider>, which is what lets it offer Back: TvApp is
-// the component that MOUNTS that provider, so it cannot read the nav itself.
-function CrashFallback({ onRetry }: Readonly<{ onRetry: () => void }>) {
-  const nav = useNav();
-  return <CrashScreen onRetry={onRetry} onBack={nav.canGoBack ? nav.back : undefined} />;
-}
-
-const crashFallback = (retry: () => void) => <CrashFallback onRetry={retry} />;
-
 // Rendered inside <ConnectionProvider>, which TvApp mounts, so TvApp cannot
 // read the verdict itself.
 function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
@@ -127,7 +101,6 @@ function CompatGate({ children }: Readonly<{ children: ReactNode }>) {
 export function TvApp({
   platform = 'TV',
   capabilities,
-  introVideoSrc,
   voiceSearch = null,
   searchShell = null,
   launcher = null,
@@ -194,11 +167,7 @@ export function TvApp({
                                   onSignedInChange={setSignedIn}
                                 >
                                   <LocaleProvider client={client}>
-                                    <CrashBoundary
-                                      client={client}
-                                      platform={platform}
-                                      fallback={crashFallback}
-                                    >
+                                    <RouteCrashBoundary client={client} platform={platform}>
                                       <CompatBanner />
                                       <CompatGate>
                                         <ContinueProvider>
@@ -225,7 +194,9 @@ export function TvApp({
                               view controller never receives a press from a remote
                               (see @kromatv/ui lib/overlay-host). */}
                                                     <OverlayHost>
-                                                      <TvRouterGuard />
+                                                      <ServerOwnerProvider client={client}>
+                                                        <TvRouterGuard />
+                                                      </ServerOwnerProvider>
                                                       {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
                                                       <Toaster
@@ -240,13 +211,13 @@ export function TvApp({
                                           </RecommendProvider>
                                         </ContinueProvider>
                                       </CompatGate>
-                                    </CrashBoundary>
+                                    </RouteCrashBoundary>
                                   </LocaleProvider>
                                 </AuthProvider>
                               </TvClientProvider>
                             </ConnectionProvider>
                           </TvNavProvider>
-                          <BrandIntro videoSrc={introVideoSrc} />
+                          <BrandIntro />
                         </EnvProvider>
                       </SearchShellProvider>
                     </VoiceSearchProvider>
@@ -261,32 +232,12 @@ export function TvApp({
   );
 }
 
-const SCREENS: Omit<TvScreens, 'player' | 'trailer'> = {
-  connect: TvConnect,
-  profiles: TvProfiles,
-  addProfile: TvAddProfile,
-  quick: TvQuickConnect,
-  deviceSettings: TvDeviceSettings,
-  pin: TvPin,
-  profileMenu: TvProfileMenu,
-  home: TvHome,
-  grid: TvGrid,
-  genres: TvGenres,
-  genre: TvGenreGrid,
-  search: TvSearch,
-  person: TvPerson,
-  movie: TvMovieDetail,
-  show: TvShowDetail,
-  discover: TvDiscoverDetail,
-  report: TvReport,
-  releases: TvReleases,
-};
-
 function TvRouterGuard() {
   const { onSearchRequest, onListenRequest } = useSearchRequests();
   const nav = useNav();
   const { deepLink, movies, shows, clearDeepLink } = useConnection();
   const { user, ready } = useAuth();
+  useOwnerRoad();
 
   useEffect(() => {
     // Routing on a session that has not been resumed yet would send the TV home

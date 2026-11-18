@@ -1,5 +1,7 @@
 //! A [`Fetch`]'s options, spelled as the curl config it hands over on stdin.
 
+use std::path::Path;
+
 use crate::config::{header_line, option_line};
 use crate::egress::Gateway;
 use crate::multipart::{part_line, FormPart};
@@ -17,6 +19,10 @@ pub(super) fn proxy_lines(proxy: &str) -> String {
     lines
 }
 
+pub(super) fn body_line(file: &Path) -> String {
+    option_line("data-binary", &format!("@{}", file.display()))
+}
+
 pub(super) fn gateway_lines(gateway: &Gateway, username: &str) -> String {
     let mut lines = proxy_lines(&gateway.address);
     lines.push_str(&option_line(
@@ -27,11 +33,11 @@ pub(super) fn gateway_lines(gateway: &Gateway, username: &str) -> String {
 }
 
 impl Fetch {
-    pub(super) fn put_json_config(&self, url: &str, body: &str) -> String {
+    pub(super) fn put_json_config(&self, url: &str, body: &Path) -> String {
         let mut config = self.base_config();
         config.push_str(&option_line("request", "PUT"));
         config.push_str(&header_line("content-type", "application/json"));
-        config.push_str(&option_line("data-binary", body));
+        config.push_str(&body_line(body));
         config.push_str(&option_line("url", url));
         config
     }

@@ -146,6 +146,26 @@ mod tests {
     }
 
     #[test]
+    fn a_newest_version_that_needs_a_newer_core_schema_falls_back_to_one_this_server_runs() {
+        let newer = (crate::core_schema().version + 1).to_string();
+        let needing = |core: &str| {
+            let mut row = version(">=0.0.1");
+            row["engines"]["core"] = json!(core);
+            row["storage"] = json!({ "core": { "read": ["downloads"] } });
+            row
+        };
+        let record = record(json!({
+            "2.0.0": needing(&newer),
+            "1.9.0": needing(&newer),
+            "1.8.0": needing("19"),
+        }));
+
+        let picked = newest_runnable(&entry(), &record, "2.0.0").unwrap();
+
+        assert_eq!(picked.version, "1.8.0");
+    }
+
+    #[test]
     fn the_picked_version_keeps_the_module_identity_and_its_own_declarations() {
         let record = record(json!({ "1.0.0": version(">=0.0.1") }));
 

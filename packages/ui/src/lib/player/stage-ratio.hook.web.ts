@@ -6,8 +6,7 @@
 // the on-screen box answers for the layout box.
 //
 // Measured here rather than through `onLayout`, which is a ResizeObserver under
-// react-native-web: that first value only arrives with a frame, and the legacy
-// television tier ships no polyfill for it at all (see lib/metrics). The read
+// react-native-web: that first value only arrives with a frame. The read
 // below is synchronous, so the first paint already has the picture's shape, and
 // the observer is only there to keep it honest afterwards - a scrollbar arriving
 // resizes the stage without resizing the window.

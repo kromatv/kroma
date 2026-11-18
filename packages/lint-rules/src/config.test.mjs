@@ -70,6 +70,11 @@ it('loads all custom rules through the real config and preserves runtime exclusi
       ],
       ['copy.ts', `const text = "Start ${String.fromCodePoint(0x2014)} end";`, 'no-em-dashes'],
       ['design.ts', "const style = { color: '#fff' };", 'no-raw-design-values'],
+      [
+        'ground.tsx',
+        "const node = <div style={{ background: 'bg' }} />;",
+        'no-unresolved-color-tokens',
+      ],
       ['widget.tsx', 'export function Widget() { return null; }', 'file-role'],
       [
         'flag.ts',

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock};
 
 use kroma_module_host::Contribution;
-use kroma_module_manifest::ModuleManifest;
+use kroma_module_manifest::{CoreSchema, ModuleManifest};
 use serde_json::Value;
 
 #[cfg(feature = "core")]
@@ -76,6 +76,7 @@ pub struct SupervisorConfig {
     pub data_dir: PathBuf,
     pub reserved_ids: Vec<String>,
     pub server_version: String,
+    pub core_schema: CoreSchema,
     pub log_line: Option<LogSink>,
 }
 

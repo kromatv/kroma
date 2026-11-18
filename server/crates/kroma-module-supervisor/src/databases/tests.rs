@@ -27,6 +27,7 @@ impl Moved {
             data_dir: data.clone(),
             reserved_ids: Vec::new(),
             server_version: "0.1.4".into(),
+            core_schema: Default::default(),
             log_line: None,
         });
         Self {

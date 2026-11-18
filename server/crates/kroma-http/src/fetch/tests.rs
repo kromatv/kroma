@@ -212,7 +212,7 @@ fn a_header_value_cannot_inject_a_second_curl_option() {
 fn a_put_names_its_method_and_carries_its_json_with_the_url_last() {
     let config = Fetch::new().put_json_config(
         "https://api.example/devices/d1/pubkey",
-        "{\"pubkey\":\"k\"}",
+        Path::new("/tmp/kroma-http-body-1"),
     );
 
     assert!(config.contains("request = \"PUT\"\n"), "{config}");
@@ -221,7 +221,7 @@ fn a_put_names_its_method_and_carries_its_json_with_the_url_last() {
         "{config}"
     );
     assert!(
-        config.contains("data-binary = \"{\\\"pubkey\\\":\\\"k\\\"}\"\n"),
+        config.contains("data-binary = \"@/tmp/kroma-http-body-1\"\n"),
         "{config}"
     );
     assert!(

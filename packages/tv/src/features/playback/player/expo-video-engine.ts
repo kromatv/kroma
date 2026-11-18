@@ -9,64 +9,21 @@
 
 import type { MediaItem } from '@kromatv/client/media';
 import { audioTracksOf } from '@kromatv/core';
-import { createVideoPlayer, type VideoPlayer } from 'expo-video';
+import type { VideoPlayer } from 'expo-video';
 import {
   BaseTvEngine,
   type EngineOptions,
   NATIVE_SEEK_AHEAD,
 } from '#tv/features/playback/player/base-engine';
-import { nativeBufferBudget, nativePlayerPlane } from '@kromatv/ui/native-player';
 import type { TvEngine } from '#tv/features/playback/player/engine';
-
-// What the platform player is actually made of, so the stats panel names the
-// same thing the logs do.
-const PLANE: string = nativePlayerPlane();
-
-const tryRead = <T>(get: () => T): T | null => {
-  try {
-    return get();
-  } catch {
-    return null;
-  }
-};
-
-// The chrome interpolates between reports, so a coarser interval than the
-// frame rate is plenty and costs less.
-const TIME_UPDATE_SEC = 0.25;
-
-// Long enough for React to have re-rendered the surface onto the successor,
-// short enough that nobody notices the memory.
-const RETIRE_MS = 1000;
-
-// Releasing immediately is a use-after-free: <VideoView> still holds this
-// player as a prop until React re-renders, and handing a released expo shared
-// object to a native prop throws mid-commit, freezing the UI with the film
-// still playing behind it. Pause now (no decoding), release on a timer once
-// nothing refers to it.
-function retire(player: VideoPlayer, now = false): void {
-  try {
-    player.pause();
-  } catch {
-    // no-op: already gone.
-  }
-  const free = () => {
-    try {
-      player.release();
-    } catch {
-      // no-op: released elsewhere, or the app is tearing down.
-    }
-  };
-  // Immediately when the ENGINE is going away rather than one of its players:
-  // there is no successor <VideoView> to wait for, and whatever replaces this
-  // engine opens its own decoder at once. A second of both resident is what the
-  // low-memory killer takes the app for on a 2 GB set, and a libVLC core
-  // carrying a software decoder is the worst possible thing to hold it next to.
-  if (now) {
-    free();
-    return;
-  }
-  setTimeout(free, RETIRE_MS);
-}
+import { MasterRescue } from '#tv/features/playback/player/engine-rescue';
+import {
+  createPlayer,
+  playerDebugRows,
+  readPlayerNumber,
+  releasePlayer,
+  retirePlayer,
+} from '#tv/features/playback/player/expo-video-player';
 
 export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   readonly kind = 'video' as const;
@@ -75,6 +32,13 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   private subscriptions: { remove(): void }[] = [];
   private pendingSeek: number | null = null;
   private pendingAudio = false;
+  private clockSettled = true;
+  private readonly rescue = new MasterRescue({
+    refreshSession: () => this.client.refreshSession(),
+    restart: () => this.reanchor(this.position()),
+    broken: () => this.listeners.onError(),
+    gone: () => this.destroyed,
+  });
 
   constructor(opts: EngineOptions) {
     super(opts);
@@ -94,16 +58,11 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     if (this.destroyed) {
       return;
     }
-    const player = createVideoPlayer({ uri: url });
-    player.timeUpdateEventInterval = TIME_UPDATE_SEC;
-    // Survives `replace`, so a re-anchor keeps the bounds this player opened with.
-    const budget = nativeBufferBudget();
-    if (budget) {
-      player.bufferOptions = budget;
-    }
+    const player = createPlayer(url);
     // Only direct mode needs a seek: master's clock already starts at baseSec.
     this.pendingSeek = this.mode === 'direct' && seekSec > 0 ? seekSec : null;
     this.pendingAudio = this.mode === 'direct';
+    this.clockSettled = true;
     this.player = player;
     this.subscribe(player);
     // Notify the surface before playing: React hasn't re-rendered <VideoView>
@@ -133,15 +92,18 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     };
 
     add('timeUpdate', (payload: { currentTime: number; bufferedPosition?: number }) => {
+      if (!this.clockSettled) {
+        return;
+      }
       this.elSec = payload.currentTime;
       // The event carries it, so take it from there: reading the property back
-      // off a player that is mid-swap throws, and `readNumber` answers that with
-      // a 0 the seek bar draws as "nothing buffered".
+      // off a player that is mid-swap throws, and `readPlayerNumber` answers
+      // that with a 0 the seek bar draws as "nothing buffered".
       if (payload.bufferedPosition != null) {
         this.bufSec = payload.bufferedPosition;
       }
       this.listeners.onTime(this.position());
-      const duration = this.readNumber(() => player.duration);
+      const duration = readPlayerNumber(() => player.duration);
       // In master mode the reported duration is the remaining anchored span,
       // so the item's own runtime (durSec) stays authoritative.
       if (this.mode === 'direct' && duration > 0 && duration !== this.durSec) {
@@ -154,6 +116,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     add('playingChange', (payload: { isPlaying: boolean }) => {
       this.paused = !payload.isPlaying;
       if (payload.isPlaying) {
+        this.rescue.playing();
         this.listeners.onPlay();
       } else {
         this.listeners.onPause();
@@ -161,6 +124,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     });
 
     add('statusChange', (payload: { status: string; error?: unknown }) => {
+      this.clockSettled = true;
       if (payload.status === 'loading') {
         this.listeners.onWaiting();
         return;
@@ -172,13 +136,19 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
         return;
       }
       if (payload.status === 'error') {
-        this.fail();
+        this.failed(payload.error);
       }
     });
 
     add('playToEnd', () => {
       this.listeners.onEnded();
     });
+  }
+
+  private failed(error: unknown): void {
+    if (this.mode !== 'master' || !this.rescue.failed(error)) {
+      this.fail();
+    }
   }
 
   private applyPending(): void {
@@ -199,7 +169,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.elSec = seek;
   }
 
-  private teardown(now = false): void {
+  private teardown(release: (player: VideoPlayer) => void = retirePlayer): void {
     for (const sub of this.subscriptions) {
       sub.remove();
     }
@@ -208,7 +178,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.player = null;
     this.bufSec = null;
     if (retiring) {
-      retire(retiring, now);
+      release(retiring);
     }
   }
 
@@ -222,6 +192,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.pendingSeek = this.mode === 'direct' && absSec > 0 ? absSec : null;
     this.pendingAudio = this.mode === 'direct';
     this.bufSec = null;
+    this.clockSettled = false;
   }
 
   /** In master mode, re-anchors at `absSec` on the server; in direct mode, seeks
@@ -256,70 +227,13 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     this.paused = true;
   }
 
-  // Only what the platform player actually answered: a field it left null is
-  // left out rather than drawn as a zero, which would read as a measurement.
-  // `isSupported` is the one worth reading twice - it is the device saying it
-  // has no decoder for this track, which is the difference between a slow
-  // picture and no picture at all.
   debugRows(): { label: string; value: string }[] {
-    const rows = [{ label: 'Plane', value: PLANE }];
-    const player = this.player;
-    if (!player) {
-      return rows;
-    }
-    const status = tryRead(() => player.status);
-    if (status) {
-      rows.push({ label: 'Player state', value: status });
-    }
-
-    const rate = tryRead(() => player.playbackRate);
-    if (rate != null && rate !== 1) {
-      rows.push({ label: 'Rate', value: `${rate}x` });
-    }
-
-    const track = tryRead(() => player.videoTrack);
-    if (!track) {
-      return rows;
-    }
-
-    if (track.mimeType) {
-      rows.push({ label: 'Track', value: track.mimeType });
-    }
-    if (track.size.width > 0) {
-      rows.push({ label: 'Track size', value: `${track.size.width}×${track.size.height}` });
-    }
-    if (track.frameRate) {
-      rows.push({ label: 'Frame rate', value: `${track.frameRate.toFixed(2)} fps` });
-    }
-    const bitrate = track.peakBitrate ?? track.averageBitrate ?? track.bitrate;
-    if (bitrate) {
-      rows.push({ label: 'Bitrate', value: `${(bitrate / 1e6).toFixed(1)} Mb/s` });
-    }
-    if (track.videoRange) {
-      rows.push({ label: 'Range', value: track.videoRange });
-    }
-    if (!track.isSupported) {
-      rows.push({ label: 'Decoder', value: 'unsupported' });
-    }
-    return rows;
+    return playerDebugRows(this.player);
   }
 
   bufferedEnd(): number {
-    const buffered = this.bufSec ?? this.readNumber(() => this.player?.bufferedPosition ?? 0);
+    const buffered = this.bufSec ?? readPlayerNumber(() => this.player?.bufferedPosition ?? 0);
     return this.baseSec + Math.max(0, buffered);
-  }
-
-  // A released expo-video player throws on property access rather than
-  // returning stale data; thrown from an event callback that used to unmount
-  // the player mid-film and drop the viewer back to the home screen on Apple
-  // TV. Swallow it and report 0.
-  private readNumber(read: () => number): number {
-    try {
-      const value = read();
-      return Number.isFinite(value) ? value : 0;
-    } catch {
-      return 0;
-    }
   }
 
   seekTo(absSec: number): void {
@@ -376,6 +290,6 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
 
   destroy(): void {
     this.destroyed = true;
-    this.teardown(true);
+    this.teardown(releasePlayer);
   }
 }

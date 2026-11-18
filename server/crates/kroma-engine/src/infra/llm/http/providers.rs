@@ -1,13 +1,15 @@
 mod anthropic;
 mod openai;
+mod openrouter;
 
 #[cfg(test)]
-mod test_support;
+pub(super) mod test_support;
 
 use anyhow::{bail, Result};
 use serde_json::{json, Value};
 
 use super::super::tools::{ToolCall, ToolDef, Turn};
+use super::ask::{Ask, ToolChoice};
 
 use anthropic::Anthropic;
 use openai::OpenAi;
@@ -22,18 +24,9 @@ pub(super) trait Provider: Send + Sync {
     fn chat_url(&self, base: &str) -> String;
     fn models_url(&self, base: &str) -> String;
     fn headers(&self, api_key: &str) -> Vec<(&'static str, String)>;
-    fn chat_body(
-        &self,
-        model: &str,
-        system: &str,
-        user: &str,
-        max_tokens: u32,
-        temperature: f32,
-        reasoning: bool,
-    ) -> Value;
+    fn chat_body(&self, ask: &Ask<'_>, user: &str) -> Value;
     fn parse_reply(&self, v: &Value) -> Result<String>;
-    // Whether a reasoning-off retry is worth attempting when a model rejects the flag.
-    fn reasoning_applies(&self) -> bool {
+    fn controls_reasoning(&self) -> bool {
         false
     }
 
@@ -41,28 +34,15 @@ pub(super) trait Provider: Send + Sync {
         false
     }
     // Build a tool-enabled chat request from a running `messages` array;
-    // `system` is applied by the provider as it sees fit. Mirrors the vendor
-    // request shape, hence the arg count.
-    #[allow(clippy::too_many_arguments)]
+    // `system` is applied by the provider as it sees fit.
     fn tools_request(
         &self,
-        model: &str,
-        system: &str,
+        ask: &Ask<'_>,
         messages: &[Value],
         tools: &[ToolDef],
-        max_tokens: u32,
-        temperature: f32,
-        reasoning: bool,
+        choice: ToolChoice,
     ) -> Value {
-        let _ = (
-            model,
-            system,
-            messages,
-            tools,
-            max_tokens,
-            temperature,
-            reasoning,
-        );
+        let _ = (ask, messages, tools, choice);
         Value::Null
     }
     fn parse_turn(&self, v: &Value) -> Result<Turn> {

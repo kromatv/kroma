@@ -56,6 +56,12 @@ The search fails when the TV and the server are on different networks, such as
 a guest Wi-Fi, or when the server uses another port than `4040`. Type the
 address in both cases.
 
+If the server has no account yet, the TV shows **This server is not set up
+yet** and the server's address. On a phone or computer, open that address in a
+web browser and create the owner account, as in [First run](first-run.md). The
+TV asks the server again every few seconds, and goes on to the sign-in below
+once the account exists.
+
 ## Sign in on the TV
 
 Typing a password with a remote is slow, so the TV asks another device to sign
