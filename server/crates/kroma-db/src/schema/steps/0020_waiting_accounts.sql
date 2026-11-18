@@ -27,7 +27,7 @@ SELECT
     id, email, username, password_hash, avatar_url, permissions, created_at, last_seen,
     language, pin_hash, audio_language, subtitle_language, email_verified_at, libraries,
     whats_new_seen
-FROM users ORDER BY rowid;
+FROM users ORDER BY rowid ASC;
 
 DROP TABLE users;
 ALTER TABLE users_new RENAME TO users;
