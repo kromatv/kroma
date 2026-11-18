@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { type BufferPlan, shakaConfig } from './playback-buffer';
-import { streamRefusal } from './playback-stall';
-import type { FailureRoute } from './stream-rescue';
+import { type FailureRoute, routeHttpStatus } from './stream-rescue';
 
 const BAD_HTTP_STATUS = 1001;
 const CRITICAL = 2;
@@ -29,13 +28,8 @@ function routeStreamingFailure(error: unknown, route: FailureRoute): void {
     return;
   }
   const status = shakaHttpStatus(error);
-  if (status === null) {
-    return;
-  }
-  if (streamRefusal(status)) {
-    route.onRefused(status);
-  } else {
-    route.onGiveUp();
+  if (status !== null) {
+    routeHttpStatus(status, route);
   }
 }
 

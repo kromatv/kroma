@@ -21,6 +21,16 @@ export interface RestartBudget {
   refill: () => void;
 }
 
+/** Routes the HTTP status an engine stopped streaming on: a refusal (see
+ * `streamRefusal`) to `onRefused`, any other to `onGiveUp`. */
+export function routeHttpStatus(status: number, route: FailureRoute): void {
+  if (streamRefusal(status)) {
+    route.onRefused(status);
+  } else {
+    route.onGiveUp();
+  }
+}
+
 /** Two rebuilds between plays: `spend` answers whether one was left, and
  * `refill` gives both back once the picture plays again. */
 export function restartBudget(): RestartBudget {

@@ -12,7 +12,9 @@ const H = vi.hoisted(() => ({
   stalled: false,
   vlc: false,
   listeners: null as EngineListeners | null,
+  setStartSec: vi.fn(),
   engine: {
+    position: () => 265,
     play: vi.fn(),
     destroy: vi.fn(),
     setAudioRendition: vi.fn(),
@@ -43,7 +45,7 @@ const BACKEND = {
 };
 
 vi.mock('#tv/features/playback/player/use-resolved-start.hook', () => ({
-  useResolvedStart: () => ({ startSec: 0, resumedAt: null, setStartSec: vi.fn() }),
+  useResolvedStart: () => ({ startSec: 79, resumedAt: 79, setStartSec: H.setStartSec }),
 }));
 
 vi.mock('#tv/features/playback/player/vlc-plane', () => ({ vlcAvailable: () => H.vlc }));
@@ -158,5 +160,34 @@ describe('useEngineLifecycle decoder ceiling', () => {
 
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.surface).not.toBe('vlc');
+  });
+});
+
+describe('useEngineLifecycle VLC fallback', () => {
+  beforeEach(() => {
+    H.listeners = null;
+    H.vlc = true;
+    H.setStartSec.mockClear();
+  });
+
+  afterEach(() => {
+    H.vlc = false;
+  });
+
+  it('opens VLC where the picture stopped', () => {
+    const { on } = open();
+    act(() => on.onPlay());
+
+    act(() => on.onError());
+
+    expect(H.setStartSec).toHaveBeenCalledWith(265);
+  });
+
+  it('opens VLC where the title opened when the picture never started', () => {
+    const { on } = open();
+
+    act(() => on.onError());
+
+    expect(H.setStartSec).not.toHaveBeenCalled();
   });
 });
