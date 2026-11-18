@@ -14,7 +14,7 @@ async function present(binary: string): Promise<boolean> {
   return (await $`command -v ${binary}`.quiet().nothrow()).exitCode === 0;
 }
 
-async function apt(packages: readonly string[], attempts = 3): Promise<void> {
+async function apt(packages: readonly string[], attempts = 4): Promise<void> {
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const update = await $`timeout 120 sudo apt-get update`.nothrow();
     if (update.exitCode !== 0) {
@@ -23,7 +23,7 @@ async function apt(packages: readonly string[], attempts = 3): Promise<void> {
       );
     }
     const install =
-      await $`timeout 180 sudo apt-get install -y --no-install-recommends ${packages}`.nothrow();
+      await $`timeout 600 sudo apt-get install -y --no-install-recommends -o Acquire::Retries=3 ${packages}`.nothrow();
     if (install.exitCode === 0) {
       return;
     }
