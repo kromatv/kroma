@@ -7,7 +7,7 @@
   "setup.importConnectSub": "Connectez-vous avec un compte administrateur de ce serveur.",
   "setup.importConnectTitle": "Connectez-vous à {name}",
   "setup.importCountPlays": "Lectures",
-  "setup.importCountStates": "Vus ou commencés",
+  "setup.importCountStates": "Regardés",
   "setup.importCountTitles": "Titres",
   "setup.importInstallFailed": "Impossible d'installer le module d'import. Revenez en arrière, puis réessayez.",
   "setup.importInstalling": "Installation du module d'import en cours…",

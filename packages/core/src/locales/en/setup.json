@@ -7,7 +7,7 @@
   "setup.importConnectSub": "Sign in with an administrator account of that server.",
   "setup.importConnectTitle": "Sign in to {name}",
   "setup.importCountPlays": "Plays",
-  "setup.importCountStates": "Watched or started",
+  "setup.importCountStates": "Watched",
   "setup.importCountTitles": "Titles",
   "setup.importInstallFailed": "The import module could not be installed. Go back, then try again.",
   "setup.importInstalling": "Installing the import module…",
