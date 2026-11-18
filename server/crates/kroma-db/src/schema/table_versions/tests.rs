@@ -156,6 +156,32 @@ fn a_table_rebuilt_without_its_not_null_breaks() {
 }
 
 #[test]
+fn a_rebuilt_table_leaves_the_tables_that_point_at_it_as_they_were() {
+    let steps = [
+        sql(
+            "0002_notes",
+            "CREATE TABLE notes (id TEXT PRIMARY KEY, \
+             user_id TEXT REFERENCES users(id) ON DELETE SET NULL)",
+        ),
+        Step {
+            name: "0003_optional_username",
+            run: Run::Sql(
+                "CREATE TABLE users_new (id TEXT PRIMARY KEY, username TEXT);\
+                 INSERT INTO users_new SELECT id, username FROM users;\
+                 DROP TABLE users;\
+                 ALTER TABLE users_new RENAME TO users;",
+            ),
+            rebuilds: true,
+        },
+    ];
+
+    let versions = history(&steps);
+
+    assert_eq!(versions["users"], at(3, 3));
+    assert_eq!(versions["notes"], at(2, 2));
+}
+
+#[test]
 fn a_code_step_breaks_the_tables_it_names() {
     let steps = [Step {
         name: "0002_rewrite_titles",

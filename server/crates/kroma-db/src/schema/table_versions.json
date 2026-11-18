@@ -50,7 +50,7 @@
     },
     "invites": {
       "broke": 1,
-      "changed": 1
+      "changed": 20
     },
     "item_suggestions": {
       "broke": 1,
@@ -201,8 +201,8 @@
       "changed": 1
     },
     "users": {
-      "broke": 1,
-      "changed": 1
+      "broke": 20,
+      "changed": 20
     },
     "wanted": {
       "broke": 1,
@@ -217,5 +217,5 @@
       "changed": 1
     }
   },
-  "version": 19
+  "version": 20
 }
