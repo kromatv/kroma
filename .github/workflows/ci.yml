@@ -633,7 +633,7 @@ jobs:
       # The server's two test jobs both measure the crates they share, so a
       # file can come twice; merging adds its hits instead of listing it twice.
       - if: needs.rust-shard.result == 'success'
-        run: bun run ci lcov merge server/lcov.info parts/*/lcov.info
+        run: bun run ci lcov merge server/lcov.info parts
       - run: bun run ci sonar prepare
       # A pull request carries its own context and the action reads it. Anything
       # else has to say which branch it is, or the analysis lands on the default
