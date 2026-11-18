@@ -4,12 +4,12 @@
 // This file replaces `i18n-instance.ts` in the staged package. Without a
 // provider every key renders as itself, which is a legible placeholder.
 
-import type { I18n, Locale, Messages, Translate } from '@kromatv/i18n';
+import type { AnyI18n, Locale, Translate } from '@kromatv/i18n';
 
 /** An instance the kit's chrome can translate through, as `createI18n` builds
- *  one. `createI18n` is re-exported from this package, so a consumer needs no
- *  other install to make one. */
-export type KitI18n = I18n<Locale, Messages>;
+ *  one from any catalogs. `createI18n` is re-exported from this package, so a
+ *  consumer needs no other install to make one. */
+export type KitI18n = AnyI18n;
 
 const echo = ((key: string) => key) as Translate;
 
