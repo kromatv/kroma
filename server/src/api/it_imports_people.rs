@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 use crate::api::test_support::{
     IMPORTER, TestApp, get, import_job_ended, importer_answering, seed_session, send,
 };
+use crate::model::Permission;
 
 const IMPORTS: &str = "/api/admin/imports";
 
@@ -153,4 +154,42 @@ async fn a_second_import_of_the_same_users_adds_no_account() {
         json!({ "read": 2, "brought": 0, "unmatched": 0 })
     );
     assert_eq!(members(&t).await.len(), first.len());
+}
+
+fn an_administrator_of_settings_alone(t: &TestApp) -> String {
+    let rights = [Permission::SettingsManage];
+    seed_session(&t.state, "ops@example.test", "ops", &rights).1
+}
+
+#[tokio::test]
+async fn an_administrator_who_cannot_manage_accounts_brings_no_user_over() {
+    let (t, asked) = importer_answering(a_household());
+    let limited = an_administrator_of_settings_alone(&t);
+    let review = the_review(json!([{ "id": "43" }]));
+
+    let (status, _) = send(&t.app, "POST", IMPORTS, Some(&limited), Some(review)).await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert!(asked.lock().unwrap().is_empty());
+    assert_eq!(members(&t).await.len(), 2);
+}
+
+#[tokio::test]
+async fn an_administrator_who_cannot_manage_accounts_starts_an_import_that_keeps_no_user() {
+    let (t, _) = importer_answering(a_household());
+    let limited = an_administrator_of_settings_alone(&t);
+    let mut events = t.state.events.subscribe();
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        IMPORTS,
+        Some(&limited),
+        Some(the_review(json!([]))),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    import_job_ended(&mut events).await;
+    assert_eq!(members(&t).await.len(), 2);
 }
