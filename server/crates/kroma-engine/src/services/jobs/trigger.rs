@@ -1,5 +1,6 @@
+use std::collections::HashMap;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
+use std::sync::{Arc, MutexGuard, PoisonError};
 
 use crate::infra::events::ServerEvent;
 use crate::state::SharedState;
@@ -56,6 +57,42 @@ impl JobManager {
         });
 
         Ok(returned_id)
+    }
+
+    /// Runs `job` now, or once more after the run in progress, so that what
+    /// changed while the job was running is not left unread. Any number of
+    /// such requests during one run ask for one more run, not one each.
+    pub fn trigger_after(
+        self: &Arc<Self>,
+        state: SharedState,
+        job: JobKey,
+        trigger: &'static str,
+    ) -> std::result::Result<(), TriggerError> {
+        self.asked_again().insert(job, trigger);
+        match self.trigger(state, job, trigger) {
+            Ok(_) => {
+                self.asked_again().remove(&job);
+                Ok(())
+            }
+            Err(TriggerError::AlreadyRunning) => Ok(()),
+            Err(unknown) => {
+                self.asked_again().remove(&job);
+                Err(unknown)
+            }
+        }
+    }
+
+    /// Starts the run a [`trigger_after`](Self::trigger_after) asked for while
+    /// `job` was running. Called once that run has left the running set.
+    pub(super) fn run_again(self: &Arc<Self>, state: &SharedState, job: JobKey) {
+        let asked = self.asked_again().remove(&job);
+        if let Some(trigger) = asked {
+            let _ = self.trigger(state.clone(), job, trigger);
+        }
+    }
+
+    fn asked_again(&self) -> MutexGuard<'_, HashMap<JobKey, &'static str>> {
+        self.again.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
     /// Requests cancellation of every running job; each observes its flag at the

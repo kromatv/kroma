@@ -67,6 +67,7 @@ pub(super) fn run_job(
     }
     let _ = db::prune_job_runs(&pool, key, RUNS_KEPT);
     manager.running.write().unwrap().remove(&job);
+    manager.run_again(&state, job);
 
     match status {
         "failed" => {

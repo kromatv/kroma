@@ -55,15 +55,20 @@ pub struct ListQuery {
     pub view: Option<ListView>,
 }
 
+const SPLASH_COVERS: usize = 40;
+
 /// `GET /api/splash` → `SplashEntry[]`: a random sample of backdrop art with
 /// title/year captions, for the sign-in screen's ambient slideshow. The
 /// sample is small and random on every call, so the catalogue stays
-/// unlistable without a session.
+/// unlistable without a session. A library with little artwork, or none, has
+/// the sample filled with what the world watches this week, each marked
+/// `trending`.
 pub async fn splash(
     State(state): State<SharedState>,
     ContentLocale(locale): ContentLocale,
 ) -> Result<Response, Response> {
-    let entries = query(&state.db, move |pool| db::splash_entries(&pool, 12, locale)).await?;
+    let held = query(&state.db, move |pool| db::splash_entries(&pool, 12, locale)).await?;
+    let entries = crate::services::sections::world::with_world(&state, held, SPLASH_COVERS);
     Ok(Json(entries).into_response())
 }
 

@@ -3,13 +3,14 @@
 //! A household's own plays say what is trending at home, and a household of one
 //! has none worth the name: its "trending" would be the viewer's own history.
 //! The provider's ranking is the heat a small server cannot make for itself. It
-//! only ever orders titles the library already holds.
+//! only ever orders titles the library already holds. Its artwork is all a
+//! screen has to show before a library exists: a sign-in, the guided setup.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use crate::infra::metadata::discover::{self, DiscoverScope};
-use crate::model::RequestKind;
+use crate::infra::metadata::discover::{self, DiscoverHit, DiscoverScope};
+use crate::model::{RequestKind, SplashEntry};
 use crate::services::jobs::now_ms;
 use crate::state::SharedState;
 
@@ -20,10 +21,19 @@ const FRESH_FOR_MS: i64 = 12 * 3_600_000;
 const RETRY_AFTER_MS: i64 = 30 * 60_000;
 const PAGES: u32 = 5;
 const ANY_LANGUAGE: &str = "en-US";
+const COVERS: usize = 48;
+
+/// What the provider's ranking gives: the order, and the artwork of the titles
+/// leading it.
+#[derive(Clone, Default)]
+struct World {
+    ranked: Arc<Vec<Ranked>>,
+    covers: Arc<Vec<SplashEntry>>,
+}
 
 #[derive(Default)]
 pub struct WorldTrending {
-    held: Mutex<Option<(i64, Arc<Vec<Ranked>>)>>,
+    held: Mutex<Option<(i64, World)>>,
     fetching: AtomicBool,
 }
 
@@ -33,16 +43,26 @@ impl WorldTrending {
     /// read again in the background, so the next home has the fresh one. Empty
     /// until the first answer, and for a server with no provider key.
     pub fn ranked(&self, state: &SharedState) -> Arc<Vec<Ranked>> {
+        self.world(state).ranked
+    }
+
+    /// The artwork of the titles leading the ranking, for a screen that has no
+    /// library to draw from yet. Read with the ranking and as fresh as it is.
+    pub fn covers(&self, state: &SharedState) -> Arc<Vec<SplashEntry>> {
+        self.world(state).covers
+    }
+
+    fn world(&self, state: &SharedState) -> World {
         let now = now_ms();
         let held = self.held.lock().unwrap_or_else(PoisonError::into_inner).clone();
-        let (due, ranked) = match held {
-            Some((until, ranked)) => (now >= until, ranked),
-            None => (true, Arc::default()),
+        let (due, world) = match held {
+            Some((until, world)) => (now >= until, world),
+            None => (true, World::default()),
         };
         if due {
             self.refresh(state);
         }
-        ranked
+        world
     }
 
     fn refresh(&self, state: &SharedState) {
@@ -57,9 +77,9 @@ impl WorldTrending {
             let world = &state.home.world;
             let fetched = fetch(&key);
             let mut held = world.held.lock().unwrap_or_else(PoisonError::into_inner);
-            let previous = held.take().map(|(_, ranked)| ranked).unwrap_or_default();
+            let previous = held.take().map(|(_, world)| world).unwrap_or_default();
             *held = Some(match fetched {
-                Some(ranked) => (now_ms() + FRESH_FOR_MS, Arc::new(ranked)),
+                Some(read) => (now_ms() + FRESH_FOR_MS, read),
                 None => (now_ms() + RETRY_AFTER_MS, previous),
             });
             world.fetching.store(false, Ordering::Release);
@@ -68,38 +88,80 @@ impl WorldTrending {
 
     #[cfg(test)]
     pub(crate) fn hold(&self, ranked: Vec<Ranked>) {
-        *self.held.lock().unwrap() = Some((i64::MAX, Arc::new(ranked)));
+        self.hold_world(ranked, Vec::new());
+    }
+
+    #[cfg(test)]
+    pub(crate) fn hold_world(&self, ranked: Vec<Ranked>, covers: Vec<SplashEntry>) {
+        let world = World {
+            ranked: Arc::new(ranked),
+            covers: Arc::new(covers),
+        };
+        *self.held.lock().unwrap() = Some((i64::MAX, world));
     }
 }
 
-fn fetch(key: &str) -> Option<Vec<Ranked>> {
-    let films = fetch_scope(key, DiscoverScope::Movies);
-    let shows = fetch_scope(key, DiscoverScope::Shows);
-    let ranked = interleave(films, shows);
-    (!ranked.is_empty()).then_some(ranked)
+/// The library's own sample of artwork, filled up to `cap` with the titles
+/// the world watches this week. A library that fills the sample alone keeps
+/// it whole.
+pub fn with_world(state: &SharedState, mut held: Vec<SplashEntry>, cap: usize) -> Vec<SplashEntry> {
+    if held.len() >= cap {
+        return held;
+    }
+    let world = state.home.world.covers(state);
+    let missing = cap - held.len();
+    held.extend(world.iter().take(missing).cloned());
+    held
 }
 
-fn fetch_scope(key: &str, scope: DiscoverScope) -> Vec<Ranked> {
-    let mut ranked: Vec<Ranked> = Vec::new();
+fn fetch(key: &str) -> Option<World> {
+    let films = fetch_scope(key, DiscoverScope::Movies);
+    let shows = fetch_scope(key, DiscoverScope::Shows);
+    let hits = interleave(films, shows);
+    if hits.is_empty() {
+        return None;
+    }
+    let ranked = hits
+        .iter()
+        .map(|hit| (hit.kind == RequestKind::Show, hit.tmdb_id))
+        .collect();
+    let covers = hits.into_iter().filter_map(cover).take(COVERS).collect();
+    Some(World {
+        ranked: Arc::new(ranked),
+        covers: Arc::new(covers),
+    })
+}
+
+fn cover(hit: DiscoverHit) -> Option<SplashEntry> {
+    let kind = if hit.kind == RequestKind::Show { "show" } else { "movie" };
+    Some(SplashEntry {
+        kind: kind.to_string(),
+        title: hit.title,
+        year: hit.year,
+        backdrop_url: hit.backdrop_url?,
+        poster_url: hit.poster_url,
+        rating: hit.rating.map(f64::from),
+        trending: true,
+    })
+}
+
+fn fetch_scope(key: &str, scope: DiscoverScope) -> Vec<DiscoverHit> {
+    let mut hits: Vec<DiscoverHit> = Vec::new();
     for page in 1..=PAGES {
         let Ok(found) = discover::trending(key, ANY_LANGUAGE, scope, page) else {
             tracing::warn!(target: "sections", page, "reading the provider's trending list failed");
             break;
         };
-        ranked.extend(
-            found
-                .hits
-                .iter()
-                .map(|hit| (hit.kind == RequestKind::Show, hit.tmdb_id)),
-        );
-        if page >= found.total_pages {
+        let last = page >= found.total_pages;
+        hits.extend(found.hits);
+        if last {
             break;
         }
     }
-    ranked
+    hits
 }
 
-fn interleave(films: Vec<Ranked>, shows: Vec<Ranked>) -> Vec<Ranked> {
+fn interleave<T>(films: Vec<T>, shows: Vec<T>) -> Vec<T> {
     let mut ranked = Vec::with_capacity(films.len() + shows.len());
     let (mut films, mut shows) = (films.into_iter(), shows.into_iter());
     loop {

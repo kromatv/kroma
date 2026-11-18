@@ -20,7 +20,7 @@ pub use cron::Cron;
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 
 use time::OffsetDateTime;
 
@@ -112,6 +112,7 @@ pub struct JobManager {
     remote_order: RwLock<Vec<JobKey>>,
     schedules: RwLock<HashMap<JobKey, ScheduleState>>,
     running: RwLock<HashMap<JobKey, Arc<RunHandle>>>,
+    again: Mutex<HashMap<JobKey, &'static str>>,
     counter: AtomicU64,
     // Global "hold all pipeline stages" switch, separate from the per-stage
     // playback pause. Seeded from the persisted `pipelinePaused` setting at boot.
@@ -127,6 +128,7 @@ impl JobManager {
             remote_order: RwLock::new(Vec::new()),
             schedules: RwLock::new(HashMap::new()),
             running: RwLock::new(HashMap::new()),
+            again: Mutex::new(HashMap::new()),
             counter: AtomicU64::new(0),
             pipeline_paused: AtomicBool::new(false),
         }

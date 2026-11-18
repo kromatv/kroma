@@ -186,3 +186,57 @@ fn trigger_unknown_job_is_rejected() {
         Err(TriggerError::Unknown)
     );
 }
+
+async fn finished_runs(state: &crate::state::SharedState, key: &str, wanted: usize) -> usize {
+    for _ in 0..300 {
+        let runs = db::list_job_runs(&state.db, key, 10).unwrap();
+        let finished = runs.iter().filter(|run| run.finished_at.is_some()).count();
+        if finished >= wanted {
+            return finished;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    0
+}
+
+#[tokio::test]
+async fn requests_that_arrive_during_a_run_get_one_more_run_after_it() {
+    let state = test_support::test_state();
+    let gate = Arc::new(Gate::default());
+    let key = "test.remote.again";
+    state
+        .jobs
+        .register_remote(key, Category::Maintenance, None, blocked_on(&gate));
+    state
+        .jobs
+        .trigger(state.clone(), JobKey(key), "manual")
+        .expect("triggered");
+
+    let first = state.jobs.trigger_after(state.clone(), JobKey(key), "edit");
+    let second = state.jobs.trigger_after(state.clone(), JobKey(key), "edit");
+    gate.release();
+
+    assert!(first.is_ok() && second.is_ok());
+    assert_eq!(finished_runs(&state, key, 2).await, 2);
+    wait_idle(&state.jobs).await;
+    assert_eq!(db::list_job_runs(&state.db, key, 10).unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn a_request_for_an_idle_job_runs_it_once() {
+    let state = test_support::test_state();
+    let key = "test.remote.once";
+    let run: RemoteRun = Arc::new(|_ctx: &JobContext| Ok(()));
+    state
+        .jobs
+        .register_remote(key, Category::Maintenance, None, run);
+
+    state
+        .jobs
+        .trigger_after(state.clone(), JobKey(key), "edit")
+        .unwrap();
+
+    assert_eq!(finished_runs(&state, key, 1).await, 1);
+    wait_idle(&state.jobs).await;
+    assert_eq!(db::list_job_runs(&state.db, key, 10).unwrap().len(), 1);
+}
