@@ -21,12 +21,15 @@ export type SetupVisitor = 'stranger' | 'owner';
 
 const OWNER_AT = SETUP_STEPS.indexOf('owner');
 
+const STEP_NAMES: ReadonlySet<unknown> = new Set(SETUP_STEPS);
+const START_NAMES: ReadonlySet<unknown> = new Set(SETUP_STARTS);
+
 export function isSetupStep(value: unknown): value is SetupStep {
-  return SETUP_STEPS.some((step) => step === value);
+  return STEP_NAMES.has(value);
 }
 
 export function isSetupStart(value: unknown): value is SetupStart {
-  return SETUP_STARTS.some((start) => start === value);
+  return START_NAMES.has(value);
 }
 
 /** The step an address names, or the first one. */
