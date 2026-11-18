@@ -1,0 +1,17 @@
+<resources>
+  <resource name="NAS" product="Plex Media Server" productVersion="1.41.0.8994" platform="Linux" clientIdentifier="{{machine}}" provides="server" owned="1" home="0" presence="1" accessToken="{{owner_server_token}}">
+    <connections>
+      <connection protocol="https" address="198.51.100.7" port="8443" uri="https://198-51-100-7.examplehash.plex.direct:8443" local="0" relay="1" IPv6="0"/>
+      <connection protocol="https" address="203.0.113.9" port="32400" uri="https://203-0-113-9.examplehash.plex.direct:32400" local="0" relay="0" IPv6="0"/>
+      <connection protocol="https" address="192.168.1.20" port="32400" uri="https://192-168-1-20.examplehash.plex.direct:32400" local="1" relay="0" IPv6="0"/>
+    </connections>
+  </resource>
+  <resource name="A friend's server" product="Plex Media Server" clientIdentifier="friend-machine" provides="server" owned="0" accessToken="{{friend_server_token}}">
+    <connections>
+      <connection protocol="https" address="203.0.113.44" port="32400" uri="https://203-0-113-44.otherhash.plex.direct:32400" local="0" relay="0" IPv6="0"/>
+    </connections>
+  </resource>
+  <resource name="Living room TV" product="Plex for Android (TV)" clientIdentifier="tv-1" provides="client,player" owned="1" accessToken="{{player_token}}">
+    <connections/>
+  </resource>
+</resources>

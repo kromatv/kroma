@@ -1,0 +1,15 @@
+<MediaContainer size="2" totalSize="2" offset="0" librarySectionID="2" librarySectionTitle="Séries">
+  <Video ratingKey="211" key="/library/metadata/211" parentRatingKey="210" grandparentRatingKey="200" guid="plex://episode/example-target" type="episode" title="The Target" grandparentTitle="The Wire" parentTitle="Season 1" parentIndex="1" index="1" year="2002" duration="3720000" viewCount="1" lastViewedAt="1700000100">
+    <Media id="11" duration="3720000">
+      <Part id="11" file="/data/shows/The Wire/Season 01/The Wire - S01E01.mkv"/>
+    </Media>
+    <Guid id="tvdb://127394"/>
+  </Video>
+  <Video ratingKey="212" key="/library/metadata/212" parentRatingKey="210" grandparentRatingKey="200" guid="plex://episode/example-buys" type="episode" title="The Buys" grandparentTitle="The Wire" parentTitle="Season 1" parentIndex="1" index="3" duration="3300000" viewOffset="600000">
+    <Media id="12" duration="3300000">
+      <Part id="12" file="/data/shows/The Wire/Season 01/The Wire - S01E03.mkv"/>
+    </Media>
+    <Guid id="tvdb://127396"/>
+    <Guid id="imdb://tt0749423"/>
+  </Video>
+</MediaContainer>

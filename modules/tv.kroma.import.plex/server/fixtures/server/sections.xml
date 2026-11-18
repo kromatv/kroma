@@ -1,0 +1,12 @@
+<MediaContainer size="3" title1="Plex Library">
+  <Directory key="1" type="movie" title="Films" agent="tv.plex.agents.movie" scanner="Plex Movie" language="fr-FR">
+    <Location id="1" path="/data/movies"/>
+    <Location id="4" path="/data/films-4k"/>
+  </Directory>
+  <Directory key="2" type="show" title="Séries" agent="tv.plex.agents.series" scanner="Plex TV Series" language="fr-FR">
+    <Location id="2" path="/data/shows"/>
+  </Directory>
+  <Directory key="3" type="artist" title="Musique" agent="tv.plex.agents.music" scanner="Plex Music" language="fr-FR">
+    <Location id="3" path="/data/music"/>
+  </Directory>
+</MediaContainer>

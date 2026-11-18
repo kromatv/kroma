@@ -1,0 +1,20 @@
+<MediaContainer friendlyName="myPlex" identifier="com.plexapp.plugins.myplex" machineIdentifier="{{machine}}" totalSize="6" size="6">
+  <User id="7002" title="Ben" username="ben" email="ben@example.org" home="0" restricted="0" protected="0" allowSync="1" filterAll="" filterMovies="" filterMusic="" filterPhotos="" filterTelevision="">
+    <Server id="9102" serverId="5501" machineIdentifier="{{machine}}" name="NAS" numLibraries="2" allLibraries="0" owned="1" pending="0"/>
+  </User>
+  <User id="7003" title="Chloé" username="" email="" home="1" restricted="1" protected="0" allowSync="0" filterAll="" filterMovies="contentRating=G%2CPG" filterMusic="" filterPhotos="" filterTelevision="label=kids">
+    <Server id="9103" serverId="5501" machineIdentifier="{{machine}}" name="NAS" numLibraries="3" allLibraries="1" owned="1" pending="0"/>
+  </User>
+  <User id="7004" title="Dan" username="dan" email="dan@example.org" home="1" restricted="0" protected="1" allowSync="1" filterAll="" filterMovies="" filterMusic="" filterPhotos="" filterTelevision="">
+    <Server id="9104" serverId="5501" machineIdentifier="{{machine}}" name="NAS" numLibraries="3" allLibraries="1" owned="1" pending="0"/>
+  </User>
+  <User id="7005" title="Eve" username="" email="" home="1" restricted="1" protected="0" allowSync="0" filterAll="" filterMovies="" filterMusic="" filterPhotos="" filterTelevision="">
+    <Server id="9105" serverId="5501" machineIdentifier="{{machine}}" name="NAS" numLibraries="3" allLibraries="1" owned="1" pending="0"/>
+  </User>
+  <User id="7006" title="Finn" username="finn" email="finn@example.org" home="0" restricted="0" protected="0" allowSync="0" filterAll="" filterMovies="" filterMusic="" filterPhotos="" filterTelevision="">
+    <Server id="9106" serverId="5502" machineIdentifier="another-machine" name="Cabin" numLibraries="1" allLibraries="1" owned="1" pending="0"/>
+  </User>
+  <User id="7007" title="Gus" username="gus" email="gus@example.org" home="0" restricted="0" protected="0" allowSync="0" filterAll="" filterMovies="" filterMusic="" filterPhotos="" filterTelevision="">
+    <Server id="9107" serverId="5501" machineIdentifier="{{machine}}" name="NAS" numLibraries="1" allLibraries="0" owned="1" pending="1"/>
+  </User>
+</MediaContainer>

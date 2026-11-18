@@ -1,0 +1,17 @@
+<MediaContainer friendlyName="myPlex" identifier="com.plexapp.plugins.myplex" machineIdentifier="{{machine}}" size="3">
+  <SharedServer id="9102" username="ben" email="ben@example.org" userID="7002" accessToken="{{ben_token}}" name="NAS" allLibraries="0" owned="0">
+    <Section id="31" key="1" title="Films" type="movie" shared="1"/>
+    <Section id="32" key="2" title="Séries" type="show" shared="0"/>
+    <Section id="33" key="3" title="Musique" type="artist" shared="1"/>
+  </SharedServer>
+  <SharedServer id="9103" username="" email="" userID="7003" accessToken="{{chloe_token}}" name="NAS" allLibraries="1" owned="0">
+    <Section id="31" key="1" title="Films" type="movie" shared="1"/>
+    <Section id="32" key="2" title="Séries" type="show" shared="1"/>
+    <Section id="33" key="3" title="Musique" type="artist" shared="1"/>
+  </SharedServer>
+  <SharedServer id="9104" username="dan" email="dan@example.org" userID="7004" accessToken="{{dan_token}}" name="NAS" allLibraries="1" owned="0">
+    <Section id="31" key="1" title="Films" type="movie" shared="1"/>
+    <Section id="32" key="2" title="Séries" type="show" shared="1"/>
+    <Section id="33" key="3" title="Musique" type="artist" shared="1"/>
+  </SharedServer>
+</MediaContainer>
