@@ -34,4 +34,25 @@ describe('kromaLegacyCss', () => {
 
     expect(out).not.toContain('button');
   });
+
+  it('keeps a one-class gap and marks its class for the runtime shim', async () => {
+    const out = await shim('.row{gap:16px 24px}');
+
+    expect(out).toContain('.row{gap:16px 24px}');
+    expect(out).toContain('.row[data-kroma-gap-static="16px|24px"]');
+  });
+
+  it('marks a row gap and a column gap on their own axis', async () => {
+    const out = await shim('.a{row-gap:8px}.b{column-gap:12px}');
+
+    expect(out).toContain('.a[data-kroma-gap-static="8px|"]');
+    expect(out).toContain('.b[data-kroma-gap-static="|12px"]');
+  });
+
+  it('spaces a gap on a compound selector with margins, as before', async () => {
+    const out = await shim('.list > .row{gap:10px}');
+
+    expect(out).toContain('.list > .row > *');
+    expect(out).not.toContain('data-kroma-gap-static');
+  });
 });

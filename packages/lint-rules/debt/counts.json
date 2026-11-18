@@ -1062,7 +1062,7 @@
     "modules/tv.kroma.vpn/ui/src/vpn-page.component.tsx": 1,
     "packages/bundler/src/deep-tier.ts": 1,
     "packages/bundler/src/git-history-parse.ts": 2,
-    "packages/bundler/src/legacy-css.ts": 2,
+    "packages/bundler/src/legacy-css.ts": 1,
     "packages/bundler/src/legacy-finalize.ts": 4,
     "packages/bundler/src/props-read.ts": 1,
     "packages/bundler/src/shell.ts": 3,
