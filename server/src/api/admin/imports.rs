@@ -98,7 +98,8 @@ fn not_found() -> Response {
 
 /// `POST /api/admin/imports` queues an import and starts the job that runs it.
 /// 409 while another import is queued or running, 404 when the importer is not
-/// running.
+/// running, 400 when a kept user is attached to an account this server does
+/// not have.
 pub async fn start(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,

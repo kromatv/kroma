@@ -171,7 +171,11 @@ fn no_watch_state_and_no_play_is_read_while_no_user_has_an_account() {
     let server = household();
     let state = importing_from(&server);
 
-    let ran = import(&state, &super::super::stages::Core, &everything());
+    let ran = import(
+        &state,
+        &super::super::stages::Core,
+        &kept(&["1", "2", "9"], &[]),
+    );
 
     assert_eq!(ran.import.status, Status::Completed);
     assert_eq!(server.methods_asked(), vec!["survey", "titles"]);

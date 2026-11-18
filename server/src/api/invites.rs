@@ -24,15 +24,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/invites/{token}", get(check_invite).delete(delete_invite))
 }
 
-const INVITE_TTL_DAYS_DEFAULT: i64 = 7;
-
-/// When an invitation minted now lapses, in Unix seconds: after `days`, held
-/// between one day and a year, or after a week when none is given.
-pub(crate) fn expires_at(days: Option<i64>) -> i64 {
-    let days = days.unwrap_or(INVITE_TTL_DAYS_DEFAULT).clamp(1, 365);
-    time::OffsetDateTime::now_utc().unix_timestamp() + days * 24 * 3600
-}
-
 /// The join page's address for an invitation, when the server knows its own.
 pub(crate) fn join_url(state: &SharedState, token: &str) -> Option<String> {
     state
@@ -61,7 +52,7 @@ pub async fn create_invite(
     let permissions = body
         .permissions
         .unwrap_or_else(|| vec![Permission::Playback]);
-    let expires_at = expires_at(body.expires_in_days);
+    let expires_at = auth::invitation_expiry(body.expires_in_days);
 
     let token_db = token.clone();
     let perms = permissions.clone();

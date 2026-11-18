@@ -1,6 +1,7 @@
 mod cancelling;
 mod failing;
 mod other_server;
+mod people;
 mod reading;
 mod recording;
 mod reporting;
@@ -20,7 +21,7 @@ use super::stages::{
 };
 use crate::db;
 use crate::db::imports::NewImport;
-use crate::model::imports::{Import, KeptLibrary, KeptUser, Origin, Selection};
+use crate::model::imports::{AccountChoice, Import, KeptLibrary, KeptUser, Origin, Selection};
 use crate::point::{Point, StubFn};
 use crate::services::importers::{Importers, POINT};
 use crate::services::jobs::{JobContext, RunHandle};
@@ -37,7 +38,10 @@ fn kept(libraries: &[&str], users: &[&str]) -> Selection {
             .collect(),
         users: users
             .iter()
-            .map(|id| KeptUser { id: (*id).into() })
+            .map(|id| KeptUser {
+                id: (*id).into(),
+                account: AccountChoice::Proposed,
+            })
             .collect(),
     }
 }

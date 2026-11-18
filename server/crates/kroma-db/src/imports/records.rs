@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use kroma_domain::imports::Kind;
 
-use crate::{Pool, Result, params, query_by_subject_ids};
+use crate::{Connection, Pool, Result, params, query_by_subject_ids};
 
 /// The rows of one kind brought from one server. `scope` narrows a kind whose
 /// ids repeat: a watch state is its title's id under its user's.
@@ -78,31 +78,39 @@ pub fn record(
 ) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
-    {
-        let mut stmt = tx.prepare(
-            "INSERT INTO import_records \
-               (server_id, kind, scope, source_id, fingerprint, target, import_id) \
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) \
-             ON CONFLICT(server_id, kind, scope, source_id) DO UPDATE SET \
-               fingerprint = excluded.fingerprint, \
-               target = COALESCE(excluded.target, import_records.target), \
-               import_id = excluded.import_id \
-             WHERE import_records.fingerprint <> excluded.fingerprint \
-                OR (excluded.target IS NOT NULL \
-                    AND excluded.target IS NOT import_records.target)",
-        )?;
-        for entry in entries {
-            stmt.execute(params![
-                ledger.server_id,
-                ledger.kind.as_str(),
-                ledger.scope,
-                entry.id,
-                entry.fingerprint,
-                entry.target,
-                import_id
-            ])?;
-        }
-    }
+    record_on(&tx, ledger, import_id, entries)?;
     tx.commit()?;
+    Ok(())
+}
+
+pub(crate) fn record_on(
+    conn: &Connection,
+    ledger: &Ledger<'_>,
+    import_id: &str,
+    entries: &[Entry<'_>],
+) -> rusqlite::Result<()> {
+    let mut stmt = conn.prepare(
+        "INSERT INTO import_records \
+           (server_id, kind, scope, source_id, fingerprint, target, import_id) \
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) \
+         ON CONFLICT(server_id, kind, scope, source_id) DO UPDATE SET \
+           fingerprint = excluded.fingerprint, \
+           target = COALESCE(excluded.target, import_records.target), \
+           import_id = excluded.import_id \
+         WHERE import_records.fingerprint <> excluded.fingerprint \
+            OR (excluded.target IS NOT NULL \
+                AND excluded.target IS NOT import_records.target)",
+    )?;
+    for entry in entries {
+        stmt.execute(params![
+            ledger.server_id,
+            ledger.kind.as_str(),
+            ledger.scope,
+            entry.id,
+            entry.fingerprint,
+            entry.target,
+            import_id
+        ])?;
+    }
     Ok(())
 }
