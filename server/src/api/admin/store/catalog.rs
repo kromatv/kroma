@@ -16,9 +16,11 @@ use serde_json::{json, Value};
 use super::refusal::Refusal;
 use crate::state::SharedState;
 
+mod forms;
 mod parse;
 mod versions;
 
+pub use forms::Form;
 pub use parse::fetch;
 
 const SERVER_VERSION: &str = crate::VERSION;
@@ -60,6 +62,7 @@ pub struct CatalogModule {
     // `(point, instance)` this module answers. The instance is absent for a
     // point that takes one answer.
     pub contributes: Vec<(String, Option<String>)>,
+    pub forms: Vec<Form>,
     // `(kind, optional provider id)` capabilities it needs SOMEONE to provide;
     // the install planner suggests providers for the unsatisfied ones.
     pub consumes: Vec<(String, Option<String>)>,
@@ -221,6 +224,7 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         dependencies: Vec::new(),
         optional_dependencies: Vec::new(),
         contributes: Vec::new(),
+        forms: Vec::new(),
         consumes: Vec::new(),
         artifacts: Vec::new(),
         permissions: None,

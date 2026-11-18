@@ -1,7 +1,9 @@
 use axum::http::StatusCode;
 use serde_json::{json, Value};
 
-use crate::api::test_support::{get, send, test_app, text, TestApp};
+use crate::api::test_support::{
+    get, point_store_at, registry_serving, send, test_app, text, TestApp,
+};
 
 fn version(server: &str, file: &str) -> Value {
     json!({
@@ -20,25 +22,8 @@ fn newest() -> Value {
 }
 
 async fn spawn_registry(index: Value, record: Option<Value>) -> String {
-    let serve = |body: Value| {
-        axum::routing::get(move || {
-            let body = body.clone();
-            async move { axum::Json(body) }
-        })
-    };
-    let descriptor = json!({ "apiVersion": 1, "name": "Test", "url": "https://test", "modules": ["tv.kroma.vpn"] });
-    let mut app = axum::Router::new()
-        .route("/registry.json", serve(descriptor))
-        .route("/index.json", serve(index));
-    if let Some(record) = record {
-        app = app.route("/m/tv.kroma.vpn.json", serve(record));
-    }
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    tokio::spawn(async move {
-        let _ = axum::serve(listener, app).await;
-    });
-    format!("http://{addr}/registry.json")
+    let records: Vec<(&str, Value)> = record.into_iter().map(|r| ("tv.kroma.vpn", r)).collect();
+    registry_serving(index, &records).await
 }
 
 fn record() -> Value {
@@ -50,15 +35,6 @@ fn record() -> Value {
             "1.3.0": version(">=0.0.1", "1.3"),
         },
     })
-}
-
-fn point_store_at(t: &TestApp, url: &str) {
-    t.state.settings.set_patch(
-        &t.state.db,
-        [("moduleRegistryUrl".to_string(), json!(url))]
-            .into_iter()
-            .collect(),
-    );
 }
 
 async fn catalog_row(t: &TestApp) -> Value {

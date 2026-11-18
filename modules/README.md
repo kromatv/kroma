@@ -182,7 +182,9 @@ Three manifest verbs, and any module may use all three:
 - **`definesPoints: [{ name, version?, methods? }]`** invents a point. `name` is
   local: the full name is `<this module's id>/<name>`, so ownership reads off the
   name and two authors cannot collide. The handful the CORE calls (`acquisition`,
-  `transcriber`, `embedder`, `network`, `trailer`) are bare, and nothing but the core may define one.
+  `transcriber`, `embedder`, `network`, `trailer`, `importer`) are bare, and nothing but the
+  core may define one. What the core sends an importer is written out
+  [below](#answering-the-importer-point).
 - **`contributes: [{ point, version?, id?, label?, fields?, flow? }]`** answers a
   point, its own included. `id` is the instance name for a point several modules
   answer at once, the way a download client is picked, and absent for a point
@@ -204,6 +206,242 @@ Two rules make this hold together across independently released modules:
   unknown fields ignored, and a test on each side asserting the exact JSON it
   sends or expects. That test is the contract. Without it a rename fails in
   someone's install rather than in CI.
+
+### Answering the `importer` point
+
+An importer is a module that reads another media server and describes its
+household: libraries, users, watch state and plays. It writes nothing to KROMA.
+The core decides what each thing becomes and does every write, so an importer
+declares no slice of the core database and never sees an account.
+
+```jsonc
+// module.json
+"contributes": [
+  { "point": "importer",
+    "label": "Other server",
+    "fields": [
+      { "key": "url", "label": "field.url", "type": "string", "required": true },
+      { "key": "username", "label": "field.username", "type": "string", "required": true },
+      { "key": "password", "label": "field.password", "type": "string", "secret": true }
+    ] }
+],
+// Its own database, for the sign-in. No `core` grant.
+"storage": {},
+"permissions": {
+  "net": { "connect": [{ "purpose": "import", "to": ["lan", "public"] }] }
+}
+```
+
+`label` is the name the owner picks the importer by. `fields` is the sign-in
+form, and the host draws it: an importer ships no frontend. An importer whose
+sign-in is a page of the other vendor declares no field and answers `pending`.
+
+The core calls six methods at `POST /_port/importer/<method>`, each with the
+port token. Each answers the usual envelope, `{ "Ok": ... }` or
+`{ "Err": "why" }`. These rules hold for all six:
+
+- **An id is an opaque string of the other server.** It is never empty and at
+  most 512 bytes, and the core sends back exactly what the importer gave. A
+  sign-in, a pending sign-in, a server, a library, a user, a title and a play
+  each have one. A cursor may be 2048 bytes.
+- **A name says its unit.** A field ending in `Ms` is milliseconds. A field
+  ending in `At`, and `changedSince`, are unix seconds.
+- **Every field but an id may be left out.** A missing boolean is false, a
+  missing list is empty, and a missing number or string is unknown. The core
+  ignores a field it does not know. An importer must do the same, because a
+  later core sends more.
+- **The core bounds an answer before it parses it**, and refuses the whole
+  answer past the bound: 64 KiB for `connect`, 2 MiB for `survey`, 4 MiB for a
+  page and 4 KiB for `forget`. `connect` has 60 seconds, `forget` 30, and the
+  others 120.
+- **The sign-in is the importer's to keep.** Store it in the module's own
+  database. The core holds the `signIn` reference and nothing else, so removing
+  the module removes the sign-in.
+
+#### `connect`
+
+The core sends the form the owner filled, by field key:
+
+```json
+{ "fields": { "url": "http://nas:8096", "username": "ana", "password": "..." } }
+```
+
+or the id of a sign-in in progress, to ask how it stands:
+
+```json
+{ "pending": "p-7" }
+```
+
+The importer answers one of three:
+
+```json
+{ "status": "ready", "signIn": "s-1",
+  "servers": [{ "id": "srv", "name": "Living room", "address": "http://nas:8096" }] }
+```
+
+```json
+{ "status": "pending", "pending": "p-7",
+  "url": "https://account.example/link?code=ABCD", "expiresAt": 1700000900 }
+```
+
+```json
+{ "status": "refused", "reason": "credentials", "message": "wrong password" }
+```
+
+- **`ready`**: the importer has stored the sign-in and names it `signIn`.
+  `servers` are the servers that sign-in reaches. `address` is where the
+  importer reaches the server, so that the owner recognises it, and may be left
+  out.
+- **`pending`**: the owner has to finish on a page of the other vendor. `url`
+  must be a plain `https://` address, or the core refuses the answer. While the
+  owner waits, the core calls `connect` again with that `pending` id, and the
+  importer asks the vendor at that moment: a component does not run between
+  calls. `expiresAt` says when to stop asking.
+- **`refused`**: `reason` is one of the keys below, and the core reads a reason
+  it does not know as `other`. `message` is for the owner, in the importer's
+  words. The core keeps 300 characters of it.
+
+| `reason` | Means |
+| --- | --- |
+| `credentials` | the other server refused the name, the password or the token |
+| `unreachable` | nothing answered at the address |
+| `notAdministrator` | the sign-in works, and is neither the owner nor an administrator |
+| `expired` | the sign-in in progress ran out, or the importer does not know that `pending` id |
+| `unsupported` | the other server is a version the importer cannot read |
+| `other` | anything else |
+
+A sign-in the other server refuses is a `refused` answer. `Err` is for a failure
+of the importer itself.
+
+#### `survey`
+
+```json
+{ "signIn": "s-1", "server": "srv" }
+```
+
+```json
+{
+  "libraries": [
+    { "id": "1", "name": "Films", "kind": "movies", "folders": ["/data/movies"] }
+  ],
+  "users": [
+    { "id": "42", "name": "Ana", "email": "ana@example.org", "signedIn": true,
+      "allLibraries": false, "libraries": ["1"],
+      "finerLimits": ["rating"],
+      "stateLocked": true, "stateNeeds": "pin" }
+  ],
+  "counts": { "titles": 1204, "states": 311, "plays": 5020 },
+  "leftBehind": ["playlists", "collections"]
+}
+```
+
+- A library's `kind` is `movies`, `shows`, `mixed` (films and shows together) or
+  `other`. `other` is every kind KROMA does not play, and the core reads a kind
+  it does not know as `other`. `folders` are the paths as the other server sees
+  them.
+- `signedIn` marks the one user the sign-in belongs to.
+- `allLibraries` says the user could see every library. Otherwise `libraries`
+  lists the ids of the ones they could see. A user with neither saw none, which
+  is why a missing `libraries` is never read as "all".
+- `finerLimits` names what limited the user beyond libraries: `rating`, `label`,
+  `tag`, or a key of the importer's own. One entry is enough for the import to
+  give that user no library until the owner chooses.
+- `stateLocked` says the importer cannot read this user's watch state.
+  `stateNeeds` names what would open it, as a stable key such as `pin`. Leave
+  `stateNeeds` out when nothing the owner can give opens it.
+- `counts` are what the review screen shows. Leave a count out when it is not
+  cheap to get: a missing count is "not counted", and 0 is "none".
+- `leftBehind` holds stable keys for what the server holds and an import does
+  not bring: `playlists`, `collections`, `watchlist`, `liveTv`, `plugins`. Name
+  only what is there. A key in `finerLimits` or `leftBehind` is at most 64
+  bytes.
+
+#### `titles`
+
+```json
+{ "signIn": "s-1", "server": "srv", "library": "1", "cursor": "c-1", "limit": 500 }
+```
+
+No `cursor` asks for the first page. Answer at most `limit` rows: the core
+refuses a page with more, and a page has to fit a module call's own limits.
+
+```json
+{
+  "titles": [
+    { "id": "t1", "kind": "movie", "paths": ["/data/movies/Heat (1995)/Heat.mkv"],
+      "title": "Heat", "year": 1995, "ids": { "tmdb": "949", "imdb": "tt0113277" } },
+    { "id": "t2", "kind": "episode", "paths": ["/data/shows/The Wire/S01E03.mkv"],
+      "title": "The Buys", "season": 1, "episode": 3,
+      "series": { "title": "The Wire", "year": 2002, "ids": { "tmdb": "1438" } },
+      "ids": { "tvdb": "127396" } }
+  ],
+  "next": "c-2"
+}
+```
+
+- `kind` is `movie` or `episode`. The core skips a title of any other kind.
+- `paths` are the title's files as the other server sees them. A title kept in
+  two versions has two.
+- `title`, `year` and `ids` are the title's own. For an episode they are the
+  episode's, `series` holds the show's title, the year it started and the show's
+  ids, and `season` and `episode` are numbers.
+- `ids` holds `tmdb`, `imdb` and `tvdb`, each a string as that catalogue writes
+  it (`"949"`, `"tt0113277"`).
+- `next` is the cursor of the next page. Leave it out on the last one. A page
+  may be empty and still carry `next`.
+
+#### `states`
+
+```json
+{ "signIn": "s-1", "server": "srv", "user": "42", "library": "1",
+  "cursor": "c-1", "changedSince": 1700000000, "limit": 500 }
+```
+
+```json
+{
+  "states": [
+    { "title": "t1", "watched": true, "playCount": 3, "positionMs": 1234000,
+      "durationMs": 10200000, "lastPlayedAt": 1700000000, "favourite": true }
+  ],
+  "next": "c-2"
+}
+```
+
+One row per title the user has a state for, by the `id` that `titles` gave.
+`positionMs` is where the user stopped, and `durationMs` is the length of the
+title as the other server knows it. `changedSince` asks only for the states that
+changed at or after that time. An importer that cannot filter answers every
+state, and the core's merge makes a repeat harmless. The paging is the same as
+for `titles`.
+
+#### `plays`
+
+```json
+{ "signIn": "s-1", "server": "srv", "cursor": "c-1", "changedSince": 1700000000, "limit": 500 }
+```
+
+```json
+{
+  "plays": [
+    { "id": "p1", "user": "42", "title": "t1", "playedAt": 1700000000, "durationMs": 9000000 }
+  ],
+  "next": "c-2"
+}
+```
+
+One row per play, for every user of the server. `id`, `user`, `title` and
+`playedAt` are required. The `id` of one play must be the same on every call,
+because it is how a second import skips that play. `durationMs` is how long the
+play lasted. Leave it out when the server kept none.
+
+#### `forget`
+
+```json
+{ "signIn": "s-1" }
+```
+
+The importer deletes the sign-in and answers `{ "Ok": null }`. A sign-in it does
+not hold is already forgotten, so that is `Ok` too.
 
 ### Reacting to what happens
 
