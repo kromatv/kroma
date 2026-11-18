@@ -1,6 +1,6 @@
 use crate::testing::TempPool;
 use kroma_domain::{
-    CastMember, Kind, Library, LibraryKind, MediaFile, MediaItem, Metadata, VideoStream,
+    CastMember, Kind, Library, LibraryKind, MediaFile, MediaItem, Metadata, Show, VideoStream,
 };
 use std::collections::HashMap;
 
@@ -116,5 +116,36 @@ pub(super) fn meta(tmdb: u64, title: &str) -> Metadata {
         keywords: vec![],
         tvdb_id: None,
         tmdb_url: "https://tmdb/1".into(),
+    }
+}
+
+pub(super) fn show(id: &str, library: &str) -> Show {
+    Show {
+        id: id.into(),
+        title: "Severance".into(),
+        year: None,
+        library: library.into(),
+        season_count: 0,
+        episode_count: 0,
+        video: None,
+        added_at: "t".into(),
+        metadata: None,
+        progress: None,
+    }
+}
+
+pub(super) fn episode(id: &str, show: &str, number: u32) -> MediaItem {
+    MediaItem {
+        kind: Kind::Episode,
+        show_id: Some(show.into()),
+        show_title: Some("Severance".into()),
+        season: Some(1),
+        episode: Some(number),
+        ..movie(
+            id,
+            "Episode",
+            "lib",
+            vec![file(&format!("{id}-f"), &format!("/media/{id}.mkv"), false)],
+        )
     }
 }

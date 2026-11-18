@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use super::super::{rescan_sync, scan_all, ScanData, Scanned};
-use super::note_changed_shows;
+use super::super::{rescan_sync, scan_all, uninterrupted, ScanData, Scanned, WalkTurn};
+use super::HeldEpisodes;
 use crate::model::Show;
 use crate::services::settings::{set_library_defs, LibraryDef};
 use crate::state::SharedState;
@@ -30,15 +30,14 @@ fn episode(root: &Path, show: &str, season: u32, number: u32) {
 fn walked(state: &SharedState) -> ScanData {
     let defs = crate::services::settings::library_defs(&state.settings, &state.config);
     let mut data = scan_all(&defs);
-    note_changed_shows(&state.db, &mut data);
+    HeldEpisodes::read(&state.db).note_changed(&mut data);
     data
 }
 
 fn indexed(state: &SharedState, root: &Path) {
     set_library_defs(&state.settings, &state.db, &[configured_library(root)]);
-    let Scanned::Applied(_) = rescan_sync(state).unwrap() else {
-        panic!("expected the scan to be applied");
-    };
+    let scanned = rescan_sync(&WalkTurn::wait(), state, &mut uninterrupted).unwrap();
+    assert!(matches!(scanned, Scanned::Applied(_)));
 }
 
 #[test]

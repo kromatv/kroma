@@ -1,5 +1,10 @@
+use super::super::batches::BatchSize;
+use super::super::found::Found;
 use super::*;
-use crate::model::Kind;
+use crate::model::{Kind, MediaItem, Show};
+use crate::services::settings::LibraryDef;
+use std::collections::HashMap;
+use std::convert::Infallible;
 use std::ffi::OsStr;
 
 #[test]
@@ -59,31 +64,27 @@ struct ScanOutcome {
 }
 
 fn scan_into(lib_id: &str, root: &Path) -> ScanOutcome {
-    let mut items = HashMap::new();
-    let mut shows = HashMap::new();
-    let mut mtimes = HashMap::new();
-    let mut item_ids = HashSet::new();
-    let mut movie_seen = false;
-    let mut episode_seen = false;
+    let def = LibraryDef {
+        id: lib_id.into(),
+        name: "Library".into(),
+        kind: String::new(),
+        folders: vec![root.to_string_lossy().into_owned()],
+        auto_scan: true,
+    };
+    let mut found = Found::default();
+    let mut lib = LibraryWalk::new(&def, &mut found);
+    let mut unobserved = |_: &crate::db::ScanBatch<'_>| Ok::<(), Infallible>(());
+    let mut batches = Batches::new(BatchSize::LIVE, &mut unobserved);
 
-    let unreadable = scan_root(
-        lib_id,
-        root,
-        &mut items,
-        &mut shows,
-        &mut mtimes,
-        &mut item_ids,
-        &mut movie_seen,
-        &mut episode_seen,
-    );
+    let Ok(unreadable) = scan_root(root, &mut lib, &mut batches);
 
     ScanOutcome {
-        items,
-        shows,
-        mtimes,
-        item_ids,
-        movie_seen,
-        episode_seen,
+        item_ids: lib.item_ids,
+        movie_seen: lib.movie_seen,
+        episode_seen: lib.episode_seen,
+        items: found.items,
+        shows: found.shows,
+        mtimes: found.mtimes,
         unreadable,
     }
 }
