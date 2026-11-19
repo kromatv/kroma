@@ -18,6 +18,10 @@ fn write_episode(p: &Pool, show_id: &str, episode_id: &str) -> usize {
     .unwrap()
 }
 
+fn shows(ids: &[&str]) -> HashSet<String> {
+    ids.iter().map(|id| (*id).to_string()).collect()
+}
+
 fn unsettled(p: &Pool) -> Vec<String> {
     let mut shows: Vec<String> = unsettled_shows(p).unwrap().into_iter().collect();
     shows.sort();
@@ -39,10 +43,23 @@ fn a_show_whose_episode_a_batch_wrote_stays_unsettled_until_a_walk_ends() {
         &p,
         &[lib("lib")],
         &[episode("e1", "s1", 1), episode("e2", "s2", 1)],
+        &shows(&["s1", "s2"]),
     )
     .unwrap();
 
     assert!(unsettled(&p).is_empty());
+}
+
+#[test]
+fn a_walk_that_ends_settles_only_the_shows_it_took() {
+    let p = pool();
+    write_episode(&p, "s1", "e1");
+    write_episode(&p, "s2", "e2");
+    let walked = [episode("e1", "s1", 1), episode("e2", "s2", 1)];
+
+    finish_sync(&p, &[lib("lib")], &walked, &shows(&["s1", "gone"])).unwrap();
+
+    assert_eq!(unsettled(&p), ["s2"]);
 }
 
 #[test]
@@ -109,10 +126,16 @@ fn a_stored_list_that_does_not_parse_reads_as_no_show() {
 fn shows_a_finished_walk_settled_can_be_left_unsettled_again() {
     let p = pool();
     write_episode(&p, "s1", "e1");
-    finish_sync(&p, &[lib("lib")], &[episode("e1", "s1", 1)]).unwrap();
+    finish_sync(
+        &p,
+        &[lib("lib")],
+        &[episode("e1", "s1", 1)],
+        &shows(&["s1"]),
+    )
+    .unwrap();
     let settled = unsettled(&p);
 
-    unsettle_shows(&p, &HashSet::from(["s1".to_string(), "s2".to_string()])).unwrap();
+    unsettle_shows(&p, &shows(&["s1", "s2"])).unwrap();
 
     assert!(settled.is_empty());
     assert_eq!(unsettled(&p), ["s1", "s2"]);

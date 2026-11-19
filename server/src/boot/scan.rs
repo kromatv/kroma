@@ -64,7 +64,8 @@ pub fn plan(
     let turn = services::scan::WalkTurn::wait();
     let library_defs = match services::settings::library_defs(settings, config) {
         Ok(library_defs) => library_defs,
-        Err(unreadable) => {
+        Err(_) => {
+            let unreadable = services::settings::unreadable_list_failure(db);
             warn!(error = %unreadable, "no startup scan; serving an empty catalog");
             return Ok(Plan::Offline);
         }
@@ -78,9 +79,8 @@ pub fn plan(
     )?;
     Ok(match scanned {
         services::scan::Scanned::Applied(data) => Plan::Applied(data),
-        services::scan::Scanned::MountOffline { .. } | services::scan::Scanned::Cancelled => {
-            Plan::Offline
-        }
+        services::scan::Scanned::MountOffline { .. }
+        | services::scan::Scanned::Cancelled { .. } => Plan::Offline,
     })
 }
 
@@ -117,14 +117,14 @@ fn startup_scan(
         .context("failed to persist library")?;
     match walked {
         Walked::Synced(data) => Ok(index_ready(data)),
-        Walked::Stopped => Ok(services::scan::Scanned::Cancelled),
+        Walked::Stopped { dropped } => Ok(services::scan::Scanned::Cancelled { dropped }),
         // Configured dirs that produce nothing mean a mount outage, not an empty
         // library: syncing that scan would cascade-delete every library.
         Walked::Empty { dropped, .. } => {
             warn!(
                 media_dirs,
-                dropped,
-                "configured media dirs produced no items; keeping the existing index (mount offline?) and skipping sync"
+                libraries_removed = dropped,
+                "configured media dirs produced no items; kept their stored titles and pruned none (mount offline?)"
             );
             Ok(services::scan::Scanned::MountOffline { dropped })
         }
@@ -159,8 +159,8 @@ fn apply_startup_scan(state: &state::SharedState, data: &services::scan::ScanDat
 }
 
 // The same walk, behind the open port. Blocking (it stats every file), so it
-// owns a thread rather than a runtime worker. A failure keeps the stored index:
-// the catalog clients are already reading stays exactly as it was.
+// owns a thread rather than a runtime worker. A failure prunes no title: what
+// the walk wrote before it failed stays.
 fn spawn_startup_scan(state: state::SharedState) {
     use infra::events::ServerEvent;
     state.events.publish(ServerEvent::ScanStarted);
@@ -169,7 +169,7 @@ fn spawn_startup_scan(state: state::SharedState) {
         let turn = services::scan::WalkTurn::wait();
         let mut announcer = services::scan::BatchAnnouncer::new(&state.events);
         let scanned = services::settings::library_defs(&state.settings, &state.config)
-            .map_err(anyhow::Error::from)
+            .map_err(|_| services::settings::unreadable_list_failure(&state.db))
             .and_then(|library_defs| {
                 startup_scan(
                     &turn,
@@ -183,14 +183,15 @@ fn spawn_startup_scan(state: state::SharedState) {
                 )
             });
         if let Err(e) = &scanned {
-            warn!(error = %format!("{e:#}"), "startup rescan failed; keeping the stored index");
+            warn!(error = %format!("{e:#}"), "startup rescan failed; what it wrote stays and no title was pruned");
         }
         let data = match scanned {
             Ok(services::scan::Scanned::Applied(data)) => data,
             // The watcher starts against no baseline, so the mount coming back
             // is a change.
             Ok(
-                services::scan::Scanned::MountOffline { .. } | services::scan::Scanned::Cancelled,
+                services::scan::Scanned::MountOffline { .. }
+                | services::scan::Scanned::Cancelled { .. },
             )
             | Err(_) => {
                 services::scan::publish_stored(&state, &mut announcer);

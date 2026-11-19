@@ -13,7 +13,7 @@ use crate::{now_or_blank, Pool};
 use super::probe_result::recompute_all_representatives;
 use super::prune::{delete_gone_files, delete_unlisted_libraries, prune_orphans};
 use super::scanned_files::sync_files;
-use super::unsettled::{forget_unsettled, note_unsettled};
+use super::unsettled::{forget_unsettled, note_unsettled, settle_shows};
 
 /// The episode ids each show holds right now, for a scan that wants to know
 /// which shows its walk changed. Read BEFORE a sync writes over them.
@@ -85,15 +85,22 @@ pub fn sync_batch(pool: &Pool, batch: &ScanBatch) -> Result<usize> {
 
 /// Ends a sync that [`sync_batch`] wrote, for a walk that read EVERY folder:
 /// the libraries take their final rows, and whatever the walk did not find is
-/// removed. A walk that stopped early must not call it.
-pub fn finish_sync(pool: &Pool, libraries: &[Library], items: &[MediaItem]) -> Result<()> {
+/// removed. A walk that stopped early must not call it. The shows in `settled`
+/// leave the unsettled list; one that joined it while the walk ran stays for
+/// the next walk.
+pub fn finish_sync(
+    pool: &Pool,
+    libraries: &[Library],
+    items: &[MediaItem],
+    settled: &HashSet<String>,
+) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
 
     sync_libraries(&tx, libraries)?;
     delete_gone_files(&tx, items)?;
     prune_orphans(&tx)?;
-    forget_unsettled(&tx)?;
+    settle_shows(&tx, settled)?;
 
     tx.commit()?;
     settle(pool)

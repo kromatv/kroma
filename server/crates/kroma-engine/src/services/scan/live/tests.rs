@@ -1,11 +1,12 @@
 use std::ops::ControlFlow;
 use std::path::Path;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::*;
 use crate::state::SharedState;
 use crate::test_support::test_state;
 
+mod announcer;
 mod between_walks;
 
 const ONE_FILE: BatchSize = BatchSize {
@@ -111,7 +112,7 @@ fn a_walk_that_stops_early_removes_nothing() {
     )
     .unwrap();
 
-    assert!(matches!(walked, Walked::Stopped));
+    assert!(matches!(walked, Walked::Stopped { .. }));
     let kept = titles(&state);
     assert!(kept.len() >= 3, "{kept:?}");
     assert!(kept.contains(&"Alien".to_string()), "{kept:?}");
@@ -178,7 +179,7 @@ fn a_walk_cancelled_between_batches_leaves_whole_titles_and_no_orphan() {
     )
     .unwrap();
 
-    assert!(matches!(walked, Walked::Stopped));
+    assert!(matches!(walked, Walked::Stopped { .. }));
     assert_eq!(batches.get(), 1);
     let items = db::list_items(&state.db, None).unwrap();
     assert_eq!(items.len(), 1);
@@ -264,54 +265,4 @@ fn a_walk_that_adds_an_episode_reports_its_show_as_changed() {
 
     assert_eq!(again.changed_shows.len(), 1);
     assert!(unchanged.changed_shows.is_empty());
-}
-
-fn library_updates(
-    events: &mut tokio::sync::broadcast::Receiver<crate::infra::events::Envelope>,
-) -> usize {
-    let mut updates = 0;
-    while let Ok(envelope) = events.try_recv() {
-        assert!(envelope.payload_unrouted().contains("library.updated"));
-        updates += 1;
-    }
-    updates
-}
-
-#[test]
-fn a_batch_that_wrote_nothing_is_not_announced() {
-    let bus = Bus::new();
-    let mut events = bus.subscribe();
-    let mut announcer = BatchAnnouncer::new(&bus);
-
-    announcer.wrote(0);
-
-    assert_eq!(library_updates(&mut events), 0);
-}
-
-#[test]
-fn batches_written_in_quick_succession_are_announced_once() {
-    let bus = Bus::new();
-    let mut events = bus.subscribe();
-    let mut announcer = BatchAnnouncer::new(&bus);
-
-    announcer.wrote(3);
-    announcer.wrote(2);
-
-    assert_eq!(library_updates(&mut events), 1);
-}
-
-#[test]
-fn a_batch_held_back_is_announced_with_the_next_one_that_is_due() {
-    let bus = Bus::new();
-    let mut events = bus.subscribe();
-    let mut announcer = BatchAnnouncer::new(&bus);
-    let start = Instant::now();
-
-    announcer.wrote_at(3, start);
-    announcer.wrote_at(2, start + Duration::from_secs(1));
-    let held_back = library_updates(&mut events);
-    announcer.wrote_at(0, start + Duration::from_secs(3));
-
-    assert_eq!(held_back, 1);
-    assert_eq!(library_updates(&mut events), 1);
 }

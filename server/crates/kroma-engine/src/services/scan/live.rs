@@ -37,13 +37,13 @@ impl WalkTurn {
 /// How a walk that writes as it goes ended. `Synced`: every folder was read,
 /// and what the walk did not find is pruned. `Empty`: every folder was read and
 /// none held a title, which is an outage: no title was written and none was
-/// pruned, and `dropped` counts the libraries that had left the configuration
-/// and went before the walk. `Stopped`: it ended before the last folder, so
-/// what its batches wrote stays and nothing was pruned.
+/// pruned. `Stopped`: it ended before the last folder, so what its batches
+/// wrote stays and nothing was pruned. `dropped` counts the libraries that had
+/// left the configuration and went before the walk.
 pub enum Walked {
     Synced(ScanData),
     Empty { unreadable: usize, dropped: usize },
-    Stopped,
+    Stopped { dropped: usize },
 }
 
 /// Hears how many rows each batch wrote, once the batch is in the catalogue,
@@ -85,7 +85,7 @@ pub(super) fn sync_walk_in(
     let configured: Vec<&str> = defs.iter().map(|def| def.id.as_str()).collect();
     let dropped = db::drop_unconfigured_libraries(db, &configured)?;
     if dropped > 0 && after_batch(dropped).is_break() {
-        return Ok(Walked::Stopped);
+        return Ok(Walked::Stopped { dropped });
     }
     let held = HeldEpisodes::read(db);
     let mut write = |batch: &ScanBatch<'_>| {
@@ -97,8 +97,8 @@ pub(super) fn sync_walk_in(
     };
     let mut data = match scan_in_batches(defs, size, &mut write) {
         Ok(data) => data,
-        Err(Halt::Stopped) => return Ok(Walked::Stopped),
-        Err(Halt::Failed(error)) => return Err(error),
+        Err(Halt::Stopped) => return Ok(Walked::Stopped { dropped }),
+        Err(Halt::Failed(error)) => return Err(after_removing(dropped, error)),
     };
     if data.items.is_empty() {
         return Ok(Walked::Empty {
@@ -107,8 +107,18 @@ pub(super) fn sync_walk_in(
         });
     }
     held.note_changed(&mut data);
-    db::finish_sync(db, &data.libraries, &data.items)?;
+    db::finish_sync(db, &data.libraries, &data.items, &held.settled_by(&data))
+        .map_err(|error| after_removing(dropped, error))?;
     Ok(Walked::Synced(data))
+}
+
+fn after_removing(dropped: usize, error: anyhow::Error) -> anyhow::Error {
+    if dropped == 0 {
+        return error;
+    }
+    error.context(format!(
+        "the walk failed after it removed the libraries that left the configuration: {dropped}"
+    ))
 }
 
 /// Write the built-in demo catalogue, for a server with no library to walk.

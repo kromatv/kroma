@@ -42,6 +42,11 @@ impl HeldEpisodes {
             .map(|show| show.id.clone())
             .collect();
     }
+
+    pub(super) fn settled_by(&self, data: &ScanData) -> HashSet<String> {
+        let taken = self.0.iter().flat_map(|held| held.unsettled.iter());
+        taken.chain(&data.changed_shows).cloned().collect()
+    }
 }
 
 fn read_held(pool: &crate::db::Pool) -> anyhow::Result<Held> {

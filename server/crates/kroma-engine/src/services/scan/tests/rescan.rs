@@ -25,7 +25,7 @@ fn item_count(state: &crate::state::SharedState) -> i64 {
 fn applied(scanned: Scanned) -> ScanData {
     match scanned {
         Scanned::Applied(data) => data,
-        Scanned::MountOffline { .. } | Scanned::Cancelled => {
+        Scanned::MountOffline { .. } | Scanned::Cancelled { .. } => {
             panic!("expected the scan to be applied")
         }
     }
@@ -123,7 +123,7 @@ fn a_scan_announces_its_start_and_its_counts() {
     // The UI shows a progress state off these, so a scan that never
     // announces completion leaves a spinner running forever.
     let state = test_state();
-    let data = applied(scan_and_publish(&state, &|| false).unwrap());
+    let data = applied(scan_and_publish(&WalkTurn::wait(), &state, &|| false).unwrap());
     assert!(
         !data.items.is_empty(),
         "demo mode, so there is something to report"
@@ -165,7 +165,7 @@ fn a_scan_announces_the_titles_it_wrote_before_it_completes() {
     let _root = library_with_one_film(&state, "announce-first");
     let mut events = state.events.subscribe();
 
-    applied(scan_and_publish(&state, &|| false).unwrap());
+    applied(scan_and_publish(&WalkTurn::wait(), &state, &|| false).unwrap());
 
     assert_eq!(
         announced(&mut events),
@@ -182,10 +182,10 @@ fn a_scan_announces_the_titles_it_wrote_before_it_completes() {
 fn a_rescan_of_an_unchanged_library_announces_only_its_end() {
     let state = test_state();
     let _root = library_with_one_film(&state, "announce-unchanged");
-    applied(scan_and_publish(&state, &|| false).unwrap());
+    applied(scan_and_publish(&WalkTurn::wait(), &state, &|| false).unwrap());
     let mut events = state.events.subscribe();
 
-    applied(scan_and_publish(&state, &|| false).unwrap());
+    applied(scan_and_publish(&WalkTurn::wait(), &state, &|| false).unwrap());
 
     assert_eq!(
         announced(&mut events),
@@ -199,9 +199,9 @@ fn a_scan_cancelled_after_a_batch_keeps_the_batch_and_reports_what_is_stored() {
     let _root = library_with_one_film(&state, "announce-cancelled");
     let mut events = state.events.subscribe();
 
-    let scanned = scan_and_publish(&state, &|| true).unwrap();
+    let scanned = scan_and_publish(&WalkTurn::wait(), &state, &|| true).unwrap();
 
-    assert!(matches!(scanned, Scanned::Cancelled));
+    assert!(matches!(scanned, Scanned::Cancelled { dropped: 0 }));
     assert_eq!(item_count(&state), 1);
     assert_eq!(
         announced(&mut events),
@@ -239,7 +239,7 @@ fn a_scan_whose_later_batch_fails_announces_the_batches_it_wrote_and_its_end() {
         .unwrap();
     let mut events = state.events.subscribe();
 
-    let failed = scan_and_publish(&state, &|| false);
+    let failed = scan_and_publish(&WalkTurn::wait(), &state, &|| false);
 
     assert!(failed.is_err());
     assert_eq!(

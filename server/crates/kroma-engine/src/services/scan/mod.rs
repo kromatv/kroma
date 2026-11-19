@@ -115,7 +115,9 @@ pub enum Scanned {
     MountOffline {
         dropped: usize,
     },
-    Cancelled,
+    Cancelled {
+        dropped: usize,
+    },
 }
 
 /// Phase-1 rescan + DB sync, demo-seeding only in demo mode (no libraries
@@ -130,7 +132,8 @@ pub fn rescan_sync(
     state: &crate::state::SharedState,
     after_batch: &mut AfterBatch<'_>,
 ) -> anyhow::Result<Scanned> {
-    let defs = crate::services::settings::library_defs(&state.settings, &state.config)?;
+    let defs = crate::services::settings::library_defs(&state.settings, &state.config)
+        .map_err(|_| crate::services::settings::unreadable_list_failure(&state.db))?;
     // Seed demo content only when nothing is configured (true demo mode). A
     // configured library that momentarily reads empty NAS/SMB unmount, slow
     // mount, permission glitch must NOT be clobbered with demo movies, and
@@ -141,7 +144,7 @@ pub fn rescan_sync(
     }
     match sync_walk(turn, &state.db, &defs, after_batch)? {
         Walked::Synced(data) => Ok(Scanned::Applied(data)),
-        Walked::Stopped => Ok(Scanned::Cancelled),
+        Walked::Stopped { dropped } => Ok(Scanned::Cancelled { dropped }),
         Walked::Empty {
             unreadable,
             dropped,
@@ -149,8 +152,8 @@ pub fn rescan_sync(
             warn!(
                 libraries = defs.len(),
                 unreadable,
-                dropped,
-                "configured libraries produced no items; keeping the stored index (mount offline?)"
+                libraries_removed = dropped,
+                "configured libraries produced no items; kept their stored titles and pruned none (mount offline?)"
             );
             Ok(Scanned::MountOffline { dropped })
         }
@@ -160,18 +163,19 @@ pub fn rescan_sync(
 /// Publish "scan started", run phase-1 [`rescan_sync`], then announce the
 /// catalog change with the resulting counts. Blocking; returns the synced data.
 /// `cancelled` is asked after each batch the walk writes. A scan that fails
-/// still announces what it wrote and its end.
+/// still announces what it wrote and its end. The caller keeps `turn` for what
+/// it does with the result before another walk may start.
 pub fn scan_and_publish(
+    turn: &WalkTurn,
     state: &crate::state::SharedState,
     cancelled: &dyn Fn() -> bool,
 ) -> anyhow::Result<Scanned> {
     use crate::infra::events::ServerEvent;
-    let turn = WalkTurn::wait();
     state.events.publish(ServerEvent::ScanStarted);
     crate::services::activity::scan_started(&state.activity);
 
     let mut announcer = BatchAnnouncer::new(&state.events);
-    let scanned = rescan_sync(&turn, state, &mut |rows| {
+    let scanned = rescan_sync(turn, state, &mut |rows| {
         announcer.wrote(rows);
         if cancelled() {
             ControlFlow::Break(())

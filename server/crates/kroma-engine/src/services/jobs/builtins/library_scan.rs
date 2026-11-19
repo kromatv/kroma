@@ -3,7 +3,7 @@
 //! /api/scan`, shared via `services::scan`.
 
 use super::prelude::*;
-use crate::services::scan::Scanned;
+use crate::services::scan::{Scanned, WalkTurn};
 
 // Manual + debounced library-watch: rescan the media folders for changes.
 pub(super) const SPEC: Builtin = Builtin {
@@ -17,14 +17,16 @@ pub(super) const SPEC: Builtin = Builtin {
 pub(super) fn run(ctx: &JobContext) -> Result<()> {
     let state = &ctx.state;
     ctx.info("scanning libraries (walk + sync)…");
-    let data = match crate::services::scan::scan_and_publish(state, &|| ctx.cancelled())? {
+    let turn = WalkTurn::wait();
+    let cancelled = || ctx.cancelled();
+    let data = match crate::services::scan::scan_and_publish(&turn, state, &cancelled)? {
         Scanned::Applied(data) => data,
         Scanned::MountOffline { dropped } => {
             ctx.info(kept_on_an_outage(dropped));
             return Ok(());
         }
-        Scanned::Cancelled => {
-            ctx.info("scan cancelled; kept the titles it had written and pruned none");
+        Scanned::Cancelled { dropped } => {
+            ctx.info(kept_on_a_cancel(dropped));
             return Ok(());
         }
     };
@@ -48,10 +50,22 @@ fn kept_on_an_outage(dropped: usize) -> String {
     if dropped == 0 {
         return "libraries produced no items; kept the stored index (mount offline?)".into();
     }
-    format!(
-        "libraries produced no items; kept their stored titles (mount offline?). \
-         Removed first, because they left the configuration: {dropped}"
+    removed_first(
+        "libraries produced no items; kept their stored titles (mount offline?)",
+        dropped,
     )
+}
+
+fn kept_on_a_cancel(dropped: usize) -> String {
+    let kept = "scan cancelled; kept the titles it had written and pruned none";
+    if dropped == 0 {
+        return kept.into();
+    }
+    removed_first(kept, dropped)
+}
+
+fn removed_first(kept: &str, dropped: usize) -> String {
+    format!("{kept}. Removed first, because they left the configuration: {dropped}")
 }
 
 #[cfg(test)]
@@ -181,20 +195,53 @@ mod tests {
     }
 
     #[test]
+    fn a_scan_cancelled_after_it_removed_a_library_says_how_many_it_removed() {
+        let state = test_state();
+        let kept = kroma_testing::temp_dir("job-cancel-kept");
+        let gone = kroma_testing::temp_dir("job-cancel-gone");
+        std::fs::write(kept.path().join("Heat (1995).mkv"), b"x").unwrap();
+        std::fs::write(gone.path().join("Ran (1985).mkv"), b"x").unwrap();
+        crate::services::settings::set_library_defs(
+            &state.settings,
+            &state.db,
+            &[
+                library("lib-1", kept.path()),
+                library("lib-gone", gone.path()),
+            ],
+        );
+        crate::services::scan::rescan_sync(
+            &crate::services::scan::WalkTurn::wait(),
+            &state,
+            &mut crate::services::scan::uninterrupted,
+        )
+        .unwrap();
+        library_at(&state, kept.path());
+        let handle = Arc::new(RunHandle::new("run-5".into(), "library.scan".into()));
+        handle.request_cancel();
+
+        run(&JobContext::from_handle(state.clone(), handle)).unwrap();
+
+        let lines = log_lines(&state, "run-5");
+        assert_eq!(crate::db::counts(&state.db).unwrap(), (1, 1, 0));
+        assert!(
+            lines
+                .iter()
+                .any(|l| l.to_lowercase().contains("removed") && l.contains('1')),
+            "{lines:?}"
+        );
+    }
+
+    #[test]
     fn a_scan_that_meets_a_saved_list_it_cannot_read_fails_and_says_so() {
         let state = test_state();
-        state.settings.set_patch(
-            &state.db,
-            std::collections::BTreeMap::from([(
-                "libraries".to_string(),
-                serde_json::json!([{ "name": "Films" }]),
-            )]),
-        );
+        let unreadable = serde_json::json!([{ "name": "Films" }]);
+        crate::db::settings_set(&state.db, "libraries", &unreadable).unwrap();
+        state.settings.reload(&state.db);
 
         let failed = run(&JobContext::for_test(state.clone()));
 
         let message = failed.unwrap_err().to_string();
-        assert!(message.contains("cannot be read"), "{message}");
+        assert!(message.contains("cannot read"), "{message}");
         let lines = log_lines(&state, "test-run");
         assert!(
             !lines.iter().any(|l| l.contains("kept the stored index")),

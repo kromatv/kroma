@@ -1,15 +1,9 @@
-use std::collections::BTreeMap;
-
 use super::*;
 
 fn save_a_list_that_does_not_read(pool: &db::Pool, settings: &services::settings::Settings) {
-    settings.set_patch(
-        pool,
-        BTreeMap::from([(
-            "libraries".to_string(),
-            serde_json::json!([{ "name": "Films" }]),
-        )]),
-    );
+    let unreadable = serde_json::json!([{ "name": "Films" }]);
+    db::settings_set(pool, "libraries", &unreadable).unwrap();
+    settings.reload(pool);
 }
 
 #[test]

@@ -9,6 +9,7 @@ use serde_json::Value;
 use crate::db::Pool;
 
 use super::keys::defaults;
+use super::library_list::LIBRARIES_KEY;
 
 /// Shared, cheap-to-clone handle to the live settings map.
 #[derive(Clone)]
@@ -17,13 +18,14 @@ pub struct Settings {
 }
 
 struct Live {
+    pool: Pool,
     values: BTreeMap<String, Value>,
     unread: Unread,
 }
 
 enum Unread {
-    Keys(BTreeSet<String>),
-    AllBut(BTreeSet<String>),
+    Rows(BTreeSet<String>),
+    Table,
 }
 
 impl Live {
@@ -32,31 +34,50 @@ impl Live {
         let unread = match crate::db::settings_all(pool) {
             Ok(stored) => {
                 values.extend(stored.values);
-                Unread::Keys(stored.unreadable.into_iter().collect())
+                Unread::Rows(stored.unreadable.into_iter().collect())
             }
-            Err(_) => Unread::AllBut(BTreeSet::new()),
+            Err(_) => Unread::Table,
         };
-        Live { values, unread }
+        Live {
+            pool: pool.clone(),
+            values,
+            unread,
+        }
     }
 
-    fn put(&mut self, key: &str, value: Value) {
-        match &mut self.unread {
-            Unread::Keys(unread) => {
-                unread.remove(key);
-            }
-            Unread::AllBut(known) => {
-                known.insert(key.to_string());
-            }
+    fn read_again(&mut self) {
+        let again = Live::read(&self.pool);
+        if !matches!(again.unread, Unread::Table) {
+            *self = again;
+        }
+    }
+
+    fn put(&mut self, key: &str, value: Value, persisted: bool) {
+        if let (true, Unread::Rows(unread)) = (persisted, &mut self.unread) {
+            unread.remove(key);
         }
         self.values.insert(key.to_string(), value);
     }
 
-    fn could_not_read(&self, key: &str) -> bool {
-        match &self.unread {
-            Unread::Keys(unread) => unread.contains(key),
-            Unread::AllBut(known) => !known.contains(key),
-        }
+    fn value(&self, key: &str) -> Value {
+        self.values
+            .get(key)
+            .cloned()
+            .or_else(|| defaults().get(key).cloned())
+            .unwrap_or(Value::Null)
     }
+
+    fn stored(&self, key: &str) -> Option<Value> {
+        let unread = match &self.unread {
+            Unread::Rows(unread) => unread.contains(key),
+            Unread::Table => true,
+        };
+        (!unread).then(|| self.value(key))
+    }
+}
+
+fn admits(pool: &Pool, key: &str, value: &Value) -> bool {
+    key != LIBRARIES_KEY || matches!(super::refusal(pool, value), Ok(None))
 }
 
 impl Settings {
@@ -73,24 +94,32 @@ impl Settings {
         *self.inner.write().unwrap() = Live::read(pool);
     }
 
-    /// Raw value for `key`, falling back to the built-in default.
-    pub fn get(&self, key: &str) -> Value {
-        self.inner
-            .read()
-            .unwrap()
-            .values
-            .get(key)
-            .cloned()
-            .or_else(|| defaults().get(key).cloned())
-            .unwrap_or(Value::Null)
+    fn live(&self) -> std::sync::RwLockReadGuard<'_, Live> {
+        let live = self.inner.read().unwrap();
+        if !matches!(live.unread, Unread::Table) {
+            return live;
+        }
+        drop(live);
+        let mut faulted = self.inner.write().unwrap();
+        if matches!(faulted.unread, Unread::Table) {
+            faulted.read_again();
+        }
+        drop(faulted);
+        self.inner.read().unwrap()
     }
 
-    /// Whether this store failed to read what is stored under `key`: its row
-    /// is not JSON, or the table did not read at all. What [`Self::get`]
-    /// answers is then a default, and not known to be what was saved. A value
-    /// written through this store is read again.
-    pub fn could_not_read(&self, key: &str) -> bool {
-        self.inner.read().unwrap().could_not_read(key)
+    /// Raw value for `key`, falling back to the built-in default.
+    pub fn get(&self, key: &str) -> Value {
+        self.live().value(key)
+    }
+
+    /// What [`Self::get`] answers for `key`, or `None` when this store failed
+    /// to read what is stored under it: its row is not JSON, or the table did
+    /// not read. `get` then answers a default that is not known to be what was
+    /// saved. A table that did not read is read again each time a key is
+    /// asked for, and a row is read again once a write of it persisted.
+    pub fn stored(&self, key: &str) -> Option<Value> {
+        self.live().stored(key)
     }
 
     pub fn get_bool(&self, key: &str, fallback: bool) -> bool {
@@ -117,23 +146,26 @@ impl Settings {
     /// value and the next start does not: what that costs is the caller's to
     /// decide.
     pub fn set_internal(&self, pool: &Pool, key: &str, value: Value) -> anyhow::Result<()> {
+        anyhow::ensure!(admits(pool, key, &value), "`{key}` refuses this value");
         let written = crate::db::settings_set(pool, key, &value);
-        self.inner.write().unwrap().put(key, value);
+        self.inner.write().unwrap().put(key, value, written.is_ok());
         written
     }
 
     /// Apply a patch in-memory and persist it. Keys absent from [`defaults`] are
-    /// silently dropped; returns the keys actually written.
+    /// silently dropped; returns the keys actually written. So is a `libraries`
+    /// value [`super::refusal`] refuses: no writer of a whole value may leave
+    /// out a library the index holds.
     pub fn set_patch(&self, pool: &Pool, patch: BTreeMap<String, Value>) -> Vec<String> {
         let known = defaults();
         let mut written = Vec::new();
         let mut guard = self.inner.write().unwrap();
         for (k, v) in patch {
-            if !known.contains_key(&k) {
+            if !known.contains_key(&k) || !admits(pool, &k, &v) {
                 continue;
             }
-            let _ = crate::db::settings_set(pool, &k, &v);
-            guard.put(&k, v);
+            let persisted = crate::db::settings_set(pool, &k, &v).is_ok();
+            guard.put(&k, v, persisted);
             written.push(k);
         }
         written
@@ -147,15 +179,22 @@ impl Settings {
             return;
         }
         let mut guard = self.inner.write().unwrap();
-        let current = guard
-            .values
-            .get(key)
-            .cloned()
-            .or_else(|| defaults().get(key).cloned())
-            .unwrap_or(Value::Null);
-        let next = f(current);
-        let _ = crate::db::settings_set(pool, key, &next);
-        guard.put(key, next);
+        let next = f(guard.value(key));
+        if !admits(pool, key, &next) {
+            return;
+        }
+        let persisted = crate::db::settings_set(pool, key, &next).is_ok();
+        guard.put(key, next, persisted);
+    }
+}
+
+impl Settings {
+    pub(super) fn save_library_list(&self, pool: &Pool, list: Value) {
+        let persisted = crate::db::settings_set(pool, LIBRARIES_KEY, &list).is_ok();
+        self.inner
+            .write()
+            .unwrap()
+            .put(LIBRARIES_KEY, list, persisted);
     }
 }
 

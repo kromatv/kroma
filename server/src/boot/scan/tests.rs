@@ -145,7 +145,10 @@ fn a_startup_walk_that_is_stopped_keeps_the_batch_it_wrote() {
     })
     .unwrap();
 
-    assert!(matches!(scanned, services::scan::Scanned::Cancelled));
+    assert!(matches!(
+        scanned,
+        services::scan::Scanned::Cancelled { dropped: 0 }
+    ));
     assert_eq!(stored_items(&pool), 1);
 }
 

@@ -191,17 +191,50 @@ async fn a_scan_is_asked_for_once_after_an_import_added_sources() {
     assert_eq!(scans_asked_for(&mut events), 1);
 }
 
+fn a_saved_list_that_cannot_be_read(state: &crate::state::SharedState) -> serde_json::Value {
+    let unreadable = json!([{ "name": "Films" }]);
+    db::settings_set(&state.db, "libraries", &unreadable).unwrap();
+    state.settings.reload(&state.db);
+    unreadable
+}
+
 #[tokio::test]
 async fn an_import_makes_no_source_while_the_saved_library_list_cannot_be_read() {
     let disk = this_machine(&["films"]);
     let state = importing_from(&household());
-    let unreadable = json!([{ "name": "Films" }]);
-    let saved = std::collections::BTreeMap::from([("libraries".to_string(), unreadable.clone())]);
-    state.settings.set_patch(&state.db, saved);
+    let unreadable = a_saved_list_that_cannot_be_read(&state);
 
     let ran = import(&state, &Core, &films_at(&at(&disk, "films")));
 
     assert_eq!(ran.import.status, Status::Failed);
     assert_eq!(state.settings.get("libraries"), unreadable);
     assert!(became(&state).is_empty());
+}
+
+#[tokio::test]
+async fn an_import_that_meets_a_list_it_cannot_read_leaves_nothing_half_done() {
+    let disk = this_machine(&["films"]);
+    let state = importing_from(&household());
+    a_saved_list_that_cannot_be_read(&state);
+    let mut selection = films_at(&at(&disk, "films"));
+    selection.users = vec![KeptUser {
+        id: "42".into(),
+        account: AccountChoice::Proposed,
+    }];
+    let mut events = state.events.subscribe();
+
+    let ran = import(&state, &Core, &selection);
+
+    let server_id = db::imports::server_key(IMPORTER, "srv");
+    let said = ran.result.unwrap_err().to_string();
+    assert!(said.contains("cannot read"), "{said}");
+    assert_eq!(ran.import.status, Status::Failed);
+    assert!(db::imports::kept_folders(&state.db, &server_id)
+        .unwrap()
+        .is_empty());
+    assert_eq!(db::admin_users(&state.db).unwrap().len(), 0);
+    assert!(records(&state).is_empty());
+    assert_eq!(scans_asked_for(&mut events), 0);
+    assert_eq!(ran.import.report.libraries, libraries(0, 0));
+    assert_eq!(ran.import.failure.and_then(|failure| failure.message), None);
 }

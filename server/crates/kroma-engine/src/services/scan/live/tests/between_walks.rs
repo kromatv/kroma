@@ -22,7 +22,9 @@ fn library_named(id: &str, root: &Path) -> LibraryDef {
 fn synced(walked: Walked) -> ScanData {
     match walked {
         Walked::Synced(data) => data,
-        Walked::Empty { .. } | Walked::Stopped => panic!("expected the walk to read every folder"),
+        Walked::Empty { .. } | Walked::Stopped { .. } => {
+            panic!("expected the walk to read every folder")
+        }
     }
 }
 
@@ -135,7 +137,7 @@ fn a_walk_stopped_before_its_first_batch_has_already_removed_what_is_no_longer_c
     )
     .unwrap();
 
-    assert!(matches!(walked, Walked::Stopped));
+    assert!(matches!(walked, Walked::Stopped { .. }));
     assert_eq!(asked, 1);
     assert_eq!(titles(&state), ["Alien", "Dune", "Heat"]);
 }
@@ -162,7 +164,7 @@ fn a_show_whose_new_episode_a_stopped_walk_wrote_is_still_changed_for_the_next_w
     let ended = synced(sync_walk(&WalkTurn::wait(), &state.db, &defs, &mut uninterrupted).unwrap());
     let after = synced(sync_walk(&WalkTurn::wait(), &state.db, &defs, &mut uninterrupted).unwrap());
 
-    assert!(matches!(stopped, Walked::Stopped));
+    assert!(matches!(stopped, Walked::Stopped { .. }));
     assert_eq!(ended.changed_shows.len(), 1);
     assert!(after.changed_shows.is_empty());
 }
@@ -229,4 +231,38 @@ fn a_walk_that_waited_for_its_turn_walks_the_libraries_configured_when_it_comes(
     waiter.unwrap().join().unwrap();
 
     assert_eq!(titles(&state), ["Alien", "Dune", "Heat", "Ran"]);
+}
+
+#[test]
+fn a_walk_that_fails_after_it_removed_a_library_says_how_many_it_removed() {
+    let state = test_state();
+    let kept = three_films("fails-kept");
+    let dropped = kroma_testing::temp_dir("live-fails-dropped");
+    std::fs::write(dropped.path().join("Ran (1985).mkv"), b"x").unwrap();
+    let both = vec![
+        library_named("lib-1", kept.path()),
+        library_named("lib-gone", dropped.path()),
+    ];
+    sync_walk(&WalkTurn::wait(), &state.db, &both, &mut uninterrupted).unwrap();
+    std::fs::write(kept.path().join("Tron (1982).mkv"), b"x").unwrap();
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute_batch(
+            "CREATE TRIGGER no_file_insert BEFORE INSERT ON files \
+             BEGIN SELECT RAISE(ABORT, 'refused'); END",
+        )
+        .unwrap();
+
+    let failed = sync_walk(&WalkTurn::wait(), &state.db, &both[..1], &mut uninterrupted);
+
+    let said = failed.err().map(|error| format!("{error:#}"));
+    assert!(
+        said.as_deref()
+            .is_some_and(|said| said.contains("left the configuration: 1")
+                && said.contains("refused")),
+        "{said:?}"
+    );
+    assert_eq!(titles(&state), ["Alien", "Dune", "Heat"]);
 }

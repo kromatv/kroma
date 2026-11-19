@@ -1,15 +1,11 @@
-use std::collections::BTreeMap;
-
 use serde_json::json;
 
 use super::*;
 
 fn a_saved_list_that_does_not_read(state: &SharedState) -> Value {
     let saved = json!([{ "name": "Films" }]);
-    state.settings.set_patch(
-        &state.db,
-        BTreeMap::from([("libraries".to_string(), saved.clone())]),
-    );
+    db::settings_set(&state.db, "libraries", &saved).unwrap();
+    state.settings.reload(&state.db);
     saved
 }
 
@@ -37,9 +33,10 @@ async fn a_saved_list_that_cannot_be_read_is_reported_to_the_libraries_page() {
         .await
         .unwrap();
     let answer: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(answer["code"], "error.libraryListUnreadable");
     assert!(answer["error"]
         .as_str()
-        .is_some_and(|error| error.contains("cannot be read")));
+        .is_some_and(|error| error.contains("cannot read")));
 }
 
 #[tokio::test]

@@ -87,6 +87,93 @@ fn a_scan_that_loses_an_episode_moves_its_show_too() {
     assert_eq!(again.changed_shows.len(), 1);
 }
 
+fn scanned(state: &SharedState) -> ScanData {
+    match rescan_sync(&WalkTurn::wait(), state, &mut uninterrupted).unwrap() {
+        Scanned::Applied(data) => data,
+        _ => panic!("the scan was not applied"),
+    }
+}
+
+#[test]
+fn shows_held_twice_are_reported_by_the_next_walk_and_then_forgotten() {
+    let state = test_state();
+    let root = tmp_root("held-twice");
+    episode(root.path(), "Breaking Bad", 1, 1);
+    episode(root.path(), "The Office", 1, 1);
+    set_library_defs(
+        &state.settings,
+        &state.db,
+        &[configured_library(root.path())],
+    );
+    let first = scanned(&state);
+    super::super::hold_changed_shows(&state, &first).unwrap();
+    super::super::hold_changed_shows(&state, &first).unwrap();
+    let held = crate::db::unsettled_shows(&state.db).unwrap();
+
+    let second = scanned(&state);
+    super::super::hold_changed_shows(&state, &second).unwrap();
+    let third = scanned(&state);
+    let fourth = scanned(&state);
+
+    assert_eq!(held.len(), 2);
+    assert_eq!(second.changed_shows, held);
+    assert_eq!(third.changed_shows, held);
+    assert!(fourth.changed_shows.is_empty());
+    assert!(crate::db::unsettled_shows(&state.db).unwrap().is_empty());
+}
+
+#[test]
+fn a_held_show_that_left_the_folder_is_forgotten_by_the_next_walk() {
+    let state = test_state();
+    let root = tmp_root("held-gone");
+    episode(root.path(), "Breaking Bad", 1, 1);
+    std::fs::write(root.path().join("Heat (1995).mkv"), b"x").unwrap();
+    set_library_defs(
+        &state.settings,
+        &state.db,
+        &[configured_library(root.path())],
+    );
+    let first = scanned(&state);
+    super::super::hold_changed_shows(&state, &first).unwrap();
+    std::fs::remove_dir_all(root.path().join("Breaking Bad")).unwrap();
+
+    let second = scanned(&state);
+
+    assert_eq!(first.changed_shows.len(), 1);
+    assert!(second.changed_shows.is_empty());
+    assert!(crate::db::unsettled_shows(&state.db).unwrap().is_empty());
+}
+
+#[test]
+fn shows_held_while_another_walk_runs_reach_a_later_walk() {
+    let state = test_state();
+    let root = tmp_root("held-during");
+    episode(root.path(), "Breaking Bad", 1, 1);
+    set_library_defs(
+        &state.settings,
+        &state.db,
+        &[configured_library(root.path())],
+    );
+    let first = scanned(&state);
+    let mut held_late = false;
+
+    let second = rescan_sync(&WalkTurn::wait(), &state, &mut |_| {
+        if !held_late {
+            super::super::hold_changed_shows(&state, &first).unwrap();
+            held_late = true;
+        }
+        std::ops::ControlFlow::Continue(())
+    })
+    .unwrap();
+    let third = scanned(&state);
+
+    let reported = match second {
+        Scanned::Applied(data) => data.changed_shows.len(),
+        _ => panic!("the scan was not applied"),
+    } + third.changed_shows.len();
+    assert_eq!((first.changed_shows.len(), reported), (1, 1));
+}
+
 #[test]
 fn a_first_scan_moves_every_show_it_finds() {
     let state = test_state();

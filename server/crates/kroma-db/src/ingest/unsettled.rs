@@ -35,12 +35,25 @@ pub(super) fn note_unsettled(tx: &rusqlite::Transaction, shows: &BTreeSet<&str>)
     if unsettled.len() == known {
         return Ok(());
     }
+    store(tx, &unsettled)
+}
+
+pub(super) fn settle_shows(tx: &rusqlite::Transaction, settled: &HashSet<String>) -> Result<()> {
+    let mut unsettled = stored(tx)?;
+    unsettled.retain(|show| !settled.contains(show));
+    if unsettled.is_empty() {
+        return forget_unsettled(tx);
+    }
+    store(tx, &unsettled)
+}
+
+fn store(tx: &rusqlite::Transaction, unsettled: &BTreeSet<String>) -> Result<()> {
     tx.execute(
         "INSERT INTO settings (key,value,updated_at) VALUES (?1,?2,?3) \
          ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=excluded.updated_at",
         params![
             UNSETTLED_SHOWS_KEY,
-            serde_json::to_string(&unsettled)?,
+            serde_json::to_string(unsettled)?,
             now_or_blank()
         ],
     )?;

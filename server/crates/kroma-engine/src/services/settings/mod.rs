@@ -23,6 +23,7 @@ pub const TMDB_LANGUAGE_AUTO: &str = "Auto";
 
 mod accessors;
 mod email_delivery;
+mod kept_libraries;
 mod keys;
 mod library_list;
 mod llm;
@@ -33,8 +34,14 @@ mod tmdb_language;
 
 pub use accessors::*;
 pub use email_delivery::*;
+pub use kept_libraries::{
+    held_libraries, refusal, unreadable_list_failure, unreadable_list_notice, HeldLibrary,
+    LibraryNotice, Refusal,
+};
 pub use keys::reach_of_setting;
-pub use library_list::{library_list, stored_library_defs, UnreadableLibraryList};
+pub use library_list::{
+    library_list, set_library_defs, stored_library_defs, UnreadableLibraryList,
+};
 pub use llm::*;
 pub use schema::*;
 pub use sign_in::*;

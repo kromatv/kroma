@@ -10,7 +10,12 @@ pub use kroma_engine::json_error;
 /// Localised JSON error: resolves message `key` in `locale` against the shared
 /// catalogs, and carries the key itself as `code`.
 pub fn lerr(locale: &str, status: StatusCode, key: &str) -> Response {
-    let message = crate::i18n::t(locale, key, &[]);
+    lerr_with(locale, status, key, &[])
+}
+
+/// [`lerr`] for a message with placeholders, which `vars` fill.
+pub fn lerr_with(locale: &str, status: StatusCode, key: &str, vars: &[(&str, &str)]) -> Response {
+    let message = crate::i18n::t(locale, key, vars);
     (
         status,
         Json(serde_json::json!({ "error": message, "code": key })),

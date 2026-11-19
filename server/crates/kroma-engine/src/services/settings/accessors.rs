@@ -259,12 +259,6 @@ fn demo_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
     defs
 }
 
-pub fn set_library_defs(settings: &Settings, pool: &Pool, defs: &[LibraryDef]) {
-    let mut patch = BTreeMap::new();
-    patch.insert("libraries".to_string(), json!(defs));
-    settings.set_patch(pool, patch);
-}
-
 /// Every folder of every library. None when the saved list cannot be read.
 pub fn all_folders(settings: &Settings, config: &crate::config::Config) -> Vec<PathBuf> {
     library_defs(settings, config)
@@ -596,7 +590,7 @@ mod tests {
             folders: vec!["/a".to_string(), "/b".to_string()],
             auto_scan: false,
         }];
-        set_library_defs(&s, &pool, &defs);
+        super::super::set_library_defs(&s, &pool, &defs);
         let got = library_defs(&s, &cfg).unwrap();
         assert_eq!(got.len(), 1);
         assert_eq!(got[0].name, "Cinema");

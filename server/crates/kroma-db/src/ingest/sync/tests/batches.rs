@@ -173,7 +173,7 @@ fn a_stored_library_keeps_its_row_until_the_walk_ends() {
     assert_eq!(films_so_far, 0);
     assert_eq!(stored_kind(&p, "lib"), "mixed");
 
-    finish_sync(&p, &[lib("lib")], &[dune()]).unwrap();
+    finish_sync(&p, &[lib("lib")], &[dune()], &HashSet::new()).unwrap();
 
     assert_eq!(stored_kind(&p, "lib"), "movies");
 }
@@ -192,7 +192,7 @@ fn finishing_a_walk_removes_the_files_titles_and_libraries_it_did_not_find() {
     .unwrap();
     write_batch(&p, &lib("lib"), &[dune()]).unwrap();
 
-    finish_sync(&p, &[lib("lib")], &[dune()]).unwrap();
+    finish_sync(&p, &[lib("lib")], &[dune()], &HashSet::new()).unwrap();
 
     assert_eq!(crate::counts(&p).unwrap(), (1, 1, 0));
     assert!(crate::get_item(&p, "m1").unwrap().is_some());
