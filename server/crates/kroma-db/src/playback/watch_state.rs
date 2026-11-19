@@ -12,10 +12,7 @@ use crate::Pool;
 pub fn mark_watched(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
     write_watched(&conn, user_id, item_id, &now_or_blank())?;
-    conn.execute(
-        "DELETE FROM progress WHERE user_id = ?1 AND item_id = ?2",
-        params![user_id, item_id],
-    )?;
+    super::remove_progress(&conn, user_id, item_id)?;
     Ok(())
 }
 

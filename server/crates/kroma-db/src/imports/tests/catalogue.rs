@@ -46,6 +46,9 @@ fn named(id: &str, title: &str, year: Option<u32>) -> Named {
         id: id.into(),
         title: title.into(),
         year,
+        tmdb: None,
+        imdb: None,
+        tvdb: None,
     }
 }
 
@@ -160,21 +163,41 @@ fn an_episode_is_found_by_its_numbers_in_a_file_of_one_episode_or_of_several() {
 }
 
 #[test]
-fn the_films_of_a_year_and_every_show_are_listed_by_name() {
+fn the_films_of_a_year_and_every_show_are_listed_by_name_with_the_ids_this_server_knows() {
     let pool = a_catalogue();
+    let ronin = Named {
+        tmdb: Some(8195),
+        imdb: Some("tt0122690".into()),
+        ..named("ronin", "Ronin", Some(1998))
+    };
+    let dark = Named {
+        tmdb: Some(70523),
+        imdb: Some("tt5753856".into()),
+        tvdb: Some(334_824),
+        ..named("dark", "Dark", Some(2017))
+    };
 
     let films = films_of_year(&pool, 1998).unwrap();
     let shows = shows_by_name(&pool).unwrap();
 
+    assert_eq!(films, [named("clip", "Holiday", Some(1998)), ronin]);
+    assert_eq!(shows, [dark.clone(), named("fargo", "Fargo", None)]);
     assert_eq!(
-        films,
-        [
-            named("clip", "Holiday", Some(1998)),
-            named("ronin", "Ronin", Some(1998))
-        ]
+        dark.ids(),
+        CatalogueIds {
+            tmdb: Some(70523),
+            imdb: Some("tt5753856"),
+            tvdb: Some(334_824),
+        }
     );
-    assert_eq!(
-        shows,
-        [named("dark", "Dark", Some(2017)), named("fargo", "Fargo", None)]
-    );
+}
+
+#[test]
+fn an_id_stored_as_nothing_is_no_id() {
+    let blank = Named {
+        imdb: Some(String::new()),
+        ..named("heat", "Heat", Some(1995))
+    };
+
+    assert_eq!(blank.ids(), CatalogueIds::default());
 }

@@ -236,3 +236,36 @@ fn scan_root_untitled_movie_gets_placeholder_title() {
     assert_eq!(scan.items.len(), 1);
     assert_eq!(scan.items.values().next().unwrap().title, "Untitled");
 }
+
+#[test]
+fn takes_says_of_each_file_what_a_walk_does_with_it() {
+    let dir = temp_scan_dir();
+    let files = [
+        "Heat (1995)/Heat (1995).mkv",
+        "Heat (1995)/Heat (1995).wmv",
+        "Heat (1995)/poster.jpg",
+        "@eaDir/Ronin (1998).mkv",
+        ".trash/Thief (1981).mkv",
+        "Dark/.extras/Dark S01E01.mkv",
+        "Dark/Season 01/Dark S01E02.MKV",
+        ".Alien (1979).mkv",
+    ];
+    for file in files {
+        let path = dir.path().join(file);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(path, b"x").unwrap();
+    }
+
+    let walked = scan_into("lib", dir.path());
+
+    let written: HashSet<String> = walked
+        .items
+        .values()
+        .flat_map(|item| &item.files)
+        .filter_map(|file| file.rel_path.clone())
+        .collect();
+    for file in files {
+        assert_eq!(takes(Path::new(file)), written.contains(file), "{file}");
+    }
+    assert_eq!(written.len(), 3);
+}

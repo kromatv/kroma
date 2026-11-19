@@ -5,7 +5,7 @@
 //! watched / my-list flags, [`show_progress`] the percent through a show, and
 //! [`up_next`] which episode comes next.
 
-use super::{now_or_blank, params, Pool, Result, Row};
+use super::{now_or_blank, params, Connection, Pool, Result, Row};
 use kroma_domain::ProgressEntry;
 use rusqlite::OptionalExtension;
 
@@ -121,7 +121,15 @@ pub fn list_progress(pool: &Pool, user_id: &str) -> Result<Vec<ProgressEntry>> {
 
 /// Remove a saved position (e.g. finished, or "remove from Continue Watching").
 pub fn delete_progress(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
-    let conn = pool.get()?;
+    remove_progress(&*pool.get()?, user_id, item_id)?;
+    Ok(())
+}
+
+pub(crate) fn remove_progress(
+    conn: &Connection,
+    user_id: &str,
+    item_id: &str,
+) -> rusqlite::Result<()> {
     conn.execute(
         "DELETE FROM progress WHERE user_id = ?1 AND item_id = ?2",
         params![user_id, item_id],

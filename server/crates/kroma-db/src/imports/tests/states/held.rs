@@ -38,7 +38,7 @@ fn a_held_state_shows_on_its_title_as_soon_as_a_scan_writes_its_file() {
     let (pool, ana) = a_film_with_a_library_and_an_account();
     let brought = Watching {
         listed: true,
-        ..watched(LAST_WEEK).with(&stopped(5_025_000, LAST_WEEK))
+        ..watched_and_stopped(5_025_000, LAST_WEEK)
     };
     merge(&pool, &ana, Place::File(HEAT), brought);
 

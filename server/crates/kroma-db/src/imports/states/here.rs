@@ -5,7 +5,9 @@ use kroma_domain::watching::{Resume, Watching};
 use rusqlite::{params, Connection, Row};
 
 use super::Merged;
-use crate::playback::{write_listed, write_progress, write_watched, Stopped};
+use crate::playback::{
+    remove_progress, write_listed, write_progress, write_watched, Stopped,
+};
 use crate::{now_or_blank, Result};
 
 const NEWER_THAN_ANY: i64 = i64::MAX;
@@ -44,19 +46,34 @@ fn held_here(conn: &Connection, account: &str, item: &str) -> rusqlite::Result<W
     conn.query_row(HELD_HERE, params![account, item], row_to_state)
 }
 
-fn write(conn: &Connection, account: &str, item: &str, gain: &Watching) -> rusqlite::Result<()> {
-    if let Some(at) = gain.watched_at {
+struct Title<'a> {
+    account: &'a str,
+    item: &'a str,
+}
+
+fn write_resume(conn: &Connection, title: &Title<'_>, resume: Option<Resume>) -> Result<()> {
+    let Some(resume) = resume else {
+        remove_progress(conn, title.account, title.item)?;
+        return Ok(());
+    };
+    let stopped = Stopped {
+        position_ms: resume.position_ms,
+        duration_ms: resume.duration_ms,
+        updated_at: &kroma_primitives::iso8601_of_secs(resume.at),
+    };
+    write_progress(conn, title.account, title.item, &stopped)?;
+    Ok(())
+}
+
+fn write(conn: &Connection, title: &Title<'_>, here: &Watching, merged: &Watching) -> Result<()> {
+    let (account, item) = (title.account, title.item);
+    if let Some(at) = merged.watched_at.filter(|_| merged.watched_at != here.watched_at) {
         write_watched(conn, account, item, &kroma_primitives::iso8601_of_secs(at))?;
     }
-    if let Some(resume) = gain.resume {
-        let stopped = Stopped {
-            position_ms: resume.position_ms,
-            duration_ms: resume.duration_ms,
-            updated_at: &kroma_primitives::iso8601_of_secs(resume.at),
-        };
-        write_progress(conn, account, item, &stopped)?;
+    if merged.resume != here.resume {
+        write_resume(conn, title, merged.resume)?;
     }
-    if gain.listed {
+    if merged.listed && !here.listed {
         write_listed(conn, account, item, &now_or_blank())?;
     }
     Ok(())
@@ -79,10 +96,11 @@ pub(super) fn merge_into_title(
     if !exists(conn, "items", item)? {
         return Ok(Merged::Gone);
     }
-    let gain = held_here(conn, account, item)?.gain_from(brought);
-    if gain.is_empty() {
+    let here = held_here(conn, account, item)?;
+    let merged = here.merged_with(brought);
+    if merged == here {
         return Ok(Merged::Unchanged);
     }
-    write(conn, account, item, &gain)?;
+    write(conn, &Title { account, item }, &here, &merged)?;
     Ok(Merged::Changed)
 }

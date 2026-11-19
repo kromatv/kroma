@@ -1,4 +1,6 @@
+mod finished;
 mod held;
+mod review;
 
 use kroma_domain::watching::{Resume, Watching};
 use kroma_domain::Permission;
@@ -24,6 +26,13 @@ fn watched(at: i64) -> Watching {
     Watching {
         watched_at: Some(at),
         ..Default::default()
+    }
+}
+
+fn watched_and_stopped(position_ms: i64, at: i64) -> Watching {
+    Watching {
+        watched_at: Some(at),
+        ..stopped(position_ms, at)
     }
 }
 
@@ -147,7 +156,7 @@ fn merging_the_same_state_twice_writes_nothing_the_second_time() {
     let (pool, ana) = a_film_with_a_library_and_an_account();
     let brought = Watching {
         listed: true,
-        ..watched(LAST_WEEK).with(&stopped(600_000, LAST_WEEK))
+        ..watched_and_stopped(600_000, LAST_WEEK)
     };
     merge(&pool, &ana, Place::Title("heat"), brought);
     let added_at = rows(&pool, "SELECT added_at FROM my_list");
@@ -158,18 +167,6 @@ fn merging_the_same_state_twice_writes_nothing_the_second_time() {
     assert_eq!(rows(&pool, "SELECT added_at FROM my_list"), added_at);
     assert_eq!(resume_points(&pool).len(), 1);
     assert_eq!(watched_flags(&pool).len(), 1);
-}
-
-#[test]
-fn a_watched_flag_from_the_other_server_removes_no_resume_point_held_here() {
-    let (pool, ana) = a_film_with_a_library_and_an_account();
-    merge(&pool, &ana, Place::Title("heat"), stopped(600_000, LAST_WEEK));
-
-    let merged = merge(&pool, &ana, Place::Title("heat"), watched(YESTERDAY));
-
-    assert_eq!(merged, Merged::Changed);
-    assert_eq!(watched_flags(&pool), ["heat on 2023-11-20T22:13:20Z"]);
-    assert_eq!(resume_points(&pool).len(), 1);
 }
 
 #[test]

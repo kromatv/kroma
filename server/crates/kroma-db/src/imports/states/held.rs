@@ -47,11 +47,10 @@ pub(super) fn hold(
     brought: &Watching,
 ) -> Result<Merged> {
     let holding = held(conn, account, path)?.unwrap_or_default();
-    let gain = holding.gain_from(brought);
-    if gain.is_empty() {
+    let kept = holding.merged_with(brought);
+    if kept == holding {
         return Ok(Merged::Unchanged);
     }
-    let kept = holding.with(&gain);
     conn.execute(
         &format!(
             "INSERT INTO import_held_states (abs_path, user_id, {STATE_COLS}) \

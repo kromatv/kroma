@@ -3,7 +3,7 @@
 
 # Requirement index
 
-720 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+721 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -281,6 +281,7 @@
 - **ADMIN-169** (AGREED) - The report at the end of an import, and the import screen of the <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-170** (AGREED) - Removing the importer forgets the sign-in to the other server <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-171** (AGREED) - An import after the importer was removed installs it again and asks <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 

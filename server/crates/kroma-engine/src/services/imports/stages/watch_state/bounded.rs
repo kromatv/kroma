@@ -5,17 +5,19 @@ use crate::domain::watching::{Resume, Watching};
 use crate::model::import::WatchState;
 
 const LONGEST_RUNTIME_MS: u64 = 7 * 24 * 60 * 60 * 1000;
-const CLOCK_SKEW_ALLOWANCE_SECS: i64 = 24 * 60 * 60;
+const CLOCK_AHEAD_TOLERANCE_SECS: i64 = 5 * 60;
 
-/// A time before the epoch, or further ahead of this server's clock than two
-/// clocks drift apart, is no time: the state is as old as a state can be. A
-/// resume point at nothing, or past the end of its title, is no resume point.
+/// A time before the epoch, or ahead of this server's clock by more than two
+/// set clocks differ, is no time: the state is as old as a state can be, and
+/// only fills what KROMA does not hold. A time ahead by less is this clock's
+/// time, so no state is ever dated later than now. A resume point at nothing,
+/// or past the end of its title, is no resume point.
 pub(super) fn bounded(state: &WatchState, now_secs: i64) -> Watching {
-    let believable = 1..=now_secs.saturating_add(CLOCK_SKEW_ALLOWANCE_SECS);
+    let believable = 1..=now_secs.saturating_add(CLOCK_AHEAD_TOLERANCE_SECS);
     let at = state
         .last_played_at
         .filter(|at| believable.contains(at))
-        .unwrap_or(0);
+        .map_or(0, |at| at.min(now_secs));
     let duration_ms = state
         .duration_ms
         .filter(|duration| (1..=LONGEST_RUNTIME_MS).contains(duration));
@@ -89,22 +91,43 @@ mod tests {
     }
 
     #[test]
-    fn a_time_before_the_epoch_or_far_ahead_of_this_clock_is_no_time() {
+    fn a_time_before_the_epoch_or_more_than_minutes_ahead_of_this_clock_is_no_time() {
         let negative = said(json!({ "title": "t1", "watched": true, "lastPlayedAt": -5 }));
-        let next_year = said(json!({
-            "title": "t1",
-            "watched": true,
-            "lastPlayedAt": NOW + 365 * 86_400,
-        }));
         let an_hour_ahead = said(json!({
             "title": "t1",
             "watched": true,
+            "positionMs": 90_000,
             "lastPlayedAt": NOW + 3600,
         }));
 
         assert_eq!(negative.watched_at, Some(0));
-        assert_eq!(next_year.watched_at, Some(0));
-        assert_eq!(an_hour_ahead.watched_at, Some(NOW + 3600));
+        assert_eq!(an_hour_ahead.watched_at, Some(0));
+        assert_eq!(an_hour_ahead.resume.map(|resume| resume.at), Some(0));
+    }
+
+    #[test]
+    fn a_time_a_little_ahead_of_this_clock_is_stamped_as_this_clock() {
+        let two_minutes_ahead = said(json!({
+            "title": "t1",
+            "watched": true,
+            "positionMs": 90_000,
+            "lastPlayedAt": NOW + 120,
+        }));
+        let on_the_edge = said(json!({
+            "title": "t1",
+            "watched": true,
+            "lastPlayedAt": NOW + CLOCK_AHEAD_TOLERANCE_SECS,
+        }));
+        let past_the_edge = said(json!({
+            "title": "t1",
+            "watched": true,
+            "lastPlayedAt": NOW + CLOCK_AHEAD_TOLERANCE_SECS + 1,
+        }));
+
+        assert_eq!(two_minutes_ahead.watched_at, Some(NOW));
+        assert_eq!(two_minutes_ahead.resume.map(|resume| resume.at), Some(NOW));
+        assert_eq!(on_the_edge.watched_at, Some(NOW));
+        assert_eq!(past_the_edge.watched_at, Some(0));
     }
 
     #[test]

@@ -73,16 +73,20 @@ fn a_title_no_id_matches_is_matched_by_its_name_and_its_year() {
 }
 
 #[test]
-fn a_name_this_server_cannot_compare_matches_no_title_of_its_year() {
-    let spirited_away = json!({ "title": "千と千尋の神隠し", "year": 1995 });
-    let titles = vec![elsewhere("t1", spirited_away)];
-    let world = a_household_that_holds(titles, of_ana(vec![watched("t1")]));
-    world.has_scanned(&["films/七人の侍 (1995)/七人の侍 (1995).mkv"]);
+fn a_name_in_letters_outside_latin_matches_that_name_and_no_other_of_its_year() {
+    let seven_samurai = "films/七人の侍 (1995)/七人の侍 (1995).mkv";
+    let titles = vec![
+        elsewhere("t1", json!({ "title": "千と千尋の神隠し", "year": 1995 })),
+        elsewhere("t2", json!({ "title": "七人の侍", "year": 1995 })),
+    ];
+    let said_there = of_ana(vec![watched("t1"), watched("t2")]);
+    let world = a_household_that_holds(titles, said_there);
+    world.has_scanned(&[seven_samurai]);
 
     let ran = world.imports();
 
-    assert_eq!(ran.import.report.states, states(1, 0, 1));
-    assert_eq!(watched_here(&world), Vec::<String>::new());
+    assert_eq!(ran.import.report.states, states(2, 1, 1));
+    assert_eq!(watched_here(&world), [world.title_of(seven_samurai)]);
 }
 
 #[test]

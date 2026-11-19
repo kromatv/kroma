@@ -98,12 +98,26 @@ pub fn episode_item(pool: &Pool, episode: &EpisodeOf<'_>) -> Result<Option<Strin
     Ok(found)
 }
 
-/// A film or a show by the name and the year a scan read for it.
+/// A film or a show by the name and the year a scan read for it, with the ids
+/// other catalogues give it where this server knows them.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Named {
     pub id: String,
     pub title: String,
     pub year: Option<u32>,
+    pub tmdb: Option<i64>,
+    pub imdb: Option<String>,
+    pub tvdb: Option<i64>,
+}
+
+impl Named {
+    pub fn ids(&self) -> CatalogueIds<'_> {
+        CatalogueIds {
+            tmdb: self.tmdb,
+            imdb: self.imdb.as_deref().filter(|id| !id.is_empty()),
+            tvdb: self.tvdb,
+        }
+    }
 }
 
 fn named(pool: &Pool, sql: &str, year: Option<u32>) -> Result<Vec<Named>> {
@@ -114,6 +128,9 @@ fn named(pool: &Pool, sql: &str, year: Option<u32>) -> Result<Vec<Named>> {
             id: r.get(0)?,
             title: r.get(1)?,
             year: r.get(2)?,
+            tmdb: r.get(3)?,
+            imdb: r.get(4)?,
+            tvdb: r.get(5)?,
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
@@ -121,12 +138,16 @@ fn named(pool: &Pool, sql: &str, year: Option<u32>) -> Result<Vec<Named>> {
 
 /// Every film of `year`, in id order.
 pub fn films_of_year(pool: &Pool, year: u32) -> Result<Vec<Named>> {
-    let films = "SELECT id, title, year FROM items \
-                 WHERE kind IN ('movie', 'video') AND year = ?1 ORDER BY id";
+    let films = "SELECT i.id, i.title, i.year, c.tmdb_id, c.imdb_id, c.tvdb_id FROM items i \
+                 LEFT JOIN metadata_core c ON c.subject_kind = 'item' AND c.subject_id = i.id \
+                 WHERE i.kind IN ('movie', 'video') AND i.year = ?1 ORDER BY i.id";
     named(pool, films, Some(year))
 }
 
 /// Every show, in id order.
 pub fn shows_by_name(pool: &Pool) -> Result<Vec<Named>> {
-    named(pool, "SELECT id, title, year FROM shows ORDER BY id", None)
+    let shows = "SELECT s.id, s.title, s.year, c.tmdb_id, c.imdb_id, c.tvdb_id FROM shows s \
+                 LEFT JOIN metadata_core c ON c.subject_kind = 'show' AND c.subject_id = s.id \
+                 ORDER BY s.id";
+    named(pool, shows, None)
 }

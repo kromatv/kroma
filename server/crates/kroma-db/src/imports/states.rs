@@ -32,7 +32,7 @@ pub enum Merged {
 /// Merges each state into what `account` holds at its place, in one
 /// transaction, and answers one [`Merged`] per state in the order given.
 ///
-/// The newer wins and this server wins a tie, as [`Watching::gain_from`]
+/// The newer wins and this server wins a tie, as [`Watching::merged_with`]
 /// rules, and each write is stamped with the time the state carries. A state
 /// for a file is held until a scan writes that file, and shows on its title
 /// in that same write.
