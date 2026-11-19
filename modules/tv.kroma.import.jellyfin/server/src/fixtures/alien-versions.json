@@ -1,0 +1,27 @@
+{
+  "Items": [
+    {
+      "Name": "Alien",
+      "Id": "c0000000000000000000000000000002",
+      "Type": "Movie",
+      "MediaSources": [
+        {
+          "Protocol": "File",
+          "Id": "c0000000000000000000000000000002",
+          "Path": "/data/movies/Alien (1979)/Alien (1979) - 1080p.mkv",
+          "Container": "mkv",
+          "Name": "1080p"
+        },
+        {
+          "Protocol": "File",
+          "Id": "c0000000000000000000000000000003",
+          "Path": "/data/movies/Alien (1979)/Alien (1979) - 2160p.mkv",
+          "Container": "mkv",
+          "Name": "2160p"
+        }
+      ]
+    }
+  ],
+  "TotalRecordCount": 1,
+  "StartIndex": 0
+}

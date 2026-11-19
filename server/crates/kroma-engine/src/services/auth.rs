@@ -20,6 +20,14 @@ const SHA256_BLOCK: usize = 64;
 pub const SESSION_TTL_SECS: i64 = 3600;
 // Exchanged for session tokens; this is the credential a logout revokes.
 pub const ACCESS_TTL_SECS: i64 = 90 * 24 * 3600;
+const INVITE_TTL_DAYS_DEFAULT: i64 = 7;
+
+/// When an invitation minted now lapses, in Unix seconds: after `days`, held
+/// between one day and a year, or after a week when none is given.
+pub fn invitation_expiry(days: Option<i64>) -> i64 {
+    let days = days.unwrap_or(INVITE_TTL_DAYS_DEFAULT).clamp(1, 365);
+    time::OffsetDateTime::now_utc().unix_timestamp() + days * 24 * 3600
+}
 
 // HMAC-SHA256 (RFC 2104) over `msg` keyed by `key`.
 pub(crate) fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {

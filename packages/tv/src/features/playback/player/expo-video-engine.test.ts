@@ -5,6 +5,7 @@ import type { EngineOptions } from './base-engine';
 import { NATIVE_SEEK_AHEAD } from './base-engine';
 import { nativeBufferBudget } from '@kromatv/ui/native-player';
 import type { EngineListeners } from './engine';
+import { bilingual } from './engine.fixture';
 import { ExpoVideoEngine } from './expo-video-engine';
 import { type FakeVideoPlayer, players } from './expo-video.fixture';
 
@@ -29,6 +30,15 @@ const client = fakeClient({
 });
 const item = { id: 'ev1' } as unknown as MediaItem;
 const budget = nativeBufferBudget();
+
+const twoLanguages = bilingual(item);
+
+function listed(): { id: string; language: string }[] {
+  return [
+    { id: 'audio-0', language: 'en' },
+    { id: 'audio-1', language: 'fr' },
+  ];
+}
 
 function mkListeners(): EngineListeners {
   return {
@@ -377,58 +387,139 @@ describe('ExpoVideoEngine seeking', () => {
 
 describe('ExpoVideoEngine audio', () => {
   it('direct: switches track in place, with no server round trip', () => {
-    const { e } = make({ direct: true });
+    const { e } = make({ direct: true, item: twoLanguages });
     const player = current(e);
-    player.availableAudioTracks = [{ id: 'en' }, { id: 'fr' }];
+    player.availableAudioTracks = listed();
+    player.emit('statusChange', { status: 'readyToPlay' });
+
     e.setAudioRendition(1);
-    expect(player.audioTrack).toEqual({ id: 'fr' });
+
+    expect(player.audioTrack).toEqual({ id: 'audio-1', language: 'fr' });
     expect(player.replaced).toEqual([]);
   });
 
   it('direct: selects the chosen track once the file is ready', () => {
-    const { e } = make({ direct: true, initialRendition: 1 });
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 1 });
     const player = current(e);
-    player.availableAudioTracks = [{ id: 'en' }, { id: 'fr' }];
+    player.availableAudioTracks = listed();
 
     player.emit('statusChange', { status: 'readyToPlay' });
 
-    expect(player.audioTrack).toEqual({ id: 'fr' });
+    expect(player.audioTrack).toEqual({ id: 'audio-1', language: 'fr' });
     expect(player.replaced).toEqual([]);
   });
 
   it('direct: selects the chosen track only once', () => {
-    const { e } = make({ direct: true, initialRendition: 1 });
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 1 });
     const player = current(e);
-    player.availableAudioTracks = [{ id: 'en' }, { id: 'fr' }];
+    player.availableAudioTracks = listed();
     player.emit('statusChange', { status: 'readyToPlay' });
-    player.audioTrack = { id: 'en' };
+    player.audioTrack = listed()[0];
 
     player.emit('statusChange', { status: 'readyToPlay' });
 
-    expect(player.audioTrack).toEqual({ id: 'en' });
+    expect(player.audioTrack).toEqual({ id: 'audio-0', language: 'en' });
   });
 
-  it('direct: a track the player does not expose re-opens the source', () => {
-    // Re-anchoring the direct file brings back the same track list, so this is a
-    // no-op reload rather than the master fallback the master branch gets.
+  it('direct: asks for the language where the player lists the tracks in its own order', () => {
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 0 });
+    const player = current(e);
+    player.availableAudioTracks = [
+      { id: 'audio-0', language: 'fr' },
+      { id: 'audio-1', language: 'en' },
+    ];
+
+    player.emit('statusChange', { status: 'readyToPlay' });
+
+    expect(player.audioTrack).toEqual({ id: 'audio-1', language: 'en' });
+  });
+
+  it('direct: asks at open even when the player claims the track already plays', () => {
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 0 });
+    const player = current(e);
+    player.availableAudioTracks = listed();
+    player.claimed = listed()[0];
+
+    player.emit('statusChange', { status: 'readyToPlay' });
+
+    expect(player.asked).toEqual([{ id: 'audio-0', language: 'en' }]);
+  });
+
+  it('direct: a pick of the track already chosen asks the player again', () => {
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 0 });
+    const player = current(e);
+    player.availableAudioTracks = listed();
+    player.emit('statusChange', { status: 'readyToPlay' });
+
+    e.setAudioRendition(0);
+
+    expect(player.asked).toHaveLength(2);
+  });
+
+  it('direct: holds the pick until the player lists its tracks', () => {
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 1 });
+    const player = current(e);
+    player.emit('statusChange', { status: 'readyToPlay' });
+    player.availableAudioTracks = listed();
+
+    player.emit('availableAudioTracksChange', { availableAudioTracks: listed() });
+
+    expect(player.audioTrack).toEqual({ id: 'audio-1', language: 'fr' });
+  });
+
+  it('direct: a list that arrives without the wanted track plays through the remux', () => {
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 1 });
+    const player = current(e);
+    player.emit('statusChange', { status: 'readyToPlay' });
+    player.availableAudioTracks = [{ id: 'audio-0', language: 'en' }];
+
+    player.emit('availableAudioTracksChange', {
+      availableAudioTracks: player.availableAudioTracks,
+    });
+
+    expect(player.replaced).toEqual(['master:ev1:false:0:1']);
+  });
+
+  it('direct: asks nothing of the player for a file with one audio track', () => {
     const { e } = make({ direct: true });
     const player = current(e);
-    player.availableAudioTracks = [{ id: 'en' }];
-    e.setAudioRendition(1);
-    expect(player.replaced).toEqual(['stream:ev1']);
+    player.availableAudioTracks = listed();
+
+    player.emit('statusChange', { status: 'readyToPlay' });
+
+    expect(player.asked).toEqual([]);
   });
 
-  it('direct: re-opening for a missing track holds the resume seek until ready', () => {
-    const { e } = make({ direct: true, startSec: 42 });
+  it('direct: a track the player does not list plays through the server remux', () => {
+    const { e } = make({ direct: true, item: twoLanguages });
     const player = current(e);
     player.emit('statusChange', { status: 'readyToPlay' });
-    player.availableAudioTracks = [{ id: 'en' }];
-    player.currentTime = 0;
+    player.availableAudioTracks = [{ id: 'audio-0', language: 'en' }];
+
     e.setAudioRendition(1);
-    expect(player.replaced).toEqual(['stream:ev1']);
-    expect(player.currentTime).toBe(0);
+
+    expect(player.replaced).toEqual(['master:ev1:false:0:1']);
+  });
+
+  it('direct: a track missing at open plays through the remux from the resume point', () => {
+    const { e } = make({ direct: true, item: twoLanguages, initialRendition: 1, startSec: 42 });
+    const player = current(e);
+    player.availableAudioTracks = [{ id: 'audio-0', language: 'en' }];
+
     player.emit('statusChange', { status: 'readyToPlay' });
-    expect(player.currentTime).toBe(42);
+
+    expect(player.replaced).toEqual(['master:ev1:false:42:1']);
+    expect(player.currentTime).toBe(0);
+  });
+
+  it('direct: a track missing at open never reports the replaced file ready', () => {
+    const { e, listeners } = make({ direct: true, item: twoLanguages, initialRendition: 1 });
+    const player = current(e);
+    player.availableAudioTracks = [{ id: 'audio-0', language: 'en' }];
+
+    player.emit('statusChange', { status: 'readyToPlay' });
+
+    expect(listeners.onReady).not.toHaveBeenCalled();
   });
 
   it('setAudioRendition is inert once the engine is destroyed', () => {

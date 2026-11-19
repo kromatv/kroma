@@ -32,25 +32,34 @@ pub enum Awaited {
 /// with playback alone. A name or an address another account holds writes
 /// nothing.
 pub fn create_waiting_account(pool: &Pool, account: &WaitingAccount) -> Result<Awaited> {
+    let mut conn = pool.get()?;
+    let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    let awaited = insert_waiting_account(&tx, account)?;
+    tx.commit()?;
+    Ok(awaited)
+}
+
+pub(crate) fn insert_waiting_account(
+    conn: &Connection,
+    account: &WaitingAccount,
+) -> Result<Awaited> {
     let username = account.username.trim();
     anyhow::ensure!(!username.is_empty(), "an account that waits needs a name");
     let email = account
         .email
         .map(str::trim)
         .filter(|address| !address.is_empty());
-    let mut conn = pool.get()?;
-    let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
-    if name_in_use(&tx, username, None)? {
+    if name_in_use(conn, username, None)? {
         return Ok(Awaited::UsernameTaken);
     }
     if let Some(address) = email {
-        if address_in_use(&tx, address, None)? {
+        if address_in_use(conn, address, None)? {
             return Ok(Awaited::EmailTaken);
         }
     }
     let mut user = minted_user(email.unwrap_or_default(), username, &[Permission::Playback]);
     user.libraries = account.libraries.clone();
-    tx.execute(
+    conn.execute(
         "INSERT INTO users \
          (id,email,username,password_hash,avatar_url,permissions,created_at,libraries,waiting) \
          VALUES (?1,?2,?3,'',NULL,?4,?5,?6,1)",
@@ -63,7 +72,6 @@ pub fn create_waiting_account(pool: &Pool, account: &WaitingAccount) -> Result<A
             stored_library_scope(account.libraries)?
         ],
     )?;
-    tx.commit()?;
     Ok(Awaited::Account(Box::new(user)))
 }
 
@@ -97,11 +105,20 @@ pub fn invite_waiting_account(pool: &Pool, invite: &AccountInvite) -> Result<boo
     if !waits(&tx, invite.user_id)? {
         return Ok(false);
     }
-    tx.execute(
+    replace_invitation(&tx, invite)?;
+    tx.commit()?;
+    Ok(true)
+}
+
+pub(crate) fn replace_invitation(
+    conn: &Connection,
+    invite: &AccountInvite,
+) -> rusqlite::Result<()> {
+    conn.execute(
         "DELETE FROM invites WHERE user_id = ?1 AND used_at IS NULL",
         params![invite.user_id],
     )?;
-    tx.execute(
+    conn.execute(
         "INSERT INTO invites (token,created_by,created_at,expires_at,used_at,user_id) \
          VALUES (?1,?2,?3,?4,NULL,?5)",
         params![
@@ -112,8 +129,7 @@ pub fn invite_waiting_account(pool: &Pool, invite: &AccountInvite) -> Result<boo
             invite.user_id
         ],
     )?;
-    tx.commit()?;
-    Ok(true)
+    Ok(())
 }
 
 /// The account a live invitation gives a credential to, as it waits.

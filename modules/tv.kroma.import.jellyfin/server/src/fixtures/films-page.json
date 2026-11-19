@@ -1,0 +1,37 @@
+{
+  "Items": [
+    {
+      "Name": "Heat",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "c0000000000000000000000000000001",
+      "Container": "mkv",
+      "Path": "/data/movies/Heat (1995)/Heat (1995).mkv",
+      "ProviderIds": { "Tmdb": "949", "Imdb": "tt0113277" },
+      "RunTimeTicks": 102000000000,
+      "ProductionYear": 1995,
+      "IsFolder": false,
+      "Type": "Movie",
+      "VideoType": "VideoFile",
+      "LocationType": "FileSystem",
+      "MediaType": "Video"
+    },
+    {
+      "Name": "Alien",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "c0000000000000000000000000000002",
+      "Container": "mkv",
+      "Path": "/data/movies/Alien (1979)/Alien (1979) - 1080p.mkv",
+      "ProviderIds": { "Tmdb": "348", "Imdb": "tt0078748", "TmdbCollection": "8091" },
+      "MediaSourceCount": 2,
+      "RunTimeTicks": 70200000000,
+      "ProductionYear": 1979,
+      "IsFolder": false,
+      "Type": "Movie",
+      "VideoType": "VideoFile",
+      "LocationType": "FileSystem",
+      "MediaType": "Video"
+    }
+  ],
+  "TotalRecordCount": 2,
+  "StartIndex": 0
+}

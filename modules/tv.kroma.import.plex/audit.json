@@ -1,0 +1,27 @@
+{
+  "requests": [
+    { "method": "POST", "path": "/_port/importer/connect", "body": {} },
+    { "method": "POST", "path": "/_port/importer/connect", "body": { "pending": "p-7" } },
+    {
+      "method": "POST",
+      "path": "/_port/importer/survey",
+      "body": { "signIn": "s-1", "server": "srv" }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/titles",
+      "body": { "signIn": "s-1", "server": "srv", "library": "1", "limit": 500 }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/states",
+      "body": { "signIn": "s-1", "server": "srv", "user": "42", "library": "1", "limit": 500 }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/plays",
+      "body": { "signIn": "s-1", "server": "srv", "limit": 500 }
+    },
+    { "method": "POST", "path": "/_port/importer/forget", "body": { "signIn": "s-1" } }
+  ]
+}

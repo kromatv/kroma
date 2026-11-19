@@ -4,10 +4,12 @@ import { webResolve } from '@kromatv/bundler/rnw';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { iconSubset } from './scripts/icon-subset.ts';
+import { PUBLISHED_TWINS } from './scripts/published-twins.ts';
 
 const src = (p: string) => fileURLToPath(new URL(`./src/${p}`, import.meta.url));
 
 const NATIVE = process.env.KROMA_UI_TARGET === 'native';
+const NO_LOCALE_NAMES = '\0kroma-ui-no-locale-names';
 
 // Metro's precedence in reverse of the web's: a plain file wins, and `.native.*`
 // wins over it. `.web.*` is never seen.
@@ -49,8 +51,14 @@ export default defineConfig({
       // The published kit speaks a host's catalogs, not KROMA's.
       name: 'kroma-ui-inject-i18n',
       enforce: 'pre' as const,
+      resolveId(id: string) {
+        return id === 'virtual:kroma-locale-names' ? NO_LOCALE_NAMES : null;
+      },
       load(id: string) {
-        for (const swap of ['services/i18n-instance']) {
+        if (id === NO_LOCALE_NAMES) {
+          return 'export default undefined;';
+        }
+        for (const swap of PUBLISHED_TWINS) {
           if (id.endsWith(`${swap}.ts`)) {
             return readFileSync(src(`${swap}.published.ts`), 'utf8');
           }

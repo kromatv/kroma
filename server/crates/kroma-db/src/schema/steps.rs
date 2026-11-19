@@ -43,4 +43,6 @@ pub(super) const STEPS: &[Step] = &[
         run: Run::Code(super::waiting_accounts::rebuild_users),
         rebuilds: true,
     },
+    sql_step!("0021_imports"),
+    sql_step!("0022_import_folders"),
 ];

@@ -7,7 +7,7 @@ const MAX_CURSOR_BYTES: usize = 2048;
 const MAX_LINK_BYTES: usize = 2048;
 const MAX_KEY_BYTES: usize = 64;
 
-fn id(what: &str, value: &str) -> Result<(), String> {
+pub(crate) fn id(what: &str, value: &str) -> Result<(), String> {
     if value.is_empty() {
         return Err(format!("an empty {what} id"));
     }

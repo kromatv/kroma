@@ -1,0 +1,25 @@
+<MediaContainer size="3" totalSize="3" offset="0" librarySectionID="1" librarySectionTitle="Films">
+  <Video ratingKey="101" key="/library/metadata/101" guid="plex://movie/example-heat" type="movie" title="Heat" year="1995" duration="10200000" viewCount="2" lastViewedAt="1700000000">
+    <Media id="1" duration="10200000" container="mkv">
+      <Part id="1" key="/library/parts/1/file.mkv" duration="10200000" file="/data/movies/Heat (1995)/Heat.mkv"/>
+    </Media>
+    <Guid id="imdb://tt0113277"/>
+    <Guid id="tmdb://949"/>
+  </Video>
+  <Video ratingKey="102" key="/library/metadata/102" guid="plex://movie/example-alien" type="movie" title="Alien" year="1979" duration="7020000" viewOffset="1234000" lastViewedAt="1700086400">
+    <Media id="2" duration="7020000" container="mkv">
+      <Part id="2" file="/data/movies/Alien (1979)/Alien.mkv"/>
+    </Media>
+    <Media id="3" duration="7020000" container="mkv">
+      <Part id="3" file="/data/films-4k/Alien (1979)/Alien.2160p.mkv"/>
+    </Media>
+    <Guid id="imdb://tt0078748"/>
+    <Guid id="tmdb://348"/>
+    <Guid id="tvdb://166"/>
+  </Video>
+  <Video ratingKey="103" key="/library/metadata/103" guid="plex://movie/example-dune" type="movie" title="Dune" year="2021" duration="9300000">
+    <Media id="4" duration="9300000" container="mkv">
+      <Part id="4" file="/data/movies/Dune (2021)/Dune.mkv"/>
+    </Media>
+  </Video>
+</MediaContainer>

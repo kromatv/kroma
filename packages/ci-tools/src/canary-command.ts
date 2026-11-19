@@ -5,7 +5,7 @@ import { parseArgs } from 'node:util';
 import { $ } from 'bun';
 import { z } from 'zod';
 import { summary, warning } from './actions';
-import { type Asset, canaryName, expired, RETENTION } from './canary';
+import { type Asset, canaryName, crowdedOut, expired, RETENTION } from './canary';
 
 const Assets = z.object({
   assets: z.array(z.object({ name: z.string().nonempty(), created_at: z.string() })).default([]),
@@ -45,8 +45,11 @@ function stage(files: string[], rename: { triplet: string; canary: string } | nu
   });
 }
 
-async function prune(tag: string, now: Date): Promise<string[]> {
-  const gone = expired(await listAssets(tag), now, RETENTION);
+async function prune(tag: string, now: Date, incoming: number): Promise<string[]> {
+  const assets = await listAssets(tag);
+  const aged = expired(assets, now, RETENTION);
+  const left = assets.filter((asset) => !aged.includes(asset));
+  const gone = [...aged, ...crowdedOut(left, incoming, RETENTION)];
   for (const asset of gone) {
     const result = await $`gh release delete-asset ${tag} ${asset.name} -y`.nothrow();
     if (result.exitCode !== 0) {
@@ -83,8 +86,8 @@ export async function main(argv: string[]): Promise<void> {
 
   const staged = stage(files, rename);
   await ensureRelease(values.tag);
+  const pruned = await prune(values.tag, new Date(), staged.length);
   await $`gh release upload ${values.tag} ${staged} --clobber`;
-  const pruned = await prune(values.tag, new Date());
 
   const uploaded = staged.map((f) => `- ${f.split('/').at(-1)}`).join('\n');
   const removed = pruned.length > 0 ? `\n\nRetired: ${pruned.join(', ')}` : '';

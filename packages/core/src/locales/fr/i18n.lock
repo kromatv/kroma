@@ -1633,6 +1633,8 @@
     "jobs.editSchedule": "c61b8926 c978d931",
     "jobs.empty": "0123fcf6 49fb6aef",
     "jobs.history": "e946fe9b 362fb460",
+    "jobs.household.import.desc": "0f5583ae 9339d609",
+    "jobs.household.import.name": "615bab2b 8e2c7244",
     "jobs.indexer.definitions.desc": "d1d3c140 88d9dd3f",
     "jobs.indexer.definitions.name": "3260adf8 04f2c5a9",
     "jobs.last": "b877ba77 39a0cd3d",

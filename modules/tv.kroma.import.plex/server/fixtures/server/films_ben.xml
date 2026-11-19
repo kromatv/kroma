@@ -1,0 +1,11 @@
+<MediaContainer size="3" totalSize="3" offset="0" librarySectionID="1" librarySectionTitle="Films">
+  <Video ratingKey="101" type="movie" title="Heat" year="1995" duration="10200000">
+    <Media id="1"><Part id="1" file="/data/movies/Heat (1995)/Heat.mkv"/></Media>
+  </Video>
+  <Video ratingKey="102" type="movie" title="Alien" year="1979" duration="7020000" viewCount="1" lastViewedAt="1700200000">
+    <Media id="2"><Part id="2" file="/data/movies/Alien (1979)/Alien.mkv"/></Media>
+  </Video>
+  <Video ratingKey="103" type="movie" title="Dune" year="2021" duration="9300000" viewOffset="600000" lastViewedAt="1699000000">
+    <Media id="4"><Part id="4" file="/data/movies/Dune (2021)/Dune.mkv"/></Media>
+  </Video>
+</MediaContainer>

@@ -4,3 +4,4 @@ export * from './hevc/directplay';
 export * from './hevc/engine';
 export * from './hevc/runtime-caps';
 export * from './hevc/stream-notice';
+export * from './hevc/native-audio-position';

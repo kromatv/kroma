@@ -1,0 +1,44 @@
+{
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/_port/importer/connect",
+      "body": { "fields": { "username": "owner" } }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/connect",
+      "body": { "fields": { "url": "http://nas.local:8096", "username": "owner" } }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/connect",
+      "body": { "fields": { "url": "https://jellyfin.example.org", "username": "owner" } }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/survey",
+      "body": { "signIn": "none", "server": "none" }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/titles",
+      "body": { "signIn": "none", "server": "none", "library": "none" }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/states",
+      "body": { "signIn": "none", "server": "none", "user": "none", "library": "none" }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/plays",
+      "body": { "signIn": "none", "server": "none" }
+    },
+    {
+      "method": "POST",
+      "path": "/_port/importer/forget",
+      "body": { "signIn": "none" }
+    }
+  ]
+}

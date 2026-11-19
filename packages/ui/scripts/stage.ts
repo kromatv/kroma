@@ -4,9 +4,10 @@
 // `exports` point at JS and declarations.
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PUBLISHED_TWINS } from './published-twins.ts';
 import {
   bundledPackages,
   declarations,
@@ -61,6 +62,9 @@ try {
   rmSync(declarationConfig, { force: true });
 }
 cpSync(join(typesTmp, 'ui', 'src'), dist, { recursive: true });
+for (const twin of PUBLISHED_TWINS) {
+  renameSync(join(dist, `${twin}.published.d.ts`), join(dist, `${twin}.d.ts`));
+}
 for (const { dir } of bundled) {
   cpSync(join(typesTmp, dir), join(dist, dir), { recursive: true });
 }

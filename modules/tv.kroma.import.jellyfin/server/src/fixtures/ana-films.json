@@ -1,0 +1,52 @@
+{
+  "Items": [
+    {
+      "Name": "Heat",
+      "Id": "c0000000000000000000000000000001",
+      "RunTimeTicks": 102000000000,
+      "Type": "Movie",
+      "UserData": {
+        "PlayedPercentage": 100,
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 3,
+        "IsFavorite": true,
+        "LastPlayedDate": "2023-11-14T22:13:20.0000000Z",
+        "Played": true,
+        "Key": "949",
+        "ItemId": "c0000000000000000000000000000001"
+      }
+    },
+    {
+      "Name": "Alien",
+      "Id": "c0000000000000000000000000000002",
+      "RunTimeTicks": 70200000000,
+      "Type": "Movie",
+      "UserData": {
+        "PlayedPercentage": 17.5,
+        "PlaybackPositionTicks": 12340000000,
+        "PlayCount": 1,
+        "IsFavorite": false,
+        "LastPlayedDate": "2023-11-15T22:13:20.1234567Z",
+        "Played": false,
+        "Key": "348",
+        "ItemId": "c0000000000000000000000000000002"
+      }
+    },
+    {
+      "Name": "Ronin",
+      "Id": "c0000000000000000000000000000004",
+      "RunTimeTicks": 73200000000,
+      "Type": "Movie",
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 0,
+        "IsFavorite": false,
+        "Played": false,
+        "Key": "8195",
+        "ItemId": "c0000000000000000000000000000004"
+      }
+    }
+  ],
+  "TotalRecordCount": 3,
+  "StartIndex": 0
+}
