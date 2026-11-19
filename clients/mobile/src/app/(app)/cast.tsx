@@ -67,6 +67,7 @@ export default function CastRemoteScreen() {
 
           <RemoteScrub
             durationMs={durationMs}
+            bufferedMs={playing.bufferedMs ?? 0}
             onSeek={(positionMs) => void send({ type: 'seek', positionMs })}
           />
 

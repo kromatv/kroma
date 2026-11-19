@@ -1,0 +1,28 @@
+{
+  "name": "@kromatv/lan-reach",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "What a KROMA app can do to a television on its own network beyond HTTP: press a Samsung remote key and send a Wake-on-LAN packet, behind the WakeReach shape @kromatv/core defines.",
+  "author": "KROMA",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kromatv/kroma.git",
+    "directory": "packages/lan-reach"
+  },
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "typecheck": "bun check"
+  },
+  "peerDependencies": {
+    "expo": "^58.0.16",
+    "@kromatv/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

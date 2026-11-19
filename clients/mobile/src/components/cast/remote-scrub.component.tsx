@@ -9,10 +9,11 @@ import { ScrubBar } from '#mobile/player/scrub-bar.component';
 
 interface RemoteScrubProps {
   durationMs: number;
+  bufferedMs: number;
   onSeek: (positionMs: number) => void;
 }
 
-export function RemoteScrub({ durationMs, onSeek }: Readonly<RemoteScrubProps>) {
+export function RemoteScrub({ durationMs, bufferedMs, onSeek }: Readonly<RemoteScrubProps>) {
   const s = useStyles(sDefinition);
   const positionMs = useCastPosition();
   const left = Math.max(0, (durationMs - positionMs) / 1000);
@@ -21,7 +22,7 @@ export function RemoteScrub({ durationMs, onSeek }: Readonly<RemoteScrubProps>) 
       <ScrubBar
         cur={positionMs / 1000}
         dur={durationMs / 1000}
-        buffered={0}
+        buffered={bufferedMs / 1000}
         onSeek={(abs) => onSeek(Math.round(abs * 1000))}
       />
       <Box style={s.times}>
