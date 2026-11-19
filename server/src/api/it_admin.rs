@@ -195,6 +195,37 @@ async fn admin_libraries_lists_a_seeded_definition() {
 }
 
 #[tokio::test]
+async fn the_demo_libraries_go_when_somebody_adds_a_library_of_their_own() {
+    let t = test_app();
+    let (movies, _) = crate::services::demo::media::roots(&t.state.config.data_dir);
+    std::fs::create_dir_all(&movies).unwrap();
+    let (_, before) = get(&t.app, "/api/admin/libraries", Some(&t.token)).await;
+
+    let (status, _) = send(
+        &t.app,
+        "POST",
+        "/api/admin/libraries",
+        Some(&t.token),
+        Some(json!({ "name": "Films", "folders": ["/media/films"] })),
+    )
+    .await;
+
+    let (_, after) = get(&t.app, "/api/admin/libraries", Some(&t.token)).await;
+    let names = |body: &serde_json::Value| -> Vec<String> {
+        body["libraries"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|library| library["name"].as_str().unwrap().to_string())
+            .collect()
+    };
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(before["libraries"][0]["demo"], json!(true));
+    assert_eq!(names(&after), ["Films"]);
+    assert!(after["libraries"][0].get("demo").is_none());
+}
+
+#[tokio::test]
 async fn admin_library_patch_toggles_auto_scan() {
     let t = test_app();
     let id = seed_library(&t.state, "Séries");

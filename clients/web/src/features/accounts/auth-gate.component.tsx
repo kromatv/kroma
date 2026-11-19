@@ -3,12 +3,13 @@
 
 import type { AuthConfig } from '@kromatv/client/accounts';
 import { Box, classes, Logo, styles, useStyles } from '@kromatv/ui/kit';
+import { Navigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { GateBody } from '#web/features/accounts/gate-body.component';
-import { LoginBackdrop } from '#web/features/accounts/login-backdrop.component';
 import { LoginSettings } from '#web/features/accounts/login-settings.component';
 import { useAuth } from '#web/shared/lib/auth';
 import { PAGE_RADIAL } from '#web/shared/ui';
+import { ServerBackdrop } from '#web/shared/ui/server-backdrop.component';
 
 // The gate is one viewport tall, and the kit carries no viewport unit: every
 // screen it draws sits on a fixed 1920x1080 stage instead. So the two frames
@@ -66,9 +67,18 @@ export function LoginGate() {
   if (!(ready && config)) {
     return null;
   }
+  if (!config.hasAccounts) {
+    return (
+      <Navigate
+        to="/setup"
+        search={{ step: 'language', start: 'fresh', reached: 'language' }}
+        replace
+      />
+    );
+  }
   return (
     <main className={classes(s.gate)}>
-      <LoginBackdrop />
+      <ServerBackdrop />
       <LoginSettings />
       {/* Centred via the child's auto margins, not justify-center: a centred
           scroll container clips overflow ABOVE the fold out of reach on short

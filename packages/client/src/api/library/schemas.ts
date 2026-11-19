@@ -11,6 +11,7 @@ export const AdminLibrary = z.object({
   sizeBytes: z.number(),
   lastScan: z.string().nullable(),
   autoScan: z.boolean(),
+  demo: z.boolean().default(false),
 });
 export type AdminLibrary = z.infer<typeof AdminLibrary>;
 

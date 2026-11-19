@@ -22,6 +22,7 @@ import {
   useState,
 } from 'react';
 import { useAdminHost } from './context';
+import { fieldIcon } from './field-icon';
 import { useAsyncAction } from './hooks';
 
 /** A contribution the add-picker can offer: it names the instance an added row
@@ -115,7 +116,7 @@ export function FieldForm({
           >
             <Field.Input
               type={f.secret ? 'password' : 'text'}
-              icon={f.secret ? 'lock' : undefined}
+              icon={fieldIcon(f)}
               placeholder={f.placeholder}
             />
           </Field.Root>

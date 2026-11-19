@@ -13,17 +13,18 @@ pub fn splash_entries(pool: &Pool, limit: u32, locale: &str) -> Result<Vec<Splas
     let mut stmt = conn.prepare(
         // The scan only knows a year when the file name carried one (shows
         // rarely do); the enriched release date fills the gap.
-        "SELECT kind, id, title, year, backdrop_url, rating FROM (\
+        "SELECT kind, id, title, year, backdrop_url, rating, poster_url FROM (\
             SELECT 'movie' AS kind, i.id AS id, i.title AS title, \
                    COALESCE(i.year, NULLIF(CAST(substr(mc.release_date,1,4) AS INTEGER),0)) AS year, \
-                   mc.backdrop_url AS backdrop_url, mc.rating AS rating \
+                   mc.backdrop_url AS backdrop_url, mc.rating AS rating, \
+                   mc.poster_url AS poster_url \
               FROM items i JOIN metadata_core mc \
                 ON mc.subject_kind='item' AND mc.subject_id=i.id \
              WHERE i.kind='movie' AND mc.backdrop_url IS NOT NULL \
             UNION ALL \
             SELECT 'show', s.id, s.title, \
                    COALESCE(s.year, NULLIF(CAST(substr(mc.release_date,1,4) AS INTEGER),0)), \
-                   mc.backdrop_url, mc.rating \
+                   mc.backdrop_url, mc.rating, mc.poster_url \
               FROM shows s JOIN metadata_core mc \
                 ON mc.subject_kind='show' AND mc.subject_id=s.id \
              WHERE mc.backdrop_url IS NOT NULL) \
@@ -39,6 +40,8 @@ pub fn splash_entries(pool: &Pool, limit: u32, locale: &str) -> Result<Vec<Splas
                     year: r.get(3)?,
                     backdrop_url: r.get(4)?,
                     rating: r.get(5)?,
+                    poster_url: r.get(6)?,
+                    trending: false,
                 },
             ))
         })?

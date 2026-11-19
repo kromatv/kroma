@@ -222,12 +222,23 @@ pub fn library_defs(settings: &Settings, config: &crate::config::Config) -> Vec<
 // Only the ones that EXIST. A definition for a folder nobody wrote would scan as
 // zero items with folders configured, which is how an unmounted share looks: the
 // scan would keep the stored index and the row-only demo seed would never run.
+const DEMO_MOVIES: &str = "lib|demo|movies";
+const DEMO_SHOWS: &str = "lib|demo|shows";
+
+/// Whether `id` names a demo library: what a server with no media of its own
+/// shows until somebody points it at a folder.
+pub fn is_demo_library(id: &str) -> bool {
+    [DEMO_MOVIES, DEMO_SHOWS]
+        .iter()
+        .any(|seed| crate::services::scan::short_hash(seed) == id)
+}
+
 fn demo_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
     let (movies, shows) = crate::services::demo::media::roots(&config.data_dir);
     let mut defs = Vec::new();
     if movies.is_dir() {
         defs.push(LibraryDef {
-            id: crate::services::scan::short_hash("lib|demo|movies"),
+            id: crate::services::scan::short_hash(DEMO_MOVIES),
             name: "Films (Démo)".to_string(),
             kind: "movies".to_string(),
             folders: vec![movies.to_string_lossy().to_string()],
@@ -236,7 +247,7 @@ fn demo_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
     }
     if shows.is_dir() {
         defs.push(LibraryDef {
-            id: crate::services::scan::short_hash("lib|demo|shows"),
+            id: crate::services::scan::short_hash(DEMO_SHOWS),
             name: "Séries (Démo)".to_string(),
             kind: "shows".to_string(),
             folders: vec![shows.to_string_lossy().to_string()],

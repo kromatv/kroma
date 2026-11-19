@@ -1965,7 +1965,7 @@
     "space": "admin",
     "number": 97,
     "status": "AGREED",
-    "text": "The first screen asks the language and one choice: start fresh, or",
+    "text": "The first screen asks the language, and nothing else. It opens in the",
     "file": "docs/spec/admin/setup.md",
     "line": 17
   },
@@ -1975,9 +1975,9 @@
     "space": "admin",
     "number": 98,
     "status": "AGREED",
-    "text": "The owner account is the second screen, and the only one the owner",
+    "text": "The owner account is the third screen, and the only one the owner",
     "file": "docs/spec/admin/setup.md",
-    "line": 21
+    "line": 23
   },
   {
     "id": "ADMIN-99",
@@ -1987,7 +1987,7 @@
     "status": "AGREED",
     "text": "Every screen after the owner account can be skipped. A skipped",
     "file": "docs/spec/admin/setup.md",
-    "line": 29
+    "line": 31
   },
   {
     "id": "ADMIN-100",
@@ -1997,7 +1997,7 @@
     "status": "AGREED",
     "text": "Every screen after the owner account offers \"Finish later\". It",
     "file": "docs/spec/admin/setup.md",
-    "line": 32
+    "line": 34
   },
   {
     "id": "ADMIN-101",
@@ -2005,9 +2005,9 @@
     "space": "admin",
     "number": 101,
     "status": "AGREED",
-    "text": "A playing title is three screens away: the first one, the owner",
+    "text": "A playing title is four screens away: the language, the choice, the",
     "file": "docs/spec/admin/setup.md",
-    "line": 35
+    "line": 37
   },
   {
     "id": "ADMIN-102",
@@ -2017,7 +2017,7 @@
     "status": "AGREED",
     "text": "Once the owner account exists, the setup remembers where the owner",
     "file": "docs/spec/admin/setup.md",
-    "line": 38
+    "line": 40
   },
   {
     "id": "ADMIN-103",
@@ -2027,7 +2027,7 @@
     "status": "AGREED",
     "text": "Only the owner is led through the setup. Anyone else who signs in",
     "file": "docs/spec/admin/setup.md",
-    "line": 41
+    "line": 46
   },
   {
     "id": "ADMIN-104",
@@ -2037,7 +2037,7 @@
     "status": "AGREED",
     "text": "A server that already has its owner when it is updated to a version",
     "file": "docs/spec/admin/setup.md",
-    "line": 44
+    "line": 49
   },
   {
     "id": "ADMIN-105",
@@ -2047,7 +2047,7 @@
     "status": "AGREED",
     "text": "On the media step the owner picks folders in the folder picker.",
     "file": "docs/spec/admin/setup.md",
-    "line": 55
+    "line": 59
   },
   {
     "id": "ADMIN-106",
@@ -2057,7 +2057,7 @@
     "status": "AGREED",
     "text": "The server proposes a kind for each folder from what the folder",
     "file": "docs/spec/admin/setup.md",
-    "line": 57
+    "line": 61
   },
   {
     "id": "ADMIN-107",
@@ -2067,7 +2067,7 @@
     "status": "AGREED",
     "text": "The scan starts when the owner confirms the media step, and keeps",
     "file": "docs/spec/admin/setup.md",
-    "line": 60
+    "line": 64
   },
   {
     "id": "ADMIN-108",
@@ -2077,7 +2077,7 @@
     "status": "AGREED",
     "text": "A source the server already has when the setup starts appears on",
     "file": "docs/spec/admin/setup.md",
-    "line": 63
+    "line": 67
   },
   {
     "id": "ADMIN-109",
@@ -2087,7 +2087,7 @@
     "status": "AGREED",
     "text": "On the modules step each module is offered by what it does for the",
     "file": "docs/spec/admin/setup.md",
-    "line": 66
+    "line": 73
   },
   {
     "id": "ADMIN-110",
@@ -2097,7 +2097,7 @@
     "status": "AGREED",
     "text": "Which modules the setup offers, and in what order, comes from the",
     "file": "docs/spec/admin/setup.md",
-    "line": 70
+    "line": 77
   },
   {
     "id": "ADMIN-111",
@@ -2107,7 +2107,7 @@
     "status": "AGREED",
     "text": "Each offer shows the module's size, the permissions it asks for and",
     "file": "docs/spec/admin/setup.md",
-    "line": 73
+    "line": 80
   },
   {
     "id": "ADMIN-112",
@@ -2117,7 +2117,7 @@
     "status": "AGREED",
     "text": "No module is selected by default.",
     "file": "docs/spec/admin/setup.md",
-    "line": 76
+    "line": 86
   },
   {
     "id": "ADMIN-113",
@@ -2125,9 +2125,9 @@
     "space": "admin",
     "number": 113,
     "status": "AGREED",
-    "text": "The modules the owner selects install in the background while the",
+    "text": "A selection is only a selection until the owner leaves the setup, at",
     "file": "docs/spec/admin/setup.md",
-    "line": 78
+    "line": 88
   },
   {
     "id": "ADMIN-114",
@@ -2137,27 +2137,7 @@
     "status": "AGREED",
     "text": "On the people step the owner creates invitations, under the rule of",
     "file": "docs/spec/admin/setup.md",
-    "line": 81
-  },
-  {
-    "id": "ADMIN-115",
-    "domain": "ADMIN",
-    "space": "admin",
-    "number": 115,
-    "status": "AGREED",
-    "text": "On the devices step the owner can pair a television",
-    "file": "docs/spec/admin/setup.md",
-    "line": 85
-  },
-  {
-    "id": "ADMIN-116",
-    "domain": "ADMIN",
-    "space": "admin",
-    "number": 116,
-    "status": "AGREED",
-    "text": "The devices step gives a link to each KROMA app.",
-    "file": "docs/spec/admin/setup.md",
-    "line": 88
+    "line": 95
   },
   {
     "id": "ADMIN-117",
@@ -2167,7 +2147,7 @@
     "status": "AGREED",
     "text": "The being-counted step says in one sentence what a counted server",
     "file": "docs/spec/admin/setup.md",
-    "line": 90
+    "line": 108
   },
   {
     "id": "ADMIN-118",
@@ -2177,7 +2157,7 @@
     "status": "AGREED",
     "text": "The last step is the home.",
     "file": "docs/spec/admin/setup.md",
-    "line": 94
+    "line": 112
   },
   {
     "id": "ADMIN-119",
@@ -2187,7 +2167,7 @@
     "status": "AGREED",
     "text": "No step holds the catalogue back. A title is playable as soon as",
     "file": "docs/spec/admin/setup.md",
-    "line": 103
+    "line": 121
   },
   {
     "id": "ADMIN-120",
@@ -2197,7 +2177,7 @@
     "status": "AGREED",
     "text": "While a scan runs, every screen after the media step shows the",
     "file": "docs/spec/admin/setup.md",
-    "line": 106
+    "line": 124
   },
   {
     "id": "ADMIN-121",
@@ -2207,7 +2187,7 @@
     "status": "AGREED",
     "text": "A setup that ended before its last step leaves a checklist on the",
     "file": "docs/spec/admin/setup.md",
-    "line": 115
+    "line": 133
   },
   {
     "id": "ADMIN-122",
@@ -2217,7 +2197,7 @@
     "status": "AGREED",
     "text": "A line leaves the checklist when its step is done, in the setup or",
     "file": "docs/spec/admin/setup.md",
-    "line": 118
+    "line": 136
   },
   {
     "id": "ADMIN-123",
@@ -2227,7 +2207,7 @@
     "status": "AGREED",
     "text": "The owner can dismiss any line, and a dismissed line does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 130
+    "line": 147
   },
   {
     "id": "ADMIN-124",
@@ -2237,7 +2217,7 @@
     "status": "AGREED",
     "text": "When no line is left the checklist is gone, and it does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 133
+    "line": 150
   },
   {
     "id": "ADMIN-125",
@@ -2247,7 +2227,7 @@
     "status": "AGREED",
     "text": "The whole setup works on a phone held upright. Nothing scrolls",
     "file": "docs/spec/admin/setup.md",
-    "line": 140
+    "line": 157
   },
   {
     "id": "ADMIN-126",
@@ -2257,7 +2237,7 @@
     "status": "AGREED",
     "text": "The whole setup works by keyboard alone, from the first screen to",
     "file": "docs/spec/admin/setup.md",
-    "line": 143
+    "line": 160
   },
   {
     "id": "ADMIN-127",
@@ -2267,7 +2247,7 @@
     "status": "AGREED",
     "text": "No step sends the owner to documentation. What a step needs to say,",
     "file": "docs/spec/admin/setup.md",
-    "line": 146
+    "line": 163
   },
   {
     "id": "ADMIN-128",
@@ -2708,6 +2688,96 @@
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
     "line": 216
+  },
+  {
+    "id": "ADMIN-172",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 172,
+    "status": "AGREED",
+    "text": "The second screen asks one choice: start fresh, or bring another",
+    "file": "docs/spec/admin/setup.md",
+    "line": 20
+  },
+  {
+    "id": "ADMIN-173",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 173,
+    "status": "AGREED",
+    "text": "The words that offer a module are the module's own, in each language",
+    "file": "docs/spec/admin/setup.md",
+    "line": 83
+  },
+  {
+    "id": "ADMIN-174",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 174,
+    "status": "AGREED",
+    "text": "A module the server already holds appears on the modules step as",
+    "file": "docs/spec/admin/setup.md",
+    "line": 92
+  },
+  {
+    "id": "ADMIN-175",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 175,
+    "status": "AGREED",
+    "text": "An invitation says what its account may do. A new one lets its",
+    "file": "docs/spec/admin/setup.md",
+    "line": 99
+  },
+  {
+    "id": "ADMIN-176",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 176,
+    "status": "AGREED",
+    "text": "The owner hands an invitation over from the step: they copy its link,",
+    "file": "docs/spec/admin/setup.md",
+    "line": 102
+  },
+  {
+    "id": "ADMIN-177",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 177,
+    "status": "AGREED",
+    "text": "The owner deletes an invitation on the people step, and its link",
+    "file": "docs/spec/admin/setup.md",
+    "line": 105
+  },
+  {
+    "id": "ADMIN-178",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 178,
+    "status": "AGREED",
+    "text": "The owner opens any step they have been to, from any other step, in",
+    "file": "docs/spec/admin/setup.md",
+    "line": 43
+  },
+  {
+    "id": "ADMIN-179",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 179,
+    "status": "AGREED",
+    "text": "On the media step the owner removes a source they added. Removing it",
+    "file": "docs/spec/admin/setup.md",
+    "line": 70
+  },
+  {
+    "id": "ADMIN-180",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 180,
+    "status": "AGREED",
+    "text": "The page of the setup never scrolls. A step with more than its frame",
+    "file": "docs/spec/admin/setup.md",
+    "line": 166
   },
   {
     "id": "ADMIN-181",
