@@ -36,7 +36,8 @@ What a platform can do is one port, `WakeReach`:
 | --- | --- | --- | --- |
 | browser | yes | no: a page may not accept the set's own certificate | no: a page has no datagram |
 | iPhone, iPad | yes | yes (`@kromatv/lan-reach`) | yes, with Apple's multicast entitlement on a real device |
-| Android, desktop | yes | not written yet | not written yet |
+| Android | yes | yes (`@kromatv/lan-reach`) | yes |
+| desktop | yes | not written yet | not written yet |
 
 A step that needs what the platform lacks ends as `needsPower`: the row says
 that the television has to be switched on with its remote, and the session
@@ -71,12 +72,13 @@ Measured on a 2024 Frame (Tizen 8), not read off a document:
 ## What is not there yet
 
 - A television in true standby is not switched on from a browser, which has
-  neither the remote service nor a datagram. The iOS app has both
-  (`packages/lan-reach`); the Android and desktop halves are not written.
-- The iOS half is not proven inside the app. Its Swift code pressed the power
-  key on the television from a Mac, and the app builds and links it, but the
-  simulator on the machine it was written on crashes in its own loader before
-  any app code runs.
+  neither the remote service nor a datagram. The iOS and Android apps have
+  both (`packages/lan-reach`); the desktop half is not written.
+- Neither native half is proven inside the app. The Swift code and the Kotlin
+  code each pressed keys on the television from a Mac, and the iOS app builds
+  and links its half. The iOS simulator on the machine they were written on
+  crashes in its own loader before any app code runs, and that machine has no
+  Android SDK, so the Android module was never built by Gradle.
 - The native Tizen package is `tv.kroma.app`, which the application service
   does not answer for. It needs an id of the form above before a native build
   can be opened; the web build already has one.
