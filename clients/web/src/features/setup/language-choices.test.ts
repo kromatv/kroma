@@ -28,6 +28,12 @@ it('puts the preferred languages on top and sorts the others by their own name',
   expect(ordered.map((choice) => choice.code)).toEqual(['fr', 'de', 'en', 'es', 'pt-BR']);
 });
 
+it('leaves out a preferred language that is not among the choices', () => {
+  const ordered = orderedChoices(CHOICES, ['it', 'fr']);
+
+  expect(ordered.map((choice) => choice.code)).toEqual(['fr', 'de', 'en', 'es', 'pt-BR']);
+});
+
 it('finds a language by its own name without the accent', () => {
   expect(matchingChoices(CHOICES, 'francais').map((choice) => choice.code)).toEqual(['fr']);
 });

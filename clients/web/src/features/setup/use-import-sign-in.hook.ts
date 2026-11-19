@@ -1,5 +1,5 @@
 import type { Importer, ImportSignIn } from '@kromatv/client/importers';
-import { useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useImportSession } from '#web/features/setup/import-session.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
@@ -33,8 +33,10 @@ function useResumed(importer: Importer, pending: string | null) {
   const keep = useKeep();
   return useQuery({
     queryKey: ['setup', 'import-pending', importer.id, pending],
-    queryFn: async () => keep(await client.importers.resume(importer.id, pending ?? '')),
-    enabled: pending !== null,
+    queryFn:
+      pending === null
+        ? skipToken
+        : async () => keep(await client.importers.resume(importer.id, pending)),
     refetchInterval: (query) => (pendingOf(query.state.data) === null ? false : ASK_AGAIN_MS),
     retry: false,
   });

@@ -11,7 +11,9 @@ function folded(text: string): string {
 }
 
 function primary(tag: string): string {
-  return tag.toLowerCase().split('-')[0] ?? '';
+  const lowered = tag.toLowerCase();
+  const dash = lowered.indexOf('-');
+  return dash === -1 ? lowered : lowered.slice(0, dash);
 }
 
 /** The offered codes a browser asks for, in the browser's own order: an exact

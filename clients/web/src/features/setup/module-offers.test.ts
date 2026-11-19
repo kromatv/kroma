@@ -9,9 +9,18 @@ interface Entry {
   installed?: string;
   library?: true;
   source?: string;
+  size?: number | null;
 }
 
-const entry = ({ id, points = [], needs = [], installed, library, source }: Entry) => ({
+const entry = ({
+  id,
+  points = [],
+  needs = [],
+  installed,
+  library,
+  source,
+  size = 1000,
+}: Entry) => ({
   id,
   name: id,
   version: '1.0.0',
@@ -21,7 +30,7 @@ const entry = ({ id, points = [], needs = [], installed, library, source }: Entr
   optionalDependencies: {},
   contributes: points.map((point) => ({ point })),
   consumes: [],
-  size: 1000,
+  size,
   installedVersion: installed,
   updateAvailable: false,
   compatible: true,
@@ -134,6 +143,17 @@ it('counts a module two selections both need once', () => {
 
   expect(pickedBytes(all, ['tv.test.get', 'tv.test.vpn'])).toBe(3000);
   expect(pickedBytes(all, [])).toBe(0);
+});
+
+it('counts a module of unknown size as nothing to download', () => {
+  const all = offers(
+    catalog([
+      { id: 'tv.test.get', points: ['acquisition'] },
+      { id: 'tv.test.vpn', points: ['network'], size: null },
+    ]),
+  );
+
+  expect(pickedBytes(all, ['tv.test.get', 'tv.test.vpn'])).toBe(1000);
 });
 
 it('reads an offer as open, selected, or on its way to the server', () => {
