@@ -78,6 +78,7 @@ pub fn sync_batch(pool: &Pool, batch: &ScanBatch) -> Result<usize> {
         + sync_shows(&tx, batch.shows.iter().copied())?;
     let items = sync_items(&tx, batch.items.iter().copied())?;
     let files = sync_files(&tx, batch.items.iter().copied(), batch.mtimes)?;
+    crate::imports::release_held_states(&tx)?;
     note_unsettled(&tx, &items.shows_with_episodes_written)?;
 
     tx.commit()?;

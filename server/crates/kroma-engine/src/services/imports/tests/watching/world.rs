@@ -7,7 +7,7 @@ use super::super::super::stages::{Core, UserRow};
 use super::super::this_machine::{at, this_machine};
 use super::super::*;
 use crate::model::imports::KeptFolder;
-use crate::services::scan::rescan_sync;
+use crate::services::scan::{rescan_sync, uninterrupted, WalkTurn};
 use crate::services::settings::{self, LibraryDef};
 
 pub(super) const LAST_WEEK: i64 = 1_700_000_000;
@@ -159,7 +159,7 @@ impl World {
     }
 
     pub(super) fn scans(&self) {
-        rescan_sync(&self.state).unwrap();
+        rescan_sync(&WalkTurn::wait(), &self.state, &mut uninterrupted).unwrap();
     }
 
     pub(super) fn has_scanned(&self, files: &[&str]) {
