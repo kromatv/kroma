@@ -68,7 +68,7 @@ impl Household {
     }
 
     fn scan_and_match(&self) {
-        scan::rescan_sync(&self.state).unwrap();
+        scan::rescan_sync(&scan::WalkTurn::wait(), &self.state, &mut scan::uninterrupted).unwrap();
         let items = db::list_items(&self.state.db, None).unwrap();
         let shows = db::list_shows(&self.state.db, None).unwrap();
         enrich::run_tracked(&self.state, &items, &shows, |_, _| (), || false);

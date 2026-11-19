@@ -37,7 +37,7 @@ fn roots(sources: &[LibraryDef]) -> Vec<Root> {
 impl ScanPaths {
     /// For the server `server_id` names in `import_servers`.
     pub(crate) fn kept(state: &SharedState, server_id: &str) -> Result<Self> {
-        let sources = settings::library_defs(&state.settings, &state.config);
+        let sources = settings::library_defs(&state.settings, &state.config)?;
         Ok(Self {
             translation: Translation::kept(&state.db, server_id)?,
             roots: roots(&sources),
