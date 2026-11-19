@@ -1,30 +1,27 @@
-import type {
-  ImportCounts,
-  ImportServerId,
-  ImportSignInId,
-  ImportSurvey,
-} from '@kromatv/client/importers';
-import type { ModuleId } from '@kromatv/client/modules';
+import type { ImportCounts, ImportSurvey } from '@kromatv/client/importers';
+import type { ImportFolder } from '@kromatv/client/imports';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout, Row, Skeleton, StatCard } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { foldersOf, placed, placesOf } from '#web/features/setup/import-folders';
+import {
+  type ImportTarget,
+  importable,
+  importRequest,
+  keptLibraries,
+} from '#web/features/setup/import-review';
+import { useImportSession } from '#web/features/setup/import-session.component';
+import { ReviewFolders } from '#web/features/setup/import-review-folders.component';
 import { ReviewLibraries, ReviewUsers } from '#web/features/setup/import-review-lists.component';
 import { leftBehindLine } from '#web/features/setup/import-words';
 import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
-/** The server an import reads: through which importer, with which sign-in. */
-export interface ImportTarget {
-  importer: ModuleId;
-  signIn: ImportSignInId;
-  server: ImportServerId;
-}
-
 interface ReviewProps {
   target: ImportTarget;
   onBack: () => void;
-  onContinue: () => void;
 }
 
 const COUNTS = [
@@ -40,6 +37,21 @@ function useSurvey({ importer, signIn, server }: ImportTarget) {
     queryFn: () => client.importers.survey(importer, signIn, server),
     retry: false,
   });
+}
+
+function usePlaces(target: ImportTarget, survey: ImportSurvey | undefined): ImportFolder[] {
+  const { client } = useWebRuntime();
+  const { session } = useImportSession();
+  const folders = foldersOf((survey?.libraries ?? []).filter(importable));
+  const { data } = useQuery({
+    queryKey: ['setup', 'import-folders', target.importer, target.server, folders],
+    queryFn: () =>
+      client.imports.folders({ importer: target.importer, server: target.server, folders }),
+    enabled: folders.length > 0,
+    retry: false,
+  });
+  const found = data?.folders ?? folders.map((folder) => ({ folder }));
+  return placed(found, session.folders);
 }
 
 function Counts({ counts }: Readonly<{ counts: ImportCounts }>) {
@@ -83,38 +95,71 @@ function Loading() {
   );
 }
 
-function Survey({ survey }: Readonly<{ survey: ImportSurvey }>) {
+interface SurveyProps {
+  survey: ImportSurvey;
+  places: readonly ImportFolder[];
+}
+
+function Survey({ survey, places }: Readonly<SurveyProps>) {
+  const { session } = useImportSession();
+  const kept = keptLibraries(survey.libraries, session.skippedLibraries);
   return (
     <>
       <Counts counts={survey.counts} />
       <ReviewLibraries libraries={survey.libraries} />
+      <ReviewFolders places={placesOf(kept, places)} />
       <ReviewUsers users={survey.users} />
       <LeftBehind keys={survey.leftBehind} />
     </>
   );
 }
 
+function useStart(target: ImportTarget, review: Partial<SurveyProps>) {
+  const { client } = useWebRuntime();
+  const { session, update } = useImportSession();
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const start = async () => {
+    const { survey, places = [] } = review;
+    if (!survey) {
+      return;
+    }
+    setBusy(true);
+    setFailed(false);
+    const request = importRequest(target, { survey, choices: session, places });
+    const started = await client.imports.start(request).catch(() => null);
+    setBusy(false);
+    setFailed(started === null);
+    update({ running: started?.id ?? null });
+  };
+  return { busy, failed, start };
+}
+
 /** What the other server holds, before anything is written: its libraries,
  * its users, how much they watched, and what an import does not bring. The
- * owner leaves out what they do not want. */
-export function ImportReview({ target, onBack, onContinue }: Readonly<ReviewProps>) {
+ * owner leaves out what they do not want, then starts the import. */
+export function ImportReview({ target, onBack }: Readonly<ReviewProps>) {
   const t = useT();
   const { data, error } = useSurvey(target);
+  const places = usePlaces(target, data);
+  const { busy, failed, start } = useStart(target, { survey: data, places });
   return (
     <>
       <StepHeading title={t('setup.importReviewTitle')} sub={t('setup.importReviewSub')} />
       <StepBody>
-        {data ? <Survey survey={data} /> : null}
+        {data ? <Survey survey={data} places={places} /> : null}
         {!data && !error ? <Loading /> : null}
         <StepFailure error={error ? t('setup.importReviewFailed') : null} />
+        <StepFailure error={failed ? t('setup.importStartFailed') : null} />
       </StepBody>
       <StepActions onBack={onBack}>
         <Button
           size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
+          icon="arrow-down-circle"
+          label={t('setup.importStart')}
+          loading={busy}
           disabled={!data}
-          onPress={onContinue}
+          onPress={() => void start()}
         />
       </StepActions>
     </>
