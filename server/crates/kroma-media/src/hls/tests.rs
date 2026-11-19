@@ -1,6 +1,8 @@
 use std::time::Duration;
 
+use super::naming::session_dir;
 use super::retime::testing::decode_times;
+use super::session::testing::{registry, LIVE, PLAYLIST};
 use super::*;
 use crate::input;
 
@@ -182,6 +184,10 @@ async fn a_re_anchor_into_a_session_already_running_is_answered_out_of_it() {
     assert_eq!(session_dirs(dir.path()), 1, "no second ffmpeg was started");
     assert_eq!(start, 0.0, "the client is told where the stream it gets begins");
     assert!(playlist.contains("seg_00000.m4s"));
+    assert!(
+        playlist.starts_with("#EXTM3U\n#EXT-X-START:TIME-OFFSET=0\n"),
+        "{playlist}"
+    );
 }
 
 async fn re_anchored_out_of_a_running_session(dir: &Path, anchor: u64) -> (HlsEngine, String, f64) {
@@ -295,4 +301,44 @@ async fn a_file_whose_clock_starts_late_is_answered_on_the_film_s_own_clock() {
 
     assert!((start - 10.0).abs() < 0.05, "{start}");
     assert_eq!(start, first_frame_on_disk(&engine, 11));
+}
+
+#[tokio::test]
+async fn a_remux_still_running_tells_the_player_to_start_at_its_anchor() {
+    let key = session_key("it1", COPY, 0, 0);
+    let (sessions, dir) = registry("start-running", 2, &[(&key, LIVE)]).await;
+    let written = sessions.root.join(session_dir(&key)).join("index.m3u8");
+    std::fs::write(written, PLAYLIST).expect("the playlist");
+    let engine = HlsEngine {
+        sessions: Arc::new(sessions),
+        durations: Default::default(),
+    };
+
+    let (playlist, _) = engine
+        .master(asked(&dir.path().join("clip.mkv"), 0))
+        .await
+        .expect("the playlist the running session wrote");
+
+    assert!(
+        playlist.starts_with("#EXTM3U\n#EXT-X-START:TIME-OFFSET=0\n"),
+        "{playlist}"
+    );
+    assert!(!playlist.contains("#EXT-X-ENDLIST"), "{playlist}");
+}
+
+#[tokio::test]
+async fn a_finished_remux_still_tells_the_player_to_start_at_its_anchor() {
+    let dir = kroma_testing::temp_dir("hls-start-finished");
+    let input = kroma_testing::clip(dir.path());
+    let engine = engine(dir.path());
+    remux(&engine, &input).await;
+    finished_playlist(&engine).await;
+
+    let playlist = remux(&engine, &input).await;
+
+    assert!(
+        playlist.starts_with("#EXTM3U\n#EXT-X-START:TIME-OFFSET=0\n"),
+        "{playlist}"
+    );
+    assert!(playlist.contains("#EXT-X-ENDLIST"), "{playlist}");
 }
