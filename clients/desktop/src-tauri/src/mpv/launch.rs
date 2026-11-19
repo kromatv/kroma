@@ -25,6 +25,7 @@ const BASE_ARGS: &[&str] = &[
     "--keep-open=no",
     "--hwdec=auto-safe",
     "--cache=yes",
+    "--demuxer-lavf-o=live_start_index=0",
     "--hr-seek=yes",
     "--force-seekable=yes",
     "--sub-auto=no",

@@ -79,11 +79,39 @@ function current(e: ExpoVideoEngine): Fake {
   return e.videoPlayer as unknown as Fake;
 }
 
+function serverStarts(...starts: string[]) {
+  const answers = [...starts];
+  const fetch = vi.fn(() => {
+    const start = answers.shift() ?? null;
+    return Promise.resolve({ status: 200, headers: { get: () => start } });
+  });
+  vi.stubGlobal('fetch', fetch);
+  return fetch;
+}
+
+function heldStarts() {
+  const pending: Array<(start: string) => void> = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      () =>
+        new Promise((resolve) => {
+          pending.push((start) => resolve({ status: 200, headers: { get: () => start } }));
+        }),
+    ),
+  );
+  return pending;
+}
+
+const answered = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 beforeEach(() => {
   players.length = 0;
+  serverStarts();
 });
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe('ExpoVideoEngine construction', () => {
@@ -735,5 +763,62 @@ describe('what the stats panel asks the engine', () => {
     current(e).throwOnRead = true;
     expect(() => e.debugRows?.()).not.toThrow();
     expect(rowsOf(e).Plane).toBeTruthy();
+  });
+});
+
+describe('ExpoVideoEngine master start', () => {
+  it('counts a master from the start the server says its remux began at', async () => {
+    serverStarts('96.043');
+    const { e, listeners } = make({ direct: false, startSec: 100 });
+
+    await answered();
+    current(e).emit('timeUpdate', { currentTime: 2 });
+
+    expect(e.position()).toBeCloseTo(98.043);
+    expect(listeners.onTime).toHaveBeenLastCalledWith(e.position());
+  });
+
+  it('counts a re-anchored master from the start the server names for it', async () => {
+    serverStarts('96.043', '48.048');
+    const { e } = make({ direct: false, startSec: 100 });
+    await answered();
+
+    e.seekTo(50);
+    await answered();
+
+    expect(current(e).replaced).toEqual(['master:ev1:false:50:0']);
+    expect(e.position()).toBeCloseTo(48.048);
+  });
+
+  it('keeps the start of the newest anchor when an older one answers last', async () => {
+    const pending = heldStarts();
+    const { e } = make({ direct: false, startSec: 300 });
+
+    e.seekTo(120);
+    pending[1]?.('118.118');
+    await answered();
+    pending[0]?.('296.296');
+    await answered();
+
+    expect(e.position()).toBeCloseTo(118.118);
+  });
+
+  it('keeps the anchor it asked for when the server names no start', async () => {
+    serverStarts();
+    const { e } = make({ direct: false, startSec: 300 });
+
+    await answered();
+
+    expect(e.position()).toBe(300);
+  });
+
+  it('asks the server nothing for a master at the top of the film or a direct file', async () => {
+    const fetch = serverStarts('7');
+
+    make({ direct: false, startSec: 0 });
+    make({ direct: true, startSec: 300 });
+    await answered();
+
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

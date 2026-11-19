@@ -66,6 +66,7 @@ pub fn apply_common_options(init: &MpvInitializer) -> MpvResult<()> {
     init.set_property("hr-seek", "yes")?;
     init.set_property("force-seekable", "yes")?;
     init.set_property("cache", "yes")?;
+    init.set_property("demuxer-lavf-o", "live_start_index=0")?;
     init.set_property("sub-auto", "no")?;
     init.set_property("sid", "no")?;
     init.set_property("terminal", false)?;

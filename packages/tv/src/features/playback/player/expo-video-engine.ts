@@ -8,7 +8,7 @@
 // is absent.
 
 import type { MediaItem } from '@kromatv/client/media';
-import { audioTracksOf } from '@kromatv/core';
+import { AT_FILM_START_SEC, audioTracksOf, resolveMasterStart } from '@kromatv/core';
 import type { VideoPlayer, VideoPlayerEvents } from 'expo-video';
 import {
   BaseTvEngine,
@@ -34,6 +34,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   private pendingSeek: number | null = null;
   private readonly audio = new ExpoDirectAudio(audioTracksOf(this.item));
   private clockSettled = true;
+  private startSeq = 0;
   private readonly rescue = new MasterRescue({
     refreshSession: () => this.client.refreshSession(),
     restart: () => this.reanchor(this.position()),
@@ -44,6 +45,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   constructor(opts: EngineOptions) {
     super(opts);
     this.open(this.sourceUrl(), opts.startSec, true);
+    this.settleStart();
   }
 
   /** Null until the first open; replaced on every re-anchor. */
@@ -215,6 +217,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
    * within the file. */
   protected reanchor(absSec: number): void {
     this.resetClock(absSec);
+    this.settleStart();
     const player = this.player;
     // `replace` keeps the existing player and <VideoView>; swapping the whole
     // VideoPlayer would black the picture out for the handover.
@@ -231,6 +234,20 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
       }
     }
     this.open(this.sourceUrl(), absSec, !this.paused);
+  }
+
+  private settleStart(): void {
+    const seq = ++this.startSeq;
+    if (this.mode !== 'master' || this.baseSec <= AT_FILM_START_SEC) {
+      return;
+    }
+    void resolveMasterStart(this.sourceUrl(), this.baseSec).then((real) => {
+      if (this.destroyed || seq !== this.startSeq) {
+        return;
+      }
+      this.baseSec = real;
+      this.listeners.onTime(this.position());
+    });
   }
 
   play(): void {

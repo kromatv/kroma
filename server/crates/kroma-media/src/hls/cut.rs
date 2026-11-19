@@ -57,6 +57,20 @@ pub(super) fn from_the_second(playlist: &str, second: f64) -> Option<Cut> {
     })
 }
 
+const FROM_THE_FIRST_SEGMENT: &str = "#EXT-X-START:TIME-OFFSET=0";
+
+pub(super) fn from_its_first_segment(playlist: String) -> String {
+    if playlist.contains("#EXT-X-START:") {
+        return playlist;
+    }
+    match playlist.split_once('\n') {
+        Some((head, rest)) if head.trim_end() == "#EXTM3U" => {
+            format!("{head}\n{FROM_THE_FIRST_SEGMENT}\n{rest}")
+        }
+        _ => playlist,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::super::session::testing::PLAYLIST;
@@ -107,5 +121,51 @@ mod tests {
             "{}",
             cut.playlist
         );
+    }
+
+    #[test]
+    fn a_playlist_still_growing_tells_the_player_to_start_at_its_first_segment() {
+        let started = from_its_first_segment(PLAYLIST.to_string());
+
+        assert_eq!(
+            started,
+            PLAYLIST.replacen("#EXTM3U\n", "#EXTM3U\n#EXT-X-START:TIME-OFFSET=0\n", 1)
+        );
+    }
+
+    #[test]
+    fn a_finished_playlist_still_starts_at_its_first_segment() {
+        let ended = format!("{PLAYLIST}#EXT-X-ENDLIST\n");
+
+        let started = from_its_first_segment(ended);
+
+        assert!(started.starts_with("#EXTM3U\n#EXT-X-START:TIME-OFFSET=0\n"));
+        assert!(started.ends_with("#EXT-X-ENDLIST\n"));
+    }
+
+    #[test]
+    fn a_cut_playlist_starts_at_the_segment_it_was_cut_on() {
+        let cut = from_the_second(PLAYLIST, 7.0).expect("inside the playlist");
+
+        let started = from_its_first_segment(cut.playlist);
+
+        assert!(started.starts_with("#EXTM3U\n#EXT-X-START:TIME-OFFSET=0\n"));
+        assert!(started.contains("#EXT-X-MEDIA-SEQUENCE:1\n"));
+    }
+
+    #[test]
+    fn a_playlist_that_already_names_its_start_is_served_as_it_is() {
+        let named = PLAYLIST.replacen("#EXTM3U\n", "#EXTM3U\n#EXT-X-START:TIME-OFFSET=12\n", 1);
+
+        let started = from_its_first_segment(named.clone());
+
+        assert_eq!(started, named);
+    }
+
+    #[test]
+    fn text_that_is_not_a_playlist_is_handed_back_untouched() {
+        let started = from_its_first_segment("partial".to_string());
+
+        assert_eq!(started, "partial");
     }
 }
