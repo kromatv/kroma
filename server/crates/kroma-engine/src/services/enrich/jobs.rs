@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 use std::path::Path;
 
-use crate::db::{self, Pool};
+use crate::db::imports::Elsewhere;
 use crate::infra::metadata::Target;
 use crate::model::{Kind, MediaItem, Metadata, Show};
-use crate::state::SharedState;
 
 use super::episodes::art_gone;
+use super::pins::Pins;
 
 pub(super) struct Job {
     pub(super) id: String,
@@ -24,11 +24,20 @@ pub(super) struct Job {
     // every stored reference back. Unlike a pin it is not a correction, so it
     // never renames the row.
     pub(super) refetch: Option<u64>,
+    pub(super) unasked: Option<Elsewhere>,
 }
 
 impl Job {
     pub(super) fn fetches(&self, changed_shows: &HashSet<String>) -> bool {
         self.resolved_tmdb.is_none() || (self.is_show && changed_shows.contains(&self.id))
+    }
+
+    pub(super) fn asking(mut self, unasked: Option<Elsewhere>) -> Self {
+        if unasked.is_some() {
+            self.refetch = self.refetch.or(self.resolved_tmdb.take());
+        }
+        self.unasked = unasked;
+        self
     }
 }
 
@@ -49,7 +58,7 @@ pub(super) fn build_jobs(
         // landed yet, so it re-matches even though the movie looks done.
         let settled = on_file.is_some() && (pin.is_none() || pin == on_file);
         let intact = art_intact(data_dir, i.metadata.as_ref());
-        jobs.push(Job {
+        let job = Job {
             id: i.id.clone(),
             target: Target::Movie,
             title: i.title.clone(),
@@ -62,7 +71,9 @@ pub(super) fn build_jobs(
             resolved_tmdb: on_file.filter(|_| settled && intact),
             pin,
             refetch: on_file.filter(|_| settled && !intact),
-        });
+            unasked: None,
+        };
+        jobs.push(job.asking(pins.unasked_items.get(&i.id).cloned()));
     }
     for s in shows {
         // Enqueued even when already enriched: a show may have gained a season,
@@ -71,7 +82,7 @@ pub(super) fn build_jobs(
         let pin = pins.shows.get(&s.id).copied();
         let settled = pin.is_none() || pin == on_file;
         let intact = art_intact(data_dir, s.metadata.as_ref());
-        jobs.push(Job {
+        let job = Job {
             id: s.id.clone(),
             target: Target::Tv,
             title: s.title.clone(),
@@ -80,7 +91,9 @@ pub(super) fn build_jobs(
             resolved_tmdb: on_file.filter(|_| settled && intact),
             pin: pin.filter(|&p| Some(p) != on_file),
             refetch: on_file.filter(|_| settled && !intact),
-        });
+            unasked: None,
+        };
+        jobs.push(job.asking(pins.unasked_shows.get(&s.id).cloned()));
     }
     jobs
 }
@@ -90,33 +103,6 @@ pub(super) fn art_intact(data_dir: &Path, meta: Option<&Metadata>) -> bool {
         let urls = [&m.poster_url, &m.backdrop_url, &m.logo_url];
         !art_gone(data_dir, urls.into_iter().map(Option::as_deref))
     })
-}
-
-#[derive(Default)]
-pub(super) struct Pins {
-    pub(super) items: std::collections::HashMap<String, u64>,
-    pub(super) shows: std::collections::HashMap<String, u64>,
-}
-
-pub(super) fn pin_for(state: &SharedState, kind: &str, id: &str) -> Option<u64> {
-    let conn = state.db.get().ok()?;
-    if let Some(p) = db::tmdb_pin::get(&conn, kind, id).ok().flatten() {
-        return Some(p);
-    }
-    if kind == db::metadata_core::SHOW {
-        db::acq_tmdb_for_show(&conn, id).ok().flatten()
-    } else {
-        db::acq_tmdb_for_item(&conn, id).ok().flatten()
-    }
-}
-
-pub(super) fn load_pins(pool: &Pool) -> Pins {
-    // Acquisition hints first, then operator corrections: the operator wins.
-    let mut items = db::acq_tmdb_by_item(pool).unwrap_or_default();
-    let mut shows = db::acq_tmdb_by_show(pool).unwrap_or_default();
-    items.extend(db::tmdb_pin::all_for_kind(pool, db::metadata_core::ITEM).unwrap_or_default());
-    shows.extend(db::tmdb_pin::all_for_kind(pool, db::metadata_core::SHOW).unwrap_or_default());
-    Pins { items, shows }
 }
 
 #[cfg(test)]

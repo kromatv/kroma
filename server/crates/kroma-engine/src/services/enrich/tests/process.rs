@@ -16,6 +16,7 @@ fn movie_job(resolved: Option<u64>, refetch: Option<u64>) -> Job {
         resolved_tmdb: resolved,
         pin: None,
         refetch,
+        unasked: None,
     }
 }
 
@@ -75,6 +76,7 @@ fn a_settled_show_with_unreachable_tmdb_still_counts_as_resolved() {
         resolved_tmdb: Some(SHOW_TMDB),
         pin: None,
         refetch: None,
+        unasked: None,
     };
 
     process_job(&eng, &counters, 1, None, job);

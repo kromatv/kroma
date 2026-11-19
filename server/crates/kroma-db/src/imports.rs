@@ -4,6 +4,7 @@
 
 mod catalogue;
 mod folders;
+mod identities;
 mod newcomers;
 mod passes;
 mod records;
@@ -15,6 +16,7 @@ mod tests;
 
 pub use catalogue::*;
 pub use folders::*;
+pub use identities::*;
 pub use newcomers::*;
 pub use passes::*;
 pub use records::*;

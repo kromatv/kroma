@@ -14,6 +14,7 @@ use super::engine::{bump, Counters, Engine};
 use super::episodes::enrich_episodes;
 use super::jobs::Job;
 use super::lang::{primary_lang, stale_langs};
+use super::pins::identified;
 
 pub(super) fn subject_kind(is_show: bool) -> &'static str {
     if is_show {
@@ -79,6 +80,7 @@ pub(super) fn process_job(
     job: Job,
 ) {
     let langs = crate::i18n::content_locales();
+    let job = identified(eng, job);
     if let Some(tmdb_id) = job.resolved_tmdb {
         if job.is_show {
             enrich_episodes(

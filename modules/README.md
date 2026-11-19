@@ -389,6 +389,10 @@ refuses a page with more, and a page has to fit a module call's own limits.
   ids, and `season` and `episode` are numbers.
 - `ids` holds `tmdb`, `imdb` and `tvdb`, each a string as that catalogue writes
   it (`"949"`, `"tt0113277"`).
+- The core keeps a film's `ids`, and for an episode the `ids` of its `series`,
+  as what each file in `paths` is, and matches the file to that title ahead of
+  its name. One id is enough. Without `tmdb` the core asks TMDB by `imdb`, then
+  by `tvdb`. An episode whose `series` has no id keeps nothing.
 - `next` is the cursor of the next page. Leave it out on the last one. A page
   may be empty and still carry `next`.
 - A cursor names one page. When a read gives a `next` it already gave, the core

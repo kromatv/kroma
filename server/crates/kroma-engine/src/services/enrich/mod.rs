@@ -6,6 +6,7 @@ mod engine;
 mod episodes;
 mod jobs;
 mod lang;
+mod pins;
 mod process;
 mod run;
 
