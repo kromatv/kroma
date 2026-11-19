@@ -44,6 +44,7 @@ pub(super) fn films_at(here: &str) -> Selection {
 
 pub(super) fn sources(state: &SharedState) -> Vec<(String, String, Vec<String>)> {
     settings::library_defs(&state.settings, &state.config)
+        .unwrap()
         .into_iter()
         .map(|def| (def.name, def.kind, def.folders))
         .collect()
@@ -51,6 +52,7 @@ pub(super) fn sources(state: &SharedState) -> Vec<(String, String, Vec<String>)>
 
 pub(super) fn source_ids(state: &SharedState) -> Vec<String> {
     settings::library_defs(&state.settings, &state.config)
+        .unwrap()
         .into_iter()
         .map(|def| def.id)
         .collect()

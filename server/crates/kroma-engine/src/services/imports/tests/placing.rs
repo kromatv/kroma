@@ -8,6 +8,7 @@ use super::this_machine::{
 };
 use super::*;
 use crate::infra::events::Envelope;
+use crate::model::imports::Status;
 use crate::services::settings::{self, LibraryDef};
 
 fn a_source(state: &SharedState, name: &str, folder: &str) -> String {
@@ -188,4 +189,19 @@ async fn a_scan_is_asked_for_once_after_an_import_added_sources() {
     import(&state, &Core, &kept);
 
     assert_eq!(scans_asked_for(&mut events), 1);
+}
+
+#[tokio::test]
+async fn an_import_makes_no_source_while_the_saved_library_list_cannot_be_read() {
+    let disk = this_machine(&["films"]);
+    let state = importing_from(&household());
+    let unreadable = json!([{ "name": "Films" }]);
+    let saved = std::collections::BTreeMap::from([("libraries".to_string(), unreadable.clone())]);
+    state.settings.set_patch(&state.db, saved);
+
+    let ran = import(&state, &Core, &films_at(&at(&disk, "films")));
+
+    assert_eq!(ran.import.status, Status::Failed);
+    assert_eq!(state.settings.get("libraries"), unreadable);
+    assert!(became(&state).is_empty());
 }
