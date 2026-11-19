@@ -189,14 +189,14 @@ jobs:
         with:
           node-version: '22'
 
-      # Select the newest Xcode the image carries and assert its Swift is new
-      # enough for the Expo SDK's Swift packages. Checking here turns a runner
-      # image drift into one readable line instead of a package-resolution error
-      # buried in a 10k-line archive log.
+      # Select the newest Xcode the image carries, never a beta (App Store
+      # Connect refuses a build from one), and assert its Swift and SDK are new
+      # enough. Checking here turns a runner image drift into one readable line
+      # instead of an error buried in a 10k-line archive log or an upload.
       - name: Select Xcode
         run: |
           set -euo pipefail
-          newest=$(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -V | tail -1)
+          newest=$(find /Applications -maxdepth 1 -name 'Xcode*.app' ! -iname '*beta*' | sort -V | tail -1)
           [ -n "$newest" ] || { echo "no Xcode on this runner"; exit 1; }
           sudo xcode-select -s "$newest"
           echo "using $newest"
@@ -210,6 +210,12 @@ jobs:
           # Expo SDK 57's expo-modules-jsi declares swift-tools-version 6.2.
           if [ "$(printf '%s\n6.2\n' "$swift_version" | sort -V | head -1)" != "6.2" ]; then
             echo "::error::Swift $swift_version is too old for the Expo SDK (needs 6.2+). Bump the runner image."
+            exit 1
+          fi
+          sdk_version=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iOS SDK $sdk_version"
+          if [ "${sdk_version%%.*}" -lt 27 ]; then
+            echo "::error::iOS SDK $sdk_version is older than 27, which App Store Connect requires from April 2027 (ITMS-90725). Run on an image with Xcode 27."
             exit 1
           fi
 

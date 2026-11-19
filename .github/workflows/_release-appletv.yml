@@ -81,7 +81,7 @@ jobs:
       - name: Select Xcode
         run: |
           set -euo pipefail
-          newest=$(find /Applications -maxdepth 1 -name 'Xcode*.app' | sort -V | tail -1)
+          newest=$(find /Applications -maxdepth 1 -name 'Xcode*.app' ! -iname '*beta*' | sort -V | tail -1)
           [ -n "$newest" ] || { echo "no Xcode on this runner"; exit 1; }
           sudo xcode-select -s "$newest"
           echo "using $newest"
@@ -93,6 +93,12 @@ jobs:
           # Expo SDK 57's expo-modules-jsi declares swift-tools-version 6.2.
           if [ "$(printf '%s\n6.2\n' "$swift_version" | sort -V | head -1)" != "6.2" ]; then
             echo "::error::Swift $swift_version is too old for the Expo SDK (needs 6.2+). Bump the runner image."
+            exit 1
+          fi
+          sdk_version=$(xcrun --sdk appletvos --show-sdk-version)
+          echo "tvOS SDK $sdk_version"
+          if [ "${sdk_version%%.*}" -lt 27 ]; then
+            echo "::error::tvOS SDK $sdk_version is older than 27. Run on an image with Xcode 27, as the phone job does."
             exit 1
           fi
 
