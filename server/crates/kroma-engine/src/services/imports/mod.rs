@@ -17,7 +17,7 @@ mod run;
 mod settle;
 #[expect(
     dead_code,
-    reason = "only the users stage reads what it is given and brings a row over yet"
+    reason = "the titles and plays stages read nothing of what they are given yet"
 )]
 mod stages;
 mod start;

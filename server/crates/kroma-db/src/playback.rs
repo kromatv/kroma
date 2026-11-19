@@ -5,13 +5,14 @@
 //! watched / my-list flags, [`show_progress`] the percent through a show, and
 //! [`up_next`] which episode comes next.
 
-use super::{now_or_blank, params, Pool, Result, Row};
+use super::{now_or_blank, params, Connection, Pool, Result, Row};
 use kroma_domain::ProgressEntry;
 use rusqlite::OptionalExtension;
 
 mod continue_watching;
 mod on_deck;
 mod show_progress;
+mod stamped;
 mod up_next;
 mod watch_state;
 
@@ -20,6 +21,7 @@ mod test_support;
 
 pub use continue_watching::*;
 pub use show_progress::*;
+pub(crate) use stamped::{write_listed, write_progress, write_watched, Stopped};
 pub use up_next::*;
 pub use watch_state::*;
 
@@ -83,14 +85,12 @@ pub fn upsert_progress(
     duration_ms: Option<i64>,
 ) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
-        "INSERT INTO progress (user_id,item_id,position_ms,duration_ms,updated_at) \
-         VALUES (?1,?2,?3,?4,?5) \
-         ON CONFLICT(user_id,item_id) DO UPDATE SET \
-            position_ms=excluded.position_ms, duration_ms=excluded.duration_ms, \
-            updated_at=excluded.updated_at",
-        params![user_id, item_id, position_ms, duration_ms, now_or_blank()],
-    )?;
+    let stopped = Stopped {
+        position_ms,
+        duration_ms,
+        updated_at: &now_or_blank(),
+    };
+    write_progress(&conn, user_id, item_id, &stopped)?;
     Ok(())
 }
 
@@ -121,7 +121,15 @@ pub fn list_progress(pool: &Pool, user_id: &str) -> Result<Vec<ProgressEntry>> {
 
 /// Remove a saved position (e.g. finished, or "remove from Continue Watching").
 pub fn delete_progress(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
-    let conn = pool.get()?;
+    remove_progress(&*pool.get()?, user_id, item_id)?;
+    Ok(())
+}
+
+pub(crate) fn remove_progress(
+    conn: &Connection,
+    user_id: &str,
+    item_id: &str,
+) -> rusqlite::Result<()> {
     conn.execute(
         "DELETE FROM progress WHERE user_id = ?1 AND item_id = ?2",
         params![user_id, item_id],

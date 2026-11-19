@@ -6,7 +6,7 @@ mod normalize;
 
 use normalize::{dice, normalize_core, strip_article};
 
-pub use normalize::{normalize, similarity, strip_combining};
+pub use normalize::{normalize, normalize_all_scripts, similarity, strip_combining};
 
 /// One TMDB search hit, reduced to what scoring needs.
 #[derive(Debug, Clone, Default, PartialEq)]

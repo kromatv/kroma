@@ -2657,7 +2657,7 @@
     "status": "AGREED",
     "text": "The importer stays installed after an import, so the owner can run",
     "file": "docs/spec/admin/import.md",
-    "line": 199
+    "line": 206
   },
   {
     "id": "ADMIN-169",
@@ -2667,7 +2667,7 @@
     "status": "AGREED",
     "text": "The report at the end of an import, and the import screen of the",
     "file": "docs/spec/admin/import.md",
-    "line": 202
+    "line": 209
   },
   {
     "id": "ADMIN-170",
@@ -2677,7 +2677,7 @@
     "status": "AGREED",
     "text": "Removing the importer forgets the sign-in to the other server",
     "file": "docs/spec/admin/import.md",
-    "line": 205
+    "line": 212
   },
   {
     "id": "ADMIN-171",
@@ -2687,7 +2687,7 @@
     "status": "AGREED",
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
-    "line": 209
+    "line": 216
   },
   {
     "id": "ADMIN-172",
@@ -2778,6 +2778,16 @@
     "text": "The page of the setup never scrolls. A step with more than its frame",
     "file": "docs/spec/admin/setup.md",
     "line": 166
+  },
+  {
+    "id": "ADMIN-181",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 181,
+    "status": "AGREED",
+    "text": "A title a person finished on the other server after they stopped",
+    "file": "docs/spec/admin/import.md",
+    "line": 191
   },
   {
     "id": "BROWSE-1",

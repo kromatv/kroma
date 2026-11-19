@@ -40,10 +40,22 @@ pub fn normalize(raw: &str) -> String {
     strip_article(&normalize_core(raw))
 }
 
+/// [`normalize`], with every letter and digit outside Latin kept, lowercased,
+/// where `normalize` drops it. Two names that differ only there stay two
+/// names, which a comparison for equality needs and a similarity score does
+/// not.
+pub fn normalize_all_scripts(raw: &str) -> String {
+    strip_article(&folded(raw, char::is_alphanumeric))
+}
+
 // [`normalize`] without dropping a leading article. Used where the article is
 // signal rather than noise: telling a literal title match ("Scary Movie") apart
 // from one that only holds once the article is stripped ("A Scary Movie").
 pub(super) fn normalize_core(raw: &str) -> String {
+    folded(raw, |_| false)
+}
+
+fn folded(raw: &str, kept_beyond_latin: impl Fn(char) -> bool) -> String {
     let mut out = String::with_capacity(raw.len());
     for ch in raw.chars() {
         if ch.is_ascii_alphanumeric() {
@@ -52,6 +64,7 @@ pub(super) fn normalize_core(raw: &str) -> String {
         }
         match fold(ch) {
             Some(s) => out.push_str(s),
+            None if kept_beyond_latin(ch) => out.extend(ch.to_lowercase()),
             // Punctuation / symbols become a separator rather than vanishing, so
             // "spider-man" and "spider man" agree.
             None if !out.ends_with(' ') => out.push(' '),
@@ -142,6 +155,25 @@ mod tests {
         );
         assert_eq!(normalize("  WALL·E  "), "wall e");
         assert_eq!(normalize("Fast & Furious"), "fast furious");
+    }
+
+    #[test]
+    fn a_name_keeps_the_letters_outside_latin_that_normalize_drops() {
+        assert_eq!(normalize("Dark 疾風伝"), "dark");
+        assert_eq!(normalize_all_scripts("Dark 疾風伝"), "dark 疾風伝");
+        assert_eq!(normalize_all_scripts("БРАТ 2"), "брат 2");
+        assert_eq!(normalize_all_scripts("七人の侍"), "七人の侍");
+    }
+
+    #[test]
+    fn a_name_in_latin_folds_the_same_with_every_letter_kept() {
+        assert_eq!(normalize_all_scripts("The Matrix"), "matrix");
+        assert_eq!(normalize_all_scripts("Ame\u{0301}lie"), "amelie");
+        assert_eq!(
+            normalize_all_scripts("Spider-Man: No Way Home"),
+            "spider man no way home"
+        );
+        assert_eq!(normalize_all_scripts("  ·—  "), "");
     }
 
     #[test]

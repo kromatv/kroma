@@ -5,6 +5,7 @@ use crate::{
 };
 
 mod batches;
+mod held;
 
 #[test]
 fn sync_all_creates_updates_and_prunes() {

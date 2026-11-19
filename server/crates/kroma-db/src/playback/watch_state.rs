@@ -3,6 +3,7 @@
 use anyhow::Result;
 use rusqlite::params;
 
+use super::stamped::{write_listed, write_watched};
 use crate::now_or_blank;
 use crate::Pool;
 
@@ -10,15 +11,8 @@ use crate::Pool;
 /// "Continue watching". Idempotent (re-marking just refreshes `watched_at`).
 pub fn mark_watched(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
-        "INSERT INTO watched (user_id,item_id,watched_at) VALUES (?1,?2,?3) \
-         ON CONFLICT(user_id,item_id) DO UPDATE SET watched_at=excluded.watched_at",
-        params![user_id, item_id, now_or_blank()],
-    )?;
-    conn.execute(
-        "DELETE FROM progress WHERE user_id = ?1 AND item_id = ?2",
-        params![user_id, item_id],
-    )?;
+    write_watched(&conn, user_id, item_id, &now_or_blank())?;
+    super::remove_progress(&conn, user_id, item_id)?;
     Ok(())
 }
 
@@ -26,11 +20,7 @@ pub fn mark_watched(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
 /// position so a scene after the credits picks up where it was left.
 pub fn mark_finished(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
-        "INSERT INTO watched (user_id,item_id,watched_at) VALUES (?1,?2,?3) \
-         ON CONFLICT(user_id,item_id) DO UPDATE SET watched_at=excluded.watched_at",
-        params![user_id, item_id, now_or_blank()],
-    )?;
+    write_watched(&conn, user_id, item_id, &now_or_blank())?;
     Ok(())
 }
 
@@ -56,11 +46,7 @@ pub fn list_watched(pool: &Pool, user_id: &str) -> Result<Vec<String>> {
 /// Add a title to the user's list. Idempotent (re-adding refreshes `added_at`).
 pub fn add_to_list(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
-        "INSERT INTO my_list (user_id,item_id,added_at) VALUES (?1,?2,?3) \
-         ON CONFLICT(user_id,item_id) DO UPDATE SET added_at=excluded.added_at",
-        params![user_id, item_id, now_or_blank()],
-    )?;
+    write_listed(&conn, user_id, item_id, &now_or_blank())?;
     Ok(())
 }
 

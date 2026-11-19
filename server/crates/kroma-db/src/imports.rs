@@ -2,19 +2,24 @@
 //! import's own row, and the record of what was brought from which server. A
 //! time is epoch milliseconds unless its name says otherwise.
 
+mod catalogue;
 mod folders;
 mod newcomers;
 mod passes;
 mod records;
+mod states;
 mod titles;
 
 #[cfg(test)]
 mod tests;
 
+pub use catalogue::*;
 pub use folders::*;
 pub use newcomers::*;
 pub use passes::*;
 pub use records::*;
+pub(crate) use states::release_held_states;
+pub use states::{merge_states, Merged, Place};
 pub use titles::*;
 
 use kroma_domain::imports::{Failure, FailureReason, Import, Origin, Report, Selection, Status};

@@ -45,4 +45,5 @@ pub(super) const STEPS: &[Step] = &[
     },
     sql_step!("0021_imports"),
     sql_step!("0022_import_folders"),
+    sql_step!("0023_import_held_states"),
 ];

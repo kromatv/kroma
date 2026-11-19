@@ -208,6 +208,13 @@ fn is_pruned_dir(name: &std::ffi::OsStr) -> bool {
     n == "@eaDir" || n.starts_with('.')
 }
 
+/// Whether a walk writes the file at `below`, its path below the folder the
+/// walk starts in: a video container, in no folder the walk prunes.
+pub fn takes(below: &Path) -> bool {
+    let mut folders = below.parent().into_iter().flat_map(Path::components);
+    has_video_extension(below) && !folders.any(|folder| is_pruned_dir(folder.as_os_str()))
+}
+
 // `stat` one file (run inside the parallel walk pool): (size, mtime-as-unix-secs).
 fn file_meta(path: &Path) -> FileMeta {
     let md = std::fs::metadata(path).ok()?;

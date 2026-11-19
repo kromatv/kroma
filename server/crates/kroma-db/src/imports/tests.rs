@@ -1,7 +1,9 @@
+mod catalogue;
 mod folders;
 mod newcomers;
 mod records;
 mod runs;
+mod states;
 
 use kroma_domain::import::Title;
 use kroma_domain::imports::{

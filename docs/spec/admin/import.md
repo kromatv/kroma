@@ -188,6 +188,13 @@ title and one person, the newer one wins. KROMA's wins a tie.
 **ADMIN-167** (AGREED) - An import only adds watch state or moves it forward. It removes
 none: a title someone marked unwatched on the other server stays as KROMA has it.
 
+**ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped
+in it on KROMA leaves Continue Watching, and the next episode of its series is offered.
+
+The finish is the newer state, so it wins (ADMIN-166), as it does when the person marks
+the title as watched on KROMA. A resume point newer than the finish stays: the person
+started the title again.
+
 ## After the import
 
 Status: **AGREED**
