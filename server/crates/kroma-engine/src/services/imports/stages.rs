@@ -7,6 +7,7 @@
 //! record, so bringing the same row twice must leave one copy.
 
 mod found;
+mod clock;
 mod identities;
 mod libraries;
 mod plays;
@@ -139,8 +140,4 @@ impl Stages for Core {
     fn plays(&self, importing: &Importing<'_>, page: &[PlayRow<'_>]) -> Result<Vec<Outcome>> {
         plays::add(importing, page)
     }
-}
-
-fn untouched(rows: usize) -> Vec<Outcome> {
-    vec![Outcome::Untouched; rows]
 }

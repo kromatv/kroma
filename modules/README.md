@@ -459,6 +459,16 @@ One row per play, for every user of the server. `id`, `user`, `title` and
 because it is how a second import skips that play. `durationMs` is how long the
 play lasted. Leave it out when the server kept none.
 
+The `id` is all that makes a play the same play. Two rows with two ids are two
+plays in watch history, also when they name one user, one title and one second.
+A play KROMA already has is never written again, so a row that comes back with
+the same `id` and another `playedAt` changes nothing: a server that keeps only
+the last play of a title puts the time in the `id`. The core reads a `playedAt`
+before 1970, or more than five minutes ahead of its own clock, as no time and
+does not bring that play. A time ahead by less is logged as its own clock's
+time. A play with no `durationMs`, or one longer than a week, counts for the
+runtime of its title wherever KROMA adds up time watched.
+
 #### `forget`
 
 ```json

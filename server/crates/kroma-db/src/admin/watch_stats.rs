@@ -8,6 +8,7 @@ use kroma_domain::{
 };
 use rusqlite::params;
 
+use super::time_watched::TIME_WATCHED;
 use crate::Pool;
 
 // Enough groups that a per-kind ranking is never starved by another kind's
@@ -41,11 +42,12 @@ pub fn top_users(pool: &Pool, since: i64, limit: usize) -> Result<Vec<TopUser>> 
         .filter_map(|(i, u)| u.user_id.clone().map(|id| (id, i)))
         .collect();
 
-    let mut watched = conn.prepare(
-        "SELECT COALESCE(user_id,username,'?'), MAX(user_id), COALESCE(MAX(username),'?'), \
-                kind, COUNT(*), SUM(watched_ms) \
-         FROM play_history WHERE ended_at >= ?1 GROUP BY 1, kind",
-    )?;
+    let mut watched = conn.prepare(&format!(
+        "SELECT COALESCE(h.user_id,h.username,'?'), MAX(h.user_id), \
+                COALESCE(MAX(h.username),'?'), h.kind, COUNT(*), SUM({TIME_WATCHED}) \
+         FROM play_history h LEFT JOIN items i ON i.id = h.item_id \
+         WHERE h.ended_at >= ?1 GROUP BY 1, h.kind"
+    ))?;
     let rows = watched.query_map(params![since], |r| {
         Ok((
             r.get::<_, String>(0)?,
@@ -98,10 +100,11 @@ pub fn history_since(
     kind: Option<WatchKind>,
 ) -> Result<Vec<HistoryRow>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "SELECT ended_at,kind,watched_ms FROM play_history \
-         WHERE ended_at >= ?1 AND (?2 IS NULL OR user_id = ?2) ORDER BY ended_at",
-    )?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT h.ended_at,h.kind,{TIME_WATCHED} \
+         FROM play_history h LEFT JOIN items i ON i.id = h.item_id \
+         WHERE h.ended_at >= ?1 AND (?2 IS NULL OR h.user_id = ?2) ORDER BY h.ended_at"
+    ))?;
     let rows = stmt.query_map(params![since, user], |r| {
         Ok(HistoryRow {
             ended_at: r.get(0)?,
