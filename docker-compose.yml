@@ -20,6 +20,8 @@ services:
     #   - /dev/dri:/dev/dri
     # group_add:
     #   - "993"          # getent group render | cut -d: -f3
+    # On a Raspberry Pi 4, the device is /dev/video11:/dev/video11 and the
+    # group is `video`.
     # environment:
     #   KROMA_HTTPS: "1"
     #   KROMA_TLS_SANS: "192.168.1.50"

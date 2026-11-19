@@ -1,0 +1,2 @@
+--enable-v4l2-m2m
+--enable-encoder=h264_v4l2m2m

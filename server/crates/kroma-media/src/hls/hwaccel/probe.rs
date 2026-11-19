@@ -7,7 +7,6 @@
 //! every candidate is made to encode three frames before it is believed, and the
 //! sentence explaining the outcome is kept for the log and the admin.
 
-use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Duration;
 
@@ -15,7 +14,8 @@ use crate::input;
 
 use super::super::ffmpeg::ffmpeg_output;
 use super::super::naming::contains;
-use super::{render_node, HwAccel};
+use super::devices::{BY_TRUST, SOFTWARE};
+use super::HwAccel;
 
 const VALIDATE_TIMEOUT: Duration = Duration::from_secs(20);
 // Three frames of nothing: enough to open the device, allocate its surfaces and
@@ -58,7 +58,8 @@ pub fn prime() {
 }
 
 fn run() -> Detection {
-    if let Some(accel) = pinned() {
+    let pin = std::env::var("KROMA_HWACCEL").ok();
+    if let Some(accel) = pin.as_deref().and_then(pinned) {
         return Detection {
             accel,
             reason: format!("pinned by KROMA_HWACCEL={}", accel.label()),
@@ -68,10 +69,11 @@ fn run() -> Detection {
     let listed = candidates(&encoders);
     if listed.is_empty() {
         return Detection {
-            accel: HwAccel::Software,
-            reason: "this ffmpeg build lists no hardware H.264 encoder \
-                     (h264_qsv, h264_vaapi, h264_nvenc, h264_videotoolbox)"
-                .to_owned(),
+            accel: SOFTWARE,
+            reason: format!(
+                "this ffmpeg build lists no hardware H.264 encoder ({})",
+                known_encoders()
+            ),
         };
     }
     let mut refused = Vec::new();
@@ -80,14 +82,14 @@ fn run() -> Detection {
             Ok(()) => {
                 return Detection {
                     accel,
-                    reason: format!("{} encoded a test frame", encoder_of(accel)),
+                    reason: format!("{} encoded a test frame", accel.device().encoder()),
                 };
             }
             Err(why) => refused.push(format!("{}: {why}", accel.label())),
         }
     }
     Detection {
-        accel: HwAccel::Software,
+        accel: SOFTWARE,
         reason: format!(
             "every listed device refused a test encode ({})",
             refused.join("; ")
@@ -95,109 +97,53 @@ fn run() -> Detection {
     }
 }
 
-fn pinned() -> Option<HwAccel> {
-    match std::env::var("KROMA_HWACCEL").ok().as_deref()? {
-        "videotoolbox" => Some(HwAccel::VideoToolbox),
-        "qsv" => Some(HwAccel::Qsv),
-        "vaapi" => Some(HwAccel::Vaapi),
-        "nvenc" => Some(HwAccel::Nvenc),
-        "software" | "none" => Some(HwAccel::Software),
-        _ => None,
+fn pinned(label: &str) -> Option<HwAccel> {
+    if label == "none" {
+        return Some(SOFTWARE);
     }
+    BY_TRUST
+        .into_iter()
+        .chain([SOFTWARE])
+        .find(|accel| accel.label() == label)
 }
 
-// Ordered by how little the host has to be trusted for it to work: an Apple
-// block is always there and always right; QSV beats VAAPI on the Intel parts
-// that have both; NVENC needs a card the encoder list alone does not prove.
+fn known_encoders() -> String {
+    let names: Vec<&str> = BY_TRUST.iter().map(|a| a.device().encoder()).collect();
+    names.join(", ")
+}
+
 fn candidates(encoders: &[u8]) -> Vec<HwAccel> {
-    let has = |accel: HwAccel| contains(encoders, encoder_of(accel).as_bytes());
-    let mut out = Vec::new();
-    if cfg!(target_os = "macos") && has(HwAccel::VideoToolbox) {
-        out.push(HwAccel::VideoToolbox);
-    }
-    for accel in [HwAccel::Qsv, HwAccel::Vaapi, HwAccel::Nvenc] {
-        if has(accel) {
-            out.push(accel);
-        }
-    }
-    out
-}
-
-const fn encoder_of(accel: HwAccel) -> &'static str {
-    match accel {
-        HwAccel::VideoToolbox => "h264_videotoolbox",
-        HwAccel::Qsv => "h264_qsv",
-        HwAccel::Vaapi => "h264_vaapi",
-        HwAccel::Nvenc => "h264_nvenc",
-        HwAccel::Software => "libx264",
-    }
-}
-
-// The render node is opened here rather than left to ffmpeg because the failure
-// an operator has to act on - the service user is not in the group that owns it -
-// is otherwise buried in a driver's own error text.
-fn openable(node: &str) -> Result<(), String> {
-    if !Path::new(node).exists() {
-        return Err(format!("{node} does not exist"));
-    }
-    std::fs::OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(node)
-        .map(|_| ())
-        .map_err(|e| match e.kind() {
-            std::io::ErrorKind::PermissionDenied => format!(
-                "{node} is not readable by this user (on DSM, the package user must \
-                 join the `videodriver` group; in Docker, pass --device {node})"
-            ),
-            _ => format!("{node} could not be opened: {e}"),
+    BY_TRUST
+        .into_iter()
+        .filter(|accel| {
+            let device = accel.device();
+            device.runs_here() && contains(encoders, device.encoder().as_bytes())
         })
+        .collect()
 }
 
 fn usable(accel: HwAccel) -> Result<(), String> {
-    let node = render_node();
-    if matches!(accel, HwAccel::Qsv | HwAccel::Vaapi) {
-        openable(node)?;
-    }
+    let device = accel.device();
+    device.reachable()?;
     let mut cmd = std::process::Command::new("ffmpeg");
-    cmd.args(["-v", "error", "-nostdin"]);
-    match accel {
-        HwAccel::Vaapi => {
-            cmd.args(["-vaapi_device", node]);
-        }
-        HwAccel::Qsv => {
-            let derive_from = format!("vaapi=va:{node}");
-            cmd.args(["-init_hw_device", derive_from.as_str()]).args([
-                "-init_hw_device",
-                "qsv=hw@va",
-                "-filter_hw_device",
-                "hw",
-            ]);
-        }
-        _ => {}
-    }
-    cmd.args(input::generated(TEST_SOURCE))
-        .args(["-frames:v", "3"]);
-    if matches!(accel, HwAccel::Qsv | HwAccel::Vaapi) {
-        cmd.args(["-vf", "format=nv12,hwupload"]);
-    }
-    cmd.args(["-c:v", encoder_of(accel)]);
-    if matches!(accel, HwAccel::VideoToolbox | HwAccel::Nvenc) {
-        cmd.args(["-b:v", "1000k"]);
-    }
-    cmd.args(["-f", "null", "-"]);
+    cmd.args(["-v", "error", "-nostdin"])
+        .args(device.probe_input_args())
+        .args(input::generated(TEST_SOURCE))
+        .args(["-frames:v", "3", "-c:v", device.encoder()])
+        .args(device.probe_output_args())
+        .args(["-f", "null", "-"]);
     crate::ffmpeg_run::run_capturing(cmd, VALIDATE_TIMEOUT)
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::devices::{NVENC, QSV, V4L2M2M, VAAPI};
     use super::*;
 
     const SOFTWARE_ONLY: &[u8] = b"V..... libx264 libx264 H.264\nV..... libx265 libx265\n";
 
     #[test]
     fn a_build_with_no_hardware_encoder_names_the_build_as_the_reason() {
-        // The static ffmpeg the NAS package used to ship: x264 and nothing else.
         assert!(candidates(SOFTWARE_ONLY).is_empty());
     }
 
@@ -205,36 +151,42 @@ mod tests {
     fn only_encoders_the_build_actually_lists_are_tried() {
         let vaapi_only = b"V..... libx264 libx264\nV..... h264_vaapi VAAPI H.264\n".as_slice();
 
-        assert_eq!(candidates(vaapi_only), vec![HwAccel::Vaapi]);
+        assert_eq!(candidates(vaapi_only), vec![VAAPI]);
     }
 
     #[test]
     fn qsv_is_tried_before_vaapi_on_a_build_that_has_both() {
         let both = b"V..... h264_vaapi VAAPI\nV..... h264_qsv QSV\nV..... h264_nvenc NVENC\n";
 
-        assert_eq!(
-            candidates(both.as_slice()),
-            vec![HwAccel::Qsv, HwAccel::Vaapi, HwAccel::Nvenc]
-        );
+        assert_eq!(candidates(both.as_slice()), vec![QSV, VAAPI, NVENC]);
     }
 
     #[test]
-    fn a_render_node_that_is_not_there_says_so_rather_than_failing_silently() {
-        let why = openable("/dev/dri/renderD-nope").unwrap_err();
+    fn the_v4l2_encoder_is_tried_on_a_build_that_lists_it() {
+        let arm = b"V..... libx264 libx264\nV..... h264_v4l2m2m V4L2 mem2mem H.264\n".as_slice();
 
-        assert!(why.contains("does not exist"), "{why}");
+        assert_eq!(candidates(arm), vec![V4L2M2M]);
     }
 
     #[test]
-    fn every_pipeline_names_the_encoder_it_is_probed_by() {
-        for accel in [
-            HwAccel::VideoToolbox,
-            HwAccel::Qsv,
-            HwAccel::Vaapi,
-            HwAccel::Nvenc,
-            HwAccel::Software,
-        ] {
-            assert!(encoder_of(accel).contains("264"), "{}", accel.label());
+    fn every_device_can_be_pinned_by_the_label_it_is_logged_under() {
+        for accel in BY_TRUST.into_iter().chain([SOFTWARE]) {
+            assert_eq!(pinned(accel.label()), Some(accel));
+        }
+    }
+
+    #[test]
+    fn none_pins_the_software_path_and_an_unknown_label_pins_nothing() {
+        assert_eq!(pinned("none"), Some(SOFTWARE));
+        assert_eq!(pinned("quantum"), None);
+    }
+
+    #[test]
+    fn a_build_with_no_device_is_told_every_encoder_that_was_looked_for() {
+        let names = known_encoders();
+
+        for accel in BY_TRUST {
+            assert!(names.contains(accel.device().encoder()), "{names}");
         }
     }
 }

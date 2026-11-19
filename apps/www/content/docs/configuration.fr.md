@@ -54,7 +54,7 @@ Ensuite, les bibliothèques se gèrent là, et les variables sont ignorées.
 
 | Variable | Valeur par défaut | Rôle |
 | --- | --- | --- |
-| `KROMA_HWACCEL` | détecté au démarrage | Impose une méthode de conversion : `qsv`, `vaapi`, `nvenc`, `videotoolbox`, ou `software` pour le processeur. Consultez [Transcodage matériel](hardware-transcoding.md). |
+| `KROMA_HWACCEL` | détecté au démarrage | Impose une méthode de conversion : `qsv`, `vaapi`, `nvenc`, `videotoolbox`, `v4l2m2m`, ou `software` pour le processeur. Consultez [Transcodage matériel](hardware-transcoding.md). |
 | `KROMA_RENDER_NODE` | `/dev/dri/renderD128` | Le périphérique graphique à utiliser quand il y en a plusieurs. |
 | `KROMA_ENCODE_EFFORT` | choisi selon la machine | `quality` ou `realtime`, pour les conversions sur le processeur. |
 | `KROMA_MAX_TRANSCODES` | la moitié des cœurs, de 1 à 4 | Conversions vidéo simultanées. Une demande au-delà de la limite est refusée : le lecteur l'indique au lieu de saccader. |
