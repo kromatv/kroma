@@ -131,6 +131,7 @@ impl Registry {
                 Some(pb) => StateChange::Position {
                     position_ms: pb.position_ms,
                     duration_ms: pb.duration_ms,
+                    buffered_ms: pb.buffered_ms,
                     state: pb.state,
                 },
                 None => StateChange::Nothing,

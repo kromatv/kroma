@@ -3,13 +3,13 @@
 // coalesced skips and the same storyboard, driven through `useCastScrub`.
 
 import type { CastNowPlaying } from '@kromatv/client/cast';
-import type { ItemId } from '@kromatv/client/media';
 import {
   type Cast,
   SeekBar,
   type SeekNudge,
   SKIP_BACK_ICON,
   SKIP_FORWARD_ICON,
+  useCastPosition,
   useSeekNudge,
   useT,
 } from '@kromatv/ui';
@@ -26,13 +26,13 @@ const BAR_SCALE = 0.7;
 
 interface CastRemoteProps {
   playing: CastNowPlaying;
-  positionMs: number;
   send: Cast['send'];
   /** Whether there is room for the seek line under the keys. */
   scrub: boolean;
 }
 
-export function CastRemote({ playing, positionMs, send, scrub }: Readonly<CastRemoteProps>) {
+export function CastRemote({ playing, send, scrub }: Readonly<CastRemoteProps>) {
+  const positionMs = useCastPosition();
   const target = useCastScrub({ positionMs, durationMs: playing.durationMs ?? 0, send });
   const { nudge } = useSeekNudge(target);
   return (
@@ -110,7 +110,7 @@ function SeekLine({ playing, target, nudge }: Readonly<SeekLineProps>) {
     <Row w="100%" gap={12}>
       <Timecode>{elapsed}</Timecode>
       <Box flex minW={0}>
-        <Track itemId={playing.item.id} target={target} nudge={nudge} elapsed={elapsed} />
+        <Track playing={playing} target={target} nudge={nudge} elapsed={elapsed} />
       </Box>
       <Timecode>{target.dur ? formatTimecode(target.dur) : '--:--'}</Timecode>
     </Row>
@@ -118,21 +118,22 @@ function SeekLine({ playing, target, nudge }: Readonly<SeekLineProps>) {
 }
 
 interface TrackProps {
-  itemId: ItemId;
+  playing: CastNowPlaying;
   target: CastScrub;
   nudge: SeekNudge['nudge'];
   elapsed: string;
 }
 
 // The player's own seek bar, drawn alone: the times are printed beside it, and
-// a remote has no chapters, no buffer and no focus ring to report.
-function Track({ itemId, target, nudge, elapsed }: Readonly<TrackProps>) {
-  const storyboard = useStoryboard(itemId);
+// a remote has no chapters and no focus ring to report.
+function Track({ playing, target, nudge, elapsed }: Readonly<TrackProps>) {
+  const storyboard = useStoryboard(playing.item.id);
+  const { bufferedMs } = playing;
   return (
     <SeekBar
       cur={target.cur}
       dur={target.dur}
-      bufEnd={null}
+      bufEnd={bufferedMs === undefined ? null : bufferedMs / 1000}
       seekPreview={target.seekPreview}
       chapters={NO_CHAPTERS}
       tileAt={(sec) => storyboard.tile(sec, THUMB_WIDTH)}

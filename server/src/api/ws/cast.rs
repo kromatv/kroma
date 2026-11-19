@@ -73,6 +73,7 @@ pub(super) async fn cast_state(
         Some(StateChange::Position {
             position_ms,
             duration_ms,
+            buffered_ms,
             state: transport,
         }) => {
             state.events.publish_to(
@@ -81,6 +82,7 @@ pub(super) async fn cast_state(
                     receiver_id: id,
                     position_ms,
                     duration_ms,
+                    buffered_ms,
                     state: transport,
                 },
             );

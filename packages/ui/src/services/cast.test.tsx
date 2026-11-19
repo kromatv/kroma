@@ -244,8 +244,8 @@ describe('sending', () => {
       positionMs: 60_000,
     });
     expect(result.current.active?.id).toBe(SALON_ID);
-    // Optimistic, so the remote doesn't sit at 0:00 while the TV starts.
-    expect(result.current.positionMs).toBeGreaterThanOrEqual(60_000);
+    // Held where the film will start until the TV says the picture moves.
+    expect(result.current.position()).toBeGreaterThanOrEqual(60_000);
   });
 
   it('reports a TV that went away, and stops driving it', async () => {
@@ -322,13 +322,13 @@ describe('the position', () => {
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
     act(() => result.current.select(SALON_ID));
 
-    const start = result.current.positionMs;
+    const start = result.current.position();
     expect(start).toBeGreaterThanOrEqual(30_000);
     await act(async () => {
       vi.advanceTimersByTime(3000);
     });
     // A bar that only moved every 10 s would still read 30 s here.
-    expect(result.current.positionMs).toBeGreaterThanOrEqual(start + 2500);
+    expect(result.current.position()).toBeGreaterThanOrEqual(start + 2500);
 
     // The TV's own beat is authoritative again.
     act(() =>
@@ -340,8 +340,31 @@ describe('the position', () => {
         state: 'playing',
       }),
     );
-    expect(result.current.positionMs).toBeGreaterThanOrEqual(90_000);
-    expect(result.current.positionMs).toBeLessThan(95_000);
+    expect(result.current.position()).toBeGreaterThanOrEqual(90_000);
+    expect(result.current.position()).toBeLessThan(95_000);
+  });
+
+  it('is where a seek was sent at once, and a report that left before it does not pull it back', async () => {
+    const client = castClient({ receivers: vi.fn(async () => [playing(30_000)]) });
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+    act(() => result.current.select(SALON_ID));
+
+    await act(async () => {
+      await result.current.send({ type: 'seek', positionMs: 300_000 });
+    });
+    act(() =>
+      events.onEvent?.({
+        type: 'cast.position',
+        receiverId: SALON_ID,
+        positionMs: 31_000,
+        durationMs: 8_160_000,
+        state: 'playing',
+      }),
+    );
+
+    expect(result.current.position()).toBeGreaterThanOrEqual(300_000);
+    expect(result.current.position()).toBeLessThan(301_000);
   });
 
   it('holds still while the TV is paused', async () => {
@@ -362,7 +385,7 @@ describe('the position', () => {
     await act(async () => {
       vi.advanceTimersByTime(5000);
     });
-    expect(result.current.positionMs).toBe(42_000);
+    expect(result.current.position()).toBe(42_000);
   });
 });
 

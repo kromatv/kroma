@@ -134,7 +134,14 @@ pub async fn announce(
     let position = body
         .playback
         .as_ref()
-        .map(|p| (p.position_ms.max(0), p.duration_ms, p.state));
+        .filter(|p| p.state != CastState::Idle)
+        .map(|p| ServerEvent::CastPosition {
+            receiver_id: body.receiver_id.clone(),
+            position_ms: p.position_ms.max(0),
+            duration_ms: p.duration_ms,
+            buffered_ms: p.buffered_ms,
+            state: p.state,
+        });
     let outcome = state.cast.announce(
         Announce {
             receiver_id: body.receiver_id.clone(),
@@ -162,18 +169,8 @@ pub async fn announce(
                     );
                 }
             }
-            if let Some((position_ms, duration_ms, cast_state)) = position {
-                if !changed && cast_state != CastState::Idle {
-                    state.events.publish_to(
-                        &user.id,
-                        ServerEvent::CastPosition {
-                            receiver_id: body.receiver_id.clone(),
-                            position_ms,
-                            duration_ms,
-                            state: cast_state,
-                        },
-                    );
-                }
+            if let Some(beat) = position.filter(|_| !changed) {
+                state.events.publish_to(&user.id, beat);
             }
             commands
         }

@@ -122,14 +122,7 @@ function Middle({ active, cast, scrub }: Readonly<MiddleProps>) {
   if (!active.nowPlaying) {
     return <Notice>{t('cast.idleHint', { device: active.name })}</Notice>;
   }
-  return (
-    <CastRemote
-      playing={active.nowPlaying}
-      positionMs={cast.positionMs}
-      send={cast.send}
-      scrub={scrub}
-    />
-  );
+  return <CastRemote playing={active.nowPlaying} send={cast.send} scrub={scrub} />;
 }
 
 function Notice({ children }: Readonly<{ children: string }>) {

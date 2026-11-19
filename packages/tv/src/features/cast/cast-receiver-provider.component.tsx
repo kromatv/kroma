@@ -20,7 +20,7 @@ import { CastControllersProvider, useCastControllerStore } from '#tv/features/ca
 import { readWakeHint, type WakeHintSource } from '#tv/features/cast/wake-hint';
 import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
-const DRIFT_MS = 20_000;
+const POSITION_BEAT_MS = 1000;
 const FALLBACK_BEAT_MS = 10_000;
 
 /** Mounts the cast receiver above the router so casting works even on the
@@ -247,14 +247,14 @@ function CastReceiver({
       },
     });
 
-    // Push on change (the player re-renders ~4 Hz; only material changes send),
-    // plus a slow position keepalive so a remote's scrubber cannot drift.
+    // Push on change, and once a second while a film plays, so a remote is
+    // never more than a second from the picture.
     const unsubscribe = onCastReportChange(pushState);
     drift = setInterval(() => {
-      if (castReport(deps.current.t)) {
+      if (castReport(deps.current.t)?.state === 'playing') {
         pushState();
       }
-    }, DRIFT_MS);
+    }, POSITION_BEAT_MS);
 
     events.connect();
     void beat();

@@ -8,9 +8,9 @@
 // Live-ness comes off the event bus rather than a poll: `cast.receivers` when the
 // roster or a title changes (the provider refetches - small payload, always
 // consistent), and `cast.position` on every heartbeat of a playing TV, which
-// moves the scrubber without any refetch at all. Between those beats the
-// position is interpolated locally, so a remote's progress bar runs smoothly
-// instead of stepping every ten seconds.
+// moves the scrubber without any refetch at all. Between those beats a view
+// counts from the last one by itself (`useCastPosition`), so this provider
+// renders only when something changed.
 
 import { apiErrorBody, type DeviceId, KromaApiError, type KromaClient } from '@kromatv/client';
 import type { CastCommand, CastReceiver } from '@kromatv/client/cast';
@@ -23,7 +23,6 @@ import {
   useEffect,
   useLayoutEffect,
   useMemo,
-  useReducer,
   useRef,
   useState,
 } from 'react';
@@ -31,9 +30,7 @@ import { useLanCast } from '#ui/services/cast-lan.hook';
 import { type Cast, CastCtx, type CastFailure } from './cast-context';
 import { applyCastEvent } from './cast-events';
 import { useCastWake } from './cast-wake.hook';
-import { baseOf, livePosition, type PositionBase, seekedBase } from './cast-position';
-
-const TICK_MS = 500;
+import { baseOf, livePosition, orderedBase, type PositionBase } from './cast-position';
 
 function failureOf(e: unknown): CastFailure {
   if (!(e instanceof KromaApiError) || e.status !== 404) {
@@ -81,7 +78,6 @@ export function CastProvider({
   // Bumped on a timer while a TV plays, purely to re-render the interpolated
   // position (which is computed from the clock, not from state). A reducer
   // rather than `useState`: the counter's VALUE is never read, and this says so.
-  const [, rerender] = useReducer((n: number) => n + 1, 0);
   // The live socket, kept so selecting a TV can announce this remote on it.
   const socket = useRef<KromaEvents | null>(null);
   // Read from the socket's `onOpen` and from the stable callbacks below, none
@@ -187,34 +183,17 @@ export function CastProvider({
     setActiveId(null);
   }
 
-  // Advance the interpolated position while the active TV is playing. One timer,
-  // only while it is needed: an idle or paused receiver costs nothing.
-  const advancing = Boolean(active && base?.id === active.id && base.playing);
-  useEffect(() => {
-    if (!advancing) {
-      return undefined;
-    }
-    const iv = setInterval(rerender, TICK_MS);
-    return () => clearInterval(iv);
-  }, [advancing]);
-
-  // Recomputed every render (the tick above forces those while playing) rather
-  // than memoized: it is arithmetic over the clock, and a memo would cache the
-  // one value that must never be cached.
-  const positionMs = livePosition(active, base);
+  const position = useCallback(() => livePosition(active, base), [active, base]);
 
   const sendTo = useCallback(
     async (receiverId: DeviceId, command: CastCommand): Promise<CastFailure | null> => {
       if (!client) {
         return 'cast.failed';
       }
+      setBase((was) => orderedBase(was, { receiverId, command }));
       try {
         await client.cast.command(receiverId, command);
         setError(null);
-        if (command.type === 'seek') {
-          const { positionMs: target } = command;
-          setBase((b) => seekedBase(b, receiverId, target));
-        }
         return null;
       } catch (e) {
         const failure = failureOf(e);
@@ -269,9 +248,8 @@ export function CastProvider({
       if (!failure) {
         setActiveId(receiverId);
         socket.current?.send({ type: 'cast.control', receiverId, name: name.current });
-        // Optimistic: the TV's own heartbeat corrects this within a beat, but the
-        // remote should not sit at 0:00 while it starts.
-        setBase({ id: receiverId, positionMs: startMs, playing: true, at: Date.now() });
+        // Held at the start: the television says when the picture moves.
+        setBase({ id: receiverId, positionMs: startMs, playing: false, at: Date.now() });
       }
       return failure;
     },
@@ -315,13 +293,13 @@ export function CastProvider({
       pairable,
       active,
       available: receivers.length > 0,
-      positionMs,
+      position,
       select,
       playOn,
       send,
       error,
     }),
-    [receivers, waking, needsPower, pairable, active, positionMs, select, playOn, send, error],
+    [receivers, waking, needsPower, pairable, active, position, select, playOn, send, error],
   );
 
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;

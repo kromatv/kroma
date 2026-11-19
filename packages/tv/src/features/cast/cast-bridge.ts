@@ -134,6 +134,7 @@ export function createCastBridge() {
       itemId: item.id,
       positionMs: Math.max(0, Math.round(controller.cur * 1000)),
       durationMs: controller.dur > 0 ? Math.round(controller.dur * 1000) : null,
+      bufferedMs: controller.bufEnd === null ? undefined : Math.round(controller.bufEnd * 1000),
       state: transportState(controller),
       audioTracks: controller.audioTracks.map((track, i) => ({
         index: track.index,

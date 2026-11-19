@@ -37,6 +37,9 @@ pub struct CastPlayback {
     pub position_ms: i64,
     #[serde(rename = "durationMs", default)]
     pub duration_ms: Option<i64>,
+    /// How far ahead the receiver's player holds, from the start of the title.
+    #[serde(rename = "bufferedMs", default)]
+    pub buffered_ms: Option<i64>,
     pub state: CastState,
     #[serde(rename = "audioTracks", default)]
     pub audio_tracks: Vec<CastTrack>,
@@ -56,6 +59,8 @@ pub struct CastNowPlaying {
     pub position_ms: i64,
     #[serde(rename = "durationMs")]
     pub duration_ms: Option<i64>,
+    #[serde(rename = "bufferedMs", skip_serializing_if = "Option::is_none")]
+    pub buffered_ms: Option<i64>,
     pub state: CastState,
     #[serde(rename = "audioTracks")]
     pub audio_tracks: Vec<CastTrack>,

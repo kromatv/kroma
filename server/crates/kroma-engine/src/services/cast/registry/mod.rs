@@ -57,6 +57,7 @@ pub enum StateChange {
     Position {
         position_ms: i64,
         duration_ms: Option<i64>,
+        buffered_ms: Option<i64>,
         state: CastState,
     },
     Nothing,
@@ -109,6 +110,7 @@ impl Receiver {
                 duration_ms: pb
                     .duration_ms
                     .or_else(|| item.duration_ms.and_then(|d| i64::try_from(d).ok())),
+                buffered_ms: pb.buffered_ms,
                 state: pb.state,
                 audio_tracks: pb.audio_tracks.clone(),
                 audio_index: pb.audio_index,

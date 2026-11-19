@@ -27,8 +27,9 @@ export interface Cast {
   active: CastReceiver | null;
   /** Whether any TV is available to cast to (drives the button's visibility). */
   available: boolean;
-  /** The active receiver's position, interpolated between heartbeats (ms). */
-  positionMs: number;
+  /** Where the active receiver's playhead is at the moment of the call, in
+   * ms. A view that draws it reads `useCastPosition` instead. */
+  position: () => number;
   /** Start driving a receiver (or `null` to go back to local playback). */
   select: (receiverId: DeviceId | null) => void;
   /** Start a title on `receiverId`, and drive that TV from now on. */
@@ -78,7 +79,7 @@ const IDLE: Cast = {
   pairable: [],
   active: null,
   available: false,
-  positionMs: 0,
+  position: () => 0,
   select: () => undefined,
   playOn: () => Promise.resolve<CastFailure>('cast.failed'),
   send: () => Promise.resolve<CastFailure>('cast.failed'),

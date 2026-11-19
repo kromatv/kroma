@@ -1,6 +1,6 @@
 // The strip above the tab bar while this phone is driving a TV.
 
-import { useCast } from '@kromatv/ui';
+import { useCast, useCastPosition } from '@kromatv/ui';
 import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
@@ -15,7 +15,7 @@ export function CastMiniBar() {
   const t = useT();
   const router = useRouter();
   const client = useClient();
-  const { active, send, positionMs } = useCast();
+  const { active, send } = useCast();
 
   if (!active) {
     return null;
@@ -24,8 +24,6 @@ export function CastMiniBar() {
   const playing = active.nowPlaying;
   const title = playing ? (playing.item.metadata?.title ?? playing.item.title) : t('cast.idle');
   const poster = playing ? client.media.artwork.posterFor(playing.item) : null;
-  const duration = playing?.durationMs ?? 0;
-  const progress = duration > 0 ? Math.min(1, positionMs / duration) : 0;
   const isPlaying = playing?.state === 'playing';
 
   return (
@@ -65,12 +63,21 @@ export function CastMiniBar() {
           />
         </Pressable>
       ) : null}
-      {/* A hairline of progress along the bottom edge: enough to say how far in
-          the TV is without spending a row on it. */}
-      <Box style={s.track} pointerEvents="none">
-        <Box style={[s.fill, { width: `${progress * 100}%` }]} />
-      </Box>
+      <Progress durationMs={playing?.durationMs ?? 0} />
     </Pressable>
+  );
+}
+
+// A hairline of progress along the bottom edge: enough to say how far in the
+// TV is without spending a row on it.
+function Progress({ durationMs }: Readonly<{ durationMs: number }>) {
+  const s = useStyles(sDefinition);
+  const positionMs = useCastPosition();
+  const progress = durationMs > 0 ? Math.min(1, positionMs / durationMs) : 0;
+  return (
+    <Box style={s.track} pointerEvents="none">
+      <Box style={[s.fill, { width: `${progress * 100}%` }]} />
+    </Box>
   );
 }
 

@@ -26,6 +26,8 @@ export const CastNowPlaying = z.object({
   item: MediaItem,
   positionMs: z.number(),
   durationMs: z.number().nullable().optional(),
+  /** How far ahead the receiver's player holds, from the start of the title. */
+  bufferedMs: z.number().optional(),
   state: CastState,
   audioTracks: z.array(CastTrack).default([]),
   audioIndex: z.number().optional(),
@@ -89,6 +91,7 @@ export const CastPlaybackReport = z.object({
   itemId: ItemId,
   positionMs: z.number(),
   durationMs: z.number().nullish(),
+  bufferedMs: z.number().optional(),
   state: ReportedCastState,
   audioTracks: z.array(CastTrack).optional(),
   audioIndex: z.number().optional(),

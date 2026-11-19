@@ -1,9 +1,21 @@
 import { DeviceId } from '@kromatv/client';
+import type { CastCommand } from '@kromatv/client/cast';
 import { describe, expect, it } from 'vitest';
-import { baseOf, livePosition, seekedBase } from './cast-position';
+import {
+  baseOf,
+  heardBase,
+  livePosition,
+  orderedBase,
+  redrawStep,
+  showsAnother,
+} from './cast-position';
 
 const SALON = DeviceId.parse('tv-salon-01');
 const T0 = 1_000_000;
+
+function order(command: CastCommand) {
+  return { receiverId: SALON, command };
+}
 
 function salon(positionMs: number, state: 'playing' | 'paused' = 'playing') {
   return { id: SALON, nowPlaying: { positionMs, durationMs: 600_000, state } };
@@ -58,11 +70,94 @@ describe('the base a roster row gives', () => {
   });
 });
 
-describe('the base after a seek sent from here', () => {
-  it('is the position asked for, and keeps whether the film was playing', () => {
-    const paused = { id: SALON, positionMs: 60_000, playing: false, at: T0 };
+describe('the base after an order sent from here', () => {
+  const counting = { id: SALON, positionMs: 60_000, playing: true, at: T0 };
 
-    expect(seekedBase(paused, SALON, 10_000)).toMatchObject({ positionMs: 10_000, playing: false });
-    expect(seekedBase(null, SALON, 10_000)).toMatchObject({ positionMs: 10_000, playing: true });
+  it('is the position a seek asked for, at once, and keeps whether the film was playing', () => {
+    const paused = { ...counting, playing: false };
+    const seek = { type: 'seek', positionMs: 10_000 } as const;
+
+    expect(orderedBase(paused, order(seek), T0)).toMatchObject({
+      positionMs: 10_000,
+      playing: false,
+    });
+    expect(orderedBase(null, order(seek), T0)).toMatchObject({ positionMs: 10_000, playing: true });
+  });
+
+  it('is a skip away from where the count is, and never before the start', () => {
+    const forward = orderedBase(counting, order({ type: 'skip', deltaMs: 10_000 }), T0 + 2000);
+    const back = orderedBase(counting, order({ type: 'skip', deltaMs: -90_000 }), T0 + 2000);
+
+    expect(forward).toMatchObject({ positionMs: 72_000, at: T0 + 2000 });
+    expect(back).toMatchObject({ positionMs: 0 });
+  });
+
+  it('is left as it is by an order that moves nothing', () => {
+    expect(orderedBase(counting, order({ type: 'pause' }), T0)).toBe(counting);
+  });
+
+  it('holds against a report that left the television before the order arrived', () => {
+    const seeked = orderedBase(counting, order({ type: 'seek', positionMs: 300_000 }), T0);
+    const stale = { id: SALON, positionMs: 60_400, playing: true, at: T0 + 400 };
+    const landed = { id: SALON, positionMs: 300_000, playing: false, at: T0 + 700 };
+    const running = { id: SALON, positionMs: 300_100, playing: true, at: T0 + 1500 };
+
+    expect(heardBase(seeked, stale)).toBe(seeked);
+    expect(heardBase(seeked, landed)).toBe(landed);
+    expect(heardBase(landed, running)).toBe(running);
+  });
+
+  it('gives way after four seconds to a television that never followed', () => {
+    const seeked = orderedBase(counting, order({ type: 'seek', positionMs: 300_000 }), T0);
+    const unmoved = { id: SALON, positionMs: 64_000, playing: true, at: T0 + 4000 };
+
+    expect(heardBase(seeked, unmoved)).toBe(unmoved);
+  });
+});
+
+describe('the base after the television said where it is', () => {
+  const counting = { id: SALON, positionMs: 60_000, playing: true, at: T0 };
+
+  it('is kept while the count agrees with what was said, so a late report moves nothing', () => {
+    const late = { id: SALON, positionMs: 60_920, playing: true, at: T0 + 1000 };
+
+    expect(heardBase(counting, late)).toBe(counting);
+  });
+
+  it('is replaced when the television is somewhere else', () => {
+    const seeked = { id: SALON, positionMs: 10_000, playing: true, at: T0 + 1000 };
+
+    expect(heardBase(counting, seeked)).toBe(seeked);
+  });
+
+  it('is replaced when the television stopped or started', () => {
+    const paused = { id: SALON, positionMs: 61_000, playing: false, at: T0 + 1000 };
+    const resumed = { id: SALON, positionMs: 61_000, playing: true, at: T0 + 9000 };
+
+    expect(heardBase(counting, paused)).toBe(paused);
+    expect(heardBase(paused, resumed)).toBe(resumed);
+  });
+
+  it('is what was said when nothing was heard before, and nothing when it plays nothing', () => {
+    expect(heardBase(null, counting)).toBe(counting);
+    expect(heardBase(counting, null)).toBeNull();
+  });
+});
+
+describe('how often a playhead is redrawn', () => {
+  it('is every frame for a short clip and ten times a second for a film', () => {
+    expect(redrawStep(12_000)).toBe(16);
+    expect(redrawStep(100_000)).toBe(50);
+    expect(redrawStep(7_200_000)).toBe(100);
+  });
+
+  it('is ten times a second when the runtime is not known', () => {
+    expect(redrawStep(0)).toBe(100);
+  });
+
+  it('is asked for by a step along the bar or by another second', () => {
+    expect(showsAnother(60_000, 60_100, 100)).toBe(true);
+    expect(showsAnother(60_000, 60_050, 100)).toBe(false);
+    expect(showsAnother(60_960, 61_000, 100)).toBe(true);
   });
 });

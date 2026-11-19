@@ -3,7 +3,7 @@ import type { CastReceiver } from '@kromatv/client/cast';
 import type { ServerEvent } from '@kromatv/client/events';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Cast } from './cast-context';
-import { baseOf, type PositionBase } from './cast-position';
+import { baseOf, heardBase, type PositionBase } from './cast-position';
 
 /** The state a [`applyCastEvent`] fold writes through. Grouped rather than
  * passed positionally: four same-shaped setters in a row is an argument list
@@ -27,7 +27,8 @@ function applyCastEvent(e: ServerEvent, set: CastEventSetters, driving: DeviceId
   if (e.type === 'cast.receiver') {
     set.receivers((list) => upsert(list, e.receiver));
     if (e.receiver.id === driving) {
-      set.base(baseOf(e.receiver));
+      const said = baseOf(e.receiver);
+      set.base((base) => heardBase(base, said));
     }
   } else if (e.type === 'cast.receiver.gone') {
     set.receivers((list) => list.filter((r) => r.id !== e.receiverId));
@@ -36,14 +37,25 @@ function applyCastEvent(e: ServerEvent, set: CastEventSetters, driving: DeviceId
     // set we no longer drive.
     set.activeId((id) => (id === e.receiverId ? null : id));
     set.error('cast.kicked');
-  } else if (e.type === 'cast.position' && e.receiverId === driving) {
-    set.base({
-      id: e.receiverId,
-      positionMs: e.positionMs,
-      playing: e.state === 'playing',
-      at: Date.now(),
-    });
+  } else if (e.type === 'cast.position') {
+    set.receivers((list) => list.map((row) => (row.id === e.receiverId ? beaten(row, e) : row)));
+    if (e.receiverId === driving) {
+      const said = baseOf({ id: e.receiverId, nowPlaying: e });
+      set.base((base) => heardBase(base, said));
+    }
   }
+}
+
+type PositionBeat = Extract<ServerEvent, { type: 'cast.position' }>;
+
+/** A row after a position beat: what the television is playing, where the
+ * beat says it is. */
+function beaten(row: CastReceiver, beat: PositionBeat): CastReceiver {
+  if (!row.nowPlaying) {
+    return row;
+  }
+  const { positionMs, bufferedMs, state } = beat;
+  return { ...row, nowPlaying: { ...row.nowPlaying, positionMs, bufferedMs, state } };
 }
 
 /** Replace a receiver's row, or add it, keeping the list sorted by name (the

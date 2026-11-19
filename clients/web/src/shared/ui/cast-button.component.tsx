@@ -32,8 +32,9 @@ export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {
           return;
         }
         const failure = await playOn(picked, itemId);
-        const device = receivers.find((r) => r.id === picked)?.name ?? '';
-        toast({ message: failure ? t(failure) : t('cast.playingOn', { device }) });
+        if (failure) {
+          toast({ message: t(failure) });
+        }
       }}
     />
   );
