@@ -218,6 +218,8 @@ export const SplashEntry = z.object({
   year: z.number().nullable(),
   backdropUrl: z.string(),
   rating: z.number().nullish(),
+  posterUrl: z.string().nullish(),
+  trending: z.boolean().default(false),
 });
 export type SplashEntry = z.infer<typeof SplashEntry>;
 

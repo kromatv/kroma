@@ -97,6 +97,10 @@ pub struct AdminLibrary {
     pub size_bytes: i64,
     pub last_scan: Option<String>,
     pub auto_scan: bool,
+    /// One of the demo libraries, which nobody added and which go once
+    /// somebody adds a folder.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub demo: bool,
 }
 
 /// One weekly bucket of the play-history chart.
