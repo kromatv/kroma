@@ -426,8 +426,10 @@ jobs:
           # built frameworks - without them every link runs again too.
           #
           # What goes is only what regenerates for free: the source index no
-          # build reads, the logs, and SPM checkouts that are re-fetched.
-          rm -rf "$dd/Index.noindex" "$dd/Logs" "$dd/SourcePackages/checkouts" || true
+          # build reads, the logs, SPM checkouts that are re-fetched, and the
+          # compilation cache, whose sparse data file a cancelled run leaves
+          # gigabytes long for the next restore to write out in full.
+          rm -rf "$dd/Index.noindex" "$dd/Logs" "$dd/SourcePackages/checkouts" "$dd/CompilationCache.noindex" || true
           echo "DerivedData now $(du -sh "$dd" | cut -f1)"
 
       - name: Save DerivedData
