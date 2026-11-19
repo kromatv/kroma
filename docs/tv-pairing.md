@@ -61,6 +61,11 @@ of them came in through its public face:
   from inside one of the server's own `/64`s;
 - or both came in through a public face, one over each family.
 
+A caller on the server's own machine arrives from loopback, which is on no
+subnet: a browser on the same computer, or one behind a proxy that runs there.
+It is in the house by definition, so it is placed beside a device on a subnet
+this machine holds an address on.
+
 Two private addresses stay under the `/24` rule: a house routed across several
 subnets is still not settled by this. A server that does not know its public
 address places nobody by it, and so does one whose admin switched *Connexion

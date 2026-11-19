@@ -15,6 +15,7 @@ import { BrandIntro } from '#tv/app/brand-intro.component';
 import { CompatBanner } from '#tv/app/compat-banner.component';
 import { ClientOutdatedScreen } from '#tv/app/client-outdated-screen.component';
 import { type DeviceNameSource, useDeviceName } from '#tv/app/device-name';
+import type { WakeHintSource } from '#tv/features/cast/wake-hint';
 import { createEnginePref, EnginePrefProvider } from '#tv/app/engine-pref';
 import { resolveRedirect } from '#tv/app/guard';
 import { type LauncherBackend, LauncherProvider } from '#tv/app/launcher';
@@ -76,6 +77,10 @@ export interface TvAppProps {
    * all answer late, so the name has to be something the tree can re-read, and
    * a module-level `let` is not. */
   deviceName?: DeviceNameSource;
+  /** What this set can say about reaching itself while it is on (its hardware
+   * address, its address on the network, its own app id), so it can be brought
+   * back once it is off. A shell that cannot read any of it leaves this out. */
+  wake?: WakeHintSource;
 }
 
 // Module scope, so the remote is wired before the first screen renders.
@@ -110,6 +115,7 @@ export function TvApp({
   decoderFrameLimits,
   lan,
   deviceName,
+  wake,
   playback,
 }: Readonly<TvAppProps>) {
   const storage = useDeviceStore();
@@ -179,6 +185,7 @@ export function TvApp({
                                                 <CastReceiverProvider
                                                   client={client}
                                                   lan={lan}
+                                                  wake={wake}
                                                   name={name}
                                                   identity={identity}
                                                 >

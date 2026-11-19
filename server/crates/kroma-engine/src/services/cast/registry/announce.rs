@@ -3,7 +3,7 @@ use std::time::Instant;
 
 use kroma_primitives::clean_label as clean;
 
-use crate::model::{CastPlayback, MediaItem};
+use crate::model::{CastCommandEnvelope, CastPlayback, MediaItem};
 
 use super::{
     trim_tracks, Announce, Announced, Hello, Receiver, Registry, StateChange, MAX_NAME,
@@ -29,6 +29,7 @@ impl Registry {
         let mut map = self.inner.write().unwrap();
         map.retain(|_, r| r.live());
 
+        let arriving = !map.contains_key(&ann.receiver_id);
         let changed = match map.get(&ann.receiver_id) {
             Some(r) if r.user_id != user_id => return Announced::Taken,
             Some(r) => r.differs(ann.playback.as_ref()) || r.name != name,
@@ -68,6 +69,13 @@ impl Registry {
 
         // What is left after the ack is replayed: the WS push may never have landed.
         entry.inbox.retain(|c| c.seq > ann.last_applied_seq);
+        if arriving {
+            if let Some(command) = self.claim(&ann.receiver_id, user_id) {
+                let seq = entry.next_seq.max(ann.last_applied_seq + 1);
+                entry.next_seq = seq + 1;
+                entry.inbox.push_back(CastCommandEnvelope { seq, command });
+            }
+        }
         let commands = entry.inbox.iter().cloned().collect();
         Announced::Ok { commands, changed }
     }

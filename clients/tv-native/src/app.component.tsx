@@ -8,12 +8,19 @@ import type { DeviceStore } from '@kromatv/ui/device-store';
 // owns is the platform's boot sequence (fonts, splash, keep-awake) and the
 // stage the app is laid out on.
 
-import { createDeepLinks, createSearchRequests, type DeviceNameSource, TvApp } from '@kromatv/tv';
+import {
+  createDeepLinks,
+  createSearchRequests,
+  type DeviceNameSource,
+  TvApp,
+  type WakeHintSource,
+} from '@kromatv/tv';
 import { NATIVE_PLAYBACK } from '@kromatv/tv/native-playback';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import { KIT_FONTS } from '@kromatv/ui/fonts';
 import { configureKit, KitProvider, TvStage } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { useFonts } from 'expo-font';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -40,6 +47,7 @@ import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search.hook';
 // port drops an empty answer for us. No `subscribe`: this one is already there
 // when the app starts, unlike the buses the browser shells have to ask.
 const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
+const WAKE_HINT: WakeHintSource = async () => ({ appId: Constants.expoConfig?.android?.package });
 // How large a picture this set's decoders take, which decides whether a title
 // direct-plays at all. Every other client guesses from the codec alone, and a
 // television that stops at 1080p answers a 4K file with a slideshow.
@@ -129,6 +137,7 @@ export function App() {
           // their addresses. Null on a shell without the native module.
           lan={lanBeacon ?? undefined}
           deviceName={DEVICE_NAME}
+          wake={WAKE_HINT}
           playback={NATIVE_PLAYBACK}
         />
       </TvStage>

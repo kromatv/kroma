@@ -1,7 +1,7 @@
 use super::Viewer;
 use crate::db;
 use crate::infra::events::ServerEvent;
-use crate::model::CastPlayback;
+use crate::model::{CastPlayback, CastWakeHint};
 use crate::services::cast::{Announced, Hello, StateChange};
 use crate::state::SharedState;
 
@@ -9,34 +9,38 @@ pub(super) fn cast_hello(
     state: &SharedState,
     who: &Viewer,
     receiver: &mut Option<String>,
-    receiver_id: String,
-    name: String,
-    platform: String,
+    hello: Hello,
+    wake: Option<CastWakeHint>,
 ) {
-    if !who.can_cast || !crate::services::cast::valid_receiver_id(&receiver_id) {
+    if !who.can_cast || !crate::services::cast::valid_receiver_id(&hello.receiver_id) {
         return;
     }
-    let outcome = state.cast.attach(
-        Hello {
-            receiver_id: receiver_id.clone(),
-            name,
-            platform,
-        },
-        &who.id,
-        &who.username,
-        who.network.clone(),
-    );
+    let receiver_id = hello.receiver_id.clone();
+    let outcome = state
+        .cast
+        .attach(hello, &who.id, &who.username, who.network.clone());
     // `Taken` and `Full` both mean "not castable": the socket stays, it just
     // carries no receiver.
-    if !matches!(outcome, Announced::Ok { .. }) {
+    let Announced::Ok { commands, .. } = outcome else {
         return;
-    }
+    };
     *receiver = Some(receiver_id.clone());
     if let Some(row) = state.cast.row(&receiver_id) {
+        crate::api::cast::keep(state, &who.id, &who.ip, row.clone(), wake);
         state.events.publish_to(
             &who.id,
             ServerEvent::CastReceiverChanged {
                 receiver: Box::new(row),
+            },
+        );
+    }
+    for envelope in commands {
+        state.events.publish_to(
+            &who.id,
+            ServerEvent::CastCommandIssued {
+                receiver_id: receiver_id.clone(),
+                seq: envelope.seq,
+                command: envelope.command,
             },
         );
     }

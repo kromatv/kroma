@@ -16,7 +16,7 @@ import { apiErrorBody, type DeviceId, KromaApiError, type KromaClient } from '@k
 import type { CastCommand, CastReceiver } from '@kromatv/client/cast';
 import { KromaEvents } from '@kromatv/client/events';
 import type { ItemId } from '@kromatv/client/media';
-import type { LanDiscoveryBridge } from '@kromatv/core';
+import { httpReach, type LanDiscoveryBridge, type WakeReach } from '@kromatv/core';
 import {
   type ReactNode,
   useCallback,
@@ -30,7 +30,8 @@ import {
 import { useLanCast } from '#ui/services/cast-lan.hook';
 import { type Cast, CastCtx, type CastFailure } from './cast-context';
 import { applyCastEvent } from './cast-events';
-import { livePosition, type PositionBase } from './cast-position';
+import { useCastWake } from './cast-wake.hook';
+import { baseOf, livePosition, type PositionBase, seekedBase } from './cast-position';
 
 const TICK_MS = 500;
 
@@ -41,6 +42,10 @@ function failureOf(e: unknown): CastFailure {
   return apiErrorBody(e).code === 'error.itemNotFound' ? 'cast.titleGone' : 'cast.gone';
 }
 
+function isAsleep(receivers: CastReceiver[], receiverId: DeviceId): boolean {
+  return receivers.some((r) => r.id === receiverId && r.asleep);
+}
+
 export interface CastProviderProps {
   /** Null while a shell is still resolving its session; treated as "not yet". */
   client: KromaClient | null;
@@ -49,6 +54,9 @@ export interface CastProviderProps {
   /** What this device calls itself on the TV's list of remotes ("iPhone",
    * "Chrome"). Shown across the room, so it should be a thing, not a session id. */
   deviceName: string;
+  /** What this shell can do to a television on its network when one has to be
+   * brought back. Defaults to HTTP alone, which is all a browser has. */
+  reach?: WakeReach;
   /** This device's DNS-SD stack, when the shell has one. It makes a television
    * appear the moment it is heard rather than on the next beat, and surfaces
    * the ones with no account at all. */
@@ -60,6 +68,7 @@ export function CastProvider({
   client,
   enabled,
   deviceName,
+  reach = httpReach,
   lan,
   children,
 }: Readonly<CastProviderProps>) {
@@ -94,7 +103,13 @@ export function CastProvider({
     }
     client.cast
       .receivers()
-      .then(setReceivers)
+      .then((rows) => {
+        setReceivers(rows);
+        const driven = rows.find((r) => r.id === drivingRef.current);
+        if (driven) {
+          setBase(baseOf(driven));
+        }
+      })
       .catch(() => undefined);
   }, [client, enabled]);
 
@@ -142,13 +157,16 @@ export function CastProvider({
           events.send({ type: 'cast.control', receiverId: driving, name: name.current });
         }
       },
-      onEvent: (e) =>
-        applyCastEvent(e, {
-          receivers: setReceivers,
-          activeId: setActiveId,
-          error: setError,
-          base: setBase,
-        }),
+      onEvent: (e) => {
+        applyCastEvent(
+          e,
+          { receivers: setReceivers, activeId: setActiveId, error: setError, base: setBase },
+          drivingRef.current,
+        );
+        if (e.type === 'cast.receiver.gone') {
+          refresh();
+        }
+      },
     });
     events.connect();
     socket.current = events;
@@ -171,19 +189,19 @@ export function CastProvider({
 
   // Advance the interpolated position while the active TV is playing. One timer,
   // only while it is needed: an idle or paused receiver costs nothing.
-  const playing = active?.nowPlaying?.state === 'playing';
+  const advancing = Boolean(active && base?.id === active.id && base.playing);
   useEffect(() => {
-    if (!playing) {
+    if (!advancing) {
       return undefined;
     }
     const iv = setInterval(rerender, TICK_MS);
     return () => clearInterval(iv);
-  }, [playing]);
+  }, [advancing]);
 
   // Recomputed every render (the tick above forces those while playing) rather
   // than memoized: it is arithmetic over the clock, and a memo would cache the
   // one value that must never be cached.
-  const positionMs = livePosition(active, base, playing);
+  const positionMs = livePosition(active, base);
 
   const sendTo = useCallback(
     async (receiverId: DeviceId, command: CastCommand): Promise<CastFailure | null> => {
@@ -193,6 +211,10 @@ export function CastProvider({
       try {
         await client.cast.command(receiverId, command);
         setError(null);
+        if (command.type === 'seek') {
+          const { positionMs: target } = command;
+          setBase((b) => seekedBase(b, receiverId, target));
+        }
         return null;
       } catch (e) {
         const failure = failureOf(e);
@@ -207,8 +229,42 @@ export function CastProvider({
     [client, refresh],
   );
 
+  const control = useCallback((receiverId: DeviceId) => {
+    socket.current?.send({ type: 'cast.control', receiverId, name: name.current });
+  }, []);
+  const gaveUp = useCallback((receiverId: DeviceId) => {
+    setActiveId((id) => (id === receiverId ? null : id));
+    setError('cast.failed');
+  }, []);
+  const { waking, needsPower, wake } = useCastWake({
+    client,
+    receivers,
+    reach,
+    onArrived: control,
+    onGaveUp: gaveUp,
+  });
+
+  const bringBack = useCallback(
+    async (receiverId: DeviceId, play?: Extract<CastCommand, { type: 'play' }>) => {
+      try {
+        await wake(receiverId, play);
+        setActiveId(receiverId);
+        setError(null);
+        return null;
+      } catch (e) {
+        const failure = failureOf(e);
+        setError(failure);
+        return failure;
+      }
+    },
+    [wake],
+  );
+
   const playOn = useCallback(
     async (receiverId: DeviceId, itemId: ItemId, startMs = 0) => {
+      if (isAsleep(receiversRef.current, receiverId)) {
+        return bringBack(receiverId, { type: 'play', itemId, positionMs: startMs });
+      }
       const failure = await sendTo(receiverId, { type: 'play', itemId, positionMs: startMs });
       if (!failure) {
         setActiveId(receiverId);
@@ -219,7 +275,7 @@ export function CastProvider({
       }
       return failure;
     },
-    [sendTo],
+    [sendTo, bringBack],
   );
 
   const send = useCallback(
@@ -230,32 +286,32 @@ export function CastProvider({
 
   // The latest `receivers` stay reachable through `receiversRef` above, so
   // `select` is never re-created.
-  const select = useCallback((receiverId: DeviceId | null) => {
-    setActiveId(receiverId);
-    setError(null);
-    // Tell the set it is being driven, so it can show this remote (and let it
-    // go). Presence rides the socket: closing the app releases it for us.
-    socket.current?.send(
-      receiverId
-        ? { type: 'cast.control', receiverId, name: name.current }
-        : { type: 'cast.release' },
-    );
-    const next = receiverId ? receiversRef.current.find((r) => r.id === receiverId) : null;
-    setBase(
-      next?.nowPlaying
-        ? {
-            id: next.id,
-            positionMs: next.nowPlaying.positionMs,
-            playing: next.nowPlaying.state === 'playing',
-            at: Date.now(),
-          }
-        : null,
-    );
-  }, []);
+  const select = useCallback(
+    (receiverId: DeviceId | null) => {
+      if (receiverId && isAsleep(receiversRef.current, receiverId)) {
+        void bringBack(receiverId);
+        return;
+      }
+      setActiveId(receiverId);
+      setError(null);
+      // Tell the set it is being driven, so it can show this remote (and let it
+      // go). Presence rides the socket: closing the app releases it for us.
+      socket.current?.send(
+        receiverId
+          ? { type: 'cast.control', receiverId, name: name.current }
+          : { type: 'cast.release' },
+      );
+      const next = receiversRef.current.find((r) => r.id === receiverId);
+      setBase(next ? baseOf(next) : null);
+    },
+    [bringBack],
+  );
 
   const value = useMemo<Cast>(
     () => ({
       receivers,
+      waking,
+      wakingNeedsPower: needsPower,
       pairable,
       active,
       available: receivers.length > 0,
@@ -265,11 +321,11 @@ export function CastProvider({
       send,
       error,
     }),
-    [receivers, pairable, active, positionMs, select, playOn, send, error],
+    [receivers, waking, needsPower, pairable, active, positionMs, select, playOn, send, error],
   );
 
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;
 }
 
-export type { Cast, CastFailure } from './cast-context';
-export { useCast } from './cast-context';
+export type { Cast, CastFailure, CastRowState } from './cast-context';
+export { castRowState, useCast } from './cast-context';

@@ -4,6 +4,7 @@
 export type { BuildInfo } from '#tv/app/build-metadata';
 export type { DeviceNameSource } from '#tv/app/device-name';
 export { lateDeviceName } from '#tv/app/device-name';
+export type { WakeHintSource } from '#tv/features/cast/wake-hint';
 export type { ClientHardware, HardwareSource } from '#tv/app/hardware-readings';
 export type { LauncherBackend } from '#tv/app/launcher';
 export { createSearchRequests, type SearchRequests } from '#tv/app/search-request';

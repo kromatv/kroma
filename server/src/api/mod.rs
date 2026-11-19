@@ -76,6 +76,8 @@ mod it_backup;
 #[cfg(test)]
 mod it_cast;
 #[cfg(test)]
+mod it_cast_wake;
+#[cfg(test)]
 mod it_content;
 #[cfg(test)]
 mod it_device_versions;

@@ -1,14 +1,25 @@
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Icon, OtpField, styles, Text, useStyles } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  classes,
+  Icon,
+  OtpField,
+  SegmentGroup,
+  styles,
+  Text,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { NearbyTvs } from '#web/features/accounts/nearby-tvs.component';
 import { useAuth } from '#web/shared/lib/auth';
 import { page } from '#web/shared/ui';
 
-// The approver side of pairing: the TVs waiting on this network are one tap
-// each, and under them the code a TV shows for everything that road cannot
-// reach. AuthGate guarantees the sign-in.
+// The approver side of pairing, as the phone draws it: two roads to the same
+// place, one on screen at a time. The televisions waiting on this network lead,
+// because they ask nothing of the reader; the code a TV shows is the road that
+// works from anywhere. AuthGate guarantees the sign-in.
 export const Route = createFileRoute('/_app/connect')({
   validateSearch: (s: Record<string, unknown>): { code?: string } => ({
     code: typeof s.code === 'string' ? s.code : undefined,
@@ -16,27 +27,68 @@ export const Route = createFileRoute('/_app/connect')({
   component: ConnectPage,
 });
 
+const MODES = ['network', 'code'] as const;
+type ConnectMode = (typeof MODES)[number];
+
 function ConnectPage() {
   const pageScoped = useStyles(page);
-
-  const s = useStyles(sDefinition);
-
   const t = useT();
-  const { code: initial } = Route.useSearch();
-  const { client, user } = useAuth();
-  const [code, setCode] = useState(initial ?? '');
+  const { code } = Route.useSearch();
+  const { user } = useAuth();
+  const [mode, setMode] = useState<ConnectMode>(code ? 'code' : 'network');
+  const codePrompt = user
+    ? t('connect.codePromptForUser', { name: user.username })
+    : t('connect.codePrompt');
+
+  return (
+    <main className={classes(pageScoped.screen)}>
+      <Box flex center px={24} py={64}>
+        <Box w="100%" maxW={440} radius="xl" border="border" bg="surface1" p={32} gap={20}>
+          <Text variant="subheading" accessibilityRole="header" textAlign="center">
+            {t('connect.title')}
+          </Text>
+
+          <SegmentGroup.Root
+            value={mode}
+            onValueChange={setMode}
+            label={t('connect.title')}
+            stretch
+          >
+            {MODES.map((m) => (
+              <SegmentGroup.Item key={m} value={m}>
+                <SegmentGroup.Label>{t(`connect.mode.${m}`)}</SegmentGroup.Label>
+              </SegmentGroup.Item>
+            ))}
+          </SegmentGroup.Root>
+
+          <Text variant="meta" color="textMuted" textAlign="center">
+            {mode === 'network' ? t('handoff.nearbySub') : codePrompt}
+          </Text>
+
+          {mode === 'network' ? <NearbyTvs /> : <CodeEntry initial={code ?? ''} />}
+        </Box>
+      </Box>
+    </main>
+  );
+}
+
+function CodeEntry({ initial }: Readonly<{ initial: string }>) {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  const { client } = useAuth();
+  const [code, setCode] = useState(initial);
   const [status, setStatus] = useState<'idle' | 'ok' | 'err'>('idle');
   const [busy, setBusy] = useState(false);
 
   async function submit(value?: string) {
-    const c = (value ?? code).trim();
-    if (!c) {
+    const typed = (value ?? code).trim();
+    if (!typed) {
       return;
     }
     setBusy(true);
     setStatus('idle');
     try {
-      await client.accounts.quickConnect.authorize(c);
+      await client.accounts.quickConnect.authorize(typed);
       setStatus('ok');
     } catch {
       setStatus('err');
@@ -45,72 +97,61 @@ function ConnectPage() {
     }
   }
 
+  if (status === 'ok') {
+    return <Connected />;
+  }
   return (
-    <main className={classes(pageScoped.screen)}>
-      <Box flex center px={24} py={64}>
-        <Box w="100%" maxW={420} radius="xl" border="border" bg="surface1" p={32}>
-          <Text variant="subheading" accessibilityRole="header" textAlign="center" mb={8}>
-            {t('connect.title')}
-          </Text>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void submit();
+      }}
+      className={classes(s.form)}
+    >
+      <OtpField.Root
+        maxLength={4}
+        value={code}
+        onValueChange={(v) => {
+          setCode(v);
+          setStatus('idle');
+        }}
+        onComplete={(v) => void submit(v)}
+        physicalKeyboard
+        autoFocus
+        disabled={busy}
+        invalid={status === 'err'}
+        label={t('connect.title')}
+      />
+      {status === 'err' ? (
+        <Text variant="meta" color="danger" textAlign="center">
+          {t('connect.invalidCode')}
+        </Text>
+      ) : null}
+      <Button
+        block
+        label={busy ? t('auth.loggingIn') : t('connect.authorize')}
+        onPress={() => void submit()}
+        loading={busy}
+        disabled={code.trim().length < 4}
+      />
+    </form>
+  );
+}
 
-          <NearbyTvs />
-
-          <Text variant="body" color="textMuted" textAlign="center" mb={28}>
-            {user
-              ? t('connect.codePromptForUser', { name: user.username })
-              : t('connect.codePrompt')}
-          </Text>
-
-          {status === 'ok' ? (
-            <Box radius="xl" border="success/40" bg="success/10" px={16} py={24}>
-              <Box center mb={4}>
-                <Icon name="check" size={38} thickness={2.4} color="success" />
-              </Box>
-              <Text variant="title" textAlign="center">
-                {t('connect.connected')}
-              </Text>
-              <Text variant="meta" color="textMuted" textAlign="center" mt={4}>
-                {t('connect.willConnectSoon')}
-              </Text>
-            </Box>
-          ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void submit();
-              }}
-              className={classes(s.form)}
-            >
-              <OtpField.Root
-                maxLength={4}
-                value={code}
-                onValueChange={(v) => {
-                  setCode(v);
-                  setStatus('idle');
-                }}
-                onComplete={(v) => void submit(v)}
-                physicalKeyboard
-                autoFocus
-                disabled={busy}
-                label={t('connect.title')}
-              />
-              {status === 'err' ? (
-                <Text variant="meta" color="danger" textAlign="center">
-                  {t('connect.invalidCode')}
-                </Text>
-              ) : null}
-              <Button
-                block
-                label={busy ? t('auth.loggingIn') : t('connect.authorize')}
-                onPress={() => void submit()}
-                loading={busy}
-                disabled={code.trim().length < 4}
-              />
-            </form>
-          )}
-        </Box>
+function Connected() {
+  const t = useT();
+  return (
+    <Box radius="xl" border="success/40" bg="success/10" px={16} py={24}>
+      <Box center mb={4}>
+        <Icon name="check" size={38} thickness={2.4} color="success" />
       </Box>
-    </main>
+      <Text variant="title" textAlign="center">
+        {t('connect.connected')}
+      </Text>
+      <Text variant="meta" color="textMuted" textAlign="center" mt={4}>
+        {t('connect.willConnectSoon')}
+      </Text>
+    </Box>
   );
 }
 

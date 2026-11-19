@@ -2,7 +2,7 @@
 //! ack/replay bookkeeping, and the TTL reaper.
 
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 // Names a device chose for itself are rendered in other people's pickers, where
@@ -18,6 +18,9 @@ mod announce;
 mod controllers;
 mod inbox;
 mod reaper;
+mod waiting;
+
+pub use waiting::WAITING_TTL;
 
 #[cfg(test)]
 mod test_support;
@@ -128,6 +131,7 @@ impl Receiver {
                 list.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.id.cmp(&b.id)));
                 list
             },
+            asleep: false,
         }
     }
 
@@ -150,6 +154,7 @@ impl Receiver {
 #[derive(Clone, Default)]
 pub struct Registry {
     inner: Arc<RwLock<HashMap<String, Receiver>>>,
+    waiting: Arc<Mutex<HashMap<String, waiting::Waiting>>>,
 }
 
 impl Registry {

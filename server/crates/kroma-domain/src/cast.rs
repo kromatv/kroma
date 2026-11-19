@@ -92,6 +92,8 @@ pub struct CastReceiver {
     #[serde(rename = "nowPlaying", skip_serializing_if = "Option::is_none")]
     pub now_playing: Option<CastNowPlaying>,
     pub controllers: Vec<CastController>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub asleep: bool,
 }
 
 /// An order from a sender to a receiver. `SkipNext` carries no target on

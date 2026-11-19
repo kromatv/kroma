@@ -18,13 +18,18 @@ use crate::api::util::{client_ip, query};
 use crate::db;
 use crate::i18n;
 use crate::infra::events::ServerEvent;
-use crate::model::{CastCommandEnvelope, CastPlayback, CastState, Permission, User};
+use crate::model::{
+    CastCommandEnvelope, CastPlayback, CastReceiver, CastState, CastWakeHint, Permission, User,
+};
+use crate::services::cast::wake::Arrival;
 use crate::services::cast::{valid_receiver_id, Announce, Announced};
 use crate::services::playback::classify_network;
 use crate::services::settings;
 use crate::state::SharedState;
 
 mod command;
+mod wake;
+
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
@@ -32,6 +37,37 @@ pub fn routes() -> Router<SharedState> {
         .route("/cast/receivers", get(list))
         .route("/cast/receivers/{id}", delete(unregister))
         .route("/cast/receivers/{id}/command", post(command::command))
+        .route(
+            "/cast/receivers/{id}/wake",
+            post(wake::wake).delete(wake::forget),
+        )
+}
+
+/// Keep what an arriving television said about reaching itself, off the
+/// request. One that says nothing at all is an older build, and what is kept
+/// for it stays.
+pub(crate) fn keep(
+    state: &SharedState,
+    user_id: &str,
+    peer: &str,
+    row: CastReceiver,
+    hint: Option<CastWakeHint>,
+) {
+    let Some(hint) = hint else {
+        return;
+    };
+    let arrival = Arrival {
+        row,
+        user_id: user_id.to_string(),
+        hint,
+        peer: peer.to_string(),
+    };
+    let now_ms = crate::services::jobs::now_ms();
+    tokio::spawn(crate::services::cast::wake::keep(
+        state.db.clone(),
+        arrival,
+        now_ms,
+    ));
 }
 
 fn bad_id(user: &User) -> Response {
@@ -54,6 +90,8 @@ pub struct AnnounceBody {
     pub last_applied_seq: u64,
     #[serde(default)]
     pub playback: Option<CastPlayback>,
+    #[serde(default)]
+    pub wake: Option<CastWakeHint>,
 }
 
 /// `POST /api/cast/announce` response: pending commands (oldest first) and the
@@ -115,6 +153,7 @@ pub async fn announce(
         Announced::Ok { commands, changed } => {
             if changed {
                 if let Some(row) = state.cast.row(&body.receiver_id) {
+                    keep(&state, &user.id, &ip, row.clone(), body.wake);
                     state.events.publish_to(
                         &user.id,
                         ServerEvent::CastReceiverChanged {
@@ -166,12 +205,27 @@ pub async fn announce(
 /// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`. Only the receivers
 /// signed into the caller's own account: casting is scoped to where you are
 /// connected, so nobody browses, let alone drives, another household's TVs.
+/// A television that is off but can be brought back follows, marked `asleep`.
 pub async fn list(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     require(&user, Permission::Playback)?;
-    Ok(Json(state.cast.list(&user.id)).into_response())
+    let mut receivers = state.cast.list(&user.id);
+    let owner = user.id.clone();
+    let kept = query(&state.db, move |pool| {
+        db::cast_devices_for_user(&pool, &owner)
+    })
+    .await
+    .unwrap_or_default();
+    let asleep: Vec<CastReceiver> = kept
+        .iter()
+        .filter(|device| receivers.iter().all(|live| live.id != device.receiver_id))
+        .filter(|device| !crate::services::cast::wake::plan(device).is_empty())
+        .map(|device| crate::services::cast::wake::asleep_row(device, &user.username))
+        .collect();
+    receivers.extend(asleep);
+    Ok(Json(receivers).into_response())
 }
 
 /// `DELETE /api/cast/receivers/:id` (Bearer) → 204. Owner-scoped: naming somebody

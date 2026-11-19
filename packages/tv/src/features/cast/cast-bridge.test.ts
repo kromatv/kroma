@@ -37,7 +37,10 @@ const sub = (over: Partial<PlayerSub>): PlayerSub =>
 
 const microtask = () => new Promise<void>((resolve) => queueMicrotask(resolve));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 function wrap(bridge: CastBridge) {
   return ({ children }: { children: ReactNode }) =>
     createElement(CastBridgeProvider, { value: bridge }, children);
@@ -130,27 +133,45 @@ describe('castReport', () => {
 });
 
 describe('onCastReportChange', () => {
-  it('fires on a material change and stays silent on the position ticking', async () => {
+  it('fires on a material change and stays silent while the playhead simply advances', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
     const bridge = createCastBridge();
     const seen = vi.fn();
     const off = bridge.onCastReportChange(seen);
 
-    bridge.setCastTarget({ item, controller: controller({ playing: true }) });
+    bridge.setCastTarget({ item, controller: controller({ playing: true, cur: 10 }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(1);
 
-    bridge.setCastTarget({ item, controller: controller({ playing: true, cur: 41.5 }) });
+    vi.advanceTimersByTime(250);
+    bridge.setCastTarget({ item, controller: controller({ playing: true, cur: 10.25 }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(1);
 
-    bridge.setCastTarget({ item, controller: controller({ playing: false }) });
+    bridge.setCastTarget({ item, controller: controller({ playing: false, cur: 10.25 }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(2);
 
     off();
-    bridge.setCastTarget({ item, controller: controller({ playing: true }) });
+    bridge.setCastTarget({ item, controller: controller({ playing: true, cur: 10.25 }) });
     await microtask();
     expect(seen).toHaveBeenCalledTimes(2);
+  });
+
+  it('fires when the playhead jumps, which is a seek from any source', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const bridge = createCastBridge();
+    const seen = vi.fn();
+    bridge.onCastReportChange(seen);
+    bridge.setCastTarget({ item, controller: controller({ playing: true, cur: 10 }) });
+    await microtask();
+    seen.mockClear();
+
+    vi.advanceTimersByTime(250);
+    bridge.setCastTarget({ item, controller: controller({ playing: true, cur: 300 }) });
+    await microtask();
+
+    expect(seen).toHaveBeenCalledTimes(1);
   });
 
   it('collapses the player re-registering itself into a single notification', async () => {

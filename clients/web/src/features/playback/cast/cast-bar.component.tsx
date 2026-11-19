@@ -1,88 +1,83 @@
-import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // The docked remote, pinned to the bottom of the app shell while this browser
-// drives a TV. It shows what the TV last reported, not what was last asked of
+// drives a TV. Three zones: what is playing, the remote, and the television
+// being driven. It shows what the TV last reported, not what was last asked of
 // it, with the position interpolated between the receiver's heartbeats.
 
-import type { CastNowPlaying } from '@kromatv/client/cast';
+import type { CastReceiver } from '@kromatv/client/cast';
 import type { MediaItem } from '@kromatv/client/media';
-import { SKIP_BACK_ICON, type Cast, SKIP_FORWARD_ICON, useCast, useT } from '@kromatv/ui';
-import { formatTimecode } from '@kromatv/ui/intl';
+import { type Cast, castRowState, useCast, useT } from '@kromatv/ui';
 import {
   Box,
   breakpoint,
+  Button,
   classes,
-  color,
-  Focusable,
-  Icon,
-  IconButton,
-  type IconName,
   Img,
   Row,
+  Spinner,
   styles,
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-
+import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { castPicker } from '#web/shared/ui/cast-picker.component';
+import { CastRemote } from './cast-remote.component';
+import { TransportButton } from './transport-button.component';
 
-const SKIP_MS = 10_000;
-
-export function CastBar() {
+/** `inset` is the width the app's rail takes on the left, which the bar stays
+ * clear of. Default 0. */
+export function CastBar({ inset = 0 }: Readonly<{ inset?: number }>) {
   const s = useStyles(sDefinition);
-
   const t = useT();
-  const { active, positionMs, send, select } = useCast();
+  const cast = useCast();
+  const { active, send, select } = cast;
   const wide = useWindowDimensions().width >= breakpoint.md;
 
   if (!active) {
     return null;
   }
 
-  const playing = active.nowPlaying;
-  const playingOn = t('cast.playingOn', { device: active.name });
+  const stop = () => {
+    void send({ type: 'stop' });
+    select(null);
+  };
 
   return (
-    <aside aria-label={playingOn} className={classes(s.bar)}>
-      <Row self="center" w="100%" maxW={1024} gap={12} px={16} py={10}>
-        <NowPlaying item={playing?.item} playingOn={playingOn} onSelect={select} />
-
-        {playing ? (
-          <>
-            <TransportKeys playing={playing} send={send} />
-            {wide ? <Scrubber playing={playing} positionMs={positionMs} send={send} /> : null}
-          </>
-        ) : (
-          <Text flex variant="meta" color="textDim">
-            {t('cast.idle')}
-          </Text>
-        )}
-
-        <Transport
-          icon="player-stop-filled"
-          label={t('cast.stop')}
-          onPress={() => {
-            void send({ type: 'stop' });
-            select(null);
-          }}
-        />
+    <aside
+      aria-label={t('cast.playingOn', { device: active.name })}
+      className={classes(s.bar)}
+      style={{ left: inset }}
+    >
+      <Row w="100%" gap={16} px={20} py={12}>
+        <Row gap={12} style={s.side}>
+          <NowPlaying item={active.nowPlaying?.item} />
+        </Row>
+        <Box style={s.middle}>
+          <Middle active={active} cast={cast} scrub={wide} />
+        </Box>
+        <Row gap={8} style={[s.side, s.end]}>
+          {wide ? <DeviceButton name={active.name} onSelect={select} /> : null}
+          <TransportButton icon="player-stop-filled" label={t('cast.stop')} onPress={stop} />
+        </Row>
       </Row>
     </aside>
   );
 }
 
-function NowPlaying({
-  item,
-  playingOn,
-  onSelect,
-}: Readonly<{ item?: MediaItem; playingOn: string; onSelect: Cast['select'] }>) {
+function secondLine(item: MediaItem): string {
+  if (item.showTitle) {
+    const number = item.season && item.episode ? ` · S${item.season}E${item.episode}` : '';
+    return `${item.showTitle}${number}`;
+  }
+  return item.year ? String(item.year) : '';
+}
+
+function NowPlaying({ item }: Readonly<{ item?: MediaItem }>) {
   const webRuntime = useWebRuntime();
-
-  const s = useStyles(sDefinition);
-
-  const t = useT();
-  const poster = item ? webRuntime.client.media.artwork.posterFor(item, 96) : null;
+  if (!item) {
+    return null;
+  }
+  const poster = webRuntime.client.media.artwork.posterFor(item, 96);
   return (
     <>
       {poster ? (
@@ -90,125 +85,81 @@ function NowPlaying({
           <Img src={poster} radius="sm" fill />
         </Box>
       ) : null}
-
-      <Box minW={0} shrink={0} basis={{ base: 112, md: 192 }}>
-        <Text variant="meta" lines={1}>
-          {item ? (item.metadata?.title ?? item.title) : t('cast.idle')}
+      <Box minW={0}>
+        <Text variant="label" lines={1}>
+          {item.metadata?.title ?? item.title}
         </Text>
-        <Focusable
-          label={playingOn}
-          onPress={async () => {
-            const picked = await castPicker({ offerLocal: true });
-            if (picked !== undefined) {
-              onSelect(picked);
-            }
-          }}
-        >
-          {(state) => (
-            <Row gap={4}>
-              <Icon name="cast" size={13} thickness={1.8} color="accent" />
-              <Text
-                variant="meta"
-                color="accent"
-                lines={1}
-                style={state.hovered ? s.underline : undefined}
-              >
-                {playingOn}
-              </Text>
-            </Row>
-          )}
-        </Focusable>
+        <Text variant="meta" color="textMuted" lines={1}>
+          {secondLine(item)}
+        </Text>
       </Box>
     </>
   );
 }
 
-function TransportKeys({
-  playing,
-  send,
-}: Readonly<{ playing: CastNowPlaying; send: Cast['send'] }>) {
+interface MiddleProps {
+  active: CastReceiver;
+  cast: Cast;
+  scrub: boolean;
+}
+
+// What the middle of the bar is, by what the television is doing: coming back,
+// waiting for somebody to switch it on, idle, or playing.
+function Middle({ active, cast, scrub }: Readonly<MiddleProps>) {
   const t = useT();
-  // Buffering is playing, stalled: the button a viewer needs is still Pause.
-  const isPlaying = playing.state === 'playing' || playing.state === 'buffering';
+  const state = castRowState(active, cast);
+  if (state === 'needsPower') {
+    return <Notice>{t('cast.needsPower')}</Notice>;
+  }
+  if (state === 'waking') {
+    return (
+      <Row gap={10}>
+        <Spinner size={18} />
+        <Notice>{t('cast.waking')}</Notice>
+      </Row>
+    );
+  }
+  if (!active.nowPlaying) {
+    return <Notice>{t('cast.idleHint', { device: active.name })}</Notice>;
+  }
   return (
-    <Row gap={4}>
-      <Transport
-        icon={SKIP_BACK_ICON}
-        label={t('player.back10')}
-        onPress={() => void send({ type: 'skip', deltaMs: -SKIP_MS })}
-      />
-      <Transport
-        icon={isPlaying ? 'player-pause-filled' : 'player-play-filled'}
-        label={t(isPlaying ? 'player.pause' : 'player.play')}
-        onPress={() => void send({ type: 'togglePlay' })}
-        primary
-      />
-      <Transport
-        icon={SKIP_FORWARD_ICON}
-        label={t('player.fwd10')}
-        onPress={() => void send({ type: 'skip', deltaMs: SKIP_MS })}
-      />
-      {playing.item.kind === 'episode' ? (
-        <Transport
-          icon="player-track-next"
-          label={t('player.nextEpisode')}
-          onPress={() => void send({ type: 'skipNext' })}
-        />
-      ) : null}
-    </Row>
+    <CastRemote
+      playing={active.nowPlaying}
+      positionMs={cast.positionMs}
+      send={cast.send}
+      scrub={scrub}
+    />
   );
 }
 
-function Scrubber({
-  playing,
-  positionMs,
-  send,
-}: Readonly<{ playing: CastNowPlaying; positionMs: number; send: Cast['send'] }>) {
-  const s = useStyles(sDefinition);
-
-  const t = useT();
-  // While a drag is in flight the bar follows the finger: the receiver's
-  // heartbeats would otherwise yank the handle back mid-gesture.
-  const [dragMs, setDragMs] = useState<number | null>(null);
-  const durationMs = playing.durationMs ?? 0;
-  const shownMs = dragMs ?? positionMs;
-
-  const commit = () => {
-    if (dragMs == null) {
-      return;
-    }
-    void send({ type: 'seek', positionMs: Math.round(dragMs) });
-    setDragMs(null);
-  };
-
+function Notice({ children }: Readonly<{ children: string }>) {
   return (
-    <>
-      <Text variant="meta" color="textDim" shrink={0} style={s.tabular}>
-        {formatTimecode(shownMs / 1000)}
-      </Text>
-      <input
-        type="range"
-        aria-label={t('player.seekBar')}
-        min={0}
-        max={Math.max(durationMs, 1)}
-        value={Math.min(shownMs, durationMs || shownMs)}
-        onChange={(e) => setDragMs(Number(e.target.value))}
-        onPointerUp={() => commit()}
-        onKeyUp={() => commit()}
-        onBlur={() => commit()}
-        className={classes(s.slider)}
-      />
-      <Text variant="meta" color="textDim" shrink={0} style={s.tabular}>
-        {durationMs ? formatTimecode(durationMs / 1000) : '--:--'}
-      </Text>
-    </>
+    <Text variant="meta" color="textMuted" textAlign="center" lines={2}>
+      {children}
+    </Text>
+  );
+}
+
+function DeviceButton({ name, onSelect }: Readonly<{ name: string; onSelect: Cast['select'] }>) {
+  return (
+    <Button
+      variant="glass"
+      size="sm"
+      icon="cast"
+      label={name}
+      onPress={async () => {
+        const picked = await castPicker({ offerLocal: true });
+        if (picked !== undefined) {
+          onSelect(picked);
+        }
+      }}
+    />
   );
 }
 
 const sDefinition = styles({
   bar: {
     position: 'fixed',
-    left: 0,
     right: 0,
     bottom: 0,
     zIndex: 40,
@@ -222,25 +173,7 @@ const sDefinition = styles({
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
   },
-  slider: { height: 4, minWidth: 0, flex: true, cursor: 'pointer', accentColor: color('accent') },
-  underline: { textDecorationLine: 'underline' },
-  tabular: { fontVariant: ['tabular-nums'] },
+  side: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 },
+  end: { justifyContent: 'flex-end' },
+  middle: { flexGrow: 2, flexShrink: 1, flexBasis: 0, minWidth: 0, alignItems: 'center' },
 });
-
-function Transport({
-  icon,
-  label,
-  onPress,
-  primary,
-}: Readonly<{ icon: IconName; label: string; onPress: () => void; primary?: boolean }>) {
-  return (
-    <IconButton
-      variant={primary ? 'glass' : 'ghost'}
-      diameter={primary ? 36 : 32}
-      glyph={primary ? 20 : 18}
-      icon={icon}
-      label={label}
-      onPress={onPress}
-    />
-  );
-}

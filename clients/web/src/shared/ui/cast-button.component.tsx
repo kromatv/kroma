@@ -4,33 +4,36 @@
 // no action at all, so with an empty roster this renders nothing rather than an
 // enabled button that opens an empty picker.
 
+import type { DeviceId } from '@kromatv/client';
 import type { ItemId } from '@kromatv/client/media';
 import { useCast, useT } from '@kromatv/ui';
 import { Button, toast } from '@kromatv/ui/kit';
 import { castPicker } from '#web/shared/ui/cast-picker.component';
+import { obviousReceiver } from './obvious-receiver';
 
 export function CastButton({ itemId }: Readonly<{ itemId: ItemId }>) {
   const t = useT();
-  const { available, playOn } = useCast();
+  const { available, receivers, active, playOn } = useCast();
   if (!available) {
     return null;
   }
+  const choose = async (): Promise<DeviceId | null> => {
+    const obvious = obviousReceiver(receivers, active);
+    return obvious ? obvious.id : ((await castPicker()) ?? null);
+  };
   return (
     <Button
       variant="outline"
       icon="cast"
       label={t('cast.title')}
       onPress={async () => {
-        const picked = await castPicker();
+        const picked = await choose();
         if (!picked) {
           return;
         }
-        // The position is the account's own resume point, which the receiver
-        // already knows - nothing to hand over from a page that isn't playing.
         const failure = await playOn(picked, itemId);
-        if (failure) {
-          toast({ message: t(failure) });
-        }
+        const device = receivers.find((r) => r.id === picked)?.name ?? '';
+        toast({ message: failure ? t(failure) : t('cast.playingOn', { device }) });
       }}
     />
   );

@@ -13,7 +13,7 @@ import {
   type GrantResult,
   grantRefusal,
 } from '@kromatv/core';
-import { useCast } from '@kromatv/ui';
+import { type CastRowState, castRowState, useCast } from '@kromatv/ui';
 import { Badge, Box, radius as cornerRadius, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -43,7 +43,8 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
 
   const t = useT();
   const client = useClient();
-  const { receivers, active, pairable } = useCast();
+  const cast = useCast();
+  const { receivers, active, pairable } = cast;
   // A television with no account cannot be cast to, and saying "none available"
   // with one in the room is the dead end this answers. The provider already
   // found it; the one useful thing to add here is the act of signing it in.
@@ -132,7 +133,7 @@ export function CastDeviceList({ onPick, offerLocal = true }: Readonly<CastDevic
           key={r.id}
           icon="device-tv"
           name={r.name}
-          detail={detailOf(r, t)}
+          detail={detailOf(r, castRowState(r, cast), t)}
           selected={active?.id === r.id}
           onPress={() => onPick(r.id)}
         />
@@ -230,7 +231,16 @@ function detailOfPairable(state: PairingState | null, t: ReturnType<typeof useT>
   return t('cast.signInThisTv');
 }
 
-function detailOf(r: CastReceiver, t: ReturnType<typeof useT>): string {
+const OFF_HINT = {
+  waking: 'cast.waking',
+  needsPower: 'cast.needsPower',
+  asleep: 'cast.asleep',
+} as const;
+
+function detailOf(r: CastReceiver, state: CastRowState, t: ReturnType<typeof useT>): string {
+  if (state !== 'playing' && state !== 'idle') {
+    return t(OFF_HINT[state]);
+  }
   const playing = r.nowPlaying?.item;
   if (playing) {
     return playing.metadata?.title ?? playing.title;

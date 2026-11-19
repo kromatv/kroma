@@ -3,7 +3,7 @@ import type { CastReceiver } from '@kromatv/client/cast';
 import type { ServerEvent } from '@kromatv/client/events';
 import type { Dispatch, SetStateAction } from 'react';
 import type { Cast } from './cast-context';
-import type { PositionBase } from './cast-position';
+import { baseOf, type PositionBase } from './cast-position';
 
 /** The state a [`applyCastEvent`] fold writes through. Grouped rather than
  * passed positionally: four same-shaped setters in a row is an argument list
@@ -15,15 +15,20 @@ interface CastEventSetters {
   base: Dispatch<SetStateAction<PositionBase | null>>;
 }
 
-/** Fold one bus event into the roster / position state.
+/** Fold one bus event into the roster / position state. `driving` is the
+ * television this sender drives: the position base is its alone, so what
+ * another television reports never moves this sender's playhead.
  *
  * At module scope rather than inside the effect: rows arrive whole (a play or
  * pause on one TV costs every sender a patch instead of a refetch), and keeping
  * the fold here means the effect stays a flat wiring step.
  */
-function applyCastEvent(e: ServerEvent, set: CastEventSetters): void {
+function applyCastEvent(e: ServerEvent, set: CastEventSetters, driving: DeviceId | null): void {
   if (e.type === 'cast.receiver') {
     set.receivers((list) => upsert(list, e.receiver));
+    if (e.receiver.id === driving) {
+      set.base(baseOf(e.receiver));
+    }
   } else if (e.type === 'cast.receiver.gone') {
     set.receivers((list) => list.filter((r) => r.id !== e.receiverId));
   } else if (e.type === 'cast.kicked') {
@@ -31,7 +36,7 @@ function applyCastEvent(e: ServerEvent, set: CastEventSetters): void {
     // set we no longer drive.
     set.activeId((id) => (id === e.receiverId ? null : id));
     set.error('cast.kicked');
-  } else if (e.type === 'cast.position') {
+  } else if (e.type === 'cast.position' && e.receiverId === driving) {
     set.base({
       id: e.receiverId,
       positionMs: e.positionMs,

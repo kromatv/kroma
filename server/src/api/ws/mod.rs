@@ -69,6 +69,7 @@ pub async fn events(
         id: user.id,
         username: user.username,
         avatar_url: user.avatar_url,
+        ip,
     };
     ws.protocols([offered])
         .on_upgrade(move |socket| connection::pump(socket, state, who))
@@ -79,5 +80,6 @@ struct Viewer {
     username: String,
     avatar_url: Option<String>,
     network: String,
+    ip: String,
     can_cast: bool,
 }

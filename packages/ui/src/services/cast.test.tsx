@@ -134,17 +134,98 @@ describe('the roster', () => {
   });
 
   it('drops the selection when the chosen TV goes away', async () => {
-    const client = castClient();
+    const receivers = vi.fn(async () => [salon()]);
+    const client = castClient({ receivers });
     const { result } = mount(client);
     await waitFor(() => expect(result.current.receivers).toHaveLength(1));
     act(() => result.current.select(SALON_ID));
     await waitFor(() => expect(result.current.active?.id).toBe(SALON_ID));
 
-    // A TV whose socket closed is announced by id - no refetch, and the remote
-    // stops pretending it is driving something.
+    receivers.mockResolvedValue([]);
     act(() => events.onEvent?.({ type: 'cast.receiver.gone', receiverId: SALON_ID }));
+
     await waitFor(() => expect(result.current.active).toBeNull());
     expect(result.current.receivers).toHaveLength(0);
+  });
+
+  it('lists a TV that went away again when the server can bring it back', async () => {
+    const receivers = vi.fn(async () => [salon()]);
+    const client = castClient({ receivers });
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+
+    receivers.mockResolvedValue([salon({ asleep: true })]);
+    act(() => events.onEvent?.({ type: 'cast.receiver.gone', receiverId: SALON_ID }));
+
+    await waitFor(() => expect(result.current.receivers[0]?.asleep).toBe(true));
+  });
+});
+
+const asleepClient = (wake = vi.fn(async () => ({ steps: [] }))) =>
+  castClient({ receivers: vi.fn(async () => [salon({ asleep: true })]), wake });
+
+describe('a TV that is off', () => {
+  it('is brought back with the title to start, instead of being sent an order', async () => {
+    const client = asleepClient();
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.playOn(SALON_ID, ItemId.parse('it1'), 60_000);
+    });
+
+    expect(client.cast.wake).toHaveBeenCalledWith(SALON_ID, {
+      type: 'play',
+      itemId: 'it1',
+      positionMs: 60_000,
+    });
+    expect(client.cast.command).not.toHaveBeenCalled();
+    expect(result.current.waking).toBe(SALON_ID);
+    expect(result.current.active?.id).toBe(SALON_ID);
+  });
+
+  it('is brought back with nothing to play when it is only selected', async () => {
+    const client = asleepClient();
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+
+    act(() => result.current.select(SALON_ID));
+
+    await waitFor(() => expect(result.current.waking).toBe(SALON_ID));
+    expect(client.cast.wake).toHaveBeenCalledWith(SALON_ID, undefined);
+  });
+
+  it('takes the remote the moment it arrives, and is no longer waking', async () => {
+    const client = asleepClient();
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+    act(() => result.current.select(SALON_ID));
+    await waitFor(() => expect(result.current.waking).toBe(SALON_ID));
+
+    act(() => events.onEvent?.({ type: 'cast.receiver', receiver: salon() }));
+
+    await waitFor(() => expect(result.current.waking).toBeNull());
+    expect(events.send).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'cast.control', receiverId: SALON_ID }),
+    );
+  });
+
+  it('reports a failure and keeps nothing selected when the server refuses', async () => {
+    const wake = vi.fn(async () => {
+      throw new KromaApiError(404, 'gone');
+    });
+    const client = asleepClient(wake);
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+
+    let failure: CastFailure | null = null;
+    await act(async () => {
+      failure = await result.current.playOn(SALON_ID, ItemId.parse('it1'));
+    });
+
+    expect(failure).toBe('cast.gone');
+    expect(result.current.waking).toBeNull();
+    expect(result.current.active).toBeNull();
   });
 });
 

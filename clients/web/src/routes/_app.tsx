@@ -68,7 +68,7 @@ function AppLayout() {
           <Outlet />
         </div>
         <CatalogModalHosts />
-        <CastBar />
+        <CastBar inset={wide ? RAIL_WIDTH : 0} />
         <DirectOffer />
       </Box>
       <Box z={CAST_PICKER_Z}>

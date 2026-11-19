@@ -47,6 +47,8 @@ export interface SeekBarProps {
   total: string;
   endsAt: string;
   scale?: number;
+  /** `none` draws the track alone, for a host that prints the times beside it. Default `above`. */
+  labels?: 'above' | 'none';
   onScrub: (sec: number) => void;
   onScrubCommit: () => void;
   /** OK on the focused bar. */
@@ -79,6 +81,7 @@ export function SeekBar({
   total,
   endsAt,
   scale = 1,
+  labels = 'above',
   onScrub,
   onScrubCommit,
   onActivate,
@@ -216,21 +219,23 @@ export function SeekBar({
       : previewCentre(offsetAt(previewSec * 1000, segs, trackWidth), trackWidth, previewHalf);
 
   return (
-    <Box mb={px(20)}>
-      {/* The chapter title is the one string of unbounded length here, so it
-          shrinks and truncates rather than growing into the runtime. */}
-      <Box row align="baseline" between gap={px(12)} mb={px(13)}>
-        <Text lines={1} style={sized.timeShrink}>
-          {elapsed}
-          {chapterLabel ? (
-            <Text style={sized.timeMuted} color="text/50">{` · ${chapterLabel}`}</Text>
-          ) : null}
-        </Text>
-        <Text lines={1} style={sized.time} color="text/50">
-          {total}
-          {endsAt ? <Text style={sized.timeMuted} color="text/38">{` · ${endsAt}`}</Text> : null}
-        </Text>
-      </Box>
+    <Box mb={labels === 'above' ? px(20) : 0}>
+      {labels === 'above' ? (
+        /* The chapter title is the one string of unbounded length here, so it
+          shrinks and truncates rather than growing into the runtime. */
+        <Box row align="baseline" between gap={px(12)} mb={px(13)}>
+          <Text lines={1} style={sized.timeShrink}>
+            {elapsed}
+            {chapterLabel ? (
+              <Text style={sized.timeMuted} color="text/50">{` · ${chapterLabel}`}</Text>
+            ) : null}
+          </Text>
+          <Text lines={1} style={sized.time} color="text/50">
+            {total}
+            {endsAt ? <Text style={sized.timeMuted} color="text/38">{` · ${endsAt}`}</Text> : null}
+          </Text>
+        </Box>
+      ) : null}
 
       {/* track */}
       <Focusable

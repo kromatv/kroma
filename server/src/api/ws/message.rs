@@ -1,9 +1,10 @@
 use serde::Deserialize;
 
 use super::cast::{cast_hello, cast_state, release_controller};
+use crate::services::cast::Hello;
 use super::Viewer;
 use crate::infra::events::ServerEvent;
-use crate::model::CastPlayback;
+use crate::model::{CastPlayback, CastWakeHint};
 use crate::state::SharedState;
 
 #[derive(Debug, Deserialize)]
@@ -17,6 +18,8 @@ pub(super) enum ClientMessage {
         name: String,
         #[serde(default)]
         platform: String,
+        #[serde(default)]
+        wake: Option<CastWakeHint>,
     },
     #[serde(rename = "cast.state")]
     State {
@@ -54,8 +57,14 @@ pub(super) async fn handle_client(
             receiver_id,
             name,
             platform,
+            wake,
         } => {
-            cast_hello(state, who, receiver, receiver_id, name, platform);
+            let hello = Hello {
+                receiver_id,
+                name,
+                platform,
+            };
+            cast_hello(state, who, receiver, hello, wake);
         }
         ClientMessage::State { playback } => {
             let Some(id) = receiver.clone() else { return };

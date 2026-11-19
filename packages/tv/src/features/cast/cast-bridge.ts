@@ -11,6 +11,7 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { createPlayheadClock } from './playhead-clock';
 
 export type CastPlaybackReport = NonNullable<CastAnnounceBody['playback']>;
 
@@ -36,9 +37,10 @@ export function createCastBridge() {
   const listeners = new Set<() => void>();
   let signature = '';
 
-  /** Fires only on a material change (title, transport state, track selection),
-   * not position, which changes ~4 times a second and senders interpolate from
-   * the clock themselves. */
+  /** Fires on a material change (title, transport state, track selection) and
+   * when the playhead jumps, which is a seek from any source. It does not fire
+   * for the playhead simply advancing, which it does ~4 times a second: senders
+   * interpolate that from the clock themselves. */
   function onCastReportChange(listener: () => void): () => void {
     listeners.add(listener);
     return () => listeners.delete(listener);
@@ -59,6 +61,14 @@ export function createCastBridge() {
     ].join('|');
   }
 
+  const playhead = createPlayheadClock();
+
+  function playheadReading() {
+    return target
+      ? { positionMs: target.controller.cur * 1000, playing: target.controller.playing }
+      : null;
+  }
+
   let notifyQueued = false;
 
   // The player re-registers on every render, and React runs the previous
@@ -74,7 +84,8 @@ export function createCastBridge() {
     queueMicrotask(() => {
       notifyQueued = false;
       const now = materialSignature();
-      if (now === signature) {
+      const jumped = playhead.jumped(playheadReading());
+      if (now === signature && !jumped) {
         return;
       }
       signature = now;
