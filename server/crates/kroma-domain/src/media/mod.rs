@@ -224,4 +224,9 @@ pub struct SplashEntry {
     pub backdrop_url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub rating: Option<f64>,
+    #[serde(rename = "posterUrl", default, skip_serializing_if = "Option::is_none")]
+    pub poster_url: Option<String>,
+    /// A title the library does not hold: one the world watches this week.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub trending: bool,
 }

@@ -58,6 +58,7 @@ pub async fn list_libraries(
                 size_bytes: st.map(|s| s.total_bytes).unwrap_or(0),
                 last_scan: last_scan.clone(),
                 auto_scan: d.auto_scan,
+                demo: settings::is_demo_library(&d.id),
             }
         })
         .collect();
@@ -99,6 +100,7 @@ pub async fn create_library(
         ));
     }
     let mut defs = settings::library_defs(&state.settings, &state.config);
+    defs.retain(|held| !settings::is_demo_library(&held.id));
     let id = crate::services::scan::short_hash(&format!(
         "lib|{name}|{}",
         crate::services::auth::random_token()
@@ -209,7 +211,7 @@ fn clean_folders(folders: Vec<String>) -> Vec<String> {
 // Goes through the job manager so it shares the `library.scan` single-flight
 // guard and its follow-up pipeline; a no-op when a scan is already running.
 fn spawn_rescan(state: SharedState) {
-    let _ = state.jobs.trigger(
+    let _ = state.jobs.trigger_after(
         state.clone(),
         crate::services::jobs::JobKey("library.scan"),
         "library-edit",

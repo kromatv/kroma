@@ -11,6 +11,10 @@ key: the tooling hands you messages as JSON and takes your answers back as JSON.
 Read [`docs/translating.md`](../../../docs/translating.md) once before you
 start. It is short, and it is the same guide a human translator follows.
 
+Load the `native-copy` skill before you write a message. It is how a message
+is written so that it reads as written in the language, and it holds one
+reference per language: register, typography, fixed vocabulary, known calques.
+
 ## The loop
 
 ```bash

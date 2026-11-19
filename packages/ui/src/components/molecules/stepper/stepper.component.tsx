@@ -72,6 +72,8 @@ interface StepperRootProps {
    *  step is done once the flow has been past it, and a step ahead of its
    *  furthest point cannot be gone to. */
   complete?: readonly string[];
+  /** With `complete`: the steps a press may go to besides the done ones. */
+  open?: readonly string[];
   /** Names the indicator to assistive tech: what is being stepped through. */
   label: string;
   /** Defaults to `horizontal`. */
@@ -94,6 +96,7 @@ function Root({
   defaultValue,
   onValueChange,
   complete,
+  open,
   label,
   orientation = 'horizontal',
   size,
@@ -109,7 +112,14 @@ function Root({
     () => members.filter((member) => member.disabled).map((member) => member.value),
     [members],
   );
-  const flow = useSteps(order, { value, defaultValue, onValueChange, complete, disabled: off });
+  const flow = useSteps(order, {
+    value,
+    defaultValue,
+    onValueChange,
+    complete,
+    open,
+    disabled: off,
+  });
 
   // The Root's own layout effect runs after every step's, so an empty flow here
   // is a flow nothing joined rather than one that has not settled yet.
