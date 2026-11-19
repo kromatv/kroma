@@ -3,6 +3,7 @@
 //! time is epoch milliseconds unless its name says otherwise.
 
 mod folders;
+mod newcomers;
 mod passes;
 mod records;
 mod titles;
@@ -11,6 +12,7 @@ mod titles;
 mod tests;
 
 pub use folders::*;
+pub use newcomers::*;
 pub use passes::*;
 pub use records::*;
 pub use titles::*;

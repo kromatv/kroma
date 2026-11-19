@@ -1,11 +1,12 @@
 mod folders;
+mod newcomers;
 mod records;
 mod runs;
 
 use kroma_domain::import::Title;
 use kroma_domain::imports::{
-    Failure, FailureReason, KeptFolder, KeptLibrary, KeptUser, Kind, Origin, Report, Selection,
-    Status,
+    AccountChoice, Failure, FailureReason, KeptFolder, KeptLibrary, KeptUser, Kind, Origin, Report,
+    Selection, Status,
 };
 use serde_json::json;
 
@@ -31,7 +32,10 @@ fn kept() -> Selection {
             id: "1".into(),
             ..Default::default()
         }],
-        users: vec![KeptUser { id: "42".into() }],
+        users: vec![KeptUser {
+            id: "42".into(),
+            account: AccountChoice::Proposed,
+        }],
     }
 }
 

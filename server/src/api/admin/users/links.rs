@@ -11,7 +11,7 @@ use serde::Deserialize;
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
-use crate::api::invites::{expires_at, join_url};
+use crate::api::invites::join_url;
 use crate::api::util::query;
 use crate::db;
 use crate::model::{Permission, User};
@@ -179,7 +179,7 @@ pub async fn invite_user(
     super::super::require(&user, Permission::UsersManage)?;
     let target = super::target_or_404(&state, &user, &id).await?;
     let token = auth::random_token();
-    let expires_at = expires_at(body.and_then(|Json(body)| body.expires_in_days));
+    let expires_at = auth::invitation_expiry(body.and_then(|Json(body)| body.expires_in_days));
     let (row_token, admin_id, target_id) = (token.clone(), user.id.clone(), id.clone());
     let minted = query(&state.db, move |pool| {
         db::invite_waiting_account(

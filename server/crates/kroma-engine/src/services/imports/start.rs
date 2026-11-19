@@ -7,7 +7,7 @@ use super::JOB;
 use super::review::confirmable;
 use crate::db;
 use crate::db::imports::NewImport;
-use crate::model::imports::{Origin, Selection};
+use crate::model::imports::{AccountChoice, Origin, Selection};
 use crate::services::importers::{Importers, bounded_id};
 use crate::services::jobs::{TriggerError, now_ms};
 use crate::state::SharedState;
@@ -32,9 +32,9 @@ pub struct Started {
     pub run_id: Option<String>,
 }
 
-/// Why no import started. `Invalid` says what the request got wrong, `Absent`
-/// that no running importer has that id, and `Busy` that another import is
-/// queued or running.
+/// Why no import started. `Invalid` says what the request got wrong, an attach
+/// to an account this server does not have included, `Absent` that no running
+/// importer has that id, and `Busy` that another import is queued or running.
 #[derive(Debug)]
 pub enum StartError {
     Invalid(String),
@@ -78,6 +78,20 @@ fn checked(request: Request) -> Result<Request, StartError> {
     })
 }
 
+fn attached_to_accounts_here(state: &SharedState, selection: &Selection) -> Result<(), StartError> {
+    for kept in &selection.users {
+        let AccountChoice::Existing(account) = &kept.account else {
+            continue;
+        };
+        bounded_id("account", account).map_err(StartError::Invalid)?;
+        if db::user_by_id(&state.db, account)?.is_none() {
+            let what = "a user attached to an account this server does not have";
+            return Err(StartError::Invalid(what.to_string()));
+        }
+    }
+    Ok(())
+}
+
 fn answering(state: &SharedState, importer: &str) -> bool {
     kroma_module_host::service::<Importers>(state.as_ref())
         .is_some_and(|importers| importers.answering().iter().any(|id| id == importer))
@@ -90,6 +104,7 @@ pub fn start(state: &SharedState, request: Request) -> Result<Started, StartErro
     if !answering(state, &request.importer) {
         return Err(StartError::Absent);
     }
+    attached_to_accounts_here(state, &request.selection)?;
     let id = format!("import-{}", &kroma_primitives::random_token()[..16]);
     let new = NewImport {
         id: &id,

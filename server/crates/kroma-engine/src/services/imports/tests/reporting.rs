@@ -63,21 +63,24 @@ fn progress_counts_each_read_of_the_other_server_to_the_last_one() {
 }
 
 #[test]
-fn the_stages_of_this_build_bring_nothing_and_settle_nothing() {
+fn the_stages_of_this_build_bring_the_users_and_settle_nothing_else() {
     let state = importing_from(&household());
 
     let ran = import(&state, &super::super::stages::Core, &everything());
 
+    let settled = records(&state);
     assert_eq!(
         ran.import.report,
         Report {
             libraries: tally(2, 0, 0),
-            users: tally(3, 0, 0),
+            users: tally(3, 2, 0),
             titles: tally(5, 0, 0),
-            ..Default::default()
+            states: tally(2, 0, 0),
+            plays: tally(5, 0, 0),
         }
     );
-    assert!(records(&state).is_empty());
+    assert_eq!(settled.len(), 2);
+    assert!(settled.iter().all(|record| record.starts_with("user|")));
 }
 
 #[test]

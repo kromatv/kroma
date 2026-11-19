@@ -2,7 +2,11 @@
 //! review screen, how the run stands and the report it ends with. These are the
 //! wire types of `/api/admin/imports`. A time is epoch milliseconds.
 
+mod account_choice;
+
 use serde::{Deserialize, Serialize};
+
+pub use account_choice::AccountChoice;
 
 /// What the owner kept on the review screen. A library or a user it does not
 /// name is left out of the import.
@@ -34,11 +38,14 @@ pub struct KeptFolder {
     pub here: String,
 }
 
-/// One user the owner kept, by the other server's id for them.
+/// One user the owner kept, by the other server's id for them, and the account
+/// the owner chose for them.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KeptUser {
     pub id: String,
+    #[serde(default, skip_serializing_if = "AccountChoice::is_proposed")]
+    pub account: AccountChoice,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
