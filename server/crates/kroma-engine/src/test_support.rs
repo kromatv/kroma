@@ -177,6 +177,13 @@ pub(crate) fn test_state() -> SharedState {
     build_state(Point::absent("embedder"), None)
 }
 
+/// Like [`test_state`], with `folder` named by the environment as a media folder.
+pub(crate) fn test_state_reading(folder: &std::path::Path) -> SharedState {
+    build_state_with(Point::absent("embedder"), None, Vec::new(), |config| {
+        config.media_dirs = vec![folder.to_path_buf()];
+    })
+}
+
 /// Insert a library row (idempotent). `kind` is `"movies" | "shows" | "mixed"`.
 pub(crate) fn seed_library(state: &SharedState, id: &str, kind: &str) {
     state

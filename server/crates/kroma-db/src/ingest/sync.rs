@@ -1,6 +1,6 @@
 //! The scan diff-sync: libraries, shows and items, then the orphans left behind.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use anyhow::Result;
 use rusqlite::params;
@@ -11,10 +11,12 @@ use crate::vectors::prune_orphan_vectors;
 use crate::{now_or_blank, Pool};
 
 use super::probe_result::recompute_all_representatives;
+use super::prune::{delete_gone_files, delete_unlisted_libraries, prune_orphans};
 use super::scanned_files::sync_files;
+use super::unsettled::{forget_unsettled, note_unsettled, settle_shows};
 
 /// The episode ids each show holds right now, for a scan that wants to know
-/// which shows its walk changed. Read BEFORE [`sync_all`] writes over them.
+/// which shows its walk changed. Read BEFORE a sync writes over them.
 pub fn episode_ids_by_show(pool: &Pool) -> Result<HashMap<String, HashSet<String>>> {
     let conn = pool.get()?;
     let mut stmt =
@@ -44,63 +46,126 @@ pub fn sync_all(
     sync_libraries(&tx, libraries)?;
     sync_shows(&tx, shows)?;
     sync_items(&tx, items)?;
+    delete_gone_files(&tx, items)?;
     sync_files(&tx, items, mtimes)?;
     prune_orphans(&tx)?;
+    forget_unsettled(&tx)?;
 
     tx.commit()?;
+    settle(pool)
+}
 
+/// What a walk still in progress found since its last batch, all of it in one
+/// library. A title arrives whole as far as the walk has read it, so a later
+/// batch may bring the same title again with one more file.
+pub struct ScanBatch<'a> {
+    pub library: &'a Library,
+    pub shows: &'a [&'a Show],
+    pub items: &'a [&'a MediaItem],
+    pub mtimes: &'a HashMap<String, Option<i64>>,
+}
+
+/// Writes one batch in one transaction and removes nothing, so a walk that
+/// stops after it leaves a catalogue that is only short. Returns how many rows
+/// it wrote: zero when the database already held everything in the batch.
+/// [`finish_sync`] ends the walk.
+pub fn sync_batch(pool: &Pool, batch: &ScanBatch) -> Result<usize> {
+    let mut conn = pool.get()?;
+    let tx = conn.transaction()?;
+
+    let outside_items = write_library(&tx, KEEP_STORED_LIBRARY, batch.library)?
+        + sync_shows(&tx, batch.shows.iter().copied())?;
+    let items = sync_items(&tx, batch.items.iter().copied())?;
+    let files = sync_files(&tx, batch.items.iter().copied(), batch.mtimes)?;
+    note_unsettled(&tx, &items.shows_with_episodes_written)?;
+
+    tx.commit()?;
+    Ok(outside_items + items.written + files)
+}
+
+/// Ends a sync that [`sync_batch`] wrote, for a walk that read EVERY folder:
+/// the libraries take their final rows, and whatever the walk did not find is
+/// removed. A walk that stopped early must not call it. The shows in `settled`
+/// leave the unsettled list; one that joined it while the walk ran stays for
+/// the next walk.
+pub fn finish_sync(
+    pool: &Pool,
+    libraries: &[Library],
+    items: &[MediaItem],
+    settled: &HashSet<String>,
+) -> Result<()> {
+    let mut conn = pool.get()?;
+    let tx = conn.transaction()?;
+
+    sync_libraries(&tx, libraries)?;
+    delete_gone_files(&tx, items)?;
+    prune_orphans(&tx)?;
+    settle_shows(&tx, settled)?;
+
+    tx.commit()?;
+    settle(pool)
+}
+
+fn settle(pool: &Pool) -> Result<()> {
     recompute_all_representatives(pool)?;
     let _ = prune_orphan_vectors(pool);
     Ok(())
 }
 
-// Upserts by id, then deletes only libraries no longer scanned: a wholesale
-// DELETE FROM libraries would cascade to items/files and wipe what this sync preserves.
-fn sync_libraries(tx: &rusqlite::Transaction, libraries: &[Library]) -> Result<()> {
-    let mut lib_stmt = tx.prepare(
+const KEEP_STORED_LIBRARY: &str = "NOTHING";
+const TAKE_SCANNED_LIBRARY: &str =
+    "UPDATE SET name=excluded.name, kind=excluded.kind, path=excluded.path";
+
+fn write_library(tx: &rusqlite::Transaction, on_conflict: &str, l: &Library) -> Result<usize> {
+    let mut stmt = tx.prepare_cached(&format!(
         "INSERT INTO libraries (id,name,kind,path,added_at) VALUES (?1,?2,?3,?4,?5) \
-         ON CONFLICT(id) DO UPDATE SET name=excluded.name, kind=excluded.kind, path=excluded.path",
-    )?;
+         ON CONFLICT(id) DO {on_conflict}"
+    ))?;
+    Ok(stmt.execute(params![
+        l.id,
+        l.name,
+        library_kind_str(&l.kind),
+        l.path,
+        now_or_blank()
+    ])?)
+}
+
+fn sync_libraries(tx: &rusqlite::Transaction, libraries: &[Library]) -> Result<()> {
     for l in libraries {
-        lib_stmt.execute(params![
-            l.id,
-            l.name,
-            library_kind_str(&l.kind),
-            l.path,
-            now_or_blank()
-        ])?;
+        write_library(tx, TAKE_SCANNED_LIBRARY, l)?;
     }
-    let keep: Vec<String> = libraries.iter().map(|l| l.id.clone()).collect();
-    let mut existing: Vec<String> = Vec::new();
-    {
-        let mut q = tx.prepare("SELECT id FROM libraries")?;
-        let rows = q.query_map([], |r| r.get::<_, String>(0))?;
-        for r in rows {
-            existing.push(r?);
-        }
-    }
-    let mut del = tx.prepare("DELETE FROM libraries WHERE id = ?1")?;
-    for id in &existing {
-        if !keep.contains(id) {
-            del.execute(params![id])?;
-        }
-    }
+    let keep: Vec<&str> = libraries.iter().map(|l| l.id.as_str()).collect();
+    delete_unlisted_libraries(tx, &keep)?;
     Ok(())
 }
 
-fn sync_shows(tx: &rusqlite::Transaction, shows: &[Show]) -> Result<()> {
+fn sync_shows<'a>(
+    tx: &rusqlite::Transaction,
+    shows: impl IntoIterator<Item = &'a Show>,
+) -> Result<usize> {
     let mut show_stmt = tx.prepare(
         "INSERT INTO shows (id,library,title,year,added_at) VALUES (?1,?2,?3,?4,?5) \
          ON CONFLICT(id) DO UPDATE SET library=excluded.library, title=excluded.title, \
-             year=COALESCE(excluded.year, shows.year)",
+             year=COALESCE(excluded.year, shows.year) \
+         WHERE shows.library IS NOT excluded.library OR shows.title IS NOT excluded.title \
+             OR shows.year IS NOT COALESCE(excluded.year, shows.year)",
     )?;
+    let mut written = 0;
     for s in shows {
-        show_stmt.execute(params![s.id, s.library, s.title, s.year, s.added_at])?;
+        written += show_stmt.execute(params![s.id, s.library, s.title, s.year, s.added_at])?;
     }
-    Ok(())
+    Ok(written)
 }
 
-fn sync_items(tx: &rusqlite::Transaction, items: &[MediaItem]) -> Result<()> {
+struct ItemRows<'a> {
+    written: usize,
+    shows_with_episodes_written: BTreeSet<&'a str>,
+}
+
+fn sync_items<'a>(
+    tx: &rusqlite::Transaction,
+    items: impl IntoIterator<Item = &'a MediaItem>,
+) -> Result<ItemRows<'a>> {
     let mut item_stmt = tx.prepare(
         "INSERT INTO items \
             (id,kind,title,year,container,library,show_id,show_title,\
@@ -111,15 +176,26 @@ fn sync_items(tx: &rusqlite::Transaction, items: &[MediaItem]) -> Result<()> {
              library=excluded.library, show_id=excluded.show_id, \
              show_title=excluded.show_title, season=excluded.season, \
              episode=excluded.episode, episode_end=excluded.episode_end, \
-             episode_title=excluded.episode_title",
+             episode_title=excluded.episode_title \
+         WHERE items.kind IS NOT excluded.kind OR items.title IS NOT excluded.title \
+             OR items.year IS NOT excluded.year OR items.library IS NOT excluded.library \
+             OR items.show_id IS NOT excluded.show_id \
+             OR items.show_title IS NOT excluded.show_title \
+             OR items.season IS NOT excluded.season OR items.episode IS NOT excluded.episode \
+             OR items.episode_end IS NOT excluded.episode_end \
+             OR items.episode_title IS NOT excluded.episode_title",
     )?;
+    let mut rows = ItemRows {
+        written: 0,
+        shows_with_episodes_written: BTreeSet::new(),
+    };
     for i in items {
         // Seed representative columns from the first file; probing recomputes them.
         let seed = i.files.first();
         let container = seed.map(|f| f.container.clone()).unwrap_or_default();
         let rel_path = seed.and_then(|f| f.rel_path.clone());
         let abs_path = seed.and_then(|f| f.abs_path.clone());
-        item_stmt.execute(params![
+        let written = item_stmt.execute(params![
             i.id,
             kind_str(&i.kind),
             i.title,
@@ -136,41 +212,13 @@ fn sync_items(tx: &rusqlite::Transaction, items: &[MediaItem]) -> Result<()> {
             abs_path,
             i.added_at,
         ])?;
+        rows.written += written;
+        if written > 0 {
+            rows.shows_with_episodes_written
+                .extend(i.show_id.as_deref());
+        }
     }
-    Ok(())
-}
-
-// Prunes items/shows with no backing files, then the language-cache rows for
-// vanished titles (no FK on those tables, so the item/show cascade misses them).
-fn prune_orphans(tx: &rusqlite::Transaction) -> Result<()> {
-    tx.execute(
-        "DELETE FROM items WHERE id NOT IN (SELECT DISTINCT item_id FROM files)",
-        [],
-    )?;
-    tx.execute("DELETE FROM shows WHERE id NOT IN (SELECT DISTINCT show_id FROM items WHERE show_id IS NOT NULL)", [])?;
-
-    tx.execute(
-        "DELETE FROM metadata_core WHERE \
-            (subject_kind='item' AND subject_id NOT IN (SELECT id FROM items)) OR \
-            (subject_kind='show' AND subject_id NOT IN (SELECT id FROM shows))",
-        [],
-    )?;
-    tx.execute(
-        "DELETE FROM translations WHERE subject_kind IN ('item','episode') \
-            AND subject_id NOT IN (SELECT id FROM items)",
-        [],
-    )?;
-    tx.execute(
-        "DELETE FROM translations WHERE subject_kind='show' \
-            AND subject_id NOT IN (SELECT id FROM shows)",
-        [],
-    )?;
-    tx.execute(
-        "DELETE FROM translations WHERE subject_kind='season_cast' \
-            AND substr(subject_id, 1, instr(subject_id, ':') - 1) NOT IN (SELECT id FROM shows)",
-        [],
-    )?;
-    Ok(())
+    Ok(rows)
 }
 
 fn kind_str(k: &Kind) -> &'static str {
@@ -190,127 +238,4 @@ fn library_kind_str(k: &LibraryKind) -> &'static str {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::ingest::test_support::*;
-    use crate::{
-        item_has_probed_file, item_probed, set_file_probe, set_item_metadata, unprobed_files,
-        FileProbe,
-    };
-
-    #[test]
-    fn sync_all_creates_updates_and_prunes() {
-        let p = pool();
-        let items = vec![
-            movie(
-                "m1",
-                "Dune",
-                "lib",
-                vec![file("f1", "/media/m1.mkv", false)],
-            ),
-            movie(
-                "m2",
-                "Arrival",
-                "lib",
-                vec![file("f2", "/media/m2.mkv", false)],
-            ),
-        ];
-        sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
-        assert_eq!(crate::counts(&p).unwrap(), (1, 2, 0));
-        let got = crate::get_item(&p, "m1").unwrap().unwrap();
-        assert_eq!(got.files.len(), 1);
-        assert_eq!(got.container, "mkv"); // seeded from the file until a probe recomputes
-
-        let mut unprobed = unprobed_files(&p).unwrap();
-        unprobed.sort();
-        assert_eq!(unprobed.len(), 2);
-        assert!(unprobed
-            .iter()
-            .any(|(id, abs, item)| id == "f1" && abs == "/media/m1.mkv" && item == "m1"));
-
-        let items = vec![movie(
-            "m1",
-            "Dune",
-            "lib",
-            vec![file("f1", "/media/m1.mkv", false)],
-        )];
-        sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
-        assert_eq!(crate::counts(&p).unwrap(), (1, 1, 0));
-        assert!(crate::get_item(&p, "m2").unwrap().is_none());
-    }
-
-    #[test]
-    fn sync_preserves_metadata_and_probe_across_rescans() {
-        let p = pool();
-        let items = vec![movie(
-            "m1",
-            "Dune",
-            "lib",
-            vec![file("f1", "/media/m1.mkv", false)],
-        )];
-        sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
-
-        set_file_probe(
-            &p,
-            "f1",
-            &FileProbe {
-                duration_ms: Some(7_200_000),
-                video: Some(&video()),
-                ..FileProbe::default()
-            },
-        )
-        .unwrap();
-        set_item_metadata(&p, "m1", &meta(603, "Dune")).unwrap();
-        assert!(item_has_probed_file(&p, "m1").unwrap());
-
-        sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
-        assert!(
-            item_probed(&p, "m1").unwrap(),
-            "unchanged file keeps probed=1"
-        );
-        let got = crate::get_item(&p, "m1").unwrap().unwrap();
-        assert_eq!(got.metadata.as_ref().map(|m| m.tmdb_id), Some(603));
-
-        sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 999)).unwrap();
-        assert!(
-            !item_probed(&p, "m1").unwrap(),
-            "changed file resets probed=0"
-        );
-        assert!(crate::get_item(&p, "m1")
-            .unwrap()
-            .unwrap()
-            .metadata
-            .is_some());
-    }
-
-    #[test]
-    fn a_scan_that_cannot_write_an_item_fails_whole_rather_than_half() {
-        let p = pool();
-        p.get()
-            .unwrap()
-            .execute_batch(
-                "CREATE TRIGGER no_item_insert BEFORE INSERT ON items \
-                 BEGIN SELECT RAISE(ABORT, 'refused'); END",
-            )
-            .unwrap();
-
-        let items = vec![movie(
-            "m1",
-            "Dune",
-            "lib",
-            vec![file("f1", "/media/m1.mkv", false)],
-        )];
-        assert!(sync_all(&p, &[lib("lib")], &[], &items, &HashMap::new()).is_err());
-    }
-
-    #[test]
-    fn every_kind_is_stored_under_the_spelling_the_queries_filter_on() {
-        assert_eq!(kind_str(&Kind::Movie), "movie");
-        assert_eq!(kind_str(&Kind::Episode), "episode");
-        assert_eq!(kind_str(&Kind::Video), "video");
-
-        assert_eq!(library_kind_str(&LibraryKind::Movies), "movies");
-        assert_eq!(library_kind_str(&LibraryKind::Shows), "shows");
-        assert_eq!(library_kind_str(&LibraryKind::Mixed), "mixed");
-    }
-}
+mod tests;

@@ -23,10 +23,12 @@ const SCAN: JobKey = JobKey("library.scan");
 
 pub(super) fn place(importing: &Importing<'_>, kept: &[LibraryRow<'_>]) -> Result<Vec<Outcome>> {
     let state = importing.state;
+    let defs = settings::library_defs(&state.settings, &state.config)
+        .map_err(|_| settings::unreadable_list_failure(&state.db))?;
     db::imports::keep_folders(&state.db, importing.server_id, &confirmed(kept))?;
     let translation = Translation::kept(&state.db, importing.server_id)?;
     let mut sources = Sources {
-        defs: settings::library_defs(&state.settings, &state.config),
+        defs,
         changed: false,
     };
     let outcomes = kept

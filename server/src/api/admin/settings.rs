@@ -10,7 +10,7 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-use crate::api::error::{json_error, lerr};
+use crate::api::error::{json_error, lerr, lerr_with};
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
@@ -66,6 +66,18 @@ pub async fn put_settings(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     patch.retain(|key, _| !KEYS_WITH_THEIR_OWN_ENDPOINT.contains(&key.as_str()));
+    if let Some(list) = patch.get("libraries").cloned() {
+        let refused = query(&state.db, move |pool| settings::refusal(&pool, &list)).await?;
+        if let Some(refusal) = refused {
+            let notice = refusal.notice();
+            return Err(lerr_with(
+                super::user_locale(&user),
+                StatusCode::BAD_REQUEST,
+                notice.key,
+                &[("libraries", &notice.libraries)],
+            ));
+        }
+    }
     // Automatic installation requires discovery. Turning discovery off also
     // revokes permission to install without a manual confirmation.
     if patch.get("autoUpdate") == Some(&json!(false)) {

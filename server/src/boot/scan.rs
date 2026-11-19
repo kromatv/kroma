@@ -13,16 +13,13 @@ use tracing::{info, warn};
 pub enum Plan {
     /// The walk ran synchronously; this is what it produced.
     Applied(services::scan::ScanData),
-    /// The walk ran and found nothing where a configured library should be, so
-    /// nothing was written. There is no catalog to announce, but the watcher
-    /// still starts: it is what notices the mount coming back.
+    /// The walk ran and found nothing where a configured library should be, or
+    /// the saved library list could not be read and no walk ran, so nothing
+    /// was written. There is no catalog to announce, but the watcher still
+    /// starts: it is what notices the mount coming back.
     Offline,
     /// The stored index is being served; the walk runs behind the open port.
-    Deferred {
-        library_defs: Vec<services::settings::LibraryDef>,
-        has_folders: bool,
-        media_dirs: usize,
-    },
+    Deferred,
 }
 
 impl Plan {
@@ -31,19 +28,14 @@ impl Plan {
         match self {
             Plan::Applied(data) => apply_startup_scan(state, data),
             Plan::Offline => infra::watch::spawn(state.clone(), 0),
-            Plan::Deferred { .. } => {}
+            Plan::Deferred => {}
         }
     }
 
     /// Start the deferred walk. Called after the port is open, never before.
     pub fn deferred(self, state: &state::SharedState) {
-        if let Plan::Deferred {
-            library_defs,
-            has_folders,
-            media_dirs,
-        } = self
-        {
-            spawn_startup_scan(state.clone(), library_defs, has_folders, media_dirs);
+        if matches!(self, Plan::Deferred) {
+            spawn_startup_scan(state.clone());
         }
     }
 }
@@ -61,27 +53,35 @@ pub fn plan(
     if demo_media_wanted(config, settings) {
         services::demo::media::ensure(&config.data_dir);
     }
-    let library_defs = services::settings::library_defs(settings, config);
-    let has_folders = library_defs.iter().any(|d| !d.folders.is_empty());
-    let media_dirs = config.media_dirs.len();
     let indexed = db::counts(db).map(|(_, items, _)| items).unwrap_or(0);
     if indexed > 0 {
         info!(
             items = indexed,
             "serving the stored index; rescanning after the port opens"
         );
-        return Ok(Plan::Deferred {
-            library_defs,
-            has_folders,
-            media_dirs,
-        });
+        return Ok(Plan::Deferred);
     }
-    Ok(
-        match startup_scan(db, &library_defs, has_folders, media_dirs)? {
-            services::scan::Scanned::Applied(data) => Plan::Applied(data),
-            services::scan::Scanned::MountOffline => Plan::Offline,
-        },
-    )
+    let turn = services::scan::WalkTurn::wait();
+    let library_defs = match services::settings::library_defs(settings, config) {
+        Ok(library_defs) => library_defs,
+        Err(_) => {
+            let unreadable = services::settings::unreadable_list_failure(db);
+            warn!(error = %unreadable, "no startup scan; serving an empty catalog");
+            return Ok(Plan::Offline);
+        }
+    };
+    let scanned = startup_scan(
+        &turn,
+        db,
+        &library_defs,
+        config.media_dirs.len(),
+        &mut services::scan::uninterrupted,
+    )?;
+    Ok(match scanned {
+        services::scan::Scanned::Applied(data) => Plan::Applied(data),
+        services::scan::Scanned::MountOffline { .. }
+        | services::scan::Scanned::Cancelled { .. } => Plan::Offline,
+    })
 }
 
 // Only for a server with no library of its own: nothing configured, nothing
@@ -96,40 +96,49 @@ fn demo_media_wanted(
     config.media_dirs.is_empty()
         && config.movies_dirs.is_empty()
         && config.series_dirs.is_empty()
-        && !matches!(settings.get("libraries"), serde_json::Value::Array(_))
+        && matches!(services::settings::stored_library_defs(settings), Ok(None))
 }
 
 // Phase 1: walk + stat only, no ffprobe; codecs/duration/HDR fill in later.
 fn startup_scan(
+    turn: &services::scan::WalkTurn,
     db: &db::Pool,
     library_defs: &[services::settings::LibraryDef],
-    has_folders: bool,
     media_dirs: usize,
+    after_batch: &mut services::scan::AfterBatch<'_>,
 ) -> anyhow::Result<services::scan::Scanned> {
-    let mut data = services::scan::scan_all(library_defs);
-    // Configured dirs that produce nothing mean a mount outage, not an empty
-    // library: syncing that scan would cascade-delete every library.
-    if data.items.is_empty() && has_folders {
-        warn!(
-            media_dirs,
-            "configured media dirs produced no items; keeping the existing index (mount offline?) and skipping sync"
-        );
-        return Ok(services::scan::Scanned::MountOffline);
-    }
-    if data.items.is_empty() {
+    use services::scan::Walked;
+    if library_defs.iter().all(|def| def.folders.is_empty()) {
         info!("no media dirs configured; seeding built-in demo content");
-        data = services::demo::demo_data();
+        let data = services::scan::seed_demo(turn, db).context("failed to persist library")?;
+        return Ok(index_ready(data));
     }
-    services::scan::note_changed_shows(db, &mut data);
-    db::sync_all(db, &data.libraries, &data.shows, &data.items, &data.mtimes)
+    let walked = services::scan::sync_walk(turn, db, library_defs, after_batch)
         .context("failed to persist library")?;
+    match walked {
+        Walked::Synced(data) => Ok(index_ready(data)),
+        Walked::Stopped { dropped } => Ok(services::scan::Scanned::Cancelled { dropped }),
+        // Configured dirs that produce nothing mean a mount outage, not an empty
+        // library: syncing that scan would cascade-delete every library.
+        Walked::Empty { dropped, .. } => {
+            warn!(
+                media_dirs,
+                libraries_removed = dropped,
+                "configured media dirs produced no items; kept their stored titles and pruned none (mount offline?)"
+            );
+            Ok(services::scan::Scanned::MountOffline { dropped })
+        }
+    }
+}
+
+fn index_ready(data: services::scan::ScanData) -> services::scan::Scanned {
     info!(
         libraries = data.libraries.len(),
         shows = data.shows.len(),
         items = data.items.len(),
         "library index ready (phase 1)"
     );
-    Ok(services::scan::Scanned::Applied(data))
+    services::scan::Scanned::Applied(data)
 }
 
 // The wiring a fresh scan feeds: what the console reports, what enrichment has
@@ -150,42 +159,42 @@ fn apply_startup_scan(state: &state::SharedState, data: &services::scan::ScanDat
 }
 
 // The same walk, behind the open port. Blocking (it stats every file), so it
-// owns a thread rather than a runtime worker. A failure keeps the stored index:
-// the catalog clients are already reading stays exactly as it was.
-fn spawn_startup_scan(
-    state: state::SharedState,
-    library_defs: Vec<services::settings::LibraryDef>,
-    has_folders: bool,
-    media_dirs: usize,
-) {
+// owns a thread rather than a runtime worker. A failure prunes no title: what
+// the walk wrote before it failed stays.
+fn spawn_startup_scan(state: state::SharedState) {
     use infra::events::ServerEvent;
     state.events.publish(ServerEvent::ScanStarted);
     services::activity::scan_started(&state.activity);
     tokio::task::spawn_blocking(move || {
-        let scanned = startup_scan(&state.db, &library_defs, has_folders, media_dirs);
+        let turn = services::scan::WalkTurn::wait();
+        let mut announcer = services::scan::BatchAnnouncer::new(&state.events);
+        let scanned = services::settings::library_defs(&state.settings, &state.config)
+            .map_err(|_| services::settings::unreadable_list_failure(&state.db))
+            .and_then(|library_defs| {
+                startup_scan(
+                    &turn,
+                    &state.db,
+                    &library_defs,
+                    state.config.media_dirs.len(),
+                    &mut |rows| {
+                        announcer.wrote(rows);
+                        std::ops::ControlFlow::Continue(())
+                    },
+                )
+            });
         if let Err(e) = &scanned {
-            warn!(error = %format!("{e:#}"), "startup rescan failed; keeping the stored index");
+            warn!(error = %format!("{e:#}"), "startup rescan failed; what it wrote stays and no title was pruned");
         }
         let data = match scanned {
             Ok(services::scan::Scanned::Applied(data)) => data,
-            // Nothing was written, so the counts to report are the STORED ones:
-            // they are what the catalog is still serving, and announcing zero
-            // would read as a library that had just been emptied. The watcher
-            // starts against no baseline, so the mount coming back is a change.
-            Ok(services::scan::Scanned::MountOffline) | Err(_) => {
-                let (libraries, items, shows) = db::counts(&state.db).unwrap_or((0, 0, 0));
-                services::activity::scan_completed(
-                    &state.activity,
-                    libraries,
-                    shows,
-                    items,
-                    services::scan::now_iso8601(),
-                );
-                state.events.publish(ServerEvent::ScanCompleted {
-                    items,
-                    shows,
-                    libraries,
-                });
+            // The watcher starts against no baseline, so the mount coming back
+            // is a change.
+            Ok(
+                services::scan::Scanned::MountOffline { .. }
+                | services::scan::Scanned::Cancelled { .. },
+            )
+            | Err(_) => {
+                services::scan::publish_stored(&state, &mut announcer);
                 infra::watch::spawn(state.clone(), 0);
                 return;
             }
@@ -217,72 +226,4 @@ fn spawn_startup_scan(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn cfg() -> kroma_config::Config {
-        kroma_config::Config {
-            demo_media: true,
-            ..Default::default()
-        }
-    }
-
-    fn settings() -> (kroma_db::testing::TempPool, services::settings::Settings) {
-        let pool = kroma_db::testing::temp_pool("boot-demo");
-        let settings = services::settings::Settings::load(&pool);
-        (pool, settings)
-    }
-
-    #[test]
-    fn a_server_with_nothing_configured_writes_the_demo_library() {
-        let (_pool, s) = settings();
-
-        assert!(demo_media_wanted(&cfg(), &s));
-    }
-
-    #[test]
-    fn a_configured_root_of_any_kind_means_the_operator_has_a_library() {
-        let (_pool, s) = settings();
-        let dir = std::path::PathBuf::from("/media");
-        for c in [
-            kroma_config::Config {
-                media_dirs: vec![dir.clone()],
-                ..cfg()
-            },
-            kroma_config::Config {
-                movies_dirs: vec![dir.clone()],
-                ..cfg()
-            },
-            kroma_config::Config {
-                series_dirs: vec![dir],
-                ..cfg()
-            },
-        ] {
-            assert!(!demo_media_wanted(&c, &s));
-        }
-    }
-
-    #[test]
-    fn libraries_defined_in_settings_are_the_operators_too() {
-        // Even an EMPTY list: it means they went to the Libraries page and left
-        // it empty, which is a decision, not an unconfigured server.
-        let (pool, s) = settings();
-        s.set_patch(
-            &pool,
-            std::collections::BTreeMap::from([("libraries".to_string(), serde_json::json!([]))]),
-        );
-
-        assert!(!demo_media_wanted(&cfg(), &s));
-    }
-
-    #[test]
-    fn the_operator_can_turn_the_written_demo_off() {
-        let (_pool, s) = settings();
-        let off = kroma_config::Config {
-            demo_media: false,
-            ..cfg()
-        };
-
-        assert!(!demo_media_wanted(&off, &s));
-    }
-}
+mod tests;

@@ -2,7 +2,7 @@
 //! folder that `stat`s each video file and groups it (via [`crate::domain::naming`])
 //! into the shared logical-item / show maps.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -10,32 +10,28 @@ use jwalk::{Parallelism, WalkDirGeneric};
 use tracing::{debug, warn};
 
 use crate::domain::naming;
-use crate::model::{MediaFile, MediaItem, Show};
+use crate::model::MediaFile;
 
+use super::batches::Batches;
+use super::found::LibraryWalk;
 use super::ids::{detect_edition, short_hash};
 use super::index::index_parsed;
 use super::now_iso8601;
 
 pub use kroma_media::video::{has_video_extension, VIDEO_EXTENSIONS};
 
-/// Scan one folder belonging to `lib_id`, accumulating items (by logical id) and
+/// Scan one folder of `lib`'s library, accumulating items (by logical id) and
 /// shows into the shared maps. Flags/ids track what this library contributed so
 /// the caller can compute its kind + item count across all its folders.
 ///
 /// Returns how many entries the walk could not read: a symlink whose target is
 /// not mounted resolves to nothing, and a whole library of those otherwise
 /// scans clean and empty.
-#[allow(clippy::too_many_arguments)]
-pub(super) fn scan_root(
-    lib_id: &str,
+pub(super) fn scan_root<S>(
     root: &Path,
-    items: &mut HashMap<String, MediaItem>,
-    shows: &mut HashMap<String, Show>,
-    mtimes: &mut HashMap<String, Option<i64>>,
-    lib_item_ids: &mut std::collections::HashSet<String>,
-    movie_seen: &mut bool,
-    episode_seen: &mut bool,
-) -> usize {
+    lib: &mut LibraryWalk<'_>,
+    batches: &mut Batches<'_, S>,
+) -> Result<usize, S> {
     let lib_name = root
         .file_name()
         .and_then(std::ffi::OsStr::to_str)
@@ -63,6 +59,9 @@ pub(super) fn scan_root(
     let mut unreadable = 0usize;
     let mut first_unreadable: Option<PathBuf> = None;
     for result in walk {
+        if batches.due() {
+            batches.close(&lib.library(), lib.found)?;
+        }
         let entry = match result {
             Ok(entry) => entry,
             Err(err) => {
@@ -117,19 +116,19 @@ pub(super) fn scan_root(
             edition_id: None,
             abs_path: Some(abs.to_string_lossy().to_string()),
         };
-        index_parsed(
+        batches.note(index_parsed(
             naming::parse(root, &path),
-            lib_id,
+            &lib.def.id,
             &added_at,
             file,
             mtime,
-            items,
-            shows,
-            mtimes,
-            lib_item_ids,
-            movie_seen,
-            episode_seen,
-        );
+            &mut lib.found.items,
+            &mut lib.found.shows,
+            &mut lib.found.mtimes,
+            &mut lib.item_ids,
+            &mut lib.movie_seen,
+            &mut lib.episode_seen,
+        ));
 
         debug!("indexed file under {}", lib_name);
     }
@@ -142,7 +141,7 @@ pub(super) fn scan_root(
             "entries skipped: a symlink whose target is not mounted reads as missing"
         );
     }
-    unreadable
+    Ok(unreadable)
 }
 
 // jwalk `process_read_dir` body: prune Synology/hidden dirs and already-visited

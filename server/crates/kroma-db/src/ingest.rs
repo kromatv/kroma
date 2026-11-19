@@ -9,8 +9,10 @@ mod episode_guide;
 mod metadata;
 mod probe;
 mod probe_result;
+mod prune;
 mod scanned_files;
 mod sync;
+mod unsettled;
 
 #[cfg(test)]
 mod test_support;
@@ -19,4 +21,6 @@ pub use episode_guide::*;
 pub use metadata::*;
 pub use probe::*;
 pub use probe_result::*;
+pub use prune::drop_unconfigured_libraries;
 pub use sync::*;
+pub use unsettled::{unsettle_shows, unsettled_shows, UNSETTLED_SHOWS_KEY};
