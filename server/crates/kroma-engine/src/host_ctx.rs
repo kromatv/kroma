@@ -139,6 +139,7 @@ impl HostCtx for AppState {
 
     fn library_folders(&self) -> Vec<kroma_module_host::LibraryFolders> {
         crate::services::settings::library_defs(&self.settings, &self.config)
+            .unwrap_or_default()
             .into_iter()
             .map(|d| kroma_module_host::LibraryFolders {
                 id: d.id,

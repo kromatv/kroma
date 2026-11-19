@@ -104,3 +104,16 @@ fn a_stored_list_that_does_not_parse_reads_as_no_show() {
 
     assert_eq!(unsettled(&p), ["s1"]);
 }
+
+#[test]
+fn shows_a_finished_walk_settled_can_be_left_unsettled_again() {
+    let p = pool();
+    write_episode(&p, "s1", "e1");
+    finish_sync(&p, &[lib("lib")], &[episode("e1", "s1", 1)]).unwrap();
+    let settled = unsettled(&p);
+
+    unsettle_shows(&p, &HashSet::from(["s1".to_string(), "s2".to_string()])).unwrap();
+
+    assert!(settled.is_empty());
+    assert_eq!(unsettled(&p), ["s1", "s2"]);
+}

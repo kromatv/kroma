@@ -28,7 +28,7 @@ fn episode(root: &Path, show: &str, season: u32, number: u32) {
 }
 
 fn walked(state: &SharedState) -> ScanData {
-    let defs = crate::services::settings::library_defs(&state.settings, &state.config);
+    let defs = crate::services::settings::library_defs(&state.settings, &state.config).unwrap();
     let mut data = scan_all(&defs);
     HeldEpisodes::read(&state.db).note_changed(&mut data);
     data

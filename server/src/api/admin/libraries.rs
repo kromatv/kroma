@@ -8,7 +8,7 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::api::error::lerr;
+use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
@@ -36,12 +36,17 @@ pub fn routes() -> Router<SharedState> {
         .route("/libraries/{id}/scan", post(scan_library))
 }
 
+fn configured(state: &SharedState) -> Result<Vec<LibraryDef>, Response> {
+    settings::library_defs(&state.settings, &state.config)
+        .map_err(|unreadable| json_error(StatusCode::CONFLICT, &unreadable.to_string()))
+}
+
 pub async fn list_libraries(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
 ) -> Result<Response, Response> {
     super::require_any_admin(&user)?;
-    let defs = settings::library_defs(&state.settings, &state.config);
+    let defs = configured(&state)?;
     let stats = query(&state.db, move |pool| db::library_stats(&pool)).await?;
     let last_scan = crate::services::activity::snapshot(&state.activity).last_scan_at;
 
@@ -98,7 +103,7 @@ pub async fn create_library(
             "admin.nameRequired",
         ));
     }
-    let mut defs = settings::library_defs(&state.settings, &state.config);
+    let mut defs = configured(&state)?;
     let id = crate::services::scan::short_hash(&format!(
         "lib|{name}|{}",
         crate::services::auth::random_token()
@@ -134,7 +139,7 @@ pub async fn update_library(
     Json(body): Json<UpdateLibraryBody>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::LibraryManage)?;
-    let mut defs = settings::library_defs(&state.settings, &state.config);
+    let mut defs = configured(&state)?;
     let Some(def) = defs.iter_mut().find(|d| d.id == id) else {
         return Err(lerr(
             super::user_locale(&user),
@@ -171,7 +176,7 @@ pub async fn delete_library(
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::LibraryManage)?;
-    let mut defs = settings::library_defs(&state.settings, &state.config);
+    let mut defs = configured(&state)?;
     let before = defs.len();
     defs.retain(|d| d.id != id);
     if defs.len() == before {

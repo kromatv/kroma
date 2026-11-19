@@ -3,6 +3,7 @@ use crate::model::{Kind, LibraryKind};
 use kroma_testing::TempDir;
 
 mod rescan;
+mod stored_list;
 
 // A fresh, empty temp directory for one test.
 fn tmp_root(tag: &str) -> TempDir {

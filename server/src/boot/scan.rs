@@ -13,9 +13,10 @@ use tracing::{info, warn};
 pub enum Plan {
     /// The walk ran synchronously; this is what it produced.
     Applied(services::scan::ScanData),
-    /// The walk ran and found nothing where a configured library should be, so
-    /// nothing was written. There is no catalog to announce, but the watcher
-    /// still starts: it is what notices the mount coming back.
+    /// The walk ran and found nothing where a configured library should be, or
+    /// the saved library list could not be read and no walk ran, so nothing
+    /// was written. There is no catalog to announce, but the watcher still
+    /// starts: it is what notices the mount coming back.
     Offline,
     /// The stored index is being served; the walk runs behind the open port.
     Deferred,
@@ -61,7 +62,13 @@ pub fn plan(
         return Ok(Plan::Deferred);
     }
     let turn = services::scan::WalkTurn::wait();
-    let library_defs = services::settings::library_defs(settings, config);
+    let library_defs = match services::settings::library_defs(settings, config) {
+        Ok(library_defs) => library_defs,
+        Err(unreadable) => {
+            warn!(error = %unreadable, "no startup scan; serving an empty catalog");
+            return Ok(Plan::Offline);
+        }
+    };
     let scanned = startup_scan(
         &turn,
         db,
@@ -71,7 +78,9 @@ pub fn plan(
     )?;
     Ok(match scanned {
         services::scan::Scanned::Applied(data) => Plan::Applied(data),
-        services::scan::Scanned::MountOffline | services::scan::Scanned::Cancelled => Plan::Offline,
+        services::scan::Scanned::MountOffline { .. } | services::scan::Scanned::Cancelled => {
+            Plan::Offline
+        }
     })
 }
 
@@ -87,7 +96,7 @@ fn demo_media_wanted(
     config.media_dirs.is_empty()
         && config.movies_dirs.is_empty()
         && config.series_dirs.is_empty()
-        && !matches!(settings.get("libraries"), serde_json::Value::Array(_))
+        && matches!(services::settings::stored_library_defs(settings), Ok(None))
 }
 
 // Phase 1: walk + stat only, no ffprobe; codecs/duration/HDR fill in later.
@@ -111,12 +120,13 @@ fn startup_scan(
         Walked::Stopped => Ok(services::scan::Scanned::Cancelled),
         // Configured dirs that produce nothing mean a mount outage, not an empty
         // library: syncing that scan would cascade-delete every library.
-        Walked::Empty { .. } => {
+        Walked::Empty { dropped, .. } => {
             warn!(
                 media_dirs,
+                dropped,
                 "configured media dirs produced no items; keeping the existing index (mount offline?) and skipping sync"
             );
-            Ok(services::scan::Scanned::MountOffline)
+            Ok(services::scan::Scanned::MountOffline { dropped })
         }
     }
 }
@@ -157,18 +167,21 @@ fn spawn_startup_scan(state: state::SharedState) {
     services::activity::scan_started(&state.activity);
     tokio::task::spawn_blocking(move || {
         let turn = services::scan::WalkTurn::wait();
-        let library_defs = services::settings::library_defs(&state.settings, &state.config);
         let mut announcer = services::scan::BatchAnnouncer::new(&state.events);
-        let scanned = startup_scan(
-            &turn,
-            &state.db,
-            &library_defs,
-            state.config.media_dirs.len(),
-            &mut |rows| {
-                announcer.wrote(rows);
-                std::ops::ControlFlow::Continue(())
-            },
-        );
+        let scanned = services::settings::library_defs(&state.settings, &state.config)
+            .map_err(anyhow::Error::from)
+            .and_then(|library_defs| {
+                startup_scan(
+                    &turn,
+                    &state.db,
+                    &library_defs,
+                    state.config.media_dirs.len(),
+                    &mut |rows| {
+                        announcer.wrote(rows);
+                        std::ops::ControlFlow::Continue(())
+                    },
+                )
+            });
         if let Err(e) = &scanned {
             warn!(error = %format!("{e:#}"), "startup rescan failed; keeping the stored index");
         }
@@ -176,7 +189,9 @@ fn spawn_startup_scan(state: state::SharedState) {
             Ok(services::scan::Scanned::Applied(data)) => data,
             // The watcher starts against no baseline, so the mount coming back
             // is a change.
-            Ok(services::scan::Scanned::MountOffline | services::scan::Scanned::Cancelled)
+            Ok(
+                services::scan::Scanned::MountOffline { .. } | services::scan::Scanned::Cancelled,
+            )
             | Err(_) => {
                 services::scan::publish_stored(&state, &mut announcer);
                 infra::watch::spawn(state.clone(), 0);

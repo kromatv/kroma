@@ -456,7 +456,7 @@ pub fn groups(
         "acquisition" => {
             // Import-target selects offer the configured libraries by name;
             // "Auto" means the first library of the matching kind.
-            let libs = super::library_defs(settings, config);
+            let libs = super::library_defs(settings, config).unwrap_or_default();
             let lib_options = |kind: &str| -> Vec<String> {
                 let mut opts = vec!["Auto".to_string()];
                 opts.extend(

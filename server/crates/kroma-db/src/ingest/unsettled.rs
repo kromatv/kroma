@@ -18,6 +18,16 @@ pub fn unsettled_shows(pool: &Pool) -> Result<HashSet<String>> {
     Ok(stored(&conn)?.into_iter().collect())
 }
 
+/// Leaves `shows` unsettled after a walk that ended and settled them, when
+/// nothing took them up: the next walk that ends reports them as changed.
+pub fn unsettle_shows(pool: &Pool, shows: &HashSet<String>) -> Result<()> {
+    let mut conn = pool.get()?;
+    let tx = conn.transaction()?;
+    note_unsettled(&tx, &shows.iter().map(String::as_str).collect())?;
+    tx.commit()?;
+    Ok(())
+}
+
 pub(super) fn note_unsettled(tx: &rusqlite::Transaction, shows: &BTreeSet<&str>) -> Result<()> {
     let mut unsettled = stored(tx)?;
     let known = unsettled.len();

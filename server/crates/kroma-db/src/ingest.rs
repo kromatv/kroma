@@ -23,4 +23,4 @@ pub use probe::*;
 pub use probe_result::*;
 pub use prune::drop_unconfigured_libraries;
 pub use sync::*;
-pub use unsettled::{unsettled_shows, UNSETTLED_SHOWS_KEY};
+pub use unsettled::{unsettle_shows, unsettled_shows, UNSETTLED_SHOWS_KEY};

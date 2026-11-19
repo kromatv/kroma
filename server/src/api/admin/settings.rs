@@ -66,6 +66,15 @@ pub async fn put_settings(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     patch.retain(|key, _| !KEYS_WITH_THEIR_OWN_ENDPOINT.contains(&key.as_str()));
+    if patch
+        .get("libraries")
+        .is_some_and(|list| settings::library_list(list).is_err())
+    {
+        return Err(json_error(
+            StatusCode::BAD_REQUEST,
+            "`libraries` is not a list of libraries",
+        ));
+    }
     // Automatic installation requires discovery. Turning discovery off also
     // revokes permission to install without a manual confirmation.
     if patch.get("autoUpdate") == Some(&json!(false)) {

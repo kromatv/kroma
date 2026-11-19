@@ -200,7 +200,13 @@ fn a_walk_that_finds_no_title_writes_nothing_and_says_so() {
 
     let walked = sync_walk(&WalkTurn::wait(), &state.db, &defs, &mut uninterrupted).unwrap();
 
-    assert!(matches!(walked, Walked::Empty { unreadable: 0 }));
+    assert!(matches!(
+        walked,
+        Walked::Empty {
+            unreadable: 0,
+            dropped: 0
+        }
+    ));
     assert_eq!(titles(&state).len(), 3);
 }
 

@@ -108,9 +108,13 @@ pub enum Scanned {
     Applied(ScanData),
     /// Configured libraries produced NO items: a mount outage, not a library
     /// someone emptied. A prune reads that as "every file vanished" and
-    /// cascade-deletes the catalog along with its probed metadata, so nothing
-    /// is written and the stored index stays authoritative.
-    MountOffline,
+    /// cascade-deletes the catalog along with its probed metadata, so no title
+    /// is written or pruned and their stored index stays authoritative.
+    /// `dropped` counts the libraries that had left the configuration and were
+    /// removed before the walk.
+    MountOffline {
+        dropped: usize,
+    },
     Cancelled,
 }
 
@@ -118,12 +122,15 @@ pub enum Scanned {
 /// configured). Pure work (no events / no background spawns) so both the `POST
 /// /api/scan` handler and the `library.scan` job can share it and add their own
 /// notifications. Blocking (walk + SQLite) call from a blocking context.
+///
+/// A saved library list that cannot be read is an error: nothing is removed
+/// and no demo is seeded.
 pub fn rescan_sync(
     turn: &WalkTurn,
     state: &crate::state::SharedState,
     after_batch: &mut AfterBatch<'_>,
 ) -> anyhow::Result<Scanned> {
-    let defs = crate::services::settings::library_defs(&state.settings, &state.config);
+    let defs = crate::services::settings::library_defs(&state.settings, &state.config)?;
     // Seed demo content only when nothing is configured (true demo mode). A
     // configured library that momentarily reads empty NAS/SMB unmount, slow
     // mount, permission glitch must NOT be clobbered with demo movies, and
@@ -135,13 +142,17 @@ pub fn rescan_sync(
     match sync_walk(turn, &state.db, &defs, after_batch)? {
         Walked::Synced(data) => Ok(Scanned::Applied(data)),
         Walked::Stopped => Ok(Scanned::Cancelled),
-        Walked::Empty { unreadable } => {
+        Walked::Empty {
+            unreadable,
+            dropped,
+        } => {
             warn!(
                 libraries = defs.len(),
                 unreadable,
+                dropped,
                 "configured libraries produced no items; keeping the stored index (mount offline?)"
             );
-            Ok(Scanned::MountOffline)
+            Ok(Scanned::MountOffline { dropped })
         }
     }
 }
@@ -222,6 +233,16 @@ pub fn spawn_follow_ups(state: &crate::state::SharedState, data: &ScanData) {
     );
     crate::services::search::spawn_reindex(state.clone());
     crate::services::enrich::maybe_spawn(state, &data.changed_shows);
+}
+
+/// Keep the shows a scan changed for the next scan, for a caller that does
+/// not start [`spawn_follow_ups`]: the walk has settled them and enrichment
+/// has not seen them, so the next walk that ends reports them as changed again.
+pub fn hold_changed_shows(
+    state: &crate::state::SharedState,
+    data: &ScanData,
+) -> anyhow::Result<()> {
+    crate::db::unsettle_shows(&state.db, &data.changed_shows)
 }
 
 #[cfg(test)]

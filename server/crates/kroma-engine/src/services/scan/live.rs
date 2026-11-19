@@ -37,11 +37,12 @@ impl WalkTurn {
 /// How a walk that writes as it goes ended. `Synced`: every folder was read,
 /// and what the walk did not find is pruned. `Empty`: every folder was read and
 /// none held a title, which is an outage: no title was written and none was
-/// pruned. `Stopped`: it ended before the last folder, so what its batches
-/// wrote stays and nothing was pruned.
+/// pruned, and `dropped` counts the libraries that had left the configuration
+/// and went before the walk. `Stopped`: it ended before the last folder, so
+/// what its batches wrote stays and nothing was pruned.
 pub enum Walked {
     Synced(ScanData),
-    Empty { unreadable: usize },
+    Empty { unreadable: usize, dropped: usize },
     Stopped,
 }
 
@@ -102,6 +103,7 @@ pub(super) fn sync_walk_in(
     if data.items.is_empty() {
         return Ok(Walked::Empty {
             unreadable: data.unreadable,
+            dropped,
         });
     }
     held.note_changed(&mut data);

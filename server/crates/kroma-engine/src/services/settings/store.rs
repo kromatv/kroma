@@ -1,7 +1,7 @@
 //! The settings store: in-memory key/value map, typed accessors and
 //! persist-on-patch writes, over the keys [`super::keys`] declares.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, RwLock};
 
 use serde_json::Value;
@@ -13,33 +13,64 @@ use super::keys::defaults;
 /// Shared, cheap-to-clone handle to the live settings map.
 #[derive(Clone)]
 pub struct Settings {
-    inner: Arc<RwLock<BTreeMap<String, Value>>>,
+    inner: Arc<RwLock<Live>>,
+}
+
+struct Live {
+    values: BTreeMap<String, Value>,
+    unread: Unread,
+}
+
+enum Unread {
+    Keys(BTreeSet<String>),
+    AllBut(BTreeSet<String>),
+}
+
+impl Live {
+    fn read(pool: &Pool) -> Self {
+        let mut values = defaults();
+        let unread = match crate::db::settings_all(pool) {
+            Ok(stored) => {
+                values.extend(stored.values);
+                Unread::Keys(stored.unreadable.into_iter().collect())
+            }
+            Err(_) => Unread::AllBut(BTreeSet::new()),
+        };
+        Live { values, unread }
+    }
+
+    fn put(&mut self, key: &str, value: Value) {
+        match &mut self.unread {
+            Unread::Keys(unread) => {
+                unread.remove(key);
+            }
+            Unread::AllBut(known) => {
+                known.insert(key.to_string());
+            }
+        }
+        self.values.insert(key.to_string(), value);
+    }
+
+    fn could_not_read(&self, key: &str) -> bool {
+        match &self.unread {
+            Unread::Keys(unread) => unread.contains(key),
+            Unread::AllBut(known) => !known.contains(key),
+        }
+    }
 }
 
 impl Settings {
     /// Build the store, loading any persisted rows over the built-in defaults.
     pub fn load(pool: &Pool) -> Self {
-        let mut map = defaults();
-        if let Ok(rows) = crate::db::settings_all(pool) {
-            for (k, v) in rows {
-                map.insert(k, v);
-            }
-        }
         Settings {
-            inner: Arc::new(RwLock::new(map)),
+            inner: Arc::new(RwLock::new(Live::read(pool))),
         }
     }
 
     /// Reload the live map from the database, over the built-in defaults, for
     /// writers that bypass [`Self::set_patch`] (e.g. a backup import).
     pub fn reload(&self, pool: &Pool) {
-        let mut map = defaults();
-        if let Ok(rows) = crate::db::settings_all(pool) {
-            for (k, v) in rows {
-                map.insert(k, v);
-            }
-        }
-        *self.inner.write().unwrap() = map;
+        *self.inner.write().unwrap() = Live::read(pool);
     }
 
     /// Raw value for `key`, falling back to the built-in default.
@@ -47,10 +78,19 @@ impl Settings {
         self.inner
             .read()
             .unwrap()
+            .values
             .get(key)
             .cloned()
             .or_else(|| defaults().get(key).cloned())
             .unwrap_or(Value::Null)
+    }
+
+    /// Whether this store failed to read what is stored under `key`: its row
+    /// is not JSON, or the table did not read at all. What [`Self::get`]
+    /// answers is then a default, and not known to be what was saved. A value
+    /// written through this store is read again.
+    pub fn could_not_read(&self, key: &str) -> bool {
+        self.inner.read().unwrap().could_not_read(key)
     }
 
     pub fn get_bool(&self, key: &str, fallback: bool) -> bool {
@@ -78,7 +118,7 @@ impl Settings {
     /// decide.
     pub fn set_internal(&self, pool: &Pool, key: &str, value: Value) -> anyhow::Result<()> {
         let written = crate::db::settings_set(pool, key, &value);
-        self.inner.write().unwrap().insert(key.to_string(), value);
+        self.inner.write().unwrap().put(key, value);
         written
     }
 
@@ -93,7 +133,7 @@ impl Settings {
                 continue;
             }
             let _ = crate::db::settings_set(pool, &k, &v);
-            guard.insert(k.clone(), v);
+            guard.put(&k, v);
             written.push(k);
         }
         written
@@ -108,116 +148,16 @@ impl Settings {
         }
         let mut guard = self.inner.write().unwrap();
         let current = guard
+            .values
             .get(key)
             .cloned()
             .or_else(|| defaults().get(key).cloned())
             .unwrap_or(Value::Null);
         let next = f(current);
         let _ = crate::db::settings_set(pool, key, &next);
-        guard.insert(key.to_string(), next);
+        guard.put(key, next);
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use serde_json::json;
-
-    use super::*;
-    use crate::db::testing::TempPool;
-
-    fn test_pool() -> TempPool {
-        crate::db::testing::temp_pool("settings-store")
-    }
-
-    #[test]
-    fn get_falls_back_to_default_then_null() {
-        let pool = test_pool();
-        let s = Settings::load(&pool);
-        assert_eq!(s.get("serverName"), json!("KROMA"));
-        assert_eq!(s.get("totallyUnknown"), Value::Null);
-    }
-
-    #[test]
-    fn typed_getters_coerce_and_fall_back() {
-        let pool = test_pool();
-        let s = Settings::load(&pool);
-        assert!(s.get_bool("watchAutoScan", false));
-        assert!(s.get_bool("anonStats", false));
-        assert!(s.get_bool("missingBool", true));
-        assert!(s.get_bool("serverName", true));
-        assert_eq!(s.get_str("serverName", "x"), "KROMA");
-        assert_eq!(s.get_str("anonStats", "fb"), "fb");
-        assert_eq!(s.get_str("missingStr", "fb"), "fb");
-        assert_eq!(s.get_i64("watchIntervalSecs", 99), -1);
-        assert_eq!(s.get_i64("maxConcurrent", 0), 8);
-        assert_eq!(s.get_i64("serverName", 42), 42);
-        assert_eq!(s.get_i64("missingI64", 7), 7);
-    }
-
-    #[test]
-    fn set_patch_keeps_known_skips_unknown_and_persists() {
-        let pool = test_pool();
-        let s = Settings::load(&pool);
-        let mut patch = BTreeMap::new();
-        patch.insert("serverName".to_string(), json!("MyBox"));
-        patch.insert("bogusKey".to_string(), json!(123));
-        let mut written = s.set_patch(&pool, patch);
-        written.sort();
-        assert_eq!(written, vec!["serverName".to_string()]);
-        assert_eq!(s.get("serverName"), json!("MyBox"));
-        assert_eq!(s.get("bogusKey"), Value::Null);
-        let s2 = Settings::load(&pool);
-        assert_eq!(s2.get("serverName"), json!("MyBox"));
-    }
-
-    #[test]
-    fn update_json_read_modify_writes_known_key_only() {
-        let pool = test_pool();
-        let s = Settings::load(&pool);
-        s.update_json(&pool, "watchIntervalSecs", |v| {
-            json!(v.as_i64().unwrap_or(0) + 5)
-        });
-        assert_eq!(s.get_i64("watchIntervalSecs", 0), 4);
-        assert_eq!(Settings::load(&pool).get_i64("watchIntervalSecs", 0), 4);
-        s.update_json(&pool, "notAKey", |_| json!("x"));
-        assert_eq!(s.get("notAKey"), Value::Null);
-    }
-
-    #[test]
-    fn reload_picks_up_direct_db_writes() {
-        let pool = test_pool();
-        let s = Settings::load(&pool);
-        assert_eq!(s.get("serverName"), json!("KROMA"));
-        crate::db::settings_set(&pool, "serverName", &json!("Restored")).unwrap();
-        s.reload(&pool);
-        assert_eq!(s.get("serverName"), json!("Restored"));
-    }
-
-    #[test]
-    fn a_store_that_cannot_be_read_falls_back_to_the_built_in_defaults() {
-        let pool = test_pool();
-        crate::db::settings_set(&pool, "serverName", &json!("Stored")).unwrap();
-        pool.get()
-            .unwrap()
-            .execute_batch("DROP TABLE settings")
-            .unwrap();
-
-        let s = Settings::load(&pool);
-        assert_eq!(s.get("serverName"), json!("KROMA"));
-
-        s.reload(&pool);
-        assert_eq!(s.get("serverName"), json!("KROMA"));
-    }
-
-    #[test]
-    fn cloned_handle_shares_the_same_map() {
-        let pool = test_pool();
-        let s = Settings::load(&pool);
-        let clone = s.clone();
-        s.set_patch(
-            &pool,
-            BTreeMap::from([("serverName".to_string(), json!("Shared"))]),
-        );
-        assert_eq!(clone.get("serverName"), json!("Shared"));
-    }
-}
+mod tests;

@@ -25,7 +25,9 @@ fn item_count(state: &crate::state::SharedState) -> i64 {
 fn applied(scanned: Scanned) -> ScanData {
     match scanned {
         Scanned::Applied(data) => data,
-        Scanned::MountOffline | Scanned::Cancelled => panic!("expected the scan to be applied"),
+        Scanned::MountOffline { .. } | Scanned::Cancelled => {
+            panic!("expected the scan to be applied")
+        }
     }
 }
 
@@ -59,7 +61,7 @@ fn a_configured_library_that_reads_empty_is_never_replaced_with_demo_content() {
 
     assert!(matches!(
         rescan_sync(&WalkTurn::wait(), &state, &mut uninterrupted).unwrap(),
-        Scanned::MountOffline
+        Scanned::MountOffline { .. }
     ));
     assert_eq!(
         item_count(&state),
@@ -92,7 +94,7 @@ fn an_unmounted_share_never_deletes_the_library_it_already_scanned() {
 
     assert!(matches!(
         rescan_sync(&WalkTurn::wait(), &state, &mut uninterrupted).unwrap(),
-        Scanned::MountOffline
+        Scanned::MountOffline { .. }
     ));
     assert_eq!(
         item_count(&state),
@@ -111,7 +113,7 @@ fn a_library_pointed_at_a_folder_that_is_not_there_is_also_left_alone() {
 
     assert!(matches!(
         rescan_sync(&WalkTurn::wait(), &state, &mut uninterrupted).unwrap(),
-        Scanned::MountOffline
+        Scanned::MountOffline { .. }
     ));
     assert_eq!(item_count(&state), 0);
 }

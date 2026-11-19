@@ -1,5 +1,7 @@
 use super::*;
 
+mod stored_list;
+
 fn cfg() -> kroma_config::Config {
     kroma_config::Config {
         demo_media: true,
@@ -115,7 +117,10 @@ fn configured_folders_that_read_empty_at_startup_keep_the_stored_index() {
 
     let scanned = walked_at_startup(&pool, &defs);
 
-    assert!(matches!(scanned, services::scan::Scanned::MountOffline));
+    assert!(matches!(
+        scanned,
+        services::scan::Scanned::MountOffline { dropped: 0 }
+    ));
     assert_eq!(stored_items(&pool), 1);
 }
 
