@@ -4,7 +4,6 @@ pub(super) struct Cut {
     pub(super) playlist: String,
     pub(super) first: String,
     pub(super) sequence: u64,
-    pub(super) offset: f64,
 }
 
 /// `#EXT-X-MEDIA-SEQUENCE` names the first segment kept, which RFC 8216
@@ -12,7 +11,7 @@ pub(super) struct Cut {
 pub(super) fn from_the_second(playlist: &str, second: f64) -> Option<Cut> {
     let mut header = String::new();
     let mut kept = String::new();
-    let mut cut: Option<(String, u64, f64)> = None;
+    let mut cut: Option<(String, u64)> = None;
     let mut spanned = 0.0;
     let mut span = 0.0;
     let mut pending = "";
@@ -40,7 +39,7 @@ pub(super) fn from_the_second(playlist: &str, second: f64) -> Option<Cut> {
         }
         let name = line.trim();
         if cut.is_none() && second < spanned + span {
-            cut = Some((name.to_string(), seg_index(name)?, spanned));
+            cut = Some((name.to_string(), seg_index(name)?));
         }
         if cut.is_some() {
             kept.push_str(pending);
@@ -50,12 +49,11 @@ pub(super) fn from_the_second(playlist: &str, second: f64) -> Option<Cut> {
         }
         spanned += span;
     }
-    let (first, sequence, offset) = cut?;
+    let (first, sequence) = cut?;
     Some(Cut {
         playlist: format!("{header}#EXT-X-MEDIA-SEQUENCE:{sequence}\n{kept}"),
         first,
         sequence,
-        offset,
     })
 }
 
@@ -70,7 +68,6 @@ mod tests {
 
         assert_eq!(cut.first, "seg_00001.m4s");
         assert_eq!(cut.sequence, 1);
-        assert_eq!(cut.offset, 6.0);
     }
 
     #[test]
@@ -89,7 +86,7 @@ mod tests {
     fn a_playlist_cut_at_its_own_beginning_is_the_playlist() {
         let cut = from_the_second(PLAYLIST, 0.0).expect("inside the playlist");
 
-        assert_eq!(cut.offset, 0.0);
+        assert_eq!(cut.first, "seg_00000.m4s");
         assert_eq!(cut.playlist.matches("#EXTINF:").count(), 3);
     }
 

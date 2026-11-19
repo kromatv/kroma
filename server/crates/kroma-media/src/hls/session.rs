@@ -25,6 +25,7 @@ use super::ffmpeg::{detect_burst, spawn_stream};
 use super::hwaccel::Pipeline;
 use super::live::Plan;
 use super::naming::{contains, content_type, is_safe_name, seg_index, session_dir};
+use super::retime::{retimed, Shift};
 use super::start::{keyframe_before, seeks, Start};
 use super::window::Window;
 use super::{StreamMode, VideoMode};
@@ -122,8 +123,8 @@ impl Sessions {
         let start_secs = asked.anchor as f64;
         if let Some(reused) = self.reuse(key, start_secs).await {
             reused.session.touch().await;
-            self.serving.note(key, &reused.key).await;
-            info!(session = %key, serving = %reused.key, "answered a re-anchor out of a running session");
+            self.serving.note(key, reused.answer.clone()).await;
+            info!(session = %key, serving = %reused.answer.key, "answered a re-anchor out of a running session");
             return Ok((ended(&reused.session, reused.playlist).await, reused.start));
         }
         self.serving.forget(key).await;
@@ -153,7 +154,7 @@ impl Sessions {
         if !is_safe_name(name) {
             return None;
         }
-        let session = self.serving_session(key).await?;
+        let (session, shift) = self.serving_session(key).await?;
         session.touch().await;
         let idx = seg_index(name);
         // A pruned segment is never reproduced (the remux only moves forward), so
@@ -168,7 +169,7 @@ impl Sessions {
                 let bytes = if name.ends_with(".m3u8") {
                     ended(&session, bytes).await
                 } else {
-                    bytes
+                    retimed(bytes, idx.and(shift.as_ref()))
                 };
                 return Some((bytes, content_type(name)));
             }
@@ -269,12 +270,13 @@ impl Sessions {
         self.reap_superseded(&mut map, key, opener).await
     }
 
-    async fn serving_session(&self, key: &str) -> Option<Arc<Session>> {
+    async fn serving_session(&self, key: &str) -> Option<(Arc<Session>, Option<Shift>)> {
         if let Some(session) = self.inner.lock().await.get(key).cloned() {
-            return Some(session);
+            return Some((session, None));
         }
-        let serving = self.serving.answering(key).await?;
-        self.inner.lock().await.get(&serving).cloned()
+        let answer = self.serving.answering(key).await?;
+        let session = self.inner.lock().await.get(&answer.key).cloned()?;
+        Some((session, Some(answer.shift)))
     }
 }
 

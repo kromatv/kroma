@@ -5,28 +5,32 @@ use tokio::sync::Mutex;
 
 use super::cut::{from_the_second, Cut};
 use super::key::same_but_the_anchor;
+use super::retime::{shift_of, Shift};
 use super::session::{Session, Sessions};
 
 pub(super) struct Covered {
-    pub(super) key: String,
+    pub(super) answer: Answer,
     pub(super) session: Arc<Session>,
     pub(super) playlist: Vec<u8>,
     pub(super) start: f64,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub(super) struct Answer {
+    pub(super) key: String,
+    pub(super) shift: Shift,
+}
+
 #[derive(Default)]
-pub(super) struct Serving(Mutex<HashMap<String, String>>);
+pub(super) struct Serving(Mutex<HashMap<String, Answer>>);
 
 impl Serving {
-    pub(super) async fn answering(&self, asked: &str) -> Option<String> {
+    pub(super) async fn answering(&self, asked: &str) -> Option<Answer> {
         self.0.lock().await.get(asked).cloned()
     }
 
-    pub(super) async fn note(&self, asked: &str, serving: &str) {
-        self.0
-            .lock()
-            .await
-            .insert(asked.to_string(), serving.to_string());
+    pub(super) async fn note(&self, asked: &str, answer: Answer) {
+        self.0.lock().await.insert(asked.to_string(), answer);
     }
 
     pub(super) async fn forget(&self, asked: &str) {
@@ -37,7 +41,7 @@ impl Serving {
         self.0
             .lock()
             .await
-            .retain(|_, serving| live.contains_key(serving));
+            .retain(|_, answer| live.contains_key(&answer.key));
     }
 }
 
@@ -58,7 +62,7 @@ impl Sessions {
 
     async fn noted(&self, key: &str, anchor: f64) -> Option<Covered> {
         let noted = self.serving.answering(key).await?;
-        let session = self.inner.lock().await.get(&noted).cloned()?;
+        let session = self.inner.lock().await.get(&noted.key).cloned()?;
         let cut = listed_cut(&session, anchor).await?;
         Some(covered(noted, session, cut))
     }
@@ -82,19 +86,19 @@ impl Sessions {
             {
                 continue;
             }
-            let Some(cut) = whole_cut(&session, anchor).await else {
+            let Some((cut, shift)) = whole_cut(&session, anchor).await else {
                 continue;
             };
-            best = Some(covered(other, session, cut));
+            best = Some(covered(Answer { key: other, shift }, session, cut));
         }
         best
     }
 }
 
-fn covered(key: String, session: Arc<Session>, cut: Cut) -> Covered {
+fn covered(answer: Answer, session: Arc<Session>, cut: Cut) -> Covered {
     Covered {
-        start: session.start.secs() + cut.offset,
-        key,
+        start: session.start.secs() + answer.shift.seconds(),
+        answer,
         session,
         playlist: cut.playlist.into_bytes(),
     }
@@ -107,28 +111,36 @@ async fn listed_cut(session: &Session, anchor: f64) -> Option<Cut> {
     from_the_second(&playlist, anchor - session.start.secs())
 }
 
-async fn whole_cut(session: &Session, anchor: f64) -> Option<Cut> {
+async fn whole_cut(session: &Session, anchor: f64) -> Option<(Cut, Shift)> {
     let cut = listed_cut(session, anchor).await?;
     if session.window.is_pruned(cut.sequence) {
         return None;
     }
-    tokio::fs::metadata(session.dir.join(&cut.first))
-        .await
-        .ok()?;
-    Some(cut)
+    let shift = shift_of(&session.dir, &cut.first).await?;
+    Some((cut, shift))
 }
 
 #[cfg(test)]
 mod tests {
     use super::super::naming::session_dir;
+    use super::super::retime::testing::{init, segment_at, shift_at, AUDIO, VIDEO};
     use super::super::session::testing::{registry, LIVE, PLAYLIST};
     use super::*;
 
     fn produced(sessions: &Sessions, key: &str, playlist: &str) {
         let dir = sessions.root.join(session_dir(key));
         std::fs::write(dir.join("index.m3u8"), playlist).expect("the playlist");
-        for name in ["seg_00000.m4s", "seg_00001.m4s", "seg_00002.m4s"] {
-            std::fs::write(dir.join(name), b"x").expect("a segment");
+        std::fs::write(dir.join("init.mp4"), init(&[VIDEO, AUDIO])).expect("the init");
+        for (index, seconds) in [0, 6, 12].into_iter().enumerate() {
+            let name = format!("seg_{index:05}.m4s");
+            std::fs::write(dir.join(name), segment_at(seconds)).expect("a segment");
+        }
+    }
+
+    fn answered_by(key: &str, seconds: u64) -> Answer {
+        Answer {
+            key: key.to_string(),
+            shift: shift_at(seconds),
         }
     }
 
@@ -139,8 +151,35 @@ mod tests {
 
         let covered = s.reuse("itA:copy:12:a0", 12.0).await.expect("the session");
 
-        assert_eq!(covered.key, "itA:copy:0:a0");
+        assert_eq!(covered.answer.key, "itA:copy:0:a0");
         assert_eq!(covered.start, 12.0);
+    }
+
+    #[tokio::test]
+    async fn a_re_anchor_out_of_a_sibling_moves_its_clock_back_to_the_segment_it_begins_on() {
+        let (s, _dir) = registry("covered-shift", 8, &[("itA:copy:0:a0", LIVE)]).await;
+        produced(&s, "itA:copy:0:a0", PLAYLIST);
+
+        let covered = s.reuse("itA:copy:12:a0", 12.0).await.expect("the session");
+
+        assert_eq!(covered.answer, answered_by("itA:copy:0:a0", 12));
+    }
+
+    #[tokio::test]
+    async fn a_sibling_whose_segment_carries_no_readable_clock_never_answers() {
+        let (s, _dir) = registry("covered-unreadable", 8, &[("itA:copy:0:a0", LIVE)]).await;
+        produced(&s, "itA:copy:0:a0", PLAYLIST);
+        std::fs::write(
+            s.root
+                .join(session_dir("itA:copy:0:a0"))
+                .join("seg_00002.m4s"),
+            b"x",
+        )
+        .expect("a segment with no fragment");
+
+        let covered = s.reuse("itA:copy:12:a0", 12.0).await;
+
+        assert!(covered.is_none());
     }
 
     #[tokio::test]
@@ -199,7 +238,9 @@ mod tests {
     async fn a_sibling_already_answering_a_key_answers_it_after_its_first_segment_is_swept() {
         let (s, _dir) = registry("covered-kept", 8, &[("itA:copy:0:a0", LIVE)]).await;
         produced(&s, "itA:copy:0:a0", PLAYLIST);
-        s.serving.note("itA:copy:12:a0", "itA:copy:0:a0").await;
+        s.serving
+            .note("itA:copy:12:a0", answered_by("itA:copy:0:a0", 12))
+            .await;
         std::fs::remove_file(
             s.root
                 .join(session_dir("itA:copy:0:a0"))
@@ -209,14 +250,16 @@ mod tests {
 
         let again = s.reuse("itA:copy:12:a0", 12.0).await.expect("the sibling");
 
-        assert_eq!(again.key, "itA:copy:0:a0");
+        assert_eq!(again.answer.key, "itA:copy:0:a0");
         assert_eq!(again.start, 12.0);
     }
 
     #[tokio::test]
     async fn a_key_answered_by_another_session_is_forgotten_when_that_one_goes() {
         let serving = Serving::default();
-        serving.note("itA:copy:300:a0", "itA:copy:0:a0").await;
+        serving
+            .note("itA:copy:300:a0", answered_by("itA:copy:0:a0", 300))
+            .await;
 
         serving.keep_only(&HashMap::new()).await;
 

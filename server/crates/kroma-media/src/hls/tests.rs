@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use super::retime::testing::decode_times;
 use super::*;
 use crate::input;
 
@@ -181,6 +182,52 @@ async fn a_re_anchor_into_a_session_already_running_is_answered_out_of_it() {
     assert_eq!(session_dirs(dir.path()), 1, "no second ffmpeg was started");
     assert_eq!(start, 0.0, "the client is told where the stream it gets begins");
     assert!(playlist.contains("seg_00000.m4s"));
+}
+
+async fn re_anchored_out_of_a_running_session(dir: &Path, anchor: u64) -> (HlsEngine, String, f64) {
+    let input = keyed_every_two_seconds(dir, "clip.mkv", 0.0);
+    let engine = engine(dir);
+    remux(&engine, &input).await;
+    finished_playlist(&engine).await;
+    let (playlist, start) = engine
+        .master(asked(&input, anchor))
+        .await
+        .expect("the running session covers the anchor");
+    let first = playlist
+        .lines()
+        .find(|line| line.ends_with(".m4s"))
+        .expect("a segment in the cut")
+        .to_string();
+    (engine, first, start)
+}
+
+#[tokio::test]
+async fn a_segment_served_out_of_a_running_session_starts_on_a_clock_of_its_own() {
+    let dir = kroma_testing::temp_dir("hls-reanchor-clock");
+    let (engine, first, _) = re_anchored_out_of_a_running_session(dir.path(), 13).await;
+
+    let (served, _) = engine
+        .file("it1", COPY, 13, 0, &first)
+        .await
+        .expect("the first segment of the cut");
+
+    assert_eq!(first, "seg_00002.m4s");
+    assert_eq!(
+        decode_times(&served)
+            .into_iter()
+            .map(|(_, ticks)| ticks)
+            .min(),
+        Some(0)
+    );
+}
+
+#[tokio::test]
+async fn a_stream_served_out_of_a_running_session_starts_where_its_first_segment_does() {
+    let dir = kroma_testing::temp_dir("hls-reanchor-start");
+
+    let (_, _, start) = re_anchored_out_of_a_running_session(dir.path(), 13).await;
+
+    assert!((start - 12.0).abs() < 0.05, "{start}");
 }
 
 fn keyed_every_two_seconds(dir: &Path, name: &str, clock_starts_at: f64) -> PathBuf {
