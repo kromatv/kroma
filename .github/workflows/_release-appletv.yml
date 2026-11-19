@@ -170,16 +170,20 @@ jobs:
 
       # The build number is minutes-since-2020, so a restored project carries
       # the one from the run that cached it and App Store Connect would refuse
-      # the duplicate. Re-stamp the plist rather than regenerate the project.
+      # the duplicate. Re-stamp the plists rather than regenerate the project:
+      # the app's and KromaTopShelf-Info.plist, whose pair must match the app's.
       - name: Re-stamp the restored project
         if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit == 'true'
         run: |
           set -euo pipefail
-          plist=$(find clients/tv-native/ios -maxdepth 2 -name Info.plist | head -1)
-          [ -n "$plist" ] || { echo "::error::no Info.plist in the restored project"; exit 1; }
-          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ inputs.triplet }}" "$plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ inputs.build }}" "$plist"
-          echo "re-stamped $plist"
+          stamped=0
+          while IFS= read -r plist; do
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ inputs.triplet }}" "$plist"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ inputs.build }}" "$plist"
+            echo "re-stamped $plist"
+            stamped=$((stamped + 1))
+          done < <(find clients/tv-native/ios -maxdepth 2 -name '*Info.plist' -not -path '*/Pods/*')
+          [ "$stamped" -gt 0 ] || { echo "::error::no Info.plist in the restored project"; exit 1; }
           echo "export NODE_BINARY=$(command -v node)" > clients/tv-native/ios/.xcode.env.local
 
       - name: Prebuild the tvOS project
