@@ -1,5 +1,6 @@
 import { ImportConnect } from '#web/features/setup/import-connect.component';
 import { ImportReview } from '#web/features/setup/import-review.component';
+import { ImportRun } from '#web/features/setup/import-run.component';
 import { ImportServers } from '#web/features/setup/import-servers.component';
 import { useImportSession } from '#web/features/setup/import-session.component';
 import { ImportSource } from '#web/features/setup/import-source.component';
@@ -16,6 +17,9 @@ interface ImportStepProps {
 export function ImportStep({ onBack, onContinue }: Readonly<ImportStepProps>) {
   const { session, update, restart } = useImportSession();
   const importer = useImporter(session.importer);
+  if (session.running) {
+    return <ImportRun id={session.running} onContinue={onContinue} />;
+  }
   if (!session.importer || !importer) {
     return <ImportSource onBack={onBack} onSkip={onContinue} />;
   }
@@ -27,5 +31,5 @@ export function ImportStep({ onBack, onContinue }: Readonly<ImportStepProps>) {
   }
   const target = { importer: session.importer, signIn: session.signIn, server: session.server };
   const back = session.servers.length > 1 ? () => update({ server: null }) : restart;
-  return <ImportReview target={target} onBack={back} onContinue={onContinue} />;
+  return <ImportReview target={target} onBack={back} />;
 }

@@ -3,33 +3,61 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 
 use kroma_domain::{HdrFormat, MediaFile, MediaItem};
 
-pub(super) fn sync_files(
+const SCANNED_COLUMNS_MOVED: &str = "files.id IS NOT excluded.id \
+    OR files.item_id IS NOT excluded.item_id OR files.rel_path IS NOT excluded.rel_path \
+    OR files.container IS NOT excluded.container OR files.size IS NOT excluded.size \
+    OR files.mtime IS NOT excluded.mtime OR files.edition IS NOT excluded.edition";
+
+const PROBE_COLUMNS_SET: &str = "files.probed IS NOT 0 OR files.unreadable IS NOT NULL \
+    OR files.duration_ms IS NOT NULL OR files.v_codec IS NOT NULL \
+    OR files.v_width IS NOT NULL OR files.v_height IS NOT NULL OR files.v_hdr IS NOT NULL \
+    OR files.v_bit_depth IS NOT NULL OR files.a_codec IS NOT NULL \
+    OR files.a_channels IS NOT NULL OR files.a_language IS NOT NULL \
+    OR files.subtitles IS NOT '[]' OR files.audio_tracks IS NOT '[]' \
+    OR files.v_hdr_format IS NOT NULL OR files.v_dv_profile IS NOT NULL \
+    OR files.v_color_primaries IS NOT NULL OR files.v_color_transfer IS NOT NULL \
+    OR files.v_color_matrix IS NOT NULL";
+
+struct FileStatements<'tx> {
+    probe_kept: rusqlite::Statement<'tx>,
+    keep: rusqlite::Statement<'tx>,
+    reset: rusqlite::Statement<'tx>,
+    preprobed: rusqlite::Statement<'tx>,
+}
+
+pub(super) fn sync_files<'a>(
     tx: &rusqlite::Transaction,
-    items: &[MediaItem],
+    items: impl IntoIterator<Item = &'a MediaItem>,
     mtimes: &HashMap<String, Option<i64>>,
-) -> Result<()> {
-    let scanned: std::collections::HashSet<&str> = items
-        .iter()
-        .flat_map(|i| i.files.iter())
-        .filter_map(|f| f.abs_path.as_deref())
-        .collect();
+) -> Result<usize> {
+    let mut statements = file_statements(tx)?;
+    let mut written = 0;
+    for i in items {
+        for f in &i.files {
+            written += upsert_scanned_file(&mut statements, mtimes, i, f)?;
+        }
+    }
+    Ok(written)
+}
 
-    delete_gone_files(tx, &scanned)?;
-    let prev = existing_file_sigs(tx)?;
-
-    let mut keep_stmt = tx.prepare(
+fn file_statements<'tx>(tx: &'tx rusqlite::Transaction) -> Result<FileStatements<'tx>> {
+    let probe_kept = tx.prepare(
+        "SELECT probed != 0 AND size IS ?2 AND mtime IS ?3 FROM files WHERE abs_path = ?1",
+    )?;
+    let keep = tx.prepare(&format!(
         "INSERT INTO files (id,item_id,abs_path,rel_path,container,size,mtime,edition) \
          VALUES (?1,?2,?3,?4,?5,?6,?7,?8) \
          ON CONFLICT(abs_path) DO UPDATE SET \
              id=excluded.id, item_id=excluded.item_id, rel_path=excluded.rel_path, \
              container=excluded.container, size=excluded.size, mtime=excluded.mtime, \
-             edition=excluded.edition",
-    )?;
-    let mut reset_stmt = tx.prepare(
+             edition=excluded.edition \
+         WHERE {SCANNED_COLUMNS_MOVED}"
+    ))?;
+    let reset = tx.prepare(&format!(
         "INSERT INTO files (id,item_id,abs_path,rel_path,container,size,mtime,edition,probed,\
              duration_ms,v_codec,v_width,v_height,v_hdr,v_bit_depth,a_codec,a_channels,a_language,subtitles,audio_tracks) \
          VALUES (?1,?2,?3,?4,?5,?6,?7,?8,0,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,'[]','[]') \
@@ -40,10 +68,11 @@ pub(super) fn sync_files(
              v_height=NULL, v_hdr=NULL, v_bit_depth=NULL, a_codec=NULL, a_channels=NULL, \
              a_language=NULL, subtitles='[]', audio_tracks='[]', unreadable=NULL, \
              v_hdr_format=NULL, v_dv_profile=NULL, v_color_primaries=NULL, \
-             v_color_transfer=NULL, v_color_matrix=NULL",
-    )?;
+             v_color_transfer=NULL, v_color_matrix=NULL \
+         WHERE {SCANNED_COLUMNS_MOVED} OR {PROBE_COLUMNS_SET}"
+    ))?;
     // Pre-probed files (demo/seed content) skip the phase-2 probe pass.
-    let mut preprobed_stmt = tx.prepare(
+    let preprobed = tx.prepare(
         "INSERT INTO files (id,item_id,abs_path,rel_path,container,size,mtime,edition,probed,\
              duration_ms,v_codec,v_width,v_height,v_hdr,v_bit_depth,a_codec,a_channels,a_language,subtitles,audio_tracks,\
              v_hdr_format,v_dv_profile,v_color_primaries,v_color_transfer,v_color_matrix) \
@@ -61,81 +90,22 @@ pub(super) fn sync_files(
              v_color_matrix=excluded.v_color_matrix",
     )?;
 
-    for i in items {
-        for f in &i.files {
-            upsert_scanned_file(
-                &mut keep_stmt,
-                &mut reset_stmt,
-                &mut preprobed_stmt,
-                &prev,
-                mtimes,
-                i,
-                f,
-            )?;
-        }
-    }
-    Ok(())
+    Ok(FileStatements {
+        probe_kept,
+        keep,
+        reset,
+        preprobed,
+    })
 }
 
-fn delete_gone_files(
-    tx: &rusqlite::Transaction,
-    scanned: &std::collections::HashSet<&str>,
-) -> Result<()> {
-    let mut existing: Vec<(String, String)> = Vec::new();
-    {
-        let mut q = tx.prepare("SELECT id, abs_path FROM files")?;
-        let rows = q.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
-        for r in rows {
-            existing.push(r?);
-        }
-    }
-    let mut del = tx.prepare("DELETE FROM files WHERE id = ?1")?;
-    for (id, abs) in &existing {
-        if !scanned.contains(abs.as_str()) {
-            del.execute(params![id])?;
-        }
-    }
-    Ok(())
-}
-
-// What a stored file row has to still match for its probe result to be kept.
-struct FileSig {
-    size: Option<i64>,
-    mtime: Option<i64>,
-    probed: bool,
-}
-
-fn existing_file_sigs(tx: &rusqlite::Transaction) -> Result<HashMap<String, FileSig>> {
-    let mut prev: HashMap<String, FileSig> = HashMap::new();
-    let mut q = tx.prepare("SELECT abs_path, size, mtime, probed FROM files")?;
-    let rows = q.query_map([], |r| {
-        Ok((
-            r.get::<_, String>(0)?,
-            FileSig {
-                size: r.get(1)?,
-                mtime: r.get(2)?,
-                probed: r.get::<_, i64>(3)? != 0,
-            },
-        ))
-    })?;
-    for r in rows {
-        let (abs, sig) = r?;
-        prev.insert(abs, sig);
-    }
-    Ok(prev)
-}
-
-fn upsert_scanned_file<'a>(
-    keep_stmt: &mut rusqlite::Statement<'a>,
-    reset_stmt: &mut rusqlite::Statement<'a>,
-    preprobed_stmt: &mut rusqlite::Statement<'a>,
-    prev: &HashMap<String, FileSig>,
+fn upsert_scanned_file(
+    statements: &mut FileStatements,
     mtimes: &HashMap<String, Option<i64>>,
     i: &MediaItem,
     f: &MediaFile,
-) -> Result<()> {
+) -> Result<usize> {
     let Some(abs) = f.abs_path.as_deref() else {
-        return Ok(());
+        return Ok(0);
     };
     let size = f.size.map(|s| s as i64);
     let mtime = mtimes.get(&f.id).copied().flatten();
@@ -146,7 +116,7 @@ fn upsert_scanned_file<'a>(
         let color = v.and_then(|v| v.color.as_ref());
         let subs = serde_json::to_string(&f.subtitles).unwrap_or_else(|_| "[]".into());
         let a_tracks = serde_json::to_string(&f.audio_tracks).unwrap_or_else(|_| "[]".into());
-        preprobed_stmt.execute(params![
+        let written = statements.preprobed.execute(params![
             f.id,
             i.id,
             abs,
@@ -172,18 +142,20 @@ fn upsert_scanned_file<'a>(
             color.and_then(|c| c.transfer.clone()),
             color.and_then(|c| c.matrix.clone()),
         ])?;
-        return Ok(());
+        return Ok(written);
     }
 
-    let unchanged_probed = prev
-        .get(abs)
-        .is_some_and(|p| p.probed && p.size == size && p.mtime == mtime);
+    let unchanged_probed = statements
+        .probe_kept
+        .query_row(params![abs, size, mtime], |r| r.get::<_, bool>(0))
+        .optional()?
+        .unwrap_or(false);
     let stmt = if unchanged_probed {
-        keep_stmt
+        &mut statements.keep
     } else {
-        reset_stmt
+        &mut statements.reset
     };
-    stmt.execute(params![
+    let written = stmt.execute(params![
         f.id,
         i.id,
         abs,
@@ -193,7 +165,7 @@ fn upsert_scanned_file<'a>(
         mtime,
         f.edition,
     ])?;
-    Ok(())
+    Ok(written)
 }
 
 #[cfg(test)]

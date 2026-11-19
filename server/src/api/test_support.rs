@@ -405,7 +405,7 @@ pub fn seed_access_token(state: &SharedState, user_id: &str, pin_verified: bool)
 /// Add a library definition of a specific `kind` to the settings store, without
 /// triggering `library.scan`. Returns the new library id.
 pub fn seed_library_kind(state: &SharedState, name: &str, kind: &str) -> String {
-    let mut defs = settings::library_defs(&state.settings, &state.config);
+    let mut defs = settings::library_defs(&state.settings, &state.config).expect("library list");
     let id = format!("lib-{}", SEQ.fetch_add(1, Ordering::Relaxed));
     defs.push(LibraryDef {
         id: id.clone(),
@@ -421,7 +421,7 @@ pub fn seed_library_kind(state: &SharedState, name: &str, kind: &str) -> String 
 /// Add a library definition to the settings store, without the background
 /// rescan. Returns the new library id.
 pub fn seed_library(state: &SharedState, name: &str) -> String {
-    let mut defs = settings::library_defs(&state.settings, &state.config);
+    let mut defs = settings::library_defs(&state.settings, &state.config).expect("library list");
     let id = format!("lib-{}", SEQ.fetch_add(1, Ordering::Relaxed));
     defs.push(LibraryDef {
         id: id.clone(),

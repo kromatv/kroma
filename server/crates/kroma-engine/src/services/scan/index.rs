@@ -5,6 +5,11 @@ use crate::model::{Kind, MediaFile, MediaItem, Show};
 
 use super::ids::{episode_logical_id, movie_logical_id, show_key};
 
+pub(super) struct Indexed {
+    pub item: String,
+    pub show: Option<String>,
+}
+
 /// Fold one parsed video file into the shared item / show maps: a movie upserts a
 /// `Movie` item; an episode upserts its show (widening a missing year) then the
 /// episode item. Either way the file + its mtime are recorded.
@@ -21,7 +26,7 @@ pub(super) fn index_parsed(
     lib_item_ids: &mut HashSet<String>,
     movie_seen: &mut bool,
     episode_seen: &mut bool,
-) {
+) -> Indexed {
     match parsed {
         Parsed::Movie { title, year } => {
             *movie_seen = true;
@@ -62,6 +67,10 @@ pub(super) fn index_parsed(
             });
             mtimes.insert(file.id.clone(), mtime);
             item.files.push(file);
+            Indexed {
+                item: logical,
+                show: None,
+            }
         }
         Parsed::Episode {
             show_title,
@@ -128,6 +137,10 @@ pub(super) fn index_parsed(
             });
             mtimes.insert(file.id.clone(), mtime);
             item.files.push(file);
+            Indexed {
+                item: logical,
+                show: Some(show_id),
+            }
         }
     }
 }

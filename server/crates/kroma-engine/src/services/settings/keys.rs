@@ -93,6 +93,7 @@ fn declared() -> Declared {
     m.minted("stats.lastSentAt");
     m.minted("update.status");
     m.minted("update.operation");
+    m.minted(crate::db::UNSETTLED_SHOWS_KEY);
     m.minted(crate::services::network::SETTING_KEY);
     m.minted(crate::services::network::MIDDLEWARE_SETTING);
     m.module_declared("showRecentHome", json!(true));

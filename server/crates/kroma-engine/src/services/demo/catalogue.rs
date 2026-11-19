@@ -5,8 +5,8 @@ use crate::services::scan::{now_iso8601, short_hash, ScanData};
 /// Build the demo data: a Movies library and a Shows library (2 shows, 4 episodes).
 pub fn demo_data() -> ScanData {
     let added = now_iso8601();
-    let movies_lib = short_hash("demo://movies");
-    let shows_lib = short_hash("demo://shows");
+    let movies_lib = short_hash(super::MOVIES);
+    let shows_lib = short_hash(super::SHOWS);
 
     let planet_earth = show_id(&shows_lib, "Planet Earth II");
     let the_office = show_id(&shows_lib, "The Office");

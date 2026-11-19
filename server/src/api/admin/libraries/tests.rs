@@ -4,6 +4,8 @@ use serde_json::Value;
 
 use crate::model::User;
 
+mod unreadable_list;
+
 pub(super) fn user_with(permissions: Vec<Permission>) -> User {
     User {
         id: "u1".into(),
@@ -31,7 +33,7 @@ fn app() -> crate::api::test_support::TestApp {
 }
 
 fn defs(state: &SharedState) -> Vec<LibraryDef> {
-    settings::library_defs(&state.settings, &state.config)
+    settings::library_defs(&state.settings, &state.config).unwrap()
 }
 
 async fn create(state: &SharedState, name: &str, folders: Vec<&str>) -> Result<String, Response> {

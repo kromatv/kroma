@@ -92,7 +92,9 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
     if !state.settings.get_bool("watchAutoScan", true) {
         return; // auto-scan disabled by the admin
     }
-    let defs = crate::services::settings::library_defs(&state.settings, &state.config);
+    let Ok(defs) = crate::services::settings::library_defs(&state.settings, &state.config) else {
+        return;
+    };
     let data = scan::scan_all(&defs);
     let sig = signature(&data.items, &data.mtimes);
     if sig == *last {

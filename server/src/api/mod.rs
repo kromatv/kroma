@@ -112,6 +112,8 @@ mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;
 #[cfg(test)]
+mod it_settings_libraries;
+#[cfg(test)]
 mod it_mail_relay;
 #[cfg(test)]
 mod it_account_identifiers;
