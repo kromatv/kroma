@@ -23,6 +23,7 @@ pub const TMDB_LANGUAGE_AUTO: &str = "Auto";
 
 mod accessors;
 mod email_delivery;
+mod encoder;
 mod kept_libraries;
 mod keys;
 mod library_list;
@@ -34,6 +35,7 @@ mod tmdb_language;
 
 pub use accessors::*;
 pub use email_delivery::*;
+pub use encoder::{apply_encoder_choice, ENCODER_KEY};
 pub use kept_libraries::{
     held_libraries, refusal, unreadable_list_failure, unreadable_list_notice, HeldLibrary,
     LibraryNotice, Refusal,

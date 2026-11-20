@@ -51,7 +51,7 @@ managed there and the variables are ignored.
 
 | Variable | Default | What it does |
 | --- | --- | --- |
-| `KROMA_HWACCEL` | found at startup | Forces a conversion method: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, `v4l2m2m`, or `software` for the processor. See [Hardware transcoding](hardware-transcoding.md). |
+| `KROMA_HWACCEL` | found at startup, or the **Video encoder** setting | Forces a conversion method: `qsv`, `vaapi`, `nvenc`, `videotoolbox`, `v4l2m2m`, or `software` for the processor. See [Hardware transcoding](hardware-transcoding.md). |
 | `KROMA_RENDER_NODE` | `/dev/dri/renderD128` | The graphics device to use when there are several. |
 | `KROMA_ENCODE_EFFORT` | chosen from the machine | `quality` or `realtime`, for conversions on the processor. |
 | `KROMA_MAX_TRANSCODES` | half the cores, from 1 to 4 | Video conversions at once. A request past the limit is refused, so the player says so instead of stuttering. |

@@ -129,11 +129,16 @@ picture on the processor, which is slow on a Raspberry Pi.
 
 ## Choose by hand
 
-To force a method, or to rule hardware out while you look for a problem, set
-`KROMA_HWACCEL` to `qsv`, `vaapi`, `nvenc`, `videotoolbox`, `v4l2m2m` or
-`software`. On a
-computer with more than one graphics device, `KROMA_RENDER_NODE` selects the
-one to use. See the [configuration reference](configuration.md#transcoding).
+In KROMA, open **Server** > **Transcoding** and select a **Video encoder**.
+The list holds `Auto`, each method that passed its test at startup, and
+`software` for the processor. The choice applies to the next conversion that
+starts, with no restart.
+
+To force a method from outside KROMA, or to rule hardware out while you look
+for a problem, set `KROMA_HWACCEL` to `qsv`, `vaapi`, `nvenc`, `videotoolbox`,
+`v4l2m2m` or `software`. The variable wins over the setting. On a computer
+with more than one graphics device, `KROMA_RENDER_NODE` selects the one to
+use. See the [configuration reference](configuration.md#transcoding).
 
 ## When there is no graphics chip
 

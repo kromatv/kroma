@@ -24,7 +24,7 @@ use std::fmt;
 use super::software::Effort;
 use device::{Decode, Device, Scale};
 
-pub use probe::{detect, detected, prime, Detection};
+pub use probe::{choose, detect, detected, pinned_by_env, prime, usable_labels, Detection};
 
 /// What one re-encode runs on: the device that encodes the picture and how hard
 /// the CPU is allowed to work per frame on whatever part of the job it keeps.

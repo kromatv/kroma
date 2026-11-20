@@ -7,7 +7,7 @@
 //! every candidate is made to encode three frames before it is believed, and the
 //! sentence explaining the outcome is kept for the log and the admin.
 
-use std::sync::OnceLock;
+use std::sync::{OnceLock, PoisonError, RwLock};
 use std::time::Duration;
 
 use crate::input;
@@ -31,18 +31,53 @@ pub struct Detection {
     pub reason: String,
 }
 
-static DETECTED: OnceLock<Detection> = OnceLock::new();
+// What the host can do, probed once per process because it cannot change while
+// it runs. Which of it is used can: that is the operator's choice.
+struct Survey {
+    usable: Vec<HwAccel>,
+    automatic: Detection,
+}
 
-/// The best pipeline this host offers, probed once. Override with
-/// `KROMA_HWACCEL=<label>`, which is how an operator picks between two devices
-/// or pins the software path to rule it out of a problem.
+static SURVEY: OnceLock<Survey> = OnceLock::new();
+static CHOSEN: RwLock<Option<HwAccel>> = RwLock::new(None);
+
+/// The pipeline re-encodes run on. `KROMA_HWACCEL=<label>` decides first, then
+/// the encoder an operator chose with [`choose`], then the best one that passed
+/// its test encode.
 pub fn detect() -> HwAccel {
     detected().accel
 }
 
 /// [`detect`] with the sentence that explains it.
-pub fn detected() -> &'static Detection {
-    DETECTED.get_or_init(run)
+pub fn detected() -> Detection {
+    if let Some(accel) = env_pin() {
+        return Detection {
+            accel,
+            reason: format!("pinned by KROMA_HWACCEL={}", accel.label()),
+        };
+    }
+    let chosen = *CHOSEN.read().unwrap_or_else(PoisonError::into_inner);
+    decide(SURVEY.get_or_init(survey), chosen)
+}
+
+/// Sets the encoder an operator chose, by its label. Any other word, such as
+/// `Auto`, hands the choice back to the probe.
+pub fn choose(label: &str) {
+    *CHOSEN.write().unwrap_or_else(PoisonError::into_inner) = pinned(label);
+}
+
+/// The labels of the hardware encoders that passed their test encode, best
+/// first. Empty until the probe has run: this never starts it.
+pub fn usable_labels() -> Vec<&'static str> {
+    SURVEY
+        .get()
+        .map(|survey| survey.usable.iter().map(|accel| accel.label()).collect())
+        .unwrap_or_default()
+}
+
+/// Whether `KROMA_HWACCEL` decides, which leaves an operator's choice unused.
+pub fn pinned_by_env() -> bool {
+    env_pin().is_some()
 }
 
 /// Probe now rather than on the first frame anyone asks for. The validation
@@ -57,43 +92,73 @@ pub fn prime() {
     }
 }
 
-fn run() -> Detection {
-    let pin = std::env::var("KROMA_HWACCEL").ok();
-    if let Some(accel) = pin.as_deref().and_then(pinned) {
-        return Detection {
+fn env_pin() -> Option<HwAccel> {
+    std::env::var("KROMA_HWACCEL")
+        .ok()
+        .as_deref()
+        .and_then(pinned)
+}
+
+fn decide(survey: &Survey, chosen: Option<HwAccel>) -> Detection {
+    match chosen {
+        None => survey.automatic.clone(),
+        Some(accel) if accel == SOFTWARE || survey.usable.contains(&accel) => Detection {
             accel,
-            reason: format!("pinned by KROMA_HWACCEL={}", accel.label()),
-        };
+            reason: format!("{} is chosen in the settings", accel.label()),
+        },
+        Some(accel) => Detection {
+            accel: survey.automatic.accel,
+            reason: format!(
+                "{} is chosen in the settings and is not usable here; {}",
+                accel.label(),
+                survey.automatic.reason
+            ),
+        },
     }
+}
+
+fn survey() -> Survey {
     let encoders = ffmpeg_output(&["-hide_banner", "-encoders"]);
     let listed = candidates(&encoders);
     if listed.is_empty() {
-        return Detection {
-            accel: SOFTWARE,
-            reason: format!(
-                "this ffmpeg build lists no hardware H.264 encoder ({})",
-                known_encoders()
-            ),
+        return Survey {
+            usable: Vec::new(),
+            automatic: Detection {
+                accel: SOFTWARE,
+                reason: format!(
+                    "this ffmpeg build lists no hardware H.264 encoder ({})",
+                    known_encoders()
+                ),
+            },
         };
     }
+    let mut passed = Vec::new();
     let mut refused = Vec::new();
     for accel in listed {
         match usable(accel) {
-            Ok(()) => {
-                return Detection {
-                    accel,
-                    reason: format!("{} encoded a test frame", accel.device().encoder()),
-                };
-            }
+            Ok(()) => passed.push(accel),
             Err(why) => refused.push(format!("{}: {why}", accel.label())),
         }
     }
-    Detection {
-        accel: SOFTWARE,
-        reason: format!(
-            "every listed device refused a test encode ({})",
-            refused.join("; ")
-        ),
+    Survey {
+        automatic: automatic(&passed, &refused),
+        usable: passed,
+    }
+}
+
+fn automatic(usable: &[HwAccel], refused: &[String]) -> Detection {
+    match usable.first() {
+        Some(&accel) => Detection {
+            accel,
+            reason: format!("{} encoded a test frame", accel.device().encoder()),
+        },
+        None => Detection {
+            accel: SOFTWARE,
+            reason: format!(
+                "every listed device refused a test encode ({})",
+                refused.join("; ")
+            ),
+        },
     }
 }
 
@@ -185,6 +250,56 @@ mod tests {
         assert_eq!(pinned("quantum"), None);
     }
 
+    fn host_with(usable: &[HwAccel]) -> Survey {
+        Survey {
+            usable: usable.to_vec(),
+            automatic: automatic(usable, &["nvenc: no card".to_owned()]),
+        }
+    }
+
+    #[test]
+    fn the_first_encoder_that_passed_its_test_is_the_automatic_one() {
+        let chosen = decide(&host_with(&[QSV, VAAPI]), None);
+
+        assert_eq!(chosen.accel, QSV);
+        assert_eq!(chosen.reason, "h264_qsv encoded a test frame");
+    }
+
+    #[test]
+    fn a_host_where_every_encoder_failed_says_why_it_is_on_the_cpu() {
+        let chosen = decide(&host_with(&[]), None);
+
+        assert_eq!(chosen.accel, SOFTWARE);
+        assert!(chosen.reason.contains("nvenc: no card"), "{}", chosen.reason);
+    }
+
+    #[test]
+    fn an_operator_takes_a_usable_encoder_over_the_automatic_one() {
+        let chosen = decide(&host_with(&[QSV, VAAPI]), Some(VAAPI));
+
+        assert_eq!(chosen.accel, VAAPI);
+        assert_eq!(chosen.reason, "vaapi is chosen in the settings");
+    }
+
+    #[test]
+    fn an_operator_can_always_choose_the_software_path() {
+        let chosen = decide(&host_with(&[QSV]), Some(SOFTWARE));
+
+        assert_eq!(chosen.accel, SOFTWARE);
+    }
+
+    #[test]
+    fn a_chosen_encoder_this_host_cannot_use_falls_back_and_says_so() {
+        let chosen = decide(&host_with(&[QSV]), Some(V4L2M2M));
+
+        assert_eq!(chosen.accel, QSV);
+        assert!(
+            chosen.reason.starts_with("v4l2m2m is chosen in the settings and is not usable"),
+            "{}",
+            chosen.reason
+        );
+    }
+
     #[test]
     fn the_test_encode_asks_the_device_for_three_frames_and_keeps_nothing() {
         let cmd = test_encode(V4L2M2M);
@@ -207,6 +322,17 @@ mod tests {
         if let Err(why) = V4L2M2M.device().reachable() {
             assert_eq!(usable(V4L2M2M), Err(why));
         }
+    }
+
+    #[test]
+    fn an_operators_choice_is_kept_by_label_and_any_other_word_gives_it_back() {
+        choose("software");
+        let kept = *CHOSEN.read().unwrap();
+        choose("Auto");
+        let given_back = *CHOSEN.read().unwrap();
+
+        assert_eq!(kept, Some(SOFTWARE));
+        assert_eq!(given_back, None);
     }
 
     #[test]
