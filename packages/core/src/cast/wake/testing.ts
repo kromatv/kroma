@@ -8,15 +8,13 @@ export function scripted(frames: unknown[]) {
   const said = frames.map((frame) => (typeof frame === 'string' ? frame : JSON.stringify(frame)));
   const sent: unknown[] = [];
   const socket: LanSocket = {
-    send: vi.fn(async (text: string) => {
+    send: vi.fn((text: string) => {
       sent.push(JSON.parse(text));
+      return Promise.resolve();
     }),
-    next: vi.fn(async () => {
+    next: vi.fn(() => {
       const frame = said.shift();
-      if (frame === undefined) {
-        throw new Error('no answer');
-      }
-      return frame;
+      return frame === undefined ? Promise.reject(new Error('no answer')) : Promise.resolve(frame);
     }),
     close: vi.fn(),
   };
@@ -27,9 +25,10 @@ export function scripted(frames: unknown[]) {
 export function remembering(known: Record<string, string> = {}) {
   const kept = new Map(Object.entries(known));
   const keys: WakeKeys = {
-    get: async (address) => kept.get(address) ?? null,
-    set: async (address, key) => {
+    get: (address) => Promise.resolve(kept.get(address) ?? null),
+    set: (address, key) => {
       kept.set(address, key);
+      return Promise.resolve();
     },
   };
   return { keys, kept };
@@ -40,8 +39,8 @@ const SILENT = () => Promise.reject(new Error('no answer'));
 /** A platform where `GET` answers `info`, `POST` answers 200, and no socket
  * opens unless `extra` gives one. */
 export function reaching(info: WakeAnswer | null, extra: Partial<WakeReach> = {}) {
-  const http = vi.fn(async (method: 'GET' | 'POST') =>
-    method === 'GET' ? info : { status: 200, text: 'true' },
+  const http = vi.fn((method: 'GET' | 'POST') =>
+    Promise.resolve(method === 'GET' ? info : { status: 200, text: 'true' }),
   );
   return { open: vi.fn(SILENT), ...extra, http };
 }
