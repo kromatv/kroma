@@ -202,3 +202,8 @@ fn the_arguments_each_encoder_shipped_with_are_unchanged() {
         ["-c:v", "h264_v4l2m2m", "-b:v", "8000k", "-pix_fmt", "yuv420p"]
     );
 }
+
+#[test]
+fn a_device_prints_as_its_label() {
+    assert_eq!(format!("{VAAPI:?}"), "vaapi");
+}

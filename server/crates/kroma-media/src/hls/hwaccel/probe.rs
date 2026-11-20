@@ -123,8 +123,12 @@ fn candidates(encoders: &[u8]) -> Vec<HwAccel> {
 }
 
 fn usable(accel: HwAccel) -> Result<(), String> {
+    accel.device().reachable()?;
+    crate::ffmpeg_run::run_capturing(test_encode(accel), VALIDATE_TIMEOUT)
+}
+
+fn test_encode(accel: HwAccel) -> std::process::Command {
     let device = accel.device();
-    device.reachable()?;
     let mut cmd = std::process::Command::new("ffmpeg");
     cmd.args(["-v", "error", "-nostdin"])
         .args(device.probe_input_args())
@@ -132,7 +136,7 @@ fn usable(accel: HwAccel) -> Result<(), String> {
         .args(["-frames:v", "3", "-c:v", device.encoder()])
         .args(device.probe_output_args())
         .args(["-f", "null", "-"]);
-    crate::ffmpeg_run::run_capturing(cmd, VALIDATE_TIMEOUT)
+    cmd
 }
 
 #[cfg(test)]
@@ -179,6 +183,30 @@ mod tests {
     fn none_pins_the_software_path_and_an_unknown_label_pins_nothing() {
         assert_eq!(pinned("none"), Some(SOFTWARE));
         assert_eq!(pinned("quantum"), None);
+    }
+
+    #[test]
+    fn the_test_encode_asks_the_device_for_three_frames_and_keeps_nothing() {
+        let cmd = test_encode(V4L2M2M);
+        let args: Vec<String> = cmd
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect();
+        let line = args.join(" ");
+
+        assert_eq!(cmd.get_program(), "ffmpeg");
+        assert!(line.contains(TEST_SOURCE), "{line}");
+        assert!(
+            line.ends_with("-frames:v 3 -c:v h264_v4l2m2m -b:v 1000k -f null -"),
+            "{line}"
+        );
+    }
+
+    #[test]
+    fn an_encoder_that_is_out_of_reach_is_refused_before_ffmpeg_is_asked() {
+        if let Err(why) = V4L2M2M.device().reachable() {
+            assert_eq!(usable(V4L2M2M), Err(why));
+        }
     }
 
     #[test]

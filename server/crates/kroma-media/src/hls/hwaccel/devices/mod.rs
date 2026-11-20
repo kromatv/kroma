@@ -22,3 +22,6 @@ pub const SOFTWARE: HwAccel = HwAccel::of(&software::Software);
 /// encoder list alone does not prove, and a V4L2 encoder leaves the decode on
 /// the CPU.
 pub const BY_TRUST: [HwAccel; 5] = [VIDEOTOOLBOX, QSV, VAAPI, NVENC, V4L2M2M];
+
+#[cfg(test)]
+mod tests;
