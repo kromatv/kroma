@@ -1,4 +1,5 @@
 {
+  "cast.asleep": "Éteint",
   "cast.connectedTo": "Connecté à {device}",
   "cast.continueHere": "Continuer sur ce téléphone",
   "cast.disconnect": "Déconnecter",
@@ -8,6 +9,7 @@
   "cast.idleHint": "Lancez un film ou un épisode : il sera lu sur {device}.",
   "cast.idleTitle": "Rien en lecture",
   "cast.moveToTv": "Envoyer sur le téléviseur",
+  "cast.needsPower": "Éteint · allumez-le avec sa télécommande",
   "cast.noDevices": "Aucun téléviseur disponible",
   "cast.noDevicesHint": "Ouvrez KROMA sur votre téléviseur : il apparaîtra ici.",
   "cast.openHint": "KROMA doit être ouvert sur le téléviseur : s'il passe sur une autre source, il quitte la liste.",
@@ -25,5 +27,6 @@
   "cast.stopHint": "Arrête la lecture sur {device}",
   "cast.thisDevice": "Cet appareil",
   "cast.title": "Lire sur la TV",
-  "cast.titleGone": "Ce titre n'est plus dans la bibliothèque"
+  "cast.titleGone": "Ce titre n'est plus dans la bibliothèque",
+  "cast.waking": "Allumage…"
 }

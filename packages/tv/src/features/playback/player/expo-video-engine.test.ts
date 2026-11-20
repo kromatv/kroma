@@ -251,6 +251,37 @@ describe('ExpoVideoEngine event mapping', () => {
     expect(listeners.onEnded).toHaveBeenCalledTimes(1);
   });
 
+  it('starts a film that ran to its end again when it is told to play', () => {
+    const { e } = make({ direct: true });
+    const player = current(e);
+    const playsBefore = player.plays;
+    player.emit('playToEnd');
+
+    e.play();
+
+    expect(player.replays).toBe(1);
+    expect(player.plays).toBe(playsBefore + 1);
+  });
+
+  it('plays on from where it is when the film has not ended', () => {
+    const { e } = make({ direct: true });
+
+    e.play();
+
+    expect(current(e).replays).toBe(0);
+  });
+
+  it('plays on from where a seek put it, after the film had ended', () => {
+    const { e } = make({ direct: true });
+    current(e).emit('playToEnd');
+    e.seekTo(30);
+
+    e.play();
+
+    expect(current(e).replays).toBe(0);
+    expect(current(e).currentTime).toBe(30);
+  });
+
   it('ignores a status the player reports that the chrome has no state for', () => {
     const { e, listeners } = make();
     current(e).emit('statusChange', { status: 'idle' });

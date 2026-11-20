@@ -68,6 +68,17 @@ describe('play', () => {
     expect(c.calls.togglePlay).toHaveBeenCalled();
   });
 
+  it('plays a paused film on from where it is when no position is asked', async () => {
+    const bridge = createCastBridge();
+    const c = controller({ playing: false, cur: 40, dur: 100 });
+    bridge.setCastTarget({ item: item('it1'), controller: c.player });
+
+    await applyCastCommand({ type: 'play', itemId: ItemId.parse('it1') }, deps(bridge));
+
+    expect(c.calls.seekTo).not.toHaveBeenCalled();
+    expect(c.calls.togglePlay).toHaveBeenCalled();
+  });
+
   it('leaves a title that is already playing exactly where it is', async () => {
     const bridge = createCastBridge();
     const c = controller({ playing: true });

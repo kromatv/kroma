@@ -8,37 +8,39 @@
 // Live-ness comes off the event bus rather than a poll: `cast.receivers` when the
 // roster or a title changes (the provider refetches - small payload, always
 // consistent), and `cast.position` on every heartbeat of a playing TV, which
-// moves the scrubber without any refetch at all. Between those beats the
-// position is interpolated locally, so a remote's progress bar runs smoothly
-// instead of stepping every ten seconds.
+// moves the scrubber without any refetch at all. Between those beats a view
+// counts from the last one by itself (`useCastPosition`), so this provider
+// renders only when something changed.
 
 import { apiErrorBody, type DeviceId, KromaApiError, type KromaClient } from '@kromatv/client';
 import type { CastCommand, CastReceiver } from '@kromatv/client/cast';
 import { KromaEvents } from '@kromatv/client/events';
 import type { ItemId } from '@kromatv/client/media';
-import type { LanDiscoveryBridge } from '@kromatv/core';
+import { httpReach, type LanDiscoveryBridge, type WakeReach } from '@kromatv/core';
 import {
   type ReactNode,
   useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
-  useReducer,
   useRef,
   useState,
 } from 'react';
 import { useLanCast } from '#ui/services/cast-lan.hook';
 import { type Cast, CastCtx, type CastFailure } from './cast-context';
 import { applyCastEvent } from './cast-events';
-import { livePosition, type PositionBase } from './cast-position';
-
-const TICK_MS = 500;
+import { useBringBack } from './cast-bring-back.hook';
+import { baseOf, drivenBase, livePosition, orderedBase, type PositionBase } from './cast-position';
 
 function failureOf(e: unknown): CastFailure {
   if (!(e instanceof KromaApiError) || e.status !== 404) {
     return 'cast.failed';
   }
   return apiErrorBody(e).code === 'error.itemNotFound' ? 'cast.titleGone' : 'cast.gone';
+}
+
+function isAsleep(receivers: CastReceiver[], receiverId: DeviceId): boolean {
+  return receivers.some((r) => r.id === receiverId && r.asleep);
 }
 
 export interface CastProviderProps {
@@ -49,6 +51,9 @@ export interface CastProviderProps {
   /** What this device calls itself on the TV's list of remotes ("iPhone",
    * "Chrome"). Shown across the room, so it should be a thing, not a session id. */
   deviceName: string;
+  /** What this shell can do to a television on its network when one has to be
+   * brought back. Defaults to HTTP alone, which is all a browser has. */
+  reach?: WakeReach;
   /** This device's DNS-SD stack, when the shell has one. It makes a television
    * appear the moment it is heard rather than on the next beat, and surfaces
    * the ones with no account at all. */
@@ -60,6 +65,7 @@ export function CastProvider({
   client,
   enabled,
   deviceName,
+  reach = httpReach,
   lan,
   children,
 }: Readonly<CastProviderProps>) {
@@ -69,10 +75,6 @@ export function CastProvider({
   // Position base: what the TV last reported, and when we heard it. Rendering
   // interpolates from here, so a progress bar moves between heartbeats.
   const [base, setBase] = useState<PositionBase | null>(null);
-  // Bumped on a timer while a TV plays, purely to re-render the interpolated
-  // position (which is computed from the clock, not from state). A reducer
-  // rather than `useState`: the counter's VALUE is never read, and this says so.
-  const [, rerender] = useReducer((n: number) => n + 1, 0);
   // The live socket, kept so selecting a TV can announce this remote on it.
   const socket = useRef<KromaEvents | null>(null);
   // Read from the socket's `onOpen` and from the stable callbacks below, none
@@ -94,7 +96,10 @@ export function CastProvider({
     }
     client.cast
       .receivers()
-      .then(setReceivers)
+      .then((rows) => {
+        setReceivers(rows);
+        setBase((was) => drivenBase(rows, drivingRef.current, was));
+      })
       .catch(() => undefined);
   }, [client, enabled]);
 
@@ -117,6 +122,17 @@ export function CastProvider({
       setActiveId(null);
     }
   }
+
+  const sinks = useMemo(
+    () => ({
+      receivers: setReceivers,
+      activeId: setActiveId,
+      error: setError,
+      base: setBase,
+      gone: refresh,
+    }),
+    [refresh],
+  );
 
   // Roster: fetched once, then kept live off the bus.
   useEffect(() => {
@@ -142,13 +158,7 @@ export function CastProvider({
           events.send({ type: 'cast.control', receiverId: driving, name: name.current });
         }
       },
-      onEvent: (e) =>
-        applyCastEvent(e, {
-          receivers: setReceivers,
-          activeId: setActiveId,
-          error: setError,
-          base: setBase,
-        }),
+      onEvent: (e) => applyCastEvent(e, sinks, drivingRef.current),
     });
     events.connect();
     socket.current = events;
@@ -156,7 +166,7 @@ export function CastProvider({
       socket.current = null;
       events.close();
     };
-  }, [client, enabled, refresh]);
+  }, [client, enabled, refresh, sinks]);
 
   const active = useMemo(
     () => receivers.find((r) => r.id === activeId) ?? null,
@@ -169,27 +179,14 @@ export function CastProvider({
     setActiveId(null);
   }
 
-  // Advance the interpolated position while the active TV is playing. One timer,
-  // only while it is needed: an idle or paused receiver costs nothing.
-  const playing = active?.nowPlaying?.state === 'playing';
-  useEffect(() => {
-    if (!playing) {
-      return undefined;
-    }
-    const iv = setInterval(rerender, TICK_MS);
-    return () => clearInterval(iv);
-  }, [playing]);
-
-  // Recomputed every render (the tick above forces those while playing) rather
-  // than memoized: it is arithmetic over the clock, and a memo would cache the
-  // one value that must never be cached.
-  const positionMs = livePosition(active, base, playing);
+  const position = useCallback(() => livePosition(active, base), [active, base]);
 
   const sendTo = useCallback(
     async (receiverId: DeviceId, command: CastCommand): Promise<CastFailure | null> => {
       if (!client) {
         return 'cast.failed';
       }
+      setBase((was) => orderedBase(was, { receiverId, command }));
       try {
         await client.cast.command(receiverId, command);
         setError(null);
@@ -207,19 +204,32 @@ export function CastProvider({
     [client, refresh],
   );
 
+  const { waking, needsPower, bringBack } = useBringBack({
+    client,
+    receivers,
+    reach,
+    socket,
+    name,
+    setActiveId,
+    setError,
+    failureOf,
+  });
+
   const playOn = useCallback(
     async (receiverId: DeviceId, itemId: ItemId, startMs = 0) => {
+      if (isAsleep(receiversRef.current, receiverId)) {
+        return bringBack(receiverId, { type: 'play', itemId, positionMs: startMs });
+      }
       const failure = await sendTo(receiverId, { type: 'play', itemId, positionMs: startMs });
       if (!failure) {
         setActiveId(receiverId);
         socket.current?.send({ type: 'cast.control', receiverId, name: name.current });
-        // Optimistic: the TV's own heartbeat corrects this within a beat, but the
-        // remote should not sit at 0:00 while it starts.
-        setBase({ id: receiverId, positionMs: startMs, playing: true, at: Date.now() });
+        // Held at the start: the television says when the picture moves.
+        setBase({ id: receiverId, positionMs: startMs, playing: false, at: Date.now() });
       }
       return failure;
     },
-    [sendTo],
+    [sendTo, bringBack],
   );
 
   const send = useCallback(
@@ -230,46 +240,46 @@ export function CastProvider({
 
   // The latest `receivers` stay reachable through `receiversRef` above, so
   // `select` is never re-created.
-  const select = useCallback((receiverId: DeviceId | null) => {
-    setActiveId(receiverId);
-    setError(null);
-    // Tell the set it is being driven, so it can show this remote (and let it
-    // go). Presence rides the socket: closing the app releases it for us.
-    socket.current?.send(
-      receiverId
-        ? { type: 'cast.control', receiverId, name: name.current }
-        : { type: 'cast.release' },
-    );
-    const next = receiverId ? receiversRef.current.find((r) => r.id === receiverId) : null;
-    setBase(
-      next?.nowPlaying
-        ? {
-            id: next.id,
-            positionMs: next.nowPlaying.positionMs,
-            playing: next.nowPlaying.state === 'playing',
-            at: Date.now(),
-          }
-        : null,
-    );
-  }, []);
+  const select = useCallback(
+    (receiverId: DeviceId | null) => {
+      if (receiverId && isAsleep(receiversRef.current, receiverId)) {
+        void bringBack(receiverId);
+        return;
+      }
+      setActiveId(receiverId);
+      setError(null);
+      // Tell the set it is being driven, so it can show this remote (and let it
+      // go). Presence rides the socket: closing the app releases it for us.
+      socket.current?.send(
+        receiverId
+          ? { type: 'cast.control', receiverId, name: name.current }
+          : { type: 'cast.release' },
+      );
+      const next = receiversRef.current.find((r) => r.id === receiverId);
+      setBase(next ? baseOf(next) : null);
+    },
+    [bringBack],
+  );
 
   const value = useMemo<Cast>(
     () => ({
       receivers,
+      waking,
+      wakingNeedsPower: needsPower,
       pairable,
       active,
       available: receivers.length > 0,
-      positionMs,
+      position,
       select,
       playOn,
       send,
       error,
     }),
-    [receivers, pairable, active, positionMs, select, playOn, send, error],
+    [receivers, waking, needsPower, pairable, active, position, select, playOn, send, error],
   );
 
   return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;
 }
 
-export type { Cast, CastFailure } from './cast-context';
-export { useCast } from './cast-context';
+export type { Cast, CastFailure, CastRowKey, CastRowState } from './cast-context';
+export { castRowDetail, castRowState, useCast } from './cast-context';

@@ -32,6 +32,7 @@
     "@kromatv/core": "workspace:*",
     "@kromatv/i18n": "workspace:*",
     "@kromatv/lan-beacon": "workspace:*",
+    "@kromatv/lan-reach": "workspace:*",
     "@kromatv/media3-ffmpeg": "workspace:*",
     "@kromatv/ui": "workspace:*",
     "@kromatv/workbench": "workspace:*",

@@ -19,23 +19,22 @@ export interface CastDeps {
   bridge: CastBridge;
 }
 
-async function play(
-  command: Extract<CastCommand, { type: 'play' }>,
-  deps: CastDeps,
-  target: ReturnType<CastBridge['castTarget']>,
-): Promise<void> {
-  const controller = target?.controller;
-  // Already on this title: seek rather than remount the engine, which would
-  // black the screen for a second.
-  if (target?.item.id === command.itemId) {
-    if (command.positionMs) {
-      controller?.seekTo(command.positionMs / 1000);
-    }
-    if (controller && !controller.playing) {
-      controller.togglePlay();
-    }
-    return;
+type Play = Extract<CastCommand, { type: 'play' }>;
+type Controller = NonNullable<ReturnType<CastBridge['castTarget']>>['controller'];
+
+// The title is already on screen: the engine is kept, since remounting it
+// blacks the screen for a second. A position that was asked for is seeked to;
+// a film that ran to its end starts again because the engine's `play` does that.
+function carryOn(controller: Controller, startMs: number): void {
+  if (startMs > 0) {
+    controller.seekTo(startMs / 1000);
   }
+  if (!controller.playing) {
+    controller.togglePlay();
+  }
+}
+
+async function launch(command: Play, deps: CastDeps): Promise<void> {
   const item = await deps.client.media.item(command.itemId).catch(() => null);
   if (!item) {
     return;
@@ -43,6 +42,18 @@ async function play(
   deps.bridge.requestCastSeek(item.id, command.positionMs ?? 0);
   // reset, not push: a cast launch has no detail screen behind it.
   deps.nav.reset('player', { item });
+}
+
+function play(
+  command: Play,
+  deps: CastDeps,
+  target: ReturnType<CastBridge['castTarget']>,
+): Promise<void> {
+  if (target?.item.id !== command.itemId) {
+    return launch(command, deps);
+  }
+  carryOn(target.controller, command.positionMs ?? 0);
+  return Promise.resolve();
 }
 
 async function skipNext(

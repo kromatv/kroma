@@ -68,6 +68,21 @@ pub async fn get_from(
     drive(app, build_request_from(peer, "GET", uri, token, None), headers).await
 }
 
+/// A request with a JSON body, like [`raw`]'s, but arriving from `peer`.
+pub async fn send_from(
+    app: &Router,
+    peer: std::net::SocketAddr,
+    request: (&str, &str),
+    token: Option<&str>,
+    json: Option<Value>,
+) -> (StatusCode, Value) {
+    let (method, uri) = request;
+    let body = json.map(|v| v.to_string());
+    let req = build_request_from(peer, method, uri, token, body);
+    let (status, _headers, value) = drive(app, req, &[]).await;
+    (status, value)
+}
+
 async fn drive(
     app: &Router,
     mut req: Request<Body>,

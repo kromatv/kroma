@@ -26,6 +26,8 @@ export const CastNowPlaying = z.object({
   item: MediaItem,
   positionMs: z.number(),
   durationMs: z.number().nullable().optional(),
+  /** How far ahead the receiver's player holds, from the start of the title. */
+  bufferedMs: z.number().optional(),
   state: CastState,
   audioTracks: z.array(CastTrack).default([]),
   audioIndex: z.number().optional(),
@@ -55,6 +57,8 @@ export const CastReceiver = z.object({
   network: z.enum(['LAN', 'WAN']).catch('WAN'),
   nowPlaying: CastNowPlaying.optional(),
   controllers: z.array(CastController).default([]),
+  /** Off or out of the app, and kept by the server well enough to be brought back. */
+  asleep: z.boolean().default(false),
 });
 export type CastReceiver = z.infer<typeof CastReceiver>;
 
@@ -87,6 +91,7 @@ export const CastPlaybackReport = z.object({
   itemId: ItemId,
   positionMs: z.number(),
   durationMs: z.number().nullish(),
+  bufferedMs: z.number().optional(),
   state: ReportedCastState,
   audioTracks: z.array(CastTrack).optional(),
   audioIndex: z.number().optional(),
@@ -94,6 +99,47 @@ export const CastPlaybackReport = z.object({
   subtitleIndex: z.number().optional(),
 });
 export type CastPlaybackReport = z.infer<typeof CastPlaybackReport>;
+
+/** What a receiver says about reaching itself while it is on. The server keeps
+ * it and derives the wake steps from it; a field the receiver cannot read is
+ * left out. */
+export const CastWakeHint = z.object({
+  mac: z.string().optional(),
+  address: z.string().optional(),
+  appId: z.string().optional(),
+});
+export type CastWakeHint = z.infer<typeof CastWakeHint>;
+
+/** One thing to do to bring a television back, in the order given. A step type
+ * this client does not know is kept as `unknown` and skipped, so a newer server
+ * can add one. */
+export const CastWakeStep = z
+  .discriminatedUnion('type', [
+    z.object({ type: z.literal('magic'), mac: z.string() }),
+    z.object({
+      type: z.literal('samsung'),
+      address: z.string(),
+      mac: z.string().optional(),
+      appId: z.string(),
+    }),
+    z.object({
+      type: z.literal('lg'),
+      address: z.string(),
+      mac: z.string().optional(),
+      appId: z.string(),
+    }),
+    z.object({ type: z.literal('knock'), address: z.string(), port: z.number() }),
+    z.object({ type: z.literal('manual') }),
+    z.object({ type: z.literal('unknown') }),
+  ])
+  .catch({ type: 'unknown' });
+export type CastWakeStep = z.infer<typeof CastWakeStep>;
+
+/** The steps for the caller to run from where it is. The server runs none. */
+export const CastWakeReply = z.object({
+  steps: z.array(CastWakeStep),
+});
+export type CastWakeReply = z.infer<typeof CastWakeReply>;
 
 /** Sent UP the event socket, by a receiver or a sender: hello once, then only
  * when something changes, plus an ack per order applied. */
@@ -103,6 +149,7 @@ export const CastClientMessage = z.discriminatedUnion('type', [
     receiverId: DeviceId,
     name: z.string(),
     platform: z.string(),
+    wake: CastWakeHint.optional(),
   }),
   z.object({ type: z.literal('cast.state'), playback: CastPlaybackReport.nullish() }),
   z.object({ type: z.literal('cast.ack'), seq: z.number() }),
@@ -120,6 +167,7 @@ export const CastAnnounceBody = z.object({
   platform: z.string(),
   lastAppliedSeq: z.number(),
   playback: CastPlaybackReport.optional(),
+  wake: CastWakeHint.optional(),
 });
 export type CastAnnounceBody = z.infer<typeof CastAnnounceBody>;
 

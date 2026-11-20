@@ -6,6 +6,7 @@ import {
   CastAnnounceReply,
   type CastCommand,
   CastReceiver,
+  CastWakeReply,
 } from './schemas';
 
 const CommandAccepted = z.object({ seq: z.number() });
@@ -26,8 +27,23 @@ export default function castApi(ctx: RequestContext) {
     unregister: (receiverId: DeviceId) =>
       ctx.delete('/cast/receivers/:receiverId', { params: { receiverId } }),
 
-    /** Every live receiver on the server, the caller's own devices first. */
+    /** Every live receiver on the account, then the ones that are off and can
+     * be brought back, marked `asleep`. */
     receivers: () => ctx.get('/cast/receivers', CastReceiver.array()),
+
+    /** Ask how to bring back a receiver that is `asleep`, and have `play` start
+     * on it once it arrives. The reply carries the steps, which the caller runs
+     * from where it is: the server reaches no television. The receiver turning
+     * up in the roster is the only success there is. */
+    wake: (receiverId: DeviceId, play?: Extract<CastCommand, { type: 'play' }>) =>
+      ctx.post('/cast/receivers/:receiverId/wake', CastWakeReply, {
+        params: { receiverId },
+        body: { play },
+      }),
+
+    /** Stop listing a receiver that is off. */
+    forgetWake: (receiverId: DeviceId) =>
+      ctx.delete('/cast/receivers/:receiverId/wake', { params: { receiverId } }),
 
     /** Send one order to a receiver, resolving with its sequence number. Throws
      * `KromaApiError` 404 when the TV went away between listing and sending. */

@@ -9,7 +9,7 @@ mod public_ip;
 mod reach;
 mod routes;
 
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use std::sync::Arc;
 
 pub use challenge::Challenge;
@@ -122,14 +122,15 @@ impl Direct {
     }
 
     /// What this server knows of the house it sits in, read without waiting:
-    /// the public IPv4 the echo last gave and the global IPv6 addresses this
-    /// machine holds. Empty while the admin switch is off.
+    /// the public IPv4 the echo last gave, and the private IPv4 and global
+    /// IPv6 addresses this machine holds. Empty while the admin switch is off.
     pub fn household(&self, settings: &Settings) -> Household {
         if !settings.get_bool(ENABLED_KEY, true) {
             return Household::default();
         }
         Household {
             public_v4: self.public_ip.learned(),
+            own_v4: lan_addresses(&local_addresses(), None, Ipv4Addr::UNSPECIFIED.into()),
             own_v6: NEIGHBOURHOOD.addresses(kroma_primitives::now_ms(), || {
                 global_v6(&local_addresses())
             }),

@@ -6,11 +6,12 @@ use super::HandoffInner;
 use crate::services::direct::{is_private_client, shares_a_prefix};
 
 /// What this server knows of the house it sits in: the public IPv4 the house
-/// leaves through, and the IPv6 addresses this machine holds there. A server
-/// that knows neither places nobody.
+/// leaves through, and the addresses this machine holds there, the private
+/// IPv4 ones and the IPv6 ones. A server that knows none of it places nobody.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Household {
     pub public_v4: Option<Ipv4Addr>,
+    pub own_v4: Vec<Ipv4Addr>,
     pub own_v6: Vec<Ipv6Addr>,
 }
 
@@ -21,16 +22,41 @@ impl Household {
     /// address, the way a browser on a tunnelled name does. Two addresses on
     /// the network itself are left to [`same_network`], which still wants them
     /// on one subnet.
+    ///
+    /// A caller on the server's own machine arrives from loopback, which is on
+    /// no subnet at all. It is in the house by definition, so it shares it with
+    /// a device on a subnet this machine holds an address on.
     pub fn joins(&self, a: &str, b: &str) -> bool {
         let (Some(a), Some(b)) = (host(a), host(b)) else {
             return false;
         };
+        if let Some(verdict) = self.through_loopback(a, b) {
+            return verdict;
+        }
         match (is_private_client(a), is_private_client(b)) {
             (true, true) => false,
             (true, false) => self.faces(b),
             (false, true) => self.faces(a),
             (false, false) => self.faces(a) && self.faces(b),
         }
+    }
+
+    fn through_loopback(&self, a: IpAddr, b: IpAddr) -> Option<bool> {
+        match (a.is_loopback(), b.is_loopback()) {
+            (true, true) => Some(false),
+            (true, false) => Some(self.beside(b)),
+            (false, true) => Some(self.beside(a)),
+            (false, false) => None,
+        }
+    }
+
+    fn beside(&self, ip: IpAddr) -> bool {
+        let IpAddr::V4(v4) = ip else {
+            return false;
+        };
+        self.own_v4
+            .iter()
+            .any(|own| own.octets()[..3] == v4.octets()[..3])
     }
 
     fn faces(&self, ip: IpAddr) -> bool {
@@ -70,8 +96,34 @@ mod tests {
 
     const HOME: Household = Household {
         public_v4: Some(Ipv4Addr::new(203, 0, 113, 7)),
+        own_v4: Vec::new(),
         own_v6: Vec::new(),
     };
+
+    fn home_on_the_network() -> Household {
+        Household {
+            own_v4: vec![Ipv4Addr::new(192, 168, 1, 10)],
+            ..HOME
+        }
+    }
+
+    #[test]
+    fn a_caller_on_the_servers_own_machine_shares_the_house_with_a_device_on_its_subnet() {
+        let home = home_on_the_network();
+
+        assert!(home.joins("127.0.0.1", "192.168.1.20"));
+        assert!(home.joins("192.168.1.20", "::1"));
+    }
+
+    #[test]
+    fn a_caller_on_the_servers_own_machine_is_not_beside_another_subnet_or_the_internet() {
+        let home = home_on_the_network();
+
+        assert!(!home.joins("127.0.0.1", "10.0.0.7"));
+        assert!(!home.joins("127.0.0.1", "203.0.113.9"));
+        assert!(!home.joins("127.0.0.1", "127.0.0.1"));
+        assert!(!HOME.joins("127.0.0.1", "192.168.1.20"));
+    }
 
     fn dual_stack_home() -> Household {
         Household {
@@ -122,6 +174,7 @@ mod tests {
     fn settled() -> Household {
         Household {
             public_v4: HOUSEHOLD.parse().ok(),
+            own_v4: Vec::new(),
             own_v6: Vec::new(),
         }
     }

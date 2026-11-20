@@ -20,6 +20,7 @@ import { type Beacon, publish } from '@kromatv/mdns-beacon';
 
 import Service from 'webos-service';
 import { z } from 'zod';
+import { registerNetworkService } from './network-service';
 
 const SERVICE_ID = 'tv.kroma.webos.service';
 const txtSchema = z
@@ -69,4 +70,6 @@ export function registerBeaconService(service: Service): () => void {
   return stop;
 }
 
-registerBeaconService(new Service(SERVICE_ID));
+const service = new Service(SERVICE_ID);
+registerBeaconService(service);
+registerNetworkService(service);

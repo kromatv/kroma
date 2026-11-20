@@ -34,6 +34,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   private pendingSeek: number | null = null;
   private readonly audio = new ExpoDirectAudio(audioTracksOf(this.item));
   private clockSettled = true;
+  private ended = false;
   private startSeq = 0;
   private readonly rescue = new MasterRescue({
     refreshSession: () => this.client.refreshSession(),
@@ -146,6 +147,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     });
 
     add('playToEnd', () => {
+      this.ended = true;
       this.listeners.onEnded();
     });
 
@@ -251,8 +253,24 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
   }
 
   play(): void {
-    this.player?.play();
+    if (this.ended) {
+      this.playFromStart();
+    } else {
+      this.player?.play();
+    }
     this.paused = false;
+  }
+
+  // A film that ran to its end starts again from its beginning, as a video
+  // element does. `play` alone leaves this player sitting on its last frame.
+  private playFromStart(): void {
+    this.ended = false;
+    if (this.mode === 'direct') {
+      this.player?.replay();
+    } else {
+      this.seekTo(0);
+    }
+    this.player?.play();
   }
 
   pause(): void {
@@ -274,6 +292,7 @@ export class ExpoVideoEngine extends BaseTvEngine implements TvEngine {
     if (!player) {
       return;
     }
+    this.ended = false;
     if (this.mode === 'direct') {
       player.currentTime = absSec;
       this.elSec = absSec;

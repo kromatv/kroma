@@ -6,6 +6,8 @@ import type { PlayerMarker } from '../media-types';
 import { type CreditsState, usePlayerCredits } from './use-player-credits.hook';
 import { usePlayerOutro } from './use-player-outro.hook';
 
+const END_WINDOW_S = 2;
+
 export interface PlayerEnding {
   credits: CreditsState;
   /** Whether the end screen has the stage, which it only ever takes with a film
@@ -22,7 +24,7 @@ export interface PlayerEnding {
  * Both hang off the same `endedNonce`, which is why they are one hook.
  */
 export function usePlayerEnding(opts: {
-  controller: PlayerController;
+  controller: Pick<PlayerController, 'cur' | 'dur' | 'playing' | 'endedNonce' | 'seekPreview'>;
   markers?: readonly PlayerMarker[];
   postPlay?: PostPlayItem | null;
   onPlayNext?: () => void;
@@ -48,6 +50,12 @@ export function usePlayerEnding(opts: {
   });
 
   const [over, setOver] = useState(false);
+  // A film playing again from before its end is not over: a remote restarted
+  // it, or something seeked back into it. The end screen falls, or it would
+  // cover the picture.
+  if (over && c.playing && c.cur < c.dur - END_WINDOW_S) {
+    setOver(false);
+  }
   const goHome = onGoHome ?? onLeave;
   const playOffer = () => {
     if (postPlay) {

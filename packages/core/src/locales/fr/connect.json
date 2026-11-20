@@ -10,6 +10,7 @@
   "connect.connectingServer": "Connexion au serveur…",
   "connect.invalidCode": "Code incorrect ou expiré. Vérifiez les 4 chiffres affichés sur votre TV.",
   "connect.localServers": "Serveurs locaux",
+  "connect.mode.code": "Avec un code",
   "connect.mode.network": "Sur ce réseau",
   "connect.mode.scan": "Scanner ou code",
   "connect.orInAppPrefix": "ou sur l'app KROMA, ",

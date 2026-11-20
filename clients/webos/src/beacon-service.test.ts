@@ -58,7 +58,7 @@ beforeEach(() => {
 describe('the webOS beacon service', () => {
   it('registers itself under the id the shell calls over Luna', () => {
     expect(serviceIds).toEqual(['tv.kroma.webos.service']);
-    expect([...registered.keys()]).toEqual(['publish', 'unpublish']);
+    expect([...registered.keys()]).toEqual(['publish', 'unpublish', 'network']);
   });
 
   it('raises the beacon with the name the owner gave the television', () => {

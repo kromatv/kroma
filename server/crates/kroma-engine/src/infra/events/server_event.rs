@@ -59,6 +59,8 @@ pub enum ServerEvent {
         position_ms: i64,
         #[serde(rename = "durationMs", skip_serializing_if = "Option::is_none")]
         duration_ms: Option<i64>,
+        #[serde(rename = "bufferedMs", skip_serializing_if = "Option::is_none")]
+        buffered_ms: Option<i64>,
         state: crate::model::CastState,
     },
     #[serde(rename = "cast.command")]

@@ -2,7 +2,7 @@
 //! ack/replay bookkeeping, and the TTL reaper.
 
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
 
 // Names a device chose for itself are rendered in other people's pickers, where
@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 use kroma_primitives::clean_label as clean;
 
 use crate::model::{
-    CastCommandEnvelope, CastController, CastNowPlaying, CastPlayback, CastReceiver, CastState,
+    CastCommand, CastCommandEnvelope, CastController, CastNowPlaying, CastPlayback, CastReceiver, CastState,
     MediaItem,
 };
 
@@ -18,6 +18,9 @@ mod announce;
 mod controllers;
 mod inbox;
 mod reaper;
+mod waiting;
+
+pub use waiting::WAITING_TTL;
 
 #[cfg(test)]
 mod test_support;
@@ -54,6 +57,7 @@ pub enum StateChange {
     Position {
         position_ms: i64,
         duration_ms: Option<i64>,
+        buffered_ms: Option<i64>,
         state: CastState,
     },
     Nothing,
@@ -98,14 +102,65 @@ impl Receiver {
         self.last_seen.elapsed() < RECEIVER_TTL
     }
 
-    fn view(&self) -> CastReceiver {
-        let now_playing = match (self.item.as_ref(), self.playback.as_ref()) {
+    fn new(id: &str, user_id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            name: String::new(),
+            platform: String::new(),
+            user_id: user_id.to_string(),
+            username: String::new(),
+            network: String::new(),
+            playback: None,
+            item: None,
+            last_seen: Instant::now(),
+            inbox: VecDeque::new(),
+            next_seq: 1,
+            controllers: HashMap::new(),
+            kicked: HashSet::new(),
+        }
+    }
+
+    fn refresh(&mut self, playback: Option<CastPlayback>, item: Option<MediaItem>) {
+        if item.is_some() {
+            self.item = item;
+        }
+        if playback.is_none() {
+            self.item = None;
+        }
+        self.playback = playback.map(trim_tracks);
+        self.last_seen = Instant::now();
+    }
+
+    fn replay(&mut self, last_applied_seq: u64, claimed: Option<CastCommand>) {
+        self.inbox.retain(|c| c.seq > last_applied_seq);
+        if let Some(command) = claimed {
+            let seq = self.next_seq.max(last_applied_seq + 1);
+            self.next_seq = seq + 1;
+            self.inbox.push_back(CastCommandEnvelope { seq, command });
+        }
+    }
+
+    fn position_change(&self) -> StateChange {
+        match self.playback.as_ref() {
+            Some(pb) => StateChange::Position {
+                position_ms: pb.position_ms,
+                duration_ms: pb.duration_ms,
+                buffered_ms: pb.buffered_ms,
+                state: pb.state,
+            },
+            None => StateChange::Nothing,
+        }
+    }
+
+    fn now_playing(&self) -> Option<CastNowPlaying> {
+        match (self.item.as_ref(), self.playback.as_ref()) {
             (Some(item), Some(pb)) if pb.state != CastState::Idle => Some(CastNowPlaying {
                 item: item.clone(),
                 position_ms: pb.position_ms,
                 duration_ms: pb
                     .duration_ms
                     .or_else(|| item.duration_ms.and_then(|d| i64::try_from(d).ok())),
+                buffered_ms: pb.buffered_ms,
                 state: pb.state,
                 audio_tracks: pb.audio_tracks.clone(),
                 audio_index: pb.audio_index,
@@ -113,14 +168,17 @@ impl Receiver {
                 subtitle_index: pb.subtitle_index,
             }),
             _ => None,
-        };
+        }
+    }
+
+    fn view(&self) -> CastReceiver {
         CastReceiver {
             id: self.id.clone(),
             name: self.name.clone(),
             platform: self.platform.clone(),
             username: self.username.clone(),
             network: self.network.clone(),
-            now_playing,
+            now_playing: self.now_playing(),
             controllers: {
                 let mut list: Vec<CastController> =
                     self.controllers.values().map(|c| c.view.clone()).collect();
@@ -128,6 +186,7 @@ impl Receiver {
                 list.sort_by(|a, b| a.name.cmp(&b.name).then_with(|| a.id.cmp(&b.id)));
                 list
             },
+            asleep: false,
         }
     }
 
@@ -150,6 +209,7 @@ impl Receiver {
 #[derive(Clone, Default)]
 pub struct Registry {
     inner: Arc<RwLock<HashMap<String, Receiver>>>,
+    waiting: Arc<Mutex<HashMap<String, waiting::Waiting>>>,
 }
 
 impl Registry {

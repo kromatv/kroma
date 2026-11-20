@@ -38,6 +38,7 @@ pub(super) fn playing(item_id: &str, position_ms: i64) -> CastPlayback {
         item_id: item_id.into(),
         position_ms,
         duration_ms: Some(7_200_000),
+        buffered_ms: None,
         state: CastState::Playing,
         audio_tracks: vec![CastTrack {
             index: 0,

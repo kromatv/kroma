@@ -3,7 +3,7 @@
 // when the socket won't come up. Renders nothing.
 
 import type { KromaClient } from '@kromatv/client';
-import type { CastCommand, CastController } from '@kromatv/client/cast';
+import type { CastCommand, CastController, CastWakeHint } from '@kromatv/client/cast';
 import { KromaEvents } from '@kromatv/client/events';
 import { beaconTxt, type LanDiscoveryBridge } from '@kromatv/core';
 import { useForeground, useT } from '@kromatv/ui';
@@ -15,11 +15,13 @@ import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { useStoredPref } from '#tv/app/settings/store';
 import { applyCastCommand } from '#tv/features/cast/apply-command';
-import { CastPlaybackProvider, useCastBridge } from '#tv/features/cast/cast-bridge';
+import { CastPlaybackProvider, isPlaying, useCastBridge } from '#tv/features/cast/cast-bridge';
 import { CastControllersProvider, useCastControllerStore } from '#tv/features/cast/controllers';
+import { useForgetWake } from '#tv/features/cast/forget-wake.hook';
+import { watchWakeHint, type WakeHintSource } from '#tv/features/cast/wake-hint';
 import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
-const DRIFT_MS = 20_000;
+const POSITION_BEAT_MS = 1000;
 const FALLBACK_BEAT_MS = 10_000;
 
 /** Mounts the cast receiver above the router so casting works even on the
@@ -28,12 +30,14 @@ const FALLBACK_BEAT_MS = 10_000;
 export function CastReceiverProvider({
   client,
   lan,
+  wake,
   name,
   children,
   identity: suppliedIdentity,
 }: Readonly<{
   client: KromaClient | null;
   lan?: LanDiscoveryBridge;
+  wake?: WakeHintSource;
   name: string;
   children: ReactNode;
   identity?: DeviceIdentity;
@@ -43,7 +47,9 @@ export function CastReceiverProvider({
   return (
     <CastControllersProvider>
       <CastPlaybackProvider>
-        {client ? <CastReceiver client={client} lan={lan} name={name} identity={identity} /> : null}
+        {client ? (
+          <CastReceiver client={client} lan={lan} wake={wake} name={name} identity={identity} />
+        ) : null}
         {children}
       </CastPlaybackProvider>
     </CastControllersProvider>
@@ -53,12 +59,14 @@ export function CastReceiverProvider({
 function CastReceiver({
   client,
   lan,
+  wake,
   name,
   identity: deviceId,
 }: Readonly<{
   identity: DeviceIdentity;
   client: KromaClient;
   lan?: LanDiscoveryBridge;
+  wake?: WakeHintSource;
   name: string;
 }>) {
   const { setCastControllers, setCastUplink } = useCastControllerStore();
@@ -79,6 +87,8 @@ function CastReceiver({
   const applied = useRef(0);
   const signedIn = ready && Boolean(user);
   const inFront = useForeground();
+
+  useForgetWake({ client, deviceId, signedIn, castable });
 
   // Say on the link that this television is up and castable, for as long as it
   // is. The phone's picker is fed by the server, which knows whose television
@@ -123,6 +133,7 @@ function CastReceiver({
     // older server ignores the hello, so this stays false and the HTTP
     // fallback below takes over.
     let attached = false;
+    let hint: CastWakeHint | undefined;
 
     const apply = async (seq: number, command: CastCommand) => {
       if (seq <= applied.current) {
@@ -171,6 +182,7 @@ function CastReceiver({
           platform: deps.current.platform,
           lastAppliedSeq: applied.current,
           playback: castReport(deps.current.t) ?? undefined,
+          wake: hint,
         });
         for (const { seq, command } of reply.commands) {
           await apply(seq, command);
@@ -186,6 +198,15 @@ function CastReceiver({
       }
     };
 
+    const hello = () =>
+      events.send({
+        type: 'cast.hello',
+        receiverId: id,
+        name: deps.current.name,
+        platform: deps.current.platform,
+        wake: hint,
+      });
+
     // Commands are addressed to the signed-in account, so another
     // household's orders never reach this socket.
     const events = new KromaEvents(client.baseUrl, {
@@ -194,12 +215,7 @@ function CastReceiver({
       token: () => deps.current.client.sessionToken,
       // The server forgets this receiver the moment its socket closes.
       onOpen: () => {
-        events.send({
-          type: 'cast.hello',
-          receiverId: id,
-          name: deps.current.name,
-          platform: deps.current.platform,
-        });
+        hello();
         pushState();
         // The top bar can now hang up on a remote: kicking one is a message on
         // this very socket.
@@ -226,20 +242,25 @@ function CastReceiver({
       },
     });
 
-    // Push on change (the player re-renders ~4 Hz; only material changes send),
-    // plus a slow position keepalive so a remote's scrubber cannot drift.
+    // Push on change, and once a second while a film plays, so a remote is
+    // never more than a second from the picture.
     const unsubscribe = onCastReportChange(pushState);
     drift = setInterval(() => {
-      if (castReport(deps.current.t)) {
+      if (isPlaying(castReport(deps.current.t))) {
         pushState();
       }
-    }, DRIFT_MS);
+    }, POSITION_BEAT_MS);
 
     events.connect();
     void beat();
+    const stopWakeHint = watchWakeHint(wake, (found) => {
+      hint = found;
+      hello();
+    });
 
     return () => {
       stopped = true;
+      stopWakeHint();
       unsubscribe();
       setCastUplink(null);
       clearTimeout(fallback);
@@ -262,6 +283,7 @@ function CastReceiver({
     castReport,
     onCastReportChange,
     deviceId,
+    wake,
   ]);
 
   return null;

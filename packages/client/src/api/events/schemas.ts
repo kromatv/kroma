@@ -44,6 +44,7 @@ export const ServerEvent = z.discriminatedUnion('type', [
     receiverId: z.string(),
     positionMs: z.number(),
     durationMs: z.number().optional(),
+    bufferedMs: z.number().optional(),
     state: CastState,
   }),
   frame('cast.command', { receiverId: z.string(), seq: z.number(), command: CastCommand }),

@@ -196,6 +196,36 @@ The same instinct applies to the code:
   enforces `cargo fmt --check`. Do not hand-format or keep a custom import
   grouping. Take rustfmt's output as-is.
 
+## Rewrite, do not patch
+
+Code stays simple, clean and readable, always. That is what makes it
+maintainable: the next person can change it without fear.
+
+A fix is not a line added where the bug showed. It is the code written the way
+it would have been written had the case been known from the start.
+
+- **Start from why the code allowed the bug.** When its shape is the reason,
+  change the shape. A check added at the place the symptom appeared leaves the
+  cause where it was, and the next case needs the next check.
+- **Many `if` / `else` is a smell.** Each branch added for one more case says
+  the code has no model of its cases. Give it one: a type that names the
+  states, a table with one row per case, one small function per case. The
+  branches then disappear, or become a single lookup.
+- **The second correction to a function is a rewrite.** One that needed fixing
+  twice was not understood the first time. Stop, find out what it is for, and
+  write it again as one piece.
+- **One source of truth.** Two values that describe the same thing will
+  disagree, and the code that picks between them is where the bugs live. Keep
+  one, and derive the rest.
+- **A rewrite replaces.** It leaves no old path beside the new one, no flag
+  that switches between them, and no comment that explains which is current.
+- **Each rule has a test that states it.** A small unit whose test reads as its
+  specification can be rewritten again later, safely.
+
+A change that makes a function longer, more nested or harder to name is going
+the wrong way, however small the diff. A larger diff that leaves the code
+simpler is the better change.
+
 ## For agents
 
 If you are an AI agent working in this repository, these are hard rules:

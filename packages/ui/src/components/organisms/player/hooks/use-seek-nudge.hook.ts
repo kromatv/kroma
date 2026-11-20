@@ -56,7 +56,12 @@ export interface SeekNudge {
  * A directional seek that ramps while a key is held: a tap moves exactly 10 s,
  * a run of taps adds up, and one real seek fires once the presses stop.
  */
-export function useSeekNudge(controller: PlayerController): SeekNudge {
+/** What a nudge reads and drives: the playhead, the runtime, and the preview
+ *  a scrub moves before one seek commits it. A remote for another screen
+ *  provides these as the player's own controller does. */
+export type SeekTarget = Pick<PlayerController, 'cur' | 'dur' | 'scrubPreview' | 'scrubCommit'>;
+
+export function useSeekNudge(controller: SeekTarget): SeekNudge {
   const burst = useRef<Burst | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [shown, setShown] = useState<SeekBurst | null>(null);

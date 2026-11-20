@@ -12,6 +12,10 @@
       "broke": 1,
       "changed": 1
     },
+    "cast_devices": {
+      "broke": 25,
+      "changed": 25
+    },
     "credential_resets": {
       "broke": 1,
       "changed": 1
@@ -253,5 +257,5 @@
       "changed": 1
     }
   },
-  "version": 24
+  "version": 25
 }
