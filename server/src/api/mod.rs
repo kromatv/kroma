@@ -108,6 +108,8 @@ mod it_imports_folders;
 #[cfg(test)]
 mod it_imports_people;
 #[cfg(test)]
+mod it_imports_plays;
+#[cfg(test)]
 mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;

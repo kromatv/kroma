@@ -4,9 +4,11 @@
 
 mod catalogue;
 mod folders;
+mod held;
 mod identities;
 mod newcomers;
 mod passes;
+mod plays;
 mod records;
 mod states;
 mod titles;
@@ -16,11 +18,12 @@ mod tests;
 
 pub use catalogue::*;
 pub use folders::*;
+pub(crate) use held::release as release_held_states;
 pub use identities::*;
 pub use newcomers::*;
 pub use passes::*;
+pub use plays::{add_plays, Added, NewPlay};
 pub use records::*;
-pub(crate) use states::release_held_states;
 pub use states::{merge_states, Merged, Place};
 pub use titles::*;
 

@@ -9,6 +9,7 @@ mod metrics;
 mod play_history;
 mod play_sort;
 mod stats;
+mod time_watched;
 mod watch_stats;
 
 #[cfg(test)]
