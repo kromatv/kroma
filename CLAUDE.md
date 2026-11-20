@@ -70,9 +70,12 @@ has come.
 frontends typed, clippy clean) and `bun run deadcode` (knip) are **not** wired
 into any workflow today. Run them by hand after touching a module.
 
-`bun run quality:report` (CRAP per function and structural duplication) and
-`bun run quality:mutate <package>` are a report, never a gate: see
-[`docs/quality.md`](docs/quality.md).
+`bun run quality:gates` is the merge gate the `Quality gate` job runs on a pull
+request: CRAP below 10, the Rust size limits and no new structural duplicate,
+judged on the functions the branch touched. Run it before a push; it needs
+`bun run quality:setup` once and reads the coverage on disk.
+`bun run quality:report` and `bun run quality:mutate <package>` measure the
+whole tree and are a report: see [`docs/quality.md`](docs/quality.md).
 
 Rust is pinned by `rust-toolchain.toml` (1.100.0, with clippy + rustfmt), and
 every manifest's `rust-version` floor is that same 1.100. `cargo fmt --check` is

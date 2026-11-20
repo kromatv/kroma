@@ -648,3 +648,51 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
+
+  # What a pull request added or made worse, judged per function: CRAP, the
+  # Rust size limits and structural duplication (docs/quality.md, "The merge
+  # gate"). It reads the coverage the jobs above produced, as the scan does.
+  # Not part of `required` yet: a red check here is a finding to read, and
+  # joins `needs` and LANE_OF there once the gate has proved itself.
+  quality:
+    name: Quality gate
+    needs: [lanes, test-report, rust-shard]
+    if: >-
+      !cancelled()
+      && github.event_name == 'pull_request'
+      && needs.lanes.outputs.code == 'true'
+      && needs.test-report.result == 'success'
+      && needs.rust-shard.result != 'failure'
+      && needs.rust-shard.result != 'cancelled'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The gate measures against the commit the branch left its base at.
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-js
+          path: coverage
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.rust-shard.result == 'success'
+        with:
+          pattern: coverage-rust-*
+          path: parts
+      - if: needs.rust-shard.result == 'success'
+        run: bun run ci lcov merge server/lcov.info parts
+      - run: bun run quality:setup
+      - run: bun run quality:gates --base "origin/$BASE"
+        env:
+          BASE: ${{ github.base_ref }}
+      - name: Verdict on the run page
+        if: ${{ !cancelled() }}
+        run: cat .metrics/gates.md >> "$GITHUB_STEP_SUMMARY"

@@ -8,6 +8,7 @@ const LOADERS: Record<string, () => Promise<{ main: Run }>> = {
   dry: () => import('./dry-command'),
   mutate: () => import('./mutate-command'),
   report: () => import('./report-command'),
+  gates: () => import('./gates-command'),
 };
 
 function fail(message: string): never {

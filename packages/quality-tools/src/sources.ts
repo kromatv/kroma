@@ -70,3 +70,13 @@ export function underPaths(files: readonly string[], paths: readonly string[]): 
 export function areaOf(path: string): string {
   return path.split('/').slice(0, 2).join('/');
 }
+
+/**
+ * The files a change is compared with for duplication: every source file in
+ * a language the change touches, and the changed files themselves, since one
+ * git does not track yet is in no source list.
+ */
+export function comparedSources(sources: readonly string[], changed: readonly string[]): string[] {
+  const languages = new Set(changed.map(languageOf));
+  return [...new Set([...sources, ...changed])].filter((file) => languages.has(languageOf(file)));
+}

@@ -10,6 +10,7 @@ describe('layout', () => {
       pins: '/repo/packages/quality-tools/pins.txt',
       requirements: '/repo/packages/quality-tools/requirements.txt',
       tools: '/repo/target/quality-tools',
+      scripts: '/repo/packages/quality-tools/python',
       python: '/repo/target/quality-tools/venv/bin/python',
       metrics: '/repo/.metrics',
       mergedLcov: '/repo/target/coverage/quality/lcov.info',
