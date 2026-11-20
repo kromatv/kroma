@@ -21,7 +21,7 @@ const Snapshot = z.object({ candidates: z.array(Candidate) });
 export type Span = z.infer<typeof Span>;
 export type Duplicate = z.infer<typeof Candidate>;
 
-interface SplitDuplicates {
+export interface SplitDuplicates {
   production: Duplicate[];
   test: Duplicate[];
 }

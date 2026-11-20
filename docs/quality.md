@@ -1,9 +1,12 @@
-# The quality report
+# The quality report and the merge gate
 
 Three measurements the lint and the Sonar gate do not make: how risky each
 function is to change, which functions are the same function twice, and
-whether the tests would notice a bug. They are a report. No number here fails
-a check or blocks a merge, and the weekly workflow passes whatever it finds.
+whether the tests would notice a bug.
+
+They are read in two ways. The weekly report measures the whole tree and
+passes whatever it finds. The merge gate judges one pull request, and fails
+on what that pull request added or made worse.
 
 The measuring is done by Robert C. Martin's
 [crapper](https://github.com/unclebob/crapper),
@@ -18,6 +21,7 @@ bun run quality:crap [path ...]          CRAP per function, from the coverage al
 bun run quality:dry [path ...]           structural duplicates between functions
 bun run quality:report [path ...]        both, and .metrics/summary.md
 bun run quality:mutate <package path>    mutation testing, one package at a time
+bun run quality:gates [--base <ref>]     the merge gate on this branch, against origin/main
 ```
 
 A path narrows a run to a directory or a file: `bun run quality:report
@@ -94,6 +98,7 @@ Everything goes to `.metrics/`, which git ignores.
 | File | What it is |
 | --- | --- |
 | `summary.md` | The report: counts, worst functions, largest duplicates. Written by `quality:report` |
+| `gates.md` | The merge gate's verdict. Written by `quality:gates` |
 | `crap-typescript.txt`, `crap-rust.txt` | crapper's full table, worst first |
 | `crap-typescript.edn`, `crap-rust.edn` | The same as data |
 | `dry-production.tsv`, `dry-test.tsv` | Every pair: score, language, left span, right span |
@@ -140,11 +145,90 @@ on the run page and uploads `.metrics/` as the `quality-report` artifact, kept
 since the CI gate reports those; a tool that crashes does, with whatever was
 written still uploaded.
 
+## The merge gate
+
+`bun run quality:gates` judges the source files the branch adds or modifies
+against the commit it left `origin/main` at, uncommitted work included.
+`--base <ref>` names another base. The `Quality gate` job of `ci.yml` runs it
+on every pull request, on the coverage the test jobs of that run produced, and
+prints the verdict on the run page. Locally it reads the coverage already on
+disk, as the report does.
+
+A function is judged when the change adds or rewrites a line inside it.
+
+| Limit | Value | Languages |
+| --- | --- | --- |
+| CRAP | below 10 | TypeScript, Rust |
+| Cyclomatic complexity | 8 | Rust |
+| Lines per function | 30, blank lines and comments not counted | Rust |
+| Parameters | 3, `self` not counted | Rust |
+| Nesting depth | 3 | Rust |
+| Lines per file | 300, tests, blank lines and comments not counted | Rust |
+| Duplication | no production pair at 0.8 or above | TypeScript, Rust |
+
+The size limits are one table for both languages, the one
+[`CONVENTIONS.md`](../CONVENTIONS.md#code-limits-are-lint-errors) sets. For
+TypeScript the lint already holds them, so the gate adds only CRAP and
+duplication there. Rust has no lint for them, and the gate is where they are
+held. A test reads `.oxlintrc.json` and fails when the gate's numbers and the
+lint's differ, so the two languages cannot drift apart.
+
+A Rust `?` is not a decision for the complexity limit: a function that only
+hands errors up is straight-line code. crapper counts each one, so the CRAP
+score still includes them.
+
+The gate fails on what a change is answerable for:
+
+- a function the base did not hold, over a limit;
+- an older function the change makes worse: longer, more complex, more
+  parameters, deeper;
+- a Rust file the change takes past 300 lines, or makes longer when it was
+  already past;
+- a duplicate pair where one side is code the change adds.
+
+An older function that was over a limit and is no worse is listed under
+"Touched, and still over a limit from before", and does not fail. The tree
+holds too much of it to clear in the pull request that happens to pass by,
+and the weekly report is where that backlog is read.
+
+Three things to know when a verdict looks wrong:
+
+- **"The same function" is a name.** A function is matched to the base by its
+  name inside the same file. Rename a long function and it is a new function,
+  over the limit.
+- **CRAP has no base.** The base version is not run under coverage, so an
+  older function's CRAP counts as worse when its complexity rose. Falling
+  coverage on new lines is Sonar's to catch.
+- **No coverage, no CRAP.** A kind of file nothing measures is named in the
+  verdict and judged on its sizes alone: no source file of the same area and
+  extension has a coverage record. `clients/desktop/src-tauri` is always in
+  that state, and so is every `.tsx`, which the coverage run leaves out as
+  Sonar does.
+- **A new file reads 0% until a coverage run has seen it.** A file with
+  measured siblings and no record of its own is scored at 0%, since no test
+  loaded it. Locally that is also a file written after the last
+  `bun run test:coverage`: run it again before trusting a CRAP finding on new
+  code. At 0% a function fails from complexity 3 up.
+
+Test files, test support, stories and demos are not judged, nor is any Rust
+item under `#[cfg(test)]`.
+
+To fix a CRAP finding, test the function or split it. To fix a size finding,
+extract a named function. To fix a duplicate, extract the shared code.
+
+The job is not part of `required`. A red `Quality gate` is a finding to read
+before the merge, and it joins `needs` and `LANE_OF` of the `required` job
+when it should block.
+
 ## The pins
 
 `packages/quality-tools/pins.txt` holds one line per tool, `name url commit`.
 `requirements.txt` beside it holds their Python dependencies at exact
-versions. `quality:setup` checks out exactly those commits, and every other
+versions. `python/functions.py` is the one Python file of this repository's
+own: crapper's snapshot names a function without its file or its lines, so
+the gate asks crapper for them as a library, and counts a Rust function's
+parameters and nesting with the parser crapper already loads. It imports
+crapper's modules, so read it again when crapper's pin moves. `quality:setup` checks out exactly those commits, and every other
 command refuses to run when either file changed since the last setup.
 
 To move a pin:
