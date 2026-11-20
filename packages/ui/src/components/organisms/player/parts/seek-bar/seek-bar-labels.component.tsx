@@ -17,7 +17,7 @@ export function SeekBarLabels({
   endsAt,
   chapterLabel,
   scale = 1,
-}: SeekBarLabelsProps) {
+}: Readonly<SeekBarLabelsProps>) {
   const scope = useStyleScope();
   const px = scaler(scale);
   const sized = scaled(scale, scope);
