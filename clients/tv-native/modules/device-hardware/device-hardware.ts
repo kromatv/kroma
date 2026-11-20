@@ -10,6 +10,8 @@ declare class DeviceHardwareNativeModule extends NativeModule {
   memoryBytes(): number;
   freeMemoryBytes(): number | null;
   decoderFrameLimits(): Record<string, FrameSize>;
+  // Apple TV only: Android has the function in no build.
+  localAddress?(): string | null;
 }
 
 const native = requireOptionalNativeModule<DeviceHardwareNativeModule>('DeviceHardware');
@@ -54,4 +56,10 @@ export function decoderFrameLimits(): DecoderFrameLimits | null {
     }
   }
   return Object.keys(limits).length > 0 ? limits : null;
+}
+
+/** This set's IPv4 address on its network, where the platform's module reads
+ * one. Null on a build without it, and when the set is on no network. */
+export function localAddress(): string | null {
+  return native?.localAddress?.() ?? null;
 }

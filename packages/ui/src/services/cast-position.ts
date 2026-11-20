@@ -87,15 +87,25 @@ function orderedBase(
  * far away while an order sent from here is still on its way: it left the
  * television before the order arrived. */
 function heardBase(base: PositionBase | null, said: PositionBase | null): PositionBase | null {
-  if (!(base && said && base.id === said.id)) {
+  if (!(base && said)) {
+    return said;
+  }
+  if (base.id !== said.id) {
     return said;
   }
   const apart = Math.abs(counted(base, said.at) - said.positionMs);
-  if (apart <= AGREES_WITHIN_MS && base.playing === said.playing) {
+  if (agrees(base, said, apart) || overtaken(base, said, apart)) {
     return base;
   }
-  const overtaken = said.at < (base.heldUntil ?? 0) && apart > LANDED_WITHIN_MS;
-  return overtaken ? base : said;
+  return said;
+}
+
+function agrees(base: PositionBase, said: PositionBase, apart: number): boolean {
+  return apart <= AGREES_WITHIN_MS && base.playing === said.playing;
+}
+
+function overtaken(base: PositionBase, said: PositionBase, apart: number): boolean {
+  return said.at < (base.heldUntil ?? 0) && apart > LANDED_WITHIN_MS;
 }
 
 const FINEST_STEP_MS = 16;

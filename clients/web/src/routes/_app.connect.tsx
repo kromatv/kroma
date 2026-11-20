@@ -48,18 +48,7 @@ function ConnectPage() {
             {t('connect.title')}
           </Text>
 
-          <SegmentGroup.Root
-            value={mode}
-            onValueChange={setMode}
-            label={t('connect.title')}
-            stretch
-          >
-            {MODES.map((m) => (
-              <SegmentGroup.Item key={m} value={m}>
-                <SegmentGroup.Label>{t(`connect.mode.${m}`)}</SegmentGroup.Label>
-              </SegmentGroup.Item>
-            ))}
-          </SegmentGroup.Root>
+          <Modes mode={mode} onChange={setMode} />
 
           <Text variant="meta" color="textMuted" textAlign="center">
             {mode === 'network' ? t('handoff.nearbySub') : codePrompt}
@@ -69,6 +58,24 @@ function ConnectPage() {
         </Box>
       </Box>
     </main>
+  );
+}
+
+interface ModesProps {
+  mode: ConnectMode;
+  onChange: (mode: ConnectMode) => void;
+}
+
+function Modes({ mode, onChange }: Readonly<ModesProps>) {
+  const t = useT();
+  return (
+    <SegmentGroup.Root value={mode} onValueChange={onChange} label={t('connect.title')} stretch>
+      {MODES.map((m) => (
+        <SegmentGroup.Item key={m} value={m}>
+          <SegmentGroup.Label>{t(`connect.mode.${m}`)}</SegmentGroup.Label>
+        </SegmentGroup.Item>
+      ))}
+    </SegmentGroup.Root>
   );
 }
 

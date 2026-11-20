@@ -30,7 +30,7 @@ LogBox.ignoreAllLogs(true);
 
 import { lanBeacon } from '@kromatv/lan-beacon';
 import { useEffect, useState } from 'react';
-import { decoderFrameLimits } from '../modules/device-hardware';
+import { decoderFrameLimits, localAddress } from '../modules/device-hardware';
 import { browseForServers } from '../modules/server-discovery';
 import { startLauncherLinks } from './lib/launcher-links';
 import { nativeLauncher } from './lib/native-launcher';
@@ -47,7 +47,11 @@ import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search.hook';
 // port drops an empty answer for us. No `subscribe`: this one is already there
 // when the app starts, unlike the buses the browser shells have to ask.
 const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
-const WAKE_HINT: WakeHintSource = async () => ({ appId: Constants.expoConfig?.android?.package });
+const WAKE_HINT: WakeHintSource = () =>
+  Promise.resolve({
+    appId: Constants.expoConfig?.android?.package,
+    address: localAddress() ?? undefined,
+  });
 // How large a picture this set's decoders take, which decides whether a title
 // direct-plays at all. Every other client guesses from the codec alone, and a
 // television that stops at 1080p answers a 4K file with a slideshow.

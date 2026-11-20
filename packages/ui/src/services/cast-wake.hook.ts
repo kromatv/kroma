@@ -67,8 +67,10 @@ function useArrival(arrival: { id: DeviceId } | null, onArrived: (id: DeviceId) 
 }
 
 // The steps are run again and again until the television arrives: one pass
-// switches it on, a later one finds it on and opens the app. A television that
-// refuses is not asked again.
+// switches it on, a later one finds it on and opens the app. A pass ends before
+// the next one is timed, so a television that waits for a person to accept
+// this device is asked once, not every few seconds. A television that refuses
+// is not asked again.
 function usePasses(job: Job | null, run: Passes): boolean {
   const { reach, everyMs, onRefused } = run;
   const [needsPower, setNeedsPower] = useState(false);
@@ -77,6 +79,7 @@ function usePasses(job: Job | null, run: Passes): boolean {
       return undefined;
     }
     let live = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const pass = async () => {
       const result = await runWakeSteps(job.steps, reach);
       if (!live) {
@@ -85,13 +88,14 @@ function usePasses(job: Job | null, run: Passes): boolean {
       setNeedsPower(result === 'needsPower');
       if (result === 'refused') {
         onRefused(job.id);
+        return;
       }
+      timer = setTimeout(() => void pass(), everyMs);
     };
     void pass();
-    const timer = setInterval(() => void pass(), everyMs);
     return () => {
       live = false;
-      clearInterval(timer);
+      clearTimeout(timer);
     };
   }, [job, reach, everyMs, onRefused]);
   return job !== null && needsPower;

@@ -1,17 +1,18 @@
-import { httpReach, type WakeReach } from '@kromatv/core';
-import { lanReach, type TokenStore } from '@kromatv/lan-reach';
+import { httpReach, type WakeKeys, type WakeReach } from '@kromatv/core';
+import { lanReach } from '@kromatv/lan-reach';
 import * as SecureStore from 'expo-secure-store';
 
 function keyFor(address: string): string {
-  return `kroma.tv-token.${address}`;
+  return `kroma.tv-key.${address}`;
 }
 
-const tokens: TokenStore = {
+const keys: WakeKeys = {
   get: (address) => SecureStore.getItemAsync(keyFor(address)),
-  set: (address, token) => SecureStore.setItemAsync(keyFor(address), token),
+  set: (address, key) => SecureStore.setItemAsync(keyFor(address), key),
 };
 
-/** What this phone can do to a television on its network: HTTP, and where the
- * binary carries the native half, the Samsung power key and the Wake-on-LAN
- * packet. A browser has the first alone. */
-export const tvReach: WakeReach = { ...httpReach, ...lanReach(tokens) };
+/** What this phone can do to a television on its network. Where the binary
+ * carries the native half, its socket accepts a television's own certificate
+ * and it can send the Wake-on-LAN packet; what a television gave when it was
+ * accepted on its screen is kept in the keychain. */
+export const tvReach: WakeReach = { ...httpReach, ...lanReach(), keys };

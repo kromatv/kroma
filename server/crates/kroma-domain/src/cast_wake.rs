@@ -55,6 +55,21 @@ pub enum CastWakeStep {
         #[serde(rename = "appId")]
         app_id: String,
     },
+    /// An LG set: the packet when it answers nothing, then its own control
+    /// service is asked to open the app.
+    Lg {
+        address: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        mac: Option<String>,
+        #[serde(rename = "appId")]
+        app_id: String,
+    },
+    /// A request to this port, which the television wakes for. It comes back
+    /// showing what it showed before it slept.
+    Knock { address: String, port: u16 },
+    /// Nothing can be sent: a person switches the television on, and the app
+    /// takes what is held for it when it opens.
+    Manual,
 }
 
 struct Driver {
@@ -62,13 +77,30 @@ struct Driver {
     plan: fn(&CastWakeTarget) -> Option<CastWakeStep>,
 }
 
+// AirPlay's port, which an Apple TV keeps answering while it sleeps.
+const APPLE_TV_PORT: u16 = 7000;
+
 // One row per platform that is brought back by more than the packet. A platform
 // with no row, or one that did not say enough for its row, gets the packet and
 // shows whatever it shows after power-on.
-const DRIVERS: &[Driver] = &[Driver {
-    platform: "tizen",
-    plan: samsung,
-}];
+const DRIVERS: &[Driver] = &[
+    Driver {
+        platform: "tizen",
+        plan: samsung,
+    },
+    Driver {
+        platform: "webos",
+        plan: lg,
+    },
+    Driver {
+        platform: "appletv",
+        plan: apple_tv,
+    },
+    Driver {
+        platform: "androidtv",
+        plan: android_tv,
+    },
+];
 
 fn samsung(target: &CastWakeTarget) -> Option<CastWakeStep> {
     Some(CastWakeStep::Samsung {
@@ -76,6 +108,28 @@ fn samsung(target: &CastWakeTarget) -> Option<CastWakeStep> {
         mac: target.mac.clone(),
         app_id: target.app_id.clone()?,
     })
+}
+
+fn lg(target: &CastWakeTarget) -> Option<CastWakeStep> {
+    Some(CastWakeStep::Lg {
+        address: target.address?.to_string(),
+        mac: target.mac.clone(),
+        app_id: target.app_id.clone()?,
+    })
+}
+
+// tvOS gives an app no hardware address, so there is no packet to fall back on.
+fn apple_tv(target: &CastWakeTarget) -> Option<CastWakeStep> {
+    Some(CastWakeStep::Knock {
+        address: target.address?.to_string(),
+        port: APPLE_TV_PORT,
+    })
+}
+
+// Android gives an app no hardware address either, and its remote service
+// wants a certificate exchanged with the set first, which nothing here does.
+fn android_tv(_: &CastWakeTarget) -> Option<CastWakeStep> {
+    Some(CastWakeStep::Manual)
 }
 
 /// The steps that bring `platform`'s television back. Empty when the television
@@ -194,16 +248,80 @@ mod tests {
     }
 
     #[test]
-    fn a_platform_with_no_launcher_is_only_powered_on() {
+    fn a_platform_with_no_driver_is_only_powered_on() {
         let target = hint("a0:b1:c2:d3:e4:f5", "192.168.1.20", "tv.kroma.app").checked();
 
-        let plan = wake_plan("webOS", &target);
+        let plan = wake_plan("Roku", &target);
 
         assert_eq!(
             plan,
             vec![CastWakeStep::Magic {
                 mac: "a0:b1:c2:d3:e4:f5".into()
             }]
+        );
+    }
+
+    #[test]
+    fn an_lg_set_gets_its_own_step_with_everything_it_said() {
+        let target = hint("a0:b1:c2:d3:e4:f5", "192.168.1.20", "tv.kroma.webos").checked();
+
+        let plan = wake_plan("webOS", &target);
+
+        assert_eq!(
+            plan,
+            vec![CastWakeStep::Lg {
+                address: "192.168.1.20".into(),
+                mac: Some("a0:b1:c2:d3:e4:f5".into()),
+                app_id: "tv.kroma.webos".into(),
+            }]
+        );
+    }
+
+    #[test]
+    fn an_apple_tv_is_knocked_at_on_its_airplay_port() {
+        let target = CastWakeHint {
+            address: Some("192.168.1.30".into()),
+            ..CastWakeHint::default()
+        }
+        .checked();
+
+        let plan = wake_plan("AppleTV", &target);
+
+        assert_eq!(
+            plan,
+            vec![CastWakeStep::Knock {
+                address: "192.168.1.30".into(),
+                port: 7000,
+            }]
+        );
+    }
+
+    #[test]
+    fn an_apple_tv_that_gave_no_address_has_no_plan() {
+        assert!(wake_plan("AppleTV", &CastWakeTarget::default()).is_empty());
+    }
+
+    #[test]
+    fn an_android_tv_is_left_to_a_person_whatever_it_said() {
+        let plan = wake_plan("AndroidTV", &CastWakeTarget::default());
+
+        assert_eq!(plan, vec![CastWakeStep::Manual]);
+    }
+
+    #[test]
+    fn a_step_is_written_as_the_sender_reads_it() {
+        let knock = CastWakeStep::Knock {
+            address: "192.168.1.30".into(),
+            port: 7000,
+        };
+
+        assert_eq!(
+            serde_json::to_value(&knock).unwrap(),
+            serde_json::json!({ "type": "knock", "address": "192.168.1.30", "port": 7000 })
+        );
+        assert_eq!(
+            serde_json::to_value(CastWakeStep::Manual).unwrap(),
+            serde_json::json!({ "type": "manual" })
         );
     }
 

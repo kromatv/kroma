@@ -122,6 +122,14 @@ export const CastWakeStep = z
       mac: z.string().optional(),
       appId: z.string(),
     }),
+    z.object({
+      type: z.literal('lg'),
+      address: z.string(),
+      mac: z.string().optional(),
+      appId: z.string(),
+    }),
+    z.object({ type: z.literal('knock'), address: z.string(), port: z.number() }),
+    z.object({ type: z.literal('manual') }),
     z.object({ type: z.literal('unknown') }),
   ])
   .catch({ type: 'unknown' });

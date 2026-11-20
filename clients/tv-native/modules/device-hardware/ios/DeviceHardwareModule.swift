@@ -30,7 +30,37 @@ public class DeviceHardwareModule: Module {
     Function("decoderFrameLimits") {
       [String: [String: Int]]()
     }
+
+    Function("localAddress") {
+      localAddress()
+    }
   }
+}
+
+// The IPv4 address of the interface this set is on the network by: the first
+// Ethernet or Wi-Fi interface that is up. nil when it is on no network.
+private func localAddress() -> String? {
+  var first: UnsafeMutablePointer<ifaddrs>?
+  guard getifaddrs(&first) == 0 else {
+    return nil
+  }
+  defer { freeifaddrs(first) }
+  for entry in sequence(first: first, next: { $0?.pointee.ifa_next }) {
+    guard let interface = entry?.pointee, let address = interface.ifa_addr else {
+      continue
+    }
+    let up = interface.ifa_flags & UInt32(IFF_UP | IFF_RUNNING) == UInt32(IFF_UP | IFF_RUNNING)
+    let wired = String(cString: interface.ifa_name).hasPrefix("en")
+    guard up, wired, address.pointee.sa_family == sa_family_t(AF_INET) else {
+      continue
+    }
+    var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+    let length = socklen_t(address.pointee.sa_len)
+    if getnameinfo(address, length, &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 {
+      return String(cString: host)
+    }
+  }
+  return nil
 }
 
 // Darwin has no equivalent of Android's `availMem`, so the free pages are read

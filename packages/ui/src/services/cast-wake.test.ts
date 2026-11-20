@@ -35,8 +35,10 @@ function mount(client: KromaClient | null, reach: WakeReach = silentReach()) {
 
 const SET: CastWakeStep = { type: 'samsung', address: '192.168.1.20', appId: 'KromaTV002.KROMA' };
 
+const noSocket = () => Promise.reject(new Error('no answer'));
+
 function silentReach(): WakeReach {
-  return { http: vi.fn(async () => null) };
+  return { http: vi.fn(async () => null), open: noSocket };
 }
 
 function wakingClient(steps: CastWakeStep[] = []) {
@@ -91,6 +93,7 @@ describe('running the steps from here', () => {
     vi.useFakeTimers();
     const reach: WakeReach = {
       http: vi.fn(async () => ({ status: 200, text: '{"device":{"PowerState":"on"}}' })),
+      open: noSocket,
     };
     const { result } = mount(wakingClient([SET]), reach);
     await act(() => result.current.wake(SALON_ID));
@@ -125,6 +128,7 @@ describe('a television that refuses', () => {
           ? { status: 200, text: '{"device":{"PowerState":"on"}}' }
           : { status: 404, text: '' },
       ),
+      open: noSocket,
     };
     const { result, onGaveUp } = mount(wakingClient([SET]), reach);
     await act(() => result.current.wake(SALON_ID));

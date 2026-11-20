@@ -8,6 +8,7 @@ import { CastBar } from '#web/features/playback/cast/cast-bar.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth.hook';
+import { tvReach } from '#web/shared/lib/tv-reach';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { CastPicker } from '#web/shared/ui/cast-picker.component';
 import { DirectOffer } from '#web/shared/ui/direct-offer.component';
@@ -55,7 +56,7 @@ function AppLayout() {
     return null;
   }
   return (
-    <CastProvider client={webRuntime.client} enabled deviceName={BROWSER_LABEL}>
+    <CastProvider client={webRuntime.client} enabled deviceName={BROWSER_LABEL} reach={tvReach}>
       <Box row={wide} minH="100%">
         {wide ? (
           <Box w={RAIL_WIDTH} shrink={0}>

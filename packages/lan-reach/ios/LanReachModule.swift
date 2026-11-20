@@ -2,24 +2,42 @@ import ExpoModulesCore
 import Foundation
 
 /**
- * What a KROMA app does to a television on its own network that HTTP cannot.
+ * What a KROMA app can do to a television on its own network that a page
+ * cannot: hold a WebSocket to a service that sits behind a certificate the
+ * television signed for itself, and send a Wake-on-LAN packet.
  *
- * A Samsung set in standby keeps its network on and takes remote keys over its
- * own remote service, a WebSocket on port 8002. That is how it is switched on:
- * it does not wake for a Wake-on-LAN packet on Wi-Fi. The service sits behind
- * a certificate the set signed for itself, which is why a browser cannot open
- * it and an app has to.
+ * It knows no television. How each make is spoken to is written once, in
+ * TypeScript, on top of these.
  *
- * The packet is here for every other set. On a real device Apple delivers a
- * broadcast only to an app that holds the multicast networking entitlement;
- * without it the send succeeds and nothing leaves, which is Apple's design.
+ * On a real device Apple delivers a broadcast only to an app that holds the
+ * multicast networking entitlement; without it the send succeeds and nothing
+ * leaves, which is Apple's design.
  */
 public class LanReachModule: Module {
+  private let sockets = Sockets()
+
   public func definition() -> ModuleDefinition {
     Name("LanReach")
 
-    AsyncFunction("samsungKey") { (address: String, key: String, token: String?) async throws -> String? in
-      try await SamsungRemote(address: address, token: token).press(key)
+    AsyncFunction("open") { (url: String) async throws -> Int in
+      guard let address = URL(string: url), LocalAddress.names(address.host) else {
+        throw ReachError.badAddress
+      }
+      let socket = TrustingSocket(address)
+      try await socket.open()
+      return self.sockets.keep(socket)
+    }
+
+    AsyncFunction("send") { (socket: Int, text: String) async throws in
+      try await self.sockets.find(socket).send(text)
+    }
+
+    AsyncFunction("receive") { (socket: Int, withinMs: Int) async throws -> String in
+      try await self.sockets.find(socket).receive(within: withinMs)
+    }
+
+    AsyncFunction("close") { (socket: Int) in
+      self.sockets.drop(socket)?.close()
     }
 
     AsyncFunction("magic") { (mac: String) in
@@ -31,62 +49,126 @@ public class LanReachModule: Module {
 enum ReachError: Error {
   case badAddress
   case badHardwareAddress
-  case refused
   case noAnswer
   case noSocket
+  case closed
 }
 
-/// One connection to a set's remote service: it waits for the set's welcome,
-/// presses one key, and goes.
-final class SamsungRemote: NSObject, URLSessionDelegate {
-  private static let name = Data("KROMA".utf8).base64EncodedString()
-  // Long enough for somebody to pick up the remote and accept the prompt the
-  // set shows the first time; a set that already gave a token answers at once.
-  private static let pairWithin: TimeInterval = 60
-  private static let answerWithin: TimeInterval = 8
-  private static let keyLanding: UInt64 = 600_000_000
+/// A private or link-local IPv4 address, written in digits. A name is refused:
+/// what it resolves to is not known before the connection is made.
+enum LocalAddress {
+  static func names(_ host: String?) -> Bool {
+    let parts = (host ?? "").split(separator: ".", omittingEmptySubsequences: false).map { UInt8($0) }
+    guard parts.count == 4, let first = parts[0], let second = parts[1], parts[2] != nil, parts[3] != nil
+    else {
+      return false
+    }
+    switch (first, second) {
+    case (10, _), (192, 168), (169, 254), (172, 16...31):
+      return true
+    default:
+      return false
+    }
+  }
+}
+
+/// The conversations that are open, by the handle JavaScript holds.
+final class Sockets {
+  private let lock = NSLock()
+  private var open: [Int: TrustingSocket] = [:]
+  private var last = 0
+
+  func keep(_ socket: TrustingSocket) -> Int {
+    lock.lock()
+    defer { lock.unlock() }
+    last += 1
+    open[last] = socket
+    return last
+  }
+
+  func find(_ handle: Int) throws -> TrustingSocket {
+    lock.lock()
+    defer { lock.unlock() }
+    guard let socket = open[handle] else {
+      throw ReachError.closed
+    }
+    return socket
+  }
+
+  func drop(_ handle: Int) -> TrustingSocket? {
+    lock.lock()
+    defer { lock.unlock() }
+    return open.removeValue(forKey: handle)
+  }
+}
+
+/// One WebSocket to a device on the local network.
+///
+/// A television signs its own certificate, for a name nobody can check, so
+/// there is nothing to verify it against. So the module opens one to an
+/// address on the local network and to no other: what travels is what the
+/// television itself issued and a request to it.
+final class TrustingSocket: NSObject, URLSessionWebSocketDelegate {
+  private static let openWithin: TimeInterval = 4
 
   private let url: URL
-  private let welcomeWithin: TimeInterval
+  private var session: URLSession?
+  private var task: URLSessionWebSocketTask?
+  private var opening: CheckedContinuation<Void, Error>?
+  private let lock = NSLock()
 
-  init(address: String, token: String?) throws {
-    var parts = URLComponents()
-    parts.scheme = "wss"
-    parts.host = address
-    parts.port = 8002
-    parts.path = "/api/v2/channels/samsung.remote.control"
-    parts.queryItems = [URLQueryItem(name: "name", value: Self.name)]
-    if let token, !token.isEmpty {
-      parts.queryItems?.append(URLQueryItem(name: "token", value: token))
-    }
-    guard let url = parts.url else {
-      throw ReachError.badAddress
-    }
+  init(_ url: URL) {
     self.url = url
-    self.welcomeWithin = token == nil ? Self.pairWithin : Self.answerWithin
   }
 
-  /// Presses `key` and answers the token the set welcomed this connection
-  /// with, which is what it wants sent back the next time.
-  func press(_ key: String) async throws -> String? {
-    let session = URLSession(configuration: .ephemeral, delegate: self, delegateQueue: nil)
-    defer { session.invalidateAndCancel() }
-    let socket = session.webSocketTask(with: url)
-    socket.resume()
-
-    let token = try await welcome(on: socket)
-    try await socket.send(.string(Self.frame(pressing: key)))
-    // The set drops a key it is still reading when the socket closes under it.
-    try await Task.sleep(nanoseconds: Self.keyLanding)
-    socket.cancel(with: .normalClosure, reason: nil)
-    return token
+  func open() async throws {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.timeoutIntervalForRequest = Self.openWithin
+    let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
+    let task = session.webSocketTask(with: url)
+    self.session = session
+    self.task = task
+    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+      opening = continuation
+      task.resume()
+    }
   }
 
-  // The set signs its own certificate, for a name nobody can check, so there
-  // is nothing to verify it against. What travels is a token the set issued
-  // and a remote key, to an address on the network the person is on.
+  func send(_ text: String) async throws {
+    guard let task else {
+      throw ReachError.closed
+    }
+    try await task.send(.string(text))
+  }
+
+  /// The next text frame. A conversation in which the device says nothing in
+  /// time is over, so the socket is closed under the wait.
+  func receive(within milliseconds: Int) async throws -> String {
+    guard let task else {
+      throw ReachError.closed
+    }
+    let deadline = Task {
+      try await Task.sleep(nanoseconds: UInt64(milliseconds) * 1_000_000)
+      self.close()
+    }
+    defer { deadline.cancel() }
+    while true {
+      guard let frame = try? await task.receive() else {
+        throw ReachError.noAnswer
+      }
+      if case .string(let text) = frame {
+        return text
+      }
+    }
+  }
+
+  func close() {
+    task?.cancel(with: .normalClosure, reason: nil)
+    session?.invalidateAndCancel()
+  }
+
   func urlSession(
-    _ session: URLSession,
+    _: URLSession,
     didReceive challenge: URLAuthenticationChallenge
   ) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
     guard let trust = challenge.protectionSpace.serverTrust else {
@@ -95,89 +177,25 @@ final class SamsungRemote: NSObject, URLSessionDelegate {
     return (.useCredential, URLCredential(trust: trust))
   }
 
-  private func welcome(on socket: URLSessionWebSocketTask) async throws -> String? {
-    let deadline = Task {
-      try await Task.sleep(nanoseconds: UInt64(welcomeWithin * 1_000_000_000))
-      socket.cancel(with: .goingAway, reason: nil)
-    }
-    defer { deadline.cancel() }
-    do {
-      return try await firstGreeting(on: socket)
-    } catch ReachError.refused {
-      throw ReachError.refused
-    } catch {
-      throw ReachError.noAnswer
-    }
+  func urlSession(
+    _: URLSession,
+    webSocketTask _: URLSessionWebSocketTask,
+    didOpenWithProtocol _: String?
+  ) {
+    opened(.success(()))
   }
 
-  private func firstGreeting(on socket: URLSessionWebSocketTask) async throws -> String? {
-    while true {
-      guard case .string(let text) = try await socket.receive() else {
-        continue
-      }
-      switch Greeting(text) {
-      case .welcome(let token):
-        return token
-      case .refused:
-        throw ReachError.refused
-      case .other:
-        continue
-      }
-    }
+  func urlSession(_: URLSession, task _: URLSessionTask, didCompleteWithError _: Error?) {
+    opened(.failure(ReachError.noAnswer))
   }
 
-  private static func frame(pressing key: String) throws -> String {
-    let frame: [String: Any] = [
-      "method": "ms.remote.control",
-      "params": [
-        "Cmd": "Click",
-        "DataOfCmd": key,
-        "Option": "false",
-        "TypeOfRemote": "SendRemoteKey",
-      ],
-    ]
-    let data = try JSONSerialization.data(withJSONObject: frame)
-    return String(decoding: data, as: UTF8.self)
-  }
-}
-
-/// What a frame from the set means for a connection that is being opened.
-enum Greeting {
-  case welcome(token: String?)
-  case refused
-  case other
-
-  init(_ text: String) {
-    guard
-      let object = try? JSONSerialization.jsonObject(with: Data(text.utf8)),
-      let frame = object as? [String: Any],
-      let event = frame["event"] as? String
-    else {
-      self = .other
-      return
-    }
-    switch event {
-    case "ms.channel.connect":
-      self = .welcome(token: Self.token(in: frame["data"]))
-    case "ms.channel.unauthorized", "ms.channel.timeOut":
-      self = .refused
-    default:
-      self = .other
-    }
-  }
-
-  // A set sends the token as a string on one firmware and as a number on another.
-  private static func token(in data: Any?) -> String? {
-    guard let fields = data as? [String: Any] else {
-      return nil
-    }
-    if let text = fields["token"] as? String, !text.isEmpty {
-      return text
-    }
-    if let number = fields["token"] as? NSNumber {
-      return number.stringValue
-    }
-    return nil
+  // Whichever of the two delegate calls comes first answers `open`, once.
+  private func opened(_ result: Result<Void, Error>) {
+    lock.lock()
+    let waiting = opening
+    opening = nil
+    lock.unlock()
+    waiting?.resume(with: result)
   }
 }
 

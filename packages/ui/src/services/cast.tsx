@@ -14,7 +14,7 @@
 
 import { apiErrorBody, type DeviceId, KromaApiError, type KromaClient } from '@kromatv/client';
 import type { CastCommand, CastReceiver } from '@kromatv/client/cast';
-import { KromaEvents } from '@kromatv/client/events';
+import { KromaEvents, type ServerEvent } from '@kromatv/client/events';
 import type { ItemId } from '@kromatv/client/media';
 import { httpReach, type LanDiscoveryBridge, type WakeReach } from '@kromatv/core';
 import {
@@ -129,6 +129,20 @@ export function CastProvider({
     }
   }
 
+  const onEvent = useCallback(
+    (e: ServerEvent) => {
+      applyCastEvent(
+        e,
+        { receivers: setReceivers, activeId: setActiveId, error: setError, base: setBase },
+        drivingRef.current,
+      );
+      if (e.type === 'cast.receiver.gone') {
+        refresh();
+      }
+    },
+    [refresh],
+  );
+
   // Roster: fetched once, then kept live off the bus.
   useEffect(() => {
     if (!enabled || !client) {
@@ -153,16 +167,7 @@ export function CastProvider({
           events.send({ type: 'cast.control', receiverId: driving, name: name.current });
         }
       },
-      onEvent: (e) => {
-        applyCastEvent(
-          e,
-          { receivers: setReceivers, activeId: setActiveId, error: setError, base: setBase },
-          drivingRef.current,
-        );
-        if (e.type === 'cast.receiver.gone') {
-          refresh();
-        }
-      },
+      onEvent,
     });
     events.connect();
     socket.current = events;
@@ -170,7 +175,7 @@ export function CastProvider({
       socket.current = null;
       events.close();
     };
-  }, [client, enabled, refresh]);
+  }, [client, enabled, refresh, onEvent]);
 
   const active = useMemo(
     () => receivers.find((r) => r.id === activeId) ?? null,
