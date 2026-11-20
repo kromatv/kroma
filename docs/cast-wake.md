@@ -30,21 +30,41 @@ network. `runWakeSteps` in `@kromatv/core` makes one pass over them, and the
 shared cast session in `@kromatv/ui` repeats the pass every 2.5 seconds until
 the television arrives or 90 seconds have passed.
 
-What a platform can do is one port, `WakeReach`:
+What a platform can do is one port, `WakeReach`, with three means:
 
-| platform | `http` | `samsungKey` | `magic` |
+| platform | `http` | `open` (a WebSocket) | `magic` |
 | --- | --- | --- | --- |
-| browser | yes | no: a page may not accept the set's own certificate | no: a page has no datagram |
-| iPhone, iPad | yes | yes (`@kromatv/lan-reach`) | yes, with Apple's multicast entitlement on a real device |
-| Android | yes | yes (`@kromatv/lan-reach`) | yes |
-| desktop | yes | not written yet | not written yet |
+| browser | yes | its own: it refuses a certificate the set signed for itself | no: a page has no datagram |
+| iPhone, iPad | yes | accepts the set's own certificate (`@kromatv/lan-reach`) | yes, with Apple's multicast entitlement on a real device |
+| Android | yes | accepts the set's own certificate (`@kromatv/lan-reach`) | yes |
+| desktop | yes | its own | not written yet |
 
-A step that needs what the platform lacks ends as `needsPower`: the row says
-that the television has to be switched on with its remote, and the session
-keeps watching, so the app is opened as soon as the set is on.
+A platform gives the means and never the protocol. How each make of television
+is spoken to is written once, in `packages/core/src/cast/wake`, on top of the
+port: `samsung.ts`, `lg.ts`, and the two steps that need no conversation in
+`steps.ts`. The native socket opens only to a private or link-local IPv4
+address written in digits, so the certificate it accepts is always a
+television's on this network.
 
-A platform is one row in `DRIVERS` (`kroma-domain/src/cast_wake.rs`) and one
-branch in `runWakeStep`. A platform with no row gets the Wake-on-LAN step.
+`keys` on the port is where what a television gave when a person accepted this
+device on its screen is kept, by the television's address: the keychain on a
+phone, `localStorage` in a browser.
+
+A step that needs what the platform lacks, or a television that waits for a
+person, ends as `needsPower`: the row says that the television has to be
+switched on with its remote, and the session keeps watching, so the app is
+opened as soon as the set is on. A pass ends before the next one is timed, so a
+set that shows a prompt shows it once.
+
+A make is one row in `DRIVERS` (`kroma-domain/src/cast_wake.rs`) and one step
+in `runWakeStep`. A platform with no row gets the Wake-on-LAN step.
+
+| platform | step | what the sender does |
+| --- | --- | --- |
+| `Tizen` | `samsung` | power key in standby, the packet when silent, then the launch |
+| `webOS` | `lg` | the packet when silent; when on, pairs once and launches the app |
+| `AppleTV` | `knock` | one request to the AirPlay port (7000) |
+| `AndroidTV` | `manual` | nothing: a person switches it on |
 
 ## Samsung
 
@@ -69,8 +89,45 @@ Measured on a 2024 Frame (Tizen 8), not read off a document:
   from there. That is the state a Frame is in after it is switched off, so a
   browser brings it back with the launch alone.
 
+## LG
+
+From LG's own Connect SDK and the libraries built on it, not measured: no LG
+set was at hand.
+
+- The control service is a WebSocket on port 3001 with a certificate the set
+  signed for itself; older sets answer on the plain port 3000 alone. The
+  encrypted port is tried first.
+- `register` with a manifest that asks for `LAUNCH` makes the set show a prompt
+  the first time, then answer `registered` with a `client-key`. Sent back, the
+  key is accepted at once.
+- `ssap://system.launcher/launch` with the app id opens the app.
+- The set wakes for the packet when its own "turn on by network" setting is on.
+- The webOS app is a browser and reads neither address. Its JS service reads
+  both from Node (`network-service.ts`).
+
+## Apple TV
+
+Not measured either. tvOS gives an app no hardware address, so there is no
+packet. An Apple TV wakes when a request is made to it, which is Apple's
+design, so the step is one request to its AirPlay port. It comes back on the
+app it showed before it slept: a set that slept on another app has to be
+brought to KROMA by a person. Nothing short of Apple's Companion protocol,
+with its pairing, opens an app.
+
+## Android TV
+
+Android gives an app no hardware address since Android 11, and Google's remote
+service (ports 6466 and 6467) wants a certificate exchanged with the set and a
+code typed first. Neither is written, so the set is listed, the sender says to
+switch it on, and the held `play` starts when the app opens.
+
 ## What is not there yet
 
+- LG, Apple TV and Android TV were written from documents and never run
+  against a set.
+- A Samsung set in full power-off (the power key held down) refuses its remote
+  service with `ms.channel.timeOut` and ignores the packet on Wi-Fi. Measured.
+  The sender then says to switch it on.
 - A television in true standby is not switched on from a browser, which has
   neither the remote service nor a datagram. The iOS and Android apps have
   both (`packages/lan-reach`); the desktop half is not written.
@@ -82,11 +139,8 @@ Measured on a 2024 Frame (Tizen 8), not read off a document:
 - The native Tizen package is `tv.kroma.app`, which the application service
   does not answer for. It needs an id of the form above before a native build
   can be opened; the web build already has one.
-- The native television apps report their app id only. Their address reaches
-  the server only when the server is on their network, and their hardware
-  address not at all.
-- LG, Android TV and Apple TV have no driver. They are listed and get the
-  packet step when they gave a hardware address.
+- The Android TV app reports its app id only. The Apple TV app reports its
+  address as well; neither can read a hardware address.
 - A page served over HTTPS asks the television over HTTP, which a browser
   allows only with its local-network permission.
 - A television that signs out stays listed until it is forgotten

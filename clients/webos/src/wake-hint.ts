@@ -31,10 +31,6 @@ function platform<T>(read: () => T | undefined): T | undefined {
 
 const Link = z.object({ address: z.string(), mac: z.string() });
 
-// The bus holds no reference this side of the boundary: a bridge left in a
-// function local can be collected before its reply lands. Held until it answers.
-const pending = new Set<Bridge>();
-
 function readLink(message: string): z.infer<typeof Link> | null {
   if (message.length > MAX_REPLY) {
     return null;
@@ -47,19 +43,22 @@ function readLink(message: string): z.infer<typeof Link> | null {
   }
 }
 
+// The bus holds no reference this side of the boundary, so a bridge left in a
+// local can be collected before its reply lands. The answer's own continuation
+// names the bridge, which keeps it for as long as somebody waits.
 function askLink(): Promise<z.infer<typeof Link> | null> {
   const Bus = platform(() => PalmServiceBridge);
   if (!Bus) {
     return Promise.resolve(null);
   }
-  return new Promise((resolve) => {
-    const bridge = new Bus();
-    pending.add(bridge);
-    bridge.onservicecallback = (message) => {
-      pending.delete(bridge);
-      resolve(readLink(message));
-    };
-    bridge.call(SERVICE, '{}');
+  const bridge = new Bus();
+  const answer = new Promise<string>((resolve) => {
+    bridge.onservicecallback = resolve;
+  });
+  bridge.call(SERVICE, '{}');
+  return answer.then((message) => {
+    bridge.onservicecallback = null;
+    return readLink(message);
   });
 }
 
