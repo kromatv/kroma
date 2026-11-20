@@ -13,7 +13,7 @@ import {
   type GrantResult,
   grantRefusal,
 } from '@kromatv/core';
-import { type CastRowState, castRowState, useCast } from '@kromatv/ui';
+import { type CastRowState, castRowDetail, castRowState, useCast } from '@kromatv/ui';
 import { Badge, Box, radius as cornerRadius, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
@@ -231,21 +231,9 @@ function detailOfPairable(state: PairingState | null, t: ReturnType<typeof useT>
   return t('cast.signInThisTv');
 }
 
-const OFF_HINT = {
-  waking: 'cast.waking',
-  needsPower: 'cast.needsPower',
-  asleep: 'cast.asleep',
-} as const;
-
 function detailOf(r: CastReceiver, state: CastRowState, t: ReturnType<typeof useT>): string {
-  if (state !== 'playing' && state !== 'idle') {
-    return t(OFF_HINT[state]);
-  }
-  const playing = r.nowPlaying?.item;
-  if (playing) {
-    return playing.metadata?.title ?? playing.title;
-  }
-  return `${r.username} · ${t('cast.idle')}`;
+  const detail = castRowDetail(r, state, t);
+  return detail.idle ? `${r.username} · ${detail.text}` : detail.text;
 }
 
 function DeviceRow({

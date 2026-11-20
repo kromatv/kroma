@@ -3,23 +3,9 @@
 // page, so a set reads the same wherever it is listed.
 
 import type { CastReceiver } from '@kromatv/client/cast';
-import { type CastRowState, castRowState, useCast, useT } from '@kromatv/ui';
+import { type CastRowState, castRowDetail, castRowState, useCast, useT } from '@kromatv/ui';
 import { Icon, type IconName, ListRow, Spinner, StatusDot } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
-
-const OFF_HINT = {
-  waking: 'cast.waking',
-  needsPower: 'cast.needsPower',
-  asleep: 'cast.asleep',
-} as const;
-
-function detailOf(r: CastReceiver, state: CastRowState, t: ReturnType<typeof useT>): string {
-  if (state !== 'playing' && state !== 'idle') {
-    return t(OFF_HINT[state]);
-  }
-  const playing = r.nowPlaying?.item;
-  return playing ? (playing.metadata?.title ?? playing.title) : t('cast.idle');
-}
 
 interface DeviceRowProps {
   icon: IconName;
@@ -70,7 +56,7 @@ export function CastReceiverRow({
     <DeviceRow
       icon="device-tv"
       name={receiver.name}
-      detail={detailOf(receiver, state, t)}
+      detail={castRowDetail(receiver, state, t).text}
       state={state}
       selected={selected}
       onPick={onPick}

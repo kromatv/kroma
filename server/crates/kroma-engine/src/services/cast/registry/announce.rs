@@ -1,12 +1,11 @@
-use std::collections::{HashMap, HashSet, VecDeque};
-use std::time::Instant;
+use std::collections::HashMap;
 
 use kroma_primitives::clean_label as clean;
 
-use crate::model::{CastCommandEnvelope, CastPlayback, MediaItem};
+use crate::model::{CastPlayback, MediaItem};
 
 use super::{
-    trim_tracks, Announce, Announced, Hello, Receiver, Registry, StateChange, MAX_NAME,
+    Announce, Announced, Hello, Receiver, Registry, StateChange, MAX_NAME,
     MAX_PLATFORM, MAX_RECEIVERS,
 };
 
@@ -30,52 +29,24 @@ impl Registry {
         map.retain(|_, r| r.live());
 
         let arriving = !map.contains_key(&ann.receiver_id);
-        let changed = match map.get(&ann.receiver_id) {
-            Some(r) if r.user_id != user_id => return Announced::Taken,
-            Some(r) => r.differs(ann.playback.as_ref()) || r.name != name,
-            None if map.len() >= MAX_RECEIVERS => return Announced::Full,
-            None => true,
+        let changed = match admission(&map, &ann, user_id) {
+            Ok(changed) => changed,
+            Err(refused) => return refused,
         };
 
         let entry = map
             .entry(ann.receiver_id.clone())
-            .or_insert_with(|| Receiver {
-                id: ann.receiver_id.clone(),
-                name: name.clone(),
-                platform: platform.clone(),
-                user_id: user_id.to_string(),
-                username: username.to_string(),
-                network: network.clone(),
-                playback: None,
-                item: None,
-                last_seen: Instant::now(),
-                inbox: VecDeque::new(),
-                next_seq: 1,
-                controllers: HashMap::new(),
-                kicked: HashSet::new(),
-            });
+            .or_insert_with(|| Receiver::new(&ann.receiver_id, user_id));
         entry.name = name;
         entry.platform = platform;
         entry.username = username.to_string();
         entry.network = network;
-        if item.is_some() {
-            entry.item = item;
-        }
-        if ann.playback.is_none() {
-            entry.item = None;
-        }
-        entry.playback = ann.playback.map(trim_tracks);
-        entry.last_seen = Instant::now();
+        entry.refresh(ann.playback, item);
 
-        // What is left after the ack is replayed: the WS push may never have landed.
-        entry.inbox.retain(|c| c.seq > ann.last_applied_seq);
-        if arriving {
-            if let Some(command) = self.claim(&ann.receiver_id, user_id) {
-                let seq = entry.next_seq.max(ann.last_applied_seq + 1);
-                entry.next_seq = seq + 1;
-                entry.inbox.push_back(CastCommandEnvelope { seq, command });
-            }
-        }
+        let claimed = arriving
+            .then(|| self.claim(&ann.receiver_id, user_id))
+            .flatten();
+        entry.replay(ann.last_applied_seq, claimed);
         let commands = entry.inbox.iter().cloned().collect();
         Announced::Ok { commands, changed }
     }
@@ -116,26 +87,24 @@ impl Registry {
         let mut map = self.inner.write().unwrap();
         let entry = map.get_mut(receiver_id)?;
         let material = entry.differs(playback.as_ref());
-        if item.is_some() {
-            entry.item = item;
-        }
-        if playback.is_none() {
-            entry.item = None;
-        }
-        entry.playback = playback.map(trim_tracks);
-        entry.last_seen = Instant::now();
+        entry.refresh(playback, item);
         Some(if material {
             StateChange::Row(Box::new(entry.view()))
         } else {
-            match entry.playback.as_ref() {
-                Some(pb) => StateChange::Position {
-                    position_ms: pb.position_ms,
-                    duration_ms: pb.duration_ms,
-                    buffered_ms: pb.buffered_ms,
-                    state: pb.state,
-                },
-                None => StateChange::Nothing,
-            }
+            entry.position_change()
         })
+    }
+}
+
+fn admission(
+    map: &HashMap<String, Receiver>,
+    ann: &Announce,
+    user_id: &str,
+) -> Result<bool, Announced> {
+    match map.get(&ann.receiver_id) {
+        Some(r) if r.user_id != user_id => Err(Announced::Taken),
+        Some(r) => Ok(r.differs(ann.playback.as_ref()) || r.name != clean(&ann.name, MAX_NAME)),
+        None if map.len() >= MAX_RECEIVERS => Err(Announced::Full),
+        None => Ok(true),
     }
 }

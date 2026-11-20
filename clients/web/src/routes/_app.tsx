@@ -8,6 +8,7 @@ import { CastBar } from '#web/features/playback/cast/cast-bar.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth.hook';
+import { hasRail, RAIL_WIDTH, railInset } from '#web/shared/lib/rail';
 import { tvReach } from '#web/shared/lib/tv-reach';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { CastPicker } from '#web/shared/ui/cast-picker.component';
@@ -41,8 +42,6 @@ const sDefinition = styles({
   column: { display: 'flex', flexDirection: 'column', flexGrow: 1, flexBasis: 0, minWidth: 0 },
 });
 
-const RAIL_WIDTH = 248;
-
 function AppLayout() {
   const webRuntime = useWebRuntime();
 
@@ -50,7 +49,7 @@ function AppLayout() {
 
   const { ready, authed } = useRequireAuth();
   const step = useBreakpoint();
-  const wide = step === 'lg' || step === 'tv';
+  const wide = hasRail(step);
   useNotificationStream();
   if (!(ready && authed)) {
     return null;
@@ -69,7 +68,7 @@ function AppLayout() {
           <Outlet />
         </div>
         <CatalogModalHosts />
-        <CastBar inset={wide ? RAIL_WIDTH : 0} />
+        <CastBar inset={railInset(step)} />
         <DirectOffer />
       </Box>
       <Box z={CAST_PICKER_Z}>

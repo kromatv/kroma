@@ -955,7 +955,6 @@
         "clients/web/src/modules/remotes.ts",
         "clients/web/src/routes/__root.tsx",
         "clients/web/src/routes/_app._player.trailer.$kind.$tmdbId.tsx",
-        "clients/web/src/routes/_app.connect.tsx",
         "clients/web/src/routes/_app.genres.$id.tsx",
         "clients/web/src/routes/_app.genres.index.tsx",
         "clients/web/src/routes/_app.my-list.tsx",

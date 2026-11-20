@@ -38,6 +38,7 @@ import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
 import { hydrateSessionStorage } from './lib/storage';
 import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search.hook';
+import { nativeWakeHint } from './wake-hint';
 
 // What the set is called, when the platform will say. On Android TV this is the
 // name typed in setup. On tvOS it is `UIDevice.current.name`, which since
@@ -48,10 +49,7 @@ import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search.hook';
 // when the app starts, unlike the buses the browser shells have to ask.
 const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
 const WAKE_HINT: WakeHintSource = () =>
-  Promise.resolve({
-    appId: Constants.expoConfig?.android?.package,
-    address: localAddress() ?? undefined,
-  });
+  Promise.resolve(nativeWakeHint({ expoConfig: Constants.expoConfig, address: localAddress() }));
 // How large a picture this set's decoders take, which decides whether a title
 // direct-plays at all. Every other client guesses from the codec alone, and a
 // television that stops at 1080p answers a 4K file with a slideshow.

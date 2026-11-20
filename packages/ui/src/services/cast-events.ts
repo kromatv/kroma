@@ -13,6 +13,7 @@ interface CastEventSetters {
   activeId: Dispatch<SetStateAction<DeviceId | null>>;
   error: Dispatch<SetStateAction<Cast['error']>>;
   base: Dispatch<SetStateAction<PositionBase | null>>;
+  gone: () => void;
 }
 
 /** Fold one bus event into the roster / position state. `driving` is the
@@ -32,6 +33,7 @@ function applyCastEvent(e: ServerEvent, set: CastEventSetters, driving: DeviceId
     }
   } else if (e.type === 'cast.receiver.gone') {
     set.receivers((list) => list.filter((r) => r.id !== e.receiverId));
+    set.gone();
   } else if (e.type === 'cast.kicked') {
     // The television let this remote go. Stand down rather than keep showing a
     // set we no longer drive.

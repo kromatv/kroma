@@ -22,6 +22,7 @@ import { useWindowDimensions } from 'react-native';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { castPicker } from '#web/shared/ui/cast-picker.component';
 import { CastRemote } from './cast-remote.component';
+import { secondLine } from './second-line';
 import { TransportButton } from './transport-button.component';
 
 /** `inset` is the width the app's rail takes on the left, which the bar stays
@@ -64,14 +65,6 @@ export function CastBar({ inset = 0 }: Readonly<{ inset?: number }>) {
   );
 }
 
-function secondLine(item: MediaItem): string {
-  if (item.showTitle) {
-    const number = item.season && item.episode ? ` · S${item.season}E${item.episode}` : '';
-    return `${item.showTitle}${number}`;
-  }
-  return item.year ? String(item.year) : '';
-}
-
 function NowPlaying({ item }: Readonly<{ item?: MediaItem }>) {
   const webRuntime = useWebRuntime();
   if (!item) {
@@ -108,16 +101,8 @@ interface MiddleProps {
 function Middle({ active, cast, scrub }: Readonly<MiddleProps>) {
   const t = useT();
   const state = castRowState(active, cast);
-  if (state === 'needsPower') {
-    return <Notice>{t('cast.needsPower')}</Notice>;
-  }
-  if (state === 'waking') {
-    return (
-      <Row gap={10}>
-        <Spinner size={18} />
-        <Notice>{t('cast.waking')}</Notice>
-      </Row>
-    );
+  if (state === 'needsPower' || state === 'waking') {
+    return <Notice busy={state === 'waking'}>{t(`cast.${state}`)}</Notice>;
   }
   if (!active.nowPlaying) {
     return <Notice>{t('cast.idleHint', { device: active.name })}</Notice>;
@@ -125,11 +110,19 @@ function Middle({ active, cast, scrub }: Readonly<MiddleProps>) {
   return <CastRemote playing={active.nowPlaying} send={cast.send} scrub={scrub} />;
 }
 
-function Notice({ children }: Readonly<{ children: string }>) {
-  return (
+function Notice({ busy, children }: Readonly<{ busy?: boolean; children: string }>) {
+  const text = (
     <Text variant="meta" color="textMuted" textAlign="center" lines={2}>
       {children}
     </Text>
+  );
+  return busy ? (
+    <Row gap={10}>
+      <Spinner size={18} />
+      {text}
+    </Row>
+  ) : (
+    text
   );
 }
 

@@ -23,6 +23,7 @@ const NO_CHAPTERS: never[] = [];
 const NOOP = () => undefined;
 const THUMB_WIDTH = 200;
 const BAR_SCALE = 0.7;
+const TIMECODE = { variant: 'meta', color: 'textDim', shrink: 0 } as const;
 
 interface CastRemoteProps {
   playing: CastNowPlaying;
@@ -89,15 +90,6 @@ function PlayPause({ playing, onPress }: Readonly<{ playing: boolean; onPress: (
   );
 }
 
-function Timecode({ children }: Readonly<{ children: string }>) {
-  const s = useStyles(sDefinition);
-  return (
-    <Text variant="meta" color="textDim" shrink={0} style={s.tabular}>
-      {children}
-    </Text>
-  );
-}
-
 interface SeekLineProps {
   playing: CastNowPlaying;
   target: CastScrub;
@@ -105,14 +97,19 @@ interface SeekLineProps {
 }
 
 function SeekLine({ playing, target, nudge }: Readonly<SeekLineProps>) {
+  const st = useStyles(sDefinition);
   const elapsed = formatTimecode(target.seekPreview ?? target.cur);
   return (
     <Row w="100%" gap={12}>
-      <Timecode>{elapsed}</Timecode>
+      <Text {...TIMECODE} style={st.tabular}>
+        {elapsed}
+      </Text>
       <Box flex minW={0}>
         <Track playing={playing} target={target} nudge={nudge} elapsed={elapsed} />
       </Box>
-      <Timecode>{target.dur ? formatTimecode(target.dur) : '--:--'}</Timecode>
+      <Text {...TIMECODE} style={st.tabular}>
+        {target.dur ? formatTimecode(target.dur) : '--:--'}
+      </Text>
     </Row>
   );
 }

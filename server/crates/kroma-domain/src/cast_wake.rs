@@ -39,6 +39,16 @@ impl CastWakeHint {
     }
 }
 
+/// What a set that opens an app by its id is reached with.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct CastLaunch {
+    pub address: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mac: Option<String>,
+    #[serde(rename = "appId")]
+    pub app_id: String,
+}
+
 /// One thing to do to bring a television back, in the order given.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "camelCase")]
@@ -48,22 +58,10 @@ pub enum CastWakeStep {
     /// A Samsung set: power it on over its own remote service when it is in
     /// standby, by the packet when it does not answer at all, then ask it to
     /// open the app.
-    Samsung {
-        address: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        mac: Option<String>,
-        #[serde(rename = "appId")]
-        app_id: String,
-    },
+    Samsung(CastLaunch),
     /// An LG set: the packet when it answers nothing, then its own control
     /// service is asked to open the app.
-    Lg {
-        address: String,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        mac: Option<String>,
-        #[serde(rename = "appId")]
-        app_id: String,
-    },
+    Lg(CastLaunch),
     /// A request to this port, which the television wakes for. It comes back
     /// showing what it showed before it slept.
     Knock { address: String, port: u16 },
@@ -102,20 +100,20 @@ const DRIVERS: &[Driver] = &[
     },
 ];
 
-fn samsung(target: &CastWakeTarget) -> Option<CastWakeStep> {
-    Some(CastWakeStep::Samsung {
+fn launch(target: &CastWakeTarget) -> Option<CastLaunch> {
+    Some(CastLaunch {
         address: target.address?.to_string(),
         mac: target.mac.clone(),
         app_id: target.app_id.clone()?,
     })
 }
 
+fn samsung(target: &CastWakeTarget) -> Option<CastWakeStep> {
+    launch(target).map(CastWakeStep::Samsung)
+}
+
 fn lg(target: &CastWakeTarget) -> Option<CastWakeStep> {
-    Some(CastWakeStep::Lg {
-        address: target.address?.to_string(),
-        mac: target.mac.clone(),
-        app_id: target.app_id.clone()?,
-    })
+    launch(target).map(CastWakeStep::Lg)
 }
 
 // tvOS gives an app no hardware address, so there is no packet to fall back on.
@@ -239,11 +237,11 @@ mod tests {
 
         assert_eq!(
             plan,
-            vec![CastWakeStep::Samsung {
+            vec![CastWakeStep::Samsung(CastLaunch {
                 address: "192.168.1.20".into(),
                 mac: Some("a0:b1:c2:d3:e4:f5".into()),
                 app_id: "KromaTV001.Kroma".into(),
-            }]
+            })]
         );
     }
 
@@ -269,11 +267,11 @@ mod tests {
 
         assert_eq!(
             plan,
-            vec![CastWakeStep::Lg {
+            vec![CastWakeStep::Lg(CastLaunch {
                 address: "192.168.1.20".into(),
                 mac: Some("a0:b1:c2:d3:e4:f5".into()),
                 app_id: "tv.kroma.webos".into(),
-            }]
+            })]
         );
     }
 
@@ -364,11 +362,11 @@ mod tests {
 
     #[test]
     fn a_samsung_step_travels_without_a_hardware_address_it_never_had() {
-        let step = CastWakeStep::Samsung {
+        let step = CastWakeStep::Samsung(CastLaunch {
             address: "192.168.1.20".into(),
             mac: None,
             app_id: "KromaTV001.Kroma".into(),
-        };
+        });
 
         let json = serde_json::to_value(&step).unwrap();
 

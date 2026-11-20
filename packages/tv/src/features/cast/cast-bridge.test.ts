@@ -7,8 +7,10 @@ import { createElement, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   type CastBridge,
+  bufferedMsOf,
   CastBridgeProvider,
   createCastBridge,
+  isPlaying,
   useCastTarget,
 } from './cast-bridge';
 
@@ -129,6 +131,36 @@ describe('castReport', () => {
     const bridge = createCastBridge();
     bridge.setCastTarget({ item, controller: controller({ subtitleIndex: null }) });
     expect(bridge.castReport(t)?.subtitleIndex).toBeUndefined();
+  });
+});
+
+describe('what a player has buffered', () => {
+  it('is its buffered end in whole milliseconds', () => {
+    expect(bufferedMsOf(12.3456)).toBe(12_346);
+  });
+
+  it('is nothing for a player with no buffered range to report', () => {
+    expect(bufferedMsOf(null)).toBeUndefined();
+  });
+
+  it('rides along in the report of a running player', () => {
+    const bridge = createCastBridge();
+    bridge.setCastTarget({ item, controller: controller({ bufEnd: 30 }) });
+
+    expect(bridge.castReport(t)?.bufferedMs).toBe(30_000);
+  });
+});
+
+describe('isPlaying', () => {
+  it('is true for a report of a playing set only', () => {
+    const bridge = createCastBridge();
+    bridge.setCastTarget({ item, controller: controller({ playing: true }) });
+    const playing = bridge.castReport(t);
+    bridge.setCastTarget({ item, controller: controller({ playing: false }) });
+
+    expect(isPlaying(playing)).toBe(true);
+    expect(isPlaying(bridge.castReport(t))).toBe(false);
+    expect(isPlaying(null)).toBe(false);
   });
 });
 

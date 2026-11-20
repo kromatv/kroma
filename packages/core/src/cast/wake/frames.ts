@@ -1,12 +1,18 @@
+import { z } from 'zod';
 import type { LanSocket } from './reach';
 
-/** What a frame said, or `null` when it is not JSON. */
-export function parsed(text: string): unknown {
+const FrameText = z.string().transform((text, ctx) => {
   try {
     return JSON.parse(text);
   } catch {
-    return null;
+    ctx.addIssue('not JSON');
+    return z.NEVER;
   }
+});
+
+/** What a frame said, or `null` when it is not JSON. */
+export function parsed(text: string): unknown {
+  return FrameText.safeParse(text).data ?? null;
 }
 
 /** Read frames until `pick` takes one, and answer what it took. Each frame is

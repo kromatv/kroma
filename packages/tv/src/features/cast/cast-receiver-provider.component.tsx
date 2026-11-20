@@ -15,9 +15,10 @@ import { useEnv } from '#tv/app/providers/env';
 import { useNav } from '#tv/app/router';
 import { useStoredPref } from '#tv/app/settings/store';
 import { applyCastCommand } from '#tv/features/cast/apply-command';
-import { CastPlaybackProvider, useCastBridge } from '#tv/features/cast/cast-bridge';
+import { CastPlaybackProvider, isPlaying, useCastBridge } from '#tv/features/cast/cast-bridge';
 import { CastControllersProvider, useCastControllerStore } from '#tv/features/cast/controllers';
-import { readWakeHint, type WakeHintSource } from '#tv/features/cast/wake-hint';
+import { useForgetWake } from '#tv/features/cast/forget-wake.hook';
+import { watchWakeHint, type WakeHintSource } from '#tv/features/cast/wake-hint';
 import { createDeviceIdentity, type DeviceIdentity } from '#tv/shared/device';
 
 const POSITION_BEAT_MS = 1000;
@@ -87,13 +88,7 @@ function CastReceiver({
   const signedIn = ready && Boolean(user);
   const inFront = useForeground();
 
-  // A set that does not allow control from another device is not listed at
-  // all, on or off: what the server kept to bring it back by is dropped.
-  useEffect(() => {
-    if (signedIn && castable === 'off') {
-      client.cast.forgetWake(deviceId()).catch(() => undefined);
-    }
-  }, [signedIn, castable, client, deviceId]);
+  useForgetWake({ client, deviceId, signedIn, castable });
 
   // Say on the link that this television is up and castable, for as long as it
   // is. The phone's picker is fed by the server, which knows whose television
@@ -251,22 +246,21 @@ function CastReceiver({
     // never more than a second from the picture.
     const unsubscribe = onCastReportChange(pushState);
     drift = setInterval(() => {
-      if (castReport(deps.current.t)?.state === 'playing') {
+      if (isPlaying(castReport(deps.current.t))) {
         pushState();
       }
     }, POSITION_BEAT_MS);
 
     events.connect();
     void beat();
-    void readWakeHint(wake).then((found) => {
+    const stopWakeHint = watchWakeHint(wake, (found) => {
       hint = found;
-      if (!stopped && found && events.open) {
-        hello();
-      }
+      hello();
     });
 
     return () => {
       stopped = true;
+      stopWakeHint();
       unsubscribe();
       setCastUplink(null);
       clearTimeout(fallback);

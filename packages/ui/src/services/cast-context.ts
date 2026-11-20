@@ -64,6 +64,35 @@ export function castRowState(
   return cast.wakingNeedsPower ? 'needsPower' : 'waking';
 }
 
+interface PlayingReceiver {
+  nowPlaying?: { item: { title: string; metadata?: { title?: string | null } | null } };
+}
+
+export type CastRowKey = 'cast.waking' | 'cast.needsPower' | 'cast.asleep' | 'cast.idle';
+
+const OFF_HINT = {
+  waking: 'cast.waking',
+  needsPower: 'cast.needsPower',
+  asleep: 'cast.asleep',
+} as const;
+
+/** The line under a receiver's name: the title it plays, or the words for its
+ * state. `idle` is true when nothing is playing, so a list may add who owns it. */
+export function castRowDetail(
+  receiver: PlayingReceiver,
+  state: CastRowState,
+  t: (key: CastRowKey) => string,
+): { text: string; idle: boolean } {
+  if (state !== 'playing' && state !== 'idle') {
+    return { text: t(OFF_HINT[state]), idle: false };
+  }
+  const playing = receiver.nowPlaying?.item;
+  if (!playing) {
+    return { text: t('cast.idle'), idle: true };
+  }
+  return { text: playing.metadata?.title ?? playing.title, idle: false };
+}
+
 const CastCtx = createContext<Cast | null>(null);
 
 /** The cast session. Outside a provider it reads as "no TVs", so a screen can

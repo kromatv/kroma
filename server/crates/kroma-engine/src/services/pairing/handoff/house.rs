@@ -30,17 +30,23 @@ impl Household {
         let (Some(a), Some(b)) = (host(a), host(b)) else {
             return false;
         };
-        match (a.is_loopback(), b.is_loopback()) {
-            (true, true) => return false,
-            (true, false) => return self.beside(b),
-            (false, true) => return self.beside(a),
-            (false, false) => {}
+        if let Some(verdict) = self.through_loopback(a, b) {
+            return verdict;
         }
         match (is_private_client(a), is_private_client(b)) {
             (true, true) => false,
             (true, false) => self.faces(b),
             (false, true) => self.faces(a),
             (false, false) => self.faces(a) && self.faces(b),
+        }
+    }
+
+    fn through_loopback(&self, a: IpAddr, b: IpAddr) -> Option<bool> {
+        match (a.is_loopback(), b.is_loopback()) {
+            (true, true) => Some(false),
+            (true, false) => Some(self.beside(b)),
+            (false, true) => Some(self.beside(a)),
+            (false, false) => None,
         }
     }
 

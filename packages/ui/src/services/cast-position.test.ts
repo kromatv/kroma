@@ -3,6 +3,7 @@ import type { CastCommand } from '@kromatv/client/cast';
 import { describe, expect, it } from 'vitest';
 import {
   baseOf,
+  drivenBase,
   heardBase,
   livePosition,
   orderedBase,
@@ -67,6 +68,26 @@ describe('the base a roster row gives', () => {
 
   it('is nothing for a television that plays nothing', () => {
     expect(baseOf({ id: SALON }, T0)).toBeNull();
+  });
+});
+
+describe('the base after a roster fetch', () => {
+  const was = { id: SALON, positionMs: 5000, playing: true, at: T0 };
+
+  it('is the row of the television driven from here', () => {
+    expect(drivenBase([salon(9000)], SALON, was)).toMatchObject({ id: SALON, positionMs: 9000 });
+  });
+
+  it('is empty when the driven television plays nothing', () => {
+    expect(drivenBase([{ id: SALON }], SALON, was)).toBeNull();
+  });
+
+  it('keeps the base when the roster does not hold the driven television', () => {
+    expect(drivenBase([salon(9000)], 'tv-other', was)).toBe(was);
+  });
+
+  it('keeps the base when no television is driven', () => {
+    expect(drivenBase([salon(9000)], null, was)).toBe(was);
   });
 });
 

@@ -28,8 +28,8 @@ use crate::services::settings;
 use crate::state::SharedState;
 
 mod command;
+mod receiver;
 mod wake;
-
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
@@ -43,24 +43,37 @@ pub fn routes() -> Router<SharedState> {
         )
 }
 
-/// Keep what an arriving television said about reaching itself, off the
-/// request. One that says nothing at all is an older build, and what is kept
-/// for it stays.
-pub(crate) fn keep(
-    state: &SharedState,
-    user_id: &str,
-    peer: &str,
-    row: CastReceiver,
-    hint: Option<CastWakeHint>,
-) {
-    let Some(hint) = hint else {
+pub(crate) struct Heard<'a> {
+    pub user_id: &'a str,
+    pub peer: &'a str,
+    pub row: CastReceiver,
+    pub hint: Option<CastWakeHint>,
+}
+
+/// Tell the account's clients a television arrived or changed, and keep what
+/// it said about reaching itself. One that says nothing at all is an older
+/// build, and what is kept for it stays.
+pub(crate) fn arrived(state: &SharedState, heard: Heard) {
+    let owner = heard.user_id.to_string();
+    let row = heard.row.clone();
+    keep(state, heard);
+    state.events.publish_to(
+        &owner,
+        ServerEvent::CastReceiverChanged {
+            receiver: Box::new(row),
+        },
+    );
+}
+
+fn keep(state: &SharedState, heard: Heard) {
+    let Some(hint) = heard.hint else {
         return;
     };
     let arrival = Arrival {
-        row,
-        user_id: user_id.to_string(),
+        row: heard.row,
+        user_id: heard.user_id.to_string(),
         hint,
-        peer: peer.to_string(),
+        peer: heard.peer.to_string(),
     };
     let now_ms = crate::services::jobs::now_ms();
     tokio::spawn(crate::services::cast::wake::keep(
@@ -70,12 +83,40 @@ pub(crate) fn keep(
     ));
 }
 
+/// Whose senders hear that an order was issued, and for which receiver.
+#[derive(Clone, Copy)]
+pub(crate) struct Issued<'a> {
+    pub user_id: &'a str,
+    pub receiver_id: &'a str,
+}
+
+pub(crate) fn publish_issued(state: &SharedState, to: Issued<'_>, envelope: CastCommandEnvelope) {
+    state.events.publish_to(
+        to.user_id,
+        ServerEvent::CastCommandIssued {
+            receiver_id: to.receiver_id.to_string(),
+            seq: envelope.seq,
+            command: envelope.command,
+        },
+    );
+}
+
+pub(crate) fn publish_all_issued(
+    state: &SharedState,
+    to: Issued<'_>,
+    envelopes: Vec<CastCommandEnvelope>,
+) {
+    for envelope in envelopes {
+        publish_issued(state, to, envelope);
+    }
+}
+
+fn refuse(user: &User, status: StatusCode, key: &'static str) -> Response {
+    lerr(i18n::user_locale(user), status, key)
+}
+
 fn bad_id(user: &User) -> Response {
-    lerr(
-        i18n::user_locale(user),
-        StatusCode::BAD_REQUEST,
-        "error.castBadReceiver",
-    )
+    refuse(user, StatusCode::BAD_REQUEST, "error.castBadReceiver")
 }
 
 #[derive(Debug, Deserialize)]
@@ -131,17 +172,7 @@ pub async fn announce(
         _ => None,
     };
 
-    let position = body
-        .playback
-        .as_ref()
-        .filter(|p| p.state != CastState::Idle)
-        .map(|p| ServerEvent::CastPosition {
-            receiver_id: body.receiver_id.clone(),
-            position_ms: p.position_ms.max(0),
-            duration_ms: p.duration_ms,
-            buffered_ms: p.buffered_ms,
-            state: p.state,
-        });
+    let position = position_beat(&body);
     let outcome = state.cast.announce(
         Announce {
             receiver_id: body.receiver_id.clone(),
@@ -160,11 +191,14 @@ pub async fn announce(
         Announced::Ok { commands, changed } => {
             if changed {
                 if let Some(row) = state.cast.row(&body.receiver_id) {
-                    keep(&state, &user.id, &ip, row.clone(), body.wake);
-                    state.events.publish_to(
-                        &user.id,
-                        ServerEvent::CastReceiverChanged {
-                            receiver: Box::new(row),
+                    let (user_id, peer, hint) = (&user.id, &ip, body.wake);
+                    arrived(
+                        &state,
+                        Heard {
+                            user_id,
+                            peer,
+                            row,
+                            hint,
                         },
                     );
                 }
@@ -177,15 +211,15 @@ pub async fn announce(
         // Refusing a taken id, rather than seizing it, is what stops an account
         // impersonating another's TV to collect the commands meant for it.
         Announced::Taken => {
-            return Err(lerr(
-                i18n::user_locale(&user),
+            return Err(refuse(
+                &user,
                 StatusCode::CONFLICT,
                 "error.castReceiverTaken",
             ))
         }
         Announced::Full => {
-            return Err(lerr(
-                i18n::user_locale(&user),
+            return Err(refuse(
+                &user,
                 StatusCode::SERVICE_UNAVAILABLE,
                 "error.castRosterFull",
             ))
@@ -197,6 +231,17 @@ pub async fn announce(
         ttl_secs: crate::services::cast::RECEIVER_TTL.as_secs(),
     })
     .into_response())
+}
+
+fn position_beat(body: &AnnounceBody) -> Option<ServerEvent> {
+    let playback = body.playback.as_ref()?;
+    (playback.state != CastState::Idle).then(|| ServerEvent::CastPosition {
+        receiver_id: body.receiver_id.clone(),
+        position_ms: playback.position_ms.max(0),
+        duration_ms: playback.duration_ms,
+        buffered_ms: playback.buffered_ms,
+        state: playback.state,
+    })
 }
 
 /// `GET /api/cast/receivers` (Bearer) → `CastReceiver[]`. Only the receivers

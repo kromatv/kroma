@@ -7,19 +7,17 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::{Deserialize, Serialize};
 
-use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::permission::require;
 use crate::api::util::query;
 use crate::db;
-use crate::i18n;
-use crate::infra::events::ServerEvent;
 use crate::model::{CastCommand, CastWakeStep, Permission, User};
-use crate::services::cast::{valid_receiver_id, wake};
+use crate::services::cast::wake;
 use crate::state::SharedState;
 
-use super::bad_id;
 use super::command::known_title;
+use super::receiver::ReceiverCall;
+use super::{publish_issued, refuse, Issued};
 
 #[derive(Debug, Default, Deserialize)]
 pub struct WakeBody {
@@ -36,11 +34,7 @@ pub struct WakeReply {
 }
 
 fn gone(user: &User) -> Response {
-    lerr(
-        i18n::user_locale(user),
-        StatusCode::NOT_FOUND,
-        "error.castReceiverGone",
-    )
+    refuse(user, StatusCode::NOT_FOUND, "error.castReceiverGone")
 }
 
 /// `POST /api/cast/receivers/:id/wake` (Bearer) `{ play? }` → `WakeReply`.
@@ -49,59 +43,57 @@ fn gone(user: &User) -> Response {
 /// is handed the order at once and has no steps to run.
 pub async fn wake(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Path(id): Path<String>,
+    call: ReceiverCall,
     body: Option<Json<WakeBody>>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::Playback)?;
-    if !valid_receiver_id(&id) {
-        return Err(bad_id(&user));
-    }
     let play = body
         .and_then(|Json(body)| body.play)
         .filter(|command| matches!(command, CastCommand::Play { .. }));
     if let Some(command) = &play {
-        known_title(&state, &user, command).await?;
+        known_title(&state, &call.user, command).await?;
     }
 
-    if state.cast.may_command(&id, &user.id).is_some() {
-        hand_over(&state, &user, &id, play);
+    if state.cast.may_command(&call.id, &call.user.id).is_some() {
+        hand_over(&state, &call, play);
         return Ok(Json(WakeReply { steps: Vec::new() }).into_response());
     }
 
-    let (wanted, owner) = (id.clone(), user.id.clone());
+    let steps = steps_to_run(&state, &call).await?;
+    if let Some(command) = play {
+        state.cast.hold(&call.id, &call.user.id, command);
+    }
+    Ok(Json(WakeReply { steps }).into_response())
+}
+
+async fn steps_to_run(
+    state: &SharedState,
+    call: &ReceiverCall,
+) -> Result<Vec<CastWakeStep>, Response> {
+    let (wanted, owner) = (call.id.clone(), call.user.id.clone());
     let device = query(&state.db, move |pool| {
         db::cast_device(&pool, &wanted, &owner)
     })
     .await
     .unwrap_or_default()
-    .ok_or_else(|| gone(&user))?;
+    .ok_or_else(|| gone(&call.user))?;
     let steps = wake::plan(&device);
     if steps.is_empty() {
-        return Err(gone(&user));
+        return Err(gone(&call.user));
     }
-
-    if let Some(command) = play {
-        state.cast.hold(&id, &user.id, command);
-    }
-    Ok(Json(WakeReply { steps }).into_response())
+    Ok(steps)
 }
 
-fn hand_over(state: &SharedState, user: &User, id: &str, play: Option<CastCommand>) {
+fn hand_over(state: &SharedState, call: &ReceiverCall, play: Option<CastCommand>) {
     let Some(command) = play else {
         return;
     };
-    let Some(envelope) = state.cast.enqueue(id, &user.id, command) else {
-        return;
-    };
-    state.events.publish_to(
-        &user.id,
-        ServerEvent::CastCommandIssued {
-            receiver_id: id.to_string(),
-            seq: envelope.seq,
-            command: envelope.command,
-        },
-    );
+    if let Some(envelope) = state.cast.enqueue(&call.id, &call.user.id, command) {
+        let to = Issued {
+            user_id: &call.user.id,
+            receiver_id: &call.id,
+        };
+        publish_issued(state, to, envelope);
+    }
 }
 
 /// `DELETE /api/cast/receivers/:id/wake` (Bearer) → 204. Stop listing a

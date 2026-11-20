@@ -29,6 +29,7 @@ import { formatTimecode } from '#ui/lib/intl';
 import { useT } from '#ui/services/i18n';
 import type { StoryboardTile } from '#ui/services/storyboard.hook';
 import { seekBarPaint } from '../../lib/style';
+import { SeekBarLabels } from './seek-bar-labels.component';
 
 const seekTrack = sv({ base: { _focus: { ring: 'focusWash' } } });
 
@@ -221,20 +222,13 @@ export function SeekBar({
   return (
     <Box mb={labels === 'above' ? px(20) : 0}>
       {labels === 'above' ? (
-        /* The chapter title is the one string of unbounded length here, so it
-          shrinks and truncates rather than growing into the runtime. */
-        <Box row align="baseline" between gap={px(12)} mb={px(13)}>
-          <Text lines={1} style={sized.timeShrink}>
-            {elapsed}
-            {chapterLabel ? (
-              <Text style={sized.timeMuted} color="text/50">{` · ${chapterLabel}`}</Text>
-            ) : null}
-          </Text>
-          <Text lines={1} style={sized.time} color="text/50">
-            {total}
-            {endsAt ? <Text style={sized.timeMuted} color="text/38">{` · ${endsAt}`}</Text> : null}
-          </Text>
-        </Box>
+        <SeekBarLabels
+          elapsed={elapsed}
+          total={total}
+          endsAt={endsAt}
+          chapterLabel={chapterLabel}
+          scale={scale}
+        />
       ) : null}
 
       {/* track */}
@@ -355,7 +349,6 @@ export function SeekBar({
   );
 }
 
-const TIME_SIZE = 18;
 const STAMP_SIZE = 14;
 const TRACK_HEIGHT = 6;
 const HIT_PAD = 14;
@@ -373,9 +366,6 @@ const playheadRing = themed((theme) =>
 );
 
 const sDefinition = styles({
-  time: { font: 'ui', fontWeight: '600', color: 'text', fontVariant: ['tabular-nums'] },
-  muted: { fontWeight: '500' },
-  shrink: { shrink: 1 },
   track: { position: 'relative', row: true, align: 'center', gap: SEGMENT_GAP },
   stamp: { font: 'ui', fontWeight: '700', color: 'white', fontVariant: ['tabular-nums'] },
   inert: { pointerEvents: 'none' },
@@ -385,19 +375,7 @@ const sDefinition = styles({
 
 function scaled(scale: number, scope: StyleScope) {
   const px = scaler(scale);
-  const time = sharedStyle(`seek:time:${scale}`, { fontSize: px(TIME_SIZE) }, scope);
   return {
-    time: [resolveStyles(sDefinition, scope).time, time],
-    timeMuted: [
-      resolveStyles(sDefinition, scope).time,
-      time,
-      resolveStyles(sDefinition, scope).muted,
-    ],
-    timeShrink: [
-      resolveStyles(sDefinition, scope).time,
-      time,
-      resolveStyles(sDefinition, scope).shrink,
-    ],
     stamp: [
       resolveStyles(sDefinition, scope).stamp,
       sharedStyle(`seek:stamp:${scale}`, { fontSize: px(STAMP_SIZE) }, scope),

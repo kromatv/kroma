@@ -210,6 +210,22 @@ describe('a TV that is off', () => {
     );
   });
 
+  it('gives the selection up when it does not come back in time', async () => {
+    const client = asleepClient();
+    const { result } = mount(client);
+    await waitFor(() => expect(result.current.receivers).toHaveLength(1));
+    act(() => result.current.select(SALON_ID));
+    await waitFor(() => expect(result.current.waking).toBe(SALON_ID));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(90_000);
+    });
+
+    expect(result.current.waking).toBeNull();
+    expect(result.current.active).toBeNull();
+    expect(result.current.error).toBe('cast.failed');
+  });
+
   it('reports a failure and keeps nothing selected when the server refuses', async () => {
     const wake = vi.fn(async () => {
       throw new KromaApiError(404, 'gone');

@@ -27,17 +27,23 @@ pub struct CastDevice {
 }
 
 fn row_to_device(r: &Row) -> rusqlite::Result<CastDevice> {
+    let (receiver_id, user_id, name, platform) = identity(r)?;
+    let (mac, address, app_id) = (r.get(4)?, r.get(5)?, r.get(6)?);
     Ok(CastDevice {
-        receiver_id: r.get(0)?,
-        user_id: r.get(1)?,
-        name: r.get(2)?,
-        platform: r.get(3)?,
-        mac: r.get(4)?,
-        address: r.get(5)?,
-        app_id: r.get(6)?,
+        receiver_id,
+        user_id,
+        name,
+        platform,
+        mac,
+        address,
+        app_id,
         beside_server: r.get(7)?,
         seen_at: r.get(8)?,
     })
+}
+
+fn identity(r: &Row) -> rusqlite::Result<(String, String, String, String)> {
+    Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
 }
 
 /// Store a television, or refresh it. A receiver id that signs into another
@@ -86,9 +92,8 @@ pub fn cast_devices_for_user(pool: &Pool, user_id: &str) -> Result<Vec<CastDevic
 /// One television, only for the account that keeps it.
 pub fn cast_device(pool: &Pool, receiver_id: &str, user_id: &str) -> Result<Option<CastDevice>> {
     let conn = pool.get()?;
-    let sql = format!(
-        "SELECT {DEVICE_COLS} FROM cast_devices WHERE receiver_id = ?1 AND user_id = ?2"
-    );
+    let sql =
+        format!("SELECT {DEVICE_COLS} FROM cast_devices WHERE receiver_id = ?1 AND user_id = ?2");
     Ok(conn
         .query_row(&sql, params![receiver_id, user_id], row_to_device)
         .optional()?)
@@ -96,12 +101,11 @@ pub fn cast_device(pool: &Pool, receiver_id: &str, user_id: &str) -> Result<Opti
 
 /// Drop a television. `false` when `user_id` keeps none by that id.
 pub fn forget_cast_device(pool: &Pool, receiver_id: &str, user_id: &str) -> Result<bool> {
-    let conn = pool.get()?;
-    let gone = conn.execute(
+    let gone = pool.get()?.execute(
         "DELETE FROM cast_devices WHERE receiver_id = ?1 AND user_id = ?2",
         params![receiver_id, user_id],
-    )?;
-    Ok(gone > 0)
+    );
+    Ok(gone? > 0)
 }
 
 #[cfg(test)]
@@ -187,8 +191,7 @@ mod tests {
     fn the_oldest_seen_leaves_when_an_account_keeps_too_many() {
         let (p, a, _) = pool();
         for n in 0..=MAX_CAST_DEVICES {
-            remember_cast_device(&p, &device(&format!("tv-number-{n:02}"), &a, 1_000 + n))
-                .unwrap();
+            remember_cast_device(&p, &device(&format!("tv-number-{n:02}"), &a, 1_000 + n)).unwrap();
         }
 
         let kept = cast_devices_for_user(&p, &a).unwrap();

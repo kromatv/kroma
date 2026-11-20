@@ -43,6 +43,17 @@ function baseOf(receiver: Positioned, at = Date.now()): PositionBase | null {
   };
 }
 
+/** The base after a roster fetch: the driven television's row, or `was` when the
+ * roster does not hold it. */
+function drivenBase(
+  rows: Positioned[],
+  driving: string | null,
+  was: PositionBase | null,
+): PositionBase | null {
+  const driven = rows.find((r) => r.id === driving);
+  return driven ? baseOf(driven) : was;
+}
+
 function target(command: CastCommand, from: number): number | null {
   if (command.type === 'seek') {
     return command.positionMs;
@@ -145,4 +156,4 @@ function livePosition(
 }
 
 export type { PositionBase };
-export { baseOf, heardBase, livePosition, orderedBase, redrawStep, showsAnother };
+export { baseOf, drivenBase, heardBase, livePosition, orderedBase, redrawStep, showsAnother };

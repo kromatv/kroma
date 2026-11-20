@@ -44,4 +44,18 @@ describe('what a Samsung set says about reaching itself', () => {
 
     expect(hint).toEqual({ mac: undefined, appId: undefined, address: '192.168.1.20' });
   });
+
+  it('says nothing in a browser, where no Samsung API exists', async () => {
+    const hint = await tizenWakeHint();
+
+    expect(hint).toEqual({ mac: undefined, appId: undefined, address: undefined });
+  });
+
+  it('leaves out a hardware address that is empty', async () => {
+    vi.stubGlobal('webapis', { network: { getMac: () => '' } });
+
+    const hint = await tizenWakeHint();
+
+    expect(hint).toMatchObject({ mac: undefined });
+  });
 });

@@ -19,7 +19,7 @@ export { useAiSuggest, useEstimatedProgress } from './services/ai-suggest.hook';
 export type { ActivateResult, AuthSession } from './services/auth.hook';
 export { useAuthSession } from './services/auth.hook';
 export type { Cast, CastFailure, CastProviderProps, CastRowState } from './services/cast';
-export { CastProvider, castRowState, useCast } from './services/cast';
+export { CastProvider, castRowDetail, castRowState, useCast } from './services/cast';
 export { useCastPosition } from './services/cast-position.hook';
 export type { DirectConnectionView, DirectPlatform } from './services/direct-connection.hook';
 export { useDirectConnection } from './services/direct-connection.hook';

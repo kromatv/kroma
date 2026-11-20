@@ -38,16 +38,7 @@ pub async fn events(
     headers: HeaderMap,
     ws: WebSocketUpgrade,
 ) -> Response {
-    let Some(offered) = headers
-        .get(axum::http::header::SEC_WEBSOCKET_PROTOCOL)
-        .and_then(|v| v.to_str().ok())
-        .and_then(|v| {
-            v.split(',')
-                .map(str::trim)
-                .find(|p| p.starts_with(SESSION_PROTO_PREFIX))
-        })
-        .map(str::to_string)
-    else {
+    let Some(offered) = offered_protocol(&headers) else {
         return (StatusCode::UNAUTHORIZED, "authentication required").into_response();
     };
     let token = offered[SESSION_PROTO_PREFIX.len()..].to_string();
@@ -73,6 +64,18 @@ pub async fn events(
     };
     ws.protocols([offered])
         .on_upgrade(move |socket| connection::pump(socket, state, who))
+}
+
+fn offered_protocol(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get(axum::http::header::SEC_WEBSOCKET_PROTOCOL)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| {
+            v.split(',')
+                .map(str::trim)
+                .find(|p| p.starts_with(SESSION_PROTO_PREFIX))
+        })
+        .map(str::to_string)
 }
 
 struct Viewer {

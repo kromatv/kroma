@@ -28,3 +28,20 @@ function timeout(): Promise<undefined> {
     }, HINT_TIMEOUT_MS);
   });
 }
+
+/** Reads the hint once and hands it to `onHint` if there is one. The function
+ * it answers drops the read when called, so a late answer reaches nobody. */
+export function watchWakeHint(
+  source: WakeHintSource | undefined,
+  onHint: (hint: CastWakeHint) => void,
+): () => void {
+  let stopped = false;
+  void readWakeHint(source).then((found) => {
+    if (!stopped && found) {
+      onHint(found);
+    }
+  });
+  return () => {
+    stopped = true;
+  };
+}
