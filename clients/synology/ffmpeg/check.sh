@@ -49,6 +49,9 @@ if [ "$ARCH" = x86_64 ]; then
   run hwaccels sh -c "$F/ffmpeg -hide_banner -hwaccels | grep -q vaapi"
   run libva-api sh -c "grep -q vaMapBuffer2 $F/../lib/libva.so.2 && grep -q vaGetDisplayDRM $F/../lib/libva-drm.so.2"
 fi
+if [ "$ARCH" = aarch64 ]; then
+  run hw-encoders sh -c "$F/ffmpeg -hide_banner -encoders | grep -q h264_v4l2m2m"
+fi
 run no-network sh -c "! $F/ffmpeg -hide_banner -protocols | grep -qw https"
 echo "ok=$ok bad=$bad"
 [ "$bad" -eq 0 ]

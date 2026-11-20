@@ -18,6 +18,7 @@ give KROMA access to it.
 | AMD graphics, VA-API | `vaapi` | Linux computers that run KROMA outside Docker, with the AMD driver installed |
 | NVIDIA graphics cards | `nvenc` | computers with an NVIDIA card |
 | Apple silicon and Intel Macs | `videotoolbox` | macOS, when KROMA runs outside Docker |
+| Raspberry Pi 4 | `v4l2m2m` | a Raspberry Pi 4, for pictures up to 1080p |
 
 KROMA tries each one at startup and only uses it if it can convert a test
 frame. A chip that is present but that KROMA cannot open counts as missing.
@@ -96,10 +97,41 @@ on the computer, then give the container the card:
               capabilities: [gpu, video]
 ```
 
+## Docker on a Raspberry Pi 4
+
+The Raspberry Pi 4 has a chip that writes H.264 video. The Raspberry Pi 5 has
+none, so it always converts on the processor.
+
+1. Check that the chip is there. On the Raspberry Pi, `ls /dev/video11` prints
+   the name back.
+2. Find the ID of the `video` group, which owns it:
+
+   ```bash
+   getent group video | cut -d: -f3
+   ```
+
+3. In the compose file, under `kroma:`, add both:
+
+   ```yaml
+       devices:
+         - /dev/video11:/dev/video11
+       group_add:
+         - "44"
+   ```
+
+   Replace `44` with the group ID from step 2.
+
+Recreate the container with `docker compose up -d` and read the log again.
+
+The chip writes the new video, and the processor still reads the film. A
+1080p film converts well. The chip stops at 1080p, so KROMA converts a larger
+picture on the processor, which is slow on a Raspberry Pi.
+
 ## Choose by hand
 
 To force a method, or to rule hardware out while you look for a problem, set
-`KROMA_HWACCEL` to `qsv`, `vaapi`, `nvenc`, `videotoolbox` or `software`. On a
+`KROMA_HWACCEL` to `qsv`, `vaapi`, `nvenc`, `videotoolbox`, `v4l2m2m` or
+`software`. On a
 computer with more than one graphics device, `KROMA_RENDER_NODE` selects the
 one to use. See the [configuration reference](configuration.md#transcoding).
 

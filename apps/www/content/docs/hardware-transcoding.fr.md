@@ -19,6 +19,7 @@ pour cent du processeur. Cette page explique comment y donner accès à KROMA.
 | Puce graphique AMD, VA-API | `vaapi` | ordinateurs Linux qui exécutent KROMA hors de Docker, avec le pilote AMD installé |
 | Cartes graphiques NVIDIA | `nvenc` | ordinateurs équipés d'une carte NVIDIA |
 | Mac à puce Apple et Mac Intel | `videotoolbox` | macOS, quand KROMA s'exécute hors de Docker |
+| Raspberry Pi 4 | `v4l2m2m` | un Raspberry Pi 4, pour une image jusqu'au 1080p |
 
 KROMA essaie chacun au démarrage et ne l'utilise que s'il parvient à convertir
 une image de test. Une puce présente que KROMA ne peut pas ouvrir compte comme
@@ -102,11 +103,41 @@ sur l'ordinateur, puis donnez la carte au conteneur :
               capabilities: [gpu, video]
 ```
 
+## Docker sur un Raspberry Pi 4
+
+Le Raspberry Pi 4 a une puce qui encode la vidéo en H.264. Le Raspberry Pi 5
+n'en a pas : il convertit toujours avec le processeur.
+
+1. Vérifiez que la puce est là. Sur le Raspberry Pi, `ls /dev/video11` affiche
+   ce nom en retour.
+2. Trouvez l'ID du groupe `video`, auquel elle appartient :
+
+   ```bash
+   getent group video | cut -d: -f3
+   ```
+
+3. Dans le fichier compose, sous `kroma:`, ajoutez les deux :
+
+   ```yaml
+       devices:
+         - /dev/video11:/dev/video11
+       group_add:
+         - "44"
+   ```
+
+   Remplacez `44` par l'ID de groupe de l'étape 2.
+
+Recréez le conteneur avec `docker compose up -d` et relisez le journal.
+
+La puce encode la nouvelle vidéo, mais c'est toujours le processeur qui lit le
+film. Un film en 1080p se convertit bien. La puce s'arrête au 1080p : au-delà,
+KROMA convertit avec le processeur, ce qui est lent sur un Raspberry Pi.
+
 ## Choisir manuellement
 
 Pour imposer une méthode, ou pour écarter le matériel pendant que vous cherchez
 un problème, définissez `KROMA_HWACCEL` sur `qsv`, `vaapi`, `nvenc`,
-`videotoolbox` ou `software`. Sur un ordinateur qui a plusieurs périphériques
+`videotoolbox`, `v4l2m2m` ou `software`. Sur un ordinateur qui a plusieurs périphériques
 graphiques, `KROMA_RENDER_NODE` choisit celui à utiliser. Consultez la
 [référence de configuration](configuration.md#transcodage).
 
