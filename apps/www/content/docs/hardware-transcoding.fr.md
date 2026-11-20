@@ -135,9 +135,15 @@ KROMA convertit avec le processeur, ce qui est lent sur un Raspberry Pi.
 
 ## Choisir manuellement
 
-Pour imposer une méthode, ou pour écarter le matériel pendant que vous cherchez
-un problème, définissez `KROMA_HWACCEL` sur `qsv`, `vaapi`, `nvenc`,
-`videotoolbox`, `v4l2m2m` ou `software`. Sur un ordinateur qui a plusieurs périphériques
+Dans KROMA, ouvrez **Serveur** > **Transcodage** et choisissez un **Encodeur
+vidéo**. La liste propose `Auto`, chaque méthode qui a réussi son test au
+démarrage, et `software` pour le processeur. Le choix s'applique dès la
+prochaine conversion, sans redémarrage.
+
+Pour imposer une méthode depuis l'extérieur de KROMA, ou pour écarter le
+matériel pendant que vous cherchez un problème, définissez `KROMA_HWACCEL` sur
+`qsv`, `vaapi`, `nvenc`, `videotoolbox`, `v4l2m2m` ou `software`. La variable
+l'emporte sur le réglage. Sur un ordinateur qui a plusieurs périphériques
 graphiques, `KROMA_RENDER_NODE` choisit celui à utiliser. Consultez la
 [référence de configuration](configuration.md#transcodage).
 

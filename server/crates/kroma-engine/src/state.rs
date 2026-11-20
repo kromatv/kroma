@@ -142,6 +142,7 @@ impl AppState {
         ));
         let services = module_services;
         kroma_media::ffmpeg_gate::set_capacity(crate::services::settings::media_workers(&settings));
+        crate::services::settings::apply_encoder_choice(&settings);
         let mut jobs = JobManager::new();
         crate::services::jobs::register_all(&mut jobs);
         for b in module_jobs {
