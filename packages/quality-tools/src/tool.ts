@@ -28,19 +28,22 @@ function requireInstalled(at: Layout): void {
   }
 }
 
-function invoke(at: Layout, tool: ToolName, args: readonly string[]) {
+function invoke(at: Layout, tool: ToolName | 'functions', args: readonly string[]) {
   requireInstalled(at);
-  const PYTHONPATH = TOOLS.map((name) => join(toolDir(at, name), 'src')).join(':');
+  const PYTHONPATH = [...TOOLS.map((name) => join(toolDir(at, name), 'src')), at.scripts].join(':');
   return $`${at.python} -P -m ${tool} ${[...args]}`
     .cwd(at.root)
     .env({ ...process.env, PYTHONPATH })
     .nothrow();
 }
 
-/** Runs a tool from the repository root and hands back what it printed, whatever its exit code. */
+/**
+ * Runs a tool from the repository root and hands back what it printed, whatever
+ * its exit code. `functions` is this package's own `python/functions.py`.
+ */
 export async function captureTool(
   at: Layout,
-  tool: ToolName,
+  tool: ToolName | 'functions',
   args: readonly string[],
 ): Promise<Captured> {
   const done = await invoke(at, tool, args).quiet();

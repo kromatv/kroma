@@ -30,7 +30,10 @@ mod start;
 mod window;
 
 pub use admission::Refusal;
-pub use hwaccel::{prime as prime_hwaccel, Detection};
+pub use hwaccel::{
+    choose as choose_encoder, pinned_by_env as encoder_pinned_by_env, prime as prime_hwaccel,
+    usable_labels as usable_encoders, Detection,
+};
 pub use live::Transcode;
 pub use mode::{AudioMode, Rung, StreamMode, VideoMode};
 
@@ -132,7 +135,7 @@ impl HlsEngine {
     /// The pipeline this host settled on for re-encodes, and the sentence that
     /// explains it. A device that is present, listed and unusable looks exactly
     /// like no device at all, and the reason is the only thing that separates them.
-    pub fn hardware() -> &'static Detection {
+    pub fn hardware() -> Detection {
         hwaccel::detected()
     }
 

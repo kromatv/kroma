@@ -7,6 +7,7 @@ import {
   languageOf,
   sourceFiles,
   underPaths,
+  comparedSources,
 } from './sources';
 
 describe('languageOf', () => {
@@ -129,5 +130,20 @@ describe('areaOf', () => {
     expect(areaOf('clients/desktop/src-tauri/src/main.rs')).toBe('clients/desktop');
     expect(areaOf('server/crates/kroma-db/src/lib.rs')).toBe('server/crates');
     expect(areaOf('vitest.config.ts')).toBe('vitest.config.ts');
+  });
+});
+
+describe('comparedSources', () => {
+  it('keeps the languages a change touches, and adds a changed file no list holds', () => {
+    const sources = ['packages/core/src/a.ts', 'server/src/b.rs'];
+
+    expect(comparedSources(sources, ['packages/core/src/new.tsx'])).toEqual([
+      'packages/core/src/a.ts',
+      'packages/core/src/new.tsx',
+    ]);
+  });
+
+  it('compares nothing when nothing changed', () => {
+    expect(comparedSources(['packages/core/src/a.ts'], [])).toEqual([]);
   });
 });

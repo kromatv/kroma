@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "The report-only quality toolchain: CRAP per function, structural duplication and mutation testing, measured by crapper, dryer and mutator at pinned commits over the tracked source list. It reports and never gates a merge.",
+  "description": "The report-only quality toolchain: CRAP per function, structural duplication and mutation testing, measured by crapper, dryer and mutator at pinned commits over the tracked source list. A weekly report over the whole tree, and a merge gate on what one pull request added or made worse.",
   "author": "KROMA",
   "license": "AGPL-3.0-or-later",
   "repository": {

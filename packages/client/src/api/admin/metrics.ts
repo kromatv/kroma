@@ -111,8 +111,9 @@ export type TranscodeHardware = z.infer<typeof TranscodeHardware>;
  *  producing less than a second of film per second and the player will run dry.
  *  `video` is `copy` | `h264` | `h264-1080` | `h264-720`, `audio` is `copy` |
  *  `aac` | `aac-standard` | `aac-night`, `accel` is `videotoolbox` | `qsv` |
- *  `vaapi` | `nvenc` | `software`, and `effort` (`quality` | `realtime`) only
- *  means anything on the software path. */
+ *  `vaapi` | `nvenc` | `v4l2m2m` | `software`, and `effort` (`quality` |
+ *  `realtime`) only means anything where the CPU decodes: `software` and
+ *  `v4l2m2m`. */
 export const LiveTranscode = z.object({
   id: z.string(),
   itemId: ItemId,
