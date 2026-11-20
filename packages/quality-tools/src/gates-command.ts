@@ -12,7 +12,7 @@ import { duplicateFindings, limitFindings, type Measurements } from './gate';
 import { failures, type GateResult, renderGate } from './gate-report';
 import { changedFiles, checkOutBase, mergeBase } from './git-changes';
 import { type Layout, layout } from './layout';
-import type { FunctionScore } from './limits';
+import type { FunctionScore } from './functions';
 import { mergeCoverage } from './merged-coverage';
 import { root } from './root';
 import { parseGateScope } from './scope';

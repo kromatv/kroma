@@ -1,7 +1,8 @@
 import { type ChangedFile, touches } from './changes';
 import type { Duplicate, Span } from './dry';
 import { byFile } from './functions';
-import { type Finding, type FunctionScore, judge } from './limits';
+import type { FunctionScore } from './functions';
+import { type Finding, judge } from './limits';
 import { languageOf } from './sources';
 
 export interface Measurements {

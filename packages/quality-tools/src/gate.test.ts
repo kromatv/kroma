@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ChangedFile } from './changes';
 import type { Duplicate } from './dry';
 import { duplicateFindings, limitFindings, type Measurements } from './gate';
-import type { FunctionScore } from './limits';
+import type { FunctionScore } from './functions';
 
 const fn = (name: string, start: number, over: Partial<FunctionScore> = {}): FunctionScore => ({
   file: 'server/src/a.rs',

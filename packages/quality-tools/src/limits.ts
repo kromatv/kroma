@@ -1,19 +1,7 @@
+import type { FunctionScore } from './functions';
 import type { Language } from './sources';
 
 export type Measure = 'crap' | 'complexity' | 'lines' | 'parameters' | 'nesting';
-
-export interface FunctionScore {
-  file: string;
-  name: string;
-  start: number;
-  end: number;
-  lines: number;
-  complexity: number;
-  crap: number | null;
-  parameters?: number | undefined;
-  nesting?: number | undefined;
-  tries?: number | undefined;
-}
 
 export interface Finding {
   function: FunctionScore;

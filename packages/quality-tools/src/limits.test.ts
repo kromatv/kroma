@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { FILE_LINE_LIMIT } from './file-size';
-import { type FunctionScore, judge, LIMITS } from './limits';
+import type { FunctionScore } from './functions';
+import { judge, LIMITS } from './limits';
 import { root } from './root';
 
 const Max = z.tuple([z.string(), z.object({ max: z.number() })]);

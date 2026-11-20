@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { FunctionScore } from './limits';
 import { type LineSpan, rustTestSpans } from './rust-test-spans';
 
 const Row = z.object({
@@ -14,6 +13,9 @@ const Row = z.object({
   nesting: z.number().int().optional(),
   tries: z.number().int().optional(),
 });
+
+/** One function as `python/functions.py` measured it. */
+export type FunctionScore = z.infer<typeof Row>;
 
 /** The functions `python/functions.py` printed, one JSON object per line. */
 export function parseFunctions(output: string): FunctionScore[] {
