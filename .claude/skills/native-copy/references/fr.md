@@ -48,6 +48,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Set up, setup | Configurer, la configuration | Installation, setup |
 | Library | Bibliothèque | Médiathèque, Librairie |
 | Media (your files) | vos films et vos séries | vos médias |
+| Release (a torrent or an NZB) | version | release |
+| Apply to the selection, 3 picked | Appliquer à la sélection (3) | , 3 choisis |
 | Scan | Analyse, analyser | Scan, scanner |
 | Match (a title) | Identifier | Matcher, faire correspondre |
 | Continue Watching | Reprendre la lecture | Continuer à regarder |
