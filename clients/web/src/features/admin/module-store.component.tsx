@@ -168,11 +168,11 @@ function StoreCard({
                 </Text>
               )}
             </Row>
-            {words.description && (
+            {words.description ? (
               <Text variant="meta" color="textMuted" lines={2} mt={4}>
                 {words.description}
               </Text>
-            )}
+            ) : null}
             {refusal && (
               <Text variant="meta" color={m.updateBlocked ? 'textDim' : 'danger'} mt={4}>
                 {refusal}
