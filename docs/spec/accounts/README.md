@@ -10,7 +10,9 @@ the NAS, the people they let in, and the screens each of them signs into. Anythi
 grander is a cost this product declines to pay.
 
 What the server tells each of those people about, and the inbox they read it in, has its own
-chapter: [`notifications.md`](notifications.md).
+chapter: [`notifications.md`](notifications.md). What age a title is rated for, the ceiling a
+profile can be kept under and the profile a household makes for a child have theirs:
+[`kids.md`](kids.md).
 
 ## The account model
 
@@ -40,6 +42,11 @@ concepts.
 The honest cost: a genuinely shared device, one television with several viewers, mixes
 everyone's watch state under whichever account it holds. We accept that. The fix is switching
 accounts on the device, not inventing passwordless sub-identities to avoid it.
+
+A Kids profile ([`kids.md`](kids.md)) is not one. It is an account with its own watch state,
+settings and devices, made by an admin for a child who has no email and no password. It has
+no credential at all, so it opens only on a device where a member of the household is
+already signed in (ACCT-126). It hangs off no other account.
 
 ### An account that waits
 
@@ -295,7 +302,8 @@ install, update or remove them.
 Status: **AGREED**
 
 **ACCT-23** (AGREED) - The matrix below is the whole of what each role may do. A user's power
-over their own account is total; their power over anyone else's, or over the server, is none.
+over their own account is total, except over the maturity ceiling an admin set for it
+(ACCT-115); their power over anyone else's, or over the server, is none.
 
 | Capability | Owner / admin | User |
 |---|---|---|
@@ -313,6 +321,8 @@ over their own account is total; their power over anyone else's, or over the ser
 | Install / update / remove modules | ✓ | no |
 | Monitor and unmonitor titles, edit quality rules | ✓ | no |
 | Change server settings, run and cancel jobs | ✓ | no |
+| Create a Kids profile | ✓ | no |
+| Set a profile's maturity ceiling, blocks and allows | ✓ | no |
 
 Everything in the admin column is [`admin/`](../admin/)'s subject in depth.
 
