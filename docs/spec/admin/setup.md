@@ -51,7 +51,7 @@ with the setup is asked nothing. It opens no setup and shows no checklist.
 
 ## The steps
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 In order: the language, the choice, the owner account, the import for an owner who chose it
 ([`import.md`](import.md)), then media, modules, people, being counted, and the home.
@@ -99,8 +99,8 @@ invitations of the accounts it created are already drafted.
 **ADMIN-175** (AGREED) - An invitation says what its account may do. A new one lets its
 account watch and nothing else, and the owner changes that on the step.
 
-**ADMIN-176** (AGREED) - The owner hands an invitation over from the step: they copy its link,
-or they send it by mail.
+**ADMIN-176** (SHIPPED) - The owner hands an invitation over from the step: they copy its link,
+or the server sends it to an address they type (ADMIN-183).
 
 **ADMIN-177** (AGREED) - The owner deletes an invitation on the people step, and its link
 stops working.

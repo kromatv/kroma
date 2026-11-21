@@ -5,11 +5,13 @@ import { Button, Callout, IconButton, ListRow, Menu } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { InvitationRights } from '#web/features/setup/invitation-rights.component';
 import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
-import { invitationMail, useInvitations } from '#web/features/setup/use-invitations.hook';
+import { useInvitations } from '#web/features/setup/use-invitations.hook';
+import { InvitationMailDialog } from '#web/shared/ui/invitation-mail.component';
 
 interface RowProps {
   invite: Invite;
   link: string;
+  onMail: () => void;
   onEdit: () => void;
   onRevoke: () => void;
 }
@@ -21,17 +23,8 @@ function useRights(rights: readonly Permission[]): string {
     .join(' · ');
 }
 
-function useMailTo(link: string): string {
+function InvitationMenu({ onMail, onEdit, onRevoke }: Readonly<Omit<RowProps, 'invite' | 'link'>>) {
   const t = useT();
-  return invitationMail({
-    subject: t('setup.peopleMailSubject'),
-    body: t('setup.peopleMailBody', { link }),
-  });
-}
-
-function InvitationMenu({ link, onEdit, onRevoke }: Readonly<Omit<RowProps, 'invite'>>) {
-  const t = useT();
-  const mail = useMailTo(link);
   return (
     <Menu.Root label={t('setup.peopleMore')} align="end">
       <Menu.Trigger
@@ -47,11 +40,7 @@ function InvitationMenu({ link, onEdit, onRevoke }: Readonly<Omit<RowProps, 'inv
           />
         )}
       />
-      <Menu.Item
-        icon="mail"
-        label={t('setup.peopleMail')}
-        onSelect={() => window.location.assign(mail)}
-      />
+      <Menu.Item icon="mail" label={t('setup.peopleMail')} onSelect={onMail} />
       <Menu.Item icon="pencil" label={t('setup.peopleRightsEdit')} onSelect={onEdit} />
       <Menu.Separator />
       <Menu.Item icon="trash" label={t('setup.peopleDelete')} tone="danger" onSelect={onRevoke} />
@@ -59,7 +48,7 @@ function InvitationMenu({ link, onEdit, onRevoke }: Readonly<Omit<RowProps, 'inv
   );
 }
 
-function InvitationRow({ invite, link, onEdit, onRevoke }: Readonly<RowProps>) {
+function InvitationRow({ invite, link, onMail, onEdit, onRevoke }: Readonly<RowProps>) {
   const t = useT();
   const rights = useRights(invite.permissions);
   return (
@@ -75,17 +64,18 @@ function InvitationRow({ invite, link, onEdit, onRevoke }: Readonly<RowProps>) {
           label={t('setup.peopleCopy')}
           onPress={() => void navigator.clipboard.writeText(link)}
         />
-        <InvitationMenu link={link} onEdit={onEdit} onRevoke={onRevoke} />
+        <InvitationMenu onMail={onMail} onEdit={onEdit} onRevoke={onRevoke} />
       </ListRow.Trailing>
     </ListRow.Root>
   );
 }
 
 interface ListProps extends Pick<ReturnType<typeof useInvitations>, 'open' | 'linkOf' | 'revoke'> {
+  onMail: (invite: Invite) => void;
   onEdit: (invite: Invite) => void;
 }
 
-function InvitationList({ open, linkOf, revoke, onEdit }: Readonly<ListProps>) {
+function InvitationList({ open, linkOf, revoke, onMail, onEdit }: Readonly<ListProps>) {
   if (open.length === 0) {
     return null;
   }
@@ -96,6 +86,7 @@ function InvitationList({ open, linkOf, revoke, onEdit }: Readonly<ListProps>) {
           key={held.token}
           invite={held}
           link={linkOf(held)}
+          onMail={() => onMail(held)}
           onEdit={() => onEdit(held)}
           onRevoke={() => void revoke(held.token)}
         />
@@ -148,13 +139,28 @@ interface PeopleStepProps {
   onContinue: () => void;
 }
 
+function MailDialog({ invite, onClose }: Readonly<{ invite: Invite | null; onClose: () => void }>) {
+  if (!invite) {
+    return null;
+  }
+  return <InvitationMailDialog token={invite.token} onClose={onClose} />;
+}
+
+function ContinueButton({ onContinue }: Readonly<{ onContinue: () => void }>) {
+  const t = useT();
+  return (
+    <Button size="md" label={t('setup.continue')} iconRight="arrow-right" onPress={onContinue} />
+  );
+}
+
 /** Who else watches here. Each invitation is a link, and the person who opens
  * it sets their own password. A link says what its account may do. The owner
- * changes those rights, sends the link by mail, or deletes it. */
+ * changes those rights, has the server send the link by mail, or deletes it. */
 export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
   const t = useT();
   const { open, busy, create, revoke, change, linkOf } = useInvitations();
   const [editing, setEditing] = useState<Invite | null>(null);
+  const [mailing, setMailing] = useState<Invite | null>(null);
   const save = (invite: Invite, rights: Permission[]) => {
     setEditing(null);
     void change(invite.token, rights);
@@ -163,18 +169,20 @@ export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
     <>
       <StepHeading title={t('setup.peopleTitle')} sub={t('setup.peopleSub')} />
       <StepBody>
-        <InvitationList open={open} linkOf={linkOf} revoke={revoke} onEdit={setEditing} />
+        <InvitationList
+          open={open}
+          linkOf={linkOf}
+          revoke={revoke}
+          onMail={setMailing}
+          onEdit={setEditing}
+        />
         <InviteMore busy={busy} onInvite={() => void create()} />
       </StepBody>
       <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
+        <ContinueButton onContinue={onContinue} />
       </StepActions>
       <RightsEditor invite={editing} onClose={() => setEditing(null)} onSave={save} />
+      <MailDialog invite={mailing} onClose={() => setMailing(null)} />
     </>
   );
 }

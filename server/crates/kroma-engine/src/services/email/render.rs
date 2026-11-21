@@ -52,12 +52,15 @@ pub fn render_strings(
         EmailKind::Reset => "email.reset",
         EmailKind::Verify => "email.verify",
         EmailKind::Activate => "email.activate",
+        EmailKind::Invite => "email.invite",
     };
     let t = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[]);
     let named = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[("name", server_name)]);
     let (code_note, code_label) = match kind {
         EmailKind::Reset => (t("codeNote"), t("codeLabel")),
-        EmailKind::Verify | EmailKind::Activate => (String::new(), String::new()),
+        EmailKind::Verify | EmailKind::Activate | EmailKind::Invite => {
+            (String::new(), String::new())
+        }
     };
     ResetStrings {
         subject: i18n::t(locale, &format!("{prefix}.subject"), &[("name", server_name)]),
@@ -176,6 +179,34 @@ mod tests {
         assert!(html.contains(url));
         assert!(!html.contains("{{"));
         assert_eq!(html.matches("https://").count(), 2);
+    }
+
+    #[test]
+    fn an_invitation_links_only_to_the_server_and_carries_no_code() {
+        let url = "https://kroma.example/join?invite=abc";
+        let s = render_strings(EmailKind::Invite, "en", "Home", url);
+        let html = render_html("en", &s, "Home", url);
+
+        assert!(s.code_note.is_empty());
+        assert!(s.subject.contains("Home"));
+        assert!(s.text.contains(url));
+        assert!(!s.preheader.contains("{name}") && !s.footer.contains("{name}"));
+        assert_eq!(s.text.matches("https://").count(), 1);
+        assert_eq!(html.matches("https://").count(), 2);
+        assert_eq!(html.matches(url).count(), 2);
+        assert!(!s.text.contains("www.") && !html.contains("www."));
+        assert!(!html.contains("{{") && !html.contains("#1C1C22"));
+    }
+
+    #[test]
+    fn an_invitation_is_written_in_the_language_it_was_sent_in() {
+        let fr = render_strings(EmailKind::Invite, "fr", "Home", "https://x");
+        let en = render_strings(EmailKind::Invite, "en", "Home", "https://x");
+
+        assert_ne!(fr.subject, en.subject);
+        assert_ne!(fr.button_label, en.button_label);
+        assert!(fr.text.contains("https://x") && en.text.contains("https://x"));
+        assert!(!fr.heading.starts_with("email.") && !en.heading.starts_with("email."));
     }
 
     #[test]
