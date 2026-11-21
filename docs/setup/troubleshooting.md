@@ -77,6 +77,20 @@ KROMA cannot see or read the folder, or does not recognize the files in it.
    [Name your files](media-folders.md#name-your-files).
 5. Under **Server** > **Sources**, select **Scan** on the library.
 
+## A film you deleted is still listed
+
+KROMA removes a title only after a scan that read every folder of its library.
+While one folder is missing, empty, or holds a link KROMA cannot open, the scan
+keeps every title of that library. A share that is not mounted yet loses
+nothing that way, and neither do the resume points on its films.
+
+1. Read the log after a scan. The warning `kept every title it holds` names the
+   library, and the folder or the number of entries KROMA could not open.
+2. Mount that folder again, or remove the link whose file is gone. A folder that
+   is empty on purpose holds the library back too: remove it from the library
+   under **Server** > **Sources**.
+3. Under **Server** > **Sources**, select **Scan** on the library.
+
 ## A film shows the wrong title or poster
 
 KROMA picked the wrong match from the file name. Signed in as the owner, open

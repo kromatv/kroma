@@ -1,9 +1,12 @@
 //! A walk written into the catalogue while it still runs: each batch is a
 //! transaction of its own, and only a walk that read every folder prunes.
 
+use std::collections::HashSet;
 use std::ops::ControlFlow;
 use std::sync::{Mutex, MutexGuard, PoisonError};
 use std::time::{Duration, Instant};
+
+use tracing::warn;
 
 use crate::db::{self, Pool, ScanBatch};
 use crate::infra::events::{Bus, ServerEvent};
@@ -11,7 +14,7 @@ use crate::services::settings::LibraryDef;
 
 use super::batches::BatchSize;
 use super::changed_shows::HeldEpisodes;
-use super::{scan_in_batches, ScanData};
+use super::{scan_in_batches, ScanData, Unread, UnreadLibrary};
 
 const ANNOUNCE_EVERY: Duration = Duration::from_secs(2);
 
@@ -107,9 +110,42 @@ pub(super) fn sync_walk_in(
         });
     }
     held.note_changed(&mut data);
-    db::finish_sync(db, &data.libraries, &data.items, &held.settled_by(&data))
-        .map_err(|error| after_removing(dropped, error))?;
+    let unread: HashSet<String> = data
+        .unread_libraries
+        .iter()
+        .map(|library| library.id.clone())
+        .collect();
+    let walk = db::WalkEnd {
+        libraries: &data.libraries,
+        items: &data.items,
+        unread: &unread,
+        settled: &held.settled_by(&data),
+    };
+    db::finish_sync(db, &walk).map_err(|error| after_removing(dropped, error))?;
+    warn_kept(&data.unread_libraries);
     Ok(Walked::Synced(data))
+}
+
+fn warn_kept(unread: &[UnreadLibrary]) {
+    for library in unread {
+        let name = library.name.as_str();
+        match &library.why {
+            Unread::Missing(folder) => warn!(
+                library = name,
+                folder, "a folder of this library is not there; kept every title it holds"
+            ),
+            Unread::Empty(folder) => warn!(
+                library = name,
+                folder,
+                "a folder of this library holds no video file (an empty mount point?); kept every title it holds"
+            ),
+            Unread::Unreadable(entries) => warn!(
+                library = name,
+                entries,
+                "entries of this library could not be read (a link whose target is not mounted?); kept every title it holds"
+            ),
+        }
+    }
 }
 
 fn after_removing(dropped: usize, error: anyhow::Error) -> anyhow::Error {
