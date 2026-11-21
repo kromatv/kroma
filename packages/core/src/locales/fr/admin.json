@@ -273,7 +273,7 @@
   "admin.resetAccessHint": "Crée un lien à usage unique et un code. Le lien seul ne suffit pas : communiquez le code à la personne par un moyen sûr.",
   "admin.resetCode": "Code à usage unique",
   "admin.resetCodeHint": "Communiquez vous-même ce code à la personne. Il n'est jamais envoyé avec le lien : le lien seul ne réinitialise rien.",
-  "admin.resetInactive": "Ce serveur n'a pas encore autorisé le relais kroma.tv : aucun e-mail n'est parti. Copiez le lien vous-même, ou autorisez le relais en lançant son test dans les réglages.",
+  "admin.resetInactive": "Ce serveur n'est pas encore autorisé sur le relais kroma.tv : aucun e-mail n'est parti. Copiez le lien vous-même, ou lancez le test du relais dans les réglages pour l'autoriser.",
   "admin.resetLink": "Lien de réinitialisation",
   "admin.resetManual": "Aucun envoi n'est configuré : copiez le lien vous-même. Comme il contient le code, la personne n'a plus qu'à choisir un nouveau mot de passe.",
   "admin.resetMetadata": "Réinitialiser les métadonnées TMDB",
