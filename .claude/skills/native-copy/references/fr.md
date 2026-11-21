@@ -44,6 +44,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Settings | Réglages | Paramétrages |
 | Search (action) | Rechercher | Chercher |
 | Save | Enregistrer | Sauver, Sauvegarder |
+| Probing (a file) | analyse des fichiers | probing, sonde |
+| Timeline, scrub bar | barre de lecture | timeline |
+| Queued (a stage) | En attente | En file |
 | Delete / Remove | Supprimer / Retirer | Effacer |
 | Clear (a PIN, metadata) | Supprimer | Effacer |
 | Storyboard (seek previews) | aperçus | storyboards |
