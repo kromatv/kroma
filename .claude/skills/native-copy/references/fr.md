@@ -41,6 +41,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 |---|---|---|
 | Settings | Réglages | Paramétrages |
 | Search (action) | Rechercher | Chercher |
+| Fix the match (a title) | Corriger l'identification | Corriger la correspondance |
+| Default (a track flag) | Par défaut | Défaut, which means a defect |
+| Media details (the file's codecs) | Détails du fichier | Détails du média |
+| A genre name | TMDB's French name, spelled as TMDB spells it, `&` included | a rewrite: KROMA matches stored genres against these labels |
 | Save | Enregistrer | Sauver, Sauvegarder |
 | Delete / Remove | Supprimer / Retirer | Effacer |
 | Skip | Passer cette étape, Ignorer | Sauter |
