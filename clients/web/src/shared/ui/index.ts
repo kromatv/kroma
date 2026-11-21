@@ -8,6 +8,7 @@ export { PosterActionBar } from '#web/shared/ui/poster-action-bar.component';
 export {
   CardSkeleton,
   DetailSkeleton,
+  ListSkeleton,
   PageSkeleton,
   RailSkeleton,
   Skeleton,

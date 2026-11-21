@@ -1,26 +1,15 @@
 import type { Importer, ImporterList } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, EmptyState, GuidedFlow, ListRow, Skeleton } from '@kromatv/ui/kit';
+import { Box, Button, Callout, EmptyState, GuidedFlow, ListRow } from '@kromatv/ui/kit';
 import { useImportSession } from '#web/features/admin/import/import-session.component';
 import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
+import { ListSkeleton } from '#web/shared/ui';
 import { StepFailure } from '#web/shared/ui/step-failure.component';
 import { useImporters } from '#web/features/admin/import/use-importers.hook';
-
-const LOADING_ROWS = ['first', 'second'];
 
 interface SourceProps {
   onBack?: () => void;
   onSkip?: () => void;
-}
-
-function Loading() {
-  return (
-    <Box gap={8}>
-      {LOADING_ROWS.map((row) => (
-        <Skeleton key={row} w="100%" h={84} radius="lg" />
-      ))}
-    </Box>
-  );
 }
 
 function ImporterRow({ importer, onPick }: Readonly<{ importer: Importer; onPick: () => void }>) {
@@ -117,7 +106,7 @@ export function ImportSource({ onBack, onSkip }: Readonly<SourceProps>) {
       </GuidedFlow.Header>
       <GuidedFlow.Panel>
         {data ? <Sources list={data} /> : null}
-        {!data && !error ? <Loading /> : null}
+        {!data && !error ? <ListSkeleton count={2} height={84} /> : null}
         <StepFailure error={error ? t('setup.importListFailed') : null} />
       </GuidedFlow.Panel>
       <SourceActions onBack={onBack} onSkip={onSkip} />

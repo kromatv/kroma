@@ -24,7 +24,7 @@ import {
 } from '#web/features/setup/module-offers';
 import { useSetupPicks } from '#web/features/setup/setup-picks.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
-import { Image } from '#web/shared/ui';
+import { Image, ListSkeleton } from '#web/shared/ui';
 
 const GROUP_TITLE = {
   library: 'setup.modulesGroupLibrary',
@@ -174,19 +174,6 @@ function OfferSections({ all }: Readonly<{ all: readonly Offer[] }>) {
   );
 }
 
-const LOADING_ROWS = ['first', 'second', 'third', 'fourth'];
-
-function OffersLoading() {
-  return (
-    <Box gap={8}>
-      <Skeleton w={160} h={12} radius="sm" />
-      {LOADING_ROWS.map((row) => (
-        <Skeleton key={row} w="100%" h={112} radius="lg" />
-      ))}
-    </Box>
-  );
-}
-
 function SummaryLine({ icon, line }: Readonly<{ icon: 'download' | 'trash'; line: string }>) {
   return (
     <Row align="center" gap={6}>
@@ -259,7 +246,13 @@ export function ModulesStep({
         <GuidedFlow.Subtitle>{t('setup.modulesSub')}</GuidedFlow.Subtitle>
       </GuidedFlow.Header>
       <GuidedFlow.Panel>
-        {isPending ? <OffersLoading /> : <OfferSections all={all} />}
+        {isPending ? (
+          <ListSkeleton count={4} height={112}>
+            <Skeleton w={160} h={12} radius="sm" />
+          </ListSkeleton>
+        ) : (
+          <OfferSections all={all} />
+        )}
         {!isPending && all.length === 0 ? (
           <Text color="textMuted">{t('setup.modulesNone')}</Text>
         ) : null}
