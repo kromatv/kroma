@@ -50,6 +50,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Media (your files) | vos films et vos séries | vos médias |
 | Scan | Analyse, analyser | Scan, scanner |
 | Match (a title) | Identifier | Matcher, faire correspondre |
+| Ready to watch (a notification) | Disponible | Prêt à regarder |
+| {title} was added, was approved | Nouveau dans la bibliothèque : {title}; Votre demande pour {title} est approuvée | {title} a été ajouté, whose gender a title does not tell |
+| Not even us (the product) | pas même KROMA | pas même nous |
 | Continue Watching | Reprendre la lecture | Continuer à regarder |
 | Trailer | Bande-annonce | Trailer |
 | Subtitles | Sous-titres | |
