@@ -47,6 +47,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Sign in / Sign out | Se connecter / Se déconnecter | Login |
 | Set up, setup | Configurer, la configuration | Installation, setup |
 | Library | Bibliothèque | Médiathèque, Librairie |
+| TV (the device, in a sentence) | téléviseur, masculine | la TV, ta TV |
+| QR (to scan) | QR code | QR |
+| Tap to (on a phone) | Touchez pour | Appuyez pour |
 | Media (your files) | vos films et vos séries | vos médias |
 | Scan | Analyse, analyser | Scan, scanner |
 | Match (a title) | Identifier | Matcher, faire correspondre |
