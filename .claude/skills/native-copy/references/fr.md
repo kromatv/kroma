@@ -33,7 +33,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 - Digits for a number the reader acts on: *7 jours*, *8 caractères minimum*.
 - Decimal comma, units *Ko*, *Mo*, *Go*. The project's formatter writes them.
 - A word, never a symbol: *et*, *ou*. Not `+`, not `/`.
-- Follow the apostrophe and the spelling of *e-mail* the catalog already uses.
+- The straight apostrophe `'`, never `’`. *E-mail* with a hyphen, never *email*.
+- No comma before the *ou* or the *et* that ends a list: *a expiré, a déjà servi
+  ou n'existe pas*.
 
 ## Fixed vocabulary
 
@@ -67,6 +69,16 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Invitation link | Lien d'invitation | |
 | Feature | Fonctionnalité | Feature |
 | At any time | à tout moment | n'importe quand |
+| Email | e-mail, adresse e-mail | email, mail, courriel |
+| Clear (a field, a search) | Effacer | Vider |
+| Done (a button that closes a step, a keyboard key) | OK | Terminé |
+| Sign in failed | Impossible de se connecter | Connexion impossible, Échec de la connexion |
+| Invalid credentials | Identifiant ou mot de passe incorrect | Identifiants invalides |
+| Passkey | Clé d'accès | Passkey |
+| One-time code | Code à usage unique | |
+| 8+ characters | 8 caractères minimum | 8+ caractères, 8 caractères ou plus |
+| Link a device, Quick Connect | Associer un appareil, la connexion rapide | Lier un appareil |
+| Has already been used (a link, a code) | a déjà servi | a déjà été utilisé |
 
 ## Calques already made here, and what was meant
 
@@ -87,6 +99,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Le compte n'a pas pu être créé | English passive | Impossible de créer le compte |
 | Regarder le catalogue + reprise | a symbol for a word, and a noun pile | Regarder les films et les séries, et reprendre une lecture |
 | Départ (a step name) | too short to mean anything | Point de départ |
+| Création du compte impossible | a noun and *impossible*, the English *failed* | Impossible de créer le compte |
+| Session expirée, veuillez vous reconnecter | *veuillez*, and a comma for a full stop | Votre session a expiré. Reconnectez-vous. |
+| Ou rejoignez avec un compte que vous avez déjà | *join with* word for word | Ou inscrivez-vous avec un compte existant |
+| Le nom d'utilisateur ne peut pas être vide | a rule stated about the field | Indiquez un nom d'utilisateur |
 
 ## One screen, one thing to know
 
