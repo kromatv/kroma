@@ -316,6 +316,7 @@
   "admin.serverName": "Server name",
   "admin.serverNameHint": "Visible to shared users",
   "admin.setupChecklistTitle": "Finish setting up",
+  "admin.setupLineBackups": "Back up this server every night.",
   "admin.setupLineDismiss": "Remove {name} from the list",
   "admin.setupLineImport": "Bring the libraries, the people and what each one watched over from Plex or Jellyfin.",
   "admin.setupLineMedia": "Add the folders that hold your films and series.",

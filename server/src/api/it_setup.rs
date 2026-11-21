@@ -143,7 +143,10 @@ async fn an_ended_setup_lists_every_step_not_done() {
 
     let setup = setup_of(&t, &token).await;
 
-    assert_eq!(checklist(&setup), ["media", "modules", "people", "privacy"]);
+    assert_eq!(
+        checklist(&setup),
+        ["media", "modules", "people", "backups", "privacy"]
+    );
 }
 
 #[tokio::test]
@@ -254,4 +257,22 @@ async fn the_importer_the_import_step_installed_leaves_the_modules_line() {
 
     let setup = setup_of(&t, &token).await;
     assert!(checklist(&setup).contains(&"modules"));
+}
+
+#[tokio::test]
+async fn scheduled_backups_switched_on_mark_the_backups_step_done() {
+    let t = test_app();
+    let token = ended_early(&t, "fresh").await;
+
+    send(
+        &t.app,
+        "PUT",
+        "/api/admin/backup/schedule",
+        Some(&token),
+        Some(json!({ "enabled": true })),
+    )
+    .await;
+
+    let setup = setup_of(&t, &token).await;
+    assert!(!checklist(&setup).contains(&"backups"));
 }

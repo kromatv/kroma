@@ -23,10 +23,16 @@ use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
 
+mod schedule;
+
 /// Backup export / import. Paths are relative to the `/api/admin` nest.
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/backup/export", get(export_backup))
+        .route(
+            "/backup/schedule",
+            get(schedule::read_schedule).put(schedule::change_schedule),
+        )
         .route(
             "/backup/import",
             post(import_backup).layer(DefaultBodyLimit::max(MAX_BACKUP_BYTES)),

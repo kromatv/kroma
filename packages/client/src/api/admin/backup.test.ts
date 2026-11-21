@@ -18,6 +18,19 @@ describe('the backup endpoints', () => {
       method: 'POST',
       path: '/admin/backup/import',
     },
+    {
+      name: 'schedule',
+      call: (c) => c.admin.backup.schedule(),
+      method: 'GET',
+      path: '/admin/backup/schedule',
+    },
+    {
+      name: 'changeSchedule',
+      call: (c) => c.admin.backup.changeSchedule({ enabled: true, keep: 3 }),
+      method: 'PUT',
+      path: '/admin/backup/schedule',
+      body: { enabled: true, keep: 3 },
+    },
   ])('$name', checkEndpoint);
 });
 

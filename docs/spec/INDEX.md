@@ -3,7 +3,7 @@
 
 # Requirement index
 
-729 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+734 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -290,6 +290,11 @@
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-195** (AGREED) - The server saves a backup by itself on a schedule once the owner <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-196** (AGREED) - Scheduled backups go to a folder the owner chose, or to a <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-197** (AGREED) - The folder keeps the newest backups and the server removes the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-198** (AGREED) - A backup that could not be saved fails its task and tells the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-199** (AGREED) - The backups step comes after the people step. It says in one <sub>[setup.md](admin/setup.md)</sub>
 
 ## BROWSE - [browse](browse/)
 

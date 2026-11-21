@@ -18,6 +18,7 @@ pub enum Step {
     Media,
     Modules,
     People,
+    Backups,
     Privacy,
     Done,
 }
@@ -32,11 +33,12 @@ pub enum Start {
 }
 
 /// The steps that can be a line of the checklist, in its order.
-pub const LINES: [Step; 5] = [
+pub const LINES: [Step; 6] = [
     Step::Import,
     Step::Media,
     Step::Modules,
     Step::People,
+    Step::Backups,
     Step::Privacy,
 ];
 
@@ -44,19 +46,20 @@ impl Step {
     /// A step whose answer leaves nothing on the server but the answer: the
     /// owner confirms it, and that is what makes it done.
     pub fn confirmed_by_the_owner(self) -> bool {
-        matches!(self, Self::Modules | Self::Privacy)
+        matches!(self, Self::Modules | Self::Backups | Self::Privacy)
     }
 }
 
 /// What the server holds that makes a step done wherever it was made
 /// (ADMIN-122): an import that ran, a source, a module, an invitation or a
-/// second account.
+/// second account, scheduled backups switched on.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Facts {
     pub imported: bool,
     pub source: bool,
     pub module: bool,
     pub people: bool,
+    pub backups: bool,
 }
 
 impl Facts {
@@ -66,6 +69,7 @@ impl Facts {
             (self.source, Step::Media),
             (self.module, Step::Modules),
             (self.people, Step::People),
+            (self.backups, Step::Backups),
         ]
         .into_iter()
         .filter_map(|(held, step)| held.then_some(step))

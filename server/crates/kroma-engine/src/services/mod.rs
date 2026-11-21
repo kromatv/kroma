@@ -11,6 +11,7 @@ pub mod direct;
 pub mod email;
 pub mod embeddings;
 pub mod enrich;
+pub mod folders;
 pub mod importers;
 pub mod imports;
 pub mod jobs;

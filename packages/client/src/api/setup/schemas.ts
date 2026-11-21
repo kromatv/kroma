@@ -9,6 +9,7 @@ export const SetupStep = z.enum([
   'media',
   'modules',
   'people',
+  'backups',
   'privacy',
   'done',
 ]);
@@ -19,11 +20,11 @@ export const SetupStart = z.enum(['fresh', 'bring']);
 export type SetupStart = z.infer<typeof SetupStart>;
 
 /** A step that can be a line of the checklist an ended setup leaves. */
-export const SetupLine = z.enum(['import', 'media', 'modules', 'people', 'privacy']);
+export const SetupLine = z.enum(['import', 'media', 'modules', 'people', 'backups', 'privacy']);
 export type SetupLine = z.infer<typeof SetupLine>;
 
 /** A step the owner confirms, because its answer leaves nothing else behind. */
-export const SetupConfirmed = z.enum(['modules', 'privacy']);
+export const SetupConfirmed = z.enum(['modules', 'backups', 'privacy']);
 export type SetupConfirmed = z.infer<typeof SetupConfirmed>;
 
 function knownLines(lines: readonly unknown[]): SetupLine[] {

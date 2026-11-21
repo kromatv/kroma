@@ -40,7 +40,7 @@ it('lets a person skip every step after the owner account, and none before', () 
 });
 
 it('counts every screen as a step but the last one', () => {
-  expect(answeredSteps()).toHaveLength(7);
+  expect(answeredSteps()).toHaveLength(8);
   expect(answeredSteps()).not.toContain('done');
 });
 
@@ -98,7 +98,7 @@ it('has no import step for an owner who starts fresh', () => {
 });
 
 it('counts the import among the steps of an owner who brings a server over', () => {
-  expect(answeredSteps('bring')).toHaveLength(8);
+  expect(answeredSteps('bring')).toHaveLength(9);
   expect(stepsBehind('media', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
   expect(stepsUpTo('import', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
 });

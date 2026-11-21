@@ -295,6 +295,32 @@ server at a backup and it becomes the old server, then re-scans sources to rebui
 caches it deliberately did not carry. The restored server re-matches files to the identities
 the backup remembers, so watch history reattaches to media the moment it is scanned back in.
 
+### Scheduled backups
+
+Status: **AGREED**
+
+An export the owner runs by hand is no backup on the day nobody remembered to run one.
+
+**ADMIN-195** (AGREED) - The server saves a backup by itself on a schedule once the owner
+turns it on, with one switch under Admin beside the export. It is off on a new server.
+
+**ADMIN-196** (AGREED) - Scheduled backups go to a folder the owner chose, or to a
+`backups` folder inside the server's data folder until they choose one. A chosen folder
+passes the checks the folder picker applies, when the owner chooses it and again before
+every backup.
+
+**ADMIN-197** (AGREED) - The folder keeps the newest backups and the server removes the
+older ones: seven, saved each night, until the owner changes either. The number is changed
+beside the switch, the time where the time of every task is changed. A file the server did
+not save is never removed.
+
+**ADMIN-198** (AGREED) - A backup that could not be saved fails its task and tells the
+owner, as every failed task does. It is never silent.
+
+A scheduled backup is not encrypted. A password the server kept to encrypt it would sit
+beside the data it protects. The file is readable by the server's own account alone, and
+the owner chooses a folder nobody else reads.
+
 ## Updates
 
 Status: **AGREED**

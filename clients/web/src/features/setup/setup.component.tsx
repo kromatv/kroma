@@ -1,6 +1,7 @@
 import { Navigate } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { DoneStep } from '#web/features/setup/done-step.component';
+import { BackupsStep } from '#web/features/setup/backups-step.component';
 import { ImportSession } from '#web/features/setup/import-session.component';
 import { ImportStep } from '#web/features/setup/import-step.component';
 import { LanguageStep } from '#web/features/setup/language-step.component';
@@ -59,6 +60,7 @@ const VIEWS: Record<SetupStep, (moves: Moves) => ReactNode> = {
   media: ({ feed, next, back }) => <MediaStep feed={feed} onBack={back} onContinue={next} />,
   modules: ({ next, back }) => <ModulesStep onBack={back} onContinue={next} />,
   people: ({ next, back }) => <PeopleStep onBack={back} onContinue={next} />,
+  backups: ({ next, back }) => <BackupsStep onBack={back} onContinue={next} />,
   privacy: ({ next, back }) => <PrivacyStep onBack={back} onContinue={next} />,
   done: ({ leave }) => <DoneStep onOpen={leave} />,
 };
@@ -94,7 +96,7 @@ type Memory = ReturnType<typeof useSetupMemory>;
 function useAnswered(step: SetupStep, memory: Memory) {
   const { picked } = useSetupPicks();
   return () => {
-    if (step === 'privacy' || (step === 'modules' && picked.length === 0)) {
+    if (step === 'privacy' || step === 'backups' || (step === 'modules' && picked.length === 0)) {
       void memory.confirm(step);
     }
   };

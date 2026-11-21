@@ -18,7 +18,7 @@ describe('a setup answer', () => {
 
   it('leaves out a line this client does not know', () => {
     const read = SetupAnswer.parse({
-      setup: { ...RUNNING, ended: true, checklist: ['media', 'backups', 'people'] },
+      setup: { ...RUNNING, ended: true, checklist: ['media', 'devices', 'people'] },
     });
 
     expect(read.setup?.checklist).toEqual(['media', 'people']);

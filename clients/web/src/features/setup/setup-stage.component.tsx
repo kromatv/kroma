@@ -10,6 +10,7 @@ const STAGE_LINE = {
   media: 'setup.stageMedia',
   modules: 'setup.stageModules',
   people: 'setup.stagePeople',
+  backups: 'setup.stageBackups',
   privacy: 'setup.stagePrivacy',
   done: 'setup.stageDone',
 } as const satisfies Record<SetupStep, string>;

@@ -13,6 +13,7 @@ import {
 import { createFileRoute } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import { ExportModal, ImportModal, isEncryptedFile } from '#web/features/admin/backup-modals';
+import { BackupScheduleSection } from '#web/features/admin/backup-schedule.component';
 import { Denied, PageHeader, useCap } from '#web/features/admin/shell';
 
 const sDefinition = styles({ hidden: { display: 'none' } });
@@ -69,6 +70,8 @@ function BackupPage() {
           {t('admin.backupWarning')}
         </Text>
       </Surface>
+
+      <BackupScheduleSection />
 
       <Section.Root mt={28}>
         <Section.Header>

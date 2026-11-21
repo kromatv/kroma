@@ -54,7 +54,13 @@ fn a_fresh_setup_has_no_import_line() {
 
     assert_eq!(
         lines,
-        [Step::Media, Step::Modules, Step::People, Step::Privacy]
+        [
+            Step::Media,
+            Step::Modules,
+            Step::People,
+            Step::Backups,
+            Step::Privacy
+        ]
     );
 }
 
@@ -75,6 +81,7 @@ fn each_fact_the_server_holds_takes_its_line_away() {
         source: true,
         module: true,
         people: true,
+        backups: true,
     };
 
     setup.observe(facts);
@@ -119,13 +126,13 @@ fn a_dismissed_line_leaves_the_checklist() {
 }
 
 #[test]
-fn only_the_modules_and_statistics_steps_are_confirmed_by_the_owner() {
+fn only_the_modules_backups_and_statistics_steps_are_confirmed_by_the_owner() {
     let confirmed: Vec<Step> = LINES
         .into_iter()
         .filter(|step| step.confirmed_by_the_owner())
         .collect();
 
-    assert_eq!(confirmed, [Step::Modules, Step::Privacy]);
+    assert_eq!(confirmed, [Step::Modules, Step::Backups, Step::Privacy]);
 }
 
 #[test]

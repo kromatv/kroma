@@ -316,6 +316,7 @@
   "admin.serverName": "Nom du serveur",
   "admin.serverNameHint": "Visible par les utilisateurs partagés",
   "admin.setupChecklistTitle": "Terminer la configuration",
+  "admin.setupLineBackups": "Sauvegardez ce serveur chaque nuit.",
   "admin.setupLineDismiss": "Retirer {name} de la liste",
   "admin.setupLineImport": "Migrez depuis Plex ou Jellyfin les bibliothèques, les comptes et ce que chacun a regardé.",
   "admin.setupLineMedia": "Ajoutez les dossiers de vos films et de vos séries.",

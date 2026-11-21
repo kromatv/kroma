@@ -86,6 +86,12 @@ fn declared() -> Declared {
     // sends, and why this is legitimate interest rather than consent, is
     // docs/anonymous-stats-gdpr.md. The two below are the detail blocks the base
     // switch carries, each droppable on its own and each silent without it.
+    m.core_only(crate::services::backup::schedule::ENABLED_KEY, json!(false));
+    m.core_only(crate::services::backup::schedule::FOLDER_KEY, json!(""));
+    m.core_only(
+        crate::services::backup::schedule::KEEP_KEY,
+        json!(crate::services::backup::schedule::DEFAULT_KEEP),
+    );
     m.module_declared("anonStats", json!(true));
     m.module_declared("anonStatsUsage", json!(true));
     m.module_declared("anonStatsStatistics", json!(true));
