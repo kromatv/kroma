@@ -58,28 +58,30 @@ pub(super) fn delete_gone_files(
     items: &[MediaItem],
     unread: &HashSet<String>,
 ) -> Result<()> {
-    let scanned: HashSet<&str> = items
-        .iter()
-        .flat_map(|i| i.files.iter())
-        .filter_map(|f| f.abs_path.as_deref())
-        .collect();
-    let mut existing: Vec<(String, String, String)> = Vec::new();
-    {
-        let mut q = tx.prepare(
-            "SELECT f.id, f.abs_path, i.library FROM files f JOIN items i ON i.id = f.item_id",
-        )?;
-        let rows = q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
-        for r in rows {
-            existing.push(r?);
-        }
-    }
+    let scanned = scanned_paths(items);
     let mut del = tx.prepare("DELETE FROM files WHERE id = ?1")?;
-    for (id, abs, library) in &existing {
-        if !scanned.contains(abs.as_str()) && !unread.contains(library) {
+    for (id, abs, library) in stored_files(tx)? {
+        if !scanned.contains(abs.as_str()) && !unread.contains(&library) {
             del.execute(params![id])?;
         }
     }
     Ok(())
+}
+
+fn scanned_paths(items: &[MediaItem]) -> HashSet<&str> {
+    items
+        .iter()
+        .flat_map(|i| i.files.iter())
+        .filter_map(|f| f.abs_path.as_deref())
+        .collect()
+}
+
+fn stored_files(tx: &rusqlite::Transaction) -> Result<Vec<(String, String, String)>> {
+    let mut q = tx.prepare(
+        "SELECT f.id, f.abs_path, i.library FROM files f JOIN items i ON i.id = f.item_id",
+    )?;
+    let rows = q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
 // Prunes items/shows with no backing files, then the language-cache rows for

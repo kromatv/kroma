@@ -110,6 +110,11 @@ pub(super) fn sync_walk_in(
         });
     }
     held.note_changed(&mut data);
+    finish(db, &held, &data).map_err(|error| after_removing(dropped, error))?;
+    Ok(Walked::Synced(data))
+}
+
+fn finish(db: &Pool, held: &HeldEpisodes, data: &ScanData) -> anyhow::Result<()> {
     let unread: HashSet<String> = data
         .unread_libraries
         .iter()
@@ -119,11 +124,11 @@ pub(super) fn sync_walk_in(
         libraries: &data.libraries,
         items: &data.items,
         unread: &unread,
-        settled: &held.settled_by(&data),
+        settled: &held.settled_by(data),
     };
-    db::finish_sync(db, &walk).map_err(|error| after_removing(dropped, error))?;
+    db::finish_sync(db, &walk)?;
     warn_kept(&data.unread_libraries);
-    Ok(Walked::Synced(data))
+    Ok(())
 }
 
 fn warn_kept(unread: &[UnreadLibrary]) {
