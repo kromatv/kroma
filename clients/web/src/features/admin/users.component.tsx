@@ -18,6 +18,8 @@ import { accessLabel } from '#web/features/admin/library-visibility.component';
 import { Pill, PillDot } from '#web/features/admin/pill.component';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { EditUserModal } from '#web/features/admin/users-edit-modal.component';
+import { KidsModal } from '#web/features/admin/users-kids-modal.component';
+import { MemberMarks } from '#web/features/admin/member-marks.component';
 import { InviteModal } from '#web/features/admin/users-invite-modal.component';
 import { JoinRequests } from '#web/features/admin/users-join-requests.component';
 import { PendingInvite } from '#web/features/admin/users-pending-invite.component';
@@ -63,6 +65,11 @@ function UsersPageInner() {
       await reloadInvites();
     }
   };
+  const openKids = async () => {
+    if (await KidsModal.call()) {
+      await reload();
+    }
+  };
   const openEdit = async (user: AdminUser) => {
     if (await EditUserModal.call({ user })) {
       await reload();
@@ -79,6 +86,7 @@ function UsersPageInner() {
         <PageHeader.Title>{t('admin.usersTitle')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('admin.usersSub')}</PageHeader.Subtitle>
         <PageHeader.Actions>
+          <Button variant="glass" label={t('admin.addKids')} onPress={() => void openKids()} />
           <Button icon="plus" label={t('nav.inviteUser')} onPress={() => void openInvite()} />
         </PageHeader.Actions>
       </PageHeader.Root>
@@ -144,11 +152,7 @@ function UsersPageInner() {
                       <Text variant="label" lines={1}>
                         {u.username}
                       </Text>
-                      {u.resetRequested ? (
-                        <Pill ink="accentText" bg="accentWash/16">
-                          {t('admin.resetRequested')}
-                        </Pill>
-                      ) : null}
+                      <MemberMarks user={u} />
                     </Box>
                     <Text variant="meta" color="textDim" lines={1}>
                       {u.email}

@@ -2061,7 +2061,6 @@
       "files": [
         "clients/web/src/features/admin/jobs-schedule.component.tsx",
         "clients/web/src/features/admin/libraries-modals.tsx",
-        "clients/web/src/features/admin/library-visibility.component.tsx",
         "clients/web/src/features/admin/modal-hosts.component.tsx",
         "clients/web/src/features/admin/shell.tsx",
         "clients/web/src/features/admin/users-approve-modal.component.tsx",
@@ -2087,7 +2086,9 @@
       }
     },
     {
-      "files": ["packages/ci-tools/src/notes-model.ts"],
+      "files": [
+        "packages/ci-tools/src/notes-model.ts"
+      ],
       "rules": {
         "import/no-named-as-default-member": "off"
       }
@@ -2659,7 +2660,9 @@
       }
     },
     {
-      "files": ["packages/workbench/src/workbench.component.tsx"],
+      "files": [
+        "packages/workbench/src/workbench.component.tsx"
+      ],
       "rules": {
         "sonarjs/cognitive-complexity": "off"
       }
@@ -3663,7 +3666,9 @@
       }
     },
     {
-      "files": ["packages/i18n/src/registry.ts"],
+      "files": [
+        "packages/i18n/src/registry.ts"
+      ],
       "rules": {
         "typescript/no-duplicate-type-constituents": "off"
       }
@@ -3724,7 +3729,10 @@
       }
     },
     {
-      "files": ["packages/i18n-tools/src/status.test.ts", "packages/i18n/src/messages.test.ts"],
+      "files": [
+        "packages/i18n-tools/src/status.test.ts",
+        "packages/i18n/src/messages.test.ts"
+      ],
       "rules": {
         "typescript/no-non-null-assertion": "off"
       }
@@ -4688,13 +4696,17 @@
       }
     },
     {
-      "files": ["packages/ui/src/testing-style.tsx"],
+      "files": [
+        "packages/ui/src/testing-style.tsx"
+      ],
       "rules": {
         "typescript/no-useless-default-assignment": "off"
       }
     },
     {
-      "files": ["packages/i18n/vite/folder.test.ts"],
+      "files": [
+        "packages/i18n/vite/folder.test.ts"
+      ],
       "rules": {
         "typescript/require-array-sort-compare": "off"
       }
@@ -4763,13 +4775,17 @@
       }
     },
     {
-      "files": ["packages/ci-tools/src/npm/registry.test.ts"],
+      "files": [
+        "packages/ci-tools/src/npm/registry.test.ts"
+      ],
       "rules": {
         "unicorn/no-thenable": "off"
       }
     },
     {
-      "files": ["packages/core/src/player.test.ts"],
+      "files": [
+        "packages/core/src/player.test.ts"
+      ],
       "rules": {
         "unicorn/no-useless-spread": "off"
       }
@@ -4790,7 +4806,9 @@
       }
     },
     {
-      "files": ["packages/ci-tools/src/cli.ts"],
+      "files": [
+        "packages/ci-tools/src/cli.ts"
+      ],
       "rules": {
         "unicorn/require-module-specifiers": "off"
       }

@@ -30,6 +30,7 @@ export interface ProfileChoice {
   avatarUrl: string | null;
   remembered: StoredSession | null;
   locked: boolean;
+  kids: boolean;
 }
 
 export function ProfilePicker({
@@ -78,6 +79,7 @@ export function ProfilePicker({
               seed={p.id}
               locked={p.locked}
               lockedLabel={t('auth.passwordRequired')}
+              kids={p.kids}
               onPress={() => onPick(p)}
             />
             {p.remembered ? (

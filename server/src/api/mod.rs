@@ -118,6 +118,8 @@ mod it_mail_relay;
 #[cfg(test)]
 mod it_account_identifiers;
 #[cfg(test)]
+mod it_kids;
+#[cfg(test)]
 mod it_maturity;
 #[cfg(test)]
 mod it_media;

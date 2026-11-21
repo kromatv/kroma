@@ -116,28 +116,30 @@ clears the other.
 
 ## A Kids profile
 
-Status: **AGREED**
+Status: **SHIPPED** in part, on the server and in the web and desktop apps; each
+requirement carries its own. The television and phone pickers do not list Kids profiles
+yet, and the avatar is the drawn one: no picture is offered.
 
 **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an
 avatar. It has no email, no password, no passkey, no sign-in provider and no invitation.
 
-**ACCT-123** (AGREED) - Creating it picks its ceiling among the kids levels, with none
+**ACCT-123** (SHIPPED) - Creating it picks its ceiling among the kids levels, with none
 preselected. YouTube Kids' bands map onto them: 4 and under is All, 5 to 8 is 7+, 9 to 12
 is 10+.
 
-**ACCT-124** (AGREED) - Its library visibility is set like any account's (ACCT-20).
+**ACCT-124** (SHIPPED) - Its library visibility is set like any account's (ACCT-20).
 
-**ACCT-125** (AGREED) - Nobody can sign in to a Kids profile, by any means, as nobody can
+**ACCT-125** (SHIPPED) - Nobody can sign in to a Kids profile, by any means, as nobody can
 sign in to a waiting account (ACCT-95).
 
-**ACCT-126** (AGREED) - A device on which a member of this server is signed in lists the
+**ACCT-126** (SHIPPED) - A device on which a member of this server is signed in lists the
 server's Kids profiles on its picker. Opening one gives that device a session of the Kids
 profile (ACCT-6), which its device list shows like any other.
 
-**ACCT-127** (AGREED) - The owner's account can never be a Kids profile, and a Kids profile
+**ACCT-127** (SHIPPED) - The owner's account can never be a Kids profile, and a Kids profile
 can never be made admin.
 
-**ACCT-128** (AGREED) - An existing account cannot become a Kids profile. It has a
+**ACCT-128** (SHIPPED) - An existing account cannot become a Kids profile. It has a
 credential of its own, and a person would lose their sign-in.
 
 **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the

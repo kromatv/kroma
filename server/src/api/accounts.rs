@@ -18,6 +18,7 @@ use axum::routing::{get, patch, post};
 use axum::Router;
 
 mod credentials;
+mod kids;
 mod profile;
 mod quick_connect;
 mod ratings;
@@ -35,6 +36,7 @@ use session::{
 };
 use verify_email::{check_verification, confirm_verification};
 
+pub(crate) use kids::AuthMember;
 pub(crate) use session::{auth_result, issue_tokens};
 pub(super) use session::mint_device_tokens;
 
@@ -67,6 +69,7 @@ pub fn routes() -> Router<SharedState> {
         )
         .merge(credential_routes())
         .merge(ratings::routes())
+        .merge(kids::routes())
 }
 
 fn credential_routes() -> Router<SharedState> {

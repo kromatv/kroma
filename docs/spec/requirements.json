@@ -1217,67 +1217,67 @@
     "status": "AGREED",
     "text": "An admin creates a Kids profile under Users, with a name and an",
     "file": "docs/spec/accounts/kids.md",
-    "line": 121
+    "line": 123
   },
   {
     "id": "ACCT-123",
     "domain": "ACCT",
     "space": "accounts",
     "number": 123,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Creating it picks its ceiling among the kids levels, with none",
     "file": "docs/spec/accounts/kids.md",
-    "line": 124
+    "line": 126
   },
   {
     "id": "ACCT-124",
     "domain": "ACCT",
     "space": "accounts",
     "number": 124,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Its library visibility is set like any account's (ACCT-20).",
     "file": "docs/spec/accounts/kids.md",
-    "line": 128
+    "line": 130
   },
   {
     "id": "ACCT-125",
     "domain": "ACCT",
     "space": "accounts",
     "number": 125,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Nobody can sign in to a Kids profile, by any means, as nobody can",
     "file": "docs/spec/accounts/kids.md",
-    "line": 130
+    "line": 132
   },
   {
     "id": "ACCT-126",
     "domain": "ACCT",
     "space": "accounts",
     "number": 126,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A device on which a member of this server is signed in lists the",
     "file": "docs/spec/accounts/kids.md",
-    "line": 133
+    "line": 135
   },
   {
     "id": "ACCT-127",
     "domain": "ACCT",
     "space": "accounts",
     "number": 127,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The owner's account can never be a Kids profile, and a Kids profile",
     "file": "docs/spec/accounts/kids.md",
-    "line": 137
+    "line": 139
   },
   {
     "id": "ACCT-128",
     "domain": "ACCT",
     "space": "accounts",
     "number": 128,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "An existing account cannot become a Kids profile. It has a",
     "file": "docs/spec/accounts/kids.md",
-    "line": 140
+    "line": 142
   },
   {
     "id": "ACCT-129",
@@ -1287,7 +1287,7 @@
     "status": "AGREED",
     "text": "A Kids profile carries the KROMA Kids logo on its avatar, on the",
     "file": "docs/spec/accounts/kids.md",
-    "line": 143
+    "line": 145
   },
   {
     "id": "ACCT-130",
@@ -1297,7 +1297,7 @@
     "status": "AGREED",
     "text": "A Kids profile whose ceiling an admin raises above 10+ loses the",
     "file": "docs/spec/accounts/kids.md",
-    "line": 146
+    "line": 148
   },
   {
     "id": "ACCT-131",
@@ -1307,7 +1307,7 @@
     "status": "AGREED",
     "text": "Leaving a Kids profile goes to the picker. There is no exit lock of",
     "file": "docs/spec/accounts/kids.md",
-    "line": 153
+    "line": 155
   },
   {
     "id": "ACCT-132",
@@ -1317,7 +1317,7 @@
     "status": "AGREED",
     "text": "The picker draws a lock on every profile that asks for a PIN, on",
     "file": "docs/spec/accounts/kids.md",
-    "line": 156
+    "line": 158
   },
   {
     "id": "ACCT-133",
@@ -1327,7 +1327,7 @@
     "status": "AGREED",
     "text": "Creating a Kids profile offers the admin, in the same flow, to set a",
     "file": "docs/spec/accounts/kids.md",
-    "line": 159
+    "line": 161
   },
   {
     "id": "ACCT-134",
@@ -1337,7 +1337,7 @@
     "status": "AGREED",
     "text": "Every other adult on the server whose profile has no PIN is told in",
     "file": "docs/spec/accounts/kids.md",
-    "line": 162
+    "line": 164
   },
   {
     "id": "ACCT-135",
@@ -1347,7 +1347,7 @@
     "status": "AGREED",
     "text": "A device's picker adds a Kids profile only while an admin is signed",
     "file": "docs/spec/accounts/kids.md",
-    "line": 165
+    "line": 167
   },
   {
     "id": "ACCT-136",
@@ -1357,7 +1357,7 @@
     "status": "AGREED",
     "text": "A Kids session wears the KROMA Kids look: the KROMA Kids logo in",
     "file": "docs/spec/accounts/kids.md",
-    "line": 176
+    "line": 178
   },
   {
     "id": "ACCT-137",
@@ -1367,7 +1367,7 @@
     "status": "AGREED",
     "text": "A Kids session has no admin, no Store, no requests and no account",
     "file": "docs/spec/accounts/kids.md",
-    "line": 179
+    "line": 181
   },
   {
     "id": "ACCT-138",
@@ -1377,7 +1377,7 @@
     "status": "AGREED",
     "text": "A Kids session never shows a title the server does not hold.",
     "file": "docs/spec/accounts/kids.md",
-    "line": 182
+    "line": 184
   },
   {
     "id": "ACCT-139",
@@ -1387,7 +1387,7 @@
     "status": "AGREED",
     "text": "A Kids session shows no module page, and the server refuses module",
     "file": "docs/spec/accounts/kids.md",
-    "line": 184
+    "line": 186
   },
   {
     "id": "ACCT-140",
@@ -1397,7 +1397,7 @@
     "status": "AGREED",
     "text": "Search stays on in a Kids session and finds only what the profile",
     "file": "docs/spec/accounts/kids.md",
-    "line": 188
+    "line": 190
   },
   {
     "id": "ACCT-150",

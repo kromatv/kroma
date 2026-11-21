@@ -10,9 +10,11 @@ import { useT } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { ForgotForm, RegisterForm } from '#web/features/accounts/auth-forms.component';
 import { LoginForm } from '#web/features/accounts/login-form.component';
+import { pickerTiles } from '#web/features/accounts/picker-tiles';
 import { PinEntry } from '#web/features/accounts/pin-entry.component';
 import { type ProfileChoice, ProfilePicker } from '#web/features/accounts/profile-picker.component';
 import { useAuth } from '#web/shared/lib/auth';
+import { useKidsProfiles } from '#web/features/accounts/use-kids-profiles.hook';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
 import { useAuthFlows } from '#web/shared/lib/use-auth-flows.hook';
 import { passkeysSupported } from '#web/shared/lib/webauthn';
@@ -42,7 +44,8 @@ function entryMode(config: AuthConfig, accounts: readonly StoredSession[]): Mode
 
 export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
   const t = useT();
-  const { client, accounts, login, loginPasskey, register, activate, forget } = useAuth();
+  const { client, accounts, login, loginPasskey, register, activate, enter, forget } = useAuth();
+  const kids = useKidsProfiles(accounts);
   const [profiles, setProfiles] = useState<PublicUser[]>([]);
   const [mode, setMode] = useState<Mode>(() => entryMode(config, accounts));
   const [entryAccounts, setEntryAccounts] = useState(accounts);
@@ -243,27 +246,14 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
     );
   }
 
-  const tiles: ProfileChoice[] = [
-    ...accounts.map((a) => ({
-      id: a.user.id,
-      username: a.user.username,
-      avatarUrl: a.user.avatarUrl ?? null,
-      remembered: a,
-      locked: a.user.hasPin,
-    })),
-    ...profiles
-      .filter((p) => !accounts.some((a) => a.user.id === p.id))
-      .map((p) => ({
-        id: p.id,
-        username: p.username,
-        avatarUrl: p.avatarUrl ?? null,
-        remembered: null,
-        locked: true,
-      })),
-  ];
+  const tiles = pickerTiles({ accounts, profiles, kids: kids.profiles });
 
   const pick = async (tile: ProfileChoice) => {
     setError(null);
+    if (tile.kids && !tile.remembered && kids.access) {
+      enter(await client.accounts.kids.open(kids.access, tile.id));
+      return;
+    }
     const acc = tile.remembered;
     if (!acc) {
       setMode({

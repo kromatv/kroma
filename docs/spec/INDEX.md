@@ -129,12 +129,12 @@
 - **ACCT-120** (SHIPPED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-121** (SHIPPED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-123** (AGREED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-124** (AGREED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-125** (AGREED) - Nobody can sign in to a Kids profile, by any means, as nobody can <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-126** (AGREED) - A device on which a member of this server is signed in lists the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-127** (AGREED) - The owner's account can never be a Kids profile, and a Kids profile <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-128** (AGREED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-123** (SHIPPED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-124** (SHIPPED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-125** (SHIPPED) - Nobody can sign in to a Kids profile, by any means, as nobody can <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-126** (SHIPPED) - A device on which a member of this server is signed in lists the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-127** (SHIPPED) - The owner's account can never be a Kids profile, and a Kids profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-128** (SHIPPED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-130** (AGREED) - A Kids profile whose ceiling an admin raises above 10+ loses the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-131** (AGREED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
