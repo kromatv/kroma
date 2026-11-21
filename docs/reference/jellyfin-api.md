@@ -251,5 +251,5 @@ and `DtoService.cs` for when each is set):
   out. The play of such a title then names an id the core did not get.
 - A server older than 12.0. The same paths are in use by older clients, but
   the source of an older tag was not read.
-- Emby. RFC 719 expects its API to be close. Nothing here was read in Emby's
-  documentation.
+- Emby. What it does differently, read in Emby's own documentation, is in
+  [`emby-api.md`](emby-api.md).

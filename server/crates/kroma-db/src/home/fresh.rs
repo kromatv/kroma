@@ -29,7 +29,8 @@ pub fn fresh_shows(pool: &Pool, since: i64, n: usize) -> Result<Vec<FreshShow>> 
                 MAX(CASE WHEN at >= ?1 THEN season * 100000 + episode END) \
            FROM (SELECT show_id, COALESCE(season, 0) AS season, COALESCE(episode, 0) AS episode, \
                         COALESCE(CAST(strftime('%s', added_at) AS INTEGER), 0) AS at \
-                   FROM items WHERE kind = 'episode' AND show_id IS NOT NULL) \
+                   FROM items \
+                  WHERE kind = 'episode' AND show_id IS NOT NULL AND absent_since IS NULL) \
           GROUP BY show_id HAVING SUM(at >= ?1) > 0 \
           ORDER BY MAX(at) DESC, show_id LIMIT ?2",
     )?;
@@ -51,7 +52,8 @@ pub fn fresh_shows(pool: &Pool, since: i64, n: usize) -> Result<Vec<FreshShow>> 
 pub fn recently_added_show_ids(pool: &Pool, n: usize) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
-        "SELECT show_id FROM items WHERE kind = 'episode' AND show_id IS NOT NULL \
+        "SELECT show_id FROM items \
+          WHERE kind = 'episode' AND show_id IS NOT NULL AND absent_since IS NULL \
           GROUP BY show_id ORDER BY MIN(added_at) DESC, show_id LIMIT ?1",
     )?;
     let rows = stmt.query_map(params![n as i64], |r| r.get::<_, String>(0))?;

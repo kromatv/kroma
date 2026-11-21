@@ -9,7 +9,7 @@ use tower::ServiceExt;
 
 use super::*;
 
-use crate::dialect::Method;
+use crate::dialect::{Method, EMBY, JELLYFIN};
 use crate::test_support::{fixture, Recorded, ADDRESS, ANA, FILMS, SERVER};
 
 const HEAT: &str = "c0000000000000000000000000000001";
@@ -58,22 +58,26 @@ fn served(jellyfin: Recorded) -> Served {
     apply_migrations(&host.store().get().unwrap(), sign_ins::MIGRATIONS).unwrap();
     let jellyfin = Arc::new(jellyfin);
     Served {
-        app: routes_over::<StubHost>(jellyfin.clone()).with_state(host.clone()),
+        app: routes_over::<StubHost>(jellyfin.dialect(), jellyfin.clone()).with_state(host.clone()),
         jellyfin,
         _host: host,
     }
 }
 
+async fn post(app: &Router, method: &str, ask: &Value) -> (StatusCode, Value) {
+    let request = Request::post(format!("/_port/importer/{method}"))
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(ask.to_string()))
+        .unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    let status = response.status();
+    let body = to_bytes(response.into_body(), 1 << 20).await.unwrap();
+    (status, serde_json::from_slice(&body).unwrap_or(Value::Null))
+}
+
 impl Served {
     async fn posted(&self, method: &str, ask: &Value) -> (StatusCode, Value) {
-        let request = Request::post(format!("/_port/importer/{method}"))
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(ask.to_string()))
-            .unwrap();
-        let response = self.app.clone().oneshot(request).await.unwrap();
-        let status = response.status();
-        let body = to_bytes(response.into_body(), 1 << 20).await.unwrap();
-        (status, serde_json::from_slice(&body).unwrap_or(Value::Null))
+        post(&self.app, method, ask).await
     }
 
     async fn asked(&self, method: &str, ask: Value) -> Value {
@@ -331,4 +335,48 @@ async fn a_whole_import_reads_the_other_server_and_changes_nothing_on_it() {
         .iter()
         .any(|call| call.method == *method && call.path == path)));
     assert_eq!(written, vec!["/Users/AuthenticateByName"]);
+}
+
+#[tokio::test]
+async fn a_whole_emby_import_calls_only_what_its_table_names() {
+    let served = served(Recorded::emby());
+    let sign_in = served.signed_in().await;
+    let on_server = json!({ "signIn": sign_in, "server": SERVER });
+    let in_library = json!({ "signIn": sign_in, "server": SERVER, "library": FILMS, "user": ANA });
+
+    served.asked("survey", on_server.clone()).await;
+    served.asked("titles", in_library.clone()).await;
+    served.asked("states", in_library).await;
+    served.asked("plays", on_server).await;
+
+    let calls: Vec<(Method, String)> = served.jellyfin.seen(|seen| {
+        seen.iter()
+            .map(|call| (call.method, call.path.clone()))
+            .collect()
+    });
+    let table = EMBY.calls();
+    let written: Vec<&str> = calls
+        .iter()
+        .filter(|(method, _)| *method != Method::Get)
+        .map(|(_, path)| path.as_str())
+        .collect();
+    assert!(calls.len() > 10);
+    assert!(calls.iter().all(|(method, path)| table
+        .iter()
+        .any(|call| call.method == *method && call.path == path)));
+    assert_eq!(written, vec!["/emby/Users/AuthenticateByName"]);
+}
+
+#[tokio::test]
+async fn the_live_routes_refuse_a_sign_in_with_no_username_before_calling_any_server() {
+    let app = routes::<StubHost>().with_state(StubHost::with_db("import-jellyfin-live"));
+    let ask = json!({ "fields": { "url": "", "username": "" } });
+
+    let (status, answer) = post(&app, "connect", &ask).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        answer,
+        json!({ "Ok": { "status": "refused", "reason": "credentials" } })
+    );
 }
