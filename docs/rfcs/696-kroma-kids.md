@@ -1,7 +1,7 @@
 # RFC 696: KROMA Kids, a maturity ceiling per profile, and the rating a reader sees
 
 - Status: **ACCEPTED**
-- PR: for issue #696
+- PR: #853, for issue #696
 - Affects: a new chapter, `docs/spec/accounts/kids.md` (ACCT-101 to ACCT-140),
   `docs/spec/accounts/README.md` (ACCT-4's reasoning, the permission matrix),
   `docs/spec/browse/README.md` (BROWSE-62, BROWSE-63), `docs/spec/admin/README.md` (the
