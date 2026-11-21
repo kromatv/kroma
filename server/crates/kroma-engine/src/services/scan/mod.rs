@@ -31,10 +31,11 @@ use crate::services::settings::LibraryDef;
 
 use batches::{BatchSink, BatchSize, Batches};
 use found::{Found, LibraryWalk};
+use live::{seed_demo, sync_walk, Walked};
 use unread::read_library;
 
 pub use ids::{movie_logical_id, short_hash};
-pub use live::{seed_demo, sync_walk, uninterrupted, AfterBatch, BatchAnnouncer, WalkTurn, Walked};
+pub use live::{uninterrupted, AfterBatch, BatchAnnouncer, WalkTurn};
 pub use unread::{Unread, UnreadLibrary};
 
 /// Everything a phase-1 scan produces.
@@ -131,15 +132,24 @@ pub fn rescan_sync(
 ) -> anyhow::Result<Scanned> {
     let defs = crate::services::settings::library_defs(&state.settings, &state.config)
         .map_err(|_| crate::services::settings::unreadable_list_failure(&state.db))?;
-    // Seed demo content only when nothing is configured (true demo mode). A
-    // configured library that momentarily reads empty NAS/SMB unmount, slow
-    // mount, permission glitch must NOT be clobbered with demo movies, and
-    // must not be synced away either.
+    walk_libraries(turn, &state.db, &defs, after_batch)
+}
+
+/// Walk `defs` and write what the walk finds, or seed the demo catalogue when
+/// `defs` is empty: the demo is for a server where the owner has made no
+/// library. A library with no folder, or whose folders read empty, is the
+/// owner's all the same: it is walked, and keeps what it holds.
+pub fn walk_libraries(
+    turn: &WalkTurn,
+    db: &crate::db::Pool,
+    defs: &[LibraryDef],
+    after_batch: &mut AfterBatch<'_>,
+) -> anyhow::Result<Scanned> {
     if defs.is_empty() {
         info!("no libraries configured; seeding demo content");
-        return seed_demo(turn, &state.db).map(Scanned::Applied);
+        return seed_demo(turn, db).map(Scanned::Applied);
     }
-    match sync_walk(turn, &state.db, &defs, after_batch)? {
+    match sync_walk(turn, db, defs, after_batch)? {
         Walked::Synced(data) => Ok(Scanned::Applied(data)),
         Walked::Stopped { dropped } => Ok(Scanned::Cancelled { dropped }),
         Walked::Empty {
