@@ -89,11 +89,9 @@ struct Sources {
 
 impl Sources {
     fn holding(&self, folder: &str) -> Option<usize> {
-        self.defs.iter().position(|def| {
-            def.folders
-                .iter()
-                .any(|held| settings::holds(held, folder))
-        })
+        self.defs
+            .iter()
+            .position(|def| def.folders.iter().any(|held| settings::holds(held, folder)))
     }
 
     fn sharing_files(&self, free: &[String], home: Option<usize>) -> Option<String> {
@@ -119,6 +117,10 @@ impl Sources {
         if let Some(with) = self.sharing_files(&free, home) {
             return Outcome::SharesFiles { with };
         }
+        self.place(row.library, home, free)
+    }
+
+    fn place(&mut self, library: &Library, home: Option<usize>, free: Vec<String>) -> Outcome {
         self.changed |= !free.is_empty();
         let at = match home {
             Some(at) => {
@@ -126,7 +128,7 @@ impl Sources {
                 at
             }
             None => {
-                self.defs.push(source_named(row.library, free));
+                self.defs.push(source_named(library, free));
                 self.defs.len() - 1
             }
         };
