@@ -4,6 +4,7 @@
 use anyhow::Result;
 use serde::Deserialize;
 
+use crate::media::present_show;
 use crate::Pool;
 
 /// One movie or show as the recommender sees it.
@@ -61,12 +62,15 @@ struct Crew {
 
 const MOVIES: &str = "SELECT id, year, duration_ms, \
        CAST(strftime('%s', added_at) AS INTEGER), library, metadata, 0 \
-     FROM items WHERE kind != 'episode'";
+     FROM items WHERE kind != 'episode' AND absent_since IS NULL";
 
-const SHOWS: &str = "SELECT s.id, s.year, NULL, \
+const SHOWS: &str = concat!(
+    "SELECT s.id, s.year, NULL, \
        CAST(strftime('%s', s.added_at) AS INTEGER), s.library, s.metadata, \
-       (SELECT COUNT(*) FROM items i WHERE i.show_id = s.id) \
-     FROM shows s";
+       (SELECT COUNT(*) FROM items i WHERE i.show_id = s.id AND i.absent_since IS NULL) \
+     FROM shows s WHERE ",
+    present_show!()
+);
 
 /// Every movie and loose video, then every show. Never an episode.
 pub fn title_facts(pool: &Pool) -> Result<Vec<TitleFacts>> {

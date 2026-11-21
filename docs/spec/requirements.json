@@ -4614,7 +4614,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 45,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
     "line": 266
@@ -4624,7 +4624,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 46,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
     "line": 271
@@ -4634,7 +4634,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 47,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
     "line": 275
@@ -4644,7 +4644,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 48,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
     "line": 279
@@ -4657,7 +4657,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 281
+    "line": 285
   },
   {
     "id": "LIB-50",

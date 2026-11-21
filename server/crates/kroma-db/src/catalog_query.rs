@@ -8,6 +8,7 @@
 //! library without the caller stitching two tables together.
 
 use super::{params, parse_metadata, Pool, Result};
+use crate::media::present_show;
 
 use rusqlite::OptionalExtension;
 
@@ -22,9 +23,13 @@ pub use find_titles::*;
 
 // Every query below selects `FROM cat`. The trailing space is intentional:
 // the per-query `SELECT …` is concatenated directly after it.
-const CAT_CTE: &str = "WITH cat(id,title,year,kind,metadata) AS (\
-    SELECT id,title,year,'movie',metadata FROM items WHERE kind != 'episode' \
-    UNION ALL SELECT id,title,year,'show',metadata FROM shows) ";
+const CAT_CTE: &str = concat!(
+    "WITH cat(id,title,year,kind,metadata) AS (\
+    SELECT id,title,year,'movie',metadata FROM items WHERE kind != 'episode' AND absent_since IS NULL \
+    UNION ALL SELECT s.id,s.title,s.year,'show',s.metadata FROM shows s WHERE ",
+    present_show!(),
+    ") "
+);
 
 const DIRECTING_JOBS_SQL: &str = "('Director','Creator')";
 
