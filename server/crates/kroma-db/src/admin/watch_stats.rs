@@ -6,7 +6,7 @@ use anyhow::Result;
 use kroma_domain::{
     HistoryRow, MostWatchedColumn, MostWatchedEntry, TopUser, WatchKind, WatchTotals,
 };
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Row};
 
 use super::time_watched::TIME_WATCHED;
 use crate::Pool;
@@ -88,20 +88,22 @@ fn watched_since(conn: &Connection, since: i64) -> Result<Vec<Watched>> {
          WHERE h.ended_at >= ?1 GROUP BY 1, h.kind"
     ))?;
     let rows = stmt
-        .query_map(params![since], |r| {
-            Ok(Watched {
-                who: r.get(0)?,
-                user_id: r.get(1)?,
-                username: r.get(2)?,
-                played: Played {
-                    kind: WatchKind::from_media_kind(&r.get::<_, String>(3)?),
-                    plays: r.get(4)?,
-                    ms: r.get::<_, Option<i64>>(5)?.unwrap_or(0),
-                },
-            })
-        })?
+        .query_map(params![since], watched)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
+}
+
+fn watched(r: &Row<'_>) -> rusqlite::Result<Watched> {
+    Ok(Watched {
+        who: r.get(0)?,
+        user_id: r.get(1)?,
+        username: r.get(2)?,
+        played: Played {
+            kind: WatchKind::from_media_kind(&r.get::<_, String>(3)?),
+            plays: r.get(4)?,
+            ms: r.get::<_, Option<i64>>(5)?.unwrap_or(0),
+        },
+    })
 }
 
 fn tally(user: &mut TopUser, played: Played) {
