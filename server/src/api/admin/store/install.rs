@@ -113,6 +113,7 @@ async fn run_plan(
 
 async fn run_unattended(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Result<()> {
     if let Some(id) = first_new(plan) {
+        tracing::info!(module = %id, "an update would install this module, so it waits for an operator to accept it from the install plan");
         return Err(AsksForMore { id: id.to_string() }.into());
     }
     run_plan(sup, op, plan, Unattended::Yes).await.map(|_| ())
@@ -351,9 +352,6 @@ pub async fn auto_update(state: &SharedState, sup: &Arc<Supervisor>) -> Vec<Upda
             }
             for u in &outcome.updated {
                 tracing::info!(module = %u.id, from = %u.from, to = %u.to, "auto-updated module");
-            }
-            for id in &outcome.needs_consent {
-                tracing::info!(module = %id, "module update waits for an operator to accept it from the install plan");
             }
             outcome.updated
         }
