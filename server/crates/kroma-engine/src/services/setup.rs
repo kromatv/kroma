@@ -42,20 +42,27 @@ pub fn facts(state: &SharedState, module: bool) -> Result<Facts> {
     })
 }
 
-/// The setup `user` leads after `change`, with every step the server now holds
-/// done recorded. `change` says whether it changed anything. `None` when the
-/// setup leads someone else, or when the server has no setup.
+/// Who asks about the setup, and whether the server holds a module, which the
+/// engine cannot see for itself.
+pub struct Asker {
+    pub user: String,
+    pub module: bool,
+}
+
+/// The setup `asker` leads after `change`, with every step the server now
+/// holds done recorded. `change` says whether it changed anything. `None` when
+/// the setup leads someone else, or when the server has no setup.
 pub fn answer(
     state: &SharedState,
-    user: &str,
-    module: bool,
+    asker: &Asker,
     change: impl FnOnce(&mut Setup) -> bool,
 ) -> Result<Option<SetupView>> {
-    let Some(mut setup) = db::setup::setup(&state.db)?.filter(|kept| kept.is_led_by(user)) else {
+    let led = |kept: &Setup| kept.is_led_by(&asker.user);
+    let Some(mut setup) = db::setup::setup(&state.db)?.filter(led) else {
         return Ok(None);
     };
     let changed = change(&mut setup);
-    let observed = setup.observe(facts(state, module)?);
+    let observed = setup.observe(facts(state, asker.module)?);
     if changed || observed {
         db::setup::save_setup(&state.db, &setup)?;
     }
@@ -67,6 +74,13 @@ mod tests {
     use super::*;
     use crate::domain::setup::Step;
     use crate::test_support::test_state;
+
+    fn asking(user: &str, module: bool) -> Asker {
+        Asker {
+            user: user.to_string(),
+            module,
+        }
+    }
 
     fn led(state: &SharedState) -> String {
         let owner = db::create_user(&state.db, "owner@test.dev", "owner", "hash", &[]).unwrap();
@@ -97,7 +111,7 @@ mod tests {
         let state = test_state();
         let owner = led(&state);
 
-        answer(&state, &owner, false, |setup| {
+        answer(&state, &asking(&owner, false), |setup| {
             setup.ended = true;
             true
         })
@@ -111,7 +125,7 @@ mod tests {
         let state = test_state();
         let owner = led(&state);
 
-        answer(&state, &owner, true, |_| false).unwrap();
+        answer(&state, &asking(&owner, true), |_| false).unwrap();
 
         let kept = db::setup::setup(&state.db).unwrap().unwrap();
         assert!(kept.done.contains(&Step::Modules));
@@ -122,7 +136,7 @@ mod tests {
         let state = test_state();
         led(&state);
 
-        let view = answer(&state, "someone-else", false, |_| false).unwrap();
+        let view = answer(&state, &asking("someone-else", false), |_| false).unwrap();
 
         assert_eq!(view, None);
     }

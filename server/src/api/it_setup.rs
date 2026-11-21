@@ -255,3 +255,12 @@ async fn the_importer_the_import_step_installed_leaves_the_modules_line() {
     let setup = setup_of(&t, &token).await;
     assert!(checklist(&setup).contains(&"modules"));
 }
+
+#[tokio::test]
+async fn a_visitor_who_is_not_signed_in_reads_no_setup() {
+    let t = test_app();
+
+    let (status, _) = get(&t.app, "/api/admin/setup", None).await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
