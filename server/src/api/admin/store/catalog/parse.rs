@@ -71,58 +71,56 @@ pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Listing> {
 
 pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
     let id = m.get("id")?.as_str()?.to_string();
-    let str_of = |k: &str| {
-        m.get(k)
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_string()
-    };
-    let artifacts: Vec<Artifact> = m
-        .get("artifacts")
-        .and_then(Value::as_array)
-        .map(|list| list.iter().filter_map(parse_artifact).collect())
-        .unwrap_or_default();
-    let dependencies = parse_deps(m, "dependencies");
-    let optional_dependencies = parse_deps(m, "optionalDependencies");
-    let contributes = parse_points(m, "contributes");
-    let forms = super::forms::parse(m);
-    let consumes = parse_points(m, "consumes");
-    // Only an inline data image of a sane size may reach the admin page's
-    // <img>; anything else from a third-party catalog is dropped.
-    let icon = m
-        .get("icon")
-        .and_then(Value::as_str)
-        .filter(|s| s.starts_with("data:image/") && s.len() <= 128 * 1024)
-        .map(str::to_string);
     Some(CatalogModule {
         official: false,
         schema_version: m.get("schemaVersion").and_then(Value::as_u64).unwrap_or(0),
         id,
-        name: str_of("name"),
-        version: str_of("version"),
-        description: str_of("description"),
+        name: declared(m, "name").unwrap_or_default(),
+        version: declared(m, "version").unwrap_or_default(),
+        description: declared(m, "description").unwrap_or_default(),
         tagline: super::words::tagline(m),
         translations: super::words::translations(m),
-        engines: m
-            .get("engines")
-            .and_then(Value::as_object)
-            .map(|e| {
-                e.iter()
-                    .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string())))
-                    .collect()
-            })
-            .unwrap_or_default(),
+        engines: engines(m),
         library: m.get("library").and_then(Value::as_bool).unwrap_or(false),
-        icon,
-        dependencies,
-        optional_dependencies,
-        contributes,
-        forms,
-        consumes,
-        artifacts,
+        icon: icon(m),
+        dependencies: parse_deps(m, "dependencies"),
+        optional_dependencies: parse_deps(m, "optionalDependencies"),
+        contributes: parse_points(m, "contributes"),
+        forms: super::forms::parse(m),
+        consumes: parse_points(m, "consumes"),
+        artifacts: each(m, "artifacts", parse_artifact),
         declaration: declaration(m),
         newest: None,
     })
+}
+
+fn engines(m: &Value) -> std::collections::BTreeMap<String, String> {
+    m.get("engines")
+        .and_then(Value::as_object)
+        .map(|e| {
+            e.iter()
+                .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_string())))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+// Only an inline data image of a sane size may reach the admin page's <img>;
+// anything else from a third-party catalog is dropped.
+fn icon(m: &Value) -> Option<String> {
+    m.get("icon")
+        .and_then(Value::as_str)
+        .filter(|s| s.starts_with("data:image/") && s.len() <= 128 * 1024)
+        .map(str::to_string)
+}
+
+/// What `read` makes of each entry of the list under `key`, less the entries
+/// it cannot read.
+pub(super) fn each<T>(m: &Value, key: &str, read: fn(&Value) -> Option<T>) -> Vec<T> {
+    m.get(key)
+        .and_then(Value::as_array)
+        .map(|list| list.iter().filter_map(read).collect())
+        .unwrap_or_default()
 }
 
 fn declaration(m: &Value) -> super::Declaration {
@@ -143,19 +141,14 @@ fn declared<T: serde::de::DeserializeOwned>(m: &Value, key: &str) -> Option<T> {
 // optional instance. An entry naming no point is not addressable and is dropped
 // rather than guessed at.
 fn parse_points(m: &Value, key: &str) -> Vec<(String, Option<String>)> {
-    m.get(key)
-        .and_then(Value::as_array)
-        .map(|list| {
-            list.iter()
-                .filter_map(|e| {
-                    Some((
-                        e.get("point")?.as_str()?.to_string(),
-                        e.get("id").and_then(Value::as_str).map(str::to_string),
-                    ))
-                })
-                .collect()
-        })
-        .unwrap_or_default()
+    each(m, key, point_of)
+}
+
+fn point_of(e: &Value) -> Option<(String, Option<String>)> {
+    Some((
+        e.get("point")?.as_str()?.to_string(),
+        e.get("id").and_then(Value::as_str).map(str::to_string),
+    ))
 }
 
 // A `{ "<id>": "<range>" }` dependency map; `"*"`/blank ranges normalize away.
