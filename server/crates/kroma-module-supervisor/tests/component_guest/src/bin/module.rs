@@ -22,6 +22,7 @@ fn routes() -> Router<RemoteHost> {
         .route("/write", get(write_at))
         .route("/fetch", get(fetch))
         .route("/fetch-header", get(fetch_with_a_file_for_a_header))
+        .route("/download/{name}", get(download_into))
         .route(
             "/setting",
             get(|State(host): State<RemoteHost>| async move { host.setting_str("theKey", "absent") }),
@@ -72,6 +73,18 @@ async fn fetch_with_a_file_for_a_header(RawQuery(url): RawQuery) -> String {
     let fetch = kroma_module_sdk::http::Fetch::new().purpose("probe").header("@/tmp/x", "1");
     match fetch.get(&url.unwrap_or_default()) {
         Ok(response) => format!("{} {}", response.status, response.text()),
+        Err(error) => format!("refused: {error:#}"),
+    }
+}
+
+async fn download_into(
+    State(host): State<RemoteHost>,
+    Path(name): Path<String>,
+    RawQuery(url): RawQuery,
+) -> String {
+    let fetch = kroma_module_sdk::http::Fetch::new().purpose("probe");
+    match fetch.download(&url.unwrap_or_default(), &module_dir(&host).join(name)) {
+        Ok(response) => response.status.to_string(),
         Err(error) => format!("refused: {error:#}"),
     }
 }
