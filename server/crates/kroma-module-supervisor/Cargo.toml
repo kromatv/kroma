@@ -40,6 +40,7 @@ hex = { workspace = true }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+tempfile = { workspace = true }
 kroma-egress = { workspace = true }
 kroma-wasm-host = { path = "../kroma-wasm-host" }
 kroma-media = { workspace = true }

@@ -1,10 +1,15 @@
 //! What WASI has no call for on the folders a module holds.
 
+use std::fs::File;
 use std::path::{Component, Path, PathBuf};
 
 use kroma_wasm_host::{Files, Preopen};
 
 use crate::asked::Watch;
+
+mod open;
+
+pub(super) use open::{open_to_read, open_to_write};
 
 fn is_plain(path: &Path) -> bool {
     path.is_absolute() && !path.components().any(|part| part == Component::ParentDir)
@@ -65,25 +70,20 @@ impl ModuleFiles {
 }
 
 #[cfg(target_os = "linux")]
-fn reflink(source: &Path, destination: &Path) -> std::io::Result<()> {
+fn reflink(from: &File, to: &File) -> std::io::Result<()> {
     use std::os::fd::AsRawFd;
 
     const FICLONE: libc::c_ulong = 0x4004_9409;
-    let from = std::fs::File::open(source)?;
-    let to = std::fs::File::create(destination)?;
     // SAFETY: both descriptors stay open for the call and FICLONE reads only them.
     let cloned = unsafe { libc::ioctl(to.as_raw_fd(), FICLONE as _, from.as_raw_fd()) };
     if cloned == 0 {
         return Ok(());
     }
-    let error = std::io::Error::last_os_error();
-    drop(to);
-    let _ = std::fs::remove_file(destination);
-    Err(error)
+    Err(std::io::Error::last_os_error())
 }
 
 #[cfg(not(target_os = "linux"))]
-fn reflink(_source: &Path, _destination: &Path) -> std::io::Result<()> {
+fn reflink(_from: &File, _to: &File) -> std::io::Result<()> {
     Err(std::io::ErrorKind::Unsupported.into())
 }
 
@@ -98,17 +98,23 @@ impl Files for ModuleFiles {
     }
 
     fn copy(&self, source: &str, destination: &str) -> Result<u64, String> {
-        let (from, to) = (Path::new(source), Path::new(destination));
         if !self.holds(source, false) {
             return Err(format!("{source} is not in a folder this module holds"));
         }
         if !self.holds(destination, true) {
             return Err(format!("{destination} is not in a folder this module may write"));
         }
-        if reflink(from, to).is_ok() {
-            return std::fs::metadata(to).map(|meta| meta.len()).map_err(|error| error.to_string());
+        let from = open_to_read(Path::new(source), &self.roots)
+            .map_err(|error| format!("{source}: {error}"))?;
+        let to = open_to_write(Path::new(destination), &self.roots)
+            .map_err(|error| format!("{destination}: {error}"))?;
+        if reflink(&from, &to).is_ok() {
+            return to
+                .metadata()
+                .map(|meta| meta.len())
+                .map_err(|error| error.to_string());
         }
-        std::fs::copy(from, to).map_err(|error| error.to_string())
+        std::io::copy(&mut &from, &mut &to).map_err(|error| error.to_string())
     }
 }
 
@@ -192,5 +198,61 @@ mod tests {
 
         assert_eq!(copied, Ok(5));
         assert_eq!(std::fs::read(dir.path().join("to")).unwrap(), b"hello");
+    }
+
+    #[test]
+    fn a_dangling_link_in_a_root_is_not_written_through() {
+        let dir = kroma_testing::temp_dir("files-dangling");
+        let (inside, outside) = (dir.path().join("in"), dir.path().join("out"));
+        std::fs::create_dir(&inside).unwrap();
+        std::fs::create_dir(&outside).unwrap();
+        std::fs::write(inside.join("from"), "hello").unwrap();
+        std::os::unix::fs::symlink("../out/escaped", inside.join("link")).unwrap();
+        let files = ModuleFiles::new(vec![root(&inside, true)]);
+
+        let copied = files.copy(
+            &inside.join("from").to_string_lossy(),
+            &inside.join("link").to_string_lossy(),
+        );
+
+        assert!(copied.is_err(), "{copied:?}");
+        assert!(!outside.join("escaped").exists());
+    }
+
+    #[test]
+    fn a_link_to_a_file_inside_the_root_is_still_written() {
+        let dir = kroma_testing::temp_dir("files-inner-link");
+        std::fs::write(dir.path().join("from"), "hello").unwrap();
+        std::fs::write(dir.path().join("target"), "an older and longer body").unwrap();
+        std::os::unix::fs::symlink("target", dir.path().join("link")).unwrap();
+        let files = ModuleFiles::new(vec![root(dir.path(), true)]);
+
+        let copied = files.copy(
+            &dir.path().join("from").to_string_lossy(),
+            &dir.path().join("link").to_string_lossy(),
+        );
+
+        assert_eq!(copied, Ok(5));
+        assert_eq!(std::fs::read(dir.path().join("target")).unwrap(), b"hello");
+    }
+
+    #[test]
+    fn a_hard_link_to_a_file_the_module_may_only_read_is_not_written() {
+        let dir = kroma_testing::temp_dir("files-hard-link");
+        let (library, own) = (dir.path().join("library"), dir.path().join("own"));
+        std::fs::create_dir(&library).unwrap();
+        std::fs::create_dir(&own).unwrap();
+        std::fs::write(library.join("film"), "the film").unwrap();
+        std::fs::write(own.join("from"), "hello").unwrap();
+        std::fs::hard_link(library.join("film"), own.join("film")).unwrap();
+        let files = ModuleFiles::new(vec![root(&library, false), root(&own, true)]);
+
+        let copied = files.copy(
+            &own.join("from").to_string_lossy(),
+            &own.join("film").to_string_lossy(),
+        );
+
+        assert!(copied.is_err(), "{copied:?}");
+        assert_eq!(std::fs::read(library.join("film")).unwrap(), b"the film");
     }
 }
