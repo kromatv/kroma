@@ -95,7 +95,7 @@ are not surfaced as settings, because changing them is a redeploy, not a prefere
 
 Status: **AGREED**
 
-The owner manages who else may use the server. Three actions, kept deliberately small:
+The owner manages who else may use the server. Four actions, kept deliberately small:
 
 - **Invite.** The owner creates an invitation the new user redeems to set their own
   credential; the owner never sets or sees another user's password. Whether an invite is a
@@ -106,6 +106,9 @@ The owner manages who else may use the server. Three actions, kept deliberately 
   affect anyone else's watch state.
 - **Reset.** The owner triggers a credential reset for a user who is locked out; the user
   re-establishes their own secret. The owner resets access, never impersonates.
+- **Make a Kids profile.** An admin creates a profile for a child, with a name, an avatar
+  and a maturity ceiling, and no credential. Everything it may and may not do is
+  [`accounts/kids.md`](../accounts/kids.md).
 
 Roles, per-user library visibility, session lifetime and what survives an account deletion
 are all [`accounts/`](../accounts/). This section is only the admin verbs.
