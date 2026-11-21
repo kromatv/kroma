@@ -54,4 +54,5 @@ pub(super) const STEPS: &[Step] = &[
     sql_step!("0029_profile_maturity"),
     sql_step!("0030_profile_title_rules"),
     sql_step!("0031_kids_profiles"),
+    sql_step!("0032_watch_removals"),
 ];

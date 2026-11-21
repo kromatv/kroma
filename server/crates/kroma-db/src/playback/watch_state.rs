@@ -3,6 +3,7 @@
 use anyhow::Result;
 use rusqlite::params;
 
+use super::removals::{remove, Part};
 use super::stamped::{write_listed, write_watched};
 use crate::now_or_blank;
 use crate::Pool;
@@ -27,10 +28,7 @@ pub fn mark_finished(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
 /// Clear an item's watched flag for a user. Idempotent.
 pub fn unmark_watched(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
-        "DELETE FROM watched WHERE user_id = ?1 AND item_id = ?2",
-        params![user_id, item_id],
-    )?;
+    remove(&conn, (user_id, item_id), Part::WATCHED)?;
     Ok(())
 }
 
@@ -53,10 +51,7 @@ pub fn add_to_list(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
 /// Remove a title from the user's list. Idempotent.
 pub fn remove_from_list(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
     let conn = pool.get()?;
-    conn.execute(
-        "DELETE FROM my_list WHERE user_id = ?1 AND item_id = ?2",
-        params![user_id, item_id],
-    )?;
+    remove(&conn, (user_id, item_id), Part::LISTED)?;
     Ok(())
 }
 

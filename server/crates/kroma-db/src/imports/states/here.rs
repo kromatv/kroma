@@ -6,7 +6,7 @@ use rusqlite::{params, Connection, Row};
 
 use super::Merged;
 use crate::playback::{
-    remove_progress, write_listed, write_progress, write_watched, Stopped,
+    remove_progress, removed, write_listed, write_progress, write_watched, Stopped,
 };
 use crate::{now_or_blank, Result};
 
@@ -97,7 +97,8 @@ pub(super) fn merge_into_title(
         return Ok(Merged::Gone);
     }
     let here = held_here(conn, account, item)?;
-    let merged = here.merged_with(brought);
+    let kept = brought.newer_than(&removed(conn, account, item)?);
+    let merged = here.merged_with(&kept);
     if merged == here {
         return Ok(Merged::Unchanged);
     }

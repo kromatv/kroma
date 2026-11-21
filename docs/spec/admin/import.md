@@ -203,6 +203,14 @@ title and one person, the newer one wins. KROMA's wins a tie.
 **ADMIN-167** (AGREED) - An import only adds watch state or moves it forward. It removes
 none: a title someone marked unwatched on the other server stays as KROMA has it.
 
+**ADMIN-200** (AGREED) - What a person removed in KROMA stays removed until the other server
+records something newer than the removal: a title marked unwatched, a resume point taken off
+Continue Watching, a title taken off their list. An import that offers that part with a time
+at or before the removal leaves it as KROMA has it, and brings the rest of the row.
+
+A favourite carries no time of its own on the other server, so one removed in KROMA comes back
+only with a play the other server recorded after the removal.
+
 **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped
 in it on KROMA leaves Continue Watching, and the next episode of its series is offered.
 

@@ -11,6 +11,7 @@ use rusqlite::OptionalExtension;
 
 mod continue_watching;
 mod on_deck;
+mod removals;
 mod show_progress;
 mod stamped;
 mod up_next;
@@ -20,6 +21,7 @@ mod watch_state;
 mod test_support;
 
 pub use continue_watching::*;
+pub(crate) use removals::removed;
 pub use show_progress::*;
 pub(crate) use stamped::{write_listed, write_progress, write_watched, Stopped};
 pub use up_next::*;
@@ -121,7 +123,7 @@ pub fn list_progress(pool: &Pool, user_id: &str) -> Result<Vec<ProgressEntry>> {
 
 /// Remove a saved position (e.g. finished, or "remove from Continue Watching").
 pub fn delete_progress(pool: &Pool, user_id: &str, item_id: &str) -> Result<()> {
-    remove_progress(&*pool.get()?, user_id, item_id)?;
+    removals::remove(&*pool.get()?, (user_id, item_id), removals::Part::RESUME)?;
     Ok(())
 }
 
