@@ -25,7 +25,7 @@ pub fn continue_watching(
     let mut stmt = conn.prepare(&format!(
         "SELECT p.item_id,p.position_ms,p.duration_ms,p.updated_at \
          FROM progress p JOIN items i ON i.id = p.item_id \
-         WHERE p.user_id = ?1 AND {} \
+         WHERE p.user_id = ?1 AND i.absent_since IS NULL AND {} \
          ORDER BY p.updated_at DESC LIMIT ?2",
         super::resumable_sql(played_percent)
     ))?;
@@ -116,7 +116,7 @@ pub fn continue_watching_ids(
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!(
         "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
-         WHERE p.user_id = ?1 AND {} \
+         WHERE p.user_id = ?1 AND i.absent_since IS NULL AND {} \
          ORDER BY p.updated_at DESC LIMIT ?2",
         super::resumable_sql(played_percent)
     ))?;

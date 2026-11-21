@@ -115,8 +115,9 @@ pub(crate) fn items_by_ids_ordered(
     let mut by_id: HashMap<String, MediaItem> = HashMap::with_capacity(ids.len());
     for chunk in ids.chunks(IN_CHUNK) {
         let ph = vec!["?"; chunk.len()].join(",");
-        let mut stmt =
-            conn.prepare(&format!("SELECT {ITEM_COLS} FROM items WHERE id IN ({ph})"))?;
+        let mut stmt = conn.prepare(&format!(
+            "SELECT {ITEM_COLS} FROM items WHERE absent_since IS NULL AND id IN ({ph})"
+        ))?;
         let rows = stmt.query_map(rusqlite::params_from_iter(chunk.iter()), row_to_item)?;
         for item in rows {
             let item = item?;

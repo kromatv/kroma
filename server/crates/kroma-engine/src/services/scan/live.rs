@@ -14,7 +14,7 @@ use crate::services::settings::LibraryDef;
 
 use super::batches::BatchSize;
 use super::changed_shows::HeldEpisodes;
-use super::{scan_in_batches, ScanData, Unread, UnreadLibrary};
+use super::{scan_in_batches, ScanData, UnreadLibrary};
 
 const ANNOUNCE_EVERY: Duration = Duration::from_secs(2);
 
@@ -132,24 +132,8 @@ fn finish(db: &Pool, held: &HeldEpisodes, data: &ScanData) -> anyhow::Result<()>
 }
 
 fn warn_kept(unread: &[UnreadLibrary]) {
-    for library in unread {
-        let name = library.name.as_str();
-        match &library.why {
-            Unread::Missing(folder) => warn!(
-                library = name,
-                folder, "a folder of this library is not there; kept every title it holds"
-            ),
-            Unread::Empty(folder) => warn!(
-                library = name,
-                folder,
-                "a folder of this library holds no video file (an empty mount point?); kept every title it holds"
-            ),
-            Unread::Unreadable(entries) => warn!(
-                library = name,
-                entries,
-                "entries of this library could not be read (a link whose target is not mounted?); kept every title it holds"
-            ),
-        }
+    for folder in unread.iter().flat_map(UnreadLibrary::folders) {
+        warn!("{folder}");
     }
 }
 
