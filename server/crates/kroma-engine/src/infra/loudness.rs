@@ -1,8 +1,7 @@
-//! EBU R128 loudness measurement via ffmpeg's `loudnorm` filter (measurement
-//! pass: decode + analyze, never transcodes). One pass over the file measures
-//! the full mix; for 5.1+ tracks the same decode also measures the centre
-//! channel alone (where dialogue lives) through an `asplit` fork, so the file
-//! is read once.
+//! EBU R128 loudness measurement via ffmpeg's `ebur128` filter (decode + meter,
+//! never transcodes). One pass over the file measures the full mix; for 5.1+
+//! tracks the same decode also measures the centre channel alone (where
+//! dialogue lives) through an `asplit` fork, so the file is read once.
 
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -17,12 +16,13 @@ const LRA_HIGH: f64 = 15.0;
 // Centre channel this far below the full mix (LU) = dialogue is buried.
 const DIALOG_GAP: f64 = 8.0;
 
-/// One `loudnorm` measurement (the filter's `input_*` fields).
+/// One `ebur128` summary: integrated loudness (LUFS), loudness range (LU) and
+/// true peak (dBTP).
 #[derive(Debug, Clone, Copy)]
 pub struct LoudnessStats {
-    pub input_i: f64,
-    pub input_lra: f64,
-    pub input_tp: f64,
+    pub integrated: f64,
+    pub range: f64,
+    pub true_peak: f64,
 }
 
 /// Full-mix measurement plus, for 5.1+ tracks, the centre channel alone.
@@ -32,36 +32,53 @@ pub struct LoudnessResult {
     pub dialog: Option<LoudnessStats>,
 }
 
-// Only the measurement (`input_*`) side is read; the targets just have to be valid.
-const LOUDNORM: &str = "loudnorm=I=-16:TP=-1.5:LRA=11:print_format=json";
+const MIX_METER: &str = "ebur128=peak=true:framelog=verbose";
+const CENTRE_METER: &str = "ebur128=framelog=verbose";
 
 /// Measure the loudness of audio track `audio_rel` (audio-relative index) of
 /// `path`. `channels` decides whether a centre-channel measurement is worth
-/// forking off (5.1 and up). Audio-only decode: minutes-per-movie work, gated
-/// on the process-wide ffmpeg budget.
+/// forking off (5.1 and up). Audio-only decode, gated on the process-wide
+/// ffmpeg budget.
 pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<LoudnessResult> {
-    let with_center = channels.is_some_and(|c| c >= 5);
-    let mut cmd = Command::new("ffmpeg");
-    // `loudnorm` prints its measurement JSON on stderr at the `info` log level.
-    cmd.args(["-hide_banner", "-v", "info", "-nostdin", "-threads", "1"]);
-    cmd.args(input::file(path));
-    if with_center {
-        // One decode, two measurements: full mix + centre channel. The graph is
-        // built mix-first, so the mix loudnorm always has the LOWER filter
-        // index the stderr blocks are matched by index, not print order
-        // (ffmpeg flushes them in nondeterministic order).
-        cmd.arg("-filter_complex").arg(format!(
-            "[0:a:{audio_rel}]asplit=2[full][c];[full]{LOUDNORM}[fo];[c]pan=mono|c0=FC,{LOUDNORM}[co]",
-        ));
-        cmd.args([
-            "-map", "[fo]", "-f", "null", "-", "-map", "[co]", "-f", "null", "-",
-        ]);
-    } else {
-        cmd.arg("-map").arg(format!("0:a:{audio_rel}"));
-        cmd.args(["-af", LOUDNORM, "-f", "null", "-"]);
-    }
-    cmd.stdout(Stdio::null()).stderr(Stdio::piped());
+    let stderr = run_meters(path, &meter_args(audio_rel, channels))?;
+    let mut summaries = parse_summaries(&stderr);
+    summaries.sort_by_key(|(idx, _)| *idx);
+    let mut readings = summaries.into_iter().map(|(_, stats)| stats);
+    let Some(mix) = readings.next() else {
+        bail!("no ebur128 summary in ffmpeg output for {}", path.display());
+    };
+    Ok(LoudnessResult {
+        mix,
+        dialog: readings.next(),
+    })
+}
 
+// The graph is built mix-first, so the mix meter always has the LOWER filter
+// index: summaries are matched by index, not print order (ffmpeg flushes them
+// in nondeterministic order).
+fn meter_args(audio_rel: u32, channels: Option<u32>) -> Vec<String> {
+    let (graph, outputs): (String, &[&str]) = if channels.is_some_and(|c| c >= 5) {
+        (
+            format!("[0:a:{audio_rel}]asplit=2[full][c];[full]{MIX_METER}[fo];[c]pan=mono|c0=FC,{CENTRE_METER}[co]"),
+            &["[fo]", "[co]"],
+        )
+    } else {
+        (format!("[0:a:{audio_rel}]{MIX_METER}[fo]"), &["[fo]"])
+    };
+    let mut args = vec!["-filter_complex".to_owned(), graph];
+    for output in outputs {
+        args.extend(["-map", output, "-f", "null", "-"].map(str::to_owned));
+    }
+    args
+}
+
+fn run_meters(path: &Path, meter_args: &[String]) -> Result<String> {
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args(["-hide_banner", "-nostats", "-nostdin"]);
+    cmd.args(["-v", "info", "-threads", "1"]);
+    cmd.args(input::file(path));
+    cmd.args(meter_args);
+    cmd.stdout(Stdio::null()).stderr(Stdio::piped());
     let out = {
         let _permit = kroma_media::ffmpeg_gate::acquire(Footprint::LIGHT);
         cmd.output()
@@ -70,82 +87,68 @@ pub fn measure(path: &Path, audio_rel: u32, channels: Option<u32>) -> Result<Lou
     if !out.status.success() {
         bail!("ffmpeg loudness pass exited with {}", out.status);
     }
-    let stderr = String::from_utf8_lossy(&out.stderr);
-    let mut blocks = parse_loudnorm_blocks(&stderr);
-    if blocks.is_empty() {
-        bail!(
-            "no loudnorm measurement in ffmpeg output for {}",
-            path.display()
-        );
-    }
-    blocks.sort_by_key(|(idx, _)| *idx);
-    let mix = blocks[0].1;
-    let dialog = if with_center {
-        blocks.get(1).map(|(_, s)| *s)
-    } else {
-        None
-    };
-    Ok(LoudnessResult { mix, dialog })
+    Ok(String::from_utf8_lossy(&out.stderr).into_owned())
 }
 
-// Extracts every `[Parsed_loudnorm_N @ …] { … }` JSON block from ffmpeg's
-// stderr as `(filter_index, stats)`. Blocks print in nondeterministic order;
-// the caller sorts by index.
-fn parse_loudnorm_blocks(stderr: &str) -> Vec<(u32, LoudnessStats)> {
-    let mut out = Vec::new();
-    for (pos, _) in stderr.match_indices("Parsed_loudnorm_") {
-        let tail = &stderr[pos + "Parsed_loudnorm_".len()..];
-        let idx: u32 = match tail
-            .chars()
-            .take_while(char::is_ascii_digit)
-            .collect::<String>()
-            .parse()
-        {
-            Ok(i) => i,
-            Err(_) => continue,
-        };
-        // The loudnorm JSON is flat: the first `{ … }` after the tag is it.
-        let Some(open) = tail.find('{') else { continue };
-        let Some(close) = tail[open..].find('}') else {
-            continue;
-        };
-        let Ok(v) = serde_json::from_str::<serde_json::Value>(&tail[open..open + close + 1]) else {
-            continue;
-        };
-        let field = |name: &str, floor: f64| -> f64 {
-            let x = v
-                .get(name)
-                .and_then(|f| f.as_str())
-                .and_then(|s| s.parse::<f64>().ok())
-                .unwrap_or(floor);
-            // Silence measures as -inf; clamp so the value stays storable and
-            // JSON-serializable.
-            if x.is_finite() {
-                x
-            } else {
-                floor
-            }
-        };
-        out.push((
-            idx,
-            LoudnessStats {
-                input_i: field("input_i", -70.0),
-                input_lra: field("input_lra", 0.0),
-                input_tp: field("input_tp", -99.0),
-            },
-        ));
+fn parse_summaries(stderr: &str) -> Vec<(u32, LoudnessStats)> {
+    let mut out: Vec<(u32, LoudnessStats)> = Vec::new();
+    for line in stderr.lines() {
+        if let Some(idx) = summary_index(line) {
+            out.push((idx, LoudnessStats::SILENT));
+        } else if let Some((_, stats)) = out.last_mut() {
+            stats.read(line);
+        }
     }
     out
 }
 
+fn summary_index(line: &str) -> Option<u32> {
+    let (_, tail) = line.split_once("[Parsed_ebur128_")?;
+    let (idx, rest) = tail.split_once(' ')?;
+    if !rest.trim_end().ends_with("Summary:") {
+        return None;
+    }
+    idx.parse().ok()
+}
+
+impl LoudnessStats {
+    // Silence reads as -70 LUFS and a -inf peak; the floors keep every value
+    // finite, so it stays storable and JSON-serializable.
+    const SILENT: Self = Self {
+        integrated: -70.0,
+        range: 0.0,
+        true_peak: -99.0,
+    };
+
+    fn read(&mut self, line: &str) {
+        let Some((key, value)) = line.split_once(':') else {
+            return;
+        };
+        let Some(x) = value
+            .split_whitespace()
+            .next()
+            .and_then(|v| v.parse::<f64>().ok())
+            .filter(|x| x.is_finite())
+        else {
+            return;
+        };
+        match key.trim() {
+            "I" => self.integrated = x,
+            "LRA" => self.range = x,
+            "Peak" => self.true_peak = x,
+            _ => {}
+        }
+    }
+}
+
 pub fn to_analysis(res: &LoudnessResult) -> AudioAnalysis {
-    let dialog_lufs = res.dialog.map(|d| d.input_i);
+    let dialog_lufs = res.dialog.map(|d| d.integrated);
     AudioAnalysis {
-        lufs_i: res.mix.input_i,
-        lra: res.mix.input_lra,
-        true_peak: res.mix.input_tp,
+        lufs_i: res.mix.integrated,
+        lra: res.mix.range,
+        true_peak: res.mix.true_peak,
         dialog_lufs,
-        verdict: verdict(res.mix.input_i, res.mix.input_lra, dialog_lufs),
+        verdict: verdict(res.mix.integrated, res.mix.range, dialog_lufs),
     }
 }
 
@@ -169,48 +172,93 @@ fn verdict(mix_i: f64, lra: f64, dialog_i: Option<f64>) -> AudioVerdict {
 mod tests {
     use super::*;
 
-    const STDERR: &str = r#"
-size=N/A time=00:00:04.50 bitrate=N/A speed=8.91x
-[Parsed_loudnorm_3 @ 0x875009440]
-{
-	"input_i" : "-31.65",
-	"input_tp" : "-27.96",
-	"input_lra" : "0.00",
-	"input_thresh" : "-41.65",
-	"normalization_type" : "dynamic",
-	"target_offset" : "0.04"
-}
-[Parsed_loudnorm_1 @ 0x8750092c0]
-{
-	"input_i" : "-9.05",
-	"input_tp" : "-10.46",
-	"input_lra" : "0.00",
-	"input_thresh" : "-19.05",
-	"normalization_type" : "dynamic",
-	"target_offset" : "0.04"
-}
-[out#0/null @ 0x875008780] video:0KiB audio:17988KiB
+    const SURROUND: &str = r#"
+[Parsed_ebur128_3 @ 0x7cbac14f00] Summary:
+
+  Integrated loudness:
+    I:         -26.8 LUFS
+    Threshold: -36.8 LUFS
+
+  Loudness range:
+    LRA:         0.1 LU
+    Threshold: -46.8 LUFS
+    LRA low:   -26.8 LUFS
+    LRA high:  -26.7 LUFS
+[Parsed_ebur128_1 @ 0x7cbac14d80] Summary:
+
+  Integrated loudness:
+    I:         -19.1 LUFS
+    Threshold: -29.1 LUFS
+
+  Loudness range:
+    LRA:        16.4 LU
+    Threshold: -39.1 LUFS
+    LRA low:   -29.2 LUFS
+    LRA high:  -12.8 LUFS
+
+  True peak:
+    Peak:      -11.6 dBFS
+[out#0/null @ 0x7cbac14240] video:0KiB audio:337497KiB subtitle:0KiB other streams:0KiB
 "#;
 
-    #[test]
-    fn parses_blocks_and_orders_by_filter_index() {
-        let mut blocks = parse_loudnorm_blocks(STDERR);
-        assert_eq!(blocks.len(), 2);
-        blocks.sort_by_key(|(idx, _)| *idx);
-        // Index 1 (the mix, declared first in the graph) sorts before index 3
-        // (the centre) even though 3 printed first.
-        assert_eq!(blocks[0].0, 1);
-        assert!((blocks[0].1.input_i - -9.05).abs() < 1e-9);
-        assert!((blocks[1].1.input_i - -31.65).abs() < 1e-9);
+    const SILENCE: &str = r#"
+[Parsed_ebur128_0 @ 0x79b5029080] Summary:
+
+  Integrated loudness:
+    I:         -70.0 LUFS
+    Threshold:   0.0 LUFS
+
+  Loudness range:
+    LRA:         0.0 LU
+    Threshold:   0.0 LUFS
+    LRA low:     0.0 LUFS
+    LRA high:    0.0 LUFS
+
+  True peak:
+    Peak:       -inf dBFS
+"#;
+
+    fn sorted(stderr: &str) -> Vec<(u32, LoudnessStats)> {
+        let mut summaries = parse_summaries(stderr);
+        summaries.sort_by_key(|(idx, _)| *idx);
+        summaries
     }
 
     #[test]
-    fn non_finite_measurements_clamp() {
-        let stderr = "[Parsed_loudnorm_0 @ 0x0]\n{\"input_i\" : \"-inf\", \"input_tp\" : \"-inf\", \"input_lra\" : \"0.00\"}";
-        let blocks = parse_loudnorm_blocks(stderr);
-        assert_eq!(blocks.len(), 1);
-        assert!((blocks[0].1.input_i - -70.0).abs() < 1e-9);
-        assert!((blocks[0].1.input_tp - -99.0).abs() < 1e-9);
+    fn the_mix_sorts_first_whatever_order_ffmpeg_printed_it_in() {
+        let summaries = sorted(SURROUND);
+
+        assert_eq!(
+            summaries.iter().map(|(idx, _)| *idx).collect::<Vec<_>>(),
+            [1, 3]
+        );
+        assert!((summaries[0].1.integrated - -19.1).abs() < 1e-9);
+        assert!((summaries[1].1.integrated - -26.8).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_summary_reads_its_range_and_true_peak_but_not_the_thresholds() {
+        let summaries = sorted(SURROUND);
+
+        let mix = summaries[0].1;
+        assert!((mix.range - 16.4).abs() < 1e-9);
+        assert!((mix.true_peak - -11.6).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_silent_track_keeps_finite_floors() {
+        let summaries = parse_summaries(SILENCE);
+
+        assert_eq!(summaries.len(), 1);
+        assert!((summaries[0].1.integrated - -70.0).abs() < 1e-9);
+        assert!((summaries[0].1.true_peak - -99.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn output_with_no_summary_reads_nothing() {
+        let stderr = "[Parsed_ebur128_0 @ 0x0] t: 0.1  TARGET:-23 LUFS    M:-120.7 S:-120.7     I: -70.0 LUFS\n";
+
+        assert!(parse_summaries(stderr).is_empty());
     }
 
     #[test]
