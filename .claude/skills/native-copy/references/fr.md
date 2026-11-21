@@ -42,7 +42,16 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | English | French | Never |
 |---|---|---|
 | Settings | Réglages | Paramétrages |
+| Build (to build a module) | compiler, recompiler, une compilation locale | build, reconstruire |
+| Build number | build {build} | compilation {build} |
+| Host updater | l'outil de mise à jour de l'hôte | l'outil hôte |
+| {count} item(s) | Éléments : {count}, or the plural forms | élément(s) |
 | Search (action) | Rechercher | Chercher |
+| Fix the match (a title) | Corriger l'identification | Corriger la correspondance |
+| Default (a track flag) | Par défaut | Défaut, which means a defect |
+| Media details (the file's codecs) | Détails du fichier | Détails du média |
+| A genre name TMDB translates (Science-Fiction & Fantastique) | TMDB's French name, spelled as TMDB spells it, `&` included | a rewrite: KROMA matches stored genres against these labels |
+| A genre name TMDB sends in English to a French reader (Action & Adventure, War & Politics, Kids, News, Reality, Soap, Talk) | a French label of its own, since the English label already matches | |
 | Save | Enregistrer | Sauver, Sauvegarder |
 | Probing (a file) | analyse des fichiers | probing, sonde |
 | Timeline, scrub bar | barre de lecture | timeline |
@@ -110,6 +119,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Media items (a count) | titres | médias |
 | Invitation link | Lien d'invitation | |
 | Feature | Fonctionnalité | Feature |
+| LAN address | adresse sur le réseau local | adresse LAN |
+| Roku (the device) | boîtier Roku | les Roku |
 | At any time | à tout moment | n'importe quand |
 | Email | e-mail, adresse e-mail | email, mail, courriel |
 | Clear (a field, a search) | Effacer | Vider |
@@ -151,6 +162,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Soirées d'automne cosy | an English word where French has an image | Soirées d'automne au coin du feu |
 | Reprendre mon serveur Plex | *reprendre* says another thing | Migrer depuis Plex ou Jellyfin |
 | Le compte n'a pas pu être créé | English passive | Impossible de créer le compte |
+| La prochaine version est prête quand vous le serez | *ready when you are* | La nouvelle version n'attend que vous |
+| Prêt à mettre à jour le serveur ? | a gendered adjective for the reader | Mettre à jour le serveur maintenant ? |
+| Nécessite le serveur 2.0, celui-ci est en 1.9 | a comma where French wants the contrast said | Nécessite le serveur 2.0, alors que celui-ci est en 1.9 |
 | Regarder le catalogue + reprise | a symbol for a word, and a noun pile | Regarder les films et les séries, et reprendre une lecture |
 | Est-ce un fichier de sauvegarde KROMA valide ? | an error asked as a question | Impossible d'importer ce fichier. Vérifiez qu'il s'agit bien d'une sauvegarde KROMA. |
 | La lecture va caler | a car's word for a stall | La lecture va s'interrompre |
@@ -196,4 +210,6 @@ move the rest to the screen where it matters.
 | Create their account (one person) | Créer son compte | Créer leur compte |
 | Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
 | Console (the admin area) | l'administration | la console |
+| Issuer (OpenID Connect) | émetteur | issuer, except in parentheses after émetteur |
+| ID token | jeton d'identité | ID token |
 
