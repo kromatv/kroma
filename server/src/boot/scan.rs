@@ -100,7 +100,12 @@ fn startup_scan(
     library_defs: &[services::settings::LibraryDef],
     after_batch: &mut services::scan::AfterBatch<'_>,
 ) -> anyhow::Result<services::scan::Scanned> {
-    let scanned = services::scan::walk_libraries(turn, db, library_defs, after_batch)
+    let walk = services::scan::LibrariesToWalk {
+        turn,
+        db,
+        defs: library_defs,
+    };
+    let scanned = services::scan::walk_libraries(walk, after_batch)
         .context("failed to persist library")?;
     Ok(match scanned {
         services::scan::Scanned::Applied(data) => index_ready(data),

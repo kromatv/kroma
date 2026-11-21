@@ -132,7 +132,20 @@ pub fn rescan_sync(
 ) -> anyhow::Result<Scanned> {
     let defs = crate::services::settings::library_defs(&state.settings, &state.config)
         .map_err(|_| crate::services::settings::unreadable_list_failure(&state.db))?;
-    walk_libraries(turn, &state.db, &defs, after_batch)
+    let walk = LibrariesToWalk {
+        turn,
+        db: &state.db,
+        defs: &defs,
+    };
+    walk_libraries(walk, after_batch)
+}
+
+/// What [`walk_libraries`] walks: the turn it holds, the index it writes and
+/// the libraries the owner made.
+pub struct LibrariesToWalk<'a> {
+    pub turn: &'a WalkTurn,
+    pub db: &'a crate::db::Pool,
+    pub defs: &'a [LibraryDef],
 }
 
 /// Walk `defs` and write what the walk finds, or seed the demo catalogue when
@@ -140,11 +153,10 @@ pub fn rescan_sync(
 /// library. A library with no folder, or whose folders read empty, is the
 /// owner's all the same: it is walked, and keeps what it holds.
 pub fn walk_libraries(
-    turn: &WalkTurn,
-    db: &crate::db::Pool,
-    defs: &[LibraryDef],
+    walk: LibrariesToWalk<'_>,
     after_batch: &mut AfterBatch<'_>,
 ) -> anyhow::Result<Scanned> {
+    let LibrariesToWalk { turn, db, defs } = walk;
     if defs.is_empty() {
         info!("no libraries configured; seeding demo content");
         return seed_demo(turn, db).map(Scanned::Applied);
