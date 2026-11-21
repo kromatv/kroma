@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use kroma_module_manifest::ModuleManifest;
+use kroma_module_manifest::{Declared, ModuleManifest};
 
 use super::core_ceiling::within_third_party_ceiling;
 use super::lifecycle::native_build;
@@ -127,16 +127,23 @@ impl Supervisor {
         match origin.accept {
             Accept::Anything => Ok(()),
             Accept::Exactly(declared) => says_what_its_row_showed(id, manifest, declared),
-            Accept::NoWider(declared) => {
-                if let Some(declared) = declared {
-                    says_what_its_row_showed(id, manifest, declared)?;
-                }
-                let installed = self.installed_manifests().into_iter().find(|m| m.id == id);
-                match installed {
-                    Some(installed) if !manifest.asks_more_than(&installed) => Ok(()),
-                    _ => Err(AsksForMore { id: id.to_string() }.into()),
-                }
-            }
+            Accept::NoWider(declared) => self.asks_no_more(id, manifest, declared),
+        }
+    }
+
+    fn asks_no_more(
+        &self,
+        id: &str,
+        manifest: &ModuleManifest,
+        shown: Option<Declared<'_>>,
+    ) -> anyhow::Result<()> {
+        if let Some(shown) = shown {
+            says_what_its_row_showed(id, manifest, shown)?;
+        }
+        let installed = self.installed_manifests().into_iter().find(|m| m.id == id);
+        match installed {
+            Some(installed) if !manifest.asks_more_than(&installed) => Ok(()),
+            _ => Err(AsksForMore { id: id.to_string() }.into()),
         }
     }
 
