@@ -188,7 +188,7 @@ fn a_page_asks_for_films_and_episodes_below_the_library_as_the_signed_in_user() 
         vec![
             ("userId", SAM),
             ("recursive", "true"),
-            ("includeItemTypes", "Movie,Episode"),
+            ("includeItemTypes", "Movie,Episode,Series"),
             ("enableImages", "false"),
             ("parentId", FILMS),
             ("fields", "Path,ProviderIds,MediaSourceCount"),
@@ -274,5 +274,36 @@ fn an_answer_past_the_size_a_page_may_have_is_not_read() {
     assert_eq!(
         failure.to_string(),
         "Jellyfin gave an answer to /Items this importer cannot read"
+    );
+}
+
+#[test]
+fn a_show_comes_as_a_series_with_its_year_and_its_ids_and_no_file() {
+    let the_wire = Recorded::jellyfin().on(
+        JELLYFIN.items.path,
+        &[("parentId", SHOWS)],
+        fixture(include_str!("../fixtures/the-wire-in-its-library.json")),
+    );
+    let world = World::over(the_wire);
+
+    let page = world.importer.titles(&library(&world, SHOWS)).unwrap();
+
+    assert_eq!(
+        page.titles,
+        vec![Title {
+            id: THE_WIRE.to_string(),
+            kind: TitleKind::Series,
+            paths: Vec::new(),
+            title: Some("The Wire".to_string()),
+            year: Some(2002),
+            ids: ExternalIds {
+                tmdb: Some("1438".to_string()),
+                imdb: Some("tt0306414".to_string()),
+                tvdb: Some("79126".to_string()),
+            },
+            series: None,
+            season: None,
+            episode: None,
+        }]
     );
 }

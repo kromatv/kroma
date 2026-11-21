@@ -147,7 +147,7 @@ The parameters the importer sends:
 | `userId` | whose view and whose user data. Another user's id needs an administrator, else HTTP 403 | S `Jellyfin.Api/Helpers/RequestHelpers.cs` |
 | `parentId` | the folder to list below. A library id is one | S `ItemsController.cs` |
 | `recursive` | every item below, not only the children | S `ItemsController.cs` |
-| `includeItemTypes` | `Movie`, `Episode`, `Playlist`, separated by commas | S `ItemsController.cs`, `Jellyfin.Data/Enums/BaseItemKind.cs` |
+| `includeItemTypes` | `Movie`, `Episode`, `Series`, `Playlist`, separated by commas. `titles` and `states` ask for `Movie,Episode,Series`, so a whole show comes with its `UserData`; the counts and the plays ask for `Movie,Episode` | S `ItemsController.cs`, `Jellyfin.Data/Enums/BaseItemKind.cs` |
 | `fields` | the optional fields to add, separated by commas | S `MediaBrowser.Model/Querying/ItemFields.cs` |
 | `filters` | `IsPlayed`, `IsUnplayed`, `IsResumable` and others. Each one narrows the listing | S `MediaBrowser.Controller/Entities/InternalItemsQuery.cs` |
 | `sortBy`, `sortOrder` | `DateCreated`, `SortName` and others. `SortName` is added last when it is not named | S `Jellyfin.Data/Enums/ItemSortBy.cs`, `Jellyfin.Server.Implementations/Item/BaseItemRepository.QueryBuilding.cs` |
@@ -197,6 +197,8 @@ and `DtoService.cs` for when each is set):
 
 - `UserData` has `Played`, `PlayCount`, `PlaybackPositionTicks`, `IsFavorite`
   and `LastPlayedDate` (S `MediaBrowser.Model/Dto/UserItemDataDto.cs`).
+- A `Series` carries `UserData` like any item, `IsFavorite` included. Its `Path`
+  is the show's folder, and the importer sends no path for it.
 - A tick "is equal to 100 nanoseconds", and "there are 10,000 ticks in a
   millisecond" (T).
 - The user data of a title holds one count and one date. RFC 719 records that

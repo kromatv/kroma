@@ -1,0 +1,20 @@
+{
+  "Items": [
+    {
+      "Name": "The Wire",
+      "Id": "e0000000000000000000000000000001",
+      "Type": "Series",
+      "IsFolder": true,
+      "UserData": {
+        "PlaybackPositionTicks": 0,
+        "PlayCount": 0,
+        "IsFavorite": true,
+        "Played": false,
+        "Key": "79126",
+        "ItemId": "e0000000000000000000000000000001"
+      }
+    }
+  ],
+  "TotalRecordCount": 1,
+  "StartIndex": 0
+}

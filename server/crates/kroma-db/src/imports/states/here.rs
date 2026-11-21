@@ -46,9 +46,10 @@ fn held_here(conn: &Connection, account: &str, item: &str) -> rusqlite::Result<W
     conn.query_row(HELD_HERE, params![account, item], row_to_state)
 }
 
-struct Title<'a> {
-    account: &'a str,
-    item: &'a str,
+/// One account's state on one title or show.
+pub(super) struct Title<'a> {
+    pub account: &'a str,
+    pub item: &'a str,
 }
 
 fn write_resume(conn: &Connection, title: &Title<'_>, resume: Option<Resume>) -> Result<()> {
@@ -87,21 +88,26 @@ pub(super) fn exists(conn: &Connection, table: &str, id: &str) -> rusqlite::Resu
     )
 }
 
-pub(super) fn merge_into_title(
+/// The table a title of the catalogue is in.
+pub(super) const TITLES: &str = "items";
+/// The table a show is in.
+pub(super) const SHOWS: &str = "shows";
+
+/// Merges `brought` into what `title` holds, when `table` still has it.
+pub(super) fn merge_into(
     conn: &Connection,
-    account: &str,
-    item: &str,
+    (table, title): (&str, &Title<'_>),
     brought: &Watching,
 ) -> Result<Merged> {
-    if !exists(conn, "items", item)? {
+    if !exists(conn, table, title.item)? {
         return Ok(Merged::Gone);
     }
-    let here = held_here(conn, account, item)?;
-    let kept = brought.newer_than(&removed(conn, account, item)?);
+    let here = held_here(conn, title.account, title.item)?;
+    let kept = brought.newer_than(&removed(conn, title.account, title.item)?);
     let merged = here.merged_with(&kept);
     if merged == here {
         return Ok(Merged::Unchanged);
     }
-    write(conn, &Title { account, item }, &here, &merged)?;
+    write(conn, title, &here, &merged)?;
     Ok(Merged::Changed)
 }

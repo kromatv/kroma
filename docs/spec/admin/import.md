@@ -154,7 +154,7 @@ series, season and episode.
 title as soon as the scan reaches it, while the scan is still running.
 
 **ADMIN-156** (AGREED) - A title a person marked as a favourite on the other server is saved
-to that person's list (BROWSE-32).
+to that person's list (BROWSE-32). A favourite on a whole series is saved on that series.
 
 **ADMIN-157** (AGREED) - When the import ends, a report lists what matched nothing, each
 title by its name on the other server and its file. Those files are in Unmatched like any

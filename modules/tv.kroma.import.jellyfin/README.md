@@ -15,7 +15,7 @@ Layout: `server/` (the crate), `module.json` (manifest), `audit.json` (what
 | --- | --- | --- |
 | `connect` | `GET /System/Info/Public`, then `POST /Users/AuthenticateByName` | the sign-in it keeps, and the one server it reaches |
 | `survey` | `GET /Library/VirtualFolders`, `GET /Users`, `GET /Items/Counts`, `GET /Items` to count | libraries with folders and kind, users with their libraries and limits, counts, what stays behind |
-| `titles` | `GET /Items` | films and episodes with their files, ids, and the show of each episode |
+| `titles` | `GET /Items` | films and episodes with their files, ids, and the show of each episode, then each whole show, for the favourite on it |
 | `states` | `GET /Items` with the user's data | watched, play count, resume point, last played, favourite |
 | `plays` | `GET /Users`, `GET /Items` | one play for each title a user watched or started |
 | `unlock` | nothing | `refused` as `notLocked`: an administrator reads every user, so no user is locked |

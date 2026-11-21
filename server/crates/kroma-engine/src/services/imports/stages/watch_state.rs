@@ -17,7 +17,7 @@ use super::{outcome_of, Importing, Outcome, StatePage};
 use crate::db;
 use crate::db::imports::{Merged, Place};
 use crate::domain::watching::Watching;
-use crate::model::import::Title;
+use crate::model::import::{Title, TitleKind};
 use crate::services::jobs::now_ms;
 
 pub(super) fn merge(importing: &Importing<'_>, page: &StatePage<'_>) -> Result<Vec<Outcome>> {
@@ -49,7 +49,7 @@ pub(super) fn merge(importing: &Importing<'_>, page: &StatePage<'_>) -> Result<V
 fn carried(page: &StatePage<'_>, now_secs: i64) -> Vec<(usize, Watching)> {
     page.rows
         .iter()
-        .map(|row| bounded(row.state, now_secs))
+        .map(|row| for_its_kind(row.title, bounded(row.state, now_secs)))
         .enumerate()
         .filter(|(_, state)| !state.is_empty())
         .collect()
@@ -67,9 +67,20 @@ fn written(
     Ok(merged)
 }
 
+fn for_its_kind(title: &Title, state: Watching) -> Watching {
+    match title.kind {
+        TitleKind::Series => Watching {
+            listed: state.listed,
+            ..Watching::default()
+        },
+        _ => state,
+    }
+}
+
 fn place_of(found: &Found) -> Option<Place<'_>> {
     match found {
         Found::Title(item) => Some(Place::Title(item)),
+        Found::Show(show) => Some(Place::Show(show)),
         Found::Awaited(file) => Some(Place::File(file)),
         Found::Nothing => None,
     }

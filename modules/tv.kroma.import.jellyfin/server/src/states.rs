@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use crate::jellyfin::{Item, UserData};
-use crate::queries::{films_and_episodes, in_library, paged, with_user_data, Window};
+use crate::queries::{in_library, paged, titles_and_shows, with_user_data, Window};
 use crate::time::{ticks_to_ms, unix_seconds};
 use crate::titles::number;
 use crate::wire::{StatePage, StatesAsk, WatchState};
@@ -45,7 +45,7 @@ impl Importer {
     pub(crate) fn states(&self, ask: &StatesAsk) -> Result<StatePage> {
         let session = self.session(&ask.sign_in, &ask.server)?;
         let window = Window::of(ask.cursor.as_deref(), ask.limit)?;
-        let listed = in_library(films_and_episodes(&ask.user), &ask.library);
+        let listed = in_library(titles_and_shows(&ask.user), &ask.library);
         let Some(page) = session.visible_items(paged(with_user_data(listed), window))? else {
             return Ok(StatePage::default());
         };

@@ -84,6 +84,7 @@ fn add(conn: &Connection, server_id: &str, play: &NewPlay<'_>) -> Result<Merged>
     match play.place {
         Place::Title(item) => log(conn, &row, item),
         Place::File(path) => held::hold(conn, &row, path),
+        Place::Show(_) => Ok(Merged::Gone),
     }
 }
 

@@ -25,6 +25,8 @@ from these shapes.
 - **M**: the API reference, one page per type, under
   <https://dev.emby.media/reference/pluginapi/>. A fact names the type, such as
   `MediaBrowser.Model.Users.UserPolicy`.
+- **T**: "Item Types",
+  <https://dev.emby.media/doc/restapi/Item-Types.html>. Read 2026-11-22.
 
 ## Versions
 
@@ -102,6 +104,11 @@ None of these pages names the server version it describes. Their footer reads
   `EnableImages` and `EnableUserData` (R `ItemsService/getItems`). The importer
   writes them in Jellyfin's spelling (`userId`, `parentId`). B writes the same
   parameter both ways, `parentId={ViewId}` and `ParentId=20aef3be-...`.
+- `IncludeItemTypes` filters on item types, several of them separated by commas
+  (R, same page).
+  `Series` is an item type, one of the "specialized representations of Folder"
+  (T). `titles` and `states` ask for `Movie,Episode,Series`, as with Jellyfin,
+  so a show's favourite comes with its `UserData`.
 - `Filters` takes `IsPlayed`, `IsUnplayed` and `IsResumable`, among others.
   `SortBy` takes `DateCreated` and `SortName`. `Fields` takes `Path` and
   `ProviderIds` (R, same page).

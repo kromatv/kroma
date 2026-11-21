@@ -8,15 +8,17 @@ use kroma_domain::watching::Watching;
 use rusqlite::TransactionBehavior;
 
 pub(crate) use held::release as release_held_states;
+use here::{merge_into, Title, SHOWS, TITLES};
 
 use crate::{Pool, Result};
 
-/// Where a state an import brings belongs: on a title of the catalogue, or
-/// with a file of this machine that no title has yet, by its path as a scan
-/// writes it.
+/// Where a state an import brings belongs: on a title of the catalogue, on a
+/// show, or with a file of this machine that no title has yet, by its path as
+/// a scan writes it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Place<'a> {
     Title(&'a str),
+    Show(&'a str),
     File(&'a str),
 }
 
@@ -49,7 +51,8 @@ pub fn merge_states(
     let merged = states
         .iter()
         .map(|(place, brought)| match place {
-            Place::Title(item) => here::merge_into_title(&tx, account, item, brought),
+            Place::Title(item) => merge_into(&tx, (TITLES, &Title { account, item }), brought),
+            Place::Show(item) => merge_into(&tx, (SHOWS, &Title { account, item }), brought),
             Place::File(path) => held::hold(&tx, account, path, brought),
         })
         .collect::<Result<Vec<_>>>()?;

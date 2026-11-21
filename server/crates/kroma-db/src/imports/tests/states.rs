@@ -2,6 +2,7 @@ mod finished;
 mod held;
 mod removed;
 mod review;
+mod shows;
 
 use kroma_domain::watching::{Resume, Watching};
 use kroma_domain::Permission;

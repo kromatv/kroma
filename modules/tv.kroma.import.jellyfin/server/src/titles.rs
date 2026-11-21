@@ -4,7 +4,7 @@ use anyhow::{bail, Result};
 
 use crate::client::Session;
 use crate::jellyfin::{Item, ItemsPage};
-use crate::queries::{by_ids, films_and_episodes, in_library, paged, with_fields, Window};
+use crate::queries::{by_ids, in_library, paged, titles_and_shows, with_fields, Window};
 use crate::wire::{ExternalIds, Series, Title, TitleKind, TitlePage, TitlesAsk};
 use crate::Importer;
 
@@ -22,6 +22,7 @@ fn kind(item: &Item) -> TitleKind {
     match item.kind.as_str() {
         "Movie" => TitleKind::Movie,
         "Episode" => TitleKind::Episode,
+        "Series" => TitleKind::Series,
         _ => TitleKind::Other,
     }
 }
@@ -42,6 +43,9 @@ fn external_ids(item: &Item) -> ExternalIds {
 }
 
 fn paths(item: &Item, versions: &Found) -> Vec<String> {
+    if kind(item) == TitleKind::Series {
+        return Vec::new();
+    }
     let mut paths: Vec<String> = item.path.iter().cloned().collect();
     let sources = versions
         .get(&item.id)
@@ -109,7 +113,7 @@ impl Importer {
     pub(crate) fn titles(&self, ask: &TitlesAsk) -> Result<TitlePage> {
         let session = self.session(&ask.sign_in, &ask.server)?;
         let window = Window::of(ask.cursor.as_deref(), ask.limit)?;
-        let listed = in_library(films_and_episodes(session.user()), &ask.library);
+        let listed = in_library(titles_and_shows(session.user()), &ask.library);
         let query = paged(with_fields(listed, TITLE_FIELDS), window);
         let Some(page) = session.visible_items(query)? else {
             let name = self.dialect.name;

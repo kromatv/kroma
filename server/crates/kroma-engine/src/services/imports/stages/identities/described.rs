@@ -44,7 +44,7 @@ pub(super) fn known_as(title: &Title) -> Option<(Subject, HeldIds)> {
     match title.kind {
         TitleKind::Movie => Some((Subject::Movie, held(&title.ids)?)),
         TitleKind::Episode => Some((Subject::Show, held(&title.series.as_ref()?.ids)?)),
-        TitleKind::Other => None,
+        TitleKind::Series | TitleKind::Other => None,
     }
 }
 

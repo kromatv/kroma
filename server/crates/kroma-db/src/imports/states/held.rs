@@ -5,7 +5,7 @@
 use kroma_domain::watching::{Resume, Watching};
 use rusqlite::{params, Connection, OptionalExtension, Row};
 
-use super::here::merge_into_title;
+use super::here::{merge_into, Title, TITLES};
 use super::Merged;
 use crate::Result;
 
@@ -105,7 +105,11 @@ fn reached(conn: &Connection) -> rusqlite::Result<Vec<Reached>> {
 pub(crate) fn release(conn: &Connection) -> Result<usize> {
     let reached = reached(conn)?;
     for held in &reached {
-        merge_into_title(conn, &held.account, &held.item, &held.state)?;
+        let title = Title {
+            account: &held.account,
+            item: &held.item,
+        };
+        merge_into(conn, (TITLES, &title), &held.state)?;
         conn.execute(
             "DELETE FROM import_held_states WHERE abs_path = ?1 AND user_id = ?2",
             params![held.path, held.account],

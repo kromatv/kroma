@@ -3,7 +3,7 @@ use serde_json::json;
 use super::*;
 
 use crate::dialect::JELLYFIN;
-use crate::test_support::{fixture, Recorded, World, ANA, FILMS, SERVER};
+use crate::test_support::{fixture, Recorded, World, ANA, FILMS, SERVER, SHOWS};
 
 const HEAT: &str = "c0000000000000000000000000000001";
 const ALIEN: &str = "c0000000000000000000000000000002";
@@ -91,7 +91,7 @@ fn the_state_is_asked_for_that_user_in_that_library() {
     });
     assert_eq!(
         asked,
-        [ANA, FILMS, "true", "Movie,Episode"].map(|value| Some(value.to_string()))
+        [ANA, FILMS, "true", "Movie,Episode,Series"].map(|value| Some(value.to_string()))
     );
 }
 
@@ -163,6 +163,36 @@ fn a_date_the_server_writes_badly_leaves_the_state_without_one() {
             duration_ms: None,
             last_played_at: None,
             favourite: false,
+        }]
+    );
+}
+
+#[test]
+fn a_favourite_on_a_whole_show_comes_with_the_show_s_id() {
+    let hers = [("userId", ANA), ("parentId", SHOWS)];
+    let shows = Recorded::jellyfin().on(
+        JELLYFIN.items.path,
+        &hers,
+        fixture(include_str!("../fixtures/ana-shows.json")),
+    );
+    let world = World::over(shows);
+    let ask = StatesAsk {
+        library: SHOWS.to_string(),
+        ..of_ana(&world)
+    };
+
+    let page = world.importer.states(&ask).unwrap();
+
+    assert_eq!(
+        page.states,
+        vec![WatchState {
+            title: "e0000000000000000000000000000001".to_string(),
+            watched: false,
+            play_count: None,
+            position_ms: None,
+            duration_ms: None,
+            last_played_at: None,
+            favourite: true,
         }]
     );
 }

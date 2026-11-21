@@ -246,7 +246,10 @@ way, for the year a show started and its ids, which an episode does not carry.
 With `X-Plex-Container-Size: 0` the answer holds no item and still has
 `totalSize`, which is how P counts a library (`totalViewSize`).
 
-Plex has no favourite on a film or an episode, so the importer reports none.
+Plex has no favourite on a film, an episode or a show, so the importer reports
+none: neither `video.py` nor `myplex.py` of P names one (searched 2026-11-21).
+The closest is the watchlist, which is on the plex.tv account and stays behind
+(ADMIN-138).
 A library whose agent is one of the old ones gives a title no `Guid` child.
 Its id is then in the `guid` attribute, in a form none of the sources above
 describes, and the importer does not read it. Such a title is matched by its

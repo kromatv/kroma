@@ -204,6 +204,21 @@ fn a_title_of_a_kind_this_build_does_not_know_does_not_break_its_page() {
 }
 
 #[test]
+fn a_whole_show_is_a_title_of_its_own_kind() {
+    let wire = json!({
+        "titles": [{ "id": "s1", "kind": "series", "title": "Dark", "year": 2017 }],
+    });
+
+    let page: TitlePage = read(wire.clone());
+
+    assert_eq!(page.titles[0].kind, TitleKind::Series);
+    assert_eq!(
+        serde_json::to_value(&page).unwrap()["titles"][0]["kind"],
+        "series"
+    );
+}
+
+#[test]
 fn a_page_of_watch_state_reads_every_field_in_its_unit() {
     let wire = json!({
         "states": [{

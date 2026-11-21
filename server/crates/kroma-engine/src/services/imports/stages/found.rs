@@ -19,17 +19,18 @@ use self::on_disk::{Placed, Sources};
 use super::super::paths::Translation;
 use super::Importing;
 use crate::db;
-use crate::model::import::Title;
+use crate::model::import::{Title, TitleKind};
 
 /// What a title of the other server is on this server.
 ///
-/// `Title` is the id of the catalogue item it is. `Awaited` is the path of a
-/// file of the title on this machine, as a scan writes it: the file is in a
-/// source, a scan writes such a file, and no title has it yet. `Nothing`
-/// matched neither.
+/// `Title` is the id of the catalogue item it is, and `Show` the id of the
+/// show a series is. `Awaited` is the path of a file of the title on this
+/// machine, as a scan writes it: the file is in a source, a scan writes such a
+/// file, and no title has it yet. `Nothing` matched none of them.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(super) enum Found {
     Title(String),
+    Show(String),
     Awaited(String),
     Nothing,
 }
@@ -56,10 +57,19 @@ pub(super) fn find(importing: &Importing<'_>, titles: &[&Title]) -> Result<Vec<F
         };
         found.push(match by_file {
             Some(by_file) => by_file,
-            None => described.find(title)?.map_or(Found::Nothing, Found::Title),
+            None => described
+                .find(title)?
+                .map_or(Found::Nothing, |id| found_as(title, id)),
         });
     }
     Ok(found)
+}
+
+fn found_as(title: &Title, id: String) -> Found {
+    match title.kind {
+        TitleKind::Series => Found::Show(id),
+        _ => Found::Title(id),
+    }
 }
 
 fn on_disk(pool: &db::Pool, sources: &Sources, files: &[Placed]) -> Result<Option<Found>> {

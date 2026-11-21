@@ -78,6 +78,7 @@ impl<'a> Described<'a> {
         match title.kind {
             TitleKind::Movie => self.film(title),
             TitleKind::Episode => self.episode(title),
+            TitleKind::Series => self.series(title),
             TitleKind::Other => Ok(None),
         }
     }
@@ -115,6 +116,15 @@ impl<'a> Described<'a> {
             }
         }
         Ok(None)
+    }
+
+    fn series(&mut self, title: &Title) -> Result<Option<String>> {
+        let series = Series {
+            title: title.title.clone(),
+            year: title.year,
+            ids: title.ids.clone(),
+        };
+        Ok(self.shows_that_are(&series)?.into_iter().next())
     }
 
     fn shows_that_are(&mut self, series: &Series) -> Result<Vec<String>> {
