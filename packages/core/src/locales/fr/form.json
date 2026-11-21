@@ -1,8 +1,8 @@
 {
-  "form.email": "Cette adresse e-mail n'a pas l'air valide.",
-  "form.mismatch": "Les deux ne correspondent pas.",
+  "form.email": "Cette adresse e-mail ne semble pas valide.",
+  "form.mismatch": "Les deux saisies ne correspondent pas.",
   "form.number": "Chiffres uniquement.",
-  "form.required": "Ce champ est requis.",
-  "form.submitFailed": "L'envoi a échoué. Réessayez.",
-  "form.tooShort": "Utilisez au moins {min} caractères."
+  "form.required": "Ce champ est obligatoire.",
+  "form.submitFailed": "Impossible d'envoyer le formulaire. Réessayez.",
+  "form.tooShort": "{min} caractères minimum."
 }
