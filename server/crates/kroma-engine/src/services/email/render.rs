@@ -42,28 +42,36 @@ pub struct ResetStrings {
     pub footer: String,
 }
 
+fn catalog_prefix(kind: EmailKind) -> &'static str {
+    match kind {
+        EmailKind::Reset => "email.reset",
+        EmailKind::Verify => "email.verify",
+        EmailKind::Activate => "email.activate",
+        EmailKind::Invite => "email.invite",
+    }
+}
+
+fn code_note(kind: EmailKind, t: impl Fn(&str) -> String) -> (String, String) {
+    match kind {
+        EmailKind::Reset => (t("codeNote"), t("codeLabel")),
+        EmailKind::Verify | EmailKind::Activate | EmailKind::Invite => {
+            (String::new(), String::new())
+        }
+    }
+}
+
 pub fn render_strings(
     kind: EmailKind,
     locale: &str,
     server_name: &str,
     url: &str,
 ) -> ResetStrings {
-    let prefix = match kind {
-        EmailKind::Reset => "email.reset",
-        EmailKind::Verify => "email.verify",
-        EmailKind::Activate => "email.activate",
-        EmailKind::Invite => "email.invite",
-    };
+    let prefix = catalog_prefix(kind);
     let t = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[]);
     let named = |key: &str| i18n::t(locale, &format!("{prefix}.{key}"), &[("name", server_name)]);
-    let (code_note, code_label) = match kind {
-        EmailKind::Reset => (t("codeNote"), t("codeLabel")),
-        EmailKind::Verify | EmailKind::Activate | EmailKind::Invite => {
-            (String::new(), String::new())
-        }
-    };
+    let (code_note, code_label) = code_note(kind, t);
     ResetStrings {
-        subject: i18n::t(locale, &format!("{prefix}.subject"), &[("name", server_name)]),
+        subject: named("subject"),
         text: i18n::t(
             locale,
             &format!("{prefix}.text"),

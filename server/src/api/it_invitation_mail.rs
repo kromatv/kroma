@@ -107,6 +107,23 @@ async fn a_server_that_sends_no_mail_answers_manual_and_asks_nobody() {
 }
 
 #[tokio::test]
+async fn a_server_with_no_public_address_answers_manual_since_no_link_could_be_written() {
+    let t = test_app();
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("emailDelivery".to_string(), json!("smtp"))]
+            .into_iter()
+            .collect(),
+    );
+    let token = invite(&t).await;
+
+    let (status, body) = mail(&t, &token, json!({ "to": "lea@test.dev" })).await;
+
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["delivered"], json!("manual"));
+}
+
+#[tokio::test]
 async fn a_mail_that_cannot_leave_says_why_and_leaves_the_invitation_as_it_was() {
     let t = test_app();
     t.state.settings.set_patch(

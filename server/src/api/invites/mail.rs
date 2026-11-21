@@ -1,6 +1,7 @@
 //! An invitation sent to a mailbox by the server, the way a credential reset is.
 
-use axum::extract::{Path, State};
+use axum::extract::{FromRequestParts, Path, State};
+use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -19,6 +20,28 @@ use crate::services::email::{self, Delivery, EmailKind, OutboundEmail, RelayTarg
 use crate::state::SharedState;
 
 const MAX_ADDRESS_CHARS: usize = 254;
+const ADDRESS_INVALID: &str = "admin.invitationMailAddressInvalid";
+
+pub(super) struct InviteManager {
+    user: User,
+    token: String,
+}
+
+impl FromRequestParts<SharedState> for InviteManager {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &SharedState,
+    ) -> Result<Self, Self::Rejection> {
+        let AuthUser(user) = AuthUser::from_request_parts(parts, state).await?;
+        require(&user, Permission::UsersManage)?;
+        let Path(token) = Path::<String>::from_request_parts(parts, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        Ok(Self { user, token })
+    }
+}
 
 #[derive(Debug, Deserialize)]
 pub struct MailInviteBody {
@@ -66,44 +89,44 @@ fn delivered(delivery: Delivery) -> Response {
 /// the server sends no mail or knows no public address. `400` for an address
 /// that is not one, `404` for an unknown invitation, `409` for one spent or
 /// expired, `502` when the mail could not leave. The invitation never changes.
-pub async fn mail_invite(
+pub(super) async fn mail_invite(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Path(token): Path<String>,
+    call: InviteManager,
     Json(body): Json<MailInviteBody>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::UsersManage)?;
-    let loc = i18n::user_locale(&user);
-    let to = recipient(&body.to).ok_or_else(|| {
-        lerr(
-            loc,
-            StatusCode::BAD_REQUEST,
-            "admin.invitationMailAddressInvalid",
-        )
-    })?;
-    live_invite(&state, loc, &token).await?;
+    let loc = i18n::user_locale(&call.user);
+    let to =
+        recipient(&body.to).ok_or_else(|| lerr(loc, StatusCode::BAD_REQUEST, ADDRESS_INVALID))?;
+    live_invite(&state, loc, &call.token).await?;
     let Some(origin) = web_base(&state) else {
         return Ok(delivered(Delivery::Manual));
     };
     let message = OutboundEmail {
         to,
-        locale: written_in(&body, &user),
-        url: format!("{origin}/join?invite={token}"),
+        locale: written_in(&body, &call.user),
+        url: format!("{origin}/join?invite={}", call.token),
         server_name: state.settings.get_str("serverName", "KROMA"),
         kind: EmailKind::Invite,
     };
+    send(&state, &origin, &message)
+        .await
+        .map(delivered)
+        .map_err(|why| not_sent(loc, &why))
+}
+
+async fn send(
+    state: &SharedState,
+    origin: &str,
+    message: &OutboundEmail,
+) -> Result<Delivery, String> {
     let target = RelayTarget {
-        url: relay_url(&state),
-        origin: &origin,
+        url: relay_url(state),
+        origin,
     };
-    match email::send(&state.settings, &state.db, Some(&target), &message).await {
-        Ok(delivery) => Ok(delivered(delivery)),
-        Err(why) => {
-            let prefix = i18n::t(loc, "admin.invitationMailFailed", &[]);
-            Err(json_error(
-                StatusCode::BAD_GATEWAY,
-                &format!("{prefix}: {why}"),
-            ))
-        }
-    }
+    email::send(&state.settings, &state.db, Some(&target), message).await
+}
+
+fn not_sent(loc: &str, why: &str) -> Response {
+    let prefix = i18n::t(loc, "admin.invitationMailFailed", &[]);
+    json_error(StatusCode::BAD_GATEWAY, &format!("{prefix}: {why}"))
 }

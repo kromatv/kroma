@@ -146,10 +146,27 @@ function MailDialog({ invite, onClose }: Readonly<{ invite: Invite | null; onClo
   return <InvitationMailDialog token={invite.token} onClose={onClose} />;
 }
 
-function ContinueButton({ onContinue }: Readonly<{ onContinue: () => void }>) {
-  const t = useT();
+function usePeople() {
+  const invitations = useInvitations();
+  const [editing, setEditing] = useState<Invite | null>(null);
+  const [mailing, setMailing] = useState<Invite | null>(null);
+  const save = (invite: Invite, rights: Permission[]) => {
+    setEditing(null);
+    void invitations.change(invite.token, rights);
+  };
+  return { ...invitations, editing, setEditing, mailing, setMailing, save };
+}
+
+function PeopleDialogs({ people }: Readonly<{ people: ReturnType<typeof usePeople> }>) {
   return (
-    <Button size="md" label={t('setup.continue')} iconRight="arrow-right" onPress={onContinue} />
+    <>
+      <RightsEditor
+        invite={people.editing}
+        onClose={() => people.setEditing(null)}
+        onSave={people.save}
+      />
+      <MailDialog invite={people.mailing} onClose={() => people.setMailing(null)} />
+    </>
   );
 }
 
@@ -158,31 +175,29 @@ function ContinueButton({ onContinue }: Readonly<{ onContinue: () => void }>) {
  * changes those rights, has the server send the link by mail, or deletes it. */
 export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
   const t = useT();
-  const { open, busy, create, revoke, change, linkOf } = useInvitations();
-  const [editing, setEditing] = useState<Invite | null>(null);
-  const [mailing, setMailing] = useState<Invite | null>(null);
-  const save = (invite: Invite, rights: Permission[]) => {
-    setEditing(null);
-    void change(invite.token, rights);
-  };
+  const people = usePeople();
   return (
     <>
       <StepHeading title={t('setup.peopleTitle')} sub={t('setup.peopleSub')} />
       <StepBody>
         <InvitationList
-          open={open}
-          linkOf={linkOf}
-          revoke={revoke}
-          onMail={setMailing}
-          onEdit={setEditing}
+          open={people.open}
+          linkOf={people.linkOf}
+          revoke={people.revoke}
+          onMail={people.setMailing}
+          onEdit={people.setEditing}
         />
-        <InviteMore busy={busy} onInvite={() => void create()} />
+        <InviteMore busy={people.busy} onInvite={() => void people.create()} />
       </StepBody>
       <StepActions onBack={onBack}>
-        <ContinueButton onContinue={onContinue} />
+        <Button
+          size="md"
+          label={t('setup.continue')}
+          iconRight="arrow-right"
+          onPress={onContinue}
+        />
       </StepActions>
-      <RightsEditor invite={editing} onClose={() => setEditing(null)} onSave={save} />
-      <MailDialog invite={mailing} onClose={() => setMailing(null)} />
+      <PeopleDialogs people={people} />
     </>
   );
 }
