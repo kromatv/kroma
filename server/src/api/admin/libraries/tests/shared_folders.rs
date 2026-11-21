@@ -105,3 +105,34 @@ async fn an_edit_may_add_a_folder_below_the_librarys_own() {
 
     assert_eq!(defs(&state)[0].folders, ["/media/Films", "/media/Films/4K"]);
 }
+
+#[tokio::test]
+async fn libraries_that_already_share_files_can_still_be_saved_as_they_are() {
+    let harness = app();
+    let state = harness.state.clone();
+    let overlapping = vec![
+        LibraryDef {
+            id: "films".into(),
+            name: "Films".into(),
+            kind: "movies".into(),
+            folders: vec!["/media/Films".into()],
+            auto_scan: true,
+        },
+        LibraryDef {
+            id: "films-4k".into(),
+            name: "Films 4K".into(),
+            kind: "movies".into(),
+            folders: vec!["/media/Films/4K".into()],
+            auto_scan: true,
+        },
+    ];
+    settings::set_library_defs(&state.settings, &state.db, &overlapping);
+
+    moved(&state, "films-4k", &["/media/Films/4K"])
+        .await
+        .unwrap();
+    let grown = moved(&state, "films-4k", &["/media/Films/4K", "/media"]).await;
+
+    assert_eq!(refusal(grown).await.0, StatusCode::CONFLICT);
+    assert_eq!(defs(&state).len(), 2);
+}

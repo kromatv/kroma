@@ -165,10 +165,8 @@ pub async fn update_library(
         ));
     };
     let folders = body.folders.map(clean_folders);
-    let sharing = folders
-        .as_deref()
-        .and_then(|folders| settings::library_sharing_files(&defs, folders, Some(&id)));
-    if let Some(sharing) = sharing {
+    let added = added_folders(folders.as_deref(), &defs[at].folders);
+    if let Some(sharing) = settings::library_sharing_files(&defs, &added, Some(&id)) {
         return Err(shares_files(&user, &sharing.name));
     }
     let def = &mut defs[at];
@@ -224,6 +222,15 @@ pub async fn scan_library(
     super::require(&user, Permission::LibraryManage)?;
     spawn_rescan(state.clone());
     Ok(Json(json!({ "started": true })).into_response())
+}
+
+fn added_folders(folders: Option<&[String]>, held: &[String]) -> Vec<String> {
+    folders
+        .unwrap_or_default()
+        .iter()
+        .filter(|folder| !held.contains(folder))
+        .cloned()
+        .collect()
 }
 
 fn shares_files(user: &User, library: &str) -> Response {
