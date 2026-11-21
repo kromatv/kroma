@@ -35,8 +35,8 @@ export function MemberIdentity({ user }: Readonly<{ user: AdminUser }>) {
         size={42}
         circle
       />
-      <Box minW={0}>
-        <Box row align="center" gap={8}>
+      <Box minW={0} flex={1}>
+        <Box row align="center" gap={8} wrap>
           <Text variant="label" lines={1}>
             {user.username}
           </Text>
