@@ -1,6 +1,6 @@
 use super::*;
 use crate::ingest::test_support::*;
-use crate::{finish_sync, sync_all, sync_batch, ScanBatch};
+use crate::{finish_sync, sync_all, sync_batch, ScanBatch, WalkEnd};
 use kroma_domain::MediaItem;
 
 fn write_episode(p: &Pool, show_id: &str, episode_id: &str) -> usize {
@@ -41,9 +41,12 @@ fn a_show_whose_episode_a_batch_wrote_stays_unsettled_until_a_walk_ends() {
 
     finish_sync(
         &p,
-        &[lib("lib")],
-        &[episode("e1", "s1", 1), episode("e2", "s2", 1)],
-        &shows(&["s1", "s2"]),
+        &WalkEnd {
+            libraries: &[lib("lib")],
+            items: &[episode("e1", "s1", 1), episode("e2", "s2", 1)],
+            unread: &HashSet::new(),
+            settled: &shows(&["s1", "s2"]),
+        },
     )
     .unwrap();
 
@@ -57,7 +60,16 @@ fn a_walk_that_ends_settles_only_the_shows_it_took() {
     write_episode(&p, "s2", "e2");
     let walked = [episode("e1", "s1", 1), episode("e2", "s2", 1)];
 
-    finish_sync(&p, &[lib("lib")], &walked, &shows(&["s1", "gone"])).unwrap();
+    finish_sync(
+        &p,
+        &WalkEnd {
+            libraries: &[lib("lib")],
+            items: &walked,
+            unread: &HashSet::new(),
+            settled: &shows(&["s1", "gone"]),
+        },
+    )
+    .unwrap();
 
     assert_eq!(unsettled(&p), ["s2"]);
 }
@@ -128,9 +140,12 @@ fn shows_a_finished_walk_settled_can_be_left_unsettled_again() {
     write_episode(&p, "s1", "e1");
     finish_sync(
         &p,
-        &[lib("lib")],
-        &[episode("e1", "s1", 1)],
-        &shows(&["s1"]),
+        &WalkEnd {
+            libraries: &[lib("lib")],
+            items: &[episode("e1", "s1", 1)],
+            unread: &HashSet::new(),
+            settled: &shows(&["s1"]),
+        },
     )
     .unwrap();
     let settled = unsettled(&p);
