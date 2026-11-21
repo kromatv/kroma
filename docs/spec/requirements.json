@@ -2790,10 +2790,10 @@
     "line": 191
   },
   {
-    "id": "ADMIN-182",
+    "id": "ADMIN-187",
     "domain": "ADMIN",
     "space": "admin",
-    "number": 182,
+    "number": 187,
     "status": "AGREED",
     "text": "A step stays done once the server has seen it done. A line that",
     "file": "docs/spec/admin/setup.md",

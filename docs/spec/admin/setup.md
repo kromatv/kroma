@@ -145,7 +145,7 @@ anywhere else in the admin console.
 | People | the server has an invitation or a second account |
 | Being counted | the owner confirmed the step |
 
-**ADMIN-182** (AGREED) - A step stays done once the server has seen it done. A line that
+**ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that
 left the checklist does not come back when its result goes, for instance when the owner
 removes the only source.
 
