@@ -47,7 +47,7 @@ ainsi vérifier que la lecture fonctionne.
 
 > [!IMPORTANT]
 > Créez le compte propriétaire depuis votre réseau domestique. Depuis
-> l'extérieur, KROMA le refuse avec le message **Le compte propriétaire se crée
+> l'extérieur, KROMA le refuse avec le message **Créez le compte du propriétaire
 > depuis le réseau local du serveur**. Ainsi, personne sur Internet ne peut
 > s'approprier un nouveau serveur avant vous.
 
