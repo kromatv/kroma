@@ -2800,20 +2800,20 @@
     "line": 75
   },
   {
-    "id": "ADMIN-183",
+    "id": "ADMIN-188",
     "domain": "ADMIN",
     "space": "admin",
-    "number": 183,
+    "number": 188,
     "status": "AGREED",
     "text": "A restore that is not a reset adds what the backup holds and removes",
     "file": "docs/spec/admin/README.md",
     "line": 298
   },
   {
-    "id": "ADMIN-184",
+    "id": "ADMIN-189",
     "domain": "ADMIN",
     "space": "admin",
-    "number": 184,
+    "number": 189,
     "status": "AGREED",
     "text": "A restore that is a reset puts the backup's sources in place of the",
     "file": "docs/spec/admin/README.md",
