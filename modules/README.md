@@ -682,6 +682,11 @@ host.notify(
   and `dedupe_key` drops a repeat the reader still holds.
   `host.resolve_notifications(&subject, NotificationEvent::Custom, by)` settles
   every row of the module about that subject, for every reader.
+- **An `api` action** is a button the reader presses once, and the press sends
+  the request with the reader's own session. It must `POST`, either to a
+  request review (`/api/requests/<id>/approve` or `/deny`) or to a route under
+  the module's own `/api/module/<its id>/`. The host answers `403` to any
+  other, and the phone opens the app instead of running one.
 
 `NotificationSpec::custom` still takes literal text, for a module built before
 declared types. Every reader gets those words whatever their language.

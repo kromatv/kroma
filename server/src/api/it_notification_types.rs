@@ -67,6 +67,21 @@ fn kind<'a>(prefs: &'a Value, name: &str) -> &'a Value {
         .unwrap_or_else(|| panic!("{name} is not listed: {prefs}"))
 }
 
+fn review_button(method: &str, href: &str) -> Value {
+    json!({
+        "audience": { "kind": "everyone" },
+        "spec": {
+            "event": "request.submitted", "pushCategory": "request_review",
+            "titleKey": "notifications.request.submitted.title",
+            "bodyKey": "notifications.request.submitted.body",
+            "actions": [{
+                "id": "approve", "labelKey": "notifications.action.approve",
+                "kind": "api", "method": method, "href": href,
+            }],
+        },
+    })
+}
+
 fn announce(declared: &str) -> Value {
     json!({
         "audience": { "kind": "everyone" },
@@ -251,4 +266,53 @@ async fn a_module_built_before_declared_types_still_sends_its_own_words() {
     assert_eq!(status, StatusCode::OK);
     let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
     assert_eq!(inbox["notifications"][0]["title"], json!("Fini"));
+}
+
+#[tokio::test]
+async fn a_module_cannot_put_an_admin_route_on_a_button() {
+    let t = test_app();
+    let token = install_declaring_module(&t);
+    let (_, ana) = admin(&t, "ana");
+    let button = review_button("DELETE", "/api/admin/users/u2");
+
+    let (status, body) = send(
+        &t.seam,
+        "POST",
+        "/api/_host/notify",
+        Some(&token),
+        Some(button),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert!(
+        body["error"].as_str().unwrap().contains("approve"),
+        "{body}"
+    );
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
+    assert_eq!(inbox["notifications"], json!([]));
+}
+
+#[tokio::test]
+async fn a_module_still_puts_the_request_review_on_a_button() {
+    let t = test_app();
+    let token = install_declaring_module(&t);
+    let (_, ana) = admin(&t, "ana");
+    let button = review_button("POST", "/api/requests/r1/approve");
+
+    let (status, _) = send(
+        &t.seam,
+        "POST",
+        "/api/_host/notify",
+        Some(&token),
+        Some(button),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let (_, inbox) = get(&t.app, "/api/notifications", Some(&ana)).await;
+    assert_eq!(
+        inbox["notifications"][0]["actions"][0]["href"],
+        json!("/api/requests/r1/approve")
+    );
 }
