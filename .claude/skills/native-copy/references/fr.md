@@ -101,6 +101,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Rights, permissions | Droits | Permissions |
 | Invitation link | Lien d'invitation | |
 | Feature | Fonctionnalité | Feature |
+| LAN address | adresse sur le réseau local | adresse LAN |
+| Roku (the device) | boîtier Roku | les Roku |
 | At any time | à tout moment | n'importe quand |
 | Email | e-mail, adresse e-mail | email, mail, courriel |
 | Clear (a field, a search) | Effacer | Vider |
