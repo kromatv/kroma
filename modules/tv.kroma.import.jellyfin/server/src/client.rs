@@ -69,7 +69,10 @@ pub(crate) struct Session<'a> {
 impl Importer {
     pub(crate) fn session(&self, sign_in: &str, server: &str) -> Result<Session<'_>> {
         let Some(sign_in) = sign_ins::find(&self.store, sign_in)? else {
-            bail!("this sign-in to Jellyfin is not kept here. Sign in again.");
+            bail!(
+                "this sign-in to {} is not kept here. Sign in again.",
+                self.dialect.name
+            );
         };
         if sign_in.server != server {
             bail!("this sign-in does not reach that server");
@@ -126,18 +129,18 @@ impl Session<'_> {
     }
 
     fn explained(&self, call: Call, failure: Failure) -> anyhow::Error {
-        let path = call.path;
+        let (name, path) = (self.dialect.name, call.path);
         match failure {
             Failure::Status(UNAUTHORIZED) => {
-                anyhow!("Jellyfin refused the sign-in it gave. Sign in again.")
+                anyhow!("{name} refused the sign-in it gave. Sign in again.")
             }
-            Failure::Status(status) => anyhow!("Jellyfin answered {path} with HTTP {status}"),
-            Failure::Redirected(_) => anyhow!("Jellyfin answered {path} with a redirect"),
+            Failure::Status(status) => anyhow!("{name} answered {path} with HTTP {status}"),
+            Failure::Redirected(_) => anyhow!("{name} answered {path} with a redirect"),
             Failure::Unreadable => {
-                anyhow!("Jellyfin gave an answer to {path} this importer cannot read")
+                anyhow!("{name} gave an answer to {path} this importer cannot read")
             }
             Failure::Unreachable(why) => {
-                anyhow!("Jellyfin did not answer at {}: {why}", self.sign_in.address)
+                anyhow!("{name} did not answer at {}: {why}", self.sign_in.address)
             }
         }
     }

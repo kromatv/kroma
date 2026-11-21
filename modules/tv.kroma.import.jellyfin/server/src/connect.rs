@@ -130,7 +130,9 @@ impl Importer {
     fn server_at(&self, address: &str) -> Result<ServerInfo, Stop> {
         let request = self.request(self.dialect.server, address);
         match ask::<ServerInfo>(self.web.as_ref(), &request) {
-            Ok(server) if server.product_name == self.dialect.product && !server.id.is_empty() => {
+            Ok(server)
+                if self.dialect.product.admits(&server.product_name) && !server.id.is_empty() =>
+            {
                 Ok(server)
             }
             Ok(other) => Err(refused_saying(Refusal::Unsupported, described(&other))),
