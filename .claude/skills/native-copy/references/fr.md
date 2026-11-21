@@ -177,6 +177,9 @@ move the rest to the screen where it matters.
 | English | French | Never |
 |---|---|---|
 | Mail server | serveur de messagerie | serveur mail |
+| Middleware (modules that filter connections) | Modules de filtrage | Intergiciels |
+| Television (a kind of device) | Téléviseur | Télévision, which is the medium |
+| Config (a WireGuard file) | configuration | config |
 | Upload (an image, a file) | Importer | Téléverser |
 | Discard your changes? | Abandonner les modifications ? | Abandonner les changements ? |
 | Create their account (one person) | Créer son compte | Créer leur compte |
