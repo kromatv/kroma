@@ -28,13 +28,28 @@ const accessOf = (
   write: union(sources.map((source) => pick(source)?.write)),
 });
 
-/** What an installed module declares, or null when it does not say what it may do. */
-export function installedSource(module: AdminModule): PermissionSource | null {
-  if (!module.permissions) {
+interface Declaration {
+  permissions?: object | null;
+  storage?: PermissionSource['storage'];
+  settings?: Access | null;
+}
+
+const lists = (access: Access | null | undefined) =>
+  [access?.read, access?.write].some((list) => (list?.length ?? 0) > 0);
+
+const says = (declared: Declaration) =>
+  Boolean(declared.permissions) || lists(declared.storage?.core) || lists(declared.settings);
+
+/** What an installed module declares, or null when it names no permission,
+ *  core table or setting. */
+export function installedSource(
+  module: Pick<AdminModule, 'permissions' | 'storage' | 'settings' | 'helpers' | 'origin'>,
+): PermissionSource | null {
+  if (!says(module)) {
     return null;
   }
   return {
-    permissions: module.permissions,
+    permissions: module.permissions ?? {},
     storage: module.storage,
     settings: module.settings,
     helpers: module.helpers ?? {},
@@ -52,14 +67,21 @@ export function fromOfficialRegistry(catalog: StoreCatalog, entry: StoreModule):
 }
 
 /** What a catalog row, a plan row or an uploaded bundle declares: null when it
- *  does not say what the module may do. */
+ *  names no permission, core table or setting. */
 export function declaredSource(
   declared: DeclaredAccess & { official?: boolean },
 ): PermissionSource | null {
+  if (!says(declared)) {
+    return null;
+  }
   const { permissions, storage, settings, helpers, official } = declared;
-  return permissions
-    ? { permissions, storage, settings, helpers, official: official ?? false }
-    : null;
+  return {
+    permissions: permissions ?? {},
+    storage,
+    settings,
+    helpers,
+    official: official ?? false,
+  };
 }
 
 /** Everything several modules declare, as if one module declared it all. */

@@ -144,6 +144,7 @@
   "modulePermissions.toAnywhere": "any website",
   "modulePermissions.toSetting": "the address you set",
   "modulePermissions.undeclaredHint": "Declares nothing: it has no network and no program.",
+  "modulePermissions.verdictAccounts": "changes the accounts on your server",
   "modulePermissions.verdictExtended": "{reasons}, outside the module's isolation.",
   "modulePermissions.verdictHost": "uses its direct connection",
   "modulePermissions.verdictHostFirst": "uses your server's direct connection",

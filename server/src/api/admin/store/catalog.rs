@@ -67,12 +67,7 @@ pub struct CatalogModule {
     // the install planner suggests providers for the unsatisfied ones.
     pub consumes: Vec<(String, Option<String>)>,
     pub artifacts: Vec<Artifact>,
-    /// What this version declares it may do and reach. Each is `None` when the
-    /// registry does not say, or says something this server cannot read.
-    pub permissions: Option<Permissions>,
-    pub storage: Option<Storage>,
-    pub settings: Option<SettingsScope>,
-    pub helpers: Option<std::collections::BTreeMap<String, Helper>>,
+    pub declaration: Declaration,
     /// Whether the registry this row came from is the official one. Set when
     /// the fetched registries are merged, and recorded at install time so a
     /// module's provenance is a fact rather than something re-derived later
@@ -132,8 +127,12 @@ pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
             speaks,
         });
     }
-    kroma_module_manifest::engines_satisfied(&m.engines, m.storage.as_ref(), this_server())
-        .map_err(Refusal::from)?;
+    kroma_module_manifest::engines_satisfied(
+        &m.engines,
+        m.declaration.storage.as_ref(),
+        this_server(),
+    )
+    .map_err(Refusal::from)?;
     if pick_artifact(m).is_none() {
         return Err(Refusal::Native);
     }
@@ -227,20 +226,28 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         forms: Vec::new(),
         consumes: Vec::new(),
         artifacts: Vec::new(),
-        permissions: None,
-        storage: None,
-        settings: None,
-        helpers: None,
+        declaration: Declaration::default(),
         newest: None,
     }
 }
 
-impl CatalogModule {
-    pub fn declared(&self) -> Declared<'_> {
+/// What a version declares it may do and reach. Each part is `None` when the
+/// registry does not say, or says something this server cannot read.
+#[derive(Clone, Default)]
+pub struct Declaration {
+    pub permissions: Option<Permissions>,
+    pub storage: Option<Storage>,
+    pub settings: Option<SettingsScope>,
+    pub helpers: Option<std::collections::BTreeMap<String, Helper>>,
+}
+
+impl Declaration {
+    pub fn as_declared(&self) -> Declared<'_> {
         Declared {
             permissions: self.permissions.as_ref(),
             storage: self.storage.as_ref(),
             settings: self.settings.as_ref(),
+            helpers: self.helpers.as_ref(),
         }
     }
 }
@@ -249,17 +256,17 @@ impl CatalogModule {
 /// that names a module carries, so a consent can show it before install.
 pub fn declared_fields(m: &CatalogModule) -> [(String, Value); 4] {
     [
-        ("permissions".into(), json!(m.permissions)),
-        ("storage".into(), json!(m.storage)),
-        ("settings".into(), json!(m.settings)),
-        ("helpers".into(), json!(m.helpers)),
+        ("permissions".into(), json!(m.declaration.permissions)),
+        ("storage".into(), json!(m.declaration.storage)),
+        ("settings".into(), json!(m.declaration.settings)),
+        ("helpers".into(), json!(m.declaration.helpers)),
     ]
 }
 
 /// Whether taking this entry asks for more than `installed` was granted. What
 /// the row does not say widens nothing.
 pub fn widens_access(entry: &CatalogModule, installed: Option<&ModuleManifest>) -> bool {
-    installed.is_some_and(|installed| entry.declared().widens(installed))
+    installed.is_some_and(|installed| entry.declaration.as_declared().widens(installed))
 }
 
 #[cfg(test)]

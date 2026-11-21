@@ -224,10 +224,10 @@ fn torrents_row() -> Value {
 fn a_row_carries_the_storage_settings_and_helpers_its_manifest_declares() {
     let m = parse_module(&torrents_row()).unwrap();
 
-    let storage = m.storage.as_ref().unwrap();
+    let storage = m.declaration.storage.as_ref().unwrap();
     assert_eq!(storage.core.read, ["downloads", "users.email"]);
-    assert_eq!(m.settings.as_ref().unwrap().write, ["rqbitPort"]);
-    assert!(m.helpers.as_ref().unwrap().contains_key("rqbit"));
+    assert_eq!(m.declaration.settings.as_ref().unwrap().write, ["rqbitPort"]);
+    assert!(m.declaration.helpers.as_ref().unwrap().contains_key("rqbit"));
 }
 
 #[test]
@@ -239,10 +239,10 @@ fn a_row_from_a_catalog_that_predates_them_reads_as_not_saying() {
 
     let m = parse_module(&older).unwrap();
 
-    assert!(m.permissions.is_some());
-    assert!(m.storage.is_none());
-    assert!(m.settings.is_none());
-    assert!(m.helpers.is_none());
+    assert!(m.declaration.permissions.is_some());
+    assert!(m.declaration.storage.is_none());
+    assert!(m.declaration.settings.is_none());
+    assert!(m.declaration.helpers.is_none());
 }
 
 #[test]
@@ -253,9 +253,9 @@ fn a_declaration_this_server_cannot_read_is_dropped_rather_than_guessed() {
 
     let m = parse_module(&row).unwrap();
 
-    assert!(m.helpers.is_none());
-    assert!(m.settings.is_none());
-    assert!(m.storage.is_some());
+    assert!(m.declaration.helpers.is_none());
+    assert!(m.declaration.settings.is_none());
+    assert!(m.declaration.storage.is_some());
 }
 
 #[test]
@@ -283,10 +283,8 @@ fn an_update_that_reads_more_account_data_widens_what_was_granted() {
     }))
     .unwrap();
     let offered = parse_module(&torrents_row()).unwrap();
-    let silent = CatalogModule {
-        storage: None,
-        ..parse_module(&torrents_row()).unwrap()
-    };
+    let mut silent = parse_module(&torrents_row()).unwrap();
+    silent.declaration.storage = None;
 
     assert!(widens_access(&offered, Some(&installed)));
     assert!(!widens_access(&silent, Some(&installed)));
@@ -296,15 +294,15 @@ fn an_update_that_reads_more_account_data_widens_what_was_granted() {
 fn reading(tables: &[&str], core: &str) -> CatalogModule {
     let mut m = CatalogModule {
         artifacts: vec![artifact(None)],
-        storage: Some(Storage {
-            core: kroma_module_manifest::CoreScope {
-                read: tables.iter().map(|t| (*t).to_string()).collect(),
-                write: Vec::new(),
-            },
-            adopt: Vec::new(),
-        }),
         ..test_module("tv.x.ledger", "1.0.0")
     };
+    m.declaration.storage = Some(Storage {
+        core: kroma_module_manifest::CoreScope {
+            read: tables.iter().map(|t| (*t).to_string()).collect(),
+            write: Vec::new(),
+        },
+        adopt: Vec::new(),
+    });
     m.engines.insert("core".into(), core.into());
     m
 }

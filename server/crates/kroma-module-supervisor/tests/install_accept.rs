@@ -1,6 +1,7 @@
 mod install_support;
 
 use install_support::{current, supervisor, tar_with_manifest, temp_modules_dir, uploaded};
+use kroma_module_manifest::{Declared, Permissions};
 use kroma_module_supervisor::{Accept, AsksForMore, Source, INSTALLED_DIR};
 
 fn declaring(version: &str, permissions: &str) -> Vec<u8> {
@@ -25,6 +26,24 @@ fn writing(version: &str, keys: &str) -> Vec<u8> {
              "library": true, "permissions": {NARROW},
              "settings": {{ "read": ["acqEnabled"], "write": {keys} }}"#
     )))
+}
+
+fn storing(core: &str) -> Vec<u8> {
+    tar_with_manifest(&current(&format!(
+        r#""id": "com.example.demo", "name": "Demo", "version": "1.0.0",
+             "library": true, "permissions": {NARROW}, "storage": {{ "core": {core} }}"#
+    )))
+}
+
+fn showing(permissions: &Permissions) -> Declared<'_> {
+    Declared {
+        permissions: Some(permissions),
+        ..Declared::default()
+    }
+}
+
+fn narrow() -> Permissions {
+    serde_json::from_str(NARROW).unwrap()
 }
 
 const NARROW: &str = r#"{ "net": { "connect": [{ "purpose": "a", "to": ["api.example"] }] } }"#;
@@ -89,9 +108,13 @@ fn an_unattended_update_still_says_what_its_catalog_row_showed() {
     let scratch = temp_modules_dir("accept-unattended-row");
     let sup = supervisor(scratch.path(), "9.9.9");
     sup.install(&declaring("1.0.0", WIDE), None, uploaded()).unwrap();
-    let shown: kroma_module_manifest::Permissions = serde_json::from_str(WIDE).unwrap();
+    let shown: Permissions = serde_json::from_str(WIDE).unwrap();
 
-    let updated = sup.install(&declaring("2.0.0", NARROW), None, offered(Accept::NoWider(Some(&shown))));
+    let updated = sup.install(
+        &declaring("2.0.0", NARROW),
+        None,
+        offered(Accept::NoWider(Some(showing(&shown)))),
+    );
 
     assert!(updated.unwrap_err().to_string().contains("catalog row"));
     assert_eq!(sup.installed_manifests()[0].version, "1.0.0");
@@ -101,9 +124,13 @@ fn an_unattended_update_still_says_what_its_catalog_row_showed() {
 fn a_bundle_must_declare_what_its_catalog_row_showed() {
     let scratch = temp_modules_dir("accept-exact");
     let sup = supervisor(scratch.path(), "9.9.9");
-    let shown: kroma_module_manifest::Permissions = serde_json::from_str(NARROW).unwrap();
+    let shown = narrow();
 
-    let installed = sup.install(&declaring("1.0.0", WIDE), None, offered(Accept::Exactly(&shown)));
+    let installed = sup.install(
+        &declaring("1.0.0", WIDE),
+        None,
+        offered(Accept::Exactly(showing(&shown))),
+    );
 
     assert!(installed.unwrap_err().to_string().contains("catalog row"));
     assert!(sup.installed_manifests().is_empty());
@@ -113,10 +140,93 @@ fn a_bundle_must_declare_what_its_catalog_row_showed() {
 fn a_bundle_that_declares_what_its_catalog_row_showed_installs() {
     let scratch = temp_modules_dir("accept-exact-ok");
     let sup = supervisor(scratch.path(), "9.9.9");
-    let shown: kroma_module_manifest::Permissions = serde_json::from_str(NARROW).unwrap();
+    let shown = narrow();
 
-    sup.install(&declaring("1.0.0", NARROW), None, offered(Accept::Exactly(&shown)))
-        .unwrap();
+    sup.install(
+        &declaring("1.0.0", NARROW),
+        None,
+        offered(Accept::Exactly(showing(&shown))),
+    )
+    .unwrap();
+
+    assert_eq!(sup.installed_manifests().len(), 1);
+}
+
+#[test]
+fn a_bundle_that_declares_storage_its_catalog_row_did_not_show_is_refused() {
+    let scratch = temp_modules_dir("accept-row-storage");
+    let sup = supervisor(scratch.path(), "9.9.9");
+    let shown = narrow();
+
+    let installed = sup.install(
+        &storing(r#"{ "write": ["sessions"] }"#),
+        None,
+        offered(Accept::Exactly(showing(&shown))),
+    );
+
+    assert!(installed.unwrap_err().to_string().contains("catalog row"));
+    assert!(sup.installed_manifests().is_empty());
+}
+
+#[test]
+fn a_row_that_shows_nothing_admits_no_bundle_that_declares_permissions() {
+    let scratch = temp_modules_dir("accept-row-empty");
+    let sup = supervisor(scratch.path(), "9.9.9");
+
+    let installed = sup.install(
+        &declaring("1.0.0", WIDE),
+        None,
+        offered(Accept::Exactly(Declared::default())),
+    );
+
+    assert!(installed.unwrap_err().to_string().contains("catalog row"));
+    assert!(sup.installed_manifests().is_empty());
+}
+
+#[test]
+fn a_bundle_whose_core_tables_differ_from_its_row_only_in_case_and_order_installs() {
+    let scratch = temp_modules_dir("accept-row-storage-same");
+    let sup = supervisor(scratch.path(), "9.9.9");
+    let shown = narrow();
+    let storage =
+        serde_json::from_str(r#"{ "core": { "read": ["requests", "users.email"] } }"#).unwrap();
+    let row = Declared {
+        storage: Some(&storage),
+        ..showing(&shown)
+    };
+
+    sup.install(
+        &storing(r#"{ "read": [" Users.Email", "requests"] }"#),
+        None,
+        offered(Accept::Exactly(row)),
+    )
+    .unwrap();
+
+    assert_eq!(sup.installed_manifests().len(), 1);
+}
+
+#[test]
+fn a_module_the_official_registry_did_not_ship_may_not_reach_the_sessions() {
+    let scratch = temp_modules_dir("ceiling-sessions");
+    let sup = supervisor(scratch.path(), "9.9.9");
+
+    let installed = sup.install(&storing(r#"{ "read": ["sessions"] }"#), None, uploaded());
+
+    assert!(installed.unwrap_err().to_string().contains("sessions"));
+    assert!(sup.installed_manifests().is_empty());
+}
+
+#[test]
+fn a_module_the_official_registry_did_not_ship_may_read_account_columns() {
+    let scratch = temp_modules_dir("ceiling-columns");
+    let sup = supervisor(scratch.path(), "9.9.9");
+
+    sup.install(
+        &storing(r#"{ "read": ["users.username", "users.pin_hash"] }"#),
+        None,
+        uploaded(),
+    )
+    .unwrap();
 
     assert_eq!(sup.installed_manifests().len(), 1);
 }
