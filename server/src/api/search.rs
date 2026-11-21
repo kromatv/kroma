@@ -58,56 +58,90 @@ pub async fn search(
     ContentLocale(locale): ContentLocale,
     Query(p): Query<SearchParams>,
 ) -> Result<Response, Response> {
-    let q: String =
-        p.q.unwrap_or_default()
-            .trim()
-            .chars()
-            .take(MAX_QUERY_CHARS)
-            .collect();
-    let limit = p.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
-    let library = p.library;
-    let card = matches!(p.view, Some(ListView::Card));
-
-    if q.is_empty() {
+    let ask = Ask::of(p, locale);
+    if ask.q.is_empty() {
         return Ok(Json(SearchResponse {
-            query: q,
+            query: ask.q,
             results: Vec::new(),
             people: Vec::new(),
         })
         .into_response());
     }
-
     let titles = visibility::seen_titles(&state, &viewer).await?;
     let engine = state.clone();
-    let resp = query(&state.db, move |pool| {
-        let favoured = favoured(&engine, &pool, &viewer.user);
-        let visible = |lib: &str| {
-            library.as_deref().is_none_or(|want| lib == want) && viewer.sees_library(lib)
-        };
-        let asker = Asker {
-            visible: &visible,
-            titles: titles.as_ref(),
-            favoured: &favoured,
-        };
-        let answer = engine.search.answer(&q, limit, &asker);
-        let mut results = one_per_title(hydrate(&pool, answer.hits, locale)?);
-        if results.len() < THIN && q.split_whitespace().count() >= MIN_WORDS_FOR_MEANING {
-            let kept = |entry: &SectionItem| visible(library_of(entry)) && viewer.sees_entry(entry);
-            by_meaning(&engine, &pool, (&q, locale), &kept, &mut results);
-        }
-        relabel(&viewer, &mut results);
-        if card {
-            results = results.into_iter().map(SearchHit::into_card).collect();
-        }
-        let people = answer.people.into_iter().map(PersonHit::from).collect();
-        Ok(SearchResponse {
-            query: q,
-            results,
-            people,
-        })
-    })
-    .await?;
+    let asked = Asked {
+        ask,
+        viewer,
+        titles,
+    };
+    let resp = query(&state.db, move |pool| answer(&engine, &pool, asked)).await?;
     Ok(Json(resp).into_response())
+}
+
+struct Ask {
+    q: String,
+    limit: usize,
+    library: Option<String>,
+    card: bool,
+    locale: &'static str,
+}
+
+impl Ask {
+    fn of(p: SearchParams, locale: &'static str) -> Ask {
+        Ask {
+            q: p.q
+                .unwrap_or_default()
+                .trim()
+                .chars()
+                .take(MAX_QUERY_CHARS)
+                .collect(),
+            limit: p.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT),
+            library: p.library,
+            card: matches!(p.view, Some(ListView::Card)),
+            locale,
+        }
+    }
+
+    fn sees(&self, viewer: &Viewer, library: &str) -> bool {
+        self.library.as_deref().is_none_or(|want| library == want) && viewer.sees_library(library)
+    }
+}
+
+struct Asked {
+    ask: Ask,
+    viewer: Viewer,
+    titles: Option<HashSet<String>>,
+}
+
+fn answer(engine: &SharedState, pool: &db::Pool, asked: Asked) -> anyhow::Result<SearchResponse> {
+    let Asked {
+        ask,
+        viewer,
+        titles,
+    } = asked;
+    let favoured = favoured(engine, pool, &viewer.user);
+    let visible = |library: &str| ask.sees(&viewer, library);
+    let asker = Asker {
+        visible: &visible,
+        titles: titles.as_ref(),
+        favoured: &favoured,
+    };
+    let found = engine.search.answer(&ask.q, ask.limit, &asker);
+    let mut results = one_per_title(hydrate(pool, found.hits, ask.locale)?);
+    if results.len() < THIN && ask.q.split_whitespace().count() >= MIN_WORDS_FOR_MEANING {
+        let kept = |entry: &SectionItem| visible(library_of(entry)) && viewer.sees_entry(entry);
+        by_meaning(engine, pool, (&ask.q, ask.locale), &kept, &mut results);
+    }
+    relabel(&viewer, &mut results);
+    if ask.card {
+        results = results.into_iter().map(SearchHit::into_card).collect();
+    }
+    let people = found.people.into_iter().map(PersonHit::from).collect();
+    Ok(SearchResponse {
+        query: ask.q,
+        results,
+        people,
+    })
 }
 
 fn favoured(state: &SharedState, pool: &db::Pool, user: &User) -> HashMap<String, f32> {

@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use crate::api::error::json_error;
 use crate::api::util::query;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::api::etag;
 use crate::db;
 use crate::i18n::ContentLocale;
@@ -168,7 +168,7 @@ pub async fn get_show(
     ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_show(&state, &viewer, &id).await?;
+    visibility::gate(&state, &viewer, Title::Show(&id)).await?;
     let uid = viewer.user.id.clone();
     let detail = query(&state.db, move |pool| {
         let Some(mut detail) = db::get_show(&pool, &id)? else {
@@ -193,7 +193,7 @@ pub async fn get_item(
     ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_item(&state, &viewer, &id).await?;
+    visibility::gate(&state, &viewer, Title::Item(&id)).await?;
     let beside = state.external_subtitles.clone();
     let item = query(&state.db, move |pool| {
         let Some(mut item) = db::get_item(&pool, &id)? else {

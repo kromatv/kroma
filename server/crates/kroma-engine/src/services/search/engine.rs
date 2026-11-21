@@ -137,22 +137,7 @@ impl SearchEngine {
         if words.is_empty() {
             return Answer::default();
         }
-        let run = Run {
-            fields: &self.fields,
-            searcher: active.reader.searcher(),
-            visible: Arc::new(
-                active
-                    .libraries
-                    .iter()
-                    .filter(|library| (asker.visible)(library))
-                    .cloned()
-                    .collect(),
-            ),
-            titles: asker.titles.map(|ids| Arc::new(ids.clone())),
-            favoured: Arc::new(asker.favoured.clone()),
-            active: active.clone(),
-            limit: limit.max(1),
-        };
+        let run = self.run_for(&active, asker, limit);
         let read = parse::parse(&words, Lexicon::shared());
         let literal = parse::literal(&words);
         let mut hits = run.titles(&read, Need::All);
@@ -168,6 +153,25 @@ impl SearchEngine {
         }
         let people = people::matching(&active.people, &read.text_words(), asker);
         Answer { hits, people }
+    }
+
+    fn run_for(&self, active: &Arc<Active>, asker: &Asker, limit: usize) -> Run<'_> {
+        Run {
+            fields: &self.fields,
+            searcher: active.reader.searcher(),
+            visible: Arc::new(
+                active
+                    .libraries
+                    .iter()
+                    .filter(|library| (asker.visible)(library))
+                    .cloned()
+                    .collect(),
+            ),
+            titles: asker.titles.map(|ids| Arc::new(ids.clone())),
+            favoured: Arc::new(asker.favoured.clone()),
+            active: active.clone(),
+            limit: limit.max(1),
+        }
     }
 
     /// How strongly each movie and show carries one of `phrases` in a title or

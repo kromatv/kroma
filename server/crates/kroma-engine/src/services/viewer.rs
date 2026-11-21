@@ -4,12 +4,12 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::config::Config;
-use crate::db::{self, Pool, TitleAccess};
+use crate::db::{self, TitleAccess};
 use crate::domain::{
     Ceiling, CountryRatings, Kind, LibraryScope, MediaItem, Metadata, SectionItem, Show, User,
 };
-use crate::services::settings::{self, Settings};
+use crate::services::settings;
+use crate::state::SharedState;
 
 /// The account a request is answered for, and what is kept from it.
 #[derive(Debug, Clone)]
@@ -24,15 +24,11 @@ pub type ShowRatings = HashMap<String, TitleAccess>;
 
 impl Viewer {
     /// `user` with the ceiling and ratings country stored on its row, read
-    /// against the household's metadata country.
-    pub fn load(
-        pool: &Pool,
-        settings: &Settings,
-        config: &Config,
-        user: User,
-    ) -> anyhow::Result<Viewer> {
-        let server = settings::metadata_country(settings, config);
-        let stored = db::profile_maturity(pool, &user.id)?;
+    /// against the household's metadata country. Blocking: it reads the
+    /// database.
+    pub fn load(state: &SharedState, user: User) -> anyhow::Result<Viewer> {
+        let server = settings::metadata_country(&state.settings, &state.config);
+        let stored = db::profile_maturity(&state.db, &user.id)?;
         Ok(Viewer {
             ceiling: Ceiling {
                 level: stored.level,

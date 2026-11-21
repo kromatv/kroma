@@ -8,7 +8,7 @@ use axum::Json;
 
 use crate::api::error::json_error;
 use crate::api::util::{blocking, query};
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::i18n::AskedLocale;
 use crate::infra::metadata::{self, Target};
@@ -34,7 +34,7 @@ pub async fn item_metadata(
     AskedLocale(reader): AskedLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_item(&state, &viewer, &id).await?;
+    visibility::gate(&state, &viewer, Title::Item(&id)).await?;
     let api_key = require_tmdb_key(&state)?;
 
     let item = query(&state.db, move |pool| db::get_item(&pool, &id))
@@ -60,7 +60,7 @@ pub async fn show_metadata(
     AskedLocale(reader): AskedLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_show(&state, &viewer, &id).await?;
+    visibility::gate(&state, &viewer, Title::Show(&id)).await?;
     let api_key = require_tmdb_key(&state)?;
 
     let show = query(&state.db, move |pool| db::get_show(&pool, &id))

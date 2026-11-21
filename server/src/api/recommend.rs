@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use crate::api::media::{items_in_view, ListView};
 use crate::api::util::query;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::model::MediaItem;
@@ -64,7 +64,7 @@ pub async fn similar(
     Path(id): Path<String>,
     Query(params): Query<SimilarParams>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let engine = state.clone();

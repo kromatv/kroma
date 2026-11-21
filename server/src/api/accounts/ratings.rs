@@ -1,20 +1,28 @@
 //! The account's own ratings country (ACCT-104): whose labels its badges show,
 //! and so the rating its ceiling compares.
 
-use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use axum::routing::get;
+use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
-use crate::i18n::ReqLocale;
+use crate::i18n;
 use crate::model::ratings_countries;
 use crate::services::settings;
 use crate::state::SharedState;
+
+pub(super) fn routes() -> Router<SharedState> {
+    Router::new().route(
+        "/auth/me/ratings",
+        get(ratings_country).put(set_ratings_country),
+    )
+}
 
 #[derive(Debug, Serialize)]
 pub struct RatingsCountry {
@@ -45,12 +53,12 @@ pub async fn ratings_country(
 /// refused.
 pub async fn set_ratings_country(
     State(state): State<SharedState>,
-    ReqLocale(loc): ReqLocale,
     AuthUser(user): AuthUser,
     Json(body): Json<RatingsCountryBody>,
 ) -> Result<Response, Response> {
     let country = match body.country.map(|c| c.trim().to_ascii_uppercase()) {
         Some(code) if !ratings_countries().contains(&code.as_str()) => {
+            let loc = i18n::user_locale(&user);
             return Err(lerr(
                 loc,
                 StatusCode::BAD_REQUEST,

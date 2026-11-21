@@ -6,7 +6,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use crate::api::util::query;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::state::SharedState;
@@ -21,7 +21,7 @@ pub async fn up_next(
     Path(show_id): Path<String>,
     ContentLocale(locale): ContentLocale,
 ) -> Response {
-    if let Err(resp) = visibility::gate_show(&state, &viewer, &show_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Show(&show_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {
@@ -45,7 +45,7 @@ pub async fn next_episode(
     Path(item_id): Path<String>,
     ContentLocale(locale): ContentLocale,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {
@@ -69,7 +69,7 @@ pub async fn following_episodes(
     Path(item_id): Path<String>,
     ContentLocale(locale): ContentLocale,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {

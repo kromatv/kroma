@@ -9,7 +9,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::util::query;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::services::settings;
@@ -33,7 +33,7 @@ pub async fn save_progress(
     Path(item_id): Path<String>,
     Json(body): Json<ProgressBody>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
     let pos = body.position_ms.max(0);
@@ -61,7 +61,7 @@ pub async fn delete_progress(
     AuthViewer(viewer): AuthViewer,
     Path(item_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {
@@ -81,7 +81,7 @@ pub async fn get_progress(
     AuthViewer(viewer): AuthViewer,
     Path(item_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {
@@ -127,7 +127,7 @@ pub async fn continue_watching(
     .await
     {
         Ok(mut rows) => {
-            match visibility::keep_rows(&state, &viewer, &mut rows, |row| &mut row.item).await {
+            match visibility::keep_items(&state, &viewer, &mut rows).await {
                 Ok(()) => Json(rows).into_response(),
                 Err(resp) => resp,
             }

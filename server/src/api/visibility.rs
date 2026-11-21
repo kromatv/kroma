@@ -13,7 +13,7 @@ use axum::response::Response;
 
 use crate::api::error::json_error;
 use crate::api::extract::AuthUser;
-use crate::api::util::query;
+use crate::api::util::{blocking, query};
 use crate::db::{self, TitleAccess};
 use crate::model::{MediaItem, RequestKind, User};
 use crate::state::SharedState;
@@ -21,9 +21,7 @@ use crate::state::SharedState;
 mod lists;
 
 pub use crate::services::viewer::{ShowRatings, Viewer};
-pub use lists::{
-    keep_discovered, keep_items, keep_rows, keep_section_item, keep_sections, keep_shows,
-};
+pub use lists::{keep_discovered, keep_items, keep_section_item, keep_sections, keep_shows};
 use lists::{ratings_of_shows, shows_behind};
 
 /// The session's account with everything that keeps a title from it. Rejects
@@ -46,10 +44,7 @@ impl FromRequestParts<SharedState> for AuthViewer {
 /// changed ceiling bites on the next one (ACCT-114).
 pub async fn viewer_of(state: &SharedState, user: User) -> Result<Viewer, Response> {
     let engine = state.clone();
-    query(&state.db, move |pool| {
-        Viewer::load(&pool, &engine.settings, &engine.config, user)
-    })
-    .await
+    blocking(move || Viewer::load(&engine, user)).await
 }
 
 /// A title the caller may not see answers exactly as one that was never
@@ -59,31 +54,38 @@ pub fn out_of_scope() -> Response {
     json_error(StatusCode::NOT_FOUND, "item not found")
 }
 
-/// Refuse unless the caller may see the item behind `item_id`. An unknown id
-/// refuses too, so probing cannot tell the two apart.
-pub async fn gate_item(
-    state: &SharedState,
-    viewer: &Viewer,
-    item_id: &str,
-) -> Result<(), Response> {
-    gate_by(state, viewer, item_id, db::items_access).await
+/// What a gate is asked about.
+#[derive(Debug, Clone, Copy)]
+pub enum Title<'a> {
+    /// A film, a video or an episode, by id.
+    Item(&'a str),
+    Show(&'a str),
+    /// An item, else a show: what a saved title or a suggestion seed names.
+    Subject(&'a str),
+    /// A title by its provider id, as discovery and trailers name one.
+    Tmdb(RequestKind, u64),
 }
 
-pub async fn gate_show(
-    state: &SharedState,
-    viewer: &Viewer,
-    show_id: &str,
-) -> Result<(), Response> {
-    gate_by(state, viewer, show_id, db::shows_access).await
-}
-
-/// Refuse unless the caller may see the item or the show `subject_id` names.
-pub async fn gate_subject(
-    state: &SharedState,
-    viewer: &Viewer,
-    subject_id: &str,
-) -> Result<(), Response> {
-    gate_by(state, viewer, subject_id, db::subjects_access).await
+/// Refuse unless the caller may see `title`. An unknown title refuses too, so
+/// probing cannot tell the two apart. Under a ceiling a title the server does
+/// not hold is unrated (ACCT-111), so a provider id answers only for a held
+/// title that passes; without one, no provider id is refused here.
+pub async fn gate(state: &SharedState, viewer: &Viewer, title: Title<'_>) -> Result<(), Response> {
+    let row = match title {
+        Title::Item(id) => (Table::Items, id),
+        Title::Show(id) => (Table::Shows, id),
+        Title::Subject(id) => (Table::Subjects, id),
+        Title::Tmdb(kind, tmdb_id) => return gate_tmdb(state, viewer, (kind, tmdb_id)).await,
+    };
+    if viewer.sees_everything() {
+        return Ok(());
+    }
+    let seen = seen_among(state, viewer, (row.0, vec![row.1.to_string()])).await?;
+    if seen.is_empty() {
+        Err(out_of_scope())
+    } else {
+        Ok(())
+    }
 }
 
 /// Refuse unless the caller may see what `subject_id` saves to "Ma liste" or
@@ -95,14 +97,11 @@ pub async fn gate_saved(
     viewer: &Viewer,
     subject_id: &str,
 ) -> Result<(), Response> {
-    if is_tmdb_title(subject_id) {
-        return if viewer.is_held() {
-            Err(out_of_scope())
-        } else {
-            Ok(())
-        };
+    match (is_tmdb_title(subject_id), viewer.is_held()) {
+        (true, true) => Err(out_of_scope()),
+        (true, false) => Ok(()),
+        (false, _) => gate(state, viewer, Title::Subject(subject_id)).await,
     }
-    gate_subject(state, viewer, subject_id).await
 }
 
 /// Which of the saved `subject_ids` the caller may see, under the rule of
@@ -114,7 +113,7 @@ pub async fn visible_saved_ids(
 ) -> Result<HashSet<String>, Response> {
     let (tmdb, local): (Vec<String>, Vec<String>) =
         subject_ids.into_iter().partition(|id| is_tmdb_title(id));
-    let mut visible = seen_among(state, viewer, local, db::subjects_access).await?;
+    let mut visible = seen_among(state, viewer, (Table::Subjects, local)).await?;
     if !viewer.is_held() {
         visible.extend(tmdb);
     }
@@ -128,7 +127,7 @@ pub async fn visible_item_ids(
     viewer: &Viewer,
     item_ids: Vec<String>,
 ) -> Result<HashSet<String>, Response> {
-    seen_among(state, viewer, item_ids, db::items_access).await
+    seen_among(state, viewer, (Table::Items, item_ids)).await
 }
 
 /// The item behind `item_id` when the caller may see it, `None` both for an
@@ -163,23 +162,16 @@ pub async fn seen_titles(
     Ok(Some(viewer.seen_ids(&every)))
 }
 
-/// Refuse a title named by its provider id, as discovery and trailers name
-/// one, unless the caller may see it. Under a ceiling a title the server does
-/// not hold is unrated (ACCT-111), so only one held in a library the caller
-/// sees, and that passes, answers. Without a ceiling no title is refused here.
-pub async fn gate_tmdb(
+async fn gate_tmdb(
     state: &SharedState,
     viewer: &Viewer,
-    kind: RequestKind,
-    tmdb_id: u64,
+    (kind, tmdb_id): (RequestKind, u64),
 ) -> Result<(), Response> {
     if !viewer.is_held() {
         return Ok(());
     }
     let held = query(&state.db, move |pool| {
-        let conn = pool.get()?;
-        let matched = db::titles_by_tmdb(&conn, kind, tmdb_id)?;
-        drop(conn);
+        let matched = db::titles_by_tmdb(&*pool.get()?, kind, tmdb_id)?;
         let ids: Vec<String> = matched.into_iter().map(|(id, _)| id).collect();
         db::subjects_access(&pool, &ids)
     })
@@ -197,30 +189,27 @@ fn is_tmdb_title(subject_id: &str) -> bool {
         .is_some_and(|n| n.bytes().all(|b| b.is_ascii_digit()) && n.parse::<u64>().is_ok())
 }
 
-type Lookup = fn(&db::Pool, &[String]) -> anyhow::Result<HashMap<String, TitleAccess>>;
+#[derive(Debug, Clone, Copy)]
+enum Table {
+    Items,
+    Shows,
+    Subjects,
+}
 
-async fn gate_by(
-    state: &SharedState,
-    viewer: &Viewer,
-    id: &str,
-    lookup: Lookup,
-) -> Result<(), Response> {
-    if viewer.sees_everything() {
-        return Ok(());
-    }
-    let ids = vec![id.to_string()];
-    let found = query(&state.db, move |pool| lookup(&pool, &ids)).await?;
-    match found.values().next() {
-        Some(title) if viewer.sees(title) => Ok(()),
-        _ => Err(out_of_scope()),
+impl Table {
+    fn read(self, pool: &db::Pool, ids: &[String]) -> anyhow::Result<HashMap<String, TitleAccess>> {
+        match self {
+            Table::Items => db::items_access(pool, ids),
+            Table::Shows => db::shows_access(pool, ids),
+            Table::Subjects => db::subjects_access(pool, ids),
+        }
     }
 }
 
 async fn seen_among(
     state: &SharedState,
     viewer: &Viewer,
-    ids: Vec<String>,
-    lookup: Lookup,
+    (table, ids): (Table, Vec<String>),
 ) -> Result<HashSet<String>, Response> {
     if viewer.sees_everything() {
         return Ok(ids.into_iter().collect());
@@ -228,7 +217,7 @@ async fn seen_among(
     if ids.is_empty() {
         return Ok(HashSet::new());
     }
-    let found = query(&state.db, move |pool| lookup(&pool, &ids)).await?;
+    let found = query(&state.db, move |pool| table.read(&pool, &ids)).await?;
     Ok(viewer.seen_ids(&found))
 }
 

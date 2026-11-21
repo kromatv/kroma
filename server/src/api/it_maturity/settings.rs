@@ -1,13 +1,13 @@
 use axum::http::StatusCode;
-use serde_json::json;
+use serde_json::{Value, json};
 
 use crate::api::test_support::{
-    PASSWORD, get, household_where_the_viewer_is_held_at_ten, rate_item, seed_session,
+    PASSWORD, TestApp, get, household_where_the_viewer_is_held_at_ten, rate_item, seed_session,
     seed_session_pw, send, test_app,
 };
 use crate::model::Permission;
 
-fn admin_with_password(app: &crate::api::test_support::TestApp) -> String {
+fn admin_with_password(app: &TestApp) -> String {
     seed_session_pw(
         &app.state,
         "admin@test.dev",
@@ -18,34 +18,39 @@ fn admin_with_password(app: &crate::api::test_support::TestApp) -> String {
     .1
 }
 
-#[tokio::test]
-async fn a_person_picks_their_ratings_country_and_the_badge_follows_it() {
-    let t = test_app();
-    let (_id, reader) = seed_session(
+fn reader(t: &TestApp) -> String {
+    seed_session(
         &t.state,
         "reader@test.dev",
         "reader",
         &[Permission::Playback],
-    );
+    )
+    .1
+}
+
+async fn pick_country(t: &TestApp, reader: &str, country: Value) -> (StatusCode, Value) {
+    let body = Some(json!({ "country": country }));
+    send(&t.app, "PUT", "/api/auth/me/ratings", Some(reader), body).await
+}
+
+#[tokio::test]
+async fn a_person_picks_their_ratings_country_and_the_badge_follows_it() {
+    let t = test_app();
+    let reader = reader(&t);
     let film = crate::api::test_support::demo_item_id("The Matrix");
     rate_item(&t.state.db, &film, &[("FR", "12"), ("US", "R")]);
     let uri = format!("/api/items/{film}");
 
     let (_, before) = get(&t.app, &uri, Some(&reader)).await;
-    let (status, chosen) = send(
-        &t.app,
-        "PUT",
-        "/api/auth/me/ratings",
-        Some(&reader),
-        Some(json!({ "country": "fr" })),
-    )
-    .await;
+    let (status, chosen) = pick_country(&t, &reader, json!("fr")).await;
     let (_, after) = get(&t.app, &uri, Some(&reader)).await;
 
     assert_eq!(before["metadata"]["ageRating"]["country"], json!("US"));
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(chosen["country"], json!("FR"));
-    assert_eq!(chosen["household"], json!("US"));
+    assert_eq!(
+        (&chosen["country"], &chosen["household"]),
+        (&json!("FR"), &json!("US"))
+    );
     assert_eq!(
         after["metadata"]["ageRating"],
         json!({ "label": "12", "country": "FR", "borrowed": false })
@@ -56,40 +61,18 @@ async fn a_person_picks_their_ratings_country_and_the_badge_follows_it() {
 #[tokio::test]
 async fn a_country_with_no_known_rating_system_is_refused_and_null_follows_the_household() {
     let t = test_app();
-    let (_id, reader) = seed_session(
-        &t.state,
-        "reader@test.dev",
-        "reader",
-        &[Permission::Playback],
-    );
+    let reader = reader(&t);
 
-    let (refused, _) = send(
-        &t.app,
-        "PUT",
-        "/api/auth/me/ratings",
-        Some(&reader),
-        Some(json!({ "country": "ZZ" })),
-    )
-    .await;
-    let (status, cleared) = send(
-        &t.app,
-        "PUT",
-        "/api/auth/me/ratings",
-        Some(&reader),
-        Some(json!({ "country": null })),
-    )
-    .await;
+    let (refused, _) = pick_country(&t, &reader, json!("ZZ")).await;
+    let (status, cleared) = pick_country(&t, &reader, Value::Null).await;
     let (_, read) = get(&t.app, "/api/auth/me/ratings", Some(&reader)).await;
 
     assert_eq!(refused, StatusCode::BAD_REQUEST);
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(cleared["country"], json!(null));
+    assert_eq!(cleared["country"], Value::Null);
     assert_eq!(read["household"], json!("US"));
-    assert!(
-        read["countries"]
-            .as_array()
-            .is_some_and(|all| all.contains(&json!("FR")) && all.contains(&json!("US")))
-    );
+    let offered = read["countries"].as_array().cloned().unwrap_or_default();
+    assert!(offered.contains(&json!("FR")) && offered.contains(&json!("US")));
 }
 
 #[tokio::test]

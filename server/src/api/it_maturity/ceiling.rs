@@ -105,53 +105,52 @@ async fn the_recommendation_rows_keep_only_what_passes_the_ceiling() {
     }
 }
 
-#[tokio::test]
-async fn watch_state_left_on_a_title_the_ceiling_now_hides_is_not_listed() {
-    let h = household_where_the_viewer_is_held_at_ten();
-    let viewer = Some(h.viewer.as_str());
-    hold_at(&h.app.state.db, &h.viewer_id, MaturityLevel::Adult);
-    for (method, uri, body) in [
+const WATCH_STATE: [&str; 4] = [
+    "/api/progress",
+    "/api/watched",
+    "/api/my-list",
+    "/api/continue",
+];
+
+async fn leave_watch_state_on_hidden_titles(h: &HeldHousehold) {
+    for (uri, body) in [
         (
-            "PUT",
             format!("/api/progress/{}", h.old_episode),
             Some(json!({ "positionMs": 600_000, "durationMs": 3_000_000 })),
         ),
-        ("PUT", format!("/api/watched/{}", h.old_film), None),
-        ("PUT", format!("/api/my-list/{}", h.old_film), None),
-        ("PUT", "/api/my-list/tmdb:603".to_string(), None),
+        (format!("/api/watched/{}", h.old_film), None),
+        (format!("/api/my-list/{}", h.old_film), None),
+        ("/api/my-list/tmdb:603".to_string(), None),
     ] {
-        let (status, _) = send(&h.app.app, method, &uri, viewer, body).await;
+        let (status, _) = send(&h.app.app, "PUT", &uri, Some(&h.viewer), body).await;
         assert!(status.is_success(), "{uri}: {status}");
     }
-    for uri in [
-        "/api/progress",
-        "/api/watched",
-        "/api/my-list",
-        "/api/continue",
-    ] {
-        let (_, body) = get(&h.app.app, uri, viewer).await;
-        assert!(
-            body.as_array().is_some_and(|rows| !rows.is_empty()),
-            "{uri} before: {body}"
-        );
+}
+
+async fn watch_state_lengths(h: &HeldHousehold) -> Vec<Option<usize>> {
+    let mut lengths = Vec::new();
+    for uri in WATCH_STATE {
+        let (_, body) = get(&h.app.app, uri, Some(&h.viewer)).await;
+        lengths.push(body.as_array().map(Vec::len));
     }
+    lengths
+}
+
+#[tokio::test]
+async fn watch_state_left_on_a_title_the_ceiling_now_hides_is_not_listed() {
+    let h = household_where_the_viewer_is_held_at_ten();
+    hold_at(&h.app.state.db, &h.viewer_id, MaturityLevel::Adult);
+    leave_watch_state_on_hidden_titles(&h).await;
+    let before = watch_state_lengths(&h).await;
 
     hold_at(&h.app.state.db, &h.viewer_id, MaturityLevel::Ten);
+    let after = watch_state_lengths(&h).await;
 
-    for uri in [
-        "/api/progress",
-        "/api/watched",
-        "/api/my-list",
-        "/api/continue",
-    ] {
-        let (status, body) = get(&h.app.app, uri, viewer).await;
-        assert_eq!(status, StatusCode::OK);
-        assert_eq!(
-            body.as_array().map(Vec::len),
-            Some(0),
-            "{uri} leaked {body}"
-        );
-    }
+    assert!(
+        before.iter().all(|rows| rows.is_some_and(|n| n > 0)),
+        "{before:?}"
+    );
+    assert_eq!(after, vec![Some(0); WATCH_STATE.len()]);
 }
 
 #[tokio::test]

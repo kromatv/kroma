@@ -19,7 +19,7 @@ use kroma_module_host::pinned_resolver;
 use crate::api::error::{json_error, lerr};
 use crate::api::media_ticket::MediaViewer;
 use crate::api::util::blocking;
-use crate::api::visibility::{self, AuthViewer, Viewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::i18n::{self, AskedLocale};
 use crate::infra::metadata::{title_videos, Target};
 use crate::infra::metrics::ByteSink;
@@ -75,17 +75,12 @@ fn ranked(state: &SharedState, target: Target, tmdb_id: u64, viewer: &str) -> Ve
         .unwrap_or_default()
 }
 
-async fn gate_title(
-    state: &SharedState,
-    viewer: &Viewer,
-    target: Target,
-    tmdb_id: u64,
-) -> Result<(), Response> {
+fn title_of(target: Target, tmdb_id: u64) -> Title<'static> {
     let kind = match target {
         Target::Movie => RequestKind::Movie,
         Target::Tv => RequestKind::Show,
     };
-    visibility::gate_tmdb(state, viewer, kind, tmdb_id).await
+    Title::Tmdb(kind, tmdb_id)
 }
 
 fn title_key(target: Target, tmdb_id: u64) -> String {
@@ -108,7 +103,7 @@ pub async fn list(
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Json<TrailerList>, Response> {
     let target = target_of(&kind)?;
-    gate_title(&state, &asker, target, tmdb_id).await?;
+    visibility::gate(&state, &asker, title_of(target, tmdb_id)).await?;
     let viewer = viewer_language(&state, &asker.user, reader);
     let playable =
         cache(&state).is_some() && pinned_resolver(state.as_ref(), POINT, None).is_some();
@@ -135,7 +130,7 @@ pub async fn prepare(
     Path((kind, tmdb_id, video)): Path<(String, u64, String)>,
 ) -> Result<Json<Preparation>, Response> {
     let target = target_of(&kind)?;
-    gate_title(&state, &asker, target, tmdb_id).await?;
+    visibility::gate(&state, &asker, title_of(target, tmdb_id)).await?;
     let user = asker.user;
     let locale = i18n::user_locale(&user);
     let resolve = crate::api::point::require(&state, &user, POINT)?;
@@ -171,7 +166,7 @@ pub async fn stream(
         Ok(target) => target,
         Err(refused) => return refused,
     };
-    if let Err(refused) = gate_title(&state, &asker, target, tmdb_id).await {
+    if let Err(refused) = visibility::gate(&state, &asker, title_of(target, tmdb_id)).await {
         return refused;
     }
     let offered = |cache: &Arc<Trailers>| {

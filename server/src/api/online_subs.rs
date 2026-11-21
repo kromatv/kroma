@@ -14,7 +14,7 @@ use serde::Serialize;
 use crate::api::error::json_error;
 use crate::api::media_ticket::MediaViewer;
 use crate::api::util::query;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::boot::transcriber::TranscriberClient;
 use crate::db;
 use crate::services::settings;
@@ -107,7 +107,7 @@ pub async fn list(
     AuthViewer(viewer): AuthViewer,
     Path(id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let item = id.clone();
@@ -134,7 +134,7 @@ pub async fn delete_downloaded(
     AuthViewer(viewer): AuthViewer,
     Path((id, dl)): Path<(String, String)>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let dl_id = dl.trim_end_matches(".vtt").to_string();
@@ -166,7 +166,7 @@ pub async fn file(
     MediaViewer(viewer): MediaViewer,
     Path((id, dl)): Path<(String, String)>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let dl_id = dl.trim_end_matches(".vtt").to_string();

@@ -22,6 +22,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
 use crate::api::visibility::AuthViewer;
 use crate::db;
+use crate::db::notifications::StoredNotification;
 use crate::i18n;
 use crate::model::{DeliveriesView, NotificationsView, PushTransport, SubscribeBody};
 use crate::services::auth::random_token;
@@ -77,18 +78,8 @@ pub async fn list(
     let locale = notify::render::locale_of(&viewer.user).to_string();
     let uid = viewer.user.id.clone();
     let types = notify::types::types_of(&state);
-    let (stored, unread, unseen) = query(&state.db, move |pool| {
-        let conn = pool.get()?;
-        let stored = if shelf.archived {
-            db::notifications::list_archived(&conn, &uid, PAGE)?
-        } else {
-            db::notifications::list_notifications(&conn, &uid, PAGE, false)?
-        };
-        let unread = db::notifications::unread_count(&conn, &uid)?;
-        let unseen = db::notifications::unseen_count(&conn, &uid)?;
-        Ok((stored, unread, unseen))
-    })
-    .await?;
+    let (stored, unread, unseen) =
+        query(&state.db, move |pool| read_shelf(&pool, &uid, &shelf)).await?;
     let stored = titles::keep_visible(&state, &viewer, stored).await?;
     let view = query(&state.db, move |pool| {
         let conn = pool.get()?;
@@ -105,6 +96,22 @@ pub async fn list(
     })
     .await?;
     Ok(Json(view).into_response())
+}
+
+fn read_shelf(
+    pool: &db::Pool,
+    uid: &str,
+    shelf: &ListQuery,
+) -> anyhow::Result<(Vec<StoredNotification>, u32, u32)> {
+    let conn = pool.get()?;
+    let stored = if shelf.archived {
+        db::notifications::list_archived(&conn, uid, PAGE)?
+    } else {
+        db::notifications::list_notifications(&conn, uid, PAGE, false)?
+    };
+    let unread = db::notifications::unread_count(&conn, uid)?;
+    let unseen = db::notifications::unseen_count(&conn, uid)?;
+    Ok((stored, unread, unseen))
 }
 
 /// `GET /api/notifications/deliveries` what became of the caller's own pushes,

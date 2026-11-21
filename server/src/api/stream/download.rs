@@ -12,7 +12,7 @@ use serde::Deserialize;
 
 use crate::api::error::json_error;
 use crate::api::util::query;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::state::SharedState;
 use tokio::io::AsyncReadExt;
@@ -49,7 +49,7 @@ pub async fn download_item(
             "too many downloads in progress, try again later",
         )
     })?;
-    visibility::gate_item(&state, &viewer, &id).await?;
+    visibility::gate(&state, &viewer, Title::Item(&id)).await?;
     let item = query(&state.db, move |pool| db::get_item(&pool, &id))
         .await?
         .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;

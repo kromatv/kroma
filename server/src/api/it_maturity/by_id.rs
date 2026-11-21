@@ -10,23 +10,26 @@ const UNKNOWN: &str = "no-such-title";
 
 async fn answer(
     h: &HeldHousehold,
-    method: &str,
-    uri: &str,
+    (method, uri): (&str, &str),
     body: Option<Value>,
 ) -> (StatusCode, Value) {
     send(&h.app.app, method, uri, Some(&h.viewer), body).await
 }
 
-async fn refused_like_an_unknown_id(h: &HeldHousehold, method: &str, route: &str, kept: &str) {
+async fn answer_for(
+    h: &HeldHousehold,
+    (method, route): (&str, &str),
+    id: &str,
+) -> (StatusCode, Value) {
     let body = route
         .contains("ping")
-        .then(|| json!({ "sessionId": "s1", "positionMs": 0, "itemId": kept }));
-    let unknown_body = body.clone().map(|mut b| {
-        b["itemId"] = json!(UNKNOWN);
-        b
-    });
-    let kept_answer = answer(h, method, &route.replace("{id}", kept), body).await;
-    let unknown_answer = answer(h, method, &route.replace("{id}", UNKNOWN), unknown_body).await;
+        .then(|| json!({ "sessionId": "s1", "positionMs": 0, "itemId": id }));
+    answer(h, (method, &route.replace("{id}", id)), body).await
+}
+
+async fn refused_like_an_unknown_id(h: &HeldHousehold, (method, route): (&str, &str), kept: &str) {
+    let kept_answer = answer_for(h, (method, route), kept).await;
+    let unknown_answer = answer_for(h, (method, route), UNKNOWN).await;
 
     assert_eq!(
         kept_answer.0,
@@ -58,7 +61,7 @@ async fn a_title_above_the_ceiling_is_refused_by_its_id_as_an_unknown_one_is() {
         ("POST", "/api/playback/ping"),
     ] {
         for kept in [&h.old_film, &h.unrated_film, &h.old_episode] {
-            refused_like_an_unknown_id(&h, method, route, kept).await;
+            refused_like_an_unknown_id(&h, (method, route), kept).await;
         }
     }
 }
@@ -72,7 +75,7 @@ async fn a_show_above_the_ceiling_is_refused_by_its_id_as_an_unknown_one_is() {
         "/api/shows/{id}/metadata",
         "/api/shows/{id}/up-next",
     ] {
-        refused_like_an_unknown_id(&h, "GET", route, &h.old_show).await;
+        refused_like_an_unknown_id(&h, ("GET", route), &h.old_show).await;
     }
 }
 
@@ -97,37 +100,19 @@ async fn the_byte_routes_refuse_a_title_above_the_ceiling_by_ticket_and_by_beare
     rate_item(&h.app.state.db, &kept, &[("US", "R")]);
 
     for uri in byte_routes(&kept) {
-        let by_ticket = raw(
-            &h.app.app,
-            "GET",
-            &ticketed(&uri, &h.ticket),
-            None,
-            None,
-            &[],
-        )
-        .await;
-        let by_bearer = raw(&h.app.app, "GET", &uri, Some(&h.viewer), None, &[]).await;
-        let unknown = raw(
-            &h.app.app,
-            "GET",
-            &ticketed(&uri.replace(&kept, UNKNOWN), &h.ticket),
-            None,
-            None,
-            &[],
-        )
-        .await;
+        let by_ticket = bytes(&h, &ticketed(&uri, &h.ticket), None).await;
+        let by_bearer = bytes(&h, &uri, Some(&h.viewer)).await;
+        let unknown = bytes(&h, &ticketed(&uri.replace(&kept, UNKNOWN), &h.ticket), None).await;
+
         assert_eq!(by_ticket.0, StatusCode::NOT_FOUND, "{uri}");
-        assert_eq!(
-            (by_ticket.0, &by_ticket.2),
-            (unknown.0, &unknown.2),
-            "{uri}"
-        );
-        assert_eq!(
-            (by_bearer.0, &by_bearer.2),
-            (unknown.0, &unknown.2),
-            "{uri}"
-        );
+        assert_eq!(by_ticket, unknown, "{uri}");
+        assert_eq!(by_bearer, unknown, "{uri}");
     }
+}
+
+async fn bytes(h: &HeldHousehold, uri: &str, bearer: Option<&str>) -> (StatusCode, Value) {
+    let (status, _headers, body) = raw(&h.app.app, "GET", uri, bearer, None, &[]).await;
+    (status, body)
 }
 
 #[tokio::test]
@@ -155,8 +140,7 @@ async fn a_report_on_a_title_above_the_ceiling_is_refused() {
 
     let (status, _) = answer(
         &h,
-        "POST",
-        "/api/reports",
+        ("POST", "/api/reports"),
         Some(json!({
             "subjectKind": "movie",
             "subjectId": h.old_film,

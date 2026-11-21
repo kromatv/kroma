@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use crate::api::extract::AuthUser;
 use crate::api::util::{client_ip, query};
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::services::playback::{self, Beat, Ping};
@@ -64,7 +64,7 @@ pub async fn ping(
     if state.playback.is_recently_terminated(&body.session_id) {
         return StatusCode::GONE.into_response();
     }
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &body.item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&body.item_id)).await {
         return resp;
     }
 

@@ -3,8 +3,9 @@
 //! (ACCT-116).
 
 use axum::Json;
-use axum::extract::{Path as AxPath, State};
+use axum::extract::{FromRequestParts, Path as AxPath, State};
 use axum::http::StatusCode;
+use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 use serde::Deserialize;
 use serde_json::json;
@@ -24,14 +25,36 @@ pub struct LevelBody {
     pub password: String,
 }
 
+/// The member a restrictions request names, asked by an account that manages
+/// users. Rejects as [`AuthUser`] does, then as every member route does for a
+/// caller without `users.manage`.
+pub struct MemberCall {
+    pub admin: User,
+    pub id: String,
+}
+
+impl FromRequestParts<SharedState> for MemberCall {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &SharedState,
+    ) -> Result<Self, Self::Rejection> {
+        let AuthUser(admin) = AuthUser::from_request_parts(parts, state).await?;
+        super::super::require(&admin, Permission::UsersManage)?;
+        let AxPath(id) = AxPath::<String>::from_request_parts(parts, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        Ok(Self { admin, id })
+    }
+}
+
 /// `GET /api/admin/users/:id/restrictions` → `{ level, held }`. `held` is
 /// `false` for an account with a management right, which no ceiling binds.
 pub async fn restrictions(
     State(state): State<SharedState>,
-    AuthUser(admin): AuthUser,
-    AxPath(id): AxPath<String>,
+    MemberCall { admin, id }: MemberCall,
 ) -> Result<Response, Response> {
-    super::super::require(&admin, Permission::UsersManage)?;
     let target = super::target_or_404(&state, &admin, &id).await?;
     let stored = query(&state.db, move |pool| db::profile_maturity(&pool, &id)).await?;
     Ok(Json(json!({ "level": stored.level, "held": !target.is_any_admin() })).into_response())
@@ -43,11 +66,9 @@ pub async fn restrictions(
 /// PIN does.
 pub async fn set_level(
     State(state): State<SharedState>,
-    AuthUser(admin): AuthUser,
-    AxPath(id): AxPath<String>,
+    MemberCall { admin, id }: MemberCall,
     Json(body): Json<LevelBody>,
 ) -> Result<Response, Response> {
-    super::super::require(&admin, Permission::UsersManage)?;
     let loc = super::super::user_locale(&admin);
     if id == admin.id {
         return Err(lerr(

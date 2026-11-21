@@ -181,7 +181,7 @@ fn a_viewer_reads_its_row_against_the_households_metadata_country() {
     let state = crate::test_support::test_state();
     let user = test_user("u1", vec![Permission::Playback]);
 
-    let viewer = Viewer::load(&state.db, &state.settings, &state.config, user).unwrap();
+    let viewer = Viewer::load(&state, user).unwrap();
 
     assert_eq!(viewer.ceiling.level, MaturityLevel::Adult);
     assert_eq!(viewer.ceiling.reader, viewer.ceiling.server);

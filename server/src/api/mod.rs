@@ -118,11 +118,7 @@ mod it_mail_relay;
 #[cfg(test)]
 mod it_account_identifiers;
 #[cfg(test)]
-mod it_maturity_by_id;
-#[cfg(test)]
-mod it_maturity_ceiling;
-#[cfg(test)]
-mod it_maturity_settings;
+mod it_maturity;
 #[cfg(test)]
 mod it_media;
 #[cfg(test)]

@@ -48,21 +48,14 @@ pub fn profile_maturity(pool: &Pool, user_id: &str) -> Result<ProfileMaturity> {
 /// `false` when no account has `user_id`.
 pub fn set_maturity_level(pool: &Pool, user_id: &str, level: MaturityLevel) -> Result<bool> {
     let stored = (level != MaturityLevel::Adult).then_some(i64::from(level.age()));
-    let conn = pool.get()?;
-    let changed = conn.execute(
-        "UPDATE users SET maturity = ?2 WHERE id = ?1",
-        params![user_id, stored],
-    )?;
-    Ok(changed > 0)
+    let sql = "UPDATE users SET maturity = ?2 WHERE id = ?1";
+    Ok(pool.get()?.execute(sql, params![user_id, stored])? > 0)
 }
 
-pub fn set_ratings_country(pool: &Pool, user_id: &str, country: Option<&str>) -> Result<()> {
-    let conn = pool.get()?;
-    conn.execute(
-        "UPDATE users SET ratings_country = ?2 WHERE id = ?1",
-        params![user_id, country],
-    )?;
-    Ok(())
+/// `None` follows the server's metadata country again.
+pub fn set_ratings_country(pool: &Pool, user_id: &str, country: Option<&str>) -> Result<bool> {
+    let sql = "UPDATE users SET ratings_country = ?2 WHERE id = ?1";
+    Ok(pool.get()?.execute(sql, params![user_id, country])? > 0)
 }
 
 /// What each named item is held to, skipping ids nothing matches. An episode
@@ -106,7 +99,7 @@ pub fn every_title_access(pool: &Pool) -> Result<HashMap<String, TitleAccess>> {
         "SELECT id, library, metadata FROM items WHERE kind != 'episode'",
         "SELECT id, library, metadata FROM shows",
     ] {
-        collect_access(&conn, sql, [], &mut out)?;
+        keep_first(&mut out, read_access(&conn, sql, [])?);
     }
     Ok(out)
 }
@@ -123,36 +116,29 @@ fn access_of(
     let conn = pool.get()?;
     for chunk in ids.chunks(IN_CHUNK) {
         let ph = vec!["?"; chunk.len()].join(",");
-        collect_access(
-            &conn,
-            &sql(&ph),
-            rusqlite::params_from_iter(chunk),
-            &mut out,
-        )?;
+        let found = read_access(&conn, &sql(&ph), rusqlite::params_from_iter(chunk))?;
+        keep_first(&mut out, found);
     }
     Ok(out)
 }
 
-fn collect_access(
+fn read_access(
     conn: &Connection,
     sql: &str,
     bound: impl rusqlite::Params,
-    out: &mut HashMap<String, TitleAccess>,
-) -> Result<()> {
+) -> Result<Vec<(String, TitleAccess)>> {
     let mut stmt = conn.prepare(sql)?;
     let rows = stmt.query_map(bound, |r| {
-        Ok((
-            r.get::<_, String>(0)?,
-            r.get::<_, String>(1)?,
-            r.get::<_, Option<String>>(2)?,
-        ))
+        let blob = r.get::<_, Option<String>>(2)?;
+        Ok((r.get::<_, String>(0)?, access(r.get(1)?, blob.as_deref())))
     })?;
-    for row in rows {
-        let (id, library, blob) = row?;
-        out.entry(id)
-            .or_insert_with(|| access(library, blob.as_deref()));
+    Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+}
+
+fn keep_first(out: &mut HashMap<String, TitleAccess>, found: Vec<(String, TitleAccess)>) {
+    for (id, title) in found {
+        out.entry(id).or_insert(title);
     }
-    Ok(())
 }
 
 #[derive(serde::Deserialize, Default)]

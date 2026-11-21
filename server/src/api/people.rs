@@ -1,4 +1,7 @@
-use axum::extract::{Query, State};
+use std::path::{Path, PathBuf};
+
+use axum::extract::{FromRequestParts, Query, State};
+use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
@@ -8,8 +11,9 @@ use crate::api::util::{blocking, query};
 use crate::api::visibility::{AuthViewer, ShowRatings, Viewer};
 use crate::db;
 use crate::i18n::{AskedLocale, ContentLocale};
+use crate::infra::metadata::person::TmdbCredit;
 use crate::infra::{image, metadata};
-use crate::model::{MediaItem, Metadata, Show};
+use crate::model::{MediaItem, Metadata, PersonDetail, Show};
 use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
@@ -73,10 +77,11 @@ pub struct NameParams {
 /// `GET /api/people/details?name=` → [`PersonDetailResponse`]. Never an error:
 /// `person` is `null` for no TMDB key, an unknown name, or a provider hiccup.
 /// The portrait is cached locally and served from `/api/images` like other art.
+/// Under a ceiling the provider's filmography is left out: the server knows no
+/// rating for a title it does not hold (BROWSE-63).
 pub async fn details(
     State(state): State<SharedState>,
-    AuthViewer(viewer): AuthViewer,
-    AskedLocale(reader): AskedLocale,
+    reader: Reader,
     Query(p): Query<NameParams>,
 ) -> Result<Response, Response> {
     let lookup = p.name.unwrap_or_default().trim().to_string();
@@ -94,35 +99,75 @@ pub async fn details(
         .into_response());
     };
     let (name, tmdb_id) = credited_person(&state, lookup).await?;
-    let language = settings::metadata_language_for(&state.settings, &state.config, reader);
-    let data_dir = state.config.data_dir.clone();
-    let lookup = name.clone();
-    let (person, credits) = blocking(move || {
-        let person =
-            metadata::person::detail(&api_key, &language, &lookup, tmdb_id).map(|mut p| {
-                if let Some(local) = p
-                    .profile_url
-                    .as_deref()
-                    .and_then(|u| image::cache_remote(&data_dir, u))
-                {
-                    p.profile_url = Some(local);
-                }
-                p
-            });
-        let credits = if viewer.is_held() {
-            Vec::new()
-        } else {
-            metadata::person::filmography(&api_key, &language, &lookup, tmdb_id)
-        };
-        Ok((person, credits))
-    })
-    .await?;
+    let asked = ProviderAsk {
+        language: settings::metadata_language_for(&state.settings, &state.config, reader.language),
+        data_dir: state.config.data_dir.clone(),
+        held: reader.viewer.is_held(),
+        api_key,
+        name: name.clone(),
+        tmdb_id,
+    };
+    let (person, credits) = blocking(move || Ok(asked.fetch())).await?;
     Ok(Json(PersonDetailResponse {
         name,
         person,
         credits,
     })
     .into_response())
+}
+
+/// Who reads a person's page: the session's viewer, and the language it asked
+/// for.
+pub struct Reader {
+    viewer: Viewer,
+    language: Option<&'static str>,
+}
+
+impl FromRequestParts<SharedState> for Reader {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &SharedState,
+    ) -> Result<Self, Self::Rejection> {
+        let AuthViewer(viewer) = AuthViewer::from_request_parts(parts, state).await?;
+        let Ok(AskedLocale(language)) = AskedLocale::from_request_parts(parts, state).await;
+        Ok(Reader { viewer, language })
+    }
+}
+
+struct ProviderAsk {
+    api_key: String,
+    language: String,
+    name: String,
+    tmdb_id: Option<u64>,
+    data_dir: PathBuf,
+    held: bool,
+}
+
+impl ProviderAsk {
+    fn fetch(self) -> (Option<PersonDetail>, Vec<TmdbCredit>) {
+        let found =
+            metadata::person::detail(&self.api_key, &self.language, &self.name, self.tmdb_id);
+        let person = found.map(|p| with_local_portrait(p, &self.data_dir));
+        if self.held {
+            return (person, Vec::new());
+        }
+        let credits =
+            metadata::person::filmography(&self.api_key, &self.language, &self.name, self.tmdb_id);
+        (person, credits)
+    }
+}
+
+fn with_local_portrait(mut person: PersonDetail, data_dir: &Path) -> PersonDetail {
+    let cached = person
+        .profile_url
+        .as_deref()
+        .and_then(|url| image::cache_remote(data_dir, url));
+    if let Some(local) = cached {
+        person.profile_url = Some(local);
+    }
+    person
 }
 
 async fn credited_person(

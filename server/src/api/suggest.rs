@@ -12,7 +12,7 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use crate::api::util::query;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::Section;
@@ -61,7 +61,7 @@ pub async fn ai_suggest(
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
 ) -> Response {
-    if visibility::gate_subject(&state, &viewer, &id).await.is_err() {
+    if visibility::gate(&state, &viewer, Title::Subject(&id)).await.is_err() {
         return section(locale, None, Vec::new());
     }
     let lookup_id = id.clone();

@@ -10,7 +10,7 @@ use axum::{Json, Router};
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::permission::require;
-use crate::api::visibility::{self, AuthViewer};
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::api::util::query;
 use crate::db;
 use crate::i18n;
@@ -56,9 +56,9 @@ pub async fn create(
     let kind = body.subject_kind;
     let subject_id = body.subject_id.clone();
     match kind {
-        ReportSubjectKind::Show => visibility::gate_show(&state, &viewer, &subject_id).await?,
+        ReportSubjectKind::Show => visibility::gate(&state, &viewer, Title::Show(&subject_id)).await?,
         ReportSubjectKind::Movie | ReportSubjectKind::Episode => {
-            visibility::gate_item(&state, &viewer, &subject_id).await?
+            visibility::gate(&state, &viewer, Title::Item(&subject_id)).await?
         }
     }
     let category = body.category;

@@ -29,18 +29,11 @@ pub(super) struct Person {
 /// The title a credit is on, which the asker has to see for it to count.
 #[derive(Clone)]
 pub(super) struct Credit {
-    library: String,
-    title: String,
+    pub(super) library: String,
+    pub(super) title: String,
 }
 
 impl Credit {
-    pub(super) fn on(library: &str, title: &str) -> Credit {
-        Credit {
-            library: library.to_string(),
-            title: title.to_string(),
-        }
-    }
-
     fn seen_by(&self, asker: &Asker) -> bool {
         (asker.visible)(&self.library) && asker.titles.is_none_or(|ids| ids.contains(&self.title))
     }
@@ -195,7 +188,10 @@ mod tests {
         let mut analyzer = schema::analyzer();
         let mut roster = Roster::default();
         for (title, (name, library)) in credits.iter().enumerate() {
-            let on = Credit::on(library, &title.to_string());
+            let on = Credit {
+                library: library.to_string(),
+                title: title.to_string(),
+            };
             roster.credit(&mut analyzer, name, None, None, &on);
         }
         roster.finish()
