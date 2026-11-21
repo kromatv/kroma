@@ -3,7 +3,7 @@
 
 use anyhow::{anyhow, Result};
 
-use crate::jellyfin::{Item, ItemsPage, User};
+use crate::jellyfin::{Item, ItemsPage, Listing, User};
 use crate::queries::{films_and_episodes, filtered, page_rows, paged, with_user_data, Window};
 use crate::states::last_played;
 use crate::survey::{PLAYED, STARTED};
@@ -125,7 +125,8 @@ fn user_ids(found: Vec<User>) -> Vec<String> {
 impl Importer {
     pub(crate) fn plays(&self, ask: &PlaysAsk) -> Result<PlayPage> {
         let session = self.session(&ask.sign_in, &ask.server)?;
-        let users = user_ids(session.get(self.dialect.users, Vec::new())?);
+        let users: Listing<User> = session.get(self.dialect.users, Vec::new())?;
+        let users = user_ids(users.0);
         let Some(place) = place(ask.cursor.as_deref(), &users)? else {
             return Ok(PlayPage::default());
         };
