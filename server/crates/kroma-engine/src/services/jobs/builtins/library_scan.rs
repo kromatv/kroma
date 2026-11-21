@@ -3,7 +3,7 @@
 //! /api/scan`, shared via `services::scan`.
 
 use super::prelude::*;
-use crate::services::scan::{Scanned, WalkTurn};
+use crate::services::scan::{Scanned, UnreadLibrary, WalkTurn};
 
 // Manual + debounced library-watch: rescan the media folders for changes.
 pub(super) const SPEC: Builtin = Builtin {
@@ -30,12 +30,7 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
             return Ok(());
         }
     };
-    ctx.info(format!(
-        "scan complete {} libraries, {} shows, {} items",
-        data.libraries.len(),
-        data.shows.len(),
-        data.items.len()
-    ));
+    report_walk(ctx, &data);
 
     if ctx.cancelled() {
         crate::services::scan::hold_changed_shows(state, &data)?;
@@ -44,6 +39,22 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     crate::services::scan::spawn_follow_ups(state, &data);
     ctx.info("dispatched probing, search reindex and TMDB enrichment");
     Ok(())
+}
+
+fn report_walk(ctx: &JobContext, data: &crate::services::scan::ScanData) {
+    ctx.info(format!(
+        "scan complete {} libraries, {} shows, {} items",
+        data.libraries.len(),
+        data.shows.len(),
+        data.items.len()
+    ));
+    for folder in data
+        .unread_libraries
+        .iter()
+        .flat_map(UnreadLibrary::folders)
+    {
+        ctx.warn(folder);
+    }
 }
 
 fn kept_on_an_outage(dropped: usize) -> String {
@@ -268,5 +279,36 @@ mod tests {
         assert!(!held.is_empty());
         assert!(matches!(next, Scanned::Applied(data) if data.changed_shows == held));
         assert!(crate::db::unsettled_shows(&state.db).unwrap().is_empty());
+    }
+
+    #[test]
+    fn a_scan_names_each_folder_it_could_not_read_in_its_log() {
+        let state = test_state();
+        let read = kroma_testing::temp_dir("job-scan-read");
+        let unmounted = kroma_testing::temp_dir("job-scan-unmounted");
+        let gone = unmounted.path().join("share");
+        let held = kroma_testing::temp_dir("job-scan-held");
+        std::fs::write(read.path().join("Heat (1995).mkv"), b"x").unwrap();
+        std::fs::write(held.path().join("Ran (1985).mkv"), b"x").unwrap();
+        let mut films = library("lib-films", read.path());
+        films
+            .folders
+            .push(held.path().to_string_lossy().into_owned());
+        crate::services::settings::set_library_defs(
+            &state.settings,
+            &state.db,
+            &[films, library("lib-share", &gone)],
+        );
+
+        run(&JobContext::for_test(state.clone())).unwrap();
+
+        let lines = log_lines(&state, "test-run");
+        let folder = gone.to_string_lossy().into_owned();
+        assert!(
+            lines
+                .iter()
+                .any(|l| l.contains(&folder) && l.contains("not there")),
+            "{lines:?}"
+        );
     }
 }

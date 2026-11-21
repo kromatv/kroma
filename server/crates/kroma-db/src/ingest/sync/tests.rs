@@ -4,11 +4,12 @@ use crate::{
     item_has_probed_file, item_probed, set_file_probe, set_item_metadata, unprobed_files, FileProbe,
 };
 
+mod absent;
 mod batches;
 mod held;
 
 #[test]
-fn sync_all_creates_updates_and_prunes() {
+fn sync_all_creates_updates_and_marks_what_it_did_not_find_absent() {
     let p = pool();
     let items = vec![
         movie(
@@ -45,7 +46,7 @@ fn sync_all_creates_updates_and_prunes() {
     )];
     sync_all(&p, &[lib("lib")], &[], &items, &mtimes_of(&items, 100)).unwrap();
     assert_eq!(crate::counts(&p).unwrap(), (1, 1, 0));
-    assert!(crate::get_item(&p, "m2").unwrap().is_none());
+    assert!(crate::get_item(&p, "m2").unwrap().unwrap().files.is_empty());
 }
 
 #[test]

@@ -102,7 +102,7 @@
     },
     "items": {
       "broke": 5,
-      "changed": 5
+      "changed": 26
     },
     "job_logs": {
       "broke": 1,
@@ -221,8 +221,8 @@
       "changed": 1
     },
     "setup": {
-      "broke": 26,
-      "changed": 26
+      "broke": 27,
+      "changed": 27
     },
     "shows": {
       "broke": 1,
@@ -261,5 +261,5 @@
       "changed": 1
     }
   },
-  "version": 26
+  "version": 27
 }

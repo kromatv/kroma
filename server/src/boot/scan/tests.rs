@@ -1,5 +1,6 @@
 use super::*;
 
+mod no_folder;
 mod stored_list;
 
 fn cfg() -> kroma_config::Config {
@@ -93,7 +94,7 @@ fn walked_at_startup(
     defs: &[services::settings::LibraryDef],
 ) -> services::scan::Scanned {
     let turn = services::scan::WalkTurn::wait();
-    startup_scan(&turn, pool, defs, 1, &mut services::scan::uninterrupted).unwrap()
+    startup_scan(&turn, pool, defs, &mut services::scan::uninterrupted).unwrap()
 }
 
 #[test]
@@ -125,7 +126,7 @@ fn configured_folders_that_read_empty_at_startup_keep_the_stored_index() {
 }
 
 #[test]
-fn a_server_with_no_folder_to_walk_is_seeded_with_the_demo_catalogue() {
+fn a_server_with_no_library_is_seeded_with_the_demo_catalogue() {
     let pool = kroma_db::testing::temp_pool("boot-scan");
 
     let scanned = walked_at_startup(&pool, &[]);
@@ -140,7 +141,7 @@ fn a_startup_walk_that_is_stopped_keeps_the_batch_it_wrote() {
     let root = one_film("stopped");
 
     let turn = services::scan::WalkTurn::wait();
-    let scanned = startup_scan(&turn, &pool, &library(root.path()), 1, &mut |_| {
+    let scanned = startup_scan(&turn, &pool, &library(root.path()), &mut |_| {
         std::ops::ControlFlow::Break(())
     })
     .unwrap();
