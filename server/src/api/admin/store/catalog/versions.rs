@@ -177,7 +177,7 @@ mod tests {
             picked.engines.get("server").map(String::as_str),
             Some(">=0.0.1")
         );
-        assert!(picked.permissions.is_none());
+        assert!(picked.declaration.permissions.is_none());
         assert_eq!(picked.artifacts[0].url, "https://x/older.kmod");
     }
 

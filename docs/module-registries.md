@@ -254,6 +254,9 @@ downloaded: the `permissions` block, `storage` (the core tables and the account
 columns it reads or writes), `settings` (the core settings keys) and `helpers`
 (the programs it pins). A row that runs programs always carries `helpers`, `{}`
 when every one comes from the server. A row with no `permissions` block reads as
-"does not say", and the screen says so. A row from a catalog that predates the
-other three still parses, and the screen shows less. A bundle whose own
-`permissions` block differs from its row is refused at install.
+"does not say" for what the module may do on the network and with programs,
+and the screen still shows the storage and the settings the row declares. A
+row from a catalog that predates the other three still parses, and the screen
+shows less. A bundle whose `permissions`, core tables, `settings` or `helpers`
+differ from its row is refused at install, so a bundle from such a row may
+declare none of the three it left out.

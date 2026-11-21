@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use anyhow::{anyhow, bail, Result};
-use kroma_module_manifest::Permissions;
+use kroma_module_manifest::Declared;
 use kroma_module_supervisor::{Accept, AsksForMore, Supervisor};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -52,11 +52,10 @@ enum Unattended {
 
 // What this install may declare: what the catalog row showed the operator, and
 // nothing wider than what is installed when nobody is looking.
-fn accepting(declared: Option<&Permissions>, unattended: Unattended) -> Accept<'_> {
-    match (declared, unattended) {
-        (declared, Unattended::Yes) => Accept::NoWider(declared),
-        (Some(declared), Unattended::No) => Accept::Exactly(declared),
-        (None, Unattended::No) => Accept::Anything,
+fn accepting(declared: Declared<'_>, unattended: Unattended) -> Accept<'_> {
+    match unattended {
+        Unattended::Yes => Accept::NoWider(Some(declared)),
+        Unattended::No => Accept::Exactly(declared),
     }
 }
 
@@ -88,7 +87,7 @@ async fn run_plan(
         let manifest = {
             let sup = sup.clone();
             let expected = entry.id.clone();
-            let declared = entry.permissions.clone();
+            let shown = entry.declaration.clone();
             tokio::task::spawn_blocking(move || {
                 sup.install(
                     &bytes,
@@ -97,7 +96,7 @@ async fn run_plan(
                         kind: "registry",
                         url: Some(&url),
                         official,
-                        accept: accepting(declared.as_ref(), unattended),
+                        accept: accepting(shown.as_declared(), unattended),
                     },
                 )
             })
@@ -177,7 +176,7 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
     let (url, bytes) = verified_artifact(sup, entry, &|_, _| {}).await?;
     let manifest = {
         let sup = sup.clone();
-        let expected = id.to_string();
+        let (expected, shown) = (id.to_string(), entry.declaration.clone());
         tokio::task::spawn_blocking(move || {
             sup.install(
                 &bytes,
@@ -186,7 +185,7 @@ pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> 
                     kind: "registry",
                     url: Some(&url),
                     official,
-                    accept: Accept::NoWider(None),
+                    accept: accepting(shown.as_declared(), Unattended::Yes),
                 },
             )
         })
@@ -365,9 +364,10 @@ pub async fn auto_update(state: &SharedState, sup: &Arc<Supervisor>) -> Vec<Upda
 
 #[cfg(test)]
 mod tests {
-    use super::{stranded_dependents, takes_update};
+    use super::{accepting, stranded_dependents, takes_update, Unattended};
     use crate::api::admin::store::catalog::{self, Artifact, CatalogModule};
-    use kroma_module_manifest::{Dependency, ModuleManifest};
+    use kroma_module_manifest::{Declared, Dependency, ModuleManifest};
+    use kroma_module_supervisor::Accept;
 
     fn offered(version: &str) -> CatalogModule {
         CatalogModule {
@@ -448,6 +448,20 @@ mod tests {
         let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "9.9.9");
 
         assert!(stranded.is_empty());
+    }
+
+    #[test]
+    fn an_install_someone_is_looking_at_takes_exactly_what_its_row_showed() {
+        let accepted = accepting(Declared::default(), Unattended::No);
+
+        assert!(matches!(accepted, Accept::Exactly(_)));
+    }
+
+    #[test]
+    fn an_install_nobody_is_looking_at_takes_no_more_than_is_installed_and_its_row_showed() {
+        let accepted = accepting(Declared::default(), Unattended::Yes);
+
+        assert!(matches!(accepted, Accept::NoWider(Some(_))));
     }
 
     #[test]

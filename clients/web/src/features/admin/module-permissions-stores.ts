@@ -91,14 +91,16 @@ function nounGroup(
 }
 
 /** What a module reads or changes about the people on the server: their
- *  account, their history, their sessions. */
+ *  account, their history, their sessions. Changing any of it reaches past the
+ *  module's isolation. */
 export function accountsGroup(core: Access | null | undefined, t: Translate) {
   const weighed = {
     read: [...(core?.read ?? [])].sort(byAccountWeight),
     write: [...(core?.write ?? [])].sort(byAccountWeight),
   };
   const items = reached(weighed, (entry) => accountWord(entry, t));
-  return nounGroup('accounts', items, 'modulePermissions.accountsUnnamed', t);
+  const group = nounGroup('accounts', items, 'modulePermissions.accountsUnnamed', t);
+  return group && { ...group, extended: group.access === 'write' };
 }
 
 /** The rest of the server's database a module reaches: the catalog, requests,
