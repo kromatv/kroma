@@ -102,7 +102,7 @@ impl<'a> Planner<'a> {
         // Fail fast with the precise blocker instead of a partial install.
         if let Err(reason) = kroma_module_manifest::engines_satisfied(
             &entry.engines,
-            entry.storage.as_ref(),
+            entry.declaration.storage.as_ref(),
             catalog::this_server(),
         ) {
             bail!("'{id}' {reason}");

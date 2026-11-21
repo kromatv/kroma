@@ -2062,6 +2062,7 @@
     "modulePermissions.toAnywhere": "afc25924 a3c357d5",
     "modulePermissions.toSetting": "a637e76b f2a73a04",
     "modulePermissions.undeclaredHint": "043518d4 2ed09c6f",
+    "modulePermissions.verdictAccounts": "fa9a59dd 74329bc2",
     "modulePermissions.verdictExtended": "c56fd4ba 5f082b88",
     "modulePermissions.verdictHost": "d5cf8fd7 ad83fd17",
     "modulePermissions.verdictHostFirst": "57532436 ab4ac9bd",

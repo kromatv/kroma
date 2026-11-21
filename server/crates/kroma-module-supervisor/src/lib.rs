@@ -15,6 +15,7 @@ mod adopt;
 mod asked;
 #[cfg(unix)]
 mod component;
+mod core_ceiling;
 #[cfg(unix)]
 mod databases;
 mod endpoint;

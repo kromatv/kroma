@@ -1,6 +1,8 @@
 //! Whether a version asks for more than the installed one was granted.
 
-use crate::{CoreScope, ModuleManifest, Permissions, SettingsScope, Storage};
+use std::collections::BTreeMap;
+
+use crate::{CoreScope, Helper, ModuleManifest, Permissions, SettingsScope, Storage};
 
 /// What a version declares it may do and reach, read off a catalog row or a
 /// bundle's manifest. A part left `None` is one the declaration does not state.
@@ -9,6 +11,7 @@ pub struct Declared<'a> {
     pub permissions: Option<&'a Permissions>,
     pub storage: Option<&'a Storage>,
     pub settings: Option<&'a SettingsScope>,
+    pub helpers: Option<&'a BTreeMap<String, Helper>>,
 }
 
 impl<'a> Declared<'a> {
@@ -17,6 +20,7 @@ impl<'a> Declared<'a> {
             permissions: manifest.permissions.as_ref(),
             storage: manifest.storage.as_ref(),
             settings: manifest.settings.as_ref(),
+            helpers: Some(&manifest.helpers),
         }
     }
 

@@ -932,6 +932,11 @@ UPDATE of that column and nothing else. INSERT and DELETE act on a whole row, so
 they need the whole table (`"write": ["users"]`) and are refused otherwise. A
 module that inserts or deletes under a column-scoped grant must widen it.
 
+A module the official registry does not ship never gets the tables that hold a
+credential, `settings`, `users` whole or `users.password_hash`, nor any write on
+`users`: its install fails and an installed one does not start. The list is in
+[`docs/module-security.md`](../docs/module-security.md#how-each-permission-is-enforced).
+
 A table the core itself reads (`downloads`, for the progress overlay) or that is
 a channel between the core and the module (`whisper_jobs`) is shared by
 definition: it lives in the core schema, and the module holds a grant on it. A
