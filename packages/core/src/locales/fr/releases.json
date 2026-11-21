@@ -1,7 +1,7 @@
 {
   "releases.action": "À faire",
   "releases.current": "Actuelle",
-  "releases.empty": "Pas encore de notes de version.",
+  "releases.empty": "Aucune note de version pour l'instant.",
   "releases.fixCount": "{count} corrections",
   "releases.fixCount_one": "{count} correction",
   "releases.fixed": "Corrections",
