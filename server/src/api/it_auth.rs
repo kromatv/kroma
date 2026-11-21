@@ -164,3 +164,13 @@ async fn a_second_account_can_get_its_own_session() {
     assert_eq!(body["user"]["id"], json!(uid));
     assert_ne!(uid, t.user_id);
 }
+
+#[tokio::test]
+async fn a_login_with_a_32_kib_password_is_refused_before_it_is_hashed() {
+    let t = test_app();
+    let body = json!({ "email": "owner", "password": "a".repeat(32 * 1024) });
+
+    let (status, _) = send(&t.app, "POST", "/api/auth/login", None, Some(body)).await;
+
+    assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
+}
