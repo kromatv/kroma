@@ -27,7 +27,7 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 
 ## Typography
 
-- A no-break space (U+00A0) before `:` `;` `!` `?` and inside `« »`.
+- A no-break space (U+00A0) before `:` `;` `!` `?` `%` and inside `« »`.
 - One character for the ellipsis: `…`.
 - Sentence case. Only the first word and proper names take a capital, in titles too.
 - Digits for a number the reader acts on: *7 jours*, *8 caractères minimum*.
@@ -52,6 +52,13 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Match (a title) | Identifier | Matcher, faire correspondre |
 | Continue Watching | Reprendre la lecture | Continuer à regarder |
 | Trailer | Bande-annonce | Trailer |
+| Play (the button that starts a title) | Lecture | Lire, Jouer |
+| My list | Ma liste, dans ma liste | dans votre liste |
+| Critically acclaimed | Salué par la critique | Acclamé |
+| A-Z (a sort) | de A à Z | A-Z |
+| AI suggestions | Suggestions de l'IA | Suggestions IA |
+| Update available | Mise à jour disponible | Nouvelle version |
+| Invite a user | Inviter quelqu'un | Inviter un utilisateur |
 | Subtitles | Sous-titres | |
 | Download / Upload | Télécharger / Importer, Envoyer | Uploader |
 | Owner | Propriétaire | Possesseur |
@@ -74,6 +81,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Que doit faire ce serveur en plus ? | English word order | Envie d'aller plus loin ? |
 | Choisissez la langue dans laquelle KROMA vous parle | the product does a human thing | Choisissez votre langue. |
 | Où sont vos médias ? | *médias* is jargon | Où sont vos films et vos séries ? |
+| À couper le souffle (*edge of your seat*) | says *breathtaking*, a thing of beauty | Suspense garanti |
+| Virées nocturnes néon | a noun pile in the English order | Virées nocturnes sous les néons |
+| Soirées d'automne cosy | an English word where French has an image | Soirées d'automne au coin du feu |
 | Reprendre mon serveur Plex | *reprendre* says another thing | Migrer depuis Plex ou Jellyfin |
 | Le compte n'a pas pu être créé | English passive | Impossible de créer le compte |
 | Regarder le catalogue + reprise | a symbol for a word, and a noun pile | Regarder les films et les séries, et reprendre une lecture |
