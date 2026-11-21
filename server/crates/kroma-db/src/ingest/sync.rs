@@ -192,8 +192,8 @@ fn sync_items<'a>(
              library=excluded.library, show_id=excluded.show_id, \
              show_title=excluded.show_title, season=excluded.season, \
              episode=excluded.episode, episode_end=excluded.episode_end, \
-             episode_title=excluded.episode_title \
-         WHERE items.kind IS NOT excluded.kind OR items.title IS NOT excluded.title \
+             episode_title=excluded.episode_title, absent_since=NULL \
+         WHERE items.absent_since IS NOT NULL OR items.kind IS NOT excluded.kind OR items.title IS NOT excluded.title \
              OR items.year IS NOT excluded.year OR items.library IS NOT excluded.library \
              OR items.show_id IS NOT excluded.show_id \
              OR items.show_title IS NOT excluded.show_title \

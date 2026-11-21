@@ -1,18 +1,18 @@
 {
-  "mediaInfo.action": "Détails du média",
+  "mediaInfo.action": "Détails du fichier",
   "mediaInfo.audio": "Audio",
   "mediaInfo.bit": "bits",
   "mediaInfo.container": "Conteneur",
-  "mediaInfo.default": "Défaut",
+  "mediaInfo.default": "Par défaut",
   "mediaInfo.duration": "Durée",
   "mediaInfo.editionUnnamed": "Version standard",
   "mediaInfo.noFile": "Aucun fichier pour cet élément.",
   "mediaInfo.noSubs": "Aucun",
   "mediaInfo.size": "Taille",
   "mediaInfo.subtitles": "Sous-titres",
-  "mediaInfo.title": "Détails du média",
+  "mediaInfo.title": "Détails du fichier",
   "mediaInfo.unknownFile": "Fichier inconnu",
   "mediaInfo.unprobed": "Analyse du fichier en attente.",
-  "mediaInfo.unreadable": "Ce fichier ne s'ouvre pas.",
+  "mediaInfo.unreadable": "Impossible d'ouvrir ce fichier.",
   "mediaInfo.video": "Vidéo"
 }

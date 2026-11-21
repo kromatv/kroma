@@ -2,7 +2,9 @@ use anyhow::Result;
 use kroma_module_sdk::db::Pool;
 use kroma_module_sdk::primitives::{now_ms, random_token};
 
-pub(crate) const MIGRATIONS: &str = "
+/// The importer's own database: this installation's device, and each sign-in
+/// it keeps.
+pub const MIGRATIONS: &str = "
 CREATE TABLE IF NOT EXISTS installation (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     device TEXT NOT NULL

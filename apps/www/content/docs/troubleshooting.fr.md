@@ -49,7 +49,7 @@ KROMA se trouve à cette adresse, sur le port `4040` :
      **Modifier les règles**.
    - Linux avec ufw : `sudo ufw allow 4040/tcp`.
 
-## `Le compte propriétaire se crée depuis le réseau local du serveur`
+## `Créez le compte du propriétaire depuis le réseau local du serveur`
 
 Vous avez ouvert KROMA par une adresse extérieure à votre réseau, par exemple
 un tunnel ou un nom de domaine. Le premier compte ne peut être créé que depuis
@@ -85,6 +85,25 @@ fichiers qu'il contient.
 4. Vérifiez le nom des fichiers. Consultez
    [Nommer vos fichiers](media-folders.md#nommer-vos-fichiers).
 5. Sous **Serveur** > **Sources**, sélectionnez **Analyser** sur la
+   bibliothèque.
+
+## Un film supprimé est toujours affiché
+
+KROMA ne retire un titre de la liste qu'après une analyse qui a lu tous les
+dossiers de sa bibliothèque. Il garde alors ce titre de côté, avec son
+historique et ses points de reprise, et l'affiche de nouveau dès que le fichier
+revient. Tant qu'un dossier manque, est vide ou contient un lien que KROMA ne
+peut pas ouvrir, l'analyse garde affichés tous les titres de cette
+bibliothèque. Un partage qui n'est pas encore monté ne perd rien.
+
+1. Ouvrez **Serveur** > **Tâches** et lisez la dernière exécution de
+   **Analyse de la bibliothèque**. Chaque dossier que KROMA n'a pas pu lire a
+   sa ligne, qui nomme la bibliothèque et le dossier, et finit par
+   `kept every title it holds`.
+2. Montez de nouveau ce dossier, ou retirez le lien dont le fichier n'existe
+   plus. Un dossier vide volontairement bloque aussi la bibliothèque : retirez-le
+   de la bibliothèque sous **Serveur** > **Sources**.
+3. Sous **Serveur** > **Sources**, sélectionnez **Analyser** sur la
    bibliothèque.
 
 ## Un film affiche le mauvais titre ou la mauvaise affiche
