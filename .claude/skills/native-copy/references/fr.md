@@ -47,6 +47,11 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Host updater | l'outil de mise à jour de l'hôte | l'outil hôte |
 | {count} item(s) | Éléments : {count}, or the plural forms | élément(s) |
 | Search (action) | Rechercher | Chercher |
+| Fix the match (a title) | Corriger l'identification | Corriger la correspondance |
+| Default (a track flag) | Par défaut | Défaut, which means a defect |
+| Media details (the file's codecs) | Détails du fichier | Détails du média |
+| A genre name TMDB translates (Science-Fiction & Fantastique) | TMDB's French name, spelled as TMDB spells it, `&` included | a rewrite: KROMA matches stored genres against these labels |
+| A genre name TMDB sends in English to a French reader (Action & Adventure, War & Politics, Kids, News, Reality, Soap, Talk) | a French label of its own, since the English label already matches | |
 | Save | Enregistrer | Sauver, Sauvegarder |
 | Probing (a file) | analyse des fichiers | probing, sonde |
 | Timeline, scrub bar | barre de lecture | timeline |
