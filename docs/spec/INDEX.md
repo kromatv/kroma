@@ -3,7 +3,7 @@
 
 # Requirement index
 
-730 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+732 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -290,6 +290,8 @@
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-182** (AGREED) - A kept library whose folder holds a folder of a KROMA source is not <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-183** (AGREED) - A restore that is not a reset adds what the backup holds and removes <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-184** (AGREED) - A restore that is a reset puts the backup's sources in place of the <sub>[README.md](admin/README.md)</sub>
 
 ## BROWSE - [browse](browse/)
 

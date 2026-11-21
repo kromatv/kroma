@@ -18,6 +18,8 @@ import { useT } from '@kromatv/ui';
 
 import { useState } from 'react';
 import { createCallable } from 'react-call';
+import type { KromaClient } from '@kromatv/client';
+import type { BackupImportOptions, BackupPreview } from '@kromatv/client/admin';
 import { useAuth } from '#web/shared/lib/auth';
 
 // "KROMABK1\n": the encrypted-backup envelope magic (see services/backup/crypto).
@@ -157,32 +159,81 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
   );
 });
 
+type RemovedLibraries = BackupPreview['removedLibraries'];
+
+type Restored = { users: number } | { removing: RemovedLibraries };
+
+async function previewThenRestore(
+  client: KromaClient,
+  restore: { file: File; options: BackupImportOptions; removing: RemovedLibraries | null },
+): Promise<Restored> {
+  const { file, options, removing } = restore;
+  if (options.reset && removing === null) {
+    const { removedLibraries } = await client.admin.backup.preview(file, options);
+    if (removedLibraries.length > 0) {
+      return { removing: removedLibraries };
+    }
+  }
+  const res = await client.admin.backup.import(file, options);
+  return { users: res.imported.users ?? 0 };
+}
+
+interface RestoreProps {
+  file: File;
+  encrypted: boolean;
+  onDone: (message: string) => void;
+}
+
+function useRestore({ file, encrypted, onDone }: RestoreProps) {
+  const t = useT();
+  const { client } = useAuth();
+  const [password, setPassword] = useState('');
+  const [reset, setReset] = useState(false);
+  const [removing, setRemoving] = useState<RemovedLibraries | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const options = { password: encrypted ? password.trim() || undefined : undefined, reset };
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      const restored = await previewThenRestore(client, { file, options, removing });
+      if ('users' in restored) {
+        onDone(t('admin.backupImported', { users: restored.users }));
+      } else {
+        setRemoving(restored.removing);
+      }
+    } catch (e) {
+      setError(errMessage(e, t('admin.backupImportFailed')));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return { password, setPassword, reset, setReset, removing, busy, error, run };
+}
+
+function RemovedList({ libraries }: Readonly<{ libraries: RemovedLibraries }>) {
+  const t = useT();
+  return (
+    <>
+      <Text variant="body">{t('admin.backupResetRemoves')}</Text>
+      {libraries.map((library) => (
+        <Text key={library.id} variant="label">
+          {library.name}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 export const ImportModal = createCallable<{ file: File; encrypted: boolean }, string | null>(
   ({ call, file, encrypted }) => {
     const t = useT();
-    const { client } = useAuth();
-    const [password, setPassword] = useState('');
-    const [reset, setReset] = useState(false);
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const restore = useRestore({ file, encrypted, onDone: (message) => call.end(message) });
+    const { password, setPassword, reset, setReset, removing, busy, error } = restore;
 
     const canImport = !encrypted || password.trim().length > 0;
-
-    async function run() {
-      setBusy(true);
-      setError(null);
-      try {
-        const res = await client.admin.backup.import(file, {
-          password: encrypted ? password.trim() || undefined : undefined,
-          reset,
-        });
-        call.end(t('admin.backupImported', { users: res.imported.users ?? 0 }));
-      } catch (e) {
-        setError(errMessage(e, t('admin.backupImportFailed')));
-      } finally {
-        setBusy(false);
-      }
-    }
 
     return (
       <Dialog.Root
@@ -191,30 +242,42 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
         width="md"
         onClose={busy ? () => {} : () => call.end(null)}
       >
-        <Field.Root label={t('admin.backupFile')}>
-          <ChosenFile name={file.name} />
-        </Field.Root>
-        {encrypted ? (
-          <Field.Root label={t('admin.backupPassword')}>
-            <Field.Input type="password" icon="lock" value={password} onValueChange={setPassword} />
-            <Field.Hint>{t('admin.backupEncryptedFile')}</Field.Hint>
-          </Field.Root>
-        ) : null}
-        <ToggleRow
-          label={t('admin.backupReset')}
-          hint={t('admin.backupResetHint')}
-          on={reset}
-          onChange={setReset}
-        />
-        <Text variant="meta" color="textDim">
-          {t('admin.backupImportDesc')}
-        </Text>
+        {removing ? (
+          <RemovedList libraries={removing} />
+        ) : (
+          <>
+            <Field.Root label={t('admin.backupFile')}>
+              <ChosenFile name={file.name} />
+            </Field.Root>
+            {encrypted ? (
+              <Field.Root label={t('admin.backupPassword')}>
+                <Field.Input
+                  type="password"
+                  icon="lock"
+                  value={password}
+                  onValueChange={setPassword}
+                />
+                <Field.Hint>{t('admin.backupEncryptedFile')}</Field.Hint>
+              </Field.Root>
+            ) : null}
+            <ToggleRow
+              label={t('admin.backupReset')}
+              hint={t('admin.backupResetHint')}
+              on={reset}
+              onChange={setReset}
+            />
+            <Text variant="meta" color="textDim">
+              {t('admin.backupImportDesc')}
+            </Text>
+          </>
+        )}
         {error ? <ErrorLine text={error} /> : null}
         <Dialog.Actions
           onCancel={() => call.end(null)}
           cancelLabel={t('common.cancel')}
-          onConfirm={() => void run()}
-          confirmLabel={busy ? t('admin.backupImporting') : t('admin.backupRestoreConfirm')}
+          onConfirm={() => void restore.run()}
+          confirmLabel={confirmLabel(t, { busy, removing })}
+          destructive={removing !== null}
           busy={busy}
           disabled={!canImport}
         />
@@ -222,3 +285,13 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
     );
   },
 );
+
+function confirmLabel(
+  t: ReturnType<typeof useT>,
+  { busy, removing }: { busy: boolean; removing: RemovedLibraries | null },
+): string {
+  if (busy) {
+    return t('admin.backupImporting');
+  }
+  return removing ? t('admin.backupRestoreRemove') : t('admin.backupRestoreConfirm');
+}

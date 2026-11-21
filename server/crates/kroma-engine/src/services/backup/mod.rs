@@ -5,6 +5,7 @@
 mod archive;
 mod assets;
 mod crypto;
+mod libraries;
 
 #[cfg(test)]
 mod test_support;
@@ -14,8 +15,11 @@ use std::path::Path;
 use anyhow::Result;
 
 use crate::db::{self, BackupDoc, Pool};
+use crate::services::settings::HeldLibrary;
 
 use archive::Assets;
+
+pub use libraries::Plan;
 
 /// Why an import couldn't proceed mapped to localized HTTP errors by the API.
 #[derive(Debug)]
@@ -24,6 +28,7 @@ pub enum ImportError {
     // Also covers a corrupted ciphertext (the AEAD tag failed to verify).
     WrongPassword,
     Invalid(anyhow::Error),
+    LibraryListUnreadable,
     Db(anyhow::Error),
 }
 
@@ -38,19 +43,36 @@ pub fn export(pool: &Pool, data_dir: &Path, password: Option<&str>) -> Result<Ve
     }
 }
 
-/// Accepts an encrypted envelope, a ZIP, or legacy v1 JSON. `reset` wipes the
-/// portable tables first, atomically. Returns per-table row counts.
+/// Accepts an encrypted envelope, a ZIP, or legacy v1 JSON. A `plan` that
+/// resets wipes the portable tables first, atomically. Returns per-table row
+/// counts.
 pub fn import(
     pool: &Pool,
     data_dir: &Path,
     bytes: &[u8],
     password: Option<&str>,
-    reset: bool,
+    plan: &Plan,
 ) -> std::result::Result<Vec<(String, usize)>, ImportError> {
     let (mut doc, files) = decode(bytes, password)?;
+    if let Some(list) = libraries::restored_list(&doc, plan)? {
+        libraries::restore_list(&mut doc, &list);
+    }
     assets::write(data_dir, &files);
     assets::rebase_subtitles(&mut doc, data_dir);
-    db::import_portable(pool, data_dir, &doc, reset).map_err(ImportError::Db)
+    db::import_portable(pool, data_dir, &doc, plan.reset).map_err(ImportError::Db)
+}
+
+/// The libraries of this server that restoring `bytes` under `plan` would
+/// remove, read without restoring anything.
+pub fn preview(
+    pool: &Pool,
+    bytes: &[u8],
+    password: Option<&str>,
+    plan: &Plan,
+) -> std::result::Result<Vec<HeldLibrary>, ImportError> {
+    let (doc, _) = decode(bytes, password)?;
+    let list = libraries::restored_list(&doc, plan)?;
+    libraries::removed(pool, list.as_deref())
 }
 
 fn decode(
@@ -83,6 +105,21 @@ fn decode(
 mod tests {
     use super::test_support::*;
     use super::*;
+
+    fn merge() -> Plan {
+        Plan {
+            reset: false,
+            now: Ok(Vec::new()),
+            seed: Vec::new(),
+        }
+    }
+
+    fn reset() -> Plan {
+        Plan {
+            reset: true,
+            ..merge()
+        }
+    }
     use crate::infra::image::images_dir;
     use crate::services::subtitles::downloaded_dir;
 
@@ -97,7 +134,7 @@ mod tests {
         );
 
         let (dst, dst_dir) = fresh("dst");
-        import(&dst, dst_dir.path(), &bytes, None, false).unwrap();
+        import(&dst, dst_dir.path(), &bytes, None, &merge()).unwrap();
         assert_eq!(user_count(&dst), 1);
         assert_eq!(
             std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(),
@@ -112,7 +149,7 @@ mod tests {
         let bytes = export(&src, src_dir.path(), None).unwrap();
         let (dst, dst_dir) = fresh("sub-dst");
 
-        import(&dst, dst_dir.path(), &bytes, None, false).unwrap();
+        import(&dst, dst_dir.path(), &bytes, None, &merge()).unwrap();
 
         let path = subtitle_path(&dst, "s1").unwrap();
         assert_eq!(
@@ -133,14 +170,14 @@ mod tests {
 
         let (dst, dst_dir) = fresh("edst");
         assert!(matches!(
-            import(&dst, dst_dir.path(), &sealed, None, false),
+            import(&dst, dst_dir.path(), &sealed, None, &merge()),
             Err(ImportError::PasswordRequired)
         ));
         assert!(matches!(
-            import(&dst, dst_dir.path(), &sealed, Some("nope"), false),
+            import(&dst, dst_dir.path(), &sealed, Some("nope"), &merge()),
             Err(ImportError::WrongPassword)
         ));
-        import(&dst, dst_dir.path(), &sealed, Some("hunter2"), false).unwrap();
+        import(&dst, dst_dir.path(), &sealed, Some("hunter2"), &merge()).unwrap();
         assert_eq!(user_count(&dst), 1);
     }
 
@@ -152,7 +189,7 @@ mod tests {
  "tables":{"users":[{"id":"u1","email":"a@b.c","username":"Al","password_hash":"ph","created_at":"t"}]}}
 "#;
 
-        import(&dst, dst_dir.path(), legacy, None, false).unwrap();
+        import(&dst, dst_dir.path(), legacy, None, &merge()).unwrap();
         assert_eq!(user_count(&dst), 1);
         assert_eq!(
             std::fs::read(images_dir(dst_dir.path()).join("av99.webp")).unwrap(),
@@ -165,7 +202,7 @@ mod tests {
         let (dst, dst_dir) = fresh("junk");
         for junk in [&b"not a backup"[..], &b""[..], &b"\x89PNG\r\n"[..]] {
             assert!(matches!(
-                import(&dst, dst_dir.path(), junk, None, false),
+                import(&dst, dst_dir.path(), junk, None, &merge()),
                 Err(ImportError::Invalid(_))
             ));
         }
@@ -178,7 +215,7 @@ mod tests {
         truncated.extend_from_slice(&[1, 1, 0, 0, 0, 1]);
         assert!(crypto::is_encrypted(&truncated));
         assert!(matches!(
-            import(&dst, dst_dir.path(), &truncated, Some("hunter2"), false),
+            import(&dst, dst_dir.path(), &truncated, Some("hunter2"), &merge()),
             Err(ImportError::Invalid(_))
         ));
     }
@@ -194,9 +231,9 @@ mod tests {
         dst.get().unwrap().execute(
             "INSERT INTO users (id,email,username,password_hash,created_at) VALUES ('keep','k@b.c','K','ph','t')", []).unwrap();
 
-        import(&dst, dst_dir.path(), &bytes, None, false).unwrap();
+        import(&dst, dst_dir.path(), &bytes, None, &merge()).unwrap();
         assert_eq!(user_count(&dst), 2);
-        import(&dst, dst_dir.path(), &bytes, None, true).unwrap();
+        import(&dst, dst_dir.path(), &bytes, None, &reset()).unwrap();
         assert_eq!(user_count(&dst), 1);
     }
 }

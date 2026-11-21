@@ -1887,7 +1887,7 @@
     "status": "AGREED",
     "text": "A server learns it is out of date by checking for a newer release and",
     "file": "docs/spec/admin/README.md",
-    "line": 302
+    "line": 310
   },
   {
     "id": "ADMIN-90",
@@ -1897,7 +1897,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 315
+    "line": 323
   },
   {
     "id": "ADMIN-91",
@@ -1907,7 +1907,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 319
+    "line": 327
   },
   {
     "id": "ADMIN-92",
@@ -1917,7 +1917,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 322
+    "line": 330
   },
   {
     "id": "ADMIN-93",
@@ -1927,7 +1927,7 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 327
+    "line": 335
   },
   {
     "id": "ADMIN-94",
@@ -2798,6 +2798,26 @@
     "text": "A kept library whose folder holds a folder of a KROMA source is not",
     "file": "docs/spec/admin/import.md",
     "line": 75
+  },
+  {
+    "id": "ADMIN-183",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 183,
+    "status": "AGREED",
+    "text": "A restore that is not a reset adds what the backup holds and removes",
+    "file": "docs/spec/admin/README.md",
+    "line": 298
+  },
+  {
+    "id": "ADMIN-184",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 184,
+    "status": "AGREED",
+    "text": "A restore that is a reset puts the backup's sources in place of the",
+    "file": "docs/spec/admin/README.md",
+    "line": 302
   },
   {
     "id": "BROWSE-1",

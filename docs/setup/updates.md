@@ -89,3 +89,9 @@ it on the machine you restore to.
 KROMA restores the accounts, settings and history, then scans your libraries.
 If your media folders have another path on the new machine, change them under
 **Sources** and scan again.
+
+A restore keeps the libraries this server already has and adds the ones from
+the backup. To make this server an exact copy of the old one instead, turn on
+**Reset before restoring**. If that would remove libraries from this server,
+KROMA lists them first, and removes them only when you select **Restore and
+remove**.

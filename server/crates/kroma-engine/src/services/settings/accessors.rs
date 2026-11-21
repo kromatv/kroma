@@ -170,9 +170,15 @@ pub fn library_defs(
     settings: &Settings,
     config: &crate::config::Config,
 ) -> Result<Vec<LibraryDef>, super::UnreadableLibraryList> {
-    if let Some(saved) = super::stored_library_defs(settings)? {
-        return Ok(saved);
+    match super::stored_library_defs(settings)? {
+        Some(saved) => Ok(saved),
+        None => Ok(seeded_library_defs(config)),
     }
+}
+
+/// The list [`library_defs`] gives while none is saved: the environment's
+/// folders, else the demo library.
+pub fn seeded_library_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
     let mut defs = Vec::new();
     if !config.movies_dirs.is_empty() {
         defs.push(LibraryDef {
@@ -216,9 +222,9 @@ pub fn library_defs(
         }
     }));
     if defs.is_empty() {
-        return Ok(demo_defs(config));
+        return demo_defs(config);
     }
-    Ok(defs)
+    defs
 }
 
 // Only the ones that EXIST. A definition for a folder nobody wrote would scan as
