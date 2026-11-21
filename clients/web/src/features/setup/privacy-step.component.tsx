@@ -1,28 +1,12 @@
 import { useT } from '@kromatv/ui';
 import { Button, ListRow, Switch } from '@kromatv/ui/kit';
-import { useState } from 'react';
 import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
-import { useWebRuntime } from '#web/shared/lib/web-runtime';
+import { StepFailure } from '#web/features/setup/step-failure.component';
+import { useCounted } from '#web/features/setup/use-counted.hook';
 
 interface CountedProps {
   counted: boolean;
   onCounted: (counted: boolean) => void;
-}
-
-function useCounted(onAnswered: () => void) {
-  const { client } = useWebRuntime();
-  const [counted, setCounted] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const confirm = async () => {
-    setBusy(true);
-    try {
-      await client.admin.updateSettings({ anonStats: counted });
-    } finally {
-      setBusy(false);
-      onAnswered();
-    }
-  };
-  return { counted, setCounted, busy, confirm };
 }
 
 function CountedSwitch({ counted, onCounted }: Readonly<CountedProps>) {
@@ -40,18 +24,19 @@ function CountedSwitch({ counted, onCounted }: Readonly<CountedProps>) {
 }
 
 /** Whether this server is counted among the KROMA servers running in the
- * world. One sentence and one switch, on as it is on any new server. */
+ * world. One sentence and one switch, in the state the server holds. */
 export function PrivacyStep({
   onBack,
   onContinue,
 }: Readonly<{ onBack: () => void; onContinue: () => void }>) {
   const t = useT();
-  const { counted, setCounted, busy, confirm } = useCounted(onContinue);
+  const { counted, setCounted, busy, confirm, failed } = useCounted(onContinue);
   return (
     <>
       <StepHeading title={t('setup.privacyTitle')} sub={t('setup.privacySub')} />
       <StepBody>
-        <CountedSwitch counted={counted} onCounted={setCounted} />
+        <StepFailure error={failed ? t('setup.privacyReadFailed') : null} />
+        {counted === null ? null : <CountedSwitch counted={counted} onCounted={setCounted} />}
       </StepBody>
       <StepActions onBack={onBack}>
         <Button
