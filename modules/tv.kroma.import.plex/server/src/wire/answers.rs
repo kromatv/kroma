@@ -184,3 +184,20 @@ pub(crate) struct Play {
     pub title: String,
     pub played_at: i64,
 }
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "status", rename_all = "camelCase")]
+pub(crate) enum Unlocked {
+    Unlocked,
+    Refused { reason: UnlockRefusal },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum UnlockRefusal {
+    Pin,
+    NotLocked,
+    Credentials,
+    Unreachable,
+    Other,
+}

@@ -121,7 +121,7 @@ pub(crate) fn set_route(pool: &Pool, key: ServerKey<'_>, route: Option<&str>) ->
 pub(crate) fn forget(pool: &Pool, sign_in: &str) -> Result<()> {
     let conn = pool.get()?;
     let tx = conn.unchecked_transaction()?;
-    for table in ["readers", "servers", "pending"] {
+    for table in ["unlocked", "readers", "servers", "pending"] {
         tx.execute(
             &format!("DELETE FROM {table} WHERE sign_in = ?1"),
             [sign_in],
