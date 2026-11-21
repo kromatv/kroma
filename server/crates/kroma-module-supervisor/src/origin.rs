@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use kroma_module_manifest::Permissions;
+use kroma_module_manifest::Declared;
 use sha2::Digest;
 
 use super::{Supervisor, MODULE_COMPONENT};
@@ -53,24 +53,26 @@ pub struct Source<'a> {
     pub url: Option<&'a str>,
     /// The catalog that listed it was the official one.
     pub official: bool,
-    /// What the bundle's `permissions` may be, for this install to go through.
+    /// What the bundle may declare, for this install to go through.
     pub accept: Accept<'a>,
 }
 
-/// What an operator accepted, which a bundle's `permissions` are held to.
+/// What an operator accepted, which a bundle's declaration is held to.
 #[derive(Debug, Clone, Copy)]
 pub enum Accept<'a> {
     /// They read the bundle's own declaration, or it comes from no catalog.
     Anything,
     /// They read this declaration on its catalog row, so the bundle must say the
-    /// same.
-    Exactly(&'a Permissions),
+    /// same: its `permissions`, the core tables of its `storage`, its `settings`
+    /// and its `helpers`. A part the row leaves out admits only a bundle that
+    /// leaves it out or leaves it empty.
+    Exactly(Declared<'a>),
     /// Nobody is looking, so the bundle may ask for no more than what is
     /// installed: no wider `permissions`, no key in `settings.write` the installed
-    /// version did not declare, and the same `permissions` as its catalog row when
+    /// version did not declare, and the same declaration as its catalog row when
     /// it has one. A module that is not installed yet asks for everything it
     /// declares. Refused with [`AsksForMore`].
-    NoWider(Option<&'a Permissions>),
+    NoWider(Option<Declared<'a>>),
 }
 
 /// An install nobody is looking at, refused because the bundle asks for more

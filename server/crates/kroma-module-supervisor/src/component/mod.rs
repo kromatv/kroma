@@ -30,6 +30,7 @@ use tokio::net::{TcpListener, UnixListener};
 use tokio::sync::Semaphore;
 
 use super::asked::Watch;
+use super::core_ceiling::within_third_party_ceiling;
 use super::gateway::{ModulePolicy, Running};
 use super::lifecycle::Proc;
 use super::private_folder::private_folder;
@@ -64,6 +65,17 @@ impl Supervisor {
         Ok(self.wasm.get_or_init(|| host))
     }
 
+    fn manifest_to_start(&self, id: &str) -> anyhow::Result<(ModuleManifest, bool)> {
+        let manifest: ModuleManifest = self
+            .manifest_on_disk(id)
+            .ok_or_else(|| anyhow::anyhow!("'{id}' has no readable manifest"))?;
+        let first_party = self.origin(id).official;
+        if !first_party {
+            within_third_party_ceiling(id, &manifest)?;
+        }
+        Ok((manifest, first_party))
+    }
+
     /// Serve an installed component on the module's socket.
     pub(crate) fn spawn_component(&self, id: &str) -> anyhow::Result<Endpoint> {
         let wiring = self
@@ -86,12 +98,9 @@ impl Supervisor {
         }
         let own_dir = self.own_dir(id);
         private_folder(&own_dir).with_context(|| format!("create '{id}'s own folder"))?;
-        let manifest: ModuleManifest = self
-            .manifest_on_disk(id)
-            .ok_or_else(|| anyhow::anyhow!("'{id}' has no readable manifest"))?;
+        let (manifest, first_party) = self.manifest_to_start(id)?;
         let storage = manifest.storage.clone();
         let kept_in = storage.as_ref().map(|_| self.module_databases(id)).transpose()?;
-        let first_party = self.origin(id).official;
         let no_network = manifest.permissions.is_none();
         let token = self.module_token(id);
         let policy = Arc::new(ModulePolicy {

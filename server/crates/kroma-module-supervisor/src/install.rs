@@ -3,8 +3,9 @@
 
 use std::path::Path;
 
-use kroma_module_manifest::{ModuleManifest, Permissions};
+use kroma_module_manifest::ModuleManifest;
 
+use super::core_ceiling::within_third_party_ceiling;
 use super::lifecycle::native_build;
 use super::manifests::check_interface;
 use super::{
@@ -12,8 +13,10 @@ use super::{
 };
 
 mod bundle;
+mod row;
 
 use bundle::{decompressed_tar, unpack_validated};
+use row::says_what_its_row_showed;
 
 impl Supervisor {
     fn staged_manifest(
@@ -76,7 +79,7 @@ impl Supervisor {
         let result = (|| {
             unpack_validated(&tar_bytes, &staging)?;
             let (id, manifest) = self.staged_manifest(&staging, expected_id)?;
-            self.check_accepted(&id, &manifest, origin.accept)?;
+            self.check_accepted(&id, &manifest, origin)?;
             self.stop(&id);
             let dest = self.installed_dir(&id);
             let _ = std::fs::remove_dir_all(&dest);
@@ -116,9 +119,12 @@ impl Supervisor {
         &self,
         id: &str,
         manifest: &ModuleManifest,
-        accept: Accept<'_>,
+        origin: crate::Source<'_>,
     ) -> anyhow::Result<()> {
-        match accept {
+        if !origin.official {
+            within_third_party_ceiling(id, manifest)?;
+        }
+        match origin.accept {
             Accept::Anything => Ok(()),
             Accept::Exactly(declared) => says_what_its_row_showed(id, manifest, declared),
             Accept::NoWider(declared) => {
@@ -158,17 +164,6 @@ fn remove_if_present(dir: &std::path::Path) -> std::io::Result<()> {
         Err(error) if error.kind() != std::io::ErrorKind::NotFound => Err(error),
         _ => Ok(()),
     }
-}
-
-fn says_what_its_row_showed(
-    id: &str,
-    manifest: &ModuleManifest,
-    declared: &Permissions,
-) -> anyhow::Result<()> {
-    if manifest.permissions.as_ref() == Some(declared) {
-        return Ok(());
-    }
-    anyhow::bail!("the bundle for '{id}' declares other permissions than its catalog row says")
 }
 
 // A module id must be a safe directory name: it becomes `<modules>/<id>/`.

@@ -56,6 +56,18 @@ describe('extendedSentence', () => {
     );
   });
 
+  it('counts a change to the accounts as reaching past the isolation', () => {
+    const accounts: PermissionSource = {
+      permissions: {},
+      storage: { core: { write: ['users.language'] } },
+      official: false,
+    };
+
+    expect(extendedSentence(accounts, t)).toBe(
+      "Changes the accounts on your server, outside the module's isolation.",
+    );
+  });
+
   it('says nothing for a module that stays inside its isolation, downloads included', () => {
     expect([extendedSentence(INDEXERS, t), extendedSentence(ACQUISITION, t)]).toEqual([null, null]);
   });
