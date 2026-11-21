@@ -28,10 +28,8 @@ const accessOf = (
   write: union(sources.map((source) => pick(source)?.write)),
 });
 
-interface Declaration {
+interface Declaration extends Pick<PermissionSource, 'storage' | 'settings'> {
   permissions?: object | null;
-  storage?: PermissionSource['storage'];
-  settings?: Access | null;
 }
 
 const lists = (access: Access | null | undefined) =>
