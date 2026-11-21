@@ -2,10 +2,10 @@
 //! behind it, and the one a reader is shown.
 
 use std::collections::BTreeMap;
+use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
 
-mod ages;
 #[cfg(test)]
 mod tests;
 
@@ -27,6 +27,9 @@ enum LabelAge {
     NotARating,
 }
 
+type AgeRow = (&'static str, &'static str, LabelAge);
+
+const AGES: &str = include_str!("ages.tsv");
 const BORROWED_FIRST: &str = "US";
 
 /// The youngest viewer `label` is rated for in `country`'s system. `None` for a
@@ -62,8 +65,23 @@ fn rated<'a>(ratings: &'a CountryRatings, country: &str) -> Option<&'a str> {
 }
 
 fn lookup(country: &str, label: &str) -> Option<LabelAge> {
-    ages::AGES
-        .binary_search_by(|(c, l, _)| (*c, *l).cmp(&(country, label)))
+    let rows = table();
+    rows.binary_search_by(|(c, l, _)| (*c, *l).cmp(&(country, label)))
         .ok()
-        .map(|i| ages::AGES[i].2)
+        .map(|i| rows[i].2)
+}
+
+fn table() -> &'static [AgeRow] {
+    static ROWS: OnceLock<Vec<AgeRow>> = OnceLock::new();
+    ROWS.get_or_init(|| AGES.lines().filter_map(age_row).collect())
+}
+
+fn age_row(line: &'static str) -> Option<AgeRow> {
+    let mut cells = line.split('\t');
+    let (country, label) = (cells.next()?, cells.next()?);
+    let age = match cells.next()? {
+        "" => LabelAge::NotARating,
+        years => LabelAge::Age(years.parse().ok()?),
+    };
+    Some((country, label, age))
 }
