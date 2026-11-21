@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 
-use super::SplashEntry;
+use super::{present_show, SplashEntry};
 use crate::{metadata_core, translations, Pool};
 
 /// A random sample of backdrop-carrying titles for the anonymous sign-in
@@ -10,7 +10,7 @@ use crate::{metadata_core, translations, Pool};
 /// listing: the one catalogue read served without a session.
 pub fn splash_entries(pool: &Pool, limit: u32, locale: &str) -> Result<Vec<SplashEntry>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
+    let mut stmt = conn.prepare(concat!(
         // The scan only knows a year when the file name carried one (shows
         // rarely do); the enriched release date fills the gap.
         "SELECT kind, id, title, year, backdrop_url, rating, poster_url FROM (\
@@ -20,16 +20,17 @@ pub fn splash_entries(pool: &Pool, limit: u32, locale: &str) -> Result<Vec<Splas
                    mc.poster_url AS poster_url \
               FROM items i JOIN metadata_core mc \
                 ON mc.subject_kind='item' AND mc.subject_id=i.id \
-             WHERE i.kind='movie' AND mc.backdrop_url IS NOT NULL \
+             WHERE i.kind='movie' AND i.absent_since IS NULL AND mc.backdrop_url IS NOT NULL \
             UNION ALL \
             SELECT 'show', s.id, s.title, \
                    COALESCE(s.year, NULLIF(CAST(substr(mc.release_date,1,4) AS INTEGER),0)), \
                    mc.backdrop_url, mc.rating, mc.poster_url \
               FROM shows s JOIN metadata_core mc \
                 ON mc.subject_kind='show' AND mc.subject_id=s.id \
-             WHERE mc.backdrop_url IS NOT NULL) \
-         ORDER BY RANDOM() LIMIT ?1",
-    )?;
+             WHERE mc.backdrop_url IS NOT NULL AND ",
+        present_show!(),
+        ") ORDER BY RANDOM() LIMIT ?1"
+    ))?;
     let mut entries: Vec<(String, SplashEntry)> = stmt
         .query_map([limit], |r| {
             Ok((

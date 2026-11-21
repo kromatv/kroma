@@ -78,7 +78,8 @@ pub fn episode_files(
 pub fn episodes_present(conn: &Connection, show_id: &str) -> rusqlite::Result<Vec<(u32, u32)>> {
     let mut stmt = conn.prepare(
         "SELECT DISTINCT season, episode, episode_end FROM items \
-         WHERE show_id = ?1 AND season IS NOT NULL AND episode IS NOT NULL",
+         WHERE show_id = ?1 AND season IS NOT NULL AND episode IS NOT NULL \
+           AND absent_since IS NULL",
     )?;
     let rows = stmt.query_map(params![show_id], |r| {
         Ok((
@@ -128,6 +129,7 @@ pub fn episodes_on_disk(conn: &Connection, show_id: &str) -> rusqlite::Result<Ve
          FROM items i \
          LEFT JOIN files f ON f.item_id = i.id AND f.probed = 1 AND f.unreadable IS NULL \
          WHERE i.show_id = ?1 AND i.season IS NOT NULL AND i.episode IS NOT NULL \
+           AND i.absent_since IS NULL \
          ORDER BY i.season, i.episode, f.v_width DESC NULLS LAST",
     )?;
     let rows = stmt.query_map(params![show_id], |r| {

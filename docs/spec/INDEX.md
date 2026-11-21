@@ -437,10 +437,10 @@
 - **LIB-42** (AGREED) - Running series are re-checked on a slow cadence, so a new episode's air <sub>[README.md](library/README.md)</sub>
 - **LIB-43** (AGREED) - A "Refresh metadata" action on any title, season or whole source <sub>[README.md](library/README.md)</sub>
 - **LIB-44** (AGREED) - A forced refresh **never** discards a manual match or user-chosen <sub>[README.md](library/README.md)</sub>
-- **LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**: <sub>[README.md](library/README.md)</sub>
-- **LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back <sub>[README.md](library/README.md)</sub>
-- **LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a <sub>[README.md](library/README.md)</sub>
-- **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data. <sub>[README.md](library/README.md)</sub>
+- **LIB-45** (SHIPPED) - When a file disappears from a source, its title is **marked absent**: <sub>[README.md](library/README.md)</sub>
+- **LIB-46** (SHIPPED) - Content that reappears, because a NAS remounts or a file is moved back <sub>[README.md](library/README.md)</sub>
+- **LIB-47** (SHIPPED) - A **move** is therefore not a special case. It is an absent path plus a <sub>[README.md](library/README.md)</sub>
+- **LIB-48** (SHIPPED) - A rescan **only ever marks absent**. It never deletes user data. <sub>[README.md](library/README.md)</sub>
 - **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated <sub>[README.md](library/README.md)</sub>
 - **LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and <sub>[README.md](library/README.md)</sub>
 - **LIB-51** (AGREED) - A movie or a show can be **monitored**: the server wants to hold it. <sub>[monitoring.md](library/monitoring.md)</sub>

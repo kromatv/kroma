@@ -4,6 +4,7 @@ use kroma_domain::{LibraryTitle, RequestKind};
 use rusqlite::{Connection, params};
 
 use super::monitored_summaries;
+use crate::media::present_show;
 
 const MOVIES: &str = "SELECT i.id, i.title, \
         COALESCE(i.year, CAST(substr(c.release_date, 1, 4) AS INTEGER)), \
@@ -12,9 +13,10 @@ const MOVIES: &str = "SELECT i.id, i.title, \
         (SELECT COALESCE(SUM(f.size), 0) FROM files f WHERE f.item_id = i.id) \
      FROM items i \
      LEFT JOIN metadata_core c ON c.subject_kind = 'item' AND c.subject_id = i.id \
-     WHERE i.kind IN ('movie', 'video')";
+     WHERE i.kind IN ('movie', 'video') AND i.absent_since IS NULL";
 
-const SHOWS: &str = "SELECT s.id, s.title, \
+const SHOWS: &str = concat!(
+    "SELECT s.id, s.title, \
         COALESCE(s.year, CAST(substr(c.release_date, 1, 4) AS INTEGER)), \
         COALESCE(c.tmdb_id, json_extract(s.metadata, '$.tmdbId')), \
         COALESCE(c.poster_url, json_extract(s.metadata, '$.posterUrl')), s.added_at, \
@@ -22,11 +24,15 @@ const SHOWS: &str = "SELECT s.id, s.title, \
              JOIN items e ON e.id = f.item_id WHERE e.show_id = s.id), \
         (SELECT COALESCE(SUM(MAX(COALESCE(e.episode_end, e.episode), e.episode) - e.episode + 1), 0) \
              FROM items e \
-             WHERE e.show_id = s.id AND e.season IS NOT NULL AND e.episode IS NOT NULL), \
+             WHERE e.show_id = s.id AND e.season IS NOT NULL AND e.episode IS NOT NULL \
+               AND e.absent_since IS NULL), \
         (SELECT COUNT(DISTINCT e.season) FROM items e \
-             WHERE e.show_id = s.id AND e.season IS NOT NULL) \
+             WHERE e.show_id = s.id AND e.season IS NOT NULL AND e.absent_since IS NULL) \
      FROM shows s \
-     LEFT JOIN metadata_core c ON c.subject_kind = 'show' AND c.subject_id = s.id";
+     LEFT JOIN metadata_core c ON c.subject_kind = 'show' AND c.subject_id = s.id \
+     WHERE ",
+    present_show!()
+);
 
 const NEXT_AIRING: &str = "SELECT tmdb_id, MIN(air_date) FROM wanted \
      WHERE kind = 'episode' AND air_date IS NOT NULL AND air_date > ?1 \

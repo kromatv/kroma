@@ -20,7 +20,8 @@ pub fn up_next_episode(
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!(
         "SELECT {ITEM_COLS} FROM items \
-         WHERE show_id = ?1 AND kind = 'episode' ORDER BY season, episode"
+         WHERE show_id = ?1 AND kind = 'episode' AND absent_since IS NULL \
+         ORDER BY season, episode"
     ))?;
     let episodes: Vec<MediaItem> = stmt
         .query_map(params![show_id], row_to_item)?
@@ -92,7 +93,7 @@ pub fn following_episodes(pool: &Pool, item_id: &str, n: usize) -> Result<Vec<Me
     };
     let mut stmt = conn.prepare(&format!(
         "SELECT {ITEM_COLS} FROM items \
-         WHERE show_id = ?1 AND kind = 'episode' \
+         WHERE show_id = ?1 AND kind = 'episode' AND absent_since IS NULL \
            AND (season > ?2 OR (season = ?2 AND episode > ?3)) \
          ORDER BY season, episode LIMIT ?4"
     ))?;
