@@ -35,14 +35,6 @@ function ActionError({ error }: Readonly<{ error: string | null }>) {
   );
 }
 
-function SectionTitle({ children }: Readonly<{ children: string }>) {
-  return (
-    <Text variant="overline" color="textDim" mb={8}>
-      {children}
-    </Text>
-  );
-}
-
 function useVerification(user: AdminUser) {
   const t = useT();
   const { client } = useAuth();
@@ -107,7 +99,9 @@ function EmailVerification({ user }: Readonly<{ user: AdminUser }>) {
   const { busy, error, verification, send } = useVerification(user);
   return (
     <Box>
-      <SectionTitle>{t('admin.email')}</SectionTitle>
+      <Text variant="overline" color="textDim" mb={8}>
+        {t('admin.email')}
+      </Text>
       <AddressRow user={user} busy={busy} onSend={() => void send()} />
       <ActionError error={error} />
       {verification ? <SentVerification verification={verification} /> : null}
@@ -245,7 +239,9 @@ function AccessRecovery({ user }: Readonly<{ user: AdminUser }>) {
   const { pinCleared, clearPin } = useClearPin(user, run);
   return (
     <Box>
-      <SectionTitle>{t('admin.accessSection')}</SectionTitle>
+      <Text variant="overline" color="textDim" mb={8}>
+        {t('admin.accessSection')}
+      </Text>
       {user.resetRequested ? <ResetRequested /> : null}
       <AccessButtons
         user={user}
