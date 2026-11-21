@@ -49,6 +49,12 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Library | Bibliothèque | Médiathèque, Librairie |
 | Media (your files) | vos films et vos séries | vos médias |
 | Scan | Analyse, analyser | Scan, scanner |
+| Controls (of the player) | Commandes | Contrôles |
+| Mute (the button) | Couper le son | Muet |
+| S1E3, Play S1E3 | S1 É3, Lecture S1 É3 | S1E3 |
+| 3 of 10, 3/10 | 3 sur 10 | 3 / 10 |
+| Text subtitles | sous-titres au format texte | sous-titres texte |
+| Remuxed, repackaged | conteneur adapté à la volée | remuxé |
 | Match (a title) | Identifier | Matcher, faire correspondre |
 | Continue Watching | Reprendre la lecture | Continuer à regarder |
 | Trailer | Bande-annonce | Trailer |
@@ -71,6 +77,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Être compté | English idiom *be counted* | Statistiques anonymes |
 | Tirer plus de votre bibliothèque | *get more from* | Lecture et recherche |
 | Chercher par le sens | nobody says it | Recherche intelligente |
+| Cette vidéo est trop grande pour cet appareil | *too big* said of a resolution | Résolution trop élevée pour cet appareil |
+| Cet appareil ne sait pas lire son format | the device does a human thing | cet appareil ne lit pas son format |
+| S'il refuse encore (the server) | the server as a person | Si la lecture est encore refusée |
 | Que doit faire ce serveur en plus ? | English word order | Envie d'aller plus loin ? |
 | Choisissez la langue dans laquelle KROMA vous parle | the product does a human thing | Choisissez votre langue. |
 | Où sont vos médias ? | *médias* is jargon | Où sont vos films et vos séries ? |
