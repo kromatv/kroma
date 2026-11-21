@@ -362,7 +362,7 @@
   "admin.upLimitHint": "Bandwidth reserved for remote streaming",
   "admin.uptime": "Uptime {uptime}",
   "admin.useHwAccel": "Use hardware acceleration",
-  "admin.useHwAccelHint": "Not applied no video transcoding",
+  "admin.useHwAccelHint": "Not applied: there is no video transcoding",
   "admin.used": "Used",
   "admin.usersEmpty": "No users yet.",
   "admin.usersEmptyHint": "Invite members to share your libraries.",
