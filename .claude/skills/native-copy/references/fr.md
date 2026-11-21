@@ -46,6 +46,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Skip | Passer cette étape, Ignorer | Sauter |
 | Sign in / Sign out | Se connecter / Se déconnecter | Login |
 | Set up, setup | Configurer, la configuration | Installation, setup |
+| Skip (a queue, a step that waits) | sans attendre | sauter |
+| A right's hint | a verb phrase: what the person can do | a list of nouns |
 | Library | Bibliothèque | Médiathèque, Librairie |
 | Media (your files) | vos films et vos séries | vos médias |
 | Scan | Analyse, analyser | Scan, scanner |
@@ -68,6 +70,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Votre bibliothèque arrive | *arrive* is the English *is arriving* | Votre bibliothèque prend forme |
 | Qui d'autre regarde ici ? | word for word | Invitez votre famille et vos amis |
 | Proches (the people a server is shared with) | *proche* also means *near*, so the word is read two ways | votre famille et vos amis, les personnes invitées; *Invitations* for the step |
+| Les demandes de ce compte sautent la file d'approbation | *skip the queue* word for word | Les demandes de ce compte sont approuvées sans attendre |
+| Scans, bibliothèques, métadonnées | an English list of nouns for a right | Gérer les bibliothèques, leurs analyses et leurs métadonnées |
 | Être compté | English idiom *be counted* | Statistiques anonymes |
 | Tirer plus de votre bibliothèque | *get more from* | Lecture et recherche |
 | Chercher par le sens | nobody says it | Recherche intelligente |
