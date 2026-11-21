@@ -2,6 +2,7 @@
 // services wrap our fields differently, and getting it wrong turns every action
 // button into a dead tap that looks like a server problem.
 
+import { BEARER, recordingClient } from '@kromatv/client/test';
 import { describe, expect, it, vi } from 'vitest';
 import { handleTap, pushData } from './taps';
 
@@ -168,5 +169,57 @@ describe('handleTap', () => {
     // No href for `deny` in this payload: open the app rather than guess one.
     expect(client.notifications.runAction).not.toHaveBeenCalled();
     expect(route).toBe('/item/ab12');
+  });
+
+  it('opens the app instead of sending a button that is not a one-tap route', async () => {
+    const { client, calls } = recordingClient(undefined, { authToken: BEARER });
+    const admin = { id: 'approve', method: 'DELETE', href: '/api/admin/users/u2' };
+
+    const route = await handleTap(
+      response({ link: '/movie/ab12', actions: [admin] }, 'approve'),
+      client,
+    );
+
+    expect(calls).toEqual([]);
+    expect(route).toBe('/item/ab12');
+  });
+
+  it.each([
+    ['a POST to an admin route', 'POST', '/api/admin/server/restart'],
+    ['a review button that deletes', 'DELETE', '/api/requests/r1/approve'],
+    ['a review id that climbs', 'POST', '/api/requests/../approve'],
+    ['a module route that climbs out', 'POST', '/api/module/tv.kroma.vpn/../../admin/users'],
+    ['a module route with a query', 'POST', '/api/module/tv.kroma.vpn/connect?then=x'],
+  ])('sends nothing for %s', async (_, method, href) => {
+    const { client, calls } = recordingClient();
+
+    await handleTap(response({ actions: [{ id: 'approve', method, href }] }, 'approve'), client);
+
+    expect(calls).toEqual([]);
+  });
+
+  it('still sends the approve button as one POST with the session', async () => {
+    const { client, calls } = recordingClient(undefined, { authToken: BEARER });
+
+    const route = await handleTap(response({ actions: [APPROVE] }, 'approve'), client);
+
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual(['POST /requests/r1/approve']);
+    expect(calls[0]?.headers.get('authorization')).toBe(`Bearer ${BEARER}`);
+    expect(route).toBeNull();
+  });
+
+  it('sends a POST to a route under a module', async () => {
+    const { client, calls } = recordingClient();
+    const retry = {
+      id: 'retry',
+      method: 'POST',
+      href: '/api/module/tv.kroma.torrents/jobs/7/retry',
+    };
+
+    await handleTap(response({ actions: [retry] }, 'retry'), client);
+
+    expect(calls.map((c) => `${c.method} ${c.path}`)).toEqual([
+      'POST /module/tv.kroma.torrents/jobs/7/retry',
+    ]);
   });
 });

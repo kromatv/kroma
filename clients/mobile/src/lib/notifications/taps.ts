@@ -53,6 +53,17 @@ export function pushData(notification: Notifications.Notification): PushData {
   return parsed.success ? parsed.data : { actions: [] };
 }
 
+const REVIEW_HREF = /^\/api\/requests\/[\w-]+\/(?:approve|deny)$/;
+const MODULE_HREF = /^\/api\/module\/[\w.~-]+(?:\/[\w.~-]+)+$/;
+const DOT_SEGMENT = /\/\.+(?:\/|$)/;
+
+function isOneTap(action: PushAction): boolean {
+  if (action.method.toUpperCase() !== 'POST' || DOT_SEGMENT.test(action.href)) {
+    return false;
+  }
+  return REVIEW_HREF.test(action.href) || MODULE_HREF.test(action.href);
+}
+
 function jsonOrNull(raw: string): unknown {
   try {
     return JSON.parse(raw);
@@ -64,7 +75,8 @@ function jsonOrNull(raw: string): unknown {
 /**
  * Act on a tap. Returns the route to navigate to, or `null` when the tap needs
  * no navigation: an action that ran in the background, or a link with no phone
- * screen.
+ * screen. A button runs only when it POSTs to a request review or to a route
+ * under `/api/module/`; any other button opens the app instead.
  */
 export async function handleTap(
   response: Notifications.NotificationResponse,
@@ -73,7 +85,7 @@ export async function handleTap(
   const data = pushData(response.notification);
   const action = data.actions.find((a) => a.id === response.actionIdentifier);
 
-  if (action) {
+  if (action && isOneTap(action)) {
     try {
       await client.notifications.runAction(action);
       if (data.id) {
