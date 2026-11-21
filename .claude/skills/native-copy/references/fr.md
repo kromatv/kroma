@@ -203,4 +203,6 @@ move the rest to the screen where it matters.
 | Create their account (one person) | Créer son compte | Créer leur compte |
 | Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
 | Console (the admin area) | l'administration | la console |
+| Issuer (OpenID Connect) | émetteur | issuer, except in parentheses after émetteur |
+| ID token | jeton d'identité | ID token |
 
