@@ -31,15 +31,20 @@ pub fn invitation_expiry(days: Option<i64>) -> i64 {
 
 // HMAC-SHA256 (RFC 2104) over `msg` keyed by `key`.
 pub(crate) fn hmac_sha256(key: &[u8], msg: &[u8]) -> [u8; 32] {
+    hmac_with_block(&hmac_key_block(key), msg)
+}
+
+fn hmac_key_block(key: &[u8]) -> [u8; SHA256_BLOCK] {
     let mut k = [0u8; SHA256_BLOCK];
     if key.len() > SHA256_BLOCK {
-        let mut h = Sha256::new();
-        h.update(key);
-        k[..32].copy_from_slice(&h.finalize());
+        k[..32].copy_from_slice(&Sha256::digest(key));
     } else {
         k[..key.len()].copy_from_slice(key);
     }
+    k
+}
 
+fn hmac_with_block(k: &[u8; SHA256_BLOCK], msg: &[u8]) -> [u8; 32] {
     let mut ipad = [0x36u8; SHA256_BLOCK];
     let mut opad = [0x5cu8; SHA256_BLOCK];
     for i in 0..SHA256_BLOCK {
@@ -68,10 +73,11 @@ pub(crate) fn pbkdf2_sha256(password: &[u8], salt: &[u8], iters: u32) -> [u8; 32
     block.extend_from_slice(salt);
     block.extend_from_slice(&1u32.to_be_bytes());
 
-    let mut u = hmac_sha256(password, &block);
+    let key = hmac_key_block(password);
+    let mut u = hmac_with_block(&key, &block);
     let mut out = u;
     for _ in 1..iters {
-        u = hmac_sha256(password, &u);
+        u = hmac_with_block(&key, &u);
         for i in 0..32 {
             out[i] ^= u[i];
         }
@@ -158,7 +164,20 @@ pub fn verify_password(password: &str, stored: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::time::{Duration, Instant};
+
     use super::*;
+
+    fn fastest_of_three_derivations(password: &[u8]) -> Duration {
+        (0..3)
+            .map(|_| {
+                let started = Instant::now();
+                std::hint::black_box(pbkdf2_sha256(password, b"salt", 500));
+                started.elapsed()
+            })
+            .min()
+            .unwrap()
+    }
 
     #[test]
     fn pbkdf2_known_vector() {
@@ -206,6 +225,42 @@ mod tests {
             hex::encode(mac),
             "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54"
         );
+    }
+
+    #[test]
+    fn a_key_of_exactly_one_block_is_used_as_it_is() {
+        let key = [0x0bu8; SHA256_BLOCK];
+
+        assert_eq!(hmac_key_block(&key), key);
+    }
+
+    #[test]
+    fn a_key_one_byte_past_the_block_is_replaced_by_its_digest() {
+        let key = [0x0bu8; SHA256_BLOCK + 1];
+
+        let block = hmac_key_block(&key);
+
+        assert_eq!(block[..32], Sha256::digest(key)[..]);
+        assert_eq!(block[32..], [0u8; 32]);
+    }
+
+    #[test]
+    fn a_password_longer_than_the_hmac_block_derives_the_same_key_as_its_digest() {
+        let password = [0x61u8; 200];
+        let digest = Sha256::digest(password);
+
+        let derived = pbkdf2_sha256(&password, b"salt", 3);
+
+        assert_eq!(derived, pbkdf2_sha256(&digest, b"salt", 3));
+    }
+
+    #[test]
+    fn a_long_password_costs_one_extra_hash_not_one_per_iteration() {
+        let short = fastest_of_three_derivations(b"password");
+
+        let long = fastest_of_three_derivations(&[0x61u8; 32 * 1024]);
+
+        assert!(long < short * 10, "{long:?} against {short:?}");
     }
 
     #[test]
