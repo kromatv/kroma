@@ -1,13 +1,22 @@
 //! The episode to play next, and the ones after it.
 
 use anyhow::Result;
-use rusqlite::{params, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::hydrate::{attach_files, attach_files_batch};
 use crate::Pool;
 use crate::rows::row_to_item;
 use crate::schema::ITEM_COLS;
 use kroma_domain::MediaItem;
+
+// Resume: the most-recently-updated in-progress episode of this show.
+const RESUMED_SQL: &str = "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
+     WHERE p.user_id = ?1 AND i.show_id = ?2 AND p.position_ms > 15000 \
+       AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
+     ORDER BY p.updated_at DESC LIMIT 1";
+
+const WATCHED_SQL: &str = "SELECT w.item_id FROM watched w JOIN items i ON i.id = w.item_id \
+     WHERE w.user_id = ?1 AND i.show_id = ?2";
 
 /// The episode to play to CONTINUE a show, for a user: the most-recent in-progress
 /// episode (resume), else the first unwatched episode in order, else the first.
@@ -18,59 +27,61 @@ pub fn up_next_episode(
     show_id: &str,
 ) -> Result<Option<(MediaItem, bool)>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(&format!(
-        "SELECT {ITEM_COLS} FROM items \
-         WHERE show_id = ?1 AND kind = 'episode' AND absent_since IS NULL \
-         ORDER BY season, episode"
-    ))?;
-    let episodes: Vec<MediaItem> = stmt
-        .query_map(params![show_id], row_to_item)?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    drop(stmt);
+    let episodes = show_episodes(&conn, show_id)?;
     if episodes.is_empty() {
         return Ok(None);
     }
-
-    // Resume: the most-recently-updated in-progress episode of this show.
-    let mut rs = conn.prepare(
-        "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
-         WHERE p.user_id = ?1 AND i.show_id = ?2 AND p.position_ms > 15000 \
-           AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
-         ORDER BY p.updated_at DESC LIMIT 1",
-    )?;
-    let resume_id = rs
-        .query_map(params![user_id, show_id], |r| r.get::<_, String>(0))?
-        .next()
-        .transpose()?;
-    drop(rs);
-
-    let (mut chosen, resume) = if let Some(id) = resume_id {
-        match episodes.iter().find(|e| e.id == id).cloned() {
-            Some(e) => (e, true),
-            None => (episodes[0].clone(), false),
-        }
-    } else {
-        // The episode AFTER the last (highest, by season/episode) watched one, so
-        // finishing E2 continues at E3 even if an earlier episode is unwatched
-        // (Plex/Netflix "on deck"). Caught up / nothing watched → the first.
-        let mut ws = conn.prepare(
-            "SELECT w.item_id FROM watched w JOIN items i ON i.id = w.item_id \
-             WHERE w.user_id = ?1 AND i.show_id = ?2",
-        )?;
-        let seen: std::collections::HashSet<String> = ws
-            .query_map(params![user_id, show_id], |r| r.get::<_, String>(0))?
-            .collect::<rusqlite::Result<_>>()?;
-        drop(ws);
-        // `episodes` is ordered by (season, episode); the next after the last seen.
-        let next = match episodes.iter().rposition(|e| seen.contains(&e.id)) {
-            Some(i) => episodes.get(i + 1).or_else(|| episodes.first()).cloned(),
-            None => episodes.first().cloned(),
-        };
-        (next.unwrap_or_else(|| episodes[0].clone()), false)
+    let resume_id = conn
+        .query_row(RESUMED_SQL, params![user_id, show_id], |r| {
+            r.get::<_, String>(0)
+        })
+        .optional()?;
+    let (mut chosen, resume) = match resume_id {
+        Some(id) => resumed_or_first(&episodes, &id),
+        None => (
+            after_last_watched(&conn, (user_id, show_id), &episodes)?,
+            false,
+        ),
     };
-
     attach_files(&conn, &mut chosen)?;
     Ok(Some((chosen, resume)))
+}
+
+fn show_episodes(conn: &Connection, show_id: &str) -> rusqlite::Result<Vec<MediaItem>> {
+    conn.prepare(&format!(
+        "SELECT {ITEM_COLS} FROM items \
+         WHERE show_id = ?1 AND kind = 'episode' AND absent_since IS NULL \
+         ORDER BY season, episode"
+    ))?
+    .query_map(params![show_id], row_to_item)?
+    .collect()
+}
+
+fn resumed_or_first(episodes: &[MediaItem], id: &str) -> (MediaItem, bool) {
+    match episodes.iter().find(|e| e.id == id) {
+        Some(e) => (e.clone(), true),
+        None => (episodes[0].clone(), false),
+    }
+}
+
+// The episode AFTER the last (highest, by season/episode) watched one, so
+// finishing E2 continues at E3 even if an earlier episode is unwatched
+// (Plex/Netflix "on deck"). Caught up / nothing watched → the first.
+fn after_last_watched(
+    conn: &Connection,
+    (user_id, show_id): (&str, &str),
+    episodes: &[MediaItem],
+) -> Result<MediaItem> {
+    let seen: std::collections::HashSet<String> = conn
+        .prepare(WATCHED_SQL)?
+        .query_map(params![user_id, show_id], |r| r.get::<_, String>(0))?
+        .collect::<rusqlite::Result<_>>()?;
+    // `episodes` is ordered by (season, episode); the next after the last seen.
+    let next = match episodes.iter().rposition(|e| seen.contains(&e.id)) {
+        Some(i) => episodes.get(i + 1).or_else(|| episodes.first()).cloned(),
+        None => episodes.first().cloned(),
+    };
+    Ok(next.unwrap_or_else(|| episodes[0].clone()))
 }
 
 /// The next `n` episodes after `item_id` in its show, by `(season, episode)`

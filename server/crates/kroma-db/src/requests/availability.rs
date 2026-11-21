@@ -118,36 +118,21 @@ pub struct EpisodeOnDisk {
     pub duration_ms: Option<i64>,
 }
 
+const EPISODES_ON_DISK_SQL: &str = "SELECT i.season, i.episode, i.episode_end, i.id, \
+        f.v_codec, f.v_width, f.v_height, f.v_hdr, f.v_bit_depth, \
+        COALESCE(f.duration_ms, i.duration_ms) \
+     FROM items i \
+     LEFT JOIN files f ON f.item_id = i.id AND f.probed = 1 AND f.unreadable IS NULL \
+     WHERE i.show_id = ?1 AND i.season IS NOT NULL AND i.episode IS NOT NULL \
+       AND i.absent_since IS NULL \
+     ORDER BY i.season, i.episode, f.v_width DESC NULLS LAST";
+
 /// Every episode of `show_id` on disk, described by its best readable file. One
 /// row per season/episode: the widest copy wins, since that is the one a viewer
 /// gets, and a file holding a run of episodes answers for each of them.
 pub fn episodes_on_disk(conn: &Connection, show_id: &str) -> rusqlite::Result<Vec<EpisodeOnDisk>> {
-    let mut stmt = conn.prepare(
-        "SELECT i.season, i.episode, i.episode_end, i.id, \
-                f.v_codec, f.v_width, f.v_height, f.v_hdr, f.v_bit_depth, \
-                COALESCE(f.duration_ms, i.duration_ms) \
-         FROM items i \
-         LEFT JOIN files f ON f.item_id = i.id AND f.probed = 1 AND f.unreadable IS NULL \
-         WHERE i.show_id = ?1 AND i.season IS NOT NULL AND i.episode IS NOT NULL \
-           AND i.absent_since IS NULL \
-         ORDER BY i.season, i.episode, f.v_width DESC NULLS LAST",
-    )?;
-    let rows = stmt.query_map(params![show_id], |r| {
-        Ok((
-            r.get::<_, Option<u32>>(2)?,
-            EpisodeOnDisk {
-                season: r.get(0)?,
-                episode: r.get(1)?,
-                item_id: r.get(3)?,
-                codec: r.get(4)?,
-                width: r.get(5)?,
-                height: r.get(6)?,
-                hdr: r.get::<_, Option<i64>>(7)?.unwrap_or(0) != 0,
-                bit_depth: r.get(8)?,
-                duration_ms: r.get(9)?,
-            },
-        ))
-    })?;
+    let mut stmt = conn.prepare(EPISODES_ON_DISK_SQL)?;
+    let rows = stmt.query_map(params![show_id], episode_on_disk)?;
     let mut seen = std::collections::HashSet::new();
     let mut out: Vec<EpisodeOnDisk> = Vec::new();
     for row in rows {
@@ -163,6 +148,23 @@ pub fn episodes_on_disk(conn: &Connection, show_id: &str) -> rusqlite::Result<Ve
     }
     out.sort_by_key(|row| (row.season, row.episode));
     Ok(out)
+}
+
+fn episode_on_disk(r: &rusqlite::Row) -> rusqlite::Result<(Option<u32>, EpisodeOnDisk)> {
+    Ok((
+        r.get::<_, Option<u32>>(2)?,
+        EpisodeOnDisk {
+            season: r.get(0)?,
+            episode: r.get(1)?,
+            item_id: r.get(3)?,
+            codec: r.get(4)?,
+            width: r.get(5)?,
+            height: r.get(6)?,
+            hdr: r.get::<_, Option<i64>>(7)?.unwrap_or(0) != 0,
+            bit_depth: r.get(8)?,
+            duration_ms: r.get(9)?,
+        },
+    ))
 }
 
 #[cfg(test)]

@@ -30,6 +30,18 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
             return Ok(());
         }
     };
+    report_walk(ctx, &data);
+
+    if ctx.cancelled() {
+        crate::services::scan::hold_changed_shows(state, &data)?;
+        return Ok(());
+    }
+    crate::services::scan::spawn_follow_ups(state, &data);
+    ctx.info("dispatched probing, search reindex and TMDB enrichment");
+    Ok(())
+}
+
+fn report_walk(ctx: &JobContext, data: &crate::services::scan::ScanData) {
     ctx.info(format!(
         "scan complete {} libraries, {} shows, {} items",
         data.libraries.len(),
@@ -43,14 +55,6 @@ pub(super) fn run(ctx: &JobContext) -> Result<()> {
     {
         ctx.warn(folder);
     }
-
-    if ctx.cancelled() {
-        crate::services::scan::hold_changed_shows(state, &data)?;
-        return Ok(());
-    }
-    crate::services::scan::spawn_follow_ups(state, &data);
-    ctx.info("dispatched probing, search reindex and TMDB enrichment");
-    Ok(())
 }
 
 fn kept_on_an_outage(dropped: usize) -> String {
