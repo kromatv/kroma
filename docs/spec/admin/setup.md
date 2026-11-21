@@ -107,8 +107,8 @@ or they send it by mail.
 stops working.
 
 **ADMIN-117** (AGREED) - The being-counted step says in one sentence what a counted server
-sends ([Diagnostics](README.md#diagnostics)) and holds its one switch, in the state it has
-on any new server.
+sends ([Diagnostics](README.md#diagnostics)) and holds its one switch, the one under Admin,
+in the state the server holds: on for a new server, off for an owner who turned it off.
 
 **ADMIN-118** (AGREED) - The last step is the home.
 
