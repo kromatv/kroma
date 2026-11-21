@@ -17,12 +17,12 @@ mod found;
 mod ids;
 mod index;
 mod live;
+mod unread;
 pub mod walk;
 
 use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 use std::ops::ControlFlow;
-use std::path::Path;
 
 use tracing::{info, warn};
 
@@ -31,10 +31,11 @@ use crate::services::settings::LibraryDef;
 
 use batches::{BatchSink, BatchSize, Batches};
 use found::{Found, LibraryWalk};
-use walk::scan_root;
+use unread::read_library;
 
 pub use ids::{movie_logical_id, short_hash};
 pub use live::{seed_demo, sync_walk, uninterrupted, AfterBatch, BatchAnnouncer, WalkTurn, Walked};
+pub use unread::{Unread, UnreadLibrary};
 
 /// Everything a phase-1 scan produces.
 #[derive(Debug, Default)]
@@ -55,6 +56,7 @@ pub struct ScanData {
     /// before the scan wrote anything. Empty until a sync fills it, so a caller
     /// that never asks enriches no show on episodes alone.
     pub changed_shows: HashSet<String>,
+    pub unread_libraries: Vec<UnreadLibrary>,
 }
 
 /// Walk every configured library (each may span multiple folders) and build the
@@ -77,14 +79,9 @@ fn scan_in_batches<S>(
 
     for def in defs {
         let mut lib = LibraryWalk::new(def, &mut found);
-        for folder in &def.folders {
-            let root = Path::new(folder);
-            if !root.is_dir() {
-                warn!(path = %root.display(), "media dir does not exist or is not a directory; skipping");
-                continue;
-            }
-            data.unreadable += scan_root(root, &mut lib, &mut batches)?;
-        }
+        let read = read_library(&mut lib, &mut batches)?;
+        data.unreadable += read.unreadable;
+        data.unread_libraries.extend(read.unread);
         let library = lib.library();
         batches.close(&library, &found)?;
 
