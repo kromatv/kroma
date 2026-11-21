@@ -43,10 +43,10 @@ pub fn sync_all(
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
 
-    sync_libraries(&tx, libraries)?;
+    sync_libraries(&tx, libraries, &HashSet::new())?;
     sync_shows(&tx, shows)?;
     sync_items(&tx, items)?;
-    delete_gone_files(&tx, items)?;
+    delete_gone_files(&tx, items, &HashSet::new())?;
     sync_files(&tx, items, mtimes)?;
     crate::imports::release_held_states(&tx)?;
     prune_orphans(&tx)?;
@@ -85,24 +85,28 @@ pub fn sync_batch(pool: &Pool, batch: &ScanBatch) -> Result<usize> {
     Ok(outside_items + items.written + files)
 }
 
-/// Ends a sync that [`sync_batch`] wrote, for a walk that read EVERY folder:
+/// What a walk that reached every folder found, for [`finish_sync`]. `unread`
+/// names the libraries whose folders it could not read whole: they keep every
+/// file. The shows in `settled` leave the unsettled list.
+pub struct WalkEnd<'a> {
+    pub libraries: &'a [Library],
+    pub items: &'a [MediaItem],
+    pub unread: &'a HashSet<String>,
+    pub settled: &'a HashSet<String>,
+}
+
+/// Ends a sync that [`sync_batch`] wrote, for a walk that reached EVERY folder:
 /// the libraries take their final rows, and whatever the walk did not find is
-/// removed. A walk that stopped early must not call it. The shows in `settled`
-/// leave the unsettled list; one that joined it while the walk ran stays for
-/// the next walk.
-pub fn finish_sync(
-    pool: &Pool,
-    libraries: &[Library],
-    items: &[MediaItem],
-    settled: &HashSet<String>,
-) -> Result<()> {
+/// removed. A walk that stopped early must not call it. A show that joined the
+/// unsettled list while the walk ran stays for the next walk.
+pub fn finish_sync(pool: &Pool, walk: &WalkEnd) -> Result<()> {
     let mut conn = pool.get()?;
     let tx = conn.transaction()?;
 
-    sync_libraries(&tx, libraries)?;
-    delete_gone_files(&tx, items)?;
+    sync_libraries(&tx, walk.libraries, walk.unread)?;
+    delete_gone_files(&tx, walk.items, walk.unread)?;
     prune_orphans(&tx)?;
-    settle_shows(&tx, settled)?;
+    settle_shows(&tx, walk.settled)?;
 
     tx.commit()?;
     settle(pool)
@@ -117,6 +121,7 @@ fn settle(pool: &Pool) -> Result<()> {
 const KEEP_STORED_LIBRARY: &str = "NOTHING";
 const TAKE_SCANNED_LIBRARY: &str =
     "UPDATE SET name=excluded.name, kind=excluded.kind, path=excluded.path";
+const KEEP_STORED_KIND: &str = "UPDATE SET name=excluded.name, path=excluded.path";
 
 fn write_library(tx: &rusqlite::Transaction, on_conflict: &str, l: &Library) -> Result<usize> {
     let mut stmt = tx.prepare_cached(&format!(
@@ -132,9 +137,18 @@ fn write_library(tx: &rusqlite::Transaction, on_conflict: &str, l: &Library) -> 
     ])?)
 }
 
-fn sync_libraries(tx: &rusqlite::Transaction, libraries: &[Library]) -> Result<()> {
+fn sync_libraries(
+    tx: &rusqlite::Transaction,
+    libraries: &[Library],
+    unread: &HashSet<String>,
+) -> Result<()> {
     for l in libraries {
-        write_library(tx, TAKE_SCANNED_LIBRARY, l)?;
+        let on_conflict = if unread.contains(&l.id) {
+            KEEP_STORED_KIND
+        } else {
+            TAKE_SCANNED_LIBRARY
+        };
+        write_library(tx, on_conflict, l)?;
     }
     let keep: Vec<&str> = libraries.iter().map(|l| l.id.as_str()).collect();
     delete_unlisted_libraries(tx, &keep)?;

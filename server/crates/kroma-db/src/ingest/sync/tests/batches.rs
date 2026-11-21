@@ -173,9 +173,42 @@ fn a_stored_library_keeps_its_row_until_the_walk_ends() {
     assert_eq!(films_so_far, 0);
     assert_eq!(stored_kind(&p, "lib"), "mixed");
 
-    finish_sync(&p, &[lib("lib")], &[dune()], &HashSet::new()).unwrap();
+    finish_sync(
+        &p,
+        &WalkEnd {
+            libraries: &[lib("lib")],
+            items: &[dune()],
+            unread: &HashSet::new(),
+            settled: &HashSet::new(),
+        },
+    )
+    .unwrap();
 
     assert_eq!(stored_kind(&p, "lib"), "movies");
+}
+
+#[test]
+fn a_library_the_walk_did_not_read_whole_keeps_its_stored_kind() {
+    let p = pool();
+    let mixed = Library {
+        kind: LibraryKind::Mixed,
+        ..lib("lib")
+    };
+    write_batch(&p, &mixed, &[dune()]).unwrap();
+    let unread = HashSet::from(["lib".to_string()]);
+
+    finish_sync(
+        &p,
+        &WalkEnd {
+            libraries: &[lib("lib")],
+            items: &[dune()],
+            unread: &unread,
+            settled: &HashSet::new(),
+        },
+    )
+    .unwrap();
+
+    assert_eq!(stored_kind(&p, "lib"), "mixed");
 }
 
 #[test]
@@ -192,7 +225,16 @@ fn finishing_a_walk_removes_the_files_titles_and_libraries_it_did_not_find() {
     .unwrap();
     write_batch(&p, &lib("lib"), &[dune()]).unwrap();
 
-    finish_sync(&p, &[lib("lib")], &[dune()], &HashSet::new()).unwrap();
+    finish_sync(
+        &p,
+        &WalkEnd {
+            libraries: &[lib("lib")],
+            items: &[dune()],
+            unread: &HashSet::new(),
+            settled: &HashSet::new(),
+        },
+    )
+    .unwrap();
 
     assert_eq!(crate::counts(&p).unwrap(), (1, 1, 0));
     assert!(crate::get_item(&p, "m1").unwrap().is_some());
