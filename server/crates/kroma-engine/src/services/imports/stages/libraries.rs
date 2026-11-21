@@ -35,7 +35,7 @@ pub(super) fn place(importing: &Importing<'_>, kept: &[LibraryRow<'_>]) -> Resul
         .collect();
     if sources.changed {
         settings::set_library_defs(&state.settings, &state.db, &sources.defs);
-        let _ = state.jobs.trigger(state.clone(), SCAN, "import");
+        let _ = state.jobs.trigger_after(state.clone(), SCAN, "import");
     }
     Ok(outcomes)
 }
