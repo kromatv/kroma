@@ -1,5 +1,6 @@
 import { sizedImageUrl } from '@kromatv/core';
 import {
+  AgeRating,
   ArtScrim,
   Box,
   Button,
@@ -13,7 +14,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import { featuredMetaLine } from '#mobile/lib/featured';
+import { featuredAgeRating, featuredMetaLine } from '#mobile/lib/featured';
 import type { HomeEntry } from '#mobile/lib/home-sections';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters, useIsWide } from '#mobile/lib/layout';
@@ -82,6 +83,7 @@ export function HeroBillboard({
     Math.round(height * HEIGHT_SHARE),
   );
   const meta = featuredMetaLine(t, entry);
+  const ageRating = featuredAgeRating(entry);
 
   return (
     <Box style={[s.wrap, { width: w, height: h }]}>
@@ -98,11 +100,14 @@ export function HeroBillboard({
         <Text lines={2} style={s.title}>
           {title}
         </Text>
-        {meta ? (
-          <Text lines={1} style={s.meta}>
-            {meta}
-          </Text>
-        ) : null}
+        <Box style={s.facts}>
+          <AgeRating rating={ageRating} tone="art" />
+          {meta ? (
+            <Text lines={1} style={s.meta}>
+              {meta}
+            </Text>
+          ) : null}
+        </Box>
         <Box style={s.buttons}>
           <Button
             icon="player-play-filled"
@@ -167,7 +172,8 @@ const sDefinition = styles({
     color: 'white',
     fontSize: textRoles.subheadingTv.size,
   },
-  meta: { ...type.caption, color: 'white/82' },
+  meta: { ...type.caption, color: 'white/82', shrink: 1 },
+  facts: { row: true, align: 'center', self: 'center', gap: 8, maxW: '100%' },
   buttons: { row: true, align: 'center', self: 'center', gap: 14, w: '100%', maxW: 480, mt: 6 },
   play: { flex: true },
   listAction: { align: 'center', gap: 3, minW: 64, py: 4 },

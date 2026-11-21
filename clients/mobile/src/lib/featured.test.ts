@@ -1,7 +1,7 @@
 import type { ContinueItem, MediaItem, Metadata, SectionItem, Show } from '@kromatv/client/media';
 import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
-import { featuredMetaLine, featuredProgress } from './featured';
+import { featuredAgeRating, featuredMetaLine, featuredProgress } from './featured';
 
 const t = ((key: string) => key) as Translate;
 
@@ -43,16 +43,20 @@ describe('featuredMetaLine', () => {
     expect(featuredMetaLine(t, movie())).toBe('1995 · 2h57 · genre.action · genre.thriller');
   });
 
-  it('prints the age rating between the runtime and the genres', () => {
-    const entry = movie({ metadata: meta({ certification: 'PG-13' }) });
+  it('leaves the age rating to its badge, for a film and for a series', () => {
+    const film = movie({ metadata: meta({ certification: 'PG-13' }) });
+    const series = show({ metadata: meta({ genres: ['Drama'], certification: 'TV-MA' }) });
 
-    expect(featuredMetaLine(t, entry)).toBe('1995 · 2h57 · PG-13 · genre.action · genre.thriller');
+    expect(featuredMetaLine(t, film)).toBe('1995 · 2h57 · genre.action · genre.thriller');
+    expect(featuredMetaLine(t, series)).toBe('2022 · genre.drama');
   });
 
-  it('prints the age rating a series carries too', () => {
-    const entry = show({ metadata: meta({ genres: ['Drama'], certification: 'TV-MA' }) });
+  it('hands the badge the age rating of a film and of a series', () => {
+    const rating = { label: '12', country: 'FR', borrowed: false };
 
-    expect(featuredMetaLine(t, entry)).toBe('2022 · TV-MA · genre.drama');
+    expect(featuredAgeRating(movie({ metadata: meta({ ageRating: rating }) }))).toEqual(rating);
+    expect(featuredAgeRating(show({ metadata: meta({ ageRating: rating }) }))).toEqual(rating);
+    expect(featuredAgeRating(movie())).toBeUndefined();
   });
 
   it('leaves out the runtime a series has no single one of', () => {

@@ -3,6 +3,7 @@ import { formatRuntime, genreLabels, posterColors, synopsisLead } from '@kromatv
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
+  AgeRating,
   Badge,
   Box,
   Button,
@@ -137,6 +138,7 @@ export function Hero({ slides, onPlay, onSelectEntry, maskInset }: Readonly<Hero
               </Text>
             </>
           ) : null}
+          <AgeRating rating={meta?.ageRating} size="tv" />
           <Text variant="labelTv" color="textMuted">
             {heroLine(t, entry)}
           </Text>

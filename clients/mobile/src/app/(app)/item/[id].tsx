@@ -5,7 +5,7 @@ import { ItemId, type MediaItem, type ProgressEntry } from '@kromatv/client/medi
 import { episodeTag, formatRuntime, qualityBadge, sizedImageUrl } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { formatTimecode } from '@kromatv/ui/intl';
-import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { AgeRating, Box, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useWindowDimensions } from 'react-native';
@@ -68,6 +68,7 @@ function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
       {runtime ? <Text style={s.metaText}>{runtime}</Text> : null}
       {badge ? <MetaBadge>{badge}</MetaBadge> : null}
       {rating ? <Text style={s.rating}>★ {rating.toFixed(1)}</Text> : null}
+      <AgeRating rating={media.metadata?.ageRating} />
     </>
   );
 }

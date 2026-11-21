@@ -4,7 +4,15 @@
 
 import { ShowId } from '@kromatv/client/media';
 import { sizedImageUrl } from '@kromatv/core';
-import { Box, Button, styles, Text, typeSpec as textRoles, useStyles } from '@kromatv/ui/kit';
+import {
+  AgeRating,
+  Box,
+  Button,
+  styles,
+  Text,
+  typeSpec as textRoles,
+  useStyles,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -104,6 +112,7 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
             {show.metadata?.rating ? (
               <Text style={s.rating}>★ {show.metadata.rating.toFixed(1)}</Text>
             ) : null}
+            <AgeRating rating={show.metadata?.ageRating} />
             {show.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
           </>
         }

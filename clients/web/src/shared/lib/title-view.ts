@@ -5,6 +5,7 @@ import type { KromaClient } from '@kromatv/client';
 import { hasPermission, type User } from '@kromatv/client/accounts';
 import type { DiscoverDetail, DiscoverEntry, DiscoverEpisode } from '@kromatv/client/discovery';
 import type {
+  AgeRating,
   CastMember,
   CrewMember,
   ListedEpisode,
@@ -56,6 +57,7 @@ export interface TitleView {
   title: string;
   year: number | null;
   rating: number | null;
+  ageRating: AgeRating | null;
   overview: string | null;
   tagline: string | null;
   genres: string[];
@@ -125,6 +127,7 @@ export function buildTitleView(
       title: item.title,
       year: item.year ?? null,
       rating: meta?.rating ?? null,
+      ageRating: meta?.ageRating ?? null,
       overview: meta?.overview ?? null,
       tagline: meta?.tagline ?? null,
       genres: genreLabels(t, meta),
@@ -167,6 +170,7 @@ export function buildTitleView(
       title: show.title,
       year: show.year ?? null,
       rating: meta?.rating ?? null,
+      ageRating: meta?.ageRating ?? null,
       overview: meta?.overview ?? null,
       tagline: meta?.tagline ?? null,
       genres: genreLabels(t, meta),
@@ -204,6 +208,7 @@ export function buildTitleView(
     title: d.title,
     year: d.year,
     rating: d.rating,
+    ageRating: null,
     overview: d.overview,
     tagline: d.tagline,
     genres: genreLabels(t, d),

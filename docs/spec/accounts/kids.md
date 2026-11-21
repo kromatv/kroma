@@ -38,7 +38,7 @@ the United States, then the first other country, in alphabetical order, that rat
 
 **ACCT-107** (SHIPPED) - A title no country rated shows no badge.
 
-**ACCT-108** (AGREED) - The badge is on a title's detail page, on the home's hero and on
+**ACCT-108** (SHIPPED) - The badge is on a title's detail page, on the home's hero and on
 the phone's billboard, on web, television, phone and desktop, and it looks the same on each.
 
 ## A maturity ceiling

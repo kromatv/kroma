@@ -73,6 +73,7 @@ export function TvShowDetail() {
       title={show.title}
       backdrop={backdrop}
       rating={meta?.rating}
+      ageRating={meta?.ageRating}
       meta={metaLong}
       badge={qualityBadgeForVideo(show.video)}
       overview={meta?.overview}
