@@ -2,8 +2,19 @@ import { apiErrorText } from '@kromatv/client';
 import type { BackupSchedule, BackupScheduleChange } from '@kromatv/client/admin';
 import { type JobRun, JobKey } from '@kromatv/client/jobs';
 import { useFormat, useT } from '@kromatv/ui';
-import { Box, Button, Callout, ListRow, NumberField, Section, Switch, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  Callout,
+  type IconName,
+  ListRow,
+  NumberField,
+  Section,
+  Switch,
+  Text,
+} from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { type Refusal, useBackupSchedule } from '#web/shared/lib/use-backup-schedule.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { FolderField } from '#web/shared/ui/folder-field.component';
@@ -18,42 +29,47 @@ interface RowsProps {
   onChange: (patch: BackupScheduleChange) => void;
 }
 
-function KeepRow({ schedule, onChange }: Readonly<RowsProps>) {
-  const t = useT();
+interface SettingRowProps {
+  icon: IconName;
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}
+
+function SettingRow({ icon, label, hint, children }: Readonly<SettingRowProps>) {
   return (
-    <ListRow.Root icon="stack-2" chevron={false}>
-      <ListRow.Label>{t('admin.backupScheduleKeep')}</ListRow.Label>
-      <ListRow.Trailing>
-        <Box w={KEEP_WIDTH}>
-          <NumberField
-            label={t('admin.backupScheduleKeep')}
-            value={schedule.keep}
-            min={1}
-            max={MAX_KEEP}
-            onValueChange={(keep) => onChange({ keep })}
-          />
-        </Box>
-      </ListRow.Trailing>
+    <ListRow.Root icon={icon} chevron={false}>
+      <ListRow.Label>{label}</ListRow.Label>
+      {hint ? <ListRow.Hint>{hint}</ListRow.Hint> : null}
+      <ListRow.Trailing>{children}</ListRow.Trailing>
     </ListRow.Root>
   );
 }
 
 function ScheduleRows({ schedule, onChange }: Readonly<RowsProps>) {
   const t = useT();
+  const enabled = t('admin.backupScheduleSwitch');
+  const keep = t('admin.backupScheduleKeep');
   return (
     <ListRow.Group>
-      <ListRow.Root icon="archive" chevron={false}>
-        <ListRow.Label>{t('admin.backupScheduleSwitch')}</ListRow.Label>
-        <ListRow.Hint>{t('admin.backupScheduleHint')}</ListRow.Hint>
-        <ListRow.Trailing>
-          <Switch
-            checked={schedule.enabled}
-            onCheckedChange={(enabled) => onChange({ enabled })}
-            label={t('admin.backupScheduleSwitch')}
+      <SettingRow icon="archive" label={enabled} hint={t('admin.backupScheduleHint')}>
+        <Switch
+          checked={schedule.enabled}
+          onCheckedChange={(on) => onChange({ enabled: on })}
+          label={enabled}
+        />
+      </SettingRow>
+      <SettingRow icon="stack-2" label={keep}>
+        <Box w={KEEP_WIDTH}>
+          <NumberField
+            label={keep}
+            value={schedule.keep}
+            min={1}
+            max={MAX_KEEP}
+            onValueChange={(count) => onChange({ keep: count })}
           />
-        </ListRow.Trailing>
-      </ListRow.Root>
-      <KeepRow schedule={schedule} onChange={onChange} />
+        </Box>
+      </SettingRow>
     </ListRow.Group>
   );
 }
