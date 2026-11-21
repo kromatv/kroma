@@ -70,7 +70,7 @@ fn config_text(api: &Api, link: &str, options: &AddOptions<'_>) -> String {
         format!("url = {}", quoted(&url)),
         format!("user = {}", quoted(api.credentials())),
         "request = \"POST\"".to_string(),
-        format!("data-binary = {}", quoted(link)),
+        format!("data-raw = {}", quoted(link)),
         format!(
             "header = {}",
             quoted(&format!("{TIMEOUT_HEADER}: {rqbit_budget_ms}"))
@@ -78,6 +78,7 @@ fn config_text(api: &Api, link: &str, options: &AddOptions<'_>) -> String {
         format!("max-time = {}", BUDGET.as_secs()),
         "silent".to_string(),
         "show-error".to_string(),
+        "globoff".to_string(),
         format!(
             "write-out = {}",
             quoted(&format!("{STATUS_MARK}%{{http_code}}"))
@@ -258,5 +259,28 @@ mod tests {
         assert!(text.contains("user = \"kroma:hunter2\""), "{text}");
         assert!(text.contains("write-out = "), "{text}");
         assert!(text.contains("x-req-timeout-ms: 125000"), "{text}");
+    }
+
+    #[test]
+    fn a_link_is_sent_as_written_and_never_read_as_a_file() {
+        let api = Api::new(1234, "pw");
+
+        let text = config_text(&api, "@/some/path", &AddOptions::default());
+
+        assert!(
+            text.lines()
+                .any(|line| line == "data-raw = \"@/some/path\""),
+            "{text}"
+        );
+        assert!(!text.contains("data-binary"), "{text}");
+    }
+
+    #[test]
+    fn the_rqbit_url_is_never_globbed() {
+        let api = Api::new(1234, "pw");
+
+        let text = config_text(&api, "magnet:?xt=urn:btih:ab", &AddOptions::default());
+
+        assert!(text.lines().any(|line| line == "globoff"), "{text}");
     }
 }
