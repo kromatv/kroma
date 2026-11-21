@@ -765,7 +765,8 @@ An update that adds a key to `settings.write` asks for more, like one that widen
 install plan.
 
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
-  The backend enforces it, and the Store installs missing ones automatically.
+  The backend enforces it, and the Store's install plan installs missing ones.
+  An automatic or batch update that would bring one waits for the operator.
 - **`optionalDependencies`** is ordered first when present, not required.
 - **`consumes`** is a POINT dependency, satisfied by any module whose
   `contributes` answers it. Prefer it to a module id: it says what has to happen

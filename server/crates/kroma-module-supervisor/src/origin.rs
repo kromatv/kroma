@@ -68,7 +68,8 @@ pub enum Accept<'a> {
     /// Nobody is looking, so the bundle may ask for no more than what is
     /// installed: no wider `permissions`, no key in `settings.write` the installed
     /// version did not declare, and the same `permissions` as its catalog row when
-    /// it has one. Refused with [`AsksForMore`].
+    /// it has one. A module that is not installed yet asks for everything it
+    /// declares. Refused with [`AsksForMore`].
     NoWider(Option<&'a Permissions>),
 }
 

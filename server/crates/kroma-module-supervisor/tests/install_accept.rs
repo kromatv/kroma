@@ -43,6 +43,25 @@ fn an_unattended_update_may_not_ask_for_more_than_is_installed() {
 }
 
 #[test]
+fn an_unattended_install_of_a_module_that_is_not_installed_waits_for_the_operator() {
+    let scratch = temp_modules_dir("accept-not-installed");
+    let sup = supervisor(scratch.path(), "9.9.9");
+
+    let installed = sup.install(
+        &declaring("1.0.0", WIDE),
+        None,
+        offered(Accept::NoWider(None)),
+    );
+
+    let refused = installed.unwrap_err();
+    assert!(
+        refused.downcast_ref::<AsksForMore>().is_some(),
+        "{refused:#}"
+    );
+    assert!(sup.installed_manifests().is_empty());
+}
+
+#[test]
 fn an_unattended_update_that_asks_for_the_same_goes_through() {
     let scratch = temp_modules_dir("accept-same");
     let sup = supervisor(scratch.path(), "9.9.9");

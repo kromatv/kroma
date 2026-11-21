@@ -15,7 +15,7 @@ use serde_json::{json, Value};
 
 use super::catalog::{self, CatalogModule};
 use super::events::Op;
-use super::plan::{plan_brief, root_list, Planned, Planner};
+use super::plan::{entry_brief, first_new, plan_brief, root_list, Planned, Planner};
 use super::registries;
 use crate::state::SharedState;
 
@@ -111,6 +111,14 @@ async fn run_plan(
     Ok(installed)
 }
 
+async fn run_unattended(sup: &Arc<Supervisor>, op: &Op, plan: &[Planned<'_>]) -> Result<()> {
+    if let Some(id) = first_new(plan) {
+        tracing::info!(module = %id, "an update would install this module, so it waits for an operator to accept it from the install plan");
+        return Err(AsksForMore { id: id.to_string() }.into());
+    }
+    run_plan(sup, op, plan, Unattended::Yes).await.map(|_| ())
+}
+
 /// `(artifact_url, bytes)` for `entry`'s component, downloaded only
 /// once the transport and the checksum are the ones a first install insists on.
 ///
@@ -157,17 +165,17 @@ async fn verified_artifact(
 /// compared against is the published one, and a module no configured registry
 /// carries any more is refused rather than fetched unchecked.
 pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> Result<Value> {
+    let current = sup
+        .installed_manifests()
+        .into_iter()
+        .find(|m| m.id == id)
+        .map(|m| m.version)
+        .ok_or_else(|| anyhow!("'{id}' is not installed or its manifest is unreadable"))?;
     let modules = registries::fetch_merged(state, sup).await?;
     let entry = modules.iter().find(|m| m.id == id).ok_or_else(|| {
         anyhow!("'{id}' is not in any configured registry, so it cannot be verified")
     })?;
-    let installed = kroma_module_kernel::manifests(state)
-        .into_iter()
-        .find(|m| m.id == id)
-        .map(|m| m.version);
-    if let Some(current) =
-        installed.filter(|current| kroma_module_manifest::is_newer(current, &entry.version))
-    {
+    if kroma_module_manifest::is_newer(&current, &entry.version) {
         bail!(
             "'{id}' {current} is installed, and the newest version this server runs is {}; reinstalling would downgrade it",
             entry.version
@@ -215,7 +223,7 @@ pub struct FailedUpdate {
 }
 
 /// `POST /store/update`'s wire shape.
-#[derive(Serialize)]
+#[derive(Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateOutcome {
     pub updated: Vec<UpdatedModule>,
@@ -264,11 +272,7 @@ pub async fn update_all(
     let modules = registries::fetch_merged(state, sup).await?;
     let by_id: std::collections::HashMap<&str, &CatalogModule> =
         modules.iter().map(|m| (m.id.as_str(), m)).collect();
-    let mut outcome = UpdateOutcome {
-        updated: Vec::new(),
-        failed: Vec::new(),
-        needs_consent: Vec::new(),
-    };
+    let mut outcome = UpdateOutcome::default();
     let mut targets: Vec<(&CatalogModule, String)> = Vec::new();
     let installed = sup.installed_manifests();
     for manifest in &installed {
@@ -306,19 +310,14 @@ pub async fn update_all(
     if targets.is_empty() {
         return Ok(outcome);
     }
-    let brief = Value::Array(
-        targets
-            .iter()
-            .map(|(e, _)| super::plan::entry_brief(e))
-            .collect(),
-    );
+    let brief = Value::Array(targets.iter().map(|(e, _)| entry_brief(e)).collect());
     let op = Op::begin(state, "update", "", brief);
     for (entry, from) in targets {
         // Re-plan per module: an earlier update may have pulled a dependency
         // this one no longer needs to.
         let mut planner = Planner::new(state, &modules);
         let result = match planner.roots(&[entry.id.as_str()]) {
-            Ok(()) => run_plan(sup, &op, &planner.plan, Unattended::Yes).await.map(|_| ()),
+            Ok(()) => run_unattended(sup, &op, &planner.plan).await,
             Err(e) => Err(e),
         };
         match result {
@@ -365,9 +364,13 @@ pub async fn auto_update(state: &SharedState, sup: &Arc<Supervisor>) -> Vec<Upda
 
 #[cfg(test)]
 mod tests {
-    use super::{stranded_dependents, takes_update};
+    use super::{reinstall, run_unattended, stranded_dependents, takes_update};
     use crate::api::admin::store::catalog::{self, Artifact, CatalogModule};
+    use crate::api::admin::store::events::Op;
+    use crate::api::admin::store::plan::Planner;
+    use crate::api::test_support::test_app;
     use kroma_module_manifest::{Dependency, ModuleManifest};
+    use kroma_module_supervisor::AsksForMore;
 
     fn offered(version: &str) -> CatalogModule {
         CatalogModule {
@@ -448,6 +451,33 @@ mod tests {
         let stranded = stranded_dependents(&installed, &|_| true, "tv.kroma.torrents", "9.9.9");
 
         assert!(stranded.is_empty());
+    }
+
+    #[tokio::test]
+    async fn an_unattended_plan_that_brings_a_module_this_server_lacks_installs_nothing() {
+        let t = test_app();
+        let modules = [offered("0.7.0")];
+        let mut planner = Planner::new(&t.state, &modules);
+        planner.roots(&["tv.kroma.torrents"]).unwrap();
+        let op = Op::begin(&t.state, "update", "", serde_json::Value::Null);
+
+        let held = run_unattended(&t.supervisor, &op, &planner.plan).await;
+
+        let held = held.unwrap_err();
+        assert!(held.downcast_ref::<AsksForMore>().is_some(), "{held:#}");
+        assert!(t.supervisor.installed_manifests().is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_module_that_is_not_installed_is_refused_before_anything_is_fetched() {
+        let t = test_app();
+
+        let refused = reinstall(&t.state, &t.supervisor, "tv.kroma.absent").await;
+
+        assert_eq!(
+            refused.unwrap_err().to_string(),
+            "'tv.kroma.absent' is not installed or its manifest is unreadable"
+        );
     }
 
     #[test]
