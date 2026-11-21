@@ -95,6 +95,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Port forwarding | redirection de port | ouverture de port |
 | Supervise (a process) | surveiller | superviser |
 | Owner | Propriétaire | Possesseur |
+| Seeding (a torrent) | En partage | Seed |
+| The swarm | les pairs | le swarm |
+| 1-50 of 200 (a page) | 1 à 50 sur 200 | 1-50 sur 200 |
 | Required (a form field) | Ce champ est obligatoire | Ce champ est requis |
 | Use at least 8 characters | 8 caractères minimum | Utilisez au moins 8 caractères |
 | Admin (the area) | l'administration | l'admin |
