@@ -220,6 +220,10 @@
       "broke": 1,
       "changed": 1
     },
+    "setup": {
+      "broke": 26,
+      "changed": 26
+    },
     "shows": {
       "broke": 1,
       "changed": 1
@@ -257,5 +261,5 @@
       "changed": 1
     }
   },
-  "version": 25
+  "version": 26
 }

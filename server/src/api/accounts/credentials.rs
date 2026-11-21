@@ -124,6 +124,7 @@ pub async fn register(
             let owner = db::create_owner_if_first(&pool, &owner_email, &owner_username, &hash)?;
             if let Some(owner) = &owner {
                 db::set_whats_new_seen(&pool, &owner.id, crate::VERSION)?;
+                db::setup::lead_setup(&pool, &owner.id)?;
             }
             Ok(owner)
         })

@@ -2185,7 +2185,7 @@
     "space": "admin",
     "number": 121,
     "status": "AGREED",
-    "text": "A setup that ended before its last step leaves a checklist on the",
+    "text": "A setup that ended leaves a checklist on the admin dashboard, one",
     "file": "docs/spec/admin/setup.md",
     "line": 133
   },
@@ -2197,7 +2197,7 @@
     "status": "AGREED",
     "text": "A line leaves the checklist when its step is done, in the setup or",
     "file": "docs/spec/admin/setup.md",
-    "line": 136
+    "line": 137
   },
   {
     "id": "ADMIN-123",
@@ -2207,7 +2207,7 @@
     "status": "AGREED",
     "text": "The owner can dismiss any line, and a dismissed line does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 147
+    "line": 152
   },
   {
     "id": "ADMIN-124",
@@ -2217,7 +2217,7 @@
     "status": "AGREED",
     "text": "When no line is left the checklist is gone, and it does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 150
+    "line": 155
   },
   {
     "id": "ADMIN-125",
@@ -2227,7 +2227,7 @@
     "status": "AGREED",
     "text": "The whole setup works on a phone held upright. Nothing scrolls",
     "file": "docs/spec/admin/setup.md",
-    "line": 157
+    "line": 162
   },
   {
     "id": "ADMIN-126",
@@ -2237,7 +2237,7 @@
     "status": "AGREED",
     "text": "The whole setup works by keyboard alone, from the first screen to",
     "file": "docs/spec/admin/setup.md",
-    "line": 160
+    "line": 165
   },
   {
     "id": "ADMIN-127",
@@ -2247,7 +2247,7 @@
     "status": "AGREED",
     "text": "No step sends the owner to documentation. What a step needs to say,",
     "file": "docs/spec/admin/setup.md",
-    "line": 163
+    "line": 168
   },
   {
     "id": "ADMIN-128",
@@ -2777,7 +2777,7 @@
     "status": "AGREED",
     "text": "The page of the setup never scrolls. A step with more than its frame",
     "file": "docs/spec/admin/setup.md",
-    "line": 166
+    "line": 171
   },
   {
     "id": "ADMIN-181",
@@ -2788,6 +2788,16 @@
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
     "line": 191
+  },
+  {
+    "id": "ADMIN-182",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 182,
+    "status": "AGREED",
+    "text": "A step stays done once the server has seen it done. A line that",
+    "file": "docs/spec/admin/setup.md",
+    "line": 148
   },
   {
     "id": "BROWSE-1",
