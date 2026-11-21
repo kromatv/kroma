@@ -1,10 +1,9 @@
 import type { Importer } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Row, Spinner, Text } from '@kromatv/ui/kit';
+import { GuidedFlow, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { ImportSignInElsewhere } from '#web/features/setup/import-sign-in-elsewhere.component';
 import { ImportSignInForm } from '#web/features/setup/import-sign-in-form.component';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
@@ -32,7 +31,7 @@ function Starting({ importer, onBack }: Readonly<ConnectProps>) {
   const install = useInstalled(importer);
   return (
     <>
-      <StepBody>
+      <GuidedFlow.Panel>
         {install.error ? (
           <StepFailure error={t('setup.importInstallFailed')} />
         ) : (
@@ -41,8 +40,10 @@ function Starting({ importer, onBack }: Readonly<ConnectProps>) {
             <Text color="textMuted">{t('setup.importInstalling')}</Text>
           </Row>
         )}
-      </StepBody>
-      <StepActions onBack={onBack}>{null}</StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+      </GuidedFlow.Footer>
     </>
   );
 }
@@ -70,7 +71,10 @@ export function ImportConnect({ importer, onBack }: Readonly<ConnectProps>) {
       : t('setup.importConnectElsewhere', { name });
   return (
     <>
-      <StepHeading title={t('setup.importConnectTitle', { name })} sub={sub} />
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.importConnectTitle', { name })}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{sub}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
       <SignIn importer={importer} onBack={onBack} />
     </>
   );

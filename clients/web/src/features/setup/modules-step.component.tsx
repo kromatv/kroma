@@ -1,7 +1,7 @@
 import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
-  Button,
+  GuidedFlow,
   Icon,
   ListRow,
   Row,
@@ -23,7 +23,6 @@ import {
   pickedBytes,
 } from '#web/features/setup/module-offers';
 import { useSetupPicks } from '#web/features/setup/setup-picks.component';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { Image } from '#web/shared/ui';
 
@@ -222,6 +221,26 @@ function ChoiceSummary({ all }: Readonly<{ all: readonly Offer[] }>) {
   );
 }
 
+interface ModulesActionsProps {
+  all: readonly Offer[];
+  onBack: () => void;
+  onContinue: () => void;
+}
+
+function ModulesActions({ all, onBack, onContinue }: Readonly<ModulesActionsProps>) {
+  return (
+    <GuidedFlow.Footer>
+      <GuidedFlow.Hint>
+        <ChoiceSummary all={all} />
+      </GuidedFlow.Hint>
+      <GuidedFlow.Previous onPress={onBack} />
+      <GuidedFlow.Actions>
+        <GuidedFlow.Next onPress={onContinue} />
+      </GuidedFlow.Actions>
+    </GuidedFlow.Footer>
+  );
+}
+
 /** What else the server can do. Each module is offered in its own words, with
  * its size and what installs with it. A module the server holds is selected,
  * and no other is. A choice is only a choice: the owner changes it until they
@@ -235,21 +254,17 @@ export function ModulesStep({
   const all = data ? offers(data) : [];
   return (
     <>
-      <StepHeading title={t('setup.modulesTitle')} sub={t('setup.modulesSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.modulesTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.modulesSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         {isPending ? <OffersLoading /> : <OfferSections all={all} />}
         {!isPending && all.length === 0 ? (
           <Text color="textMuted">{t('setup.modulesNone')}</Text>
         ) : null}
-      </StepBody>
-      <StepActions onBack={onBack} note={<ChoiceSummary all={all} />}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <ModulesActions all={all} onBack={onBack} onContinue={onContinue} />
     </>
   );
 }

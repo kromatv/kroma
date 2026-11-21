@@ -1,7 +1,6 @@
 import { useT } from '@kromatv/ui';
-import { Button, ListRow, Switch } from '@kromatv/ui/kit';
+import { GuidedFlow, ListRow, Switch } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 interface CountedProps {
@@ -49,19 +48,23 @@ export function PrivacyStep({
   const { counted, setCounted, busy, confirm } = useCounted(onContinue);
   return (
     <>
-      <StepHeading title={t('setup.privacyTitle')} sub={t('setup.privacySub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.privacyTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.privacySub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <CountedSwitch counted={counted} onCounted={setCounted} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.privacyConfirm')}
-          iconRight="arrow-right"
-          loading={busy}
-          onPress={() => void confirm()}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next
+            label={t('setup.privacyConfirm')}
+            loading={busy}
+            onPress={() => void confirm()}
+          />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

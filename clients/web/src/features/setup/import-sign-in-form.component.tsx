@@ -1,11 +1,10 @@
 import type { Importer, ImportSignIn } from '@kromatv/client/importers';
 import { FieldForm } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout } from '@kromatv/ui/kit';
+import { Box, Button, Callout, GuidedFlow } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { ImportRefused } from '#web/features/setup/import-refused.component';
 import { ImporterIcon } from '#web/features/setup/importer-icon.component';
-import { StepActions, StepBody } from '#web/features/setup/setup-shell.component';
 import { openPage, useImportSignIn } from '#web/features/setup/use-import-sign-in.hook';
 
 interface FormProps {
@@ -44,23 +43,25 @@ export function ImportSignInForm({ importer, onBack }: Readonly<FormProps>) {
   const type = (key: string, value: string) => setValues((before) => ({ ...before, [key]: value }));
   return (
     <>
-      <StepBody>
+      <GuidedFlow.Panel>
         <ImporterIcon importer={importer} size={64} />
         <Box gap={16}>
           <FieldForm fields={importer.fields} values={values} onChange={type} />
         </Box>
         <Waiting answer={answer} />
         <ImportRefused answer={answer} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.importSignIn')}
-          loading={busy}
-          disabled={missing}
-          onPress={() => void connect(values)}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next
+            label={t('setup.importSignIn')}
+            loading={busy}
+            disabled={missing}
+            onPress={() => void connect(values)}
+          />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

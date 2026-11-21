@@ -5,7 +5,7 @@ import { Box } from '#ui/components/atoms/box';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { ChoiceList } from './choice-list.component';
-import { QUALITIES, LIBRARIES, Single, Multiple, WithActions, Composed } from './choice-list.fixtures';
+import { QUALITIES, LIBRARIES, Single, Multiple, WithActions, Composed, Cards } from './choice-list.fixtures';
 
 export const story = defineStory({
   group: 'Input',
@@ -60,6 +60,12 @@ A list whose rows ARE the control: pick one (`single`, radios) or pick several (
       <Composed />
     </Box>
   </Box>
+</Scene>
+
+<Scene name="Chosen as a card">
+  On a `surface`, each choice is a card of its own and the chosen one wears the accent, which is how a guided flow asks its one question. A `<ChoiceList.Media>` leads the card: `name` for a glyph, children for a logo or a poster. With one, the indicator moves to the end of the card.
+
+  <Cards />
 </Scene>
 
 <Do>
