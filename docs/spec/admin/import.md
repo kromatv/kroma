@@ -112,7 +112,11 @@ library is not the absence of a grant, which would show everything.
 
 **ADMIN-150** (AGREED) - A user whose watch state the other server gives only against that
 user's own PIN is listed on the review screen with a field for it. Without the PIN that
-user comes over with an account and libraries, and no watch state.
+user comes over with an account and libraries, and no watch state. A PIN the other server
+does not take is said beside the field.
+
+KROMA passes the PIN to the importer once and keeps it nowhere. What the PIN opened is kept
+with the sign-in (ADMIN-132), so a later import does not ask for it again.
 
 ## Watch state
 

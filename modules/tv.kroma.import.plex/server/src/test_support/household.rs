@@ -44,6 +44,8 @@ pub(crate) struct Household {
     pub ben_token: String,
     pub chloe_token: String,
     pub dan_token: String,
+    pub dan_account_token: String,
+    pub dan_server_token: String,
 }
 
 impl Household {
@@ -60,6 +62,8 @@ impl Household {
             ben_token: mint("ben"),
             chloe_token: mint("chloe"),
             dan_token: mint("dan"),
+            dan_account_token: mint("dan-account"),
+            dan_server_token: mint("dan-server"),
         };
         home.record_account();
         home.record_server(LOCAL);
@@ -108,13 +112,15 @@ impl Household {
         }
     }
 
-    fn tokens(&self) -> Vec<(&'static str, &str)> {
+    pub(crate) fn tokens(&self) -> Vec<(&'static str, &str)> {
         vec![
             ("machine", MACHINE),
             ("owner_server_token", &self.owner_token),
             ("ben_token", &self.ben_token),
             ("chloe_token", &self.chloe_token),
             ("dan_token", &self.dan_token),
+            ("dan_account_token", &self.dan_account_token),
+            ("dan_server_token", &self.dan_server_token),
             ("friend_server_token", "not-used"),
             ("player_token", "not-used"),
         ]

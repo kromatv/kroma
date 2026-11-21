@@ -264,6 +264,7 @@ own.
 | `titles` | `{ signIn, server, library, cursor, limit }` | `{ titles: [{ id, kind, paths, title, year, ids, series: { title, year, ids }, season, episode }], next }` |
 | `states` | `{ signIn, server, user, library, cursor, changedSince, limit }` | `{ states: [{ title, watched, playCount, positionMs, durationMs, lastPlayedAt, favourite }], next }` |
 | `plays` | `{ signIn, server, cursor, changedSince, limit }` | `{ plays: [{ id, user, title, playedAt, durationMs }], next }` |
+| `unlock` | `{ signIn, server, user, pin }` | `{ status: "unlocked" }`, or `{ status: "refused", reason, message }` |
 | `forget` | `{ signIn }` | nothing: the importer has deleted the sign-in |
 
 `ids` is `{ tmdb, imdb, tvdb }`. Each answer comes in the envelope every point
@@ -296,10 +297,14 @@ back a reference, `signIn`, and every later call names the sign-in by it. The
 importer keeps the sign-in in its own database, so uninstalling the importer
 removes it.
 
-The owner reaches this through four routes under `/api/admin/importers`, all
+The PIN that `unlock` carries is the other secret the core passes through. It
+sends it once, keeps it nowhere, and masks it in anything the importer says
+back before that reaches a log or a response.
+
+The owner reaches this through five routes under `/api/admin/importers`, all
 behind `settings.manage`: the list of importers (the installed ones, then the
-ones the official registry offers), `connect`, `survey` and `forget`. `titles`,
-`states` and `plays` have no route. The import job calls them.
+ones the official registry offers), `connect`, `survey`, `unlock` and `forget`.
+`titles`, `states` and `plays` have no route. The import job calls them.
 
 ## Points are not libraries
 

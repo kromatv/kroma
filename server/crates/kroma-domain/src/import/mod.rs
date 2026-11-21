@@ -9,10 +9,12 @@
 mod connect;
 mod pages;
 mod survey;
+mod unlock;
 
 pub use connect::*;
 pub use pages::*;
 pub use survey::*;
+pub use unlock::*;
 
 #[cfg(test)]
 mod tests;

@@ -9,7 +9,7 @@ use crate::dialect::JELLYFIN;
 use crate::web::{Live, Web};
 use crate::wire::{
     ConnectAsk, Connected, ForgetAsk, PlayPage, PlaysAsk, StatePage, StatesAsk, Survey, SurveyAsk,
-    TitlePage, TitlesAsk,
+    TitlePage, TitlesAsk, UnlockRefusal, Unlocked,
 };
 use crate::{sign_ins, Importer};
 
@@ -32,6 +32,7 @@ pub(crate) fn routes_over<S: HostStorage + Clone + Send + Sync + 'static>(
         .route("/_port/importer/titles", post(titles::<S>))
         .route("/_port/importer/states", post(states::<S>))
         .route("/_port/importer/plays", post(plays::<S>))
+        .route("/_port/importer/unlock", post(unlock))
         .route("/_port/importer/forget", post(forget::<S>))
         .layer(Extension(web))
         .layer(DefaultBodyLimit::max(MAX_ASK_BYTES))
@@ -88,6 +89,12 @@ async fn plays<S: HostStorage + Clone>(
 ) -> Reply<PlayPage> {
     let importer = importer(&host, web);
     port_reply(move || importer.plays(&ask)).await
+}
+
+async fn unlock() -> Reply<Unlocked> {
+    Json(Ok(Unlocked::Refused {
+        reason: UnlockRefusal::NotLocked,
+    }))
 }
 
 async fn forget<S: HostStorage + Clone>(

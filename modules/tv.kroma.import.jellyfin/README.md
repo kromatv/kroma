@@ -18,6 +18,7 @@ Layout: `server/` (the crate), `module.json` (manifest), `audit.json` (what
 | `titles` | `GET /Items` | films and episodes with their files, ids, and the show of each episode |
 | `states` | `GET /Items` with the user's data | watched, play count, resume point, last played, favourite |
 | `plays` | `GET /Users`, `GET /Items` | one play for each title a user watched or started |
+| `unlock` | nothing | `refused` as `notLocked`: an administrator reads every user, so no user is locked |
 | `forget` | nothing | nothing: the sign-in is deleted here |
 
 Every endpoint, with the fields read and the source of each fact, is in
