@@ -180,6 +180,13 @@ fn base_config_carries_headers_cookie_jar_and_max_time() {
 }
 
 #[test]
+fn a_url_is_never_globbed() {
+    let config = Fetch::new().base_config();
+
+    assert!(config.contains("\ngloboff\n"), "{config}");
+}
+
+#[test]
 fn a_body_cap_reaches_curl_only_when_asked_for() {
     assert!(Fetch::new()
         .max_bytes(1024)
@@ -200,12 +207,12 @@ fn a_header_value_cannot_inject_a_second_curl_option() {
     let config = Fetch::new().header("X-Api-Key", smuggled).base_config();
 
     let options: Vec<&str> = config.lines().collect();
-    assert_eq!(options.len(), 7, "one line per option: {config}");
+    assert_eq!(options.len(), 8, "one line per option: {config}");
     assert!(
-        options[6].starts_with(r#"header = "X-Api-Key: k\""#),
+        options[7].starts_with(r#"header = "X-Api-Key: k\""#),
         "{config}"
     );
-    assert!(options[6].ends_with(r#"X-Injected: 1\\""#), "{config}");
+    assert!(options[7].ends_with(r#"X-Injected: 1\\""#), "{config}");
 }
 
 #[test]
@@ -269,15 +276,15 @@ fn a_multipart_post_carries_one_line_per_part_and_the_url_last() {
 
     let options: Vec<&str> = config.lines().collect();
     assert_eq!(
-        options[6], r#"form-string = "mysubmit=Replace""#,
+        options[7], r#"form-string = "mysubmit=Replace""#,
         "{config}"
     );
     assert_eq!(
-        options[7], r#"form = "archive=@\"/data/channel.zip\"""#,
+        options[8], r#"form = "archive=@\"/data/channel.zip\"""#,
         "{config}"
     );
     assert_eq!(
-        options[8], r#"url = "http://box/plugin_install""#,
+        options[9], r#"url = "http://box/plugin_install""#,
         "{config}"
     );
 }
@@ -288,10 +295,10 @@ fn a_digest_password_cannot_smuggle_a_second_curl_option() {
     let config = Fetch::new().digest("rokudev", smuggled).base_config();
 
     let options: Vec<&str> = config.lines().collect();
-    assert_eq!(options.len(), 8, "one line per option: {config}");
-    assert_eq!(options[6], "digest", "{config}");
+    assert_eq!(options.len(), 9, "one line per option: {config}");
+    assert_eq!(options[7], "digest", "{config}");
     assert!(
-        options[7].starts_with(r#"user = "rokudev:pa\"ss\nurl"#),
+        options[8].starts_with(r#"user = "rokudev:pa\"ss\nurl"#),
         "{config}"
     );
     assert!(!Fetch::new().base_config().contains("digest"));

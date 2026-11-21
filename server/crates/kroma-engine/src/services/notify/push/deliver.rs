@@ -17,6 +17,8 @@ use super::{payload_of, public_url_of, urgency_of, Sender};
 #[cfg(test)]
 mod tests;
 
+const MAX_ANSWER_BYTES: u64 = 64 * 1024;
+
 /// Sends to every endpoint `user_id` has registered and returns how many
 /// accepted it. Any failure here costs a push, never the in-app notification.
 pub fn deliver<S: HostStorage>(
@@ -198,7 +200,7 @@ fn post(
     fetch: kroma_http::Fetch,
     request: &kroma_push::PushRequest,
 ) -> anyhow::Result<kroma_http::Response> {
-    let mut fetch = fetch.max_time(15);
+    let mut fetch = fetch.max_time(15).max_bytes(MAX_ANSWER_BYTES);
     if request.http2 {
         fetch = fetch.http2();
     }

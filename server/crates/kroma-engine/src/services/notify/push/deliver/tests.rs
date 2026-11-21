@@ -47,6 +47,10 @@ fn drain_request(stream: &std::net::TcpStream) -> bool {
 
 impl FakeService {
     fn answering(status: u16) -> Self {
+        Self::answering_with(status, String::new())
+    }
+
+    fn answering_with(status: u16, body: String) -> Self {
         let listener = TcpListener::bind("127.0.0.1:0").expect("bind");
         let port = listener.local_addr().unwrap().port();
         let hits = Arc::new(Mutex::new(0usize));
@@ -60,7 +64,8 @@ impl FakeService {
                 }
                 *counter.lock().unwrap() += 1;
                 let resp = format!(
-                    "HTTP/1.1 {status} X\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+                    "HTTP/1.1 {status} X\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    body.len()
                 );
                 let _ = stream.write_all(resp.as_bytes());
                 let _ = stream.flush();
@@ -536,4 +541,22 @@ fn a_web_push_endpoint_on_a_private_address_is_never_contacted() {
     assert_eq!(service.hits(), 0);
     let said = records(&state, &user)[0].error.clone().unwrap_or_default();
     assert!(said.contains("not a public internet address"), "{said}");
+}
+
+#[test]
+fn a_push_service_answer_longer_than_any_service_sends_is_refused_unread() {
+    let service = FakeService::answering_with(400, "x".repeat(1 << 20));
+    let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
+
+    deliver(
+        &state,
+        &sender(&state),
+        &user,
+        &notification(NotificationCategory::Requests),
+    );
+
+    let written = records(&state, &user);
+    let said = written[0].error.as_deref().unwrap_or_default();
+    assert_eq!(written[0].status, DeliveryStatus::Failed);
+    assert!(said.starts_with("curl exit 63"), "{said}");
 }
