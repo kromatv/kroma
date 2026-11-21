@@ -4,5 +4,5 @@
   "field.name": "Nom",
   "field.password": "Mot de passe",
   "field.url": "URL",
-  "field.username": "Utilisateur"
+  "field.username": "Nom d'utilisateur"
 }

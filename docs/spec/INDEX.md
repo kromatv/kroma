@@ -3,7 +3,7 @@
 
 # Requirement index
 
-728 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+770 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -107,6 +107,46 @@
 - **ACCT-98** (SHIPPED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-101** (AGREED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-102** (AGREED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-103** (AGREED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-104** (AGREED) - Every account has a ratings country. It starts as the server's <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-106** (AGREED) - A title that country never rated borrows another country's label, <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-107** (AGREED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-108** (AGREED) - The badge is on a title's detail page, on the home's hero and on <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-109** (AGREED) - Every profile carries one of the six levels. 18+ is the default, and <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-110** (AGREED) - A ceiling compares ages, never labels. A title passes when the age <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-111** (AGREED) - Under a ceiling, a title with no rating does not pass. A title the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-112** (AGREED) - A title that does not pass is absent for that profile from browse, <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-113** (AGREED) - A title that does not pass is refused by its id on every route that <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-114** (AGREED) - A changed ceiling bites on the profile's next request, on every <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-115** (AGREED) - Only an admin sets a profile's ceiling. No profile can change its <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-116** (AGREED) - An admin confirms their own password before changing a ceiling, as <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-117** (AGREED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-118** (AGREED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-119** (AGREED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-120** (AGREED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-121** (AGREED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-123** (AGREED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-124** (AGREED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-125** (AGREED) - Nobody can sign in to a Kids profile, by any means, as nobody can <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-126** (AGREED) - A device on which a member of this server is signed in lists the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-127** (AGREED) - The owner's account can never be a Kids profile, and a Kids profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-128** (AGREED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-130** (AGREED) - A Kids profile whose ceiling an admin raises above 10+ loses the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-131** (AGREED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-132** (AGREED) - The picker draws a lock on every profile that asks for a PIN, on <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-133** (AGREED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-134** (AGREED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-135** (AGREED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests and no account <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-138** (AGREED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
@@ -353,6 +393,8 @@
 - **BROWSE-59** (SHIPPED) - A synopsis shown on the home is cut by sentence, never by the box:
 - **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
 - **BROWSE-61** (SHIPPED) - While a scan runs, the home gains each title as the scan matches it,
+- **BROWSE-62** (AGREED) - The home, search and a person's page obey the viewer's maturity
+- **BROWSE-63** (AGREED) - Under a maturity ceiling, a person's page lists only the titles the
 
 ## DISC - [discovery](discovery/)
 
