@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { permissionGroups, type PermissionSource } from '#web/features/admin/module-permissions';
-import { englishT } from '#web/features/admin/module-permissions.fixture';
+import { permissionGroups, type PermissionSource } from '#web/shared/lib/module-permissions';
+import { englishT } from '#web/shared/lib/module-permissions.fixture';
 
 const t = englishT();
 

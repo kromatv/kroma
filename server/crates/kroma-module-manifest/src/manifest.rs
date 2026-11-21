@@ -404,6 +404,12 @@ pub struct ModuleManifest {
     pub data_dirs: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub notifications: Vec<kroma_module_wire::NotificationType>,
+    /// One sentence, in English, that says what this module does for a
+    /// household. The guided setup offers the module by it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tagline: Option<String>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub translations: crate::Translations,
 }
 
 impl ModuleManifest {
@@ -436,6 +442,8 @@ impl ModuleManifest {
             permissions: None,
             data_dirs: Vec::new(),
             notifications: Vec::new(),
+            tagline: None,
+            translations: BTreeMap::new(),
         }
     }
 

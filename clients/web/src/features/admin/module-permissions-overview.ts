@@ -6,9 +6,9 @@ import {
   permissionGroups,
   type PermissionSource,
   tileGroups,
-} from '#web/features/admin/module-permissions';
+} from '#web/shared/lib/module-permissions';
 import { mergeSources } from '#web/features/admin/module-permissions-sources';
-import { listOf, opening } from '#web/features/admin/module-permissions-words';
+import { listOf, opening } from '#web/shared/lib/module-permissions-words';
 
 const LINES_SHOWN = 3;
 

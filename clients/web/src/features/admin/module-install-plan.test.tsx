@@ -5,7 +5,7 @@ import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { PlanBody, planSubtitle } from '#web/features/admin/module-install-plan';
-import { englishT } from '#web/features/admin/module-permissions.fixture';
+import { englishT } from '#web/shared/lib/module-permissions.fixture';
 
 const inputHost = createInputTestHost();
 

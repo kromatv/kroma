@@ -1,16 +1,8 @@
 import type { ModulePermissions } from '@kromatv/client/modules';
 import type { MessageKey, Translate } from '@kromatv/i18n';
-import {
-  internetGroup,
-  lanGroup,
-  listenGroup,
-} from '#web/features/admin/module-permissions-network';
-import {
-  accountsGroup,
-  dataGroup,
-  settingsGroup,
-} from '#web/features/admin/module-permissions-stores';
-import { accessWord, listOf, opening } from '#web/features/admin/module-permissions-words';
+import { internetGroup, lanGroup, listenGroup } from '#web/shared/lib/module-permissions-network';
+import { accountsGroup, dataGroup, settingsGroup } from '#web/shared/lib/module-permissions-stores';
+import { accessWord, listOf, opening } from '#web/shared/lib/module-permissions-words';
 
 export type PermissionCategory =
   | 'run'

@@ -3,8 +3,16 @@
   "schemaVersion": 3,
   "id": "tv.kroma.mdns",
   "name": "mDNS discovery",
-  "version": "0.3.20",
+  "version": "0.3.21",
   "description": "mDNS / DNS-SD advertising so LAN clients find the server automatically.",
+  "tagline": "Your televisions and phones find this server on their own.",
+  "translations": {
+    "fr": {
+      "name": "Découverte mDNS",
+      "description": "Annonce mDNS et DNS-SD : les appareils du réseau local trouvent le serveur sans aucun réglage.",
+      "tagline": "Vos télévisions et vos téléphones trouvent ce serveur tout seuls."
+    }
+  },
   "engines": {
     "server": ">=0.1.39"
   },

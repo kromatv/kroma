@@ -19,9 +19,10 @@ use crate::state::SharedState;
 mod forms;
 mod parse;
 mod versions;
+mod words;
 
 pub use forms::Form;
-pub use parse::fetch;
+pub use parse::{fetch, Listing};
 
 const SERVER_VERSION: &str = crate::VERSION;
 
@@ -51,6 +52,10 @@ pub struct CatalogModule {
     pub name: String,
     pub version: String,
     pub description: String,
+    /// One sentence that says what the module does for a household.
+    pub tagline: Option<String>,
+    /// The module's words in each other language it speaks, by language tag.
+    pub translations: kroma_module_manifest::Translations,
     /// What the module needs from its host, by engine name and semver range.
     pub engines: std::collections::BTreeMap<String, String>,
     pub library: bool,
@@ -164,6 +169,8 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
                 "name": m.name,
                 "version": m.version,
                 "description": m.description,
+                "tagline": m.tagline,
+                "translations": m.translations,
                 "library": m.library,
                 "icon": m.icon,
                 "engines": m.engines,
@@ -203,6 +210,7 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
         "error": official.and_then(|f| f.error.clone()),
         "registries": super::registries::status(fetched),
         "modules": entries,
+        "setup": super::registries::setup_offer(fetched),
     })
 }
 
@@ -217,6 +225,8 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         name: id.into(),
         version: version.into(),
         description: String::new(),
+        tagline: None,
+        translations: kroma_module_manifest::Translations::new(),
         engines: std::collections::BTreeMap::new(),
         library: false,
         icon: None,

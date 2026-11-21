@@ -1,7 +1,7 @@
 import type { ModulePermissions } from '@kromatv/client/modules';
 import type { Translate } from '@kromatv/i18n';
-import type { PermissionGroup } from '#web/features/admin/module-permissions';
-import { listOf, opening, purposeWord } from '#web/features/admin/module-permissions-words';
+import type { PermissionGroup } from '#web/shared/lib/module-permissions';
+import { listOf, opening, purposeWord } from '#web/shared/lib/module-permissions-words';
 
 type Net = NonNullable<ModulePermissions['net']>;
 type Connect = NonNullable<Net['connect']>[number];

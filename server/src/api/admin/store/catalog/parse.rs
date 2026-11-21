@@ -37,12 +37,22 @@ pub(super) fn index_url(descriptor: &Value, fetched_from: &str) -> anyhow::Resul
     )?))
 }
 
+/// What one registry serves: its modules, and the ones its descriptor offers a
+/// server's guided setup, in order.
+#[derive(Default)]
+pub struct Listing {
+    pub modules: Vec<CatalogModule>,
+    pub setup: Vec<String>,
+}
+
 /// The modules a registry offers this server: each one's newest version, or the
 /// newest older version this server runs when it refuses the newest.
-pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Vec<CatalogModule>> {
+pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Listing> {
     let mut raw = sup.fetch_catalog(url).await?;
     let mut fetched_from = url.to_string();
+    let mut setup = Vec::new();
     if let Some(index) = index_url(&raw, url)? {
+        setup = super::words::setup(&raw);
         raw = sup.fetch_catalog(&index).await?;
         fetched_from = index;
     }
@@ -56,7 +66,7 @@ pub async fn fetch(sup: &Supervisor, url: &str) -> anyhow::Result<Vec<CatalogMod
         };
         modules.push(super::versions::runnable(sup, &fetched_from, entry, newest).await);
     }
-    Ok(modules)
+    Ok(Listing { modules, setup })
 }
 
 pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
@@ -91,6 +101,8 @@ pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
         name: str_of("name"),
         version: str_of("version"),
         description: str_of("description"),
+        tagline: super::words::tagline(m),
+        translations: super::words::translations(m),
         engines: m
             .get("engines")
             .and_then(Value::as_object)

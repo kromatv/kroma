@@ -6,8 +6,8 @@ import {
   permissionGroups,
   type PermissionSource,
   tileGroups,
-} from '#web/features/admin/module-permissions';
-import { englishT } from '#web/features/admin/module-permissions.fixture';
+} from '#web/shared/lib/module-permissions';
+import { englishT } from '#web/shared/lib/module-permissions.fixture';
 
 const t = englishT();
 

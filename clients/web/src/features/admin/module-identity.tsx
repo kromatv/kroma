@@ -91,6 +91,7 @@ export function identityOf(
     name: installed?.name ?? entry?.name ?? id,
     version: installed?.version ?? entry?.version,
     description: installed?.description ?? entry?.description ?? '',
+    translations: installed?.translations ?? entry?.translations,
   };
 }
 
