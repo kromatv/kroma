@@ -1,13 +1,13 @@
 {
   "addProfile.addManually": "Ajouter manuellement",
-  "addProfile.addManuallySub": "Saisir l'adresse d'un serveur distant",
+  "addProfile.addManuallySub": "Saisissez l'adresse d'un serveur distant",
   "addProfile.availableServers": "Serveurs disponibles",
-  "addProfile.checking": "Vérification…",
+  "addProfile.checking": "Vérification en cours…",
   "addProfile.new": "nouveau",
   "addProfile.reachable": "En ligne",
   "addProfile.showCount": "{count} séries",
   "addProfile.showCount_one": "{count} série",
-  "addProfile.subtitle": "Choisissez le serveur, puis liez votre profil par connexion rapide.",
+  "addProfile.subtitle": "Choisissez le serveur, puis associez votre profil avec la connexion rapide.",
   "addProfile.title": "Ajouter un profil",
   "addProfile.unreachable": "Injoignable"
 }

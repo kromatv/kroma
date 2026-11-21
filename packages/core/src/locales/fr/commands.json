@@ -11,7 +11,7 @@
   "commands.close": "Fermer le menu",
   "commands.closeActions": "Fermer les actions",
   "commands.empty": "Aucun résultat.",
-  "commands.failed": "Cela n’a pas fonctionné.",
+  "commands.failed": "Impossible d'effectuer l'action.",
   "commands.field": "Rechercher une page, une action ou un titre",
   "commands.groupPage": "Cette page",
   "commands.groupRecent": "Récents",

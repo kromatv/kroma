@@ -1,0 +1,45 @@
+[workspace]
+
+[package]
+name = "kroma-import-emby"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.100"
+description = "KROMA Emby importer: a module answering the importer point by reading an Emby server, through the Jellyfin importer's Emby dialect."
+license = "AGPL-3.0-or-later"
+
+[[bin]]
+name = "kroma-module-import-emby"
+path = "src/bin/module.rs"
+
+[dependencies]
+kroma-import-jellyfin = { path = "../../tv.kroma.import.jellyfin/server" }
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["storage"] }
+kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
+anyhow = "1"
+
+[dev-dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+serde_json = "1"
+tower = { version = "0.5", features = ["util"] }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+axum = { version = "0.8", features = ["macros"] }
+tokio = { version = "1", features = ["full"] }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+axum = { version = "0.8", default-features = false, features = ["json", "macros", "query", "form", "matched-path"] }
+tokio = { version = "1", default-features = false, features = ["sync", "macros", "rt", "time", "io-util"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 16
+strip = true
+
+[profile.release-kmod]
+inherits = "release"
+panic = "abort"
+
+[profile.dev]
+debug = false

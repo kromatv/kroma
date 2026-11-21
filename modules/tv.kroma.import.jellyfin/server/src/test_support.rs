@@ -7,7 +7,7 @@ use kroma_module_sdk::db::testing::{temp_pool, TempPool};
 use kroma_module_sdk::primitives::random_token;
 use serde_json::{json, Value};
 
-use crate::dialect::{Method, JELLYFIN};
+use crate::dialect::{Dialect, Method, EMBY, JELLYFIN};
 use crate::sign_ins::MIGRATIONS;
 use crate::web::{Answer, Request, Web};
 use crate::wire::{ConnectAsk, Connected};
@@ -67,6 +67,7 @@ impl Rule {
 }
 
 pub(crate) struct Recorded {
+    dialect: &'static Dialect,
     address: String,
     username: String,
     password: String,
@@ -78,7 +79,46 @@ pub(crate) struct Recorded {
 
 impl Recorded {
     pub(crate) fn jellyfin() -> Self {
+        Self::speaking(&JELLYFIN)
+            .on(
+                JELLYFIN.server.path,
+                &[],
+                fixture(include_str!("fixtures/system-info-public.json")),
+            )
+            .on(
+                JELLYFIN.users.path,
+                &[],
+                fixture(include_str!("fixtures/users.json")),
+            )
+            .on(
+                JELLYFIN.libraries.path,
+                &[],
+                fixture(include_str!("fixtures/virtual-folders.json")),
+            )
+    }
+
+    pub(crate) fn emby() -> Self {
+        Self::speaking(&EMBY)
+            .on(
+                EMBY.server.path,
+                &[],
+                fixture(include_str!("fixtures/emby/system-info-public.json")),
+            )
+            .on(
+                EMBY.users.path,
+                &[],
+                fixture(include_str!("fixtures/emby/users-query.json")),
+            )
+            .on(
+                EMBY.libraries.path,
+                &[],
+                fixture(include_str!("fixtures/emby/virtual-folders-query.json")),
+            )
+    }
+
+    fn speaking(dialect: &'static Dialect) -> Self {
         Self {
+            dialect,
             address: ADDRESS.to_string(),
             username: "sam".to_string(),
             password: random_token(),
@@ -88,27 +128,12 @@ impl Recorded {
             revoked: AtomicBool::new(false),
         }
         .on(
-            JELLYFIN.server.path,
-            &[],
-            fixture(include_str!("fixtures/system-info-public.json")),
-        )
-        .on(
-            JELLYFIN.users.path,
-            &[],
-            fixture(include_str!("fixtures/users.json")),
-        )
-        .on(
-            JELLYFIN.libraries.path,
-            &[],
-            fixture(include_str!("fixtures/virtual-folders.json")),
-        )
-        .on(
-            JELLYFIN.counts.path,
+            dialect.counts.path,
             &[],
             fixture(include_str!("fixtures/counts.json")),
         )
         .on(
-            JELLYFIN.whoami.path,
+            dialect.whoami.path,
             &[],
             json!({ "Name": "sam", "Id": SAM }),
         )
@@ -151,6 +176,10 @@ impl Recorded {
         self
     }
 
+    pub(crate) fn dialect(&self) -> &'static Dialect {
+        self.dialect
+    }
+
     pub(crate) fn password(&self) -> &str {
         &self.password
     }
@@ -188,14 +217,15 @@ impl Recorded {
     }
 
     fn answer(&self, seen: &Seen) -> (u16, Value) {
-        let open = [JELLYFIN.server.path, JELLYFIN.sign_in.path].contains(&seen.path.as_str());
+        let dialect = self.dialect;
+        let open = [dialect.server.path, dialect.sign_in.path].contains(&seen.path.as_str());
         if !open && !self.holds_the_token(seen) {
             return (401, Value::Null);
         }
         match self.rules.iter().find(|rule| rule.answers(seen)) {
             Some(rule) => (rule.status, rule.body.clone()),
-            None if seen.path == JELLYFIN.sign_in.path => self.signs_in(seen),
-            None if seen.path == JELLYFIN.items.path => {
+            None if seen.path == dialect.sign_in.path => self.signs_in(seen),
+            None if seen.path == dialect.items.path => {
                 (200, json!({ "Items": [], "TotalRecordCount": 0 }))
             }
             None => (404, Value::Null),
@@ -248,7 +278,7 @@ impl World {
             importer: Importer {
                 store: (*store).clone(),
                 web: jellyfin.clone(),
-                dialect: &JELLYFIN,
+                dialect: jellyfin.dialect,
             },
             jellyfin,
             _store: store,

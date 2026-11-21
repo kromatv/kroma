@@ -84,11 +84,13 @@ fn stored_files(tx: &rusqlite::Transaction) -> Result<Vec<(String, String, Strin
     Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
-// Prunes items/shows with no backing files, then the language-cache rows for
-// vanished titles (no FK on those tables, so the item/show cascade misses them).
+// A title left with no file is marked absent and kept (LIB-45, LIB-48); a show
+// left with no title goes, then the language-cache rows of titles that went
+// with their library (no FK on those tables, so the cascade misses them).
 pub(super) fn prune_orphans(tx: &rusqlite::Transaction) -> Result<()> {
     tx.execute(
-        "DELETE FROM items WHERE id NOT IN (SELECT DISTINCT item_id FROM files)",
+        "UPDATE items SET absent_since = CAST(strftime('%s','now') AS INTEGER) \
+         WHERE absent_since IS NULL AND id NOT IN (SELECT DISTINCT item_id FROM files)",
         [],
     )?;
     tx.execute("DELETE FROM shows WHERE id NOT IN (SELECT DISTINCT show_id FROM items WHERE show_id IS NOT NULL)", [])?;

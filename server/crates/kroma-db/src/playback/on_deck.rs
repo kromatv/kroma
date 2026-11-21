@@ -27,7 +27,7 @@ SELECT next.id, seen.watched_at \
   FROM seen \
   JOIN items next ON next.id = ( \
        SELECT e.id FROM items e \
-        WHERE e.show_id = seen.show_id AND e.kind = 'episode' \
+        WHERE e.show_id = seen.show_id AND e.kind = 'episode' AND e.absent_since IS NULL \
           AND COALESCE(e.season,0) * 1000000 + COALESCE(e.episode,0) > seen.rank \
           AND NOT EXISTS (SELECT 1 FROM watched w2 \
                            WHERE w2.user_id = ?1 AND w2.item_id = e.id) \

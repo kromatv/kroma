@@ -27,7 +27,7 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 
 ## Typography
 
-- A no-break space (U+00A0) before `:` `;` `!` `?` and inside `« »`.
+- A no-break space (U+00A0) before `:` `;` `!` `?` `%` and inside `« »`.
 - One character for the ellipsis: `…`.
 - Sentence case. Only the first word and proper names take a capital, in titles too.
 - Digits for a number the reader acts on: *7 jours*, *8 caractères minimum*.
@@ -42,6 +42,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | English | French | Never |
 |---|---|---|
 | Settings | Réglages | Paramétrages |
+| Build (to build a module) | compiler, recompiler, une compilation locale | build, reconstruire |
+| Build number | build {build} | compilation {build} |
+| Host updater | l'outil de mise à jour de l'hôte | l'outil hôte |
+| {count} item(s) | Éléments : {count}, or the plural forms | élément(s) |
 | Search (action) | Rechercher | Chercher |
 | Save | Enregistrer | Sauver, Sauvegarder |
 | Probing (a file) | analyse des fichiers | probing, sonde |
@@ -62,7 +66,12 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Skip | Passer cette étape, Ignorer | Sauter |
 | Sign in / Sign out | Se connecter / Se déconnecter | Login |
 | Set up, setup | Configurer, la configuration | Installation, setup |
+| Skip (a queue, a step that waits) | sans attendre | sauter |
+| A right's hint | a verb phrase: what the person can do | a list of nouns |
 | Library | Bibliothèque | Médiathèque, Librairie |
+| TV (the device, in a sentence) | téléviseur, masculine | la TV, ta TV |
+| QR (to scan) | QR code | QR |
+| Tap to (on a phone) | Touchez pour | Appuyez pour |
 | Media (your files) | vos films et vos séries | vos médias |
 | Release (a torrent or an NZB) | version | release |
 | Apply to the selection, 3 picked | Appliquer à la sélection (3) | , 3 choisis |
@@ -79,6 +88,13 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Not even us (the product) | pas même KROMA | pas même nous |
 | Continue Watching | Reprendre la lecture | Continuer à regarder |
 | Trailer | Bande-annonce | Trailer |
+| Play (the button that starts a title) | Lecture | Lire, Jouer |
+| My list | Ma liste, dans ma liste | dans votre liste |
+| Critically acclaimed | Salué par la critique | Acclamé |
+| A-Z (a sort) | de A à Z | A-Z |
+| AI suggestions | Suggestions de l'IA | Suggestions IA |
+| Update available | Mise à jour disponible | Nouvelle version |
+| Invite a user | Inviter quelqu'un | Inviter un utilisateur |
 | Subtitles | Sous-titres | |
 | Download / Upload | Télécharger / Importer, Envoyer | Uploader |
 | Optional | Facultatif | Optionnel |
@@ -92,6 +108,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Use at least 8 characters | 8 caractères minimum | Utilisez au moins 8 caractères |
 | Admin (the area) | l'administration | l'admin |
 | Rights, permissions | Droits | Permissions |
+| PIN | code PIN | PIN alone |
+| Link / Unlink (a sign-in provider) | Associer / Dissocier | Lier / Délier |
+| You are signed out (a state of the reader) | Déconnexion effectuée | Vous êtes déconnecté |
+| Media items (a count) | titres | médias |
 | Invitation link | Lien d'invitation | |
 | Feature | Fonctionnalité | Feature |
 | At any time | à tout moment | n'importe quand |
@@ -119,6 +139,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Retournons à votre bibliothèque | the product says *nous* | Revenez à votre bibliothèque |
 | Connexion directe (on a button) | a noun on a button | Se connecter directement |
 | Proches (the people a server is shared with) | *proche* also means *near*, so the word is read two ways | votre famille et vos amis, les personnes invitées; *Invitations* for the step |
+| Les demandes de ce compte sautent la file d'approbation | *skip the queue* word for word | Les demandes de ce compte sont approuvées sans attendre |
+| Scans, bibliothèques, métadonnées | an English list of nouns for a right | Gérer les bibliothèques, leurs analyses et leurs métadonnées |
 | Être compté | English idiom *be counted* | Statistiques anonymes |
 | Tirer plus de votre bibliothèque | *get more from* | Lecture et recherche |
 | Chercher par le sens | nobody says it | Recherche intelligente |
@@ -128,8 +150,14 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Que doit faire ce serveur en plus ? | English word order | Envie d'aller plus loin ? |
 | Choisissez la langue dans laquelle KROMA vous parle | the product does a human thing | Choisissez votre langue. |
 | Où sont vos médias ? | *médias* is jargon | Où sont vos films et vos séries ? |
+| À couper le souffle (*edge of your seat*) | says *breathtaking*, a thing of beauty | Suspense garanti |
+| Virées nocturnes néon | a noun pile in the English order | Virées nocturnes sous les néons |
+| Soirées d'automne cosy | an English word where French has an image | Soirées d'automne au coin du feu |
 | Reprendre mon serveur Plex | *reprendre* says another thing | Migrer depuis Plex ou Jellyfin |
 | Le compte n'a pas pu être créé | English passive | Impossible de créer le compte |
+| La prochaine version est prête quand vous le serez | *ready when you are* | La nouvelle version n'attend que vous |
+| Prêt à mettre à jour le serveur ? | a gendered adjective for the reader | Mettre à jour le serveur maintenant ? |
+| Nécessite le serveur 2.0, celui-ci est en 1.9 | a comma where French wants the contrast said | Nécessite le serveur 2.0, alors que celui-ci est en 1.9 |
 | Regarder le catalogue + reprise | a symbol for a word, and a noun pile | Regarder les films et les séries, et reprendre une lecture |
 | Est-ce un fichier de sauvegarde KROMA valide ? | an error asked as a question | Impossible d'importer ce fichier. Vérifiez qu'il s'agit bien d'une sauvegarde KROMA. |
 | La lecture va caler | a car's word for a stall | La lecture va s'interrompre |
@@ -164,8 +192,14 @@ move the rest to the screen where it matters.
 | English | French | Never |
 |---|---|---|
 | Mail server | serveur de messagerie | serveur mail |
+| Middleware (modules that filter connections) | Modules de filtrage | Intergiciels |
+| Television (a kind of device) | Téléviseur | Télévision, which is the medium |
+| Config (a WireGuard file) | configuration | config |
 | Upload (an image, a file) | Importer | Téléverser |
 | Discard your changes? | Abandonner les modifications ? | Abandonner les changements ? |
+| No account with us (the project) | aucun compte KROMA à créer | aucun compte chez nous |
+| Muted (the volume) | coupé | muet |
+| est. (estimated) | estimée | est. |
 | Create their account (one person) | Créer son compte | Créer leur compte |
 | Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
 | The server's database | la base de données du serveur | la base du serveur |

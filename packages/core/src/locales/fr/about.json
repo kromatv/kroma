@@ -9,9 +9,9 @@
   "about.memoryFree": "{free} Go libres sur {total} Go",
   "about.memorySize": "{gb} Go",
   "about.platform": "Plateforme",
-  "about.privacyBody": "L'application ne collecte rien. Aucun compte chez nous, aucune analyse d'usage, aucun traçage : elle dialogue avec le serveur que vous configurez et n'affiche que ce qu'il sert. Votre serveur peut être compté parmi les installations KROMA qui tournent dans le monde, anonymement, et ne l'est pas tant que son propriétaire ne l'a pas activé.",
+  "about.privacyBody": "L'application ne collecte rien : aucun compte KROMA à créer, aucune mesure d'audience, aucun traçage. Elle échange uniquement avec le serveur que vous configurez et n'affiche que ce qu'il envoie. Votre serveur peut figurer, de façon anonyme, dans le décompte des installations KROMA dans le monde, mais seulement si son propriétaire l'active.",
   "about.privacyTitle": "Confidentialité",
-  "about.privacyUrl": "Politique complète : kroma.tv/privacy",
+  "about.privacyUrl": "Politique complète : kroma.tv/privacy",
   "about.repository": "Dépôt",
   "about.title": "À propos",
   "about.version": "Version"

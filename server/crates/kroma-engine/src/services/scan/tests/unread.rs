@@ -50,14 +50,20 @@ fn rescan(state: &SharedState) -> Scanned {
 }
 
 fn titles(state: &SharedState) -> Vec<String> {
-    let conn = state.db.get().unwrap();
-    let mut stmt = conn
-        .prepare("SELECT title FROM items ORDER BY title")
-        .unwrap();
-    stmt.query_map([], |r| r.get(0))
+    crate::db::list_movies(&state.db, None)
         .unwrap()
-        .map(Result::unwrap)
+        .into_iter()
+        .map(|item| item.title)
         .collect()
+}
+
+fn stored_titles(state: &SharedState) -> i64 {
+    state
+        .db
+        .get()
+        .unwrap()
+        .query_row("SELECT COUNT(*) FROM items", [], |r| r.get(0))
+        .unwrap()
 }
 
 fn resume_a_share_film(state: &SharedState) {
@@ -97,7 +103,7 @@ fn a_share_that_drops_while_another_library_still_reads_keeps_its_titles_and_the
 }
 
 #[test]
-fn a_file_deleted_from_a_library_that_reads_is_still_pruned() {
+fn a_file_deleted_from_a_library_that_reads_leaves_its_title_absent() {
     let state = test_state();
     let mounts = scanned_once(&state, &["Dune (2021)", "Heat (1995)"]);
     std::fs::remove_file(mounts.share.join("Heat (1995).mkv")).unwrap();
@@ -105,6 +111,7 @@ fn a_file_deleted_from_a_library_that_reads_is_still_pruned() {
     rescan(&state);
 
     assert_eq!(titles(&state), ["Alien", "Dune"]);
+    assert_eq!(stored_titles(&state), 3);
 }
 
 #[test]
@@ -157,4 +164,23 @@ fn a_library_holding_a_link_whose_target_is_gone_prunes_nothing() {
     rescan(&state);
 
     assert_eq!(titles(&state), ["Alien", "Dune", "Heat"]);
+}
+
+#[test]
+fn a_file_put_back_brings_its_title_back_with_its_progress() {
+    let state = test_state();
+    let mounts = scanned_once(&state, &["Dune (2021)", "Heat (1995)"]);
+    resume_a_share_film(&state);
+    let dune = mounts.share.join("Dune (2021).mkv");
+    let aside = mounts.share.join("Dune (2021).mkv.moved");
+    std::fs::rename(&dune, &aside).unwrap();
+    rescan(&state);
+    let while_gone = titles(&state);
+
+    std::fs::rename(&aside, &dune).unwrap();
+    rescan(&state);
+
+    assert_eq!(while_gone, ["Alien", "Heat"]);
+    assert_eq!(titles(&state), ["Alien", "Dune", "Heat"]);
+    assert_eq!(resume_positions(&state), 1);
 }
