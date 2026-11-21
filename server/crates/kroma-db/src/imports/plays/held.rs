@@ -3,17 +3,12 @@
 
 use rusqlite::{params, Connection};
 
-use super::{Added, Keyed, INTO_THE_LOG, WHO_AND_WHAT};
+use super::{exists, Keyed, Merged, INTO_THE_LOG, WHO_AND_WHAT};
 use crate::Result;
 
-fn held(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
-    conn.prepare_cached("SELECT EXISTS (SELECT 1 FROM import_held_plays WHERE id = ?1)")?
-        .query_row([id], |r| r.get(0))
-}
-
-pub(super) fn hold(conn: &Connection, row: &Keyed<'_>, path: &str) -> Result<Added> {
-    if held(conn, &row.id)? {
-        return Ok(Added::AlreadyHere);
+pub(super) fn hold(conn: &Connection, row: &Keyed<'_>, path: &str) -> Result<Merged> {
+    if exists(conn, "import_held_plays", &row.id)? {
+        return Ok(Merged::Unchanged);
     }
     let kept = conn
         .prepare_cached(
@@ -28,7 +23,7 @@ pub(super) fn hold(conn: &Connection, row: &Keyed<'_>, path: &str) -> Result<Add
             row.play.played_at,
             row.play.duration_ms
         ])?;
-    Ok(if kept == 1 { Added::New } else { Added::Gone })
+    Ok(if kept == 1 { Merged::Changed } else { Merged::Gone })
 }
 
 /// Adds every held play whose file a title now has to the play log, and stops

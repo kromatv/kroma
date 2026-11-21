@@ -77,11 +77,11 @@ fn logged(pool: &Pool) -> Vec<PlayEntry> {
 }
 
 impl Household {
-    fn adds(&self, plays: &[NewPlay<'_>]) -> Vec<Added> {
+    fn adds(&self, plays: &[NewPlay<'_>]) -> Vec<Merged> {
         add_plays(&self.pool, &self.server, plays).unwrap()
     }
 
-    fn plays_heat(&self, id: &str) -> Added {
+    fn plays_heat(&self, id: &str) -> Merged {
         self.adds(&[played(id, &self.ana, Place::Title("heat"))])[0]
     }
 }
@@ -93,7 +93,7 @@ fn a_play_joins_the_log_with_its_account_its_title_and_the_time_it_was_played() 
     let added = home.plays_heat("p1");
 
     let log = logged(&home.pool);
-    assert_eq!(added, Added::New);
+    assert_eq!(added, Merged::Changed);
     assert_eq!(log.len(), 1);
     assert_eq!(log[0].user_id.as_deref(), Some(home.ana.as_str()));
     assert_eq!(log[0].username, "ana");
@@ -166,7 +166,7 @@ fn the_same_play_added_twice_is_one_row() {
 
     let again = home.plays_heat("p1");
 
-    assert_eq!((first, again), (Added::New, Added::AlreadyHere));
+    assert_eq!((first, again), (Merged::Changed, Merged::Unchanged));
     assert_eq!(logged(&home.pool).len(), 1);
 }
 
@@ -179,7 +179,7 @@ fn two_plays_of_one_title_by_one_account_at_the_same_second_are_two_rows() {
         played("p2", &home.ana, Place::Title("heat")),
     ]);
 
-    assert_eq!(added, [Added::New, Added::New]);
+    assert_eq!(added, [Merged::Changed, Merged::Changed]);
     assert_eq!(logged(&home.pool).len(), 2);
 }
 
@@ -200,7 +200,7 @@ fn the_same_id_on_two_servers_is_two_plays() {
     )
     .unwrap();
 
-    assert_eq!(added, [Added::New]);
+    assert_eq!(added, [Merged::Changed]);
     assert_eq!(logged(&home.pool).len(), 2);
 }
 
@@ -214,7 +214,7 @@ fn a_play_whose_title_or_account_left_the_server_is_not_written() {
         played("p3", "left-the-server", Place::File("/films/Heat.mkv")),
     ]);
 
-    assert_eq!(added, [Added::Gone, Added::Gone, Added::Gone]);
+    assert_eq!(added, [Merged::Gone, Merged::Gone, Merged::Gone]);
     assert_eq!(logged(&home.pool).len(), 0);
     assert_eq!(
         rows(&home.pool, "SELECT id FROM import_held_plays"),

@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 
 use crate::api::test_support::{IMPORTER, TestApp, get, test_app};
 use crate::db;
-use crate::db::imports::{Added, NewImport, NewPlay, Place};
+use crate::db::imports::{Merged, NewImport, NewPlay, Place};
 use crate::model::PlayRecord;
 use crate::model::imports::{Origin, Selection};
 
@@ -57,7 +57,7 @@ fn an_import_brought_a_play_of(t: &TestApp, film: &str) {
     };
     let server = db::imports::server_key(IMPORTER, "srv");
     let added = db::imports::add_plays(&t.state.db, &server, &[play]).unwrap();
-    assert_eq!(added, [Added::New]);
+    assert_eq!(added, [Merged::Changed]);
 }
 
 async fn watch_history(t: &TestApp) -> Value {

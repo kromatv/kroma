@@ -18,9 +18,9 @@ use anyhow::Result;
 
 use self::bounded::bounded;
 use super::found::{Found, find};
-use super::{Importing, Outcome, PlayRow};
+use super::{outcome_of, Importing, Outcome, PlayRow};
 use crate::db;
-use crate::db::imports::{Added, NewPlay, Place};
+use crate::db::imports::{NewPlay, Place};
 use crate::model::import::Title;
 use crate::services::jobs::now_ms;
 
@@ -73,12 +73,4 @@ pub(super) fn add(importing: &Importing<'_>, page: &[PlayRow<'_>]) -> Result<Vec
         Sorted::Add(_) => added.next().map_or(Outcome::Untouched, outcome_of),
     });
     Ok(outcomes.collect())
-}
-
-fn outcome_of(added: Added) -> Outcome {
-    match added {
-        Added::New => Outcome::Brought { target: None },
-        Added::AlreadyHere => Outcome::AlreadyHere,
-        Added::Gone => Outcome::Untouched,
-    }
 }

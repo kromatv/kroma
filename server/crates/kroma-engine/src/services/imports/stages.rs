@@ -18,6 +18,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
+use crate::db::imports::Merged;
 use crate::model::import::{Library, Play, Title, User, WatchState};
 use crate::model::imports::{Import, KeptLibrary, KeptUser};
 use crate::state::SharedState;
@@ -39,6 +40,14 @@ pub(crate) enum Outcome {
     AlreadyHere,
     Unmatched,
     Untouched,
+}
+
+fn outcome_of(merged: Merged) -> Outcome {
+    match merged {
+        Merged::Changed => Outcome::Brought { target: None },
+        Merged::Unchanged => Outcome::AlreadyHere,
+        Merged::Gone => Outcome::Untouched,
+    }
 }
 
 /// The import a stage works for. `server_id` is the key of the other server in

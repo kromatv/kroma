@@ -22,7 +22,7 @@ pub(crate) use held::release as release_held_states;
 pub use identities::*;
 pub use newcomers::*;
 pub use passes::*;
-pub use plays::{add_plays, Added, NewPlay};
+pub use plays::{add_plays, NewPlay};
 pub use records::*;
 pub use states::{merge_states, Merged, Place};
 pub use titles::*;

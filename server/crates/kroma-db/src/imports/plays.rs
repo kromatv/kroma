@@ -10,7 +10,7 @@ use rusqlite::{params, Connection, TransactionBehavior};
 
 pub(crate) use held::release as release_held_plays;
 
-use super::Place;
+use super::{Merged, Place};
 use crate::{Pool, Result};
 
 const INTO_THE_LOG: &str = "INSERT INTO play_history \
@@ -32,15 +32,6 @@ pub struct NewPlay<'a> {
     pub duration_ms: Option<i64>,
 }
 
-/// What became of one play. `Gone` is a play whose title or account left the
-/// server while the import ran: nothing was written for it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Added {
-    New,
-    AlreadyHere,
-    Gone,
-}
-
 struct Keyed<'a> {
     id: String,
     server_id: &'a str,
@@ -58,12 +49,12 @@ impl<'a> Keyed<'a> {
     }
 }
 
-fn logged(conn: &Connection, id: &str) -> rusqlite::Result<bool> {
-    conn.prepare_cached("SELECT EXISTS (SELECT 1 FROM play_history WHERE id = ?1)")?
+fn exists(conn: &Connection, table: &str, id: &str) -> rusqlite::Result<bool> {
+    conn.prepare_cached(&format!("SELECT EXISTS (SELECT 1 FROM {table} WHERE id = ?1)"))?
         .query_row([id], |r| r.get(0))
 }
 
-fn log(conn: &Connection, row: &Keyed<'_>, item: &str) -> Result<Added> {
+fn log(conn: &Connection, row: &Keyed<'_>, item: &str) -> Result<Merged> {
     let written = conn
         .prepare_cached(&format!(
             "{INTO_THE_LOG} SELECT ?1, {WHO_AND_WHAT}, ?4, ?4, ?5, ?6 \
@@ -79,16 +70,16 @@ fn log(conn: &Connection, row: &Keyed<'_>, item: &str) -> Result<Added> {
             row.server_id
         ])?;
     Ok(if written == 1 {
-        Added::New
+        Merged::Changed
     } else {
-        Added::Gone
+        Merged::Gone
     })
 }
 
-fn add(conn: &Connection, server_id: &str, play: &NewPlay<'_>) -> Result<Added> {
+fn add(conn: &Connection, server_id: &str, play: &NewPlay<'_>) -> Result<Merged> {
     let row = Keyed::of(server_id, play);
-    if logged(conn, &row.id)? {
-        return Ok(Added::AlreadyHere);
+    if exists(conn, "play_history", &row.id)? {
+        return Ok(Merged::Unchanged);
     }
     match play.place {
         Place::Title(item) => log(conn, &row, item),
@@ -97,13 +88,13 @@ fn add(conn: &Connection, server_id: &str, play: &NewPlay<'_>) -> Result<Added> 
 }
 
 /// Adds each play of the server `server_id` to the play log, in one
-/// transaction, and answers one [`Added`] per play in the order given.
+/// transaction, and answers one [`Merged`] per play in the order given.
 ///
 /// A play the log or the hold already has is left as it is. A play for a file
 /// is held until a scan writes that file, and joins the log in that same
 /// write. A play with no duration is logged with none: the log reads the
 /// runtime of its title in its place.
-pub fn add_plays(pool: &Pool, server_id: &str, plays: &[NewPlay<'_>]) -> Result<Vec<Added>> {
+pub fn add_plays(pool: &Pool, server_id: &str, plays: &[NewPlay<'_>]) -> Result<Vec<Merged>> {
     let mut conn = pool.get()?;
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let added = plays

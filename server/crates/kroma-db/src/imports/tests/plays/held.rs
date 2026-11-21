@@ -24,7 +24,7 @@ fn held(pool: &Pool) -> Vec<String> {
 }
 
 impl Household {
-    fn holds_heat(&self, id: &str) -> Added {
+    fn holds_heat(&self, id: &str) -> Merged {
         self.adds(&[played(id, &self.ana, Place::File(HEAT))])[0]
     }
 }
@@ -35,7 +35,7 @@ fn a_play_for_a_file_no_title_has_is_held_and_shows_nowhere() {
 
     let added = home.holds_heat("p1");
 
-    assert_eq!(added, Added::New);
+    assert_eq!(added, Merged::Changed);
     assert_eq!(held(&home.pool), [format!("{HEAT} at {LAST_WEEK} for -")]);
     assert_eq!(logged(&home.pool).len(), 0);
 }
@@ -86,7 +86,7 @@ fn a_play_held_twice_is_held_once() {
 
     let again = home.holds_heat("p1");
 
-    assert_eq!((first, again), (Added::New, Added::AlreadyHere));
+    assert_eq!((first, again), (Merged::Changed, Merged::Unchanged));
     assert_eq!(held(&home.pool).len(), 1);
 }
 
@@ -97,7 +97,7 @@ fn a_play_already_in_the_log_is_not_held() {
 
     let again = home.holds_heat("p1");
 
-    assert_eq!(again, Added::AlreadyHere);
+    assert_eq!(again, Merged::Unchanged);
     assert_eq!(held(&home.pool), Vec::<String>::new());
     assert_eq!(logged(&home.pool).len(), 1);
 }
@@ -110,7 +110,7 @@ fn a_held_play_found_on_its_title_before_the_scan_is_logged_once() {
 
     a_scan_writes(&home.pool, HEAT, "heat");
 
-    assert_eq!(found, Added::New);
+    assert_eq!(found, Merged::Changed);
     assert_eq!(logged(&home.pool).len(), 1);
     assert_eq!(held(&home.pool), Vec::<String>::new());
 }
@@ -122,7 +122,7 @@ fn a_play_for_a_file_a_scan_wrote_a_moment_ago_joins_the_log_at_once() {
 
     let added = home.holds_heat("p1");
 
-    assert_eq!(added, Added::New);
+    assert_eq!(added, Merged::Changed);
     assert_eq!(logged(&home.pool).len(), 1);
     assert_eq!(held(&home.pool), Vec::<String>::new());
 }
