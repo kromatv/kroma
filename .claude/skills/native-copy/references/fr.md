@@ -98,3 +98,15 @@ move the rest to the screen where it matters.
 - A colon for cause or result: *Ne prenez que l'utile : un module se retire à tout moment.*
 - *Là où* for *where you left off*: *Chacun reprend là où il s'était arrêté.*
 - *Prendre forme*, *se poursuivre*, *tout seul*, *s'occuper de*: verbs a person uses.
+
+## Terms of the administration
+
+| English | French | Never |
+|---|---|---|
+| Mail server | serveur de messagerie | serveur mail |
+| Upload (an image, a file) | Importer | Téléverser |
+| Discard your changes? | Abandonner les modifications ? | Abandonner les changements ? |
+| Create their account (one person) | Créer son compte | Créer leur compte |
+| Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
+| Console (the admin area) | l'administration | la console |
+
