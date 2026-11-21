@@ -78,6 +78,12 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Trailer | Bande-annonce | Trailer |
 | Subtitles | Sous-titres | |
 | Download / Upload | Télécharger / Importer, Envoyer | Uploader |
+| Optional | Facultatif | Optionnel |
+| e.g. | Par exemple | Ex :, ex. |
+| Logs | journaux | logs |
+| Blocklist | liste de blocage | liste noire |
+| Port forwarding | redirection de port | ouverture de port |
+| Supervise (a process) | surveiller | superviser |
 | Owner | Propriétaire | Possesseur |
 | Required (a form field) | Ce champ est obligatoire | Ce champ est requis |
 | Use at least 8 characters | 8 caractères minimum | Utilisez au moins 8 caractères |
@@ -122,6 +128,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Reprendre mon serveur Plex | *reprendre* says another thing | Migrer depuis Plex ou Jellyfin |
 | Le compte n'a pas pu être créé | English passive | Impossible de créer le compte |
 | Regarder le catalogue + reprise | a symbol for a word, and a noun pile | Regarder les films et les séries, et reprendre une lecture |
+| Est-ce un fichier de sauvegarde KROMA valide ? | an error asked as a question | Impossible d'importer ce fichier. Vérifiez qu'il s'agit bien d'une sauvegarde KROMA. |
+| La lecture va caler | a car's word for a stall | La lecture va s'interrompre |
 | Départ (a step name) | too short to mean anything | Point de départ |
 | Création du compte impossible | a noun and *impossible*, the English *failed* | Impossible de créer le compte |
 | Session expirée, veuillez vous reconnecter | *veuillez*, and a comma for a full stop | Votre session a expiré. Reconnectez-vous. |
