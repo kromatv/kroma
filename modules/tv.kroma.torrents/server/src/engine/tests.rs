@@ -186,3 +186,22 @@ fn torrent_file_entry_round_trips() {
     assert_eq!(back.path, "a/b.mkv");
     assert_eq!(back.size_bytes, 42);
 }
+
+#[test]
+fn only_a_magnet_or_a_web_url_is_a_download_link() {
+    let taken = [
+        "magnet:?xt=urn:btih:ab",
+        "https://indexer.example/1.torrent",
+        "HTTP://indexer.example/1",
+    ];
+    let refused = [
+        "@/some/path",
+        "file:///some/path",
+        "ftp://indexer.example/1",
+        "/some/path",
+        "magnet",
+    ];
+
+    assert!(taken.iter().all(|link| is_download_link(link)));
+    assert!(!refused.iter().any(|link| is_download_link(link)));
+}

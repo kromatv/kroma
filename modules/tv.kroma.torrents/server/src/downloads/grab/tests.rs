@@ -116,3 +116,19 @@ fn removing_a_row_still_being_added_drops_the_add_with_it() {
     assert!(db::get_download(&conn, "d1").unwrap().is_none());
     manager.stop_rqbit();
 }
+
+#[test]
+fn a_link_that_is_neither_a_magnet_nor_a_web_url_is_refused_before_it_is_queued() {
+    let (host, manager) = manager_over("grab-not-a-link", &[]);
+    let spec = crate::GrabSpec {
+        magnet_or_url: "@/some/path".into(),
+        release_title: "Some.Release".into(),
+        ..Default::default()
+    };
+
+    let grabbed = manager.grab(&host, spec);
+
+    let conn = manager.core().get().unwrap();
+    assert!(grabbed.unwrap_err().to_string().contains("magnet"));
+    assert!(db::active_download_by_url(&conn, "@/some/path").unwrap().is_none());
+}

@@ -144,5 +144,15 @@ pub fn magnet_info_hash(uri: &str) -> Option<String> {
     (hash.len() == 40 || hash.len() == 32).then_some(hash)
 }
 
+const LINK_SCHEMES: [&str; 3] = ["magnet:", "http://", "https://"];
+
+/// Whether `link` is one an engine is handed: a magnet or a web URL, by scheme.
+pub fn is_download_link(link: &str) -> bool {
+    LINK_SCHEMES.iter().any(|scheme| {
+        link.get(..scheme.len())
+            .is_some_and(|start| start.eq_ignore_ascii_case(scheme))
+    })
+}
+
 #[cfg(test)]
 mod tests;

@@ -22,6 +22,9 @@ impl DownloadManager {
         if spec.magnet_or_url.trim().is_empty() {
             bail!("no magnet or download link");
         }
+        if !crate::engine::is_download_link(spec.magnet_or_url.trim()) {
+            bail!("a download link is a magnet or an http(s) URL");
+        }
         let conn = self.core().get()?;
         if let Some(existing) = db::active_download_by_url(&conn, spec.magnet_or_url.trim())? {
             bail!(
