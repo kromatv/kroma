@@ -100,7 +100,7 @@ peut pas.
 
 ## Inviter les personnes avec qui vous partagez
 
-1. Dans le menu, sélectionnez **Inviter un utilisateur**.
+1. Dans le menu, sélectionnez **Inviter quelqu'un**.
 2. Choisissez ce que la personne peut faire, et combien de temps le lien reste
    valide.
 3. Sélectionnez **Créer le lien d'invitation**, puis envoyez-lui le lien.
