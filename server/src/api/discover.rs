@@ -15,7 +15,7 @@ use serde::Deserialize;
 use serde_json::json;
 
 use crate::api::error::{json_error, lerr};
-use crate::api::extract::AuthUser;
+use crate::api::visibility::{self, AuthViewer};
 use crate::api::permission::require;
 use crate::api::util::blocking;
 use crate::i18n;
@@ -68,11 +68,11 @@ pub struct SearchParams {
 pub async fn search(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Query(params): Query<SearchParams>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
-    let key = require_tmdb(&state, &user)?;
+    require(&viewer.user, Permission::RequestsCreate)?;
+    let key = require_tmdb(&state, &viewer.user)?;
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let query = params.q.trim().to_string();
     if query.is_empty() {
@@ -85,10 +85,12 @@ pub async fn search(
     }
     let scope = scope_from_type(params.kind.as_deref());
     let page = params.page.unwrap_or(1);
-    let out = blocking(move || {
+    let user = viewer.user.clone();
+    let engine = state.clone();
+    let mut out = blocking(move || {
         let found = discover::search(&key, &lang, scope, &query, page)
             .map_err(|()| anyhow::anyhow!("TMDB search failed"))?;
-        let conn = state.db.get()?;
+        let conn = engine.db.get()?;
         Ok(DiscoverResponse {
             results: flag_hits(&conn, found.hits, &user)?,
             page: found.page,
@@ -96,6 +98,7 @@ pub async fn search(
         })
     })
     .await?;
+    visibility::keep_discovered(&state, &viewer, &mut out.results).await?;
     Ok(Json(out).into_response())
 }
 
@@ -113,18 +116,20 @@ pub struct TrendingParams {
 pub async fn trending(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Query(params): Query<TrendingParams>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
-    let key = require_tmdb(&state, &user)?;
+    require(&viewer.user, Permission::RequestsCreate)?;
+    let key = require_tmdb(&state, &viewer.user)?;
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let scope = scope_from_type(params.kind.as_deref());
     let page = params.page.unwrap_or(1);
-    let out = blocking(move || {
+    let user = viewer.user.clone();
+    let engine = state.clone();
+    let mut out = blocking(move || {
         let found = discover::trending(&key, &lang, scope, page)
             .map_err(|()| anyhow::anyhow!("TMDB trending failed"))?;
-        let conn = state.db.get()?;
+        let conn = engine.db.get()?;
         Ok(DiscoverResponse {
             results: flag_hits(&conn, found.hits, &user)?,
             page: found.page,
@@ -132,6 +137,7 @@ pub async fn trending(
         })
     })
     .await?;
+    visibility::keep_discovered(&state, &viewer, &mut out.results).await?;
     Ok(Json(out).into_response())
 }
 
@@ -139,29 +145,33 @@ pub async fn trending(
 pub async fn detail(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
-    let key = require_tmdb(&state, &user)?;
-    let loc = i18n::user_locale(&user);
+    require(&viewer.user, Permission::RequestsCreate)?;
+    let key = require_tmdb(&state, &viewer.user)?;
+    let loc = i18n::user_locale(&viewer.user);
     let kind = match kind.as_str() {
         "movie" => RequestKind::Movie,
         "tv" | "show" => RequestKind::Show,
         _ => return Err(json_error(StatusCode::NOT_FOUND, "unknown media type")),
     };
+    visibility::gate_tmdb(&state, &viewer, kind, tmdb_id).await?;
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
+    let user = viewer.user.clone();
+    let engine = state.clone();
     let out = blocking(move || {
         let detail = discover::detail(&key, &lang, kind, tmdb_id)
             .map_err(|()| anyhow::anyhow!("TMDB detail failed"))?;
-        let conn = state.db.get()?;
+        let conn = engine.db.get()?;
         detail.map(|d| flag_detail(&conn, d, &user)).transpose()
     })
     .await?;
-    match out {
-        Some(d) => Ok(Json(d).into_response()),
-        None => Err(lerr(loc, StatusCode::NOT_FOUND, "error.itemNotFound")),
-    }
+    let Some(mut detail) = out else {
+        return Err(lerr(loc, StatusCode::NOT_FOUND, "error.itemNotFound"));
+    };
+    visibility::keep_discovered(&state, &viewer, &mut detail.similar).await?;
+    Ok(Json(detail).into_response())
 }
 
 /// `GET /api/discover/tv/:tmdbId/season/:season` the episodes of one season, in
@@ -169,11 +179,12 @@ pub async fn detail(
 pub async fn season(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path((tmdb_id, season)): Path<(u64, u32)>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::RequestsCreate)?;
-    let key = require_tmdb(&state, &user)?;
+    require(&viewer.user, Permission::RequestsCreate)?;
+    let key = require_tmdb(&state, &viewer.user)?;
+    visibility::gate_tmdb(&state, &viewer, RequestKind::Show, tmdb_id).await?;
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let found = blocking(move || Ok(season_episodes(&key, &lang, tmdb_id, season))).await?;
     let episodes: Vec<DiscoverEpisode> = found.episodes.into_iter().map(Into::into).collect();

@@ -4,6 +4,7 @@
 //! the invitation of an account that waits.
 
 pub(super) mod links;
+mod restrictions;
 
 use std::collections::BTreeSet;
 
@@ -35,6 +36,11 @@ pub fn routes() -> Router<SharedState> {
             post(links::send_email_verification),
         )
         .route("/users/{id}/pin", axum::routing::delete(clear_user_pin))
+        .route("/users/{id}/restrictions", get(restrictions::restrictions))
+        .route(
+            "/users/{id}/restrictions/level",
+            axum::routing::put(restrictions::set_level),
+        )
 }
 
 async fn target_or_404(state: &SharedState, user: &User, id: &str) -> Result<User, Response> {

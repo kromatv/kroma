@@ -8,9 +8,9 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
-use crate::api::extract::AuthUser;
 use crate::api::util::query;
-use crate::api::{etag, visibility};
+use crate::api::visibility::{self, AuthViewer};
+use crate::api::etag;
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::model::{show_card, MediaCard, MediaItem};
@@ -76,19 +76,17 @@ pub async fn splash(
 /// granted (ACCT-20).
 pub async fn list_libraries(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
 ) -> Result<Response, Response> {
     let mut libs = query(&state.db, move |pool| db::list_libraries(&pool)).await?;
-    if !user.sees_every_library() {
-        libs.retain(|lib| user.sees_library(&lib.id));
-    }
+    libs.retain(|lib| viewer.sees_library(&lib.id));
     Ok(Json(libs).into_response())
 }
 
 /// `GET /api/items` (optional `?library=`) → all playable items (movies + episodes).
 pub async fn list_items(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Query(q): Query<LibraryQuery>,
 ) -> Result<Response, Response> {
@@ -98,7 +96,7 @@ pub async fn list_items(
         Ok(items)
     })
     .await?;
-    visibility::keep_items(&user, &mut items);
+    visibility::keep_items(&state, &viewer, &mut items).await?;
     Ok(Json(items).into_response())
 }
 
@@ -107,7 +105,7 @@ pub async fn list_items(
 /// files, tracks, cast or crew.
 pub async fn list_movies(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Query(q): Query<ListQuery>,
 ) -> Result<Response, Response> {
@@ -118,7 +116,7 @@ pub async fn list_movies(
         Ok(items)
     })
     .await?;
-    visibility::keep_items(&user, &mut items);
+    visibility::keep_items(&state, &viewer, &mut items).await?;
     Ok(items_in_view(items, q.view))
 }
 
@@ -139,11 +137,11 @@ pub fn items_in_view(items: Vec<MediaItem>, view: Option<ListView>) -> Response 
 /// calling account.
 pub async fn list_shows(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Query(q): Query<ListQuery>,
 ) -> Result<Response, Response> {
-    let uid = user.id.clone();
+    let uid = viewer.user.id.clone();
     let library = q.library;
     let mut shows = query(&state.db, move |pool| {
         let mut shows = db::list_shows(&pool, library.as_deref())?;
@@ -155,7 +153,7 @@ pub async fn list_shows(
         Ok(shows)
     })
     .await?;
-    visibility::keep_shows(&user, &mut shows);
+    visibility::keep_shows(&viewer, &mut shows);
     if matches!(q.view, Some(ListView::Card)) {
         shows = shows.into_iter().map(show_card).collect();
     }
@@ -166,12 +164,12 @@ pub async fn list_shows(
 /// calling account.
 pub async fn get_show(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_show(&state, &user, &id).await?;
-    let uid = user.id;
+    visibility::gate_show(&state, &viewer, &id).await?;
+    let uid = viewer.user.id.clone();
     let detail = query(&state.db, move |pool| {
         let Some(mut detail) = db::get_show(&pool, &id)? else {
             return Ok(None);
@@ -182,6 +180,8 @@ pub async fn get_show(
     })
     .await?
     .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "show not found"))?;
+    let mut detail = detail;
+    viewer.relabel(detail.show.metadata.as_mut());
     Ok(Json(detail).into_response())
 }
 
@@ -189,11 +189,11 @@ pub async fn get_show(
 /// its file followed by the text subtitle files sitting beside it on disk.
 pub async fn get_item(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_item(&state, &user, &id).await?;
+    visibility::gate_item(&state, &viewer, &id).await?;
     let beside = state.external_subtitles.clone();
     let item = query(&state.db, move |pool| {
         let Some(mut item) = db::get_item(&pool, &id)? else {
@@ -205,5 +205,7 @@ pub async fn get_item(
     })
     .await?
     .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
+    let mut item = item;
+    viewer.relabel(item.metadata.as_mut());
     Ok(Json(item).into_response())
 }

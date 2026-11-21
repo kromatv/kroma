@@ -5,6 +5,7 @@ use std::collections::{BTreeSet, HashMap};
 
 use tantivy::tokenizer::TextAnalyzer;
 
+use super::engine::Asker;
 use super::entry::tokens;
 
 /// Somebody credited in the catalogue whose name matches the query.
@@ -22,7 +23,27 @@ pub(super) struct Person {
     tmdb_id: Option<u64>,
     profile_url: Option<String>,
     words: Vec<String>,
-    libraries: Vec<String>,
+    credits: Vec<Credit>,
+}
+
+/// The title a credit is on, which the asker has to see for it to count.
+#[derive(Clone)]
+pub(super) struct Credit {
+    library: String,
+    title: String,
+}
+
+impl Credit {
+    pub(super) fn on(library: &str, title: &str) -> Credit {
+        Credit {
+            library: library.to_string(),
+            title: title.to_string(),
+        }
+    }
+
+    fn seen_by(&self, asker: &Asker) -> bool {
+        (asker.visible)(&self.library) && asker.titles.is_none_or(|ids| ids.contains(&self.title))
+    }
 }
 
 #[derive(Default)]
@@ -37,7 +58,7 @@ impl Roster {
         name: &str,
         tmdb_id: Option<u64>,
         profile_url: Option<&str>,
-        library: &str,
+        on: &Credit,
     ) {
         let words = tokens(analyzer, name);
         if words.is_empty() {
@@ -48,7 +69,7 @@ impl Roster {
             tmdb_id,
             profile_url: None,
             words,
-            libraries: Vec::new(),
+            credits: Vec::new(),
         });
         if person.tmdb_id.is_none() {
             person.tmdb_id = tmdb_id;
@@ -56,7 +77,7 @@ impl Roster {
         if person.profile_url.is_none() {
             person.profile_url = profile_url.map(str::to_string);
         }
-        person.libraries.push(library.to_string());
+        person.credits.push(on.clone());
     }
 
     pub(super) fn finish(self) -> Vec<Person> {
@@ -71,11 +92,7 @@ const MIN_QUERY_CHARS: usize = 3;
 
 /// The people whose name covers every word of `query`, the best match first.
 /// The last word may be unfinished, and a long word may carry a typo.
-pub(super) fn matching(
-    people: &[Person],
-    query: &[String],
-    visible: &dyn Fn(&str) -> bool,
-) -> Vec<PersonHit> {
+pub(super) fn matching(people: &[Person], query: &[String], asker: &Asker) -> Vec<PersonHit> {
     let typed: usize = query.iter().map(|w| w.chars().count()).sum();
     if query.is_empty() || typed < MIN_QUERY_CHARS {
         return Vec::new();
@@ -84,7 +101,7 @@ pub(super) fn matching(
         .iter()
         .filter_map(|person| {
             let closeness = closeness(&person.words, query)?;
-            let titles = person.libraries.iter().filter(|l| visible(l)).count();
+            let titles = person.credits.iter().filter(|c| c.seen_by(asker)).count();
             (titles > 0).then_some((closeness, titles, person))
         })
         .collect();
@@ -169,16 +186,34 @@ pub(super) fn within(a: &str, b: &str, budget: usize) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
     use crate::services::search::schema;
 
     fn roster(credits: &[(&str, &str)]) -> Vec<Person> {
         let mut analyzer = schema::analyzer();
         let mut roster = Roster::default();
-        for (name, library) in credits {
-            roster.credit(&mut analyzer, name, None, None, library);
+        for (title, (name, library)) in credits.iter().enumerate() {
+            let on = Credit::on(library, &title.to_string());
+            roster.credit(&mut analyzer, name, None, None, &on);
         }
         roster.finish()
+    }
+
+    fn found_by(
+        people: &[Person],
+        raw: &str,
+        visible: &dyn Fn(&str) -> bool,
+        titles: Option<&HashSet<String>>,
+    ) -> Vec<PersonHit> {
+        let favoured = HashMap::new();
+        let asker = Asker {
+            visible,
+            titles,
+            favoured: &favoured,
+        };
+        matching(people, &query(raw), &asker)
     }
 
     fn query(raw: &str) -> Vec<String> {
@@ -186,7 +221,7 @@ mod tests {
     }
 
     fn names(people: &[Person], raw: &str) -> Vec<String> {
-        matching(people, &query(raw), &|_| true)
+        found_by(people, raw, &|_| true, None)
             .into_iter()
             .map(|hit| hit.name)
             .collect()
@@ -196,7 +231,7 @@ mod tests {
     fn a_full_name_finds_the_person_and_counts_their_titles() {
         let people = roster(&[("Tom Hardy", "films"), ("Tom Hardy", "films"), ("Tom Hanks", "films")]);
 
-        let found = matching(&people, &query("tom hardy"), &|_| true);
+        let found = found_by(&people, "tom hardy", &|_| true, None);
 
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].name, "Tom Hardy");
@@ -232,8 +267,21 @@ mod tests {
     fn somebody_credited_only_in_a_library_the_asker_cannot_see_is_absent() {
         let people = roster(&[("Tom Hardy", "private"), ("Tom Hardy", "films")]);
 
-        let seen = matching(&people, &query("hardy"), &|library| library == "films");
-        let hidden = matching(&people, &query("hardy"), &|library| library == "kids");
+        let seen = found_by(&people, "hardy", &|library| library == "films", None);
+        let hidden = found_by(&people, "hardy", &|library| library == "kids", None);
+
+        assert_eq!(seen[0].titles, 1);
+        assert!(hidden.is_empty());
+    }
+
+    #[test]
+    fn a_person_is_counted_only_over_the_titles_a_profile_may_see() {
+        let people = roster(&[("Tom Hardy", "films"), ("Tom Hardy", "films")]);
+        let one = HashSet::from(["1".to_string()]);
+        let none = HashSet::new();
+
+        let seen = found_by(&people, "hardy", &|_| true, Some(&one));
+        let hidden = found_by(&people, "hardy", &|_| true, Some(&none));
 
         assert_eq!(seen[0].titles, 1);
         assert!(hidden.is_empty());

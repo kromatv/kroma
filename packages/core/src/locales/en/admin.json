@@ -402,5 +402,16 @@
   "admin.serverRestartUnsupported": "This installation cannot restart the server on its own.",
   "admin.serverRestartDuringUpdate": "An update is in progress and will restart the server itself.",
   "admin.downloadFolders": "Download folders",
-  "admin.downloadFoldersHint": "Where an external download client saves its files, as this server sees them. Separate folders with commas."
+  "admin.downloadFoldersHint": "Where an external download client saves its files, as this server sees them. Separate folders with commas.",
+  "admin.restrictionsAdmin": "A profile that runs the server can't be held to a maturity rating",
+  "admin.restrictionsOwnProfile": "Another admin has to change your own profile's restrictions",
+  "admin.maturity": "Maturity rating",
+  "admin.maturityHint": "Titles rated above this level, and titles with no rating, are hidden from this profile on all of its devices.",
+  "admin.maturityChange": "Change",
+  "admin.maturityPasswordHint": "Type your own password to change this profile's restrictions.",
+  "admin.maturityPassword": "Your password",
+  "admin.maturityConfirm": "Confirm",
+  "admin.maturitySelf": "Another admin sets your own profile's maturity rating.",
+  "admin.maturityRunsServer": "A profile that runs the server sees every title.",
+  "admin.maturityFailed": "Couldn't change the maturity rating"
 }

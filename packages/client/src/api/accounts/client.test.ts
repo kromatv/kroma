@@ -49,6 +49,26 @@ describe('the accounts endpoints', () => {
     },
     { name: 'me', call: (c) => c.accounts.me(), method: 'GET', path: '/auth/me' },
     {
+      name: 'the ratings country',
+      call: (c) => c.accounts.ratings.get(),
+      method: 'GET',
+      path: '/auth/me/ratings',
+    },
+    {
+      name: 'picking a ratings country',
+      call: (c) => c.accounts.ratings.set('DE'),
+      method: 'PUT',
+      path: '/auth/me/ratings',
+      body: { country: 'DE' },
+    },
+    {
+      name: 'following the household country again',
+      call: (c) => c.accounts.ratings.set(null),
+      method: 'PUT',
+      path: '/auth/me/ratings',
+      body: { country: null },
+    },
+    {
       name: 'update',
       call: (c) => c.accounts.update({ username: 'max' }),
       method: 'PATCH',

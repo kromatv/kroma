@@ -48,4 +48,5 @@ pub(super) const STEPS: &[Step] = &[
     sql_step!("0023_import_held_states"),
     sql_step!("0024_import_identities"),
     sql_step!("0025_cast_devices"),
+    sql_step!("0029_profile_maturity"),
 ];

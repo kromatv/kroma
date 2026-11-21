@@ -20,6 +20,7 @@ use serde::Deserialize;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
+use crate::api::visibility::AuthViewer;
 use crate::db;
 use crate::i18n;
 use crate::model::{DeliveriesView, NotificationsView, PushTransport, SubscribeBody};
@@ -31,6 +32,7 @@ use crate::state::SharedState;
 
 mod inbox;
 mod prefs;
+mod titles;
 
 // The store keeps 200 rows per user (`db::notifications::RETENTION_PER_USER`);
 // the bell only ever shows a page.
@@ -69,13 +71,13 @@ pub struct ListQuery {
 /// the unread tally and the unseen one that drives the bell badge.
 pub async fn list(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Query(shelf): Query<ListQuery>,
 ) -> Result<Response, Response> {
-    let locale = notify::render::locale_of(&user).to_string();
-    let uid = user.id.clone();
+    let locale = notify::render::locale_of(&viewer.user).to_string();
+    let uid = viewer.user.id.clone();
     let types = notify::types::types_of(&state);
-    let view = query(&state.db, move |pool| {
+    let (stored, unread, unseen) = query(&state.db, move |pool| {
         let conn = pool.get()?;
         let stored = if shelf.archived {
             db::notifications::list_archived(&conn, &uid, PAGE)?
@@ -84,6 +86,12 @@ pub async fn list(
         };
         let unread = db::notifications::unread_count(&conn, &uid)?;
         let unseen = db::notifications::unseen_count(&conn, &uid)?;
+        Ok((stored, unread, unseen))
+    })
+    .await?;
+    let stored = titles::keep_visible(&state, &viewer, stored).await?;
+    let view = query(&state.db, move |pool| {
+        let conn = pool.get()?;
         let subjects =
             notify::subject::Subjects::from(db::notifications::subject_facts(&conn, &stored)?);
         Ok(NotificationsView {

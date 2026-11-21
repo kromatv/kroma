@@ -34,5 +34,6 @@
   "error.tmdbUnavailable": "TMDB n'est pas disponible sur ce serveur",
   "error.unauthorizedBody": "Votre session a pris fin. Reconnectez-vous pour continuer à regarder.",
   "error.unauthorizedTitle": "Connexion requise",
-  "error.userNotFound": "Utilisateur introuvable"
+  "error.userNotFound": "Utilisateur introuvable",
+  "error.ratingsCountryUnknown": "KROMA ne connaît pas la classification par âge de ce pays"
 }

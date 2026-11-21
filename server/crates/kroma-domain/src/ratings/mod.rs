@@ -67,3 +67,14 @@ fn lookup(country: &str, label: &str) -> Option<LabelAge> {
         .ok()
         .map(|i| ages::AGES[i].2)
 }
+
+mod ceiling;
+pub use ceiling::{Ceiling, MaturityLevel};
+
+/// Every country the table knows a rating system for, by code: the countries a
+/// reader may pick as theirs.
+pub fn countries() -> Vec<&'static str> {
+    let mut out: Vec<&'static str> = ages::AGES.iter().map(|(country, _, _)| *country).collect();
+    out.dedup();
+    out
+}

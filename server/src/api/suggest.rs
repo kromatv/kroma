@@ -11,9 +11,8 @@ use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use crate::api::extract::AuthUser;
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer};
 use crate::db;
 use crate::i18n::{self, ReqLocale};
 use crate::model::Section;
@@ -58,11 +57,11 @@ fn reserve(in_flight: &mut HashSet<String>, id: &str) -> bool {
 /// nothing can generate, so a miss is terminal and empty.
 pub async fn ai_suggest(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ReqLocale(locale): ReqLocale,
     Path(id): Path<String>,
 ) -> Response {
-    if !seed_visible(&state, &user, &id).await {
+    if visibility::gate_subject(&state, &viewer, &id).await.is_err() {
         return section(locale, None, Vec::new());
     }
     let lookup_id = id.clone();
@@ -90,7 +89,7 @@ pub async fn ai_suggest(
         Ok(Cached::Ready(row, items)) => {
             let items = items
                 .into_iter()
-                .filter_map(|entry| visibility::keep_section_item(&user, Some(entry)))
+                .filter_map(|entry| visibility::keep_section_item(&viewer, Some(entry)))
                 .collect();
             section(locale, i18n::pick(&row.reasons, locale).cloned(), items)
         }
@@ -106,20 +105,6 @@ pub async fn ai_suggest(
     }
 }
 
-async fn seed_visible(state: &SharedState, user: &crate::model::User, id: &str) -> bool {
-    if user.sees_every_library() {
-        return true;
-    }
-    let seed = id.to_string();
-    let library = query(&state.db, move |pool| {
-        Ok(match db::item_library(&pool, &seed)? {
-            Some(library) => Some(library),
-            None => db::show_library(&pool, &seed)?,
-        })
-    })
-    .await;
-    matches!(library, Ok(Some(library)) if user.sees_library(&library))
-}
 
 enum Cached {
     Ready(db::SuggestionRow, Vec<crate::model::SectionItem>),

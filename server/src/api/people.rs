@@ -4,12 +4,12 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::dto::{one_per_title, PersonDetailResponse, PersonResponse, SearchHit};
-use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
+use crate::api::visibility::{AuthViewer, ShowRatings, Viewer};
 use crate::db;
 use crate::i18n::{AskedLocale, ContentLocale};
 use crate::infra::{image, metadata};
-use crate::model::{MediaItem, Metadata, Show, User};
+use crate::model::{MediaItem, Metadata, Show};
 use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
@@ -31,7 +31,7 @@ pub struct PersonParams {
 /// id, a slug or a display name.
 pub async fn person(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Query(p): Query<PersonParams>,
 ) -> Result<Response, Response> {
@@ -58,7 +58,7 @@ pub async fn person(
         db::localize::overlay_shows(&pool, &mut shows, locale)?;
         Ok(PersonResponse {
             name: found.name,
-            results: hits_best_known_first(movies, shows, library.as_deref(), &user),
+            results: hits_best_known_first(movies, shows, library.as_deref(), &viewer),
         })
     })
     .await?;
@@ -75,6 +75,7 @@ pub struct NameParams {
 /// The portrait is cached locally and served from `/api/images` like other art.
 pub async fn details(
     State(state): State<SharedState>,
+    AuthViewer(viewer): AuthViewer,
     AskedLocale(reader): AskedLocale,
     Query(p): Query<NameParams>,
 ) -> Result<Response, Response> {
@@ -108,7 +109,11 @@ pub async fn details(
                 }
                 p
             });
-        let credits = metadata::person::filmography(&api_key, &language, &lookup, tmdb_id);
+        let credits = if viewer.is_held() {
+            Vec::new()
+        } else {
+            metadata::person::filmography(&api_key, &language, &lookup, tmdb_id)
+        };
         Ok((person, credits))
     })
     .await?;
@@ -139,19 +144,22 @@ fn hits_best_known_first(
     movies: Vec<MediaItem>,
     shows: Vec<Show>,
     library: Option<&str>,
-    user: &User,
+    viewer: &Viewer,
 ) -> Vec<SearchHit> {
-    let in_library = |lib: &str| library.is_none_or(|want| lib == want) && user.sees_library(lib);
+    let in_library = |lib: &str| library.is_none_or(|want| lib == want);
+    let films = ShowRatings::new();
 
     let mut rows: Vec<((f32, i32), SearchHit)> = Vec::with_capacity(movies.len() + shows.len());
-    for m in movies {
-        if in_library(&m.library) {
+    for mut m in movies {
+        if in_library(&m.library) && viewer.sees_item(&m, &films) {
+            viewer.relabel(m.metadata.as_mut());
             let key = best_known_rank(m.metadata.as_ref(), m.year);
             rows.push((key, SearchHit::Movie { item: m }));
         }
     }
-    for s in shows {
-        if in_library(&s.library) {
+    for mut s in shows {
+        if in_library(&s.library) && viewer.sees_show(&s) {
+            viewer.relabel(s.metadata.as_mut());
             let key = best_known_rank(s.metadata.as_ref(), s.year);
             rows.push((key, SearchHit::Show { show: s }));
         }

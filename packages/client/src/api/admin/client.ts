@@ -7,6 +7,7 @@ import { backupApi } from './backup';
 import { LogsView } from './logs';
 import { type MetricRange, MetricsSnapshot, StorageInfo, Transcodes } from './metrics';
 import { adminNotificationsApi } from './notifications';
+import { restrictionsApi } from './restrictions';
 import { SettingsView } from './settings';
 import { Activity, HistoryStats, MostWatched, PlaybackSession, PlaysPage, TopUser } from './stats';
 import { UpdateStatus, type UpdateTarget } from './updates';
@@ -33,6 +34,7 @@ export default function adminApi(ctx: RequestContext) {
   return {
     backup: backupApi(ctx),
     notifications: adminNotificationsApi(ctx),
+    restrictions: restrictionsApi(ctx),
 
     server: () => ctx.get('/admin/server', ServerInfo),
 

@@ -7,9 +7,8 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use crate::api::error::json_error;
-use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer};
 use crate::db;
 use crate::i18n::AskedLocale;
 use crate::infra::metadata::{self, Target};
@@ -31,11 +30,11 @@ pub fn routes() -> Router<SharedState> {
 /// the item is unknown or TMDB has no match.
 pub async fn item_metadata(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     AskedLocale(reader): AskedLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_item(&state, &user, &id).await?;
+    visibility::gate_item(&state, &viewer, &id).await?;
     let api_key = require_tmdb_key(&state)?;
 
     let item = query(&state.db, move |pool| db::get_item(&pool, &id))
@@ -57,11 +56,11 @@ pub async fn item_metadata(
 /// `GET /api/shows/:id/metadata` → TMDB details + IDs for one show.
 pub async fn show_metadata(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     AskedLocale(reader): AskedLocale,
     Path(id): Path<String>,
 ) -> Result<Response, Response> {
-    visibility::gate_show(&state, &user, &id).await?;
+    visibility::gate_show(&state, &viewer, &id).await?;
     let api_key = require_tmdb_key(&state)?;
 
     let show = query(&state.db, move |pool| db::get_show(&pool, &id))

@@ -118,6 +118,12 @@ mod it_mail_relay;
 #[cfg(test)]
 mod it_account_identifiers;
 #[cfg(test)]
+mod it_maturity_by_id;
+#[cfg(test)]
+mod it_maturity_ceiling;
+#[cfg(test)]
+mod it_maturity_settings;
+#[cfg(test)]
 mod it_media;
 #[cfg(test)]
 mod it_module_frontend;

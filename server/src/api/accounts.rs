@@ -20,6 +20,7 @@ use axum::Router;
 mod credentials;
 mod profile;
 mod quick_connect;
+mod ratings;
 mod reset;
 mod session;
 mod verify_email;
@@ -28,6 +29,7 @@ mod waiting;
 use credentials::{change_password, login, register};
 use profile::{update_me, upload_avatar};
 use quick_connect::{quick_authorize, quick_initiate, quick_poll};
+use ratings::{ratings_country, set_ratings_country};
 use reset::{check_reset, redeem_reset, request_reset};
 use session::{
     exchange_token, list_sessions, logout, relock, revoke_other_sessions, revoke_session,
@@ -44,6 +46,10 @@ pub fn routes() -> Router<SharedState> {
         .route("/auth/relock", post(relock))
         .route("/auth/logout", post(logout))
         .route("/auth/me", get(me).patch(update_me))
+        .route(
+            "/auth/me/ratings",
+            get(ratings_country).put(set_ratings_country),
+        )
         .route(
             "/auth/me/sessions",
             get(list_sessions).delete(revoke_other_sessions),

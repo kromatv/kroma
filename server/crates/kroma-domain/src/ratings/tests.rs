@@ -116,3 +116,11 @@ fn every_row_of_the_reference_table_has_the_same_age_here() {
         assert!(lookup(&country, &label).is_some(), "{country} {label}");
     }
 }
+
+#[test]
+fn every_country_with_a_rating_system_is_offered_once_in_code_order() {
+    let offered = countries();
+
+    assert!(offered.contains(&"FR") && offered.contains(&"US"));
+    assert!(offered.windows(2).all(|pair| pair[0] < pair[1]));
+}

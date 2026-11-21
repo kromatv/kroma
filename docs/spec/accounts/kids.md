@@ -23,11 +23,13 @@ that covers every system the provider returns
 ([`docs/reference/content-ratings.md`](../../reference/content-ratings.md)). A label that is
 not a rating, such as "not rated" or "exempt", has no age.
 
-**ACCT-103** (AGREED) - A show's rating is the rating of every one of its episodes.
+**ACCT-103** (SHIPPED) - A show's rating is the rating of every one of its episodes.
 
-**ACCT-104** (AGREED) - Every account has a ratings country. It starts as the server's
-metadata country. A person changes their own in their settings, and an admin sets a Kids
-profile's.
+**ACCT-104** (SHIPPED) - Every account has a ratings country. It starts as the server's
+metadata country, and a person changes their own in their settings.
+
+**ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs
+in to it to change its settings.
 
 **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the
 reader's ratings country.
@@ -43,37 +45,50 @@ the phone's billboard, on web, television, phone and desktop, and it looks the s
 
 ## A maturity ceiling
 
-Status: **AGREED**
+Status: **SHIPPED** on the server, and in the web and desktop apps, where an admin sets a
+profile's level and a person picks their ratings country. The television and phone apps
+have no screen for either yet; they show only what the server lets through.
 
 A ceiling is chosen from six levels, the ones Netflix uses: **All**, **7+**, **10+**,
 **13+**, **16+** and **18+**. All, 7+ and 10+ are the kids levels.
 
-**ACCT-109** (AGREED) - Every profile carries one of the six levels. 18+ is the default, and
+**ACCT-109** (SHIPPED) - Every profile carries one of the six levels. 18+ is the default, and
 it hides nothing. A profile at any other level is under a ceiling.
 
-**ACCT-110** (AGREED) - A ceiling compares ages, never labels. A title passes when the age
+**ACCT-110** (SHIPPED) - A ceiling compares ages, never labels. A title passes when the age
 of the rating its badge shows to that profile is at or below the level. All is age 0.
 
-**ACCT-111** (AGREED) - Under a ceiling, a title with no rating does not pass. A title the
+**ACCT-111** (SHIPPED) - Under a ceiling, a title with no rating does not pass. A title the
 server does not hold counts as unrated.
 
-**ACCT-112** (AGREED) - A title that does not pass is absent for that profile from browse,
+**ACCT-112** (SHIPPED) - A title that does not pass is absent for that profile from browse,
 search, every home row, recommendations, a person's page and its watch state.
 
-**ACCT-113** (AGREED) - A title that does not pass is refused by its id on every route that
+**ACCT-113** (SHIPPED) - A title that does not pass is refused by its id on every route that
 presents the profile's session, deep links and media bytes included (ACCT-35). It refuses
 exactly as an ungranted title does (ACCT-34), so probing cannot tell a title kept from this
 profile apart from one that was never scanned.
 
-**ACCT-114** (AGREED) - A changed ceiling bites on the profile's next request, on every
+**ACCT-114** (SHIPPED) - A changed ceiling bites on the profile's next request, on every
 device it is signed in on.
 
-**ACCT-115** (AGREED) - Only an admin sets a profile's ceiling. No profile can change its
+**ACCT-115** (SHIPPED) - Only an admin sets a profile's ceiling. No profile can change its
 own.
 
-**ACCT-116** (AGREED) - An admin confirms their own password before changing a ceiling, as
+**ACCT-116** (SHIPPED) - An admin confirms their own password before changing a ceiling, as
 Netflix asks for the account password. One confirmation covers the rest of that visit to
 the profile's restrictions.
+
+**ACCT-151** (SHIPPED) - A ceiling binds only a profile with no management right. A profile
+that can manage users, libraries, settings, requests or reports reaches every title through
+the console, so the server refuses to put one under a ceiling, and a stored ceiling stops
+binding while the profile holds such a right.
+
+**ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may
+not see.
+
+**ACCT-153** (AGREED) - A push notification about a title the profile may not see is not
+sent to its devices.
 
 The artwork edge ACCT-35 records holds here too: someone who already has a hidden title's
 id can fetch its cover. None of its bytes.

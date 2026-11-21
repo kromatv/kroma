@@ -3,7 +3,7 @@
 
 # Requirement index
 
-770 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+774 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -109,20 +109,20 @@
 - **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-101** (SHIPPED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-102** (SHIPPED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-103** (AGREED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-104** (AGREED) - Every account has a ratings country. It starts as the server's <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-103** (SHIPPED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-104** (SHIPPED) - Every account has a ratings country. It starts as the server's <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-106** (AGREED) - A title that country never rated borrows another country's label, <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-107** (SHIPPED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-108** (AGREED) - The badge is on a title's detail page, on the home's hero and on <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-109** (AGREED) - Every profile carries one of the six levels. 18+ is the default, and <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-110** (AGREED) - A ceiling compares ages, never labels. A title passes when the age <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-111** (AGREED) - Under a ceiling, a title with no rating does not pass. A title the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-112** (AGREED) - A title that does not pass is absent for that profile from browse, <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-113** (AGREED) - A title that does not pass is refused by its id on every route that <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-114** (AGREED) - A changed ceiling bites on the profile's next request, on every <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-115** (AGREED) - Only an admin sets a profile's ceiling. No profile can change its <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-116** (AGREED) - An admin confirms their own password before changing a ceiling, as <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-109** (SHIPPED) - Every profile carries one of the six levels. 18+ is the default, and <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-110** (SHIPPED) - A ceiling compares ages, never labels. A title passes when the age <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-111** (SHIPPED) - Under a ceiling, a title with no rating does not pass. A title the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-112** (SHIPPED) - A title that does not pass is absent for that profile from browse, <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-113** (SHIPPED) - A title that does not pass is refused by its id on every route that <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-114** (SHIPPED) - A changed ceiling bites on the profile's next request, on every <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-115** (SHIPPED) - Only an admin sets a profile's ceiling. No profile can change its <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-116** (SHIPPED) - An admin confirms their own password before changing a ceiling, as <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-117** (AGREED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-118** (AGREED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-119** (AGREED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
@@ -147,6 +147,10 @@
 - **ACCT-138** (AGREED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-151** (SHIPPED) - A ceiling binds only a profile with no management right. A profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-153** (AGREED) - A push notification about a title the profile may not see is not <sub>[kids.md](accounts/kids.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
@@ -394,7 +398,7 @@
 - **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
 - **BROWSE-61** (SHIPPED) - While a scan runs, the home gains each title as the scan matches it,
 - **BROWSE-62** (AGREED) - The home, search and a person's page obey the viewer's maturity
-- **BROWSE-63** (AGREED) - Under a maturity ceiling, a person's page lists only the titles the
+- **BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
 
 ## DISC - [discovery](discovery/)
 

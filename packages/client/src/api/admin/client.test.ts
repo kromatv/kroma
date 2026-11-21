@@ -77,6 +77,19 @@ describe('the admin console endpoints', () => {
     },
     { name: 'users', call: (c) => c.admin.users(), method: 'GET', path: '/admin/users' },
     {
+      name: 'restrictions',
+      call: (c) => c.admin.restrictions.get(user),
+      method: 'GET',
+      path: '/admin/users/u1/restrictions',
+    },
+    {
+      name: 'setLevel carries the admin password',
+      call: (c) => c.admin.restrictions.setLevel(user, 10, 'secret'),
+      method: 'PUT',
+      path: '/admin/users/u1/restrictions/level',
+      body: { level: 10, password: 'secret' },
+    },
+    {
       name: 'updateUser',
       call: (c) => c.admin.updateUser(user, { permissions: ['playback'] }),
       method: 'PATCH',

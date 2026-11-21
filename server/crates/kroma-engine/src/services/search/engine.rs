@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, RwLock};
 
 use anyhow::Result;
@@ -30,6 +30,9 @@ pub struct SearchEngine {
 pub struct Asker<'a> {
     /// Whether a library is one the asker may see.
     pub visible: &'a dyn Fn(&str) -> bool,
+    /// When set, the only films and shows the asker may see, by id: an episode
+    /// answers as its show. `None` holds the asker to its libraries alone.
+    pub titles: Option<&'a HashSet<String>>,
     /// Titles to favour by id, as a factor above 1.0: what the asker is in the
     /// middle of, or saved. A show's factor reaches its episodes.
     pub favoured: &'a HashMap<String, f32>,
@@ -117,6 +120,7 @@ impl SearchEngine {
     pub fn search(&self, raw: &str, limit: usize) -> Vec<Hit> {
         let asker = Asker {
             visible: &|_| true,
+            titles: None,
             favoured: &HashMap::new(),
         };
         self.answer(raw, limit, &asker).hits
@@ -144,6 +148,7 @@ impl SearchEngine {
                     .cloned()
                     .collect(),
             ),
+            titles: asker.titles.map(|ids| Arc::new(ids.clone())),
             favoured: Arc::new(asker.favoured.clone()),
             active: active.clone(),
             limit: limit.max(1),
@@ -161,7 +166,7 @@ impl SearchEngine {
             let most = (words.len() as f32 * RELAXED_SHARE).ceil() as usize;
             hits = run.titles(&literal, Need::AtLeast(most));
         }
-        let people = people::matching(&active.people, &read.text_words(), asker.visible);
+        let people = people::matching(&active.people, &read.text_words(), asker);
         Answer { hits, people }
     }
 

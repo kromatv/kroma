@@ -206,7 +206,9 @@ pub struct DeletePinBody {
     pub password: Option<String>,
 }
 
-async fn check_password(
+/// Refuse unless `password` is `uid`'s own, under the same cooldown a wrong
+/// PIN earns.
+pub(crate) async fn check_password(
     state: &SharedState,
     uid: &str,
     password: &str,

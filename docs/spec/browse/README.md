@@ -245,7 +245,7 @@ best known first.
 the library does not hold, each leading to where it can be requested. The web client does
 this; the television and mobile clients list the library titles only.
 
-**BROWSE-63** (AGREED) - Under a maturity ceiling, a person's page lists only the titles the
+**BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
 library holds. The server knows no rating for the rest, so they count as unrated.
 
 **BROWSE-51** (SHIPPED) - A guest spot as oneself on a talk show is not part of a filmography.

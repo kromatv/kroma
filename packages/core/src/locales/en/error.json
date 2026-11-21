@@ -34,5 +34,6 @@
   "error.tmdbUnavailable": "TMDB is not available on this server",
   "error.unauthorizedBody": "Your session has ended. Sign in again to keep watching.",
   "error.unauthorizedTitle": "Sign-in required",
-  "error.userNotFound": "User not found"
+  "error.userNotFound": "User not found",
+  "error.ratingsCountryUnknown": "KROMA doesn't know this country's age ratings"
 }

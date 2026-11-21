@@ -7,10 +7,9 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
-use crate::api::extract::AuthUser;
 use crate::api::media::{items_in_view, ListView};
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer};
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::model::MediaItem;
@@ -31,10 +30,10 @@ const ROW_LEN: usize = 30;
 /// `GET /api/for-you` — empty until the caller has watched something embeddable.
 pub async fn for_you(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
 ) -> Response {
-    let uid = user.id.clone();
+    let uid = viewer.user.id.clone();
     let engine = state.clone();
     match query(&state.db, move |pool| {
         let mut items = recommend::for_you(&engine, &pool, &uid, ROW_LEN)?;
@@ -43,10 +42,10 @@ pub async fn for_you(
     })
     .await
     {
-        Ok(mut items) => {
-            visibility::keep_items(&user, &mut items);
-            Json(items).into_response()
-        }
+        Ok(mut items) => match visibility::keep_items(&state, &viewer, &mut items).await {
+            Ok(()) => Json(items).into_response(),
+            Err(resp) => resp,
+        },
         Err(resp) => resp,
     }
 }
@@ -60,12 +59,12 @@ pub struct SimilarParams {
 /// `MediaCard[]`: the shape a poster rail draws.
 pub async fn similar(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Path(id): Path<String>,
     Query(params): Query<SimilarParams>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
         return resp;
     }
     let engine = state.clone();
@@ -76,10 +75,10 @@ pub async fn similar(
     })
     .await
     {
-        Ok(mut items) => {
-            visibility::keep_items(&user, &mut items);
-            items_in_view(items, params.view)
-        }
+        Ok(mut items) => match visibility::keep_items(&state, &viewer, &mut items).await {
+            Ok(()) => items_in_view(items, params.view),
+            Err(resp) => resp,
+        },
         Err(resp) => resp,
     }
 }
@@ -94,7 +93,7 @@ pub struct ThemedParams {
 /// free-text phrase. An empty `q` yields an empty row, never "everything".
 pub async fn themed(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Query(params): Query<ThemedParams>,
 ) -> Response {
@@ -111,10 +110,10 @@ pub async fn themed(
     })
     .await
     {
-        Ok(mut items) => {
-            visibility::keep_items(&user, &mut items);
-            Json(items).into_response()
-        }
+        Ok(mut items) => match visibility::keep_items(&state, &viewer, &mut items).await {
+            Ok(()) => Json(items).into_response(),
+            Err(resp) => resp,
+        },
         Err(resp) => resp,
     }
 }

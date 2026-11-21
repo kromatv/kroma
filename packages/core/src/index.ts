@@ -6,6 +6,7 @@ export * from './auth';
 export * from './browse';
 export * from './cast';
 export * from './compat';
+export * from './country-name';
 export * from './direct';
 export * from './discover';
 export * from './format';

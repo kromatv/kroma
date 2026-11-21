@@ -111,5 +111,8 @@
   "account.uiLanguage": "Langue de l'interface",
   "account.uiLanguageDesc": "La langue des menus et des boutons.",
   "account.unknownDevice": "Appareil inconnu",
-  "account.updatePassword": "Mettre à jour le mot de passe"
+  "account.updatePassword": "Mettre à jour le mot de passe",
+  "account.ratingsCountry": "Classification par âge",
+  "account.ratingsCountryDesc": "Le pays dont la classification s'affiche sur les titres.",
+  "account.ratingsCountryHousehold": "Comme le serveur ({country})"
 }

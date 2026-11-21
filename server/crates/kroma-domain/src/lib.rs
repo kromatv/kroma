@@ -55,3 +55,4 @@ pub use section::*;
 
 pub mod ratings;
 pub use ratings::{AgeRating, CountryRatings};
+pub use ratings::{Ceiling, MaturityLevel};

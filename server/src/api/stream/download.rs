@@ -11,9 +11,8 @@ use kroma_media::input;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
-use crate::api::extract::AuthUser;
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer};
 use crate::db;
 use crate::state::SharedState;
 use tokio::io::AsyncReadExt;
@@ -38,7 +37,7 @@ pub struct DownloadQuery {
 /// capped by `state.downloads`; a full gate answers `503`.
 pub async fn download_item(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(id): Path<String>,
     Query(q): Query<DownloadQuery>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -50,7 +49,7 @@ pub async fn download_item(
             "too many downloads in progress, try again later",
         )
     })?;
-    visibility::gate_item(&state, &user, &id).await?;
+    visibility::gate_item(&state, &viewer, &id).await?;
     let item = query(&state.db, move |pool| db::get_item(&pool, &id))
         .await?
         .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;

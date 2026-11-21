@@ -12,9 +12,9 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::dto::{one_per_title, PersonHit, SearchHit, SearchResponse};
-use crate::api::extract::AuthUser;
 use crate::api::media::ListView;
 use crate::api::util::query;
+use crate::api::visibility::{self, AuthViewer, Viewer};
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::model::{SectionItem, User};
@@ -54,7 +54,7 @@ pub struct SearchParams {
 /// `view=card` every hit is slimmed to what a poster draws.
 pub async fn search(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ContentLocale(locale): ContentLocale,
     Query(p): Query<SearchParams>,
 ) -> Result<Response, Response> {
@@ -77,20 +77,25 @@ pub async fn search(
         .into_response());
     }
 
+    let titles = visibility::seen_titles(&state, &viewer).await?;
     let engine = state.clone();
     let resp = query(&state.db, move |pool| {
-        let favoured = favoured(&engine, &pool, &user);
-        let visible =
-            |lib: &str| library.as_deref().is_none_or(|want| lib == want) && user.sees_library(lib);
+        let favoured = favoured(&engine, &pool, &viewer.user);
+        let visible = |lib: &str| {
+            library.as_deref().is_none_or(|want| lib == want) && viewer.sees_library(lib)
+        };
         let asker = Asker {
             visible: &visible,
+            titles: titles.as_ref(),
             favoured: &favoured,
         };
         let answer = engine.search.answer(&q, limit, &asker);
         let mut results = one_per_title(hydrate(&pool, answer.hits, locale)?);
         if results.len() < THIN && q.split_whitespace().count() >= MIN_WORDS_FOR_MEANING {
-            by_meaning(&engine, &pool, &q, locale, &visible, &mut results);
+            let kept = |entry: &SectionItem| visible(library_of(entry)) && viewer.sees_entry(entry);
+            by_meaning(&engine, &pool, (&q, locale), &kept, &mut results);
         }
+        relabel(&viewer, &mut results);
         if card {
             results = results.into_iter().map(SearchHit::into_card).collect();
         }
@@ -159,12 +164,24 @@ fn hydrate(pool: &db::Pool, hits: Vec<Hit>, locale: &str) -> anyhow::Result<Vec<
     Ok(out)
 }
 
+fn relabel(viewer: &Viewer, results: &mut [SearchHit]) {
+    for hit in results {
+        viewer.relabel(hit.metadata_mut());
+    }
+}
+
+fn library_of(entry: &SectionItem) -> &str {
+    match entry {
+        SectionItem::Movie { item } => &item.library,
+        SectionItem::Show { show } => &show.library,
+    }
+}
+
 fn by_meaning(
     state: &SharedState,
     pool: &db::Pool,
-    q: &str,
-    locale: &str,
-    visible: &dyn Fn(&str) -> bool,
+    (q, locale): (&str, &str),
+    kept: &dyn Fn(&SectionItem) -> bool,
     results: &mut Vec<SearchHit>,
 ) {
     let floor = embeddings::relevance_floor(&state.embedder);
@@ -188,15 +205,14 @@ fn by_meaning(
         return;
     };
     let _ = db::localize::overlay_section_items(pool, &mut entries, locale);
-    for entry in entries {
+    for entry in entries.into_iter().filter(|entry| kept(entry)) {
         match entry {
-            SectionItem::Movie { item } if visible(&item.library) => {
+            SectionItem::Movie { item } => {
                 results.push(SearchHit::Movie { item: *item });
             }
-            SectionItem::Show { show } if visible(&show.library) => {
+            SectionItem::Show { show } => {
                 results.push(SearchHit::Show { show: *show });
             }
-            _ => {}
         }
     }
 }

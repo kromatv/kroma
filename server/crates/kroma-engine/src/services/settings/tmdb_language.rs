@@ -23,6 +23,13 @@ pub fn metadata_language(settings: &Settings, config: &Config) -> String {
     i18n::tmdb_language(configured).into_owned()
 }
 
+/// The country whose rating labels a reader sees until they pick their own
+/// (ACCT-104): the one the household's [`metadata_language`] names.
+pub fn metadata_country(settings: &Settings, config: &Config) -> String {
+    let language = metadata_language(settings, config);
+    crate::infra::metadata::country_of(&language, &language)
+}
+
 /// TMDB's regional tag for a bare language code, which is what decides the
 /// release dates and the artwork it hands back. Unknown codes pass through.
 pub fn tmdb_region_of(lang: &str) -> &str {
@@ -127,6 +134,17 @@ mod tests {
         assert_eq!(metadata_language(&s, &c), "en-US");
         configure(&s, &pool, "fr-FR");
         assert_eq!(metadata_language(&s, &c), "fr-FR");
+    }
+
+    #[test]
+    fn the_households_rating_country_is_the_region_of_its_metadata_language() {
+        let pool = test_pool();
+        let s = Settings::load(&pool);
+        let c = test_config();
+
+        assert_eq!(metadata_country(&s, &c), "US");
+        configure(&s, &pool, "fr-FR");
+        assert_eq!(metadata_country(&s, &c), "FR");
     }
 
     #[test]
