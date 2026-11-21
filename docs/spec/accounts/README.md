@@ -43,8 +43,7 @@ accounts on the device, not inventing passwordless sub-identities to avoid it.
 
 ### An account that waits
 
-Status: **SHIPPED** in part, from [RFC 719](../../rfcs/719-guided-setup-and-import.md);
-each requirement carries its own.
+Status: **SHIPPED**, from [RFC 719](../../rfcs/719-guided-setup-and-import.md).
 
 An import brings a person's watch state before that person has ever opened KROMA
 ([`admin/import.md`](../admin/import.md)). The state needs an account to belong to.
@@ -68,8 +67,11 @@ so everything it held is still there.
 **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like
 any other.
 
-**ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids
+**ACCT-100** (SHIPPED) - An admin can mint a new invitation for a waiting account. It voids
 the one before, and the account goes on waiting until one is redeemed.
+
+**ACCT-101** (SHIPPED) - The member list tells a waiting account apart from one its person
+signs in to, and says whether its invitation still works, has expired, or was never made.
 
 A waiting account is not a profile (ACCT-4). It is a real account whose owner has not
 arrived yet, and once they arrive nothing tells it apart from any other.

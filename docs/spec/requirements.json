@@ -47,7 +47,7 @@
     "status": "SHIPPED",
     "text": "A person proves who they are with a **username and password**, a",
     "file": "docs/spec/accounts/README.md",
-    "line": 81
+    "line": 83
   },
   {
     "id": "ACCT-6",
@@ -57,7 +57,7 @@
     "status": "SHIPPED",
     "text": "A successful authentication mints a **session**: a long-lived,",
     "file": "docs/spec/accounts/README.md",
-    "line": 87
+    "line": 89
   },
   {
     "id": "ACCT-7",
@@ -67,7 +67,7 @@
     "status": "SHIPPED",
     "text": "**Sessions do not expire on a clock.** A session lives until it is",
     "file": "docs/spec/accounts/README.md",
-    "line": 91
+    "line": 93
   },
   {
     "id": "ACCT-8",
@@ -77,7 +77,7 @@
     "status": "SHIPPED",
     "text": "A session is per device, not per account, so one can be revoked without",
     "file": "docs/spec/accounts/README.md",
-    "line": 95
+    "line": 97
   },
   {
     "id": "ACCT-9",
@@ -87,7 +87,7 @@
     "status": "SHIPPED",
     "text": "A **device** is where a session lives. Signing in on a phone, a browser",
     "file": "docs/spec/accounts/README.md",
-    "line": 164
+    "line": 166
   },
   {
     "id": "ACCT-10",
@@ -97,7 +97,7 @@
     "status": "AGREED",
     "text": "Every session appears in the account's **device list** with enough to",
     "file": "docs/spec/accounts/README.md",
-    "line": 167
+    "line": 169
   },
   {
     "id": "ACCT-11",
@@ -107,7 +107,7 @@
     "status": "SHIPPED",
     "text": "A television binds to an account through the pairing handshake rather",
     "file": "docs/spec/accounts/README.md",
-    "line": 170
+    "line": 172
   },
   {
     "id": "ACCT-12",
@@ -117,7 +117,7 @@
     "status": "AGREED",
     "text": "A paired television is not a special class of trust. It lands in the",
     "file": "docs/spec/accounts/README.md",
-    "line": 174
+    "line": 176
   },
   {
     "id": "ACCT-13",
@@ -127,7 +127,7 @@
     "status": "SHIPPED",
     "text": "**Unbinding is revocation.** Revoking a device's session ends its",
     "file": "docs/spec/accounts/README.md",
-    "line": 196
+    "line": 198
   },
   {
     "id": "ACCT-14",
@@ -137,7 +137,7 @@
     "status": "SHIPPED",
     "text": "A revoked device that returns must pair or sign in afresh.",
     "file": "docs/spec/accounts/README.md",
-    "line": 200
+    "line": 202
   },
   {
     "id": "ACCT-15",
@@ -147,7 +147,7 @@
     "status": "SHIPPED",
     "text": "A television session is long-lived and revocable, and is **never",
     "file": "docs/spec/accounts/README.md",
-    "line": 214
+    "line": 216
   },
   {
     "id": "ACCT-16",
@@ -157,7 +157,7 @@
     "status": "AGREED",
     "text": "The device list is the control that replaces expiry: security comes",
     "file": "docs/spec/accounts/README.md",
-    "line": 217
+    "line": 219
   },
   {
     "id": "ACCT-17",
@@ -167,7 +167,7 @@
     "status": "SHIPPED",
     "text": "An **owner or admin** runs the server: users, settings, jobs and",
     "file": "docs/spec/accounts/README.md",
-    "line": 230
+    "line": 232
   },
   {
     "id": "ACCT-18",
@@ -177,7 +177,7 @@
     "status": "AGREED",
     "text": "The owner is the founding admin, the owner may grant admin to another",
     "file": "docs/spec/accounts/README.md",
-    "line": 233
+    "line": 235
   },
   {
     "id": "ACCT-19",
@@ -187,7 +187,7 @@
     "status": "SHIPPED",
     "text": "A **user** uses the server: browses and plays what they are permitted",
     "file": "docs/spec/accounts/README.md",
-    "line": 236
+    "line": 238
   },
   {
     "id": "ACCT-20",
@@ -197,7 +197,7 @@
     "status": "SHIPPED",
     "text": "**Library visibility is per user.** An admin decides which libraries a",
     "file": "docs/spec/accounts/README.md",
-    "line": 239
+    "line": 241
   },
   {
     "id": "ACCT-21",
@@ -207,7 +207,7 @@
     "status": "SHIPPED",
     "text": "Visibility gates browsing, search and playback alike. A title a user",
     "file": "docs/spec/accounts/README.md",
-    "line": 247
+    "line": 249
   },
   {
     "id": "ACCT-22",
@@ -217,7 +217,7 @@
     "status": "SHIPPED",
     "text": "Installing a module is an **admin** right, because it runs new",
     "file": "docs/spec/accounts/README.md",
-    "line": 288
+    "line": 290
   },
   {
     "id": "ACCT-23",
@@ -227,7 +227,7 @@
     "status": "AGREED",
     "text": "The matrix below is the whole of what each role may do. A user's power",
     "file": "docs/spec/accounts/README.md",
-    "line": 297
+    "line": 299
   },
   {
     "id": "ACCT-24",
@@ -237,7 +237,7 @@
     "status": "SHIPPED",
     "text": "**Per-user**: watch state, meaning resume points, watched flags and",
     "file": "docs/spec/accounts/README.md",
-    "line": 325
+    "line": 327
   },
   {
     "id": "ACCT-25",
@@ -247,7 +247,7 @@
     "status": "SHIPPED",
     "text": "**Per-server**: the libraries and their contents, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 330
+    "line": 332
   },
   {
     "id": "ACCT-26",
@@ -257,7 +257,7 @@
     "status": "SHIPPED",
     "text": "Watch state is per user and never per device: resume a film on the",
     "file": "docs/spec/accounts/README.md",
-    "line": 334
+    "line": 336
   },
   {
     "id": "ACCT-27",
@@ -267,7 +267,7 @@
     "status": "SHIPPED",
     "text": "Deletion destroys the account's credentials, all of its sessions and",
     "file": "docs/spec/accounts/README.md",
-    "line": 344
+    "line": 346
   },
   {
     "id": "ACCT-28",
@@ -277,7 +277,7 @@
     "status": "SHIPPED",
     "text": "Everything per-server survives. Libraries, media, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 348
+    "line": 350
   },
   {
     "id": "ACCT-29",
@@ -287,7 +287,7 @@
     "status": "AGREED",
     "text": "The owner account cannot be deleted while it is the only admin.",
     "file": "docs/spec/accounts/README.md",
-    "line": 352
+    "line": 354
   },
   {
     "id": "ACCT-30",
@@ -297,7 +297,7 @@
     "status": "AGREED",
     "text": "A user may request deletion of their own account, which revokes their",
     "file": "docs/spec/accounts/README.md",
-    "line": 356
+    "line": 358
   },
   {
     "id": "ACCT-31",
@@ -307,7 +307,7 @@
     "status": "SHIPPED",
     "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
     "file": "docs/spec/accounts/README.md",
-    "line": 365
+    "line": 367
   },
   {
     "id": "ACCT-32",
@@ -317,7 +317,7 @@
     "status": "AGREED",
     "text": "Bytes already downloaded for offline viewing sit in local storage the",
     "file": "docs/spec/accounts/README.md",
-    "line": 368
+    "line": 370
   },
   {
     "id": "ACCT-33",
@@ -327,7 +327,7 @@
     "status": "AGREED",
     "text": "The guarantee is that a revoked device gains nothing new and loses its",
     "file": "docs/spec/accounts/README.md",
-    "line": 372
+    "line": 374
   },
   {
     "id": "ACCT-34",
@@ -337,7 +337,7 @@
     "status": "SHIPPED",
     "text": "A title outside a person's grant is absent from browse, search, every",
     "file": "docs/spec/accounts/README.md",
-    "line": 253
+    "line": 255
   },
   {
     "id": "ACCT-35",
@@ -347,7 +347,7 @@
     "status": "SHIPPED",
     "text": "Every request for media bytes carries a credential the grant can be",
     "file": "docs/spec/accounts/README.md",
-    "line": 258
+    "line": 260
   },
   {
     "id": "ACCT-36",
@@ -717,7 +717,7 @@
     "status": "SHIPPED",
     "text": "The device list shows the app version each device last used",
     "file": "docs/spec/accounts/README.md",
-    "line": 178
+    "line": 180
   },
   {
     "id": "ACCT-73",
@@ -727,7 +727,7 @@
     "status": "SHIPPED",
     "text": "A device whose app is older than the oldest version its server serves",
     "file": "docs/spec/accounts/README.md",
-    "line": 181
+    "line": 183
   },
   {
     "id": "ACCT-74",
@@ -737,7 +737,7 @@
     "status": "SHIPPED",
     "text": "A device that never sent its app version shows \"version unknown\", never",
     "file": "docs/spec/accounts/README.md",
-    "line": 184
+    "line": 186
   },
   {
     "id": "ACCT-75",
@@ -747,7 +747,7 @@
     "status": "SHIPPED",
     "text": "An admin may add sign-in providers that speak OpenID Connect. Each one",
     "file": "docs/spec/accounts/README.md",
-    "line": 108
+    "line": 110
   },
   {
     "id": "ACCT-76",
@@ -757,7 +757,7 @@
     "status": "SHIPPED",
     "text": "A provider's button appears only after an admin's test sign-in passed",
     "file": "docs/spec/accounts/README.md",
-    "line": 111
+    "line": 113
   },
   {
     "id": "ACCT-77",
@@ -767,7 +767,7 @@
     "status": "SHIPPED",
     "text": "A provider sign-in ends in an ordinary session (ACCT-6), like a",
     "file": "docs/spec/accounts/README.md",
-    "line": 115
+    "line": 117
   },
   {
     "id": "ACCT-78",
@@ -777,7 +777,7 @@
     "status": "SHIPPED",
     "text": "An account is tied to a person at a provider by that provider's own",
     "file": "docs/spec/accounts/README.md",
-    "line": 118
+    "line": 120
   },
   {
     "id": "ACCT-79",
@@ -787,7 +787,7 @@
     "status": "SHIPPED",
     "text": "A person the provider vouches for and the server has never seen gets",
     "file": "docs/spec/accounts/README.md",
-    "line": 122
+    "line": 124
   },
   {
     "id": "ACCT-80",
@@ -797,7 +797,7 @@
     "status": "SHIPPED",
     "text": "A provider may require a group. A person outside it is refused at every",
     "file": "docs/spec/accounts/README.md",
-    "line": 126
+    "line": 128
   },
   {
     "id": "ACCT-81",
@@ -807,7 +807,7 @@
     "status": "SHIPPED",
     "text": "An admin who declines a join request stops that person asking again,",
     "file": "docs/spec/accounts/README.md",
-    "line": 129
+    "line": 131
   },
   {
     "id": "ACCT-82",
@@ -817,7 +817,7 @@
     "status": "SHIPPED",
     "text": "An admin may turn password sign-in and passkey sign-in off. Passwords",
     "file": "docs/spec/accounts/README.md",
-    "line": 132
+    "line": 134
   },
   {
     "id": "ACCT-83",
@@ -827,7 +827,7 @@
     "status": "SHIPPED",
     "text": "An account that can change server settings keeps its password",
     "file": "docs/spec/accounts/README.md",
-    "line": 143
+    "line": 145
   },
   {
     "id": "ACCT-84",
@@ -837,7 +837,7 @@
     "status": "SHIPPED",
     "text": "An account cannot remove its last way to sign in.",
     "file": "docs/spec/accounts/README.md",
-    "line": 146
+    "line": 148
   },
   {
     "id": "ACCT-85",
@@ -847,7 +847,7 @@
     "status": "SHIPPED",
     "text": "No claim from a provider grants a permission or a library.",
     "file": "docs/spec/accounts/README.md",
-    "line": 148
+    "line": 150
   },
   {
     "id": "ACCT-86",
@@ -857,7 +857,7 @@
     "status": "SHIPPED",
     "text": "The phone app offers the provider buttons. It opens the provider in",
     "file": "docs/spec/accounts/README.md",
-    "line": 151
+    "line": 153
   },
   {
     "id": "ACCT-87",
@@ -867,7 +867,7 @@
     "status": "SHIPPED",
     "text": "Passwords, passkeys and each provider are one list of sign-in methods.",
     "file": "docs/spec/accounts/README.md",
-    "line": 135
+    "line": 137
   },
   {
     "id": "ACCT-88",
@@ -877,7 +877,7 @@
     "status": "SHIPPED",
     "text": "A provider's button shows the logo of the provider it was set up as,",
     "file": "docs/spec/accounts/README.md",
-    "line": 140
+    "line": 142
   },
   {
     "id": "ACCT-89",
@@ -887,7 +887,7 @@
     "status": "AGREED",
     "text": "The desktop app offers the provider buttons the same way.",
     "file": "docs/spec/accounts/README.md",
-    "line": 154
+    "line": 156
   },
   {
     "id": "ACCT-90",
@@ -897,7 +897,7 @@
     "status": "SHIPPED",
     "text": "A device opens onto what the server knows of it: the address it last",
     "file": "docs/spec/accounts/README.md",
-    "line": 187
+    "line": 189
   },
   {
     "id": "ACCT-91",
@@ -907,7 +907,7 @@
     "status": "SHIPPED",
     "text": "The device list puts the device in hand first, then the others by most",
     "file": "docs/spec/accounts/README.md",
-    "line": 191
+    "line": 193
   },
   {
     "id": "ACCT-92",
@@ -917,7 +917,7 @@
     "status": "SHIPPED",
     "text": "One action signs out every device except the one in hand.",
     "file": "docs/spec/accounts/README.md",
-    "line": 194
+    "line": 196
   },
   {
     "id": "ACCT-93",
@@ -927,7 +927,7 @@
     "status": "SHIPPED",
     "text": "An account holder who no longer knows their profile PIN turns the lock",
     "file": "docs/spec/accounts/README.md",
-    "line": 206
+    "line": 208
   },
   {
     "id": "ACCT-94",
@@ -937,7 +937,7 @@
     "status": "SHIPPED",
     "text": "An account can exist before its person has signed in. It **waits on",
     "file": "docs/spec/accounts/README.md",
-    "line": 52
+    "line": 51
   },
   {
     "id": "ACCT-95",
@@ -947,7 +947,7 @@
     "status": "SHIPPED",
     "text": "Nobody can sign in to a waiting account, by any means. Its invitation",
     "file": "docs/spec/accounts/README.md",
-    "line": 56
+    "line": 55
   },
   {
     "id": "ACCT-96",
@@ -957,7 +957,7 @@
     "status": "SHIPPED",
     "text": "Redeeming the invitation gives the account its credential, and the",
     "file": "docs/spec/accounts/README.md",
-    "line": 59
+    "line": 58
   },
   {
     "id": "ACCT-97",
@@ -967,7 +967,7 @@
     "status": "SHIPPED",
     "text": "The person may correct the account's name and address when they",
     "file": "docs/spec/accounts/README.md",
-    "line": 62
+    "line": 61
   },
   {
     "id": "ACCT-98",
@@ -977,7 +977,7 @@
     "status": "SHIPPED",
     "text": "It is the same account before and after the invitation is redeemed,",
     "file": "docs/spec/accounts/README.md",
-    "line": 65
+    "line": 64
   },
   {
     "id": "ACCT-99",
@@ -987,17 +987,27 @@
     "status": "SHIPPED",
     "text": "The invitation of a waiting account is single-use and expires like",
     "file": "docs/spec/accounts/README.md",
-    "line": 68
+    "line": 67
   },
   {
     "id": "ACCT-100",
     "domain": "ACCT",
     "space": "accounts",
     "number": 100,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "An admin can mint a new invitation for a waiting account. It voids",
     "file": "docs/spec/accounts/README.md",
-    "line": 71
+    "line": 70
+  },
+  {
+    "id": "ACCT-101",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 101,
+    "status": "SHIPPED",
+    "text": "The member list tells a waiting account apart from one its person",
+    "file": "docs/spec/accounts/README.md",
+    "line": 73
   },
   {
     "id": "ADMIN-1",
