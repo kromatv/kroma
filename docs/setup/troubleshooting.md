@@ -79,13 +79,15 @@ KROMA cannot see or read the folder, or does not recognize the files in it.
 
 ## A film you deleted is still listed
 
-KROMA removes a title only after a scan that read every folder of its library.
-While one folder is missing, empty, or holds a link KROMA cannot open, the scan
-keeps every title of that library. A share that is not mounted yet loses
-nothing that way, and neither do the resume points on its films.
+KROMA takes a title out of the listing only after a scan that read every folder
+of its library. It keeps the title out of sight, with its watch history and
+resume points, and lists it again when the file comes back. While one folder is
+missing, empty, or holds a link KROMA cannot open, the scan keeps every title of
+that library listed. A share that is not mounted yet loses nothing that way.
 
-1. Read the log after a scan. The warning `kept every title it holds` names the
-   library, and the folder or the number of entries KROMA could not open.
+1. Open **Server** > **Tasks** and read the last run of **Library scan**. Each
+   folder KROMA could not read has a line that names the library and the
+   folder, and ends with `kept every title it holds`.
 2. Mount that folder again, or remove the link whose file is gone. A folder that
    is empty on purpose holds the library back too: remove it from the library
    under **Server** > **Sources**.
