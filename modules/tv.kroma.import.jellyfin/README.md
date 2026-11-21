@@ -71,7 +71,9 @@ no sentence: the point gives an importer no language to write one in.
 
 ## Another dialect
 
-Emby speaks an API of the same family. The paths, the name the server gives
-itself, the default address and the authorization scheme are the rows of
-`Dialect` in `server/src/dialect.rs`. An Emby importer is a second `Dialect`
-and the header it needs. It is not written.
+Emby speaks an API of the same family. The paths, how the server says what it
+is, the default address and the authorization scheme are the rows of `Dialect`
+in `server/src/dialect.rs`, and `EMBY` is the second one. The module
+`tv.kroma.import.emby` runs this crate's routes with it (`routes_for`). A change
+here reaches both importers; a change to the Emby module alone reaches Emby
+alone.

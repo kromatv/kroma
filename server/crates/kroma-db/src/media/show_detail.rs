@@ -53,7 +53,7 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
     };
 
     let mut stmt = conn.prepare(&format!(
-        "SELECT {ITEM_COLS} FROM items WHERE show_id = ?1 \
+        "SELECT {ITEM_COLS} FROM items WHERE show_id = ?1 AND absent_since IS NULL \
          ORDER BY season, episode",
     ))?;
     let mut episodes: Vec<MediaItem> = stmt
