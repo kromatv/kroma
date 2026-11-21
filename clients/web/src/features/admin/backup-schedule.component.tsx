@@ -18,6 +18,26 @@ interface RowsProps {
   onChange: (patch: BackupScheduleChange) => void;
 }
 
+function KeepRow({ schedule, onChange }: Readonly<RowsProps>) {
+  const t = useT();
+  return (
+    <ListRow.Root icon="stack-2" chevron={false}>
+      <ListRow.Label>{t('admin.backupScheduleKeep')}</ListRow.Label>
+      <ListRow.Trailing>
+        <Box w={KEEP_WIDTH}>
+          <NumberField
+            label={t('admin.backupScheduleKeep')}
+            value={schedule.keep}
+            min={1}
+            max={MAX_KEEP}
+            onValueChange={(keep) => onChange({ keep })}
+          />
+        </Box>
+      </ListRow.Trailing>
+    </ListRow.Root>
+  );
+}
+
 function ScheduleRows({ schedule, onChange }: Readonly<RowsProps>) {
   const t = useT();
   return (
@@ -33,20 +53,7 @@ function ScheduleRows({ schedule, onChange }: Readonly<RowsProps>) {
           />
         </ListRow.Trailing>
       </ListRow.Root>
-      <ListRow.Root icon="stack-2" chevron={false}>
-        <ListRow.Label>{t('admin.backupScheduleKeep')}</ListRow.Label>
-        <ListRow.Trailing>
-          <Box w={KEEP_WIDTH}>
-            <NumberField
-              label={t('admin.backupScheduleKeep')}
-              value={schedule.keep}
-              min={1}
-              max={MAX_KEEP}
-              onValueChange={(keep) => onChange({ keep })}
-            />
-          </Box>
-        </ListRow.Trailing>
-      </ListRow.Root>
+      <KeepRow schedule={schedule} onChange={onChange} />
     </ListRow.Group>
   );
 }
