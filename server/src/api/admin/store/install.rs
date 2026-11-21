@@ -15,7 +15,7 @@ use serde_json::{json, Value};
 
 use super::catalog::{self, CatalogModule};
 use super::events::Op;
-use super::plan::{plan_brief, root_list, Planned, Planner};
+use super::plan::{brings_new, plan_brief, root_list, Planned, Planner};
 use super::registries;
 use crate::state::SharedState;
 
@@ -157,17 +157,17 @@ async fn verified_artifact(
 /// compared against is the published one, and a module no configured registry
 /// carries any more is refused rather than fetched unchecked.
 pub async fn reinstall(state: &SharedState, sup: &Arc<Supervisor>, id: &str) -> Result<Value> {
+    let current = sup
+        .installed_manifests()
+        .into_iter()
+        .find(|m| m.id == id)
+        .map(|m| m.version)
+        .ok_or_else(|| anyhow!("'{id}' is not installed or its manifest is unreadable"))?;
     let modules = registries::fetch_merged(state, sup).await?;
     let entry = modules.iter().find(|m| m.id == id).ok_or_else(|| {
         anyhow!("'{id}' is not in any configured registry, so it cannot be verified")
     })?;
-    let installed = kroma_module_kernel::manifests(state)
-        .into_iter()
-        .find(|m| m.id == id)
-        .map(|m| m.version);
-    if let Some(current) =
-        installed.filter(|current| kroma_module_manifest::is_newer(current, &entry.version))
-    {
+    if kroma_module_manifest::is_newer(&current, &entry.version) {
         bail!(
             "'{id}' {current} is installed, and the newest version this server runs is {}; reinstalling would downgrade it",
             entry.version
@@ -318,7 +318,13 @@ pub async fn update_all(
         // this one no longer needs to.
         let mut planner = Planner::new(state, &modules);
         let result = match planner.roots(&[entry.id.as_str()]) {
-            Ok(()) => run_plan(sup, &op, &planner.plan, Unattended::Yes).await.map(|_| ()),
+            Ok(()) if brings_new(&planner.plan) => {
+                outcome.needs_consent.push(entry.id.clone());
+                continue;
+            }
+            Ok(()) => run_plan(sup, &op, &planner.plan, Unattended::Yes)
+                .await
+                .map(|_| ()),
             Err(e) => Err(e),
         };
         match result {
@@ -353,6 +359,9 @@ pub async fn auto_update(state: &SharedState, sup: &Arc<Supervisor>) -> Vec<Upda
             }
             for u in &outcome.updated {
                 tracing::info!(module = %u.id, from = %u.from, to = %u.to, "auto-updated module");
+            }
+            for id in &outcome.needs_consent {
+                tracing::info!(module = %id, "module update waits for an operator to accept it from the install plan");
             }
             outcome.updated
         }

@@ -127,10 +127,8 @@ impl Supervisor {
                 }
                 let installed = self.installed_manifests().into_iter().find(|m| m.id == id);
                 match installed {
-                    Some(installed) if manifest.asks_more_than(&installed) => {
-                        Err(AsksForMore { id: id.to_string() }.into())
-                    }
-                    _ => Ok(()),
+                    Some(installed) if !manifest.asks_more_than(&installed) => Ok(()),
+                    _ => Err(AsksForMore { id: id.to_string() }.into()),
                 }
             }
         }

@@ -34,9 +34,10 @@ share and which modules have each. It reads the catalog row or, for an upload,
 the bundle itself. The row carries the module's `storage` and `settings` beside
 its `permissions`, so the account data, server tables and settings show before
 install too. An update that asks for more waits: a new permission, core table or
-account column, or a key in `settings.write` the installed version did not
-declare. No automatic or batch update takes it, and the operator accepts it from
-the install plan, which shows only what the update adds. A bundle must declare
+account column, a key in `settings.write` the installed version did not declare,
+or a dependency this server does not have yet. No automatic or batch update
+takes it, and the operator accepts it from the install plan, which shows only
+what the update adds. A bundle must declare
 the `permissions` its catalog row showed, and an install fails when it does not.
 Its `storage` and `settings` are not yet held to the row.
 
@@ -397,7 +398,7 @@ the backup's tests export and restore through no link.
 `host_settings.rs` there and the server's `it_host_settings.rs` refuse a read or
 a write of a key the module did not declare, and of a key the core keeps even
 when declared, and `install_accept.rs` holds back an unattended update that
-writes a new key.
+writes a new key, and an unattended install of a module that is not installed.
 
 ## Status
 

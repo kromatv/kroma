@@ -293,6 +293,10 @@ pub(super) fn plan_brief(plan: &[Planned<'_>]) -> Value {
     Value::Array(plan.iter().map(|p| entry_brief(p.entry)).collect())
 }
 
+pub(super) fn brings_new(plan: &[Planned<'_>]) -> bool {
+    plan.iter().any(|p| p.installed.is_none())
+}
+
 fn plan_row(p: &Planned<'_>) -> Value {
     let mut row = row_base(p.entry);
     row.insert("installedVersion".into(), json!(p.installed));
@@ -671,6 +675,41 @@ mod tests {
         assert_eq!(first.get("id").and_then(Value::as_str), Some("tv.x.lib"));
         assert!(first.get("installedVersion").is_none());
         assert_eq!(entry_brief(&modules[1]), *first);
+    }
+
+    #[test]
+    fn an_update_that_brings_a_module_that_is_not_installed_brings_new() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.dependencies = vec![("tv.x.lib".into(), None)];
+        let modules = vec![root, module("tv.x.lib", "1.0.0")];
+        let mut p = Planner::with_present(
+            &modules,
+            HashMap::from([("tv.x.app".to_string(), "0.9.0".to_string())]),
+            Vec::new(),
+        );
+
+        p.roots(&["tv.x.app"]).unwrap();
+
+        assert!(brings_new(&p.plan));
+    }
+
+    #[test]
+    fn an_update_whose_dependencies_are_all_installed_brings_nothing_new() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.dependencies = vec![("tv.x.lib".into(), None)];
+        let modules = vec![root, module("tv.x.lib", "1.0.0")];
+        let mut p = Planner::with_present(
+            &modules,
+            HashMap::from([
+                ("tv.x.app".to_string(), "0.9.0".to_string()),
+                ("tv.x.lib".to_string(), "1.0.0".to_string()),
+            ]),
+            Vec::new(),
+        );
+
+        p.roots(&["tv.x.app"]).unwrap();
+
+        assert!(!brings_new(&p.plan));
     }
 
     #[test]
