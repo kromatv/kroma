@@ -1,5 +1,5 @@
 import type { SubjectId } from '@kromatv/client/media';
-import { qualityBadge, qualityBadgeForVideo, synopsisLead } from '@kromatv/core';
+import { ageRatingOf, qualityBadge, qualityBadgeForVideo, synopsisLead } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
   AgeRating,
@@ -43,15 +43,14 @@ export interface HeroSlideProps {
 
 function SlideFacts({ entry }: Readonly<{ entry: HomeEntry }>) {
   const t = useT();
-  const meta = entryMetadata(entry);
-  const rating = meta?.rating;
+  const rating = entryMetadata(entry)?.rating;
   const badge =
     entry.type === 'show' ? qualityBadgeForVideo(entry.show.video) : qualityBadge(entry.item);
 
   return (
     <Row wrap gap={12} mb={14}>
       {rating ? <Text variant="meta" color="accent">{`${rating.toFixed(1)}★`}</Text> : null}
-      <AgeRating rating={meta?.ageRating} />
+      <AgeRating rating={ageRatingOf(entryMetadata(entry))} />
       <Text variant="meta" color="textMuted">
         {entryFacts(t, entry).join(' · ')}
       </Text>

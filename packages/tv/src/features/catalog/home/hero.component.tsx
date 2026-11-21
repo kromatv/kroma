@@ -1,5 +1,5 @@
 import type { MediaCard } from '@kromatv/client/media';
-import { formatRuntime, genreLabels, posterColors, synopsisLead } from '@kromatv/core';
+import { ageRatingOf, formatRuntime, genreLabels, posterColors, synopsisLead } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
@@ -138,7 +138,7 @@ export function Hero({ slides, onPlay, onSelectEntry, maskInset }: Readonly<Hero
               </Text>
             </>
           ) : null}
-          <AgeRating rating={meta?.ageRating} size="tv" />
+          <AgeRating rating={ageRatingOf(meta)} size="tv" />
           <Text variant="labelTv" color="textMuted">
             {heroLine(t, entry)}
           </Text>

@@ -3,7 +3,7 @@
 // components/showEpisodes.tsx.
 
 import { ShowId } from '@kromatv/client/media';
-import { sizedImageUrl } from '@kromatv/core';
+import { ageRatingOf, sizedImageUrl } from '@kromatv/core';
 import {
   AgeRating,
   Box,
@@ -112,7 +112,7 @@ function ShowDetail({ id }: Readonly<{ id: ShowId }>) {
             {show.metadata?.rating ? (
               <Text style={s.rating}>★ {show.metadata.rating.toFixed(1)}</Text>
             ) : null}
-            <AgeRating rating={show.metadata?.ageRating} />
+            <AgeRating rating={ageRatingOf(show.metadata)} />
             {show.video?.hdr ? <MetaBadge>HDR</MetaBadge> : null}
           </>
         }

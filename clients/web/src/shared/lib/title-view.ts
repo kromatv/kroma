@@ -18,7 +18,7 @@ import type {
   VideoTrack,
 } from '@kromatv/client/media';
 import type { RequestStatus } from '@kromatv/client/requests';
-import { directorsOf, formatRuntime, genreLabels } from '@kromatv/core';
+import { ageRatingOf, directorsOf, formatRuntime, genreLabels } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { imageUrl } from '#web/shared/lib/api';
 
@@ -127,7 +127,7 @@ export function buildTitleView(
       title: item.title,
       year: item.year ?? null,
       rating: meta?.rating ?? null,
-      ageRating: meta?.ageRating ?? null,
+      ageRating: ageRatingOf(meta),
       overview: meta?.overview ?? null,
       tagline: meta?.tagline ?? null,
       genres: genreLabels(t, meta),
@@ -170,7 +170,7 @@ export function buildTitleView(
       title: show.title,
       year: show.year ?? null,
       rating: meta?.rating ?? null,
-      ageRating: meta?.ageRating ?? null,
+      ageRating: ageRatingOf(meta),
       overview: meta?.overview ?? null,
       tagline: meta?.tagline ?? null,
       genres: genreLabels(t, meta),

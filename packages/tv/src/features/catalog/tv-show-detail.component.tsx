@@ -1,4 +1,4 @@
-import { episodeTag, qualityBadgeForVideo } from '@kromatv/core';
+import { ageRatingOf, episodeTag, qualityBadgeForVideo } from '@kromatv/core';
 import { useT, useThemeAudio } from '@kromatv/ui';
 import {
   Box,
@@ -73,7 +73,7 @@ export function TvShowDetail() {
       title={show.title}
       backdrop={backdrop}
       rating={meta?.rating}
-      ageRating={meta?.ageRating}
+      ageRating={ageRatingOf(meta)}
       meta={metaLong}
       badge={qualityBadgeForVideo(show.video)}
       overview={meta?.overview}

@@ -1,5 +1,5 @@
 import type { AgeRating, ContinueItem } from '@kromatv/client/media';
-import { formatRuntime, genreLabels } from '@kromatv/core';
+import { ageRatingOf, formatRuntime, genreLabels } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import type { HomeEntry } from './home-sections';
 
@@ -24,8 +24,8 @@ export function featuredMetaLine(t: Translate, entry: HomeEntry): string {
 }
 
 /** The age rating the billboard draws beside its meta line, for a film or a series. */
-export function featuredAgeRating(entry: HomeEntry): AgeRating | null | undefined {
-  return (entry.type === 'movie' ? entry.item : entry.show).metadata?.ageRating;
+export function featuredAgeRating(entry: HomeEntry): AgeRating | null {
+  return ageRatingOf((entry.type === 'movie' ? entry.item : entry.show).metadata);
 }
 
 /** How far into the featured title the viewer already is, 0..1, or null while

@@ -56,7 +56,7 @@ describe('featuredMetaLine', () => {
 
     expect(featuredAgeRating(movie({ metadata: meta({ ageRating: rating }) }))).toEqual(rating);
     expect(featuredAgeRating(show({ metadata: meta({ ageRating: rating }) }))).toEqual(rating);
-    expect(featuredAgeRating(movie())).toBeUndefined();
+    expect(featuredAgeRating(movie())).toBeNull();
   });
 
   it('leaves out the runtime a series has no single one of', () => {
