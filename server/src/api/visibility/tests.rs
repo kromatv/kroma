@@ -11,6 +11,7 @@ fn viewer(libraries: LibraryScope) -> Viewer {
             reader: "US".into(),
             server: "US".into(),
         },
+        rules: Default::default(),
     }
 }
 

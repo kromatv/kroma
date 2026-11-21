@@ -199,7 +199,7 @@ person as well as with their titles.
 library the asker cannot see takes no place in the results, and a person is counted only over
 the titles the asker may see.
 
-**BROWSE-62** (AGREED) - The home, search and a person's page obey the viewer's maturity
+**BROWSE-62** (SHIPPED) - The home, search and a person's page obey the viewer's maturity
 ceiling and the titles an admin blocked or allowed for them
 ([`accounts/kids.md`](../accounts/kids.md)) as they obey visibility: a title kept from the
 viewer takes no place, and a person is counted only over the titles left.

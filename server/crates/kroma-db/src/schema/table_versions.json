@@ -188,6 +188,10 @@
       "broke": 1,
       "changed": 1
     },
+    "profile_title_rules": {
+      "broke": 27,
+      "changed": 27
+    },
     "progress": {
       "broke": 1,
       "changed": 1
@@ -257,5 +261,5 @@
       "changed": 1
     }
   },
-  "version": 26
+  "version": 27
 }

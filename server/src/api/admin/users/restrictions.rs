@@ -1,6 +1,9 @@
-//! What an admin keeps from a profile: its maturity level (ACCT-109), set only
-//! by an admin on another account (ACCT-115) after typing their own password
-//! (ACCT-116).
+//! What an admin keeps from a profile: its maturity level (ACCT-109) and the
+//! titles blocked or allowed for it (ACCT-117 to ACCT-120). Only an admin
+//! sets them, never on their own profile (ACCT-115), and each change carries
+//! that admin's own password (ACCT-116, ACCT-121).
+
+use std::collections::HashMap;
 
 use axum::Json;
 use axum::extract::{FromRequestParts, Path as AxPath, State};
@@ -14,9 +17,9 @@ use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::pin::check_password;
 use crate::api::util::query;
-use crate::db;
+use crate::db::{self, RuledTitle};
 use crate::infra::events::ServerEvent;
-use crate::model::{MaturityLevel, Permission, User};
+use crate::model::{MaturityLevel, Permission, TitleRule, User};
 use crate::state::SharedState;
 
 #[derive(Debug, Deserialize)]
@@ -25,12 +28,20 @@ pub struct LevelBody {
     pub password: String,
 }
 
-/// The member a restrictions request names, asked by an account that manages
-/// users. Rejects as [`AuthUser`] does, then as every member route does for a
-/// caller without `users.manage`.
+/// `rule` is `null` to lift whichever rule the title carries.
+#[derive(Debug, Deserialize)]
+pub struct RuleBody {
+    pub rule: Option<TitleRule>,
+    pub password: String,
+}
+
+/// The member a restrictions request names, and the title when the route
+/// names one, asked by an account that manages users. Rejects as [`AuthUser`]
+/// does, then as every member route does for a caller without `users.manage`.
 pub struct MemberCall {
     pub admin: User,
     pub id: String,
+    pub title: Option<String>,
 }
 
 impl FromRequestParts<SharedState> for MemberCall {
@@ -42,22 +53,36 @@ impl FromRequestParts<SharedState> for MemberCall {
     ) -> Result<Self, Self::Rejection> {
         let AuthUser(admin) = AuthUser::from_request_parts(parts, state).await?;
         super::super::require(&admin, Permission::UsersManage)?;
-        let AxPath(id) = AxPath::<String>::from_request_parts(parts, state)
+        let AxPath(mut named) = AxPath::<HashMap<String, String>>::from_request_parts(parts, state)
             .await
             .map_err(IntoResponse::into_response)?;
-        Ok(Self { admin, id })
+        Ok(Self {
+            id: named.remove("id").unwrap_or_default(),
+            title: named.remove("title"),
+            admin,
+        })
     }
 }
 
-/// `GET /api/admin/users/:id/restrictions` → `{ level, held }`. `held` is
-/// `false` for an account with a management right, which no ceiling binds.
+/// `GET /api/admin/users/:id/restrictions` → `{ level, held, titles }`.
+/// `held` is `false` for an account with a management right, which neither a
+/// ceiling nor a block binds; `titles` lists every blocked or allowed title,
+/// newest first.
 pub async fn restrictions(
     State(state): State<SharedState>,
-    MemberCall { admin, id }: MemberCall,
+    MemberCall { admin, id, .. }: MemberCall,
 ) -> Result<Response, Response> {
     let target = super::target_or_404(&state, &admin, &id).await?;
-    let stored = query(&state.db, move |pool| db::profile_maturity(&pool, &id)).await?;
-    Ok(Json(json!({ "level": stored.level, "held": !target.is_any_admin() })).into_response())
+    let (stored, ruled) = query(&state.db, move |pool| {
+        Ok((
+            db::profile_maturity(&pool, &id)?,
+            db::ruled_titles(&pool, &id)?,
+        ))
+    })
+    .await?;
+    let titles: Vec<serde_json::Value> = ruled.iter().map(ruled_json).collect();
+    let held = !target.is_any_admin();
+    Ok(Json(json!({ "level": stored.level, "held": held, "titles": titles })).into_response())
 }
 
 /// `PUT /api/admin/users/:id/restrictions/level` `{ level, password }` → 204.
@@ -66,21 +91,20 @@ pub async fn restrictions(
 /// PIN does.
 pub async fn set_level(
     State(state): State<SharedState>,
-    MemberCall { admin, id }: MemberCall,
+    call: MemberCall,
     Json(body): Json<LevelBody>,
 ) -> Result<Response, Response> {
-    let loc = super::super::user_locale(&admin);
-    if id == admin.id {
-        return Err(lerr(
-            loc,
-            StatusCode::FORBIDDEN,
-            "admin.restrictionsOwnProfile",
-        ));
-    }
-    let target = super::target_or_404(&state, &admin, &id).await?;
-    refuse_an_admin(&target, body.level, loc)?;
-    check_password(&state, &admin.id, &body.password, loc).await?;
-    let level = body.level;
+    let restricts = body.level != MaturityLevel::Adult;
+    proven(
+        &state,
+        &call,
+        Change {
+            password: &body.password,
+            restricts,
+        },
+    )
+    .await?;
+    let (id, level) = (call.id, body.level);
     query(&state.db, move |pool| {
         db::set_maturity_level(&pool, &id, level)
     })
@@ -89,9 +113,75 @@ pub async fn set_level(
     Ok(StatusCode::NO_CONTENT.into_response())
 }
 
-fn refuse_an_admin(target: &User, level: MaturityLevel, loc: &str) -> Result<(), Response> {
-    if target.is_any_admin() && level != MaturityLevel::Adult {
+/// `PUT /api/admin/users/:id/restrictions/titles/:title` `{ rule, password }`
+/// → 204. Blocks or allows a film or a show for the profile, replacing the
+/// rule it had (ACCT-119); a show's rule covers its episodes. An episode or an
+/// unknown title answers 404. Refused as [`set_level`] is.
+pub async fn set_title_rule(
+    State(state): State<SharedState>,
+    call: MemberCall,
+    Json(body): Json<RuleBody>,
+) -> Result<Response, Response> {
+    let title = whole_title(&state, &call).await?;
+    let restricts = body.rule.is_some();
+    proven(
+        &state,
+        &call,
+        Change {
+            password: &body.password,
+            restricts,
+        },
+    )
+    .await?;
+    let (id, rule) = (call.id, body.rule);
+    query(&state.db, move |pool| {
+        db::set_title_rule(&pool, (&id, &title), rule)
+    })
+    .await?;
+    state.events.publish(ServerEvent::LibraryUpdated);
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+async fn whole_title(state: &SharedState, call: &MemberCall) -> Result<String, Response> {
+    let title = call.title.clone().unwrap_or_default();
+    let named = vec![title.clone()];
+    let found = query(&state.db, move |pool| db::subjects_access(&pool, &named)).await?;
+    if found
+        .get(&title)
+        .is_some_and(|access| access.title == title)
+    {
+        return Ok(title);
+    }
+    let loc = super::super::user_locale(&call.admin);
+    Err(lerr(loc, StatusCode::NOT_FOUND, "error.itemNotFound"))
+}
+
+struct Change<'a> {
+    password: &'a str,
+    restricts: bool,
+}
+
+async fn proven(
+    state: &SharedState,
+    call: &MemberCall,
+    change: Change<'_>,
+) -> Result<(), Response> {
+    let loc = super::super::user_locale(&call.admin);
+    if call.id == call.admin.id {
+        return Err(lerr(
+            loc,
+            StatusCode::FORBIDDEN,
+            "admin.restrictionsOwnProfile",
+        ));
+    }
+    let target = super::target_or_404(state, &call.admin, &call.id).await?;
+    if target.is_any_admin() && change.restricts {
         return Err(lerr(loc, StatusCode::CONFLICT, "admin.restrictionsAdmin"));
     }
-    Ok(())
+    check_password(state, &call.admin.id, change.password, loc).await
+}
+
+fn ruled_json(title: &RuledTitle) -> serde_json::Value {
+    let kind = if title.show { "show" } else { "movie" };
+    json!({ "id": title.id, "name": title.name, "kind": kind, "rule": title.rule })
 }

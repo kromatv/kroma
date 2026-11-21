@@ -413,5 +413,14 @@
   "admin.maturityConfirm": "Confirmer",
   "admin.maturitySelf": "La classification de votre propre profil se règle depuis le compte d'un autre administrateur.",
   "admin.maturityRunsServer": "Un profil qui gère le serveur voit tous les titres.",
-  "admin.maturityFailed": "Impossible de modifier la classification"
+  "admin.maturityFailed": "Impossible de modifier la classification",
+  "admin.titleRules": "Titres bloqués ou autorisés",
+  "admin.titleRulesHint": "Un titre bloqué est masqué pour ce profil, quelle que soit sa classification. Un titre autorisé passe sa classification par âge, classé ou non.",
+  "admin.titleRulesEmpty": "Aucun titre bloqué ni autorisé.",
+  "admin.titleBlocked": "Bloqué",
+  "admin.titleAllowed": "Autorisé",
+  "admin.titleBlock": "Bloquer",
+  "admin.titleAllow": "Autoriser",
+  "admin.titleLift": "Retirer",
+  "admin.titleFind": "Rechercher un titre"
 }

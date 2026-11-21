@@ -41,6 +41,10 @@ pub fn routes() -> Router<SharedState> {
             "/users/{id}/restrictions/level",
             axum::routing::put(restrictions::set_level),
         )
+        .route(
+            "/users/{id}/restrictions/titles/{title}",
+            axum::routing::put(restrictions::set_title_rule),
+        )
 }
 
 async fn target_or_404(state: &SharedState, user: &User, id: &str) -> Result<User, Response> {

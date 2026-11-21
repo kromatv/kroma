@@ -413,5 +413,14 @@
   "admin.maturityConfirm": "Confirm",
   "admin.maturitySelf": "Another admin sets your own profile's maturity rating.",
   "admin.maturityRunsServer": "A profile that runs the server sees every title.",
-  "admin.maturityFailed": "Couldn't change the maturity rating"
+  "admin.maturityFailed": "Couldn't change the maturity rating",
+  "admin.titleRules": "Blocked and allowed titles",
+  "admin.titleRulesHint": "A blocked title is hidden from this profile whatever its rating. An allowed title passes its maturity rating, rated or not.",
+  "admin.titleRulesEmpty": "No title is blocked or allowed.",
+  "admin.titleBlocked": "Blocked",
+  "admin.titleAllowed": "Allowed",
+  "admin.titleBlock": "Block",
+  "admin.titleAllow": "Allow",
+  "admin.titleLift": "Remove",
+  "admin.titleFind": "Find a title"
 }

@@ -79,10 +79,11 @@ own.
 Netflix asks for the account password. One confirmation covers the rest of that visit to
 the profile's restrictions.
 
-**ACCT-151** (SHIPPED) - A ceiling binds only a profile with no management right. A profile
-that can manage users, libraries, settings, requests or reports reaches every title through
-the console, so the server refuses to put one under a ceiling, and a stored ceiling stops
-binding while the profile holds such a right.
+**ACCT-151** (SHIPPED) - A ceiling, a block and an allow bind only a profile with no
+management right. A profile that can manage users, libraries, settings, requests or reports
+reaches every title through the console, so the server refuses to put one under a ceiling
+or block a title for it, and what is stored stops binding while the profile holds such a
+right.
 
 **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may
 not see.
@@ -95,21 +96,22 @@ id can fetch its cover. None of its bytes.
 
 ## Blocking and allowing a title
 
-Status: **AGREED**
+Status: **SHIPPED** on the server, and in the web and desktop apps, where an admin blocks
+and allows titles from a member's restrictions.
 
-**ACCT-117** (AGREED) - An admin can block a title for one profile. A blocked title is kept
+**ACCT-117** (SHIPPED) - An admin can block a title for one profile. A blocked title is kept
 from that profile as ACCT-112 and ACCT-113 say, whatever its rating and whether or not the
 profile is under a ceiling.
 
-**ACCT-118** (AGREED) - An admin can allow a title for one profile. An allowed title passes
+**ACCT-118** (SHIPPED) - An admin can allow a title for one profile. An allowed title passes
 that profile's ceiling, rated or not.
 
-**ACCT-119** (AGREED) - A title is blocked or allowed for a profile, never both. Setting one
+**ACCT-119** (SHIPPED) - A title is blocked or allowed for a profile, never both. Setting one
 clears the other.
 
-**ACCT-120** (AGREED) - A block or an allow on a show covers every episode of it.
+**ACCT-120** (SHIPPED) - A block or an allow on a show covers every episode of it.
 
-**ACCT-121** (AGREED) - Blocks and allows sit behind the same confirmation as the ceiling
+**ACCT-121** (SHIPPED) - Blocks and allows sit behind the same confirmation as the ceiling
 (ACCT-116).
 
 ## A Kids profile

@@ -123,11 +123,11 @@
 - **ACCT-114** (SHIPPED) - A changed ceiling bites on the profile's next request, on every <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-115** (SHIPPED) - Only an admin sets a profile's ceiling. No profile can change its <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-116** (SHIPPED) - An admin confirms their own password before changing a ceiling, as <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-117** (AGREED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-118** (AGREED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-119** (AGREED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-120** (AGREED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-121** (AGREED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-117** (SHIPPED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-118** (SHIPPED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-119** (SHIPPED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-120** (SHIPPED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-121** (SHIPPED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-123** (AGREED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-124** (AGREED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
@@ -148,7 +148,7 @@
 - **ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-151** (SHIPPED) - A ceiling binds only a profile with no management right. A profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-151** (SHIPPED) - A ceiling, a block and an allow bind only a profile with no <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-153** (AGREED) - A push notification about a title the profile may not see is not <sub>[kids.md](accounts/kids.md)</sub>
 
@@ -397,7 +397,7 @@
 - **BROWSE-59** (SHIPPED) - A synopsis shown on the home is cut by sentence, never by the box:
 - **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
 - **BROWSE-61** (SHIPPED) - While a scan runs, the home gains each title as the scan matches it,
-- **BROWSE-62** (AGREED) - The home, search and a person's page obey the viewer's maturity
+- **BROWSE-62** (SHIPPED) - The home, search and a person's page obey the viewer's maturity
 - **BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
 
 ## DISC - [discovery](discovery/)

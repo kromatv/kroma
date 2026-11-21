@@ -83,6 +83,21 @@ describe('the admin console endpoints', () => {
       path: '/admin/users/u1/restrictions',
     },
     {
+      name: 'setTitleRule carries the rule and the admin password',
+      call: (c) =>
+        c.admin.restrictions.setTitleRule(user, { title: 'm 1', rule: 'block' }, 'secret'),
+      method: 'PUT',
+      path: '/admin/users/u1/restrictions/titles/m%201',
+      body: { rule: 'block', password: 'secret' },
+    },
+    {
+      name: 'setTitleRule lifts a rule with null',
+      call: (c) => c.admin.restrictions.setTitleRule(user, { title: 'm1', rule: null }, 'secret'),
+      method: 'PUT',
+      path: '/admin/users/u1/restrictions/titles/m1',
+      body: { rule: null, password: 'secret' },
+    },
+    {
       name: 'setLevel carries the admin password',
       call: (c) => c.admin.restrictions.setLevel(user, 10, 'secret'),
       method: 'PUT',
