@@ -9,7 +9,7 @@
 
 use std::sync::Arc;
 
-use axum::extract::{DefaultBodyLimit, Path, State};
+use axum::extract::{DefaultBodyLimit, FromRequest, Path, State};
 use axum::http::StatusCode;
 use axum::response::Response;
 use axum::routing::{get, post};
@@ -176,16 +176,22 @@ pub async fn survey(
     asked(&state, &user, move |importers| importers.survey(&id, &ask)).await
 }
 
+#[derive(FromRequest)]
+#[from_request(state(SharedState))]
+struct UnlockRequest {
+    state: State<SharedState>,
+    user: AuthUser,
+    importer: Path<String>,
+    ask: Json<UnlockAsk>,
+}
+
 /// `POST /api/admin/importers/:id/unlock` opens the watch state of one user
 /// of a server with the PIN the owner typed. A PIN the other server does not
 /// take is a `refused` answer, not an error.
-pub async fn unlock(
-    State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Path(id): Path<String>,
-    Json(ask): Json<UnlockAsk>,
-) -> Result<Json<Unlock>, Response> {
-    asked(&state, &user, move |importers| importers.unlock(&id, &ask)).await
+async fn unlock(request: UnlockRequest) -> Result<Json<Unlock>, Response> {
+    let (Path(id), Json(ask)) = (request.importer, request.ask);
+    let unlocked = move |importers: &Importers| importers.unlock(&id, &ask);
+    asked(&request.state, &request.user.0, unlocked).await
 }
 
 /// `POST /api/admin/importers/:id/forget` has the importer delete a sign-in,
