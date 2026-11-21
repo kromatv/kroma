@@ -1,7 +1,7 @@
 use serde_json::json;
 
 use super::super::test_support::{fresh, user_count};
-use super::super::{export, import, preview, ImportError};
+use super::super::{Backup, ImportError, export, import, preview};
 use super::*;
 use crate::db::{self, Pool};
 use crate::services::settings::HeldLibrary;
@@ -25,6 +25,13 @@ fn a_backup_of(libraries: Option<&[LibraryDef]>) -> Vec<u8> {
     export(&source, dir.path(), None).unwrap()
 }
 
+fn unlocked(bytes: &[u8]) -> Backup<'_> {
+    Backup {
+        bytes,
+        password: None,
+    }
+}
+
 fn holding(pool: &Pool, libraries: &[LibraryDef]) {
     db::settings_set(pool, "libraries", &json!(libraries)).unwrap();
     for def in libraries {
@@ -42,7 +49,11 @@ fn saved_libraries(pool: &Pool) -> Vec<String> {
     let stored: String = pool
         .get()
         .unwrap()
-        .query_row("SELECT value FROM settings WHERE key = 'libraries'", [], |r| r.get(0))
+        .query_row(
+            "SELECT value FROM settings WHERE key = 'libraries'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap();
     let defs: Vec<LibraryDef> = serde_json::from_str(&stored).unwrap();
     defs.into_iter().map(|def| def.id).collect()
@@ -100,7 +111,7 @@ fn a_restore_without_reset_says_it_removes_no_library() {
     let series = [library("series", "/b/series")];
     holding(&target, &series);
 
-    let removed = preview(&target, &backup, None, &merging(&series)).unwrap();
+    let removed = preview(&target, &unlocked(&backup), &merging(&series)).unwrap();
 
     assert_eq!(removed, Vec::<HeldLibrary>::new());
 }
@@ -111,7 +122,7 @@ fn a_restore_with_reset_names_the_libraries_it_will_remove_before_it_runs() {
     let (target, _dir) = fresh("lib-preview-reset");
     holding(&target, &[library("series", "/b/series")]);
 
-    let removed = preview(&target, &backup, None, &resetting(&[])).unwrap();
+    let removed = preview(&target, &unlocked(&backup), &resetting(&[])).unwrap();
 
     assert_eq!(
         removed,
@@ -127,11 +138,22 @@ fn a_restore_with_reset_names_the_libraries_it_will_remove_before_it_runs() {
 fn a_reset_from_a_backup_with_no_saved_list_removes_only_what_the_seed_leaves_out() {
     let backup = a_backup_of(None);
     let (target, _dir) = fresh("lib-preview-seed");
-    holding(&target, &[library("series", "/b/series"), library("films", "/a/films")]);
+    holding(
+        &target,
+        &[library("series", "/b/series"), library("films", "/a/films")],
+    );
 
-    let removed = preview(&target, &backup, None, &resetting(&[library("series", "/b/series")])).unwrap();
+    let removed = preview(
+        &target,
+        &unlocked(&backup),
+        &resetting(&[library("series", "/b/series")]),
+    )
+    .unwrap();
 
-    assert_eq!(removed.iter().map(|l| l.id.as_str()).collect::<Vec<_>>(), ["films"]);
+    assert_eq!(
+        removed.iter().map(|l| l.id.as_str()).collect::<Vec<_>>(),
+        ["films"]
+    );
 }
 
 #[test]
@@ -151,7 +173,11 @@ fn a_restore_without_reset_onto_a_list_that_cannot_be_read_restores_nothing() {
     let named: i64 = target
         .get()
         .unwrap()
-        .query_row("SELECT COUNT(*) FROM settings WHERE key = 'serverName'", [], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) FROM settings WHERE key = 'serverName'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap();
     assert_eq!(named, 0);
 }

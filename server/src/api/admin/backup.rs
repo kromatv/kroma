@@ -6,7 +6,7 @@
 //! `settings`). See [`crate::services::backup`].
 
 use axum::body::{Body, Bytes};
-use axum::extract::State;
+use axum::extract::{FromRequest, Request, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -88,20 +88,26 @@ pub async fn export_backup(
 
 /// What a restore reads from the request: the file, its password, whether it
 /// resets, and how it treats this server's libraries.
-struct Restore {
+pub struct Restore {
     bytes: Vec<u8>,
     password: Option<String>,
     plan: crate::services::backup::Plan,
 }
 
-impl Restore {
-    fn read(state: &SharedState, headers: &HeaderMap, body: Bytes) -> Self {
-        let reset = header_flag(headers, "x-backup-reset");
-        Restore {
+impl FromRequest<SharedState> for Restore {
+    type Rejection = Response;
+
+    async fn from_request(request: Request, state: &SharedState) -> Result<Self, Response> {
+        let reset = header_flag(request.headers(), "x-backup-reset");
+        let password = header_password(request.headers());
+        let body = Bytes::from_request(request, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        Ok(Restore {
             bytes: body.to_vec(),
-            password: header_password(headers),
+            password,
             plan: crate::services::backup::Plan::for_server(&state.settings, &state.config, reset),
-        }
+        })
     }
 }
 
@@ -112,20 +118,17 @@ impl Restore {
 pub async fn preview_backup(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    headers: HeaderMap,
-    body: Bytes,
+    restore: Restore,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     let locale = super::user_locale(&user);
-    let restore = Restore::read(&state, &headers, body);
     let pool = state.db.clone();
     let outcome = tokio::task::spawn_blocking(move || {
-        crate::services::backup::preview(
-            &pool,
-            &restore.bytes,
-            restore.password.as_deref(),
-            &restore.plan,
-        )
+        let backup = crate::services::backup::Backup {
+            bytes: &restore.bytes,
+            password: restore.password.as_deref(),
+        };
+        crate::services::backup::preview(&pool, &backup, &restore.plan)
     })
     .await;
     let removed = refused(&state, locale, outcome).await?;
@@ -145,12 +148,10 @@ pub async fn preview_backup(
 pub async fn import_backup(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    headers: HeaderMap,
-    body: Bytes,
+    restore: Restore,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     let locale = super::user_locale(&user);
-    let restore = Restore::read(&state, &headers, body);
     let pool = state.db.clone();
     let data_dir = state.config.data_dir.clone();
     let outcome = tokio::task::spawn_blocking(move || {
@@ -191,35 +192,37 @@ async fn refused<T>(
     locale: &str,
     outcome: Result<Result<T, ImportError>, tokio::task::JoinError>,
 ) -> Result<T, Response> {
-    let error = match outcome {
-        Ok(Ok(done)) => return Ok(done),
-        Ok(Err(error)) => error,
+    match outcome {
+        Ok(Ok(done)) => Ok(done),
+        Ok(Err(error)) => Err(answer(state, locale, error).await),
         Err(e) => {
             tracing::error!(error = %e, "backup import task join error");
-            return Err(internal());
+            Err(internal())
         }
-    };
-    Err(match error {
-        ImportError::PasswordRequired => lerr(
-            locale,
-            StatusCode::BAD_REQUEST,
-            "admin.backupPasswordRequired",
-        ),
-        ImportError::WrongPassword => lerr(
-            locale,
-            StatusCode::BAD_REQUEST,
-            "admin.backupWrongPassword",
-        ),
-        ImportError::Invalid(e) => {
-            tracing::warn!(error = %e, "rejected backup import");
-            lerr(locale, StatusCode::BAD_REQUEST, "admin.backupInvalid")
-        }
+    }
+}
+
+async fn answer(state: &SharedState, locale: &str, error: ImportError) -> Response {
+    match error {
         ImportError::LibraryListUnreadable => unreadable_list(state, locale).await,
         ImportError::Db(e) => {
             tracing::error!(error = %e, "backup import database error");
             internal()
         }
-    })
+        other => rejected(locale, &other),
+    }
+}
+
+fn rejected(locale: &str, error: &ImportError) -> Response {
+    if let ImportError::Invalid(e) = error {
+        tracing::warn!(error = %e, "rejected backup import");
+    }
+    let key = match error {
+        ImportError::PasswordRequired => "admin.backupPasswordRequired",
+        ImportError::WrongPassword => "admin.backupWrongPassword",
+        _ => "admin.backupInvalid",
+    };
+    lerr(locale, StatusCode::BAD_REQUEST, key)
 }
 
 async fn unreadable_list(state: &SharedState, locale: &str) -> Response {

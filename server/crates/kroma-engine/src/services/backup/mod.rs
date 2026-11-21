@@ -62,15 +62,20 @@ pub fn import(
     db::import_portable(pool, data_dir, &doc, plan.reset).map_err(ImportError::Db)
 }
 
-/// The libraries of this server that restoring `bytes` under `plan` would
+/// A backup file as a request brings it, with the password that opens it.
+pub struct Backup<'a> {
+    pub bytes: &'a [u8],
+    pub password: Option<&'a str>,
+}
+
+/// The libraries of this server that restoring `backup` under `plan` would
 /// remove, read without restoring anything.
 pub fn preview(
     pool: &Pool,
-    bytes: &[u8],
-    password: Option<&str>,
+    backup: &Backup<'_>,
     plan: &Plan,
 ) -> std::result::Result<Vec<HeldLibrary>, ImportError> {
-    let (doc, _) = decode(bytes, password)?;
+    let (doc, _) = decode(backup.bytes, backup.password)?;
     let list = libraries::restored_list(&doc, plan)?;
     libraries::removed(pool, list.as_deref())
 }
