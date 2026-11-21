@@ -176,6 +176,10 @@ folder is opened where it really is and shown at the path it was named by, becau
 WASI refuses a symlink whose target is absolute, and Synology's
 `/var/packages/kroma/var` is one. `files.canonical` and `files.copy` (a reflink
 where the filesystem has one) cover what WASI lacks, inside the same folders.
+`files.copy` and `net.download` open what they write one name at a time from the
+held folder, following no link, and write only a regular file with a single
+link. A download lands in a file of the host's under `run` first, and reaches
+the module's folder only once curl is done.
 
 The server's own folders are the data folder, the modules folder, the release
 folder the Synology package starts from, the folder of the running binary, the
