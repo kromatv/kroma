@@ -2,7 +2,7 @@
   "stats.anchor": "Ancre (-ss)",
   "stats.audio": "Audio",
   "stats.avgBitrate": "Débit moyen",
-  "stats.bandwidth": "Bande passante est.",
+  "stats.bandwidth": "Bande passante estimée",
   "stats.buffer": "Tampon",
   "stats.bufferAhead": "{seconds} s d'avance",
   "stats.codecs": "Codecs",
@@ -27,5 +27,5 @@
   "stats.title2": "Titre",
   "stats.video": "Vidéo",
   "stats.volume": "Volume",
-  "stats.volumeMuted": " (muet)"
+  "stats.volumeMuted": " (coupé)"
 }

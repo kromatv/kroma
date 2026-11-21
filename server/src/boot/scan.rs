@@ -70,13 +70,7 @@ pub fn plan(
             return Ok(Plan::Offline);
         }
     };
-    let scanned = startup_scan(
-        &turn,
-        db,
-        &library_defs,
-        config.media_dirs.len(),
-        &mut services::scan::uninterrupted,
-    )?;
+    let scanned = startup_scan(&turn, db, &library_defs, &mut services::scan::uninterrupted)?;
     Ok(match scanned {
         services::scan::Scanned::Applied(data) => Plan::Applied(data),
         services::scan::Scanned::MountOffline { .. }
@@ -104,31 +98,19 @@ fn startup_scan(
     turn: &services::scan::WalkTurn,
     db: &db::Pool,
     library_defs: &[services::settings::LibraryDef],
-    media_dirs: usize,
     after_batch: &mut services::scan::AfterBatch<'_>,
 ) -> anyhow::Result<services::scan::Scanned> {
-    use services::scan::Walked;
-    if library_defs.iter().all(|def| def.folders.is_empty()) {
-        info!("no media dirs configured; seeding built-in demo content");
-        let data = services::scan::seed_demo(turn, db).context("failed to persist library")?;
-        return Ok(index_ready(data));
-    }
-    let walked = services::scan::sync_walk(turn, db, library_defs, after_batch)
+    let walk = services::scan::LibrariesToWalk {
+        turn,
+        db,
+        defs: library_defs,
+    };
+    let scanned = services::scan::walk_libraries(walk, after_batch)
         .context("failed to persist library")?;
-    match walked {
-        Walked::Synced(data) => Ok(index_ready(data)),
-        Walked::Stopped { dropped } => Ok(services::scan::Scanned::Cancelled { dropped }),
-        // Configured dirs that produce nothing mean a mount outage, not an empty
-        // library: syncing that scan would cascade-delete every library.
-        Walked::Empty { dropped, .. } => {
-            warn!(
-                media_dirs,
-                libraries_removed = dropped,
-                "configured media dirs produced no items; kept their stored titles and pruned none (mount offline?)"
-            );
-            Ok(services::scan::Scanned::MountOffline { dropped })
-        }
-    }
+    Ok(match scanned {
+        services::scan::Scanned::Applied(data) => index_ready(data),
+        stored => stored,
+    })
 }
 
 fn index_ready(data: services::scan::ScanData) -> services::scan::Scanned {
@@ -171,16 +153,10 @@ fn spawn_startup_scan(state: state::SharedState) {
         let scanned = services::settings::library_defs(&state.settings, &state.config)
             .map_err(|_| services::settings::unreadable_list_failure(&state.db))
             .and_then(|library_defs| {
-                startup_scan(
-                    &turn,
-                    &state.db,
-                    &library_defs,
-                    state.config.media_dirs.len(),
-                    &mut |rows| {
-                        announcer.wrote(rows);
-                        std::ops::ControlFlow::Continue(())
-                    },
-                )
+                startup_scan(&turn, &state.db, &library_defs, &mut |rows| {
+                    announcer.wrote(rows);
+                    std::ops::ControlFlow::Continue(())
+                })
             });
         if let Err(e) = &scanned {
             warn!(error = %format!("{e:#}"), "startup rescan failed; what it wrote stays and no title was pruned");
