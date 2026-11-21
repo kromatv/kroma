@@ -7,7 +7,7 @@
     "status": "SHIPPED",
     "text": "An **account** is a person. It has credentials, its own watch state,",
     "file": "docs/spec/accounts/README.md",
-    "line": 19
+    "line": 21
   },
   {
     "id": "ACCT-2",
@@ -17,7 +17,7 @@
     "status": "SHIPPED",
     "text": "The first account created at first-run is the **owner**, an account",
     "file": "docs/spec/accounts/README.md",
-    "line": 22
+    "line": 24
   },
   {
     "id": "ACCT-3",
@@ -27,7 +27,7 @@
     "status": "SHIPPED",
     "text": "Every subsequent account is an ordinary **user**, admitted by an admin:",
     "file": "docs/spec/accounts/README.md",
-    "line": 25
+    "line": 27
   },
   {
     "id": "ACCT-4",
@@ -37,7 +37,7 @@
     "status": "SHIPPED",
     "text": "There are no profiles under an account, and there will not be. A person",
     "file": "docs/spec/accounts/README.md",
-    "line": 29
+    "line": 31
   },
   {
     "id": "ACCT-5",
@@ -47,7 +47,7 @@
     "status": "SHIPPED",
     "text": "A person proves who they are with a **username and password**, a",
     "file": "docs/spec/accounts/README.md",
-    "line": 83
+    "line": 90
   },
   {
     "id": "ACCT-6",
@@ -57,7 +57,7 @@
     "status": "SHIPPED",
     "text": "A successful authentication mints a **session**: a long-lived,",
     "file": "docs/spec/accounts/README.md",
-    "line": 89
+    "line": 96
   },
   {
     "id": "ACCT-7",
@@ -67,7 +67,7 @@
     "status": "SHIPPED",
     "text": "**Sessions do not expire on a clock.** A session lives until it is",
     "file": "docs/spec/accounts/README.md",
-    "line": 93
+    "line": 100
   },
   {
     "id": "ACCT-8",
@@ -77,7 +77,7 @@
     "status": "SHIPPED",
     "text": "A session is per device, not per account, so one can be revoked without",
     "file": "docs/spec/accounts/README.md",
-    "line": 97
+    "line": 104
   },
   {
     "id": "ACCT-9",
@@ -87,7 +87,7 @@
     "status": "SHIPPED",
     "text": "A **device** is where a session lives. Signing in on a phone, a browser",
     "file": "docs/spec/accounts/README.md",
-    "line": 166
+    "line": 173
   },
   {
     "id": "ACCT-10",
@@ -97,7 +97,7 @@
     "status": "AGREED",
     "text": "Every session appears in the account's **device list** with enough to",
     "file": "docs/spec/accounts/README.md",
-    "line": 169
+    "line": 176
   },
   {
     "id": "ACCT-11",
@@ -107,7 +107,7 @@
     "status": "SHIPPED",
     "text": "A television binds to an account through the pairing handshake rather",
     "file": "docs/spec/accounts/README.md",
-    "line": 172
+    "line": 179
   },
   {
     "id": "ACCT-12",
@@ -117,7 +117,7 @@
     "status": "AGREED",
     "text": "A paired television is not a special class of trust. It lands in the",
     "file": "docs/spec/accounts/README.md",
-    "line": 176
+    "line": 183
   },
   {
     "id": "ACCT-13",
@@ -127,7 +127,7 @@
     "status": "SHIPPED",
     "text": "**Unbinding is revocation.** Revoking a device's session ends its",
     "file": "docs/spec/accounts/README.md",
-    "line": 198
+    "line": 205
   },
   {
     "id": "ACCT-14",
@@ -137,7 +137,7 @@
     "status": "SHIPPED",
     "text": "A revoked device that returns must pair or sign in afresh.",
     "file": "docs/spec/accounts/README.md",
-    "line": 202
+    "line": 209
   },
   {
     "id": "ACCT-15",
@@ -147,7 +147,7 @@
     "status": "SHIPPED",
     "text": "A television session is long-lived and revocable, and is **never",
     "file": "docs/spec/accounts/README.md",
-    "line": 216
+    "line": 223
   },
   {
     "id": "ACCT-16",
@@ -157,7 +157,7 @@
     "status": "AGREED",
     "text": "The device list is the control that replaces expiry: security comes",
     "file": "docs/spec/accounts/README.md",
-    "line": 219
+    "line": 226
   },
   {
     "id": "ACCT-17",
@@ -167,7 +167,7 @@
     "status": "SHIPPED",
     "text": "An **owner or admin** runs the server: users, settings, jobs and",
     "file": "docs/spec/accounts/README.md",
-    "line": 232
+    "line": 239
   },
   {
     "id": "ACCT-18",
@@ -177,7 +177,7 @@
     "status": "AGREED",
     "text": "The owner is the founding admin, the owner may grant admin to another",
     "file": "docs/spec/accounts/README.md",
-    "line": 235
+    "line": 242
   },
   {
     "id": "ACCT-19",
@@ -187,7 +187,7 @@
     "status": "SHIPPED",
     "text": "A **user** uses the server: browses and plays what they are permitted",
     "file": "docs/spec/accounts/README.md",
-    "line": 238
+    "line": 245
   },
   {
     "id": "ACCT-20",
@@ -197,7 +197,7 @@
     "status": "SHIPPED",
     "text": "**Library visibility is per user.** An admin decides which libraries a",
     "file": "docs/spec/accounts/README.md",
-    "line": 241
+    "line": 248
   },
   {
     "id": "ACCT-21",
@@ -207,7 +207,7 @@
     "status": "SHIPPED",
     "text": "Visibility gates browsing, search and playback alike. A title a user",
     "file": "docs/spec/accounts/README.md",
-    "line": 249
+    "line": 256
   },
   {
     "id": "ACCT-22",
@@ -217,7 +217,7 @@
     "status": "SHIPPED",
     "text": "Installing a module is an **admin** right, because it runs new",
     "file": "docs/spec/accounts/README.md",
-    "line": 290
+    "line": 297
   },
   {
     "id": "ACCT-23",
@@ -227,7 +227,7 @@
     "status": "AGREED",
     "text": "The matrix below is the whole of what each role may do. A user's power",
     "file": "docs/spec/accounts/README.md",
-    "line": 299
+    "line": 306
   },
   {
     "id": "ACCT-24",
@@ -237,7 +237,7 @@
     "status": "SHIPPED",
     "text": "**Per-user**: watch state, meaning resume points, watched flags and",
     "file": "docs/spec/accounts/README.md",
-    "line": 327
+    "line": 337
   },
   {
     "id": "ACCT-25",
@@ -247,7 +247,7 @@
     "status": "SHIPPED",
     "text": "**Per-server**: the libraries and their contents, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 332
+    "line": 342
   },
   {
     "id": "ACCT-26",
@@ -257,7 +257,7 @@
     "status": "SHIPPED",
     "text": "Watch state is per user and never per device: resume a film on the",
     "file": "docs/spec/accounts/README.md",
-    "line": 336
+    "line": 346
   },
   {
     "id": "ACCT-27",
@@ -267,7 +267,7 @@
     "status": "SHIPPED",
     "text": "Deletion destroys the account's credentials, all of its sessions and",
     "file": "docs/spec/accounts/README.md",
-    "line": 346
+    "line": 356
   },
   {
     "id": "ACCT-28",
@@ -277,7 +277,7 @@
     "status": "SHIPPED",
     "text": "Everything per-server survives. Libraries, media, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 350
+    "line": 360
   },
   {
     "id": "ACCT-29",
@@ -287,7 +287,7 @@
     "status": "AGREED",
     "text": "The owner account cannot be deleted while it is the only admin.",
     "file": "docs/spec/accounts/README.md",
-    "line": 354
+    "line": 364
   },
   {
     "id": "ACCT-30",
@@ -297,7 +297,7 @@
     "status": "AGREED",
     "text": "A user may request deletion of their own account, which revokes their",
     "file": "docs/spec/accounts/README.md",
-    "line": 358
+    "line": 368
   },
   {
     "id": "ACCT-31",
@@ -307,7 +307,7 @@
     "status": "SHIPPED",
     "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
     "file": "docs/spec/accounts/README.md",
-    "line": 367
+    "line": 377
   },
   {
     "id": "ACCT-32",
@@ -317,7 +317,7 @@
     "status": "AGREED",
     "text": "Bytes already downloaded for offline viewing sit in local storage the",
     "file": "docs/spec/accounts/README.md",
-    "line": 370
+    "line": 380
   },
   {
     "id": "ACCT-33",
@@ -327,7 +327,7 @@
     "status": "AGREED",
     "text": "The guarantee is that a revoked device gains nothing new and loses its",
     "file": "docs/spec/accounts/README.md",
-    "line": 374
+    "line": 384
   },
   {
     "id": "ACCT-34",
@@ -337,7 +337,7 @@
     "status": "SHIPPED",
     "text": "A title outside a person's grant is absent from browse, search, every",
     "file": "docs/spec/accounts/README.md",
-    "line": 255
+    "line": 262
   },
   {
     "id": "ACCT-35",
@@ -347,7 +347,7 @@
     "status": "SHIPPED",
     "text": "Every request for media bytes carries a credential the grant can be",
     "file": "docs/spec/accounts/README.md",
-    "line": 260
+    "line": 267
   },
   {
     "id": "ACCT-36",
@@ -717,7 +717,7 @@
     "status": "SHIPPED",
     "text": "The device list shows the app version each device last used",
     "file": "docs/spec/accounts/README.md",
-    "line": 180
+    "line": 187
   },
   {
     "id": "ACCT-73",
@@ -727,7 +727,7 @@
     "status": "SHIPPED",
     "text": "A device whose app is older than the oldest version its server serves",
     "file": "docs/spec/accounts/README.md",
-    "line": 183
+    "line": 190
   },
   {
     "id": "ACCT-74",
@@ -737,7 +737,7 @@
     "status": "SHIPPED",
     "text": "A device that never sent its app version shows \"version unknown\", never",
     "file": "docs/spec/accounts/README.md",
-    "line": 186
+    "line": 193
   },
   {
     "id": "ACCT-75",
@@ -747,7 +747,7 @@
     "status": "SHIPPED",
     "text": "An admin may add sign-in providers that speak OpenID Connect. Each one",
     "file": "docs/spec/accounts/README.md",
-    "line": 110
+    "line": 117
   },
   {
     "id": "ACCT-76",
@@ -757,7 +757,7 @@
     "status": "SHIPPED",
     "text": "A provider's button appears only after an admin's test sign-in passed",
     "file": "docs/spec/accounts/README.md",
-    "line": 113
+    "line": 120
   },
   {
     "id": "ACCT-77",
@@ -767,7 +767,7 @@
     "status": "SHIPPED",
     "text": "A provider sign-in ends in an ordinary session (ACCT-6), like a",
     "file": "docs/spec/accounts/README.md",
-    "line": 117
+    "line": 124
   },
   {
     "id": "ACCT-78",
@@ -777,7 +777,7 @@
     "status": "SHIPPED",
     "text": "An account is tied to a person at a provider by that provider's own",
     "file": "docs/spec/accounts/README.md",
-    "line": 120
+    "line": 127
   },
   {
     "id": "ACCT-79",
@@ -787,7 +787,7 @@
     "status": "SHIPPED",
     "text": "A person the provider vouches for and the server has never seen gets",
     "file": "docs/spec/accounts/README.md",
-    "line": 124
+    "line": 131
   },
   {
     "id": "ACCT-80",
@@ -797,7 +797,7 @@
     "status": "SHIPPED",
     "text": "A provider may require a group. A person outside it is refused at every",
     "file": "docs/spec/accounts/README.md",
-    "line": 128
+    "line": 135
   },
   {
     "id": "ACCT-81",
@@ -807,7 +807,7 @@
     "status": "SHIPPED",
     "text": "An admin who declines a join request stops that person asking again,",
     "file": "docs/spec/accounts/README.md",
-    "line": 131
+    "line": 138
   },
   {
     "id": "ACCT-82",
@@ -817,7 +817,7 @@
     "status": "SHIPPED",
     "text": "An admin may turn password sign-in and passkey sign-in off. Passwords",
     "file": "docs/spec/accounts/README.md",
-    "line": 134
+    "line": 141
   },
   {
     "id": "ACCT-83",
@@ -827,7 +827,7 @@
     "status": "SHIPPED",
     "text": "An account that can change server settings keeps its password",
     "file": "docs/spec/accounts/README.md",
-    "line": 145
+    "line": 152
   },
   {
     "id": "ACCT-84",
@@ -837,7 +837,7 @@
     "status": "SHIPPED",
     "text": "An account cannot remove its last way to sign in.",
     "file": "docs/spec/accounts/README.md",
-    "line": 148
+    "line": 155
   },
   {
     "id": "ACCT-85",
@@ -847,7 +847,7 @@
     "status": "SHIPPED",
     "text": "No claim from a provider grants a permission or a library.",
     "file": "docs/spec/accounts/README.md",
-    "line": 150
+    "line": 157
   },
   {
     "id": "ACCT-86",
@@ -857,7 +857,7 @@
     "status": "SHIPPED",
     "text": "The phone app offers the provider buttons. It opens the provider in",
     "file": "docs/spec/accounts/README.md",
-    "line": 153
+    "line": 160
   },
   {
     "id": "ACCT-87",
@@ -867,7 +867,7 @@
     "status": "SHIPPED",
     "text": "Passwords, passkeys and each provider are one list of sign-in methods.",
     "file": "docs/spec/accounts/README.md",
-    "line": 137
+    "line": 144
   },
   {
     "id": "ACCT-88",
@@ -877,7 +877,7 @@
     "status": "SHIPPED",
     "text": "A provider's button shows the logo of the provider it was set up as,",
     "file": "docs/spec/accounts/README.md",
-    "line": 142
+    "line": 149
   },
   {
     "id": "ACCT-89",
@@ -887,7 +887,7 @@
     "status": "AGREED",
     "text": "The desktop app offers the provider buttons the same way.",
     "file": "docs/spec/accounts/README.md",
-    "line": 156
+    "line": 163
   },
   {
     "id": "ACCT-90",
@@ -897,7 +897,7 @@
     "status": "SHIPPED",
     "text": "A device opens onto what the server knows of it: the address it last",
     "file": "docs/spec/accounts/README.md",
-    "line": 189
+    "line": 196
   },
   {
     "id": "ACCT-91",
@@ -907,7 +907,7 @@
     "status": "SHIPPED",
     "text": "The device list puts the device in hand first, then the others by most",
     "file": "docs/spec/accounts/README.md",
-    "line": 193
+    "line": 200
   },
   {
     "id": "ACCT-92",
@@ -917,7 +917,7 @@
     "status": "SHIPPED",
     "text": "One action signs out every device except the one in hand.",
     "file": "docs/spec/accounts/README.md",
-    "line": 196
+    "line": 203
   },
   {
     "id": "ACCT-93",
@@ -927,7 +927,7 @@
     "status": "SHIPPED",
     "text": "An account holder who no longer knows their profile PIN turns the lock",
     "file": "docs/spec/accounts/README.md",
-    "line": 208
+    "line": 215
   },
   {
     "id": "ACCT-94",
@@ -937,7 +937,7 @@
     "status": "SHIPPED",
     "text": "An account can exist before its person has signed in. It **waits on",
     "file": "docs/spec/accounts/README.md",
-    "line": 51
+    "line": 58
   },
   {
     "id": "ACCT-95",
@@ -947,7 +947,7 @@
     "status": "SHIPPED",
     "text": "Nobody can sign in to a waiting account, by any means. Its invitation",
     "file": "docs/spec/accounts/README.md",
-    "line": 55
+    "line": 62
   },
   {
     "id": "ACCT-96",
@@ -957,7 +957,7 @@
     "status": "SHIPPED",
     "text": "Redeeming the invitation gives the account its credential, and the",
     "file": "docs/spec/accounts/README.md",
-    "line": 58
+    "line": 65
   },
   {
     "id": "ACCT-97",
@@ -967,7 +967,7 @@
     "status": "SHIPPED",
     "text": "The person may correct the account's name and address when they",
     "file": "docs/spec/accounts/README.md",
-    "line": 61
+    "line": 68
   },
   {
     "id": "ACCT-98",
@@ -977,7 +977,7 @@
     "status": "SHIPPED",
     "text": "It is the same account before and after the invitation is redeemed,",
     "file": "docs/spec/accounts/README.md",
-    "line": 64
+    "line": 71
   },
   {
     "id": "ACCT-99",
@@ -987,7 +987,7 @@
     "status": "SHIPPED",
     "text": "The invitation of a waiting account is single-use and expires like",
     "file": "docs/spec/accounts/README.md",
-    "line": 67
+    "line": 74
   },
   {
     "id": "ACCT-100",
@@ -997,7 +997,407 @@
     "status": "SHIPPED",
     "text": "An admin can mint a new invitation for a waiting account. It voids",
     "file": "docs/spec/accounts/README.md",
-    "line": 70
+    "line": 77
+  },
+  {
+    "id": "ACCT-101",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 101,
+    "status": "AGREED",
+    "text": "The server keeps, for each title, the label every country's rating",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 18
+  },
+  {
+    "id": "ACCT-102",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 102,
+    "status": "AGREED",
+    "text": "Each label carries the minimum age it stands for, from one table",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 21
+  },
+  {
+    "id": "ACCT-103",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 103,
+    "status": "AGREED",
+    "text": "A show's rating is the rating of every one of its episodes.",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 26
+  },
+  {
+    "id": "ACCT-104",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 104,
+    "status": "AGREED",
+    "text": "Every account has a ratings country. It starts as the server's",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 28
+  },
+  {
+    "id": "ACCT-105",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 105,
+    "status": "AGREED",
+    "text": "A title shows its rating as a badge holding the label of the",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 32
+  },
+  {
+    "id": "ACCT-106",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 106,
+    "status": "AGREED",
+    "text": "A title that country never rated borrows another country's label,",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 35
+  },
+  {
+    "id": "ACCT-107",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 107,
+    "status": "AGREED",
+    "text": "A title no country rated shows no badge.",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 39
+  },
+  {
+    "id": "ACCT-108",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 108,
+    "status": "AGREED",
+    "text": "The badge is on a title's detail page, on the home's hero and on",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 41
+  },
+  {
+    "id": "ACCT-109",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 109,
+    "status": "AGREED",
+    "text": "Every profile carries one of the six levels. 18+ is the default, and",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 51
+  },
+  {
+    "id": "ACCT-110",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 110,
+    "status": "AGREED",
+    "text": "A ceiling compares ages, never labels. A title passes when the age",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 54
+  },
+  {
+    "id": "ACCT-111",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 111,
+    "status": "AGREED",
+    "text": "Under a ceiling, a title with no rating does not pass. A title the",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 57
+  },
+  {
+    "id": "ACCT-112",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 112,
+    "status": "AGREED",
+    "text": "A title that does not pass is absent for that profile from browse,",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 60
+  },
+  {
+    "id": "ACCT-113",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 113,
+    "status": "AGREED",
+    "text": "A title that does not pass is refused by its id on every route that",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 63
+  },
+  {
+    "id": "ACCT-114",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 114,
+    "status": "AGREED",
+    "text": "A changed ceiling bites on the profile's next request, on every",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 68
+  },
+  {
+    "id": "ACCT-115",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 115,
+    "status": "AGREED",
+    "text": "Only an admin sets a profile's ceiling. No profile can change its",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 71
+  },
+  {
+    "id": "ACCT-116",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 116,
+    "status": "AGREED",
+    "text": "An admin confirms their own password before changing a ceiling, as",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 74
+  },
+  {
+    "id": "ACCT-117",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 117,
+    "status": "AGREED",
+    "text": "An admin can block a title for one profile. A blocked title is kept",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 85
+  },
+  {
+    "id": "ACCT-118",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 118,
+    "status": "AGREED",
+    "text": "An admin can allow a title for one profile. An allowed title passes",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 89
+  },
+  {
+    "id": "ACCT-119",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 119,
+    "status": "AGREED",
+    "text": "A title is blocked or allowed for a profile, never both. Setting one",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 92
+  },
+  {
+    "id": "ACCT-120",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 120,
+    "status": "AGREED",
+    "text": "A block or an allow on a show covers every episode of it.",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 95
+  },
+  {
+    "id": "ACCT-121",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 121,
+    "status": "AGREED",
+    "text": "Blocks and allows sit behind the same confirmation as the ceiling",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 97
+  },
+  {
+    "id": "ACCT-122",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 122,
+    "status": "AGREED",
+    "text": "An admin creates a Kids profile under Users, with a name and an",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 104
+  },
+  {
+    "id": "ACCT-123",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 123,
+    "status": "AGREED",
+    "text": "Creating it picks its ceiling among the kids levels, with none",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 107
+  },
+  {
+    "id": "ACCT-124",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 124,
+    "status": "AGREED",
+    "text": "Its library visibility is set like any account's (ACCT-20).",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 111
+  },
+  {
+    "id": "ACCT-125",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 125,
+    "status": "AGREED",
+    "text": "Nobody can sign in to a Kids profile, by any means, as nobody can",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 113
+  },
+  {
+    "id": "ACCT-126",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 126,
+    "status": "AGREED",
+    "text": "A device on which a member of this server is signed in lists the",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 116
+  },
+  {
+    "id": "ACCT-127",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 127,
+    "status": "AGREED",
+    "text": "The owner's account can never be a Kids profile, and a Kids profile",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 120
+  },
+  {
+    "id": "ACCT-128",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 128,
+    "status": "AGREED",
+    "text": "An existing account cannot become a Kids profile. It has a",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 123
+  },
+  {
+    "id": "ACCT-129",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 129,
+    "status": "AGREED",
+    "text": "A Kids profile carries the KROMA Kids logo on its avatar, on the",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 126
+  },
+  {
+    "id": "ACCT-130",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 130,
+    "status": "AGREED",
+    "text": "A Kids profile whose ceiling an admin raises above 10+ loses the",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 129
+  },
+  {
+    "id": "ACCT-131",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 131,
+    "status": "AGREED",
+    "text": "Leaving a Kids profile goes to the picker. There is no exit lock of",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 136
+  },
+  {
+    "id": "ACCT-132",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 132,
+    "status": "AGREED",
+    "text": "The picker draws a lock on every profile that asks for a PIN, on",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 139
+  },
+  {
+    "id": "ACCT-133",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 133,
+    "status": "AGREED",
+    "text": "Creating a Kids profile offers the admin, in the same flow, to set a",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 142
+  },
+  {
+    "id": "ACCT-134",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 134,
+    "status": "AGREED",
+    "text": "Every other adult on the server whose profile has no PIN is told in",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 145
+  },
+  {
+    "id": "ACCT-135",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 135,
+    "status": "AGREED",
+    "text": "A device's picker adds a Kids profile only while an admin is signed",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 148
+  },
+  {
+    "id": "ACCT-136",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 136,
+    "status": "AGREED",
+    "text": "A Kids session wears the KROMA Kids look: the KROMA Kids logo in",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 159
+  },
+  {
+    "id": "ACCT-137",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 137,
+    "status": "AGREED",
+    "text": "A Kids session has no admin, no Store, no requests and no account",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 162
+  },
+  {
+    "id": "ACCT-138",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 138,
+    "status": "AGREED",
+    "text": "A Kids session never shows a title the server does not hold.",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 165
+  },
+  {
+    "id": "ACCT-139",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 139,
+    "status": "AGREED",
+    "text": "A Kids session shows no module page, and the server refuses module",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 167
+  },
+  {
+    "id": "ACCT-140",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 140,
+    "status": "AGREED",
+    "text": "Search stays on in a Kids session and finds only what the profile",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 171
   },
   {
     "id": "ACCT-141",
@@ -1007,7 +1407,7 @@
     "status": "SHIPPED",
     "text": "The member list tells a waiting account apart from one its person",
     "file": "docs/spec/accounts/README.md",
-    "line": 73
+    "line": 80
   },
   {
     "id": "ADMIN-1",
@@ -1797,7 +2197,7 @@
     "status": "AGREED",
     "text": "A reset is a single-use, time-limited link plus a short one-time",
     "file": "docs/spec/admin/README.md",
-    "line": 117
+    "line": 120
   },
   {
     "id": "ADMIN-80",
@@ -1807,7 +2207,7 @@
     "status": "AGREED",
     "text": "The code is eight characters from a thirty-two-symbol alphabet with",
     "file": "docs/spec/admin/README.md",
-    "line": 123
+    "line": 126
   },
   {
     "id": "ADMIN-81",
@@ -1817,7 +2217,7 @@
     "status": "AGREED",
     "text": "A new reset invalidates any unused previous one for the same account.",
     "file": "docs/spec/admin/README.md",
-    "line": 127
+    "line": 130
   },
   {
     "id": "ADMIN-82",
@@ -1827,7 +2227,7 @@
     "status": "AGREED",
     "text": "Delivery is the owner's choice, per server: copy the link and code",
     "file": "docs/spec/admin/README.md",
-    "line": 131
+    "line": 134
   },
   {
     "id": "ADMIN-83",
@@ -1837,7 +2237,7 @@
     "status": "AGREED",
     "text": "The kroma.tv relay carries what the server wrote; it writes nothing",
     "file": "docs/spec/admin/README.md",
-    "line": 139
+    "line": 142
   },
   {
     "id": "ADMIN-84",
@@ -1847,7 +2247,7 @@
     "status": "AGREED",
     "text": "The owner can clear a user's profile PIN. Clearing is the only PIN",
     "file": "docs/spec/admin/README.md",
-    "line": 178
+    "line": 181
   },
   {
     "id": "ADMIN-85",
@@ -1857,7 +2257,7 @@
     "status": "AGREED",
     "text": "An address on an account is unverified until the mailbox proves",
     "file": "docs/spec/admin/README.md",
-    "line": 188
+    "line": 191
   },
   {
     "id": "ADMIN-86",
@@ -1867,7 +2267,7 @@
     "status": "AGREED",
     "text": "The owner sends a verification from the member editor, with the",
     "file": "docs/spec/admin/README.md",
-    "line": 193
+    "line": 196
   },
   {
     "id": "ADMIN-87",
@@ -1877,7 +2277,7 @@
     "status": "AGREED",
     "text": "Changing the address clears the verified state: the proof belongs",
     "file": "docs/spec/admin/README.md",
-    "line": 199
+    "line": 202
   },
   {
     "id": "ADMIN-88",
@@ -1887,7 +2287,7 @@
     "status": "AGREED",
     "text": "A user who cannot sign in can ask for a reset from the sign-in",
     "file": "docs/spec/admin/README.md",
-    "line": 167
+    "line": 170
   },
   {
     "id": "ADMIN-89",
@@ -1897,7 +2297,7 @@
     "status": "AGREED",
     "text": "A server learns it is out of date by checking for a newer release and",
     "file": "docs/spec/admin/README.md",
-    "line": 302
+    "line": 305
   },
   {
     "id": "ADMIN-90",
@@ -1907,7 +2307,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 315
+    "line": 318
   },
   {
     "id": "ADMIN-91",
@@ -1917,7 +2317,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 319
+    "line": 322
   },
   {
     "id": "ADMIN-92",
@@ -1927,7 +2327,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 322
+    "line": 325
   },
   {
     "id": "ADMIN-93",
@@ -1937,7 +2337,7 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 327
+    "line": 330
   },
   {
     "id": "ADMIN-94",
@@ -1947,7 +2347,7 @@
     "status": "AGREED",
     "text": "A server speaks to the relay under an identity of its own: a key it",
     "file": "docs/spec/admin/README.md",
-    "line": 146
+    "line": 149
   },
   {
     "id": "ADMIN-95",
@@ -1957,7 +2357,7 @@
     "status": "AGREED",
     "text": "The relay carries a server's mail only after a person allowed that",
     "file": "docs/spec/admin/README.md",
-    "line": 152
+    "line": 155
   },
   {
     "id": "ADMIN-96",
@@ -3257,7 +3657,7 @@
     "status": "SHIPPED",
     "text": "A title the asker is in the middle of, or saved, comes before its",
     "file": "docs/spec/browse/README.md",
-    "line": 202
+    "line": 207
   },
   {
     "id": "BROWSE-47",
@@ -3267,7 +3667,7 @@
     "status": "SHIPPED",
     "text": "A show that matches is listed once, without its episodes. A show",
     "file": "docs/spec/browse/README.md",
-    "line": 205
+    "line": 210
   },
   {
     "id": "BROWSE-48",
@@ -3277,7 +3677,7 @@
     "status": "SHIPPED",
     "text": "A title the library holds under two entries is listed once, in",
     "file": "docs/spec/browse/README.md",
-    "line": 208
+    "line": 213
   },
   {
     "id": "BROWSE-49",
@@ -3287,7 +3687,7 @@
     "status": "SHIPPED",
     "text": "A person's page lists the titles of the library that credit them,",
     "file": "docs/spec/browse/README.md",
-    "line": 236
+    "line": 241
   },
   {
     "id": "BROWSE-50",
@@ -3297,7 +3697,7 @@
     "status": "AGREED",
     "text": "Under them it lists the rest of the person's filmography, the titles",
     "file": "docs/spec/browse/README.md",
-    "line": 239
+    "line": 244
   },
   {
     "id": "BROWSE-51",
@@ -3307,7 +3707,7 @@
     "status": "SHIPPED",
     "text": "A guest spot as oneself on a talk show is not part of a filmography.",
     "file": "docs/spec/browse/README.md",
-    "line": 243
+    "line": 251
   },
   {
     "id": "BROWSE-52",
@@ -3317,7 +3717,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Explicit feedback: \"not for me\" on a title, or a",
     "file": "docs/spec/browse/README.md",
-    "line": 249
+    "line": 257
   },
   {
     "id": "BROWSE-53",
@@ -3327,7 +3727,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Counting what was shown and never chosen, to retire a",
     "file": "docs/spec/browse/README.md",
-    "line": 254
+    "line": 262
   },
   {
     "id": "BROWSE-54",
@@ -3337,7 +3737,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Themes read from the provider's keywords. The",
     "file": "docs/spec/browse/README.md",
-    "line": 258
+    "line": 266
   },
   {
     "id": "BROWSE-55",
@@ -3367,7 +3767,7 @@
     "status": "SHIPPED",
     "text": "Nothing the home or the search recognises in text depends on one",
     "file": "docs/spec/browse/README.md",
-    "line": 215
+    "line": 220
   },
   {
     "id": "BROWSE-58",
@@ -3377,7 +3777,7 @@
     "status": "SHIPPED",
     "text": "Adding a language is adding its copy. Its words join the vocabulary",
     "file": "docs/spec/browse/README.md",
-    "line": 221
+    "line": 226
   },
   {
     "id": "BROWSE-59",
@@ -3387,7 +3787,7 @@
     "status": "SHIPPED",
     "text": "A synopsis shown on the home is cut by sentence, never by the box:",
     "file": "docs/spec/browse/README.md",
-    "line": 224
+    "line": 229
   },
   {
     "id": "BROWSE-60",
@@ -3397,7 +3797,7 @@
     "status": "SHIPPED",
     "text": "A rank is drawn as a shape in the display face, the same on a",
     "file": "docs/spec/browse/README.md",
-    "line": 228
+    "line": 233
   },
   {
     "id": "BROWSE-61",
@@ -3408,6 +3808,26 @@
     "text": "While a scan runs, the home gains each title as the scan matches it,",
     "file": "docs/spec/browse/README.md",
     "line": 155
+  },
+  {
+    "id": "BROWSE-62",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 62,
+    "status": "AGREED",
+    "text": "The home, search and a person's page obey the viewer's maturity",
+    "file": "docs/spec/browse/README.md",
+    "line": 202
+  },
+  {
+    "id": "BROWSE-63",
+    "domain": "BROWSE",
+    "space": "browse",
+    "number": 63,
+    "status": "AGREED",
+    "text": "Under a maturity ceiling, a person's page lists only the titles the",
+    "file": "docs/spec/browse/README.md",
+    "line": 248
   },
   {
     "id": "DISC-1",
