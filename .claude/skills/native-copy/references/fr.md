@@ -55,6 +55,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Subtitles | Sous-titres | |
 | Download / Upload | Télécharger / Importer, Envoyer | Uploader |
 | Owner | Propriétaire | Possesseur |
+| Required (a form field) | Ce champ est obligatoire | Ce champ est requis |
+| Use at least 8 characters | 8 caractères minimum | Utilisez au moins 8 caractères |
 | Admin (the area) | l'administration | l'admin |
 | Rights, permissions | Droits | Permissions |
 | Invitation link | Lien d'invitation | |
@@ -67,6 +69,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 |---|---|---|
 | Votre bibliothèque arrive | *arrive* is the English *is arriving* | Votre bibliothèque prend forme |
 | Qui d'autre regarde ici ? | word for word | Invitez votre famille et vos amis |
+| Retournons à votre bibliothèque | the product says *nous* | Revenez à votre bibliothèque |
+| Connexion directe (on a button) | a noun on a button | Se connecter directement |
 | Proches (the people a server is shared with) | *proche* also means *near*, so the word is read two ways | votre famille et vos amis, les personnes invitées; *Invitations* for the step |
 | Être compté | English idiom *be counted* | Statistiques anonymes |
 | Tirer plus de votre bibliothèque | *get more from* | Lecture et recherche |
