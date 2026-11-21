@@ -43,3 +43,5 @@ pub use fetch::Fetch;
 pub use loopback::{Loopback, Method, Request, Transport, MAX_BODY_BYTES};
 pub use multipart::FormPart;
 pub use response::Response;
+#[cfg(not(target_family = "wasm"))]
+pub use config::is_field_name;

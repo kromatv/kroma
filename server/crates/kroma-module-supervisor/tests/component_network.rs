@@ -61,3 +61,26 @@ fn a_component_that_declares_nothing_has_no_network() {
     );
     assert_eq!(hits.load(Ordering::SeqCst), 0);
 }
+
+#[test]
+fn a_header_name_that_names_a_file_is_refused_and_journaled() {
+    let server = Server::new("component-header-file", NetworkAction::Direct);
+    let endpoint = server.started(GUEST, guest_component(), DECLARES);
+    let (port, hits) = http_server("from the target");
+
+    let answered = server.get(
+        &endpoint,
+        &format!("/fetch-header?http://127.0.0.1:{port}/"),
+    );
+
+    assert!(
+        answered.text().contains("is not an HTTP field name"),
+        "{}",
+        answered.text()
+    );
+    assert_eq!(hits.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        server.network.flows.lock().unwrap()[0].route,
+        NetworkRoute::Blocked
+    );
+}

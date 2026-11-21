@@ -21,6 +21,7 @@ fn routes() -> Router<RemoteHost> {
         .route("/read", get(read_at))
         .route("/write", get(write_at))
         .route("/fetch", get(fetch))
+        .route("/fetch-header", get(fetch_with_a_file_for_a_header))
         .route(
             "/setting",
             get(|State(host): State<RemoteHost>| async move { host.setting_str("theKey", "absent") }),
@@ -62,6 +63,14 @@ async fn write_at(RawQuery(path): RawQuery) -> String {
 async fn fetch(RawQuery(url): RawQuery) -> String {
     let url = url.unwrap_or_default();
     match kroma_module_sdk::http::Fetch::new().purpose("probe").get(&url) {
+        Ok(response) => format!("{} {}", response.status, response.text()),
+        Err(error) => format!("refused: {error:#}"),
+    }
+}
+
+async fn fetch_with_a_file_for_a_header(RawQuery(url): RawQuery) -> String {
+    let fetch = kroma_module_sdk::http::Fetch::new().purpose("probe").header("@/tmp/x", "1");
+    match fetch.get(&url.unwrap_or_default()) {
         Ok(response) => format!("{} {}", response.status, response.text()),
         Err(error) => format!("refused: {error:#}"),
     }
