@@ -276,3 +276,12 @@ async fn scheduled_backups_switched_on_mark_the_backups_step_done() {
     let setup = setup_of(&t, &token).await;
     assert!(!checklist(&setup).contains(&"backups"));
 }
+
+#[tokio::test]
+async fn a_visitor_who_is_not_signed_in_reads_no_setup() {
+    let t = test_app();
+
+    let (status, _) = get(&t.app, "/api/admin/setup", None).await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}

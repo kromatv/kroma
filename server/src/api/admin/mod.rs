@@ -37,7 +37,7 @@ use std::sync::Arc;
 use axum::extract::{OriginalUri, Path as AxPath, Query, Request, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post};
+use axum::routing::{MethodRouter, get, post};
 use axum::Extension;
 use axum::Json;
 use axum::Router;
@@ -64,11 +64,26 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
     // disabled module's whole admin surface disappears. Downloads / VPN /
     // Indexers / Remote are modules, merged via `kroma_module_kernel::mount_admin`
     // below instead.
-    let mut router = Router::new()
+    let router = Router::new()
         .route("/server", get(server_info))
         .route("/sessions", get(sessions))
         .route("/sessions/{id}/stop", post(terminate_session))
         .route("/metrics", get(metrics))
+        .merge(noun_routes())
+        .merge(kroma_module_kernel::mount_admin(state.clone()));
+    // Installed modules with admin routes: `/api/admin/m/<id>/*` is
+    // reverse-proxied to that module. The mount is the module's id, so
+    // it needs no declaration and two modules cannot claim the same path.
+    // Explicit wildcard routes rather than a `.fallback`: axum 0.8's `nest`
+    // drops the nested router's fallback, and its matchit allows a param route
+    // to overlap the static ones above (statics win), which 0.7 forbade.
+    router
+        .route("/m/{id}", axum::routing::any(admin_module_proxy))
+        .route("/m/{id}/{*rest}", axum::routing::any(admin_module_proxy))
+}
+
+fn noun_routes() -> Router<SharedState> {
+    Router::new()
         .merge(users::routes())
         .merge(join_requests::routes())
         .merge(sign_in::routes())
@@ -91,17 +106,20 @@ pub fn routes(state: SharedState) -> Router<SharedState> {
         .merge(store::routes())
         .merge(pipeline::routes())
         .merge(backup::routes())
-        .merge(updates::routes());
-    router = router.merge(kroma_module_kernel::mount_admin(state.clone()));
-    // Installed modules with admin routes: `/api/admin/m/<id>/*` is
-    // reverse-proxied to that module. The mount is the module's id, so
-    // it needs no declaration and two modules cannot claim the same path.
-    // Explicit wildcard routes rather than a `.fallback`: axum 0.8's `nest`
-    // drops the nested router's fallback, and its matchit allows a param route
-    // to overlap the static ones above (statics win), which 0.7 forbade.
-    router
-        .route("/m/{id}", axum::routing::any(admin_module_proxy))
-        .route("/m/{id}/{*rest}", axum::routing::any(admin_module_proxy))
+        .merge(updates::routes())
+}
+
+/// A noun read and written whole at `path`, and each of its `actions` at
+/// `path/<action>`.
+pub(crate) fn noun<const N: usize>(
+    path: &str,
+    whole: MethodRouter<SharedState>,
+    actions: [(&str, MethodRouter<SharedState>); N],
+) -> Router<SharedState> {
+    actions.into_iter().fold(
+        Router::new().route(path, whole),
+        |router, (action, handler)| router.route(&format!("{path}/{action}"), handler),
+    )
 }
 
 // Reverse-proxy `/api/admin/m/<id>/*` to module `<id>`; 404 when no

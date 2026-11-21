@@ -18,6 +18,9 @@ use crate::services::auth;
 use crate::services::loginguard;
 use crate::state::SharedState;
 
+use super::registration::{
+    create_owner, from_lan, invite_open, invited_user, names_free, registrant, NameCheck,
+};
 use super::waiting::{claim, invited_account, Joining};
 use super::{issue_tokens, ThisDevice};
 
@@ -48,34 +51,18 @@ pub async fn register(
     headers: HeaderMap,
     Json(body): Json<RegisterBody>,
 ) -> Response {
-    let email = body.email.trim().to_lowercase();
-    let username = body.username.trim().to_string();
-    if email.is_empty()
-        || !email.contains('@')
-        || username.is_empty()
-        || body.password.len() < MIN_PASSWORD_LEN
-    {
+    let Some(who) = registrant(&body) else {
         return lerr(loc, StatusCode::BAD_REQUEST, "auth.registerInvalid");
-    }
+    };
 
     let count = match query(&state.db, move |pool| db::user_count(&pool)).await {
         Ok(n) => n,
         Err(resp) => return resp,
     };
 
-    if count > 0 && !crate::api::sso::sign_in_config(&state).password() {
-        return lerr(loc, StatusCode::FORBIDDEN, "sso.passwordOff");
-    }
-
     if count > 0 {
-        let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
-            return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
-        };
-        let now = time::OffsetDateTime::now_utc().unix_timestamp();
-        match query(&state.db, move |pool| db::get_invite(&pool, token.trim())).await {
-            Ok(Some(invite)) if !invite.used && invite.expires_at > now => {}
-            Ok(_) => return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteInvalid"),
-            Err(resp) => return resp,
+        if let Err(resp) = invite_open(&state, loc, body.invite_token.clone()).await {
+            return resp;
         }
     }
 
@@ -86,50 +73,22 @@ pub async fn register(
 
     // Reject a duplicate email before consuming any invite, or a retry spends the
     // single-use invite. `create_user`'s UNIQUE constraint is the atomic backstop.
-    let (email_check, own) = (email.clone(), waiting.clone());
-    match query(&state.db, move |pool| {
-        db::email_taken(&pool, &email_check, own.as_deref())
-    })
-    .await
-    {
-        Ok(true) => return lerr(loc, StatusCode::CONFLICT, "auth.emailTaken"),
-        Ok(false) => {}
-        Err(resp) => return resp,
-    }
-
     // Same for the username, and before the invite too: a duplicate would make
     // username login ambiguous.
-    let (username_check, own) = (username.clone(), waiting.clone());
-    match query(&state.db, move |pool| {
-        db::username_taken(&pool, &username_check, own.as_deref())
-    })
-    .await
-    {
-        Ok(true) => return lerr(loc, StatusCode::CONFLICT, "auth.usernameTaken"),
-        Ok(false) => {}
-        Err(resp) => return resp,
+    let names = NameCheck {
+        email: who.email.clone(),
+        username: who.username.clone(),
+        own: waiting.clone(),
+    };
+    if let Err(resp) = names_free(&state, loc, names).await {
+        return resp;
     }
 
     if count == 0 {
-        let ip = client_ip(&headers, &addr, &state.config.trusted_proxies);
-        if !crate::services::playback::is_lan(
-            &ip,
-            &crate::services::settings::local_networks(&state.settings),
-        ) {
+        if !from_lan(&state, &headers, &addr) {
             return lerr(loc, StatusCode::FORBIDDEN, "auth.firstRunLocalOnly");
         }
-        let hash = auth::hash_password(&body.password);
-        let (owner_email, owner_username) = (email.clone(), username.clone());
-        match query(&state.db, move |pool| {
-            let owner = db::create_owner_if_first(&pool, &owner_email, &owner_username, &hash)?;
-            if let Some(owner) = &owner {
-                db::set_whats_new_seen(&pool, &owner.id, crate::VERSION)?;
-                db::setup::lead_setup(&pool, &owner.id)?;
-            }
-            Ok(owner)
-        })
-        .await
-        {
+        match create_owner(&state, &who).await {
             Ok(Some(owner)) => return issue_tokens(state, owner, device.clone()).await,
             Ok(None) => {}
             Err(resp) => return resp,
@@ -139,37 +98,19 @@ pub async fn register(
     let Some(token) = body.invite_token.clone().filter(|t| !t.trim().is_empty()) else {
         return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteOnly");
     };
+    let joining = Joining {
+        token,
+        email: who.email,
+        username: who.username,
+        password: who.password,
+    };
     if waiting.is_some() {
-        let joining = Joining {
-            token,
-            email,
-            username,
-            password: body.password,
-        };
         return claim(state, loc, device, joining).await;
     }
-    let permissions = match query(&state.db, move |pool| {
-        db::consume_invite(&pool, token.trim())
-    })
-    .await
-    {
-        Ok(Some(perms)) => perms,
-        Ok(None) => return lerr(loc, StatusCode::FORBIDDEN, "auth.inviteInvalid"),
-        Err(resp) => return resp,
-    };
-
-    let hash = auth::hash_password(&body.password);
-    let user = match query(&state.db, move |pool| {
-        let user = db::create_user(&pool, &email, &username, &hash, &permissions)?;
-        db::set_whats_new_seen(&pool, &user.id, crate::VERSION)?;
-        Ok(user)
-    })
-    .await
-    {
-        Ok(u) => u,
-        Err(resp) => return resp,
-    };
-    issue_tokens(state, user, device.clone()).await
+    match invited_user(&state, loc, joining).await {
+        Ok(user) => issue_tokens(state, user, device.clone()).await,
+        Err(resp) => resp,
+    }
 }
 
 #[derive(Debug, Deserialize)]

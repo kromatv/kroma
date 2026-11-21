@@ -20,6 +20,7 @@ use axum::Router;
 mod credentials;
 mod profile;
 mod quick_connect;
+mod registration;
 mod reset;
 mod session;
 mod verify_email;

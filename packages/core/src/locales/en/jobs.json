@@ -77,7 +77,7 @@
   "jobs.saving": "Saving…",
   "jobs.search.reindex.desc": "Rebuilds the full-text search index from the database.",
   "jobs.search.reindex.name": "Search reindex",
-  "jobs.sections.curate.desc": "Builds catalog-wide collections everyone sees director spotlights plus LLM-curated genre, list, franchise and mood rows.",
+  "jobs.sections.curate.desc": "Builds catalog-wide collections everyone sees: director spotlights plus LLM-curated genre, list, franchise and mood rows.",
   "jobs.sections.curate.name": "Editorial collections (AI)",
   "jobs.sections.personalize.desc": "Analyzes each user's taste and has the configured LLM name their home sections.",
   "jobs.sections.personalize.name": "Personalized sections (AI)",
