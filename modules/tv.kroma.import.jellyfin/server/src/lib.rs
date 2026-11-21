@@ -25,8 +25,10 @@ use std::sync::Arc;
 
 use kroma_module_sdk::db::Pool;
 
+pub use dialect::{Dialect, EMBY};
 pub use module::{server_module, MODULE};
-pub use serve::routes;
+pub use serve::{routes, routes_for};
+pub use sign_ins::MIGRATIONS;
 
 pub const MODULE_ID: &str = "tv.kroma.import.jellyfin";
 

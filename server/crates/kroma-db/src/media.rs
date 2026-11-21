@@ -31,8 +31,16 @@ pub use splash::*;
 pub fn counts(pool: &Pool) -> Result<(usize, usize, usize)> {
     let conn = pool.get()?;
     let libs: i64 = conn.query_row("SELECT COUNT(*) FROM libraries", [], |r| r.get(0))?;
-    let items: i64 = conn.query_row("SELECT COUNT(*) FROM items", [], |r| r.get(0))?;
-    let shows: i64 = conn.query_row("SELECT COUNT(*) FROM shows", [], |r| r.get(0))?;
+    let items: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM items WHERE absent_since IS NULL",
+        [],
+        |r| r.get(0),
+    )?;
+    let shows: i64 = conn.query_row(
+        &format!("SELECT COUNT(*) FROM shows s WHERE {PRESENT_SHOW}"),
+        [],
+        |r| r.get(0),
+    )?;
     Ok((libs as usize, items as usize, shows as usize))
 }
 
@@ -41,7 +49,7 @@ pub fn counts(pool: &Pool) -> Result<(usize, usize, usize)> {
 pub fn movie_count(pool: &Pool) -> Result<i64> {
     let conn = pool.get()?;
     Ok(conn.query_row(
-        "SELECT COUNT(*) FROM items WHERE kind != 'episode'",
+        "SELECT COUNT(*) FROM items WHERE kind != 'episode' AND absent_since IS NULL",
         [],
         |r| r.get(0),
     )?)
@@ -51,7 +59,7 @@ pub fn movie_count(pool: &Pool) -> Result<i64> {
 pub fn list_movies(pool: &Pool, library: Option<&str>) -> Result<Vec<MediaItem>> {
     query_items(
         pool,
-        &format!("SELECT {ITEM_COLS} FROM items WHERE kind != 'episode'"),
+        &format!("SELECT {ITEM_COLS} FROM items WHERE kind != 'episode' AND absent_since IS NULL"),
         library,
         "ORDER BY title COLLATE NOCASE",
     )
@@ -61,7 +69,7 @@ pub fn list_movies(pool: &Pool, library: Option<&str>) -> Result<Vec<MediaItem>>
 pub fn list_items(pool: &Pool, library: Option<&str>) -> Result<Vec<MediaItem>> {
     query_items(
         pool,
-        &format!("SELECT {ITEM_COLS} FROM items"),
+        &format!("SELECT {ITEM_COLS} FROM items WHERE absent_since IS NULL"),
         library,
         "ORDER BY title COLLATE NOCASE",
     )
@@ -85,11 +93,15 @@ pub fn get_item(pool: &Pool, id: &str) -> Result<Option<MediaItem>> {
 /// representative-video lookups, so a full reindex is two table scans.
 pub fn index_snapshot(pool: &Pool) -> Result<(Vec<MediaItem>, Vec<Show>)> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(&format!("SELECT {ITEM_COLS} FROM items"))?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT {ITEM_COLS} FROM items WHERE absent_since IS NULL"
+    ))?;
     let items: Vec<MediaItem> = stmt
         .query_map([], row_to_item)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
-    let mut stmt = conn.prepare("SELECT id,title,year,library,added_at,metadata FROM shows")?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT id,title,year,library,added_at,metadata FROM shows s WHERE {PRESENT_SHOW}"
+    ))?;
     let shows: Vec<Show> = stmt
         .query_map([], row_to_show_bare)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
