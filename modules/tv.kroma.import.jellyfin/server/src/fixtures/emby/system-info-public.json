@@ -1,0 +1,9 @@
+{
+  "LocalAddress": "http://192.168.1.30:8096",
+  "LocalAddresses": ["http://192.168.1.30:8096"],
+  "WanAddress": null,
+  "RemoteAddresses": [],
+  "ServerName": "Den",
+  "Version": "4.8.11.0",
+  "Id": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f"
+}

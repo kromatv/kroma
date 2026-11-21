@@ -252,25 +252,29 @@ menu entry.
 
 ## Deletions and moves
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 The rule is **mark absent, never destroy user data**, and it is not negotiable enough to leave
 as an open question.
 
-**LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**:
+**LIB-45** (SHIPPED) - When a file disappears from a source, its title is **marked absent**:
 removed from normal browsing, but its record and all watch history, resume positions, ratings
 and manual-match bindings keyed to it are retained. Watch history survives a file outliving
 its bytes.
 
-**LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back
+**LIB-46** (SHIPPED) - Content that reappears, because a NAS remounts or a file is moved back
 or relocated within the source, re-matches to the same identity, and everything the person
 built up is still there.
 
-**LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a
+**LIB-47** (SHIPPED) - A **move** is therefore not a special case. It is an absent path plus a
 new path that resolve to one identity, and the history follows the identity rather than the
 path. This is what makes reorganising a library on disk safe.
 
-**LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data.
+**LIB-48** (SHIPPED) - A rescan **only ever marks absent**. It never deletes user data.
+
+A folder the scan cannot read, because it is missing, empty or holds a link it cannot open,
+says nothing about the files below it: their titles stay as they were, present, and the scan
+names that folder where the owner reads the scan's result (LIB-6).
 
 **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated
 admin action ("Remove and forget"), never a side effect of a scan. The one actor allowed to
