@@ -41,22 +41,9 @@ pub(super) use session::mint_device_tokens;
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/auth/config", get(auth_config))
-        .route(
-            "/auth/register",
-            post(register).layer(credentials_body_limit()),
-        )
-        .route("/auth/login", post(login).layer(credentials_body_limit()))
-        .route(
-            "/auth/token",
-            post(exchange_token).layer(credentials_body_limit()),
-        )
         .route("/auth/relock", post(relock))
         .route("/auth/logout", post(logout))
         .route("/auth/me", get(me).patch(update_me))
-        .route(
-            "/auth/me/password",
-            patch(change_password).layer(credentials_body_limit()),
-        )
         .route(
             "/auth/me/sessions",
             get(list_sessions).delete(revoke_other_sessions),
@@ -69,10 +56,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/auth/quickconnect/authorize", post(quick_authorize))
         .route("/auth/quickconnect/poll", get(quick_poll))
         .route("/auth/reset/{token}", get(check_reset))
-        .route(
-            "/auth/reset",
-            post(redeem_reset).layer(credentials_body_limit()),
-        )
         .route("/auth/reset-request", post(request_reset))
         .route("/auth/verify-email/{token}", get(check_verification))
         .route("/auth/verify-email", post(confirm_verification))
@@ -81,6 +64,17 @@ pub fn routes() -> Router<SharedState> {
             "/users/avatar",
             post(upload_avatar).layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES)),
         )
+        .merge(credential_routes())
+}
+
+fn credential_routes() -> Router<SharedState> {
+    Router::new()
+        .route("/auth/register", post(register))
+        .route("/auth/login", post(login))
+        .route("/auth/token", post(exchange_token))
+        .route("/auth/me/password", patch(change_password))
+        .route("/auth/reset", post(redeem_reset))
+        .layer(credentials_body_limit())
 }
 
 pub const MAX_AVATAR_BYTES: usize = 8 * 1024 * 1024;
