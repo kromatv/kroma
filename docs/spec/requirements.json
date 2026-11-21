@@ -2397,7 +2397,7 @@
     "status": "AGREED",
     "text": "A folder that does not exist on this machine under the name the",
     "file": "docs/spec/admin/import.md",
-    "line": 75
+    "line": 80
   },
   {
     "id": "ADMIN-143",
@@ -2407,7 +2407,7 @@
     "status": "AGREED",
     "text": "The translation is kept, so a later import asks nothing again.",
     "file": "docs/spec/admin/import.md",
-    "line": 82
+    "line": 87
   },
   {
     "id": "ADMIN-144",
@@ -2417,7 +2417,7 @@
     "status": "AGREED",
     "text": "Each user the owner kept becomes an account that waits on an",
     "file": "docs/spec/admin/import.md",
-    "line": 88
+    "line": 93
   },
   {
     "id": "ADMIN-145",
@@ -2427,7 +2427,7 @@
     "status": "AGREED",
     "text": "That account sees the libraries its user could see on the other",
     "file": "docs/spec/admin/import.md",
-    "line": 91
+    "line": 96
   },
   {
     "id": "ADMIN-146",
@@ -2437,7 +2437,7 @@
     "status": "AGREED",
     "text": "The person who signed in to the other server is the owner running",
     "file": "docs/spec/admin/import.md",
-    "line": 94
+    "line": 99
   },
   {
     "id": "ADMIN-147",
@@ -2447,7 +2447,7 @@
     "status": "AGREED",
     "text": "The owner can attach a user of the other server to an account",
     "file": "docs/spec/admin/import.md",
-    "line": 98
+    "line": 103
   },
   {
     "id": "ADMIN-148",
@@ -2457,7 +2457,7 @@
     "status": "AGREED",
     "text": "A user brought over once is found again by a later import, which",
     "file": "docs/spec/admin/import.md",
-    "line": 102
+    "line": 107
   },
   {
     "id": "ADMIN-149",
@@ -2467,7 +2467,7 @@
     "status": "AGREED",
     "text": "A user the other server limited more finely than by library, by",
     "file": "docs/spec/admin/import.md",
-    "line": 105
+    "line": 110
   },
   {
     "id": "ADMIN-150",
@@ -2477,7 +2477,7 @@
     "status": "AGREED",
     "text": "A user whose watch state the other server gives only against that",
     "file": "docs/spec/admin/import.md",
-    "line": 113
+    "line": 118
   },
   {
     "id": "ADMIN-151",
@@ -2487,7 +2487,7 @@
     "status": "AGREED",
     "text": "Each person's watched flags come over (ACCT-24).",
     "file": "docs/spec/admin/import.md",
-    "line": 121
+    "line": 126
   },
   {
     "id": "ADMIN-152",
@@ -2497,7 +2497,7 @@
     "status": "AGREED",
     "text": "Each person's resume points come over, and a resume point lands at",
     "file": "docs/spec/admin/import.md",
-    "line": 123
+    "line": 128
   },
   {
     "id": "ADMIN-153",
@@ -2507,7 +2507,7 @@
     "status": "AGREED",
     "text": "A title on the other server is matched to a KROMA title by its file",
     "file": "docs/spec/admin/import.md",
-    "line": 126
+    "line": 131
   },
   {
     "id": "ADMIN-154",
@@ -2517,7 +2517,7 @@
     "status": "AGREED",
     "text": "A title whose file matches nothing is matched by the external",
     "file": "docs/spec/admin/import.md",
-    "line": 129
+    "line": 134
   },
   {
     "id": "ADMIN-155",
@@ -2527,7 +2527,7 @@
     "status": "AGREED",
     "text": "Watch state for a file the scan has not reached yet shows on its",
     "file": "docs/spec/admin/import.md",
-    "line": 133
+    "line": 138
   },
   {
     "id": "ADMIN-156",
@@ -2537,7 +2537,7 @@
     "status": "AGREED",
     "text": "A title a person marked as a favourite on the other server is saved",
     "file": "docs/spec/admin/import.md",
-    "line": 136
+    "line": 141
   },
   {
     "id": "ADMIN-157",
@@ -2547,7 +2547,7 @@
     "status": "AGREED",
     "text": "When the import ends, a report lists what matched nothing, each",
     "file": "docs/spec/admin/import.md",
-    "line": 139
+    "line": 144
   },
   {
     "id": "ADMIN-158",
@@ -2557,7 +2557,7 @@
     "status": "AGREED",
     "text": "The plays the other server recorded come into watch history",
     "file": "docs/spec/admin/import.md",
-    "line": 150
+    "line": 155
   },
   {
     "id": "ADMIN-159",
@@ -2567,7 +2567,7 @@
     "status": "AGREED",
     "text": "A row that came from an import says so and names the server it came",
     "file": "docs/spec/admin/import.md",
-    "line": 153
+    "line": 158
   },
   {
     "id": "ADMIN-160",
@@ -2577,7 +2577,7 @@
     "status": "AGREED",
     "text": "An imported row leaves blank what the other server did not record:",
     "file": "docs/spec/admin/import.md",
-    "line": 156
+    "line": 161
   },
   {
     "id": "ADMIN-161",
@@ -2587,7 +2587,7 @@
     "status": "AGREED",
     "text": "An imported play that carries no duration counts for its title's",
     "file": "docs/spec/admin/import.md",
-    "line": 159
+    "line": 164
   },
   {
     "id": "ADMIN-162",
@@ -2597,7 +2597,7 @@
     "status": "AGREED",
     "text": "A play brought over once is not brought again by a later import.",
     "file": "docs/spec/admin/import.md",
-    "line": 167
+    "line": 172
   },
   {
     "id": "ADMIN-163",
@@ -2607,7 +2607,7 @@
     "status": "AGREED",
     "text": "The import runs in the background as a job with progress",
     "file": "docs/spec/admin/import.md",
-    "line": 173
+    "line": 178
   },
   {
     "id": "ADMIN-164",
@@ -2617,7 +2617,7 @@
     "status": "AGREED",
     "text": "The owner can cancel the import, and a cancelled import keeps what",
     "file": "docs/spec/admin/import.md",
-    "line": 176
+    "line": 181
   },
   {
     "id": "ADMIN-165",
@@ -2627,7 +2627,7 @@
     "status": "AGREED",
     "text": "A second import, run when nothing changed on the other server,",
     "file": "docs/spec/admin/import.md",
-    "line": 179
+    "line": 184
   },
   {
     "id": "ADMIN-166",
@@ -2637,7 +2637,7 @@
     "status": "AGREED",
     "text": "Where KROMA and the other server both hold watch state for one",
     "file": "docs/spec/admin/import.md",
-    "line": 185
+    "line": 190
   },
   {
     "id": "ADMIN-167",
@@ -2647,7 +2647,7 @@
     "status": "AGREED",
     "text": "An import only adds watch state or moves it forward. It removes",
     "file": "docs/spec/admin/import.md",
-    "line": 188
+    "line": 193
   },
   {
     "id": "ADMIN-168",
@@ -2657,7 +2657,7 @@
     "status": "AGREED",
     "text": "The importer stays installed after an import, so the owner can run",
     "file": "docs/spec/admin/import.md",
-    "line": 206
+    "line": 211
   },
   {
     "id": "ADMIN-169",
@@ -2667,7 +2667,7 @@
     "status": "AGREED",
     "text": "The report at the end of an import, and the import screen of the",
     "file": "docs/spec/admin/import.md",
-    "line": 209
+    "line": 214
   },
   {
     "id": "ADMIN-170",
@@ -2677,7 +2677,7 @@
     "status": "AGREED",
     "text": "Removing the importer forgets the sign-in to the other server",
     "file": "docs/spec/admin/import.md",
-    "line": 212
+    "line": 217
   },
   {
     "id": "ADMIN-171",
@@ -2687,7 +2687,7 @@
     "status": "AGREED",
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
-    "line": 216
+    "line": 221
   },
   {
     "id": "ADMIN-172",
@@ -2787,7 +2787,17 @@
     "status": "AGREED",
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
-    "line": 191
+    "line": 196
+  },
+  {
+    "id": "ADMIN-182",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 182,
+    "status": "AGREED",
+    "text": "A kept library whose folder holds a folder of a KROMA source is not",
+    "file": "docs/spec/admin/import.md",
+    "line": 75
   },
   {
     "id": "BROWSE-1",
@@ -3777,7 +3787,7 @@
     "status": "AGREED",
     "text": "A source is an input, not a category a person browses by. Filtering the",
     "file": "docs/spec/library/README.md",
-    "line": 27
+    "line": 33
   },
   {
     "id": "LIB-5",
@@ -3787,7 +3797,7 @@
     "status": "SHIPPED",
     "text": "A source tree may be assembled from symlinks. A curated folder of links",
     "file": "docs/spec/library/README.md",
-    "line": 30
+    "line": 36
   },
   {
     "id": "LIB-6",
@@ -3797,7 +3807,7 @@
     "status": "SHIPPED",
     "text": "A link the server cannot resolve is reported, never silently skipped,",
     "file": "docs/spec/library/README.md",
-    "line": 34
+    "line": 40
   },
   {
     "id": "LIB-7",
@@ -3807,7 +3817,7 @@
     "status": "AGREED",
     "text": "A source records its mount path, its content kind and its scan schedule.",
     "file": "docs/spec/library/README.md",
-    "line": 38
+    "line": 44
   },
   {
     "id": "LIB-8",
@@ -3817,7 +3827,7 @@
     "status": "AGREED",
     "text": "Nothing about a source is destructive. Removing one drops its titles",
     "file": "docs/spec/library/README.md",
-    "line": 40
+    "line": 46
   },
   {
     "id": "LIB-9",
@@ -3827,7 +3837,7 @@
     "status": "AGREED",
     "text": "Matching is convention-first: a correctly named file matches offline,",
     "file": "docs/spec/library/README.md",
-    "line": 49
+    "line": 55
   },
   {
     "id": "LIB-10",
@@ -3837,7 +3847,7 @@
     "status": "SHIPPED",
     "text": "The `Title (Year)` stem is what is matched. The year is not",
     "file": "docs/spec/library/README.md",
-    "line": 60
+    "line": 66
   },
   {
     "id": "LIB-11",
@@ -3847,7 +3857,7 @@
     "status": "SHIPPED",
     "text": "A trailing tag after ` - `, a resolution, an edition or a source, is",
     "file": "docs/spec/library/README.md",
-    "line": 64
+    "line": 70
   },
   {
     "id": "LIB-12",
@@ -3857,7 +3867,7 @@
     "status": "SHIPPED",
     "text": "A loose file directly under the source root, with no folder, is",
     "file": "docs/spec/library/README.md",
-    "line": 68
+    "line": 74
   },
   {
     "id": "LIB-13",
@@ -3867,7 +3877,7 @@
     "status": "SHIPPED",
     "text": "A season folder is what makes the folder above it the show. With one",
     "file": "docs/spec/library/README.md",
-    "line": 80
+    "line": 86
   },
   {
     "id": "LIB-14",
@@ -3877,7 +3887,7 @@
     "status": "SHIPPED",
     "text": "Without a season folder the folder proves nothing, because a flat pool",
     "file": "docs/spec/library/README.md",
-    "line": 84
+    "line": 90
   },
   {
     "id": "LIB-15",
@@ -3887,7 +3897,7 @@
     "status": "SHIPPED",
     "text": "An episode whose filename is only its marker (`S01E01.mkv`) takes the",
     "file": "docs/spec/library/README.md",
-    "line": 87
+    "line": 93
   },
   {
     "id": "LIB-16",
@@ -3897,7 +3907,7 @@
     "status": "SHIPPED",
     "text": "The show folder name and the `SxxEyy` marker are load-bearing; the",
     "file": "docs/spec/library/README.md",
-    "line": 91
+    "line": 97
   },
   {
     "id": "LIB-17",
@@ -3907,7 +3917,7 @@
     "status": "SHIPPED",
     "text": "`Specials` is accepted as an alias for `Season 00`.",
     "file": "docs/spec/library/README.md",
-    "line": 94
+    "line": 100
   },
   {
     "id": "LIB-18",
@@ -3917,7 +3927,7 @@
     "status": "SHIPPED",
     "text": "A multi-episode file is named with a range (`S01E01-E02`) and matched",
     "file": "docs/spec/library/README.md",
-    "line": 96
+    "line": 102
   },
   {
     "id": "LIB-19",
@@ -3927,7 +3937,7 @@
     "status": "AGREED",
     "text": "A show folder MAY carry a `(Year)` for disambiguation",
     "file": "docs/spec/library/README.md",
-    "line": 99
+    "line": 105
   },
   {
     "id": "LIB-20",
@@ -3937,7 +3947,7 @@
     "status": "SHIPPED",
     "text": "Case is ignored, and separators may be spaces, dots or underscores.",
     "file": "docs/spec/library/README.md",
-    "line": 102
+    "line": 108
   },
   {
     "id": "LIB-21",
@@ -3947,7 +3957,7 @@
     "status": "SHIPPED",
     "text": "Only recognised video containers are considered files to match.",
     "file": "docs/spec/library/README.md",
-    "line": 104
+    "line": 110
   },
   {
     "id": "LIB-22",
@@ -3957,7 +3967,7 @@
     "status": "AGREED",
     "text": "The scheme is a convention rather than configuration, so a library is",
     "file": "docs/spec/library/README.md",
-    "line": 108
+    "line": 114
   },
   {
     "id": "LIB-23",
@@ -3967,7 +3977,7 @@
     "status": "SHIPPED",
     "text": "An **initial scan** runs when a source is added: the whole tree is",
     "file": "docs/spec/library/README.md",
-    "line": 117
+    "line": 123
   },
   {
     "id": "LIB-24",
@@ -3977,7 +3987,7 @@
     "status": "AGREED",
     "text": "An **incremental rescan** keeps the catalogue true to disk afterwards.",
     "file": "docs/spec/library/README.md",
-    "line": 122
+    "line": 128
   },
   {
     "id": "LIB-25",
@@ -3987,7 +3997,7 @@
     "status": "AGREED",
     "text": "An incremental rescan only reconsiders what changed, meaning new paths,",
     "file": "docs/spec/library/README.md",
-    "line": 128
+    "line": 134
   },
   {
     "id": "LIB-26",
@@ -3997,7 +4007,7 @@
     "status": "AGREED",
     "text": "Scanning is safe to run at any time, including while files are being",
     "file": "docs/spec/library/README.md",
-    "line": 132
+    "line": 138
   },
   {
     "id": "LIB-27",
@@ -4007,7 +4017,7 @@
     "status": "AGREED",
     "text": "A file is matched only once it looks **settled**, its size and",
     "file": "docs/spec/library/README.md",
-    "line": 135
+    "line": 141
   },
   {
     "id": "LIB-28",
@@ -4017,7 +4027,7 @@
     "status": "SHIPPED",
     "text": "Scanning **reads only**. It never writes, moves, renames or deletes",
     "file": "docs/spec/library/README.md",
-    "line": 140
+    "line": 146
   },
   {
     "id": "LIB-29",
@@ -4027,7 +4037,7 @@
     "status": "AGREED",
     "text": "KROMA never demands exclusive access to a library and never blocks the",
     "file": "docs/spec/library/README.md",
-    "line": 143
+    "line": 149
   },
   {
     "id": "LIB-30",
@@ -4037,7 +4047,7 @@
     "status": "AGREED",
     "text": "Matching resolves a settled file to an identity: a convention parse",
     "file": "docs/spec/library/README.md",
-    "line": 158
+    "line": 164
   },
   {
     "id": "LIB-31",
@@ -4047,7 +4057,7 @@
     "status": "AGREED",
     "text": "A file that parses to no confident identity, whether from an",
     "file": "docs/spec/library/README.md",
-    "line": 164
+    "line": 170
   },
   {
     "id": "LIB-32",
@@ -4057,7 +4067,7 @@
     "status": "AGREED",
     "text": "Unmatched items appear in a browsable **Unmatched** view in the library",
     "file": "docs/spec/library/README.md",
-    "line": 169
+    "line": 175
   },
   {
     "id": "LIB-33",
@@ -4067,7 +4077,7 @@
     "status": "AGREED",
     "text": "**Manual match.** A person searches the provider, picks the correct",
     "file": "docs/spec/library/README.md",
-    "line": 173
+    "line": 179
   },
   {
     "id": "LIB-34",
@@ -4077,7 +4087,7 @@
     "status": "AGREED",
     "text": "**Rename on disk.** A name fixed to the convention above matches",
     "file": "docs/spec/library/README.md",
-    "line": 177
+    "line": 183
   },
   {
     "id": "LIB-35",
@@ -4087,7 +4097,7 @@
     "status": "AGREED",
     "text": "A file that could be more than one identity, a title shared by a remake",
     "file": "docs/spec/library/README.md",
-    "line": 191
+    "line": 197
   },
   {
     "id": "LIB-36",
@@ -4097,7 +4107,7 @@
     "status": "AGREED",
     "text": "One unplaceable file never stalls a source. The catalogue is always the",
     "file": "docs/spec/library/README.md",
-    "line": 197
+    "line": 203
   },
   {
     "id": "LIB-37",
@@ -4107,7 +4117,7 @@
     "status": "AGREED",
     "text": "Every field and image a provider returns is written to the server's own",
     "file": "docs/spec/library/README.md",
-    "line": 207
+    "line": 213
   },
   {
     "id": "LIB-38",
@@ -4117,7 +4127,7 @@
     "status": "AGREED",
     "text": "With no internet, everything already matched browses and plays exactly",
     "file": "docs/spec/library/README.md",
-    "line": 212
+    "line": 218
   },
   {
     "id": "LIB-39",
@@ -4127,7 +4137,7 @@
     "status": "AGREED",
     "text": "Offline, a brand-new file that needs a first provider lookup stays",
     "file": "docs/spec/library/README.md",
-    "line": 215
+    "line": 221
   },
   {
     "id": "LIB-40",
@@ -4137,7 +4147,7 @@
     "status": "AGREED",
     "text": "Offline, a forced refresh queues rather than fails.",
     "file": "docs/spec/library/README.md",
-    "line": 219
+    "line": 225
   },
   {
     "id": "LIB-41",
@@ -4147,7 +4157,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 228
+    "line": 234
   },
   {
     "id": "LIB-42",
@@ -4157,7 +4167,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 230
+    "line": 236
   },
   {
     "id": "LIB-43",
@@ -4167,7 +4177,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 234
+    "line": 240
   },
   {
     "id": "LIB-44",
@@ -4177,7 +4187,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 238
+    "line": 244
   },
   {
     "id": "LIB-45",
@@ -4187,7 +4197,7 @@
     "status": "AGREED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 260
+    "line": 266
   },
   {
     "id": "LIB-46",
@@ -4197,7 +4207,7 @@
     "status": "AGREED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 265
+    "line": 271
   },
   {
     "id": "LIB-47",
@@ -4207,7 +4217,7 @@
     "status": "AGREED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 269
+    "line": 275
   },
   {
     "id": "LIB-48",
@@ -4217,7 +4227,7 @@
     "status": "AGREED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 273
+    "line": 279
   },
   {
     "id": "LIB-49",
@@ -4227,7 +4237,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 275
+    "line": 281
   },
   {
     "id": "LIB-50",
@@ -4237,7 +4247,7 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 242
+    "line": 248
   },
   {
     "id": "LIB-51",
@@ -4517,7 +4527,17 @@
     "status": "AGREED",
     "text": "**A match that came from another server.** An import",
     "file": "docs/spec/library/README.md",
-    "line": 181
+    "line": 187
+  },
+  {
+    "id": "LIB-79",
+    "domain": "LIB",
+    "space": "library",
+    "number": 79,
+    "status": "AGREED",
+    "text": "A file belongs to one source. A source whose folder holds a folder of",
+    "file": "docs/spec/library/README.md",
+    "line": 27
   },
   {
     "id": "MEDIA-1",

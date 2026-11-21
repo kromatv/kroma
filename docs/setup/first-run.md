@@ -76,6 +76,9 @@ KROMA starts scanning. Posters, summaries and cast appear as it identifies
 each title, which takes a few minutes for a few hundred files. Repeat these
 steps for your series.
 
+A file belongs to one library. KROMA refuses a folder that holds the folder of
+another library, or sits inside it, and names that library.
+
 If you installed with the Synology wizard or set `KROMA_MOVIES_DIRS` and
 `KROMA_SERIES_DIRS`, KROMA already created a **Films** and a **Séries**
 library from those folders. Check them under **Sources** and rename them if

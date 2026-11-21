@@ -28,6 +28,7 @@ fn the_report_counts_what_was_read_brought_and_unmatched_kind_by_kind() {
             titles: tally(5, 3, 1),
             states: tally(5, 3, 1),
             plays: tally(5, 2, 1),
+            refused_libraries: Vec::new(),
         }
     );
 }
@@ -77,6 +78,7 @@ fn the_stages_of_this_build_bring_the_users_and_settle_nothing_else() {
             titles: tally(5, 0, 0),
             states: tally(2, 0, 1),
             plays: tally(5, 0, 0),
+            refused_libraries: Vec::new(),
         }
     );
     assert_eq!(settled.len(), 2);

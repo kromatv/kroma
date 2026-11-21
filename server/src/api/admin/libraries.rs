@@ -117,6 +117,10 @@ pub async fn create_library(
     }
     let mut defs = configured(&state, &user).await?;
     defs.retain(|held| !settings::is_demo_library(&held.id));
+    let folders = clean_folders(body.folders);
+    if let Some(sharing) = settings::library_sharing_files(&defs, &folders, None) {
+        return Err(shares_files(&user, &sharing.name));
+    }
     let id = crate::services::scan::short_hash(&format!(
         "lib|{name}|{}",
         crate::services::auth::random_token()
@@ -125,7 +129,7 @@ pub async fn create_library(
         id: id.clone(),
         name,
         kind: body.kind.unwrap_or_default(),
-        folders: clean_folders(body.folders),
+        folders,
         auto_scan: true,
     });
     settings::set_library_defs(&state.settings, &state.db, &defs);
@@ -153,23 +157,30 @@ pub async fn update_library(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::LibraryManage)?;
     let mut defs = configured(&state, &user).await?;
-    let Some(def) = defs.iter_mut().find(|d| d.id == id) else {
+    let Some(at) = defs.iter().position(|d| d.id == id) else {
         return Err(lerr(
             super::user_locale(&user),
             StatusCode::NOT_FOUND,
             "error.libraryNotFound",
         ));
     };
-    let mut needs_scan = false;
+    let folders = body.folders.map(clean_folders);
+    let sharing = folders
+        .as_deref()
+        .and_then(|folders| settings::library_sharing_files(&defs, folders, Some(&id)));
+    if let Some(sharing) = sharing {
+        return Err(shares_files(&user, &sharing.name));
+    }
+    let def = &mut defs[at];
+    let needs_scan = folders.is_some();
     if let Some(name) = body.name.filter(|n| !n.trim().is_empty()) {
         def.name = name.trim().to_string();
     }
     if let Some(kind) = body.kind {
         def.kind = kind;
     }
-    if let Some(folders) = body.folders {
-        def.folders = clean_folders(folders);
-        needs_scan = true;
+    if let Some(folders) = folders {
+        def.folders = folders;
     }
     if let Some(auto) = body.auto_scan {
         def.auto_scan = auto;
@@ -213,6 +224,15 @@ pub async fn scan_library(
     super::require(&user, Permission::LibraryManage)?;
     spawn_rescan(state.clone());
     Ok(Json(json!({ "started": true })).into_response())
+}
+
+fn shares_files(user: &User, library: &str) -> Response {
+    lerr_with(
+        super::user_locale(user),
+        StatusCode::CONFLICT,
+        "error.libraryFoldersShared",
+        &[("library", library)],
+    )
 }
 
 fn clean_folders(folders: Vec<String>) -> Vec<String> {

@@ -86,6 +86,26 @@ function Tallies({ found }: Readonly<{ found: Import | undefined }>) {
   );
 }
 
+function RefusedLibraries({ found }: Readonly<{ found: Import | undefined }>) {
+  const t = useT();
+  const refused = found?.report.refusedLibraries ?? [];
+  if (refused.length === 0) {
+    return null;
+  }
+  return (
+    <>
+      {refused.map((library) => (
+        <Text key={library.name} variant="meta" color="danger">
+          {t('setup.importLibraryRefused', {
+            name: library.name,
+            library: library.sharesFilesWith,
+          })}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 function CancelAction({ working }: Readonly<{ working: boolean }>) {
   const t = useT();
   const { client } = useWebRuntime();
@@ -116,6 +136,7 @@ export function ImportRun({ id, onContinue }: Readonly<RunProps>) {
       <StepBody>
         {working ? <Progress value={0} waiting label={t(TITLE[status])} /> : null}
         <Tallies found={data} />
+        <RefusedLibraries found={data} />
       </StepBody>
       <StepActions>
         <CancelAction working={working} />

@@ -70,6 +70,7 @@
   "setup.importStartFailed": "The import could not start. Try again.",
   "setup.importTally": "{brought} of {read}",
   "setup.importTallyUnmatched": "{count} unmatched",
+  "setup.importLibraryRefused": "{name} was not added: its folders share files with the library {library}.",
   "setup.importUserAll": "Every library",
   "setup.importUserLimited": "Restricted access: no library by default",
   "setup.importUserLocked": "History locked by a PIN",

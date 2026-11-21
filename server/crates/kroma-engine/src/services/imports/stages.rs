@@ -29,14 +29,17 @@ use crate::state::SharedState;
 /// needs it: a library's source id, a user's account id. `AlreadyHere` wrote
 /// nothing because KROMA holds the same or something newer.
 ///
-/// `Unmatched` and `Untouched` leave the row for a later import. `Unmatched` is
-/// a watch state or a play whose title is nothing here, and the report lists
-/// that title. `Untouched` is a row the stage did not handle.
+/// `Unmatched`, `SharesFiles` and `Untouched` leave the row for a later
+/// import. `Unmatched` is a watch state or a play whose title is nothing here,
+/// and the report lists that title. `SharesFiles` is a library not made because
+/// the library here it names already holds its files, and the report lists
+/// both. `Untouched` is a row the stage did not handle.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Outcome {
     Brought { target: Option<String> },
     AlreadyHere,
     Unmatched,
+    SharesFiles { with: String },
     Untouched,
 }
 

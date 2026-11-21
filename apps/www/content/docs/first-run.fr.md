@@ -80,6 +80,10 @@ KROMA lance l'analyse. Les affiches, les résumés et la distribution
 apparaissent à mesure qu'il identifie chaque titre. Pour quelques centaines de
 fichiers, cela prend quelques minutes. Répétez ces étapes pour vos séries.
 
+Un fichier n'appartient qu'à une seule bibliothèque. KROMA refuse un dossier
+qui contient le dossier d'une autre bibliothèque, ou qui se trouve dedans, et
+nomme cette bibliothèque.
+
 Si vous avez installé KROMA avec l'assistant Synology, ou défini
 `KROMA_MOVIES_DIRS` et `KROMA_SERIES_DIRS`, KROMA a déjà créé une bibliothèque
 **Films** et une bibliothèque **Séries** à partir de ces dossiers. Vérifiez-les

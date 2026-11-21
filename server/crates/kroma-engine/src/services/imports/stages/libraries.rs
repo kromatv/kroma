@@ -6,8 +6,6 @@
 //! screen or on an earlier one. The other server's word for where a folder is
 //! places nothing.
 
-use std::path::Path;
-
 use anyhow::Result;
 
 use super::super::passage::logged;
@@ -94,8 +92,13 @@ impl Sources {
         self.defs.iter().position(|def| {
             def.folders
                 .iter()
-                .any(|held| Path::new(folder).starts_with(held))
+                .any(|held| settings::holds(held, folder))
         })
+    }
+
+    fn sharing_files(&self, free: &[String], home: Option<usize>) -> Option<String> {
+        let home = home.map(|at| self.defs[at].id.as_str());
+        settings::library_sharing_files(&self.defs, free, home).map(|def| def.name.clone())
     }
 
     fn take(&mut self, row: &LibraryRow<'_>, folders: Vec<String>) -> Outcome {
@@ -112,6 +115,9 @@ impl Sources {
             .collect();
         if own.is_some() && free.is_empty() {
             return Outcome::AlreadyHere;
+        }
+        if let Some(with) = self.sharing_files(&free, home) {
+            return Outcome::SharesFiles { with };
         }
         self.changed |= !free.is_empty();
         let at = match home {
