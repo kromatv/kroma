@@ -166,16 +166,21 @@ async fn notify<S: HostCtx>(
 }
 
 fn notify_refusal(caller: &Caller, spec: &kroma_module_host::NotificationSpec) -> Option<String> {
-    let undeclared = spec
+    undeclared_type(caller, spec).or_else(|| refused_button(caller, spec))
+}
+
+fn undeclared_type(caller: &Caller, spec: &kroma_module_host::NotificationSpec) -> Option<String> {
+    let name = spec
         .module_type
         .as_deref()
-        .filter(|name| !caller.declares_notification(name));
-    if let Some(name) = undeclared {
-        return Some(format!(
-            "{} sent the notification type \"{name}\", which its module.json does not declare",
-            caller.name()
-        ));
-    }
+        .filter(|name| !caller.declares_notification(name))?;
+    Some(format!(
+        "{} sent the notification type \"{name}\", which its module.json does not declare",
+        caller.name()
+    ))
+}
+
+fn refused_button(caller: &Caller, spec: &kroma_module_host::NotificationSpec) -> Option<String> {
     let action = one_tap::refused_action(caller.module(), &spec.actions)?;
     Some(format!(
         "{} put the button \"{}\" ({} {}) on a notification; a button may only POST to a request review or to the module's own /api/module/<id>/ routes",
