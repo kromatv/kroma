@@ -12,7 +12,7 @@
   "admin.backupImportDesc": "Restores accounts, settings and history from a backup file, then re-scans your libraries. Existing entries are overwritten by the backup.",
   "admin.backupImportFailed": "Import failed. Is this a valid KROMA backup file?",
   "admin.backupImportTitle": "Import a backup",
-  "admin.backupImported": "Backup imported ({users} accounts) a re-scan has started. If your media paths differ, update the library folders, then re-scan.",
+  "admin.backupImported": "Backup imported ({users} accounts), and a re-scan has started. If your media paths differ, update the library folders, then re-scan.",
   "admin.backupImporting": "Importing…",
   "admin.backupInvalid": "Invalid or corrupted backup file.",
   "admin.backupPassword": "Encryption password",
