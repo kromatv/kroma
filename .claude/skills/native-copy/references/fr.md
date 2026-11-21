@@ -45,6 +45,17 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Search (action) | Rechercher | Chercher |
 | Save | Enregistrer | Sauver, Sauvegarder |
 | Delete / Remove | Supprimer / Retirer | Effacer |
+| Clear (a PIN, metadata) | Supprimer | Effacer |
+| Storyboard (seek previews) | aperçus | storyboards |
+| Intro and credits detection | détection des génériques | détection intro / générique |
+| Pipeline | chaîne de traitement, Traitement in a menu | pipeline |
+| Kill switch | coupe-circuit | kill switch |
+| Uptime | En service depuis {durée} | Disponibilité |
+| Last year (a time range) | Les 12 derniers mois | L'année dernière |
+| Top users | Utilisateurs les plus actifs | Top des utilisateurs |
+| Theme song (of a series) | générique | musique de thème |
+| Mb/s | Mbit/s | Mb/s |
+| 0 = auto, Empty = none (a field's hint) | 0 pour…, Laissez vide pour… | = |
 | Skip | Passer cette étape, Ignorer | Sauter |
 | Sign in / Sign out | Se connecter / Se déconnecter | Login |
 | Set up, setup | Configurer, la configuration | Installation, setup |
@@ -91,6 +102,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Written | Why it is wrong | Write |
 |---|---|---|
 | Votre bibliothèque arrive | *arrive* is the English *is arriving* | Votre bibliothèque prend forme |
+| Visible par les utilisateurs partagés | *shared users* word for word | Visible par les personnes invitées |
+| Inclure ce que ce serveur fait tourner | *what this server runs* | Inclure les modules et les langues utilisés |
+| Le lecteur de {user} sera arrêté | English passive | La lecture s'arrêtera tout de suite pour {user} |
+| Cette installation ne sait pas redémarrer | the installation as a person | ne peut pas redémarrer le serveur d'elle-même |
 | Qui d'autre regarde ici ? | word for word | Invitez votre famille et vos amis |
 | Retournons à votre bibliothèque | the product says *nous* | Revenez à votre bibliothèque |
 | Connexion directe (on a button) | a noun on a button | Se connecter directement |
