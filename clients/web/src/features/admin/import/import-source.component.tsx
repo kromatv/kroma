@@ -1,16 +1,16 @@
 import type { Importer, ImporterList } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout, EmptyState, GuidedFlow, ListRow, Skeleton } from '@kromatv/ui/kit';
-import { useImportSession } from '#web/features/setup/import-session.component';
-import { ImporterIcon } from '#web/features/setup/importer-icon.component';
-import { StepFailure } from '#web/features/setup/step-failure.component';
-import { useImporters } from '#web/features/setup/use-importers.hook';
+import { useImportSession } from '#web/features/admin/import/import-session.component';
+import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
+import { StepFailure } from '#web/shared/ui/step-failure.component';
+import { useImporters } from '#web/features/admin/import/use-importers.hook';
 
 const LOADING_ROWS = ['first', 'second'];
 
 interface SourceProps {
-  onBack: () => void;
-  onSkip: () => void;
+  onBack?: () => void;
+  onSkip?: () => void;
 }
 
 function Loading() {
@@ -87,6 +87,23 @@ function Sources({ list }: Readonly<{ list: ImporterList }>) {
   );
 }
 
+function SourceActions({ onBack, onSkip }: Readonly<SourceProps>) {
+  const t = useT();
+  if (!onBack && !onSkip) {
+    return null;
+  }
+  return (
+    <GuidedFlow.Footer>
+      {onBack ? <GuidedFlow.Previous onPress={onBack} /> : null}
+      <GuidedFlow.Actions>
+        {onSkip ? (
+          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
+        ) : null}
+      </GuidedFlow.Actions>
+    </GuidedFlow.Footer>
+  );
+}
+
 /** Which server the owner comes from. The choice is the list of importers the
  * server can use, each in its own name. */
 export function ImportSource({ onBack, onSkip }: Readonly<SourceProps>) {
@@ -103,12 +120,7 @@ export function ImportSource({ onBack, onSkip }: Readonly<SourceProps>) {
         {!data && !error ? <Loading /> : null}
         <StepFailure error={error ? t('setup.importListFailed') : null} />
       </GuidedFlow.Panel>
-      <GuidedFlow.Footer>
-        <GuidedFlow.Previous onPress={onBack} />
-        <GuidedFlow.Actions>
-          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
-        </GuidedFlow.Actions>
-      </GuidedFlow.Footer>
+      <SourceActions onBack={onBack} onSkip={onSkip} />
     </>
   );
 }

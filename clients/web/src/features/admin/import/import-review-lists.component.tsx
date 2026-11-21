@@ -7,10 +7,10 @@ import {
   keptIds,
   sight,
   skippedIds,
-} from '#web/features/setup/import-review';
-import { useImportSession } from '#web/features/setup/import-session.component';
-import { KIND_NAME } from '#web/features/setup/import-words';
-import { shortPath } from '#web/features/setup/media-step.component';
+} from '#web/features/admin/import/import-review';
+import { useImportSession } from '#web/features/admin/import/import-session.component';
+import { KIND_NAME } from '#web/features/admin/import/import-words';
+import { shortPath } from '#web/shared/lib/short-path';
 
 const SIGHT_LINE = {
   all: 'setup.importUserAll',

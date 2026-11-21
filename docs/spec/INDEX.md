@@ -3,7 +3,7 @@
 
 # Requirement index
 
-728 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+731 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -289,6 +289,8 @@
 - **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
@@ -631,6 +633,7 @@
 - **MOD-105** (AGREED) - An importer reads the other server and describes what it found. The <sub>[README.md](modules/README.md)</sub>
 - **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
 - **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
+- **MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do, <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 

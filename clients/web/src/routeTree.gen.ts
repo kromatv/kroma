@@ -33,6 +33,7 @@ import { Route as AdminAiRouteImport } from './routes/admin.ai'
 import { Route as AdminBackupRouteImport } from './routes/admin.backup'
 import { Route as AdminGeneralRouteImport } from './routes/admin.general'
 import { Route as AdminHistoryRouteImport } from './routes/admin.history'
+import { Route as AdminImportRouteImport } from './routes/admin.import'
 import { Route as AdminJobsRouteImport } from './routes/admin.jobs'
 import { Route as AdminLibrariesRouteImport } from './routes/admin.libraries'
 import { Route as AdminLogsRouteImport } from './routes/admin.logs'
@@ -179,6 +180,11 @@ const AdminGeneralRoute = AdminGeneralRouteImport.update({
 const AdminHistoryRoute = AdminHistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminImportRoute = AdminImportRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminJobsRoute = AdminJobsRouteImport.update({
@@ -351,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/admin/backup': typeof AdminBackupRoute
   '/admin/general': typeof AdminGeneralRoute
   '/admin/history': typeof AdminHistoryRoute
+  '/admin/import': typeof AdminImportRoute
   '/admin/jobs': typeof AdminJobsRoute
   '/admin/libraries': typeof AdminLibrariesRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -403,6 +410,7 @@ export interface FileRoutesByTo {
   '/admin/backup': typeof AdminBackupRoute
   '/admin/general': typeof AdminGeneralRoute
   '/admin/history': typeof AdminHistoryRoute
+  '/admin/import': typeof AdminImportRoute
   '/admin/jobs': typeof AdminJobsRoute
   '/admin/libraries': typeof AdminLibrariesRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -458,6 +466,7 @@ export interface FileRoutesById {
   '/admin/backup': typeof AdminBackupRoute
   '/admin/general': typeof AdminGeneralRoute
   '/admin/history': typeof AdminHistoryRoute
+  '/admin/import': typeof AdminImportRoute
   '/admin/jobs': typeof AdminJobsRoute
   '/admin/libraries': typeof AdminLibrariesRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -514,6 +523,7 @@ export interface FileRouteTypes {
     | '/admin/backup'
     | '/admin/general'
     | '/admin/history'
+    | '/admin/import'
     | '/admin/jobs'
     | '/admin/libraries'
     | '/admin/logs'
@@ -566,6 +576,7 @@ export interface FileRouteTypes {
     | '/admin/backup'
     | '/admin/general'
     | '/admin/history'
+    | '/admin/import'
     | '/admin/jobs'
     | '/admin/libraries'
     | '/admin/logs'
@@ -620,6 +631,7 @@ export interface FileRouteTypes {
     | '/admin/backup'
     | '/admin/general'
     | '/admin/history'
+    | '/admin/import'
     | '/admin/jobs'
     | '/admin/libraries'
     | '/admin/logs'
@@ -832,6 +844,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/admin/history'
       preLoaderRoute: typeof AdminHistoryRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/import': {
+      id: '/admin/import'
+      path: '/import'
+      fullPath: '/admin/import'
+      preLoaderRoute: typeof AdminImportRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/jobs': {
@@ -1106,6 +1125,7 @@ interface AdminRouteChildren {
   AdminBackupRoute: typeof AdminBackupRoute
   AdminGeneralRoute: typeof AdminGeneralRoute
   AdminHistoryRoute: typeof AdminHistoryRoute
+  AdminImportRoute: typeof AdminImportRoute
   AdminJobsRoute: typeof AdminJobsRoute
   AdminLibrariesRoute: typeof AdminLibrariesRoute
   AdminLogsRoute: typeof AdminLogsRoute
@@ -1133,6 +1153,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBackupRoute: AdminBackupRoute,
   AdminGeneralRoute: AdminGeneralRoute,
   AdminHistoryRoute: AdminHistoryRoute,
+  AdminImportRoute: AdminImportRoute,
   AdminJobsRoute: AdminJobsRoute,
   AdminLibrariesRoute: AdminLibrariesRoute,
   AdminLogsRoute: AdminLogsRoute,

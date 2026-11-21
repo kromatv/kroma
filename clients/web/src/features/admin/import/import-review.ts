@@ -8,7 +8,7 @@ import type {
 } from '@kromatv/client/importers';
 import type { ImportFolder, ImportRequest } from '@kromatv/client/imports';
 import type { ModuleId } from '@kromatv/client/modules';
-import { keptFolders } from '#web/features/setup/import-folders';
+import { keptFolders } from '#web/features/admin/import/import-folders';
 
 /** The server an import reads: through which importer, with which sign-in. */
 export interface ImportTarget {

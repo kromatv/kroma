@@ -3,7 +3,7 @@ import { JobKey } from '@kromatv/client/jobs';
 import { useT } from '@kromatv/ui';
 import { Button, GuidedFlow, ListRow, Progress, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { atWork, type TallyKind, tallies } from '#web/features/setup/import-run';
+import { atWork, type TallyKind, tallies } from '#web/features/admin/import/import-run';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const ASK_AGAIN_MS = 1000;

@@ -75,6 +75,13 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         icon: 'library',
       },
       {
+        to: '/admin/import',
+        labelKey: 'admin.navImport',
+        cap: 'settings.manage',
+        icon: 'arrows-exchange',
+        keywords: 'migration import migrer',
+      },
+      {
         to: '/admin/transcoder',
         labelKey: 'admin.navTranscoder',
         cap: 'settings.manage',
