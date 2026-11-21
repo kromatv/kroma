@@ -1,29 +1,159 @@
-import type { CastReceiver } from '@kromatv/client/cast';
+import type { CastCommand, CastNowPlaying } from '@kromatv/client/cast';
 
-/** What a receiver last reported, and when this sender heard it. */
+/** What the position is read from: a roster row, by the few fields that say
+ * where its playhead is. */
+interface Positioned {
+  id: string;
+  nowPlaying?: Pick<CastNowPlaying, 'positionMs' | 'durationMs' | 'state'>;
+}
+
+/** Where the driven television's playhead was at one moment, and whether it
+ * was moving. It is the one source of the position: this sender counts from
+ * it, and an order sent from here or a report from the television replaces it
+ * whole. */
 interface PositionBase {
   id: string;
   positionMs: number;
   playing: boolean;
   at: number;
+  /** Set by an order sent from here: until this moment, a report that says
+   * another place left the television before the order reached it. */
+  heldUntil?: number;
 }
 
-/** Where the TV is *now*: what it last told us, plus the wall time since. The
- * roster snapshot and the position event race, so the fresher of the two wins,
- * and the result never runs past the title's own duration. */
-function livePosition(
-  active: CastReceiver | null,
+const AGREES_WITHIN_MS = 300;
+const LANDED_WITHIN_MS = 2000;
+const ORDER_LANDS_WITHIN_MS = 4000;
+
+function counted(base: PositionBase, now: number): number {
+  return base.positionMs + (base.playing ? Math.max(0, now - base.at) : 0);
+}
+
+/** The base a roster row gives, or `null` for a television playing nothing. */
+function baseOf(receiver: Positioned, at = Date.now()): PositionBase | null {
+  const playing = receiver.nowPlaying;
+  if (!playing) {
+    return null;
+  }
+  return {
+    id: receiver.id,
+    positionMs: playing.positionMs,
+    playing: playing.state === 'playing',
+    at,
+  };
+}
+
+/** The base after a roster fetch: the driven television's row, or `was` when the
+ * roster does not hold it. */
+function drivenBase(
+  rows: Positioned[],
+  driving: string | null,
+  was: PositionBase | null,
+): PositionBase | null {
+  const driven = rows.find((r) => r.id === driving);
+  return driven ? baseOf(driven) : was;
+}
+
+function target(command: CastCommand, from: number): number | null {
+  if (command.type === 'seek') {
+    return command.positionMs;
+  }
+  return command.type === 'skip' ? Math.max(0, from + command.deltaMs) : null;
+}
+
+/** An order sent from here, and the television it went to. */
+interface Order {
+  receiverId: string;
+  command: CastCommand;
+}
+
+/** The base after an order sent from here. A seek or a skip puts the playhead
+ * where it was sent at once, and holds it there while the order travels; any
+ * other order leaves the base as it is. */
+function orderedBase(
   base: PositionBase | null,
-  playing: boolean,
+  { receiverId, command }: Order,
+  now = Date.now(),
+): PositionBase | null {
+  const from = base?.id === receiverId ? counted(base, now) : 0;
+  const positionMs = target(command, from);
+  if (positionMs === null) {
+    return base;
+  }
+  return {
+    id: receiverId,
+    positionMs,
+    playing: base?.playing ?? true,
+    at: now,
+    heldUntil: now + ORDER_LANDS_WITHIN_MS,
+  };
+}
+
+/** The base after the television said where it is.
+ *
+ * While the count from the base agrees with what it said, the base is kept:
+ * each report is late by the time it took to arrive, a different time for each
+ * one, so taking every one would move a steady playhead back and forth. A
+ * report that disagrees replaces the base. The one exception is a report from
+ * far away while an order sent from here is still on its way: it left the
+ * television before the order arrived. */
+function heardBase(base: PositionBase | null, said: PositionBase | null): PositionBase | null {
+  if (!(base && said)) {
+    return said;
+  }
+  if (base.id !== said.id) {
+    return said;
+  }
+  const apart = Math.abs(counted(base, said.at) - said.positionMs);
+  if (agrees(base, said, apart) || overtaken(base, said, apart)) {
+    return base;
+  }
+  return said;
+}
+
+function agrees(base: PositionBase, said: PositionBase, apart: number): boolean {
+  return apart <= AGREES_WITHIN_MS && base.playing === said.playing;
+}
+
+function overtaken(base: PositionBase, said: PositionBase, apart: number): boolean {
+  return said.at < (base.heldUntil ?? 0) && apart > LANDED_WITHIN_MS;
+}
+
+const FINEST_STEP_MS = 16;
+const COARSEST_STEP_MS = 100;
+const BAR_STEPS = 2000;
+
+/** The smallest move of the playhead worth a redraw, in ms: a two-thousandth
+ * of the title, which is finer than a bar's pixels, and never slower than ten
+ * redraws a second. A short clip redraws every frame, a film far less. */
+function redrawStep(durationMs: number): number {
+  if (durationMs <= 0) {
+    return COARSEST_STEP_MS;
+  }
+  return Math.min(COARSEST_STEP_MS, Math.max(FINEST_STEP_MS, durationMs / BAR_STEPS));
+}
+
+/** Whether `next` reads differently from `shown`: a step along the bar, or
+ * another second on the timecode. */
+function showsAnother(shown: number, next: number, step: number): boolean {
+  return Math.abs(next - shown) >= step || Math.floor(next / 1000) !== Math.floor(shown / 1000);
+}
+
+/** Where the television is now: the count from the base, never past the
+ * title's own duration. Before anything was heard for this television, it is
+ * where the roster last had it. */
+function livePosition(
+  active: Positioned | null,
+  base: PositionBase | null,
+  now = Date.now(),
 ): number {
-  const reported = active?.nowPlaying?.positionMs ?? 0;
-  const from = base && base.id === active?.id ? base : null;
-  const start = from ? Math.max(from.positionMs, reported) : reported;
-  const elapsed = from && (from.playing || playing) ? Math.max(0, Date.now() - from.at) : 0;
-  const duration = active?.nowPlaying?.durationMs;
-  const out = start + elapsed;
-  return duration ? Math.min(out, duration) : out;
+  const playing = active?.nowPlaying;
+  if (!(base && base.id === active?.id)) {
+    return playing?.positionMs ?? 0;
+  }
+  const position = counted(base, now);
+  return playing?.durationMs ? Math.min(position, playing.durationMs) : position;
 }
 
 export type { PositionBase };
-export { livePosition };
+export { baseOf, drivenBase, heardBase, livePosition, orderedBase, redrawStep, showsAnother };

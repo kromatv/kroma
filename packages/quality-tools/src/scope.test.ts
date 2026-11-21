@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseScope } from './scope';
+import { parseGateScope, parseScope } from './scope';
 
 describe('parseScope', () => {
   it('covers everything when given nothing', () => {
@@ -15,5 +15,22 @@ describe('parseScope', () => {
 
   it('refuses a flag it does not know', () => {
     expect(() => parseScope(['--threshold', '30'])).toThrow();
+  });
+});
+
+describe('parseGateScope', () => {
+  it('measures against origin/main when no base is named', () => {
+    expect(parseGateScope([])).toEqual({ base: 'origin/main', lcov: [] });
+  });
+
+  it('reads the base and every --lcov report', () => {
+    expect(parseGateScope(['--base', 'origin/release', '--lcov', 'a.info'])).toEqual({
+      base: 'origin/release',
+      lcov: ['a.info'],
+    });
+  });
+
+  it('refuses a path, since the gate judges the whole change', () => {
+    expect(() => parseGateScope(['packages/core'])).toThrow();
   });
 });

@@ -21,7 +21,12 @@ const REBUILT_FROM_THE_MEDIA_AND_ITS_PROVIDERS: &[&str] = &[
     "user_taste",
 ];
 
-const SIGNED_IN_DEVICES: &[&str] = &["access_tokens", "push_subscriptions", "sessions"];
+const SIGNED_IN_DEVICES: &[&str] = &[
+    "access_tokens",
+    "cast_devices",
+    "push_subscriptions",
+    "sessions",
+];
 
 const SHORT_LIVED: &[&str] = &[
     "credential_resets",

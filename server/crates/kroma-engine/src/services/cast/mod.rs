@@ -10,5 +10,6 @@
 //! once; roster and inboxes are bounded.
 
 mod registry;
+pub mod wake;
 
 pub use registry::*;

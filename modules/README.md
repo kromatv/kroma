@@ -692,6 +692,11 @@ host.notify(
   and `dedupe_key` drops a repeat the reader still holds.
   `host.resolve_notifications(&subject, NotificationEvent::Custom, by)` settles
   every row of the module about that subject, for every reader.
+- **An `api` action** is a button the reader presses once, and the press sends
+  the request with the reader's own session. It must `POST`, either to a
+  request review (`/api/requests/<id>/approve` or `/deny`) or to a route under
+  the module's own `/api/module/<its id>/`. The host answers `403` to any
+  other, and the phone opens the app instead of running one.
 
 `NotificationSpec::custom` still takes literal text, for a module built before
 declared types. Every reader gets those words whatever their language.
@@ -775,7 +780,8 @@ An update that adds a key to `settings.write` asks for more, like one that widen
 install plan.
 
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
-  The backend enforces it, and the Store installs missing ones automatically.
+  The backend enforces it, and the Store's install plan installs missing ones.
+  An automatic or batch update that would bring one waits for the operator.
 - **`optionalDependencies`** is ordered first when present, not required.
 - **`consumes`** is a POINT dependency, satisfied by any module whose
   `contributes` answers it. Prefer it to a module id: it says what has to happen
@@ -935,6 +941,11 @@ A `write` entry scoped to a column (`"write": ["users.language"]`) authorises
 UPDATE of that column and nothing else. INSERT and DELETE act on a whole row, so
 they need the whole table (`"write": ["users"]`) and are refused otherwise. A
 module that inserts or deletes under a column-scoped grant must widen it.
+
+A module the official registry does not ship never gets the tables that hold a
+credential, `settings`, `users` whole or `users.password_hash`, nor any write on
+`users`: its install fails and an installed one does not start. The list is in
+[`docs/module-security.md`](../docs/module-security.md#how-each-permission-is-enforced).
 
 A table the core itself reads (`downloads`, for the progress overlay) or that is
 a channel between the core and the module (`whisper_jobs`) is shared by

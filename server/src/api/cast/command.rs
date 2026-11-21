@@ -13,12 +13,11 @@ use crate::api::permission::require;
 use crate::api::util::query;
 use crate::db;
 use crate::i18n;
-use crate::infra::events::ServerEvent;
-use crate::model::{CastCommand, Permission};
+use crate::model::{CastCommand, Permission, User};
 use crate::services::cast::valid_receiver_id;
 use crate::state::SharedState;
 
-use super::bad_id;
+use super::{bad_id, publish_issued, Issued};
 
 #[derive(Debug, Deserialize)]
 pub struct CommandBody {
@@ -66,21 +65,7 @@ pub async fn command(
             ))
         }
     }
-    if let CastCommand::Play { item_id, .. } = &body.command {
-        let wanted = item_id.clone();
-        let known = query(&state.db, move |pool| db::get_item(&pool, &wanted))
-            .await
-            .unwrap_or_default()
-            .filter(|item| user.sees_library(&item.library))
-            .is_some();
-        if !known {
-            return Err(lerr(
-                i18n::user_locale(&user),
-                StatusCode::NOT_FOUND,
-                "error.itemNotFound",
-            ));
-        }
-    }
+    known_title(&state, &user, &body.command).await?;
 
     let Some(envelope) = state.cast.enqueue(&id, &user.id, body.command) else {
         return Err(lerr(
@@ -90,15 +75,37 @@ pub async fn command(
         ));
     };
 
-    // Addressed to the caller's own account, the only one the receiver can
-    // belong to here, so no other household's clients ever see it.
-    state.events.publish_to(
-        &user.id,
-        ServerEvent::CastCommandIssued {
-            receiver_id: id,
-            seq: envelope.seq,
-            command: envelope.command,
-        },
-    );
-    Ok(Json(CommandReply { seq: envelope.seq }).into_response())
+    let seq = envelope.seq;
+    let to = Issued {
+        user_id: &user.id,
+        receiver_id: &id,
+    };
+    publish_issued(&state, to, envelope);
+    Ok(Json(CommandReply { seq }).into_response())
+}
+
+/// Refuses a `play` that names a title the caller cannot see, so a television
+/// is never handed an id the server did not recognize. Any other order passes.
+pub(super) async fn known_title(
+    state: &SharedState,
+    user: &User,
+    command: &CastCommand,
+) -> Result<(), Response> {
+    let CastCommand::Play { item_id, .. } = command else {
+        return Ok(());
+    };
+    let wanted = item_id.clone();
+    let known = query(&state.db, move |pool| db::get_item(&pool, &wanted))
+        .await
+        .unwrap_or_default()
+        .filter(|item| user.sees_library(&item.library))
+        .is_some();
+    if known {
+        return Ok(());
+    }
+    Err(lerr(
+        i18n::user_locale(user),
+        StatusCode::NOT_FOUND,
+        "error.itemNotFound",
+    ))
 }

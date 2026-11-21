@@ -4,6 +4,7 @@
 export * from './airdate';
 export * from './auth';
 export * from './browse';
+export * from './cast';
 export * from './compat';
 export * from './direct';
 export * from './discover';

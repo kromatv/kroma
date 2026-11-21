@@ -5,10 +5,11 @@ use kroma_module_host::NetworkAction;
 mod component_support;
 
 use component_support::wasm::guest_component;
-use component_support::{DECLARES, GUEST, STORES, Server, seed_core};
+use component_support::{DECLARES, GUEST, STORES, Server, THIRD_PARTY, place_component, seed_core};
 
 const NO_STORAGE: &str =
     r#", "permissions": { "net": { "connect": [{ "purpose": "probe", "to": ["lan"] }] } }"#;
+const READS_SESSIONS: &str = r#", "storage": { "core": { "read": ["sessions"] } }"#;
 
 #[test]
 fn a_component_cannot_reach_a_file_of_the_machine() {
@@ -71,4 +72,17 @@ fn a_component_writes_in_its_own_folder() {
     let kept = server.get(&endpoint, "/keep");
 
     assert_eq!(kept.text(), "Ok(\"kept\")");
+}
+
+#[test]
+fn a_third_party_component_that_declares_sessions_does_not_start() {
+    let server = Server::new("component-third-party-sessions", NetworkAction::Direct);
+    let module = server.installed(GUEST, READS_SESSIONS, THIRD_PARTY);
+    place_component(&module, guest_component(), THIRD_PARTY);
+
+    let started = server.supervisor.spawn(GUEST);
+
+    let refused = started.unwrap_err().to_string();
+    assert!(refused.contains("sessions"), "{refused}");
+    assert!(!server.supervisor.is_running(GUEST));
 }

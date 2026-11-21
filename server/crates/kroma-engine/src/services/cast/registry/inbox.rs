@@ -64,7 +64,7 @@ impl Registry {
 
 // Bounds the stored numbers so a hostile sender cannot hand the TV a position
 // that overflows its clock arithmetic.
-fn clamp(command: CastCommand) -> CastCommand {
+pub(super) fn clamp(command: CastCommand) -> CastCommand {
     match command {
         CastCommand::Play {
             item_id,

@@ -19,18 +19,7 @@ impl DownloadManager {
         if self.holds(&protocol) {
             bail!("{protocol} downloads are held by the VPN kill switch");
         }
-        if spec.magnet_or_url.trim().is_empty() {
-            bail!("no magnet or download link");
-        }
-        let conn = self.core().get()?;
-        if let Some(existing) = db::active_download_by_url(&conn, spec.magnet_or_url.trim())? {
-            bail!(
-                "this release is already in the queue (\"{}\", status: {})",
-                existing.title.as_deref().unwrap_or(&existing.release_title),
-                existing.status
-            );
-        }
-        drop(conn);
+        self.check_link(spec.magnet_or_url.trim())?;
         let client = self.client_for(&protocol)?;
 
         let id = kroma_module_sdk::primitives::short_hash(&format!(
@@ -88,6 +77,24 @@ impl DownloadManager {
         }
         tracing::info!(release = %row.release_title, client = %client.name, "queued torrent grab");
         Ok(row)
+    }
+
+    fn check_link(&self, link: &str) -> Result<()> {
+        if link.is_empty() {
+            bail!("no magnet or download link");
+        }
+        if !crate::engine::is_download_link(link) {
+            bail!("a download link is a magnet or an http(s) URL");
+        }
+        let conn = self.core().get()?;
+        if let Some(existing) = db::active_download_by_url(&conn, link)? {
+            bail!(
+                "this release is already in the queue (\"{}\", status: {})",
+                existing.title.as_deref().unwrap_or(&existing.release_title),
+                existing.status
+            );
+        }
+        Ok(())
     }
 
     /// Background phase of a grab: safe to run detached from the request that

@@ -83,7 +83,7 @@ impl Fetch {
         } else {
             "=http,https"
         };
-        let mut config = String::from("silent\nshow-error\n");
+        let mut config = String::from("silent\nshow-error\ngloboff\n");
         config.push_str(&option_line("proto", protocols));
         config.push_str(&option_line("proto-redir", protocols));
         if self.follow_redirects {

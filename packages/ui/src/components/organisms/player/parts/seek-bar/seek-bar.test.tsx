@@ -71,6 +71,16 @@ describe('the forward buffer on the track', () => {
   });
 });
 
+describe('the times above the track', () => {
+  it('prints the times by default', () => {
+    expect(draw().container.textContent).toContain('1:40');
+  });
+
+  it('leaves them out when the host prints them itself', () => {
+    expect(draw({ labels: 'none' }).container.textContent).not.toContain('1:40');
+  });
+});
+
 describe('the seek bar on the navigator', () => {
   it('reports the focus it takes', () => {
     const onFocus = vi.fn();

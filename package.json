@@ -96,6 +96,7 @@
     "quality:dry": "bun packages/quality-tools/src/cli.ts dry",
     "quality:mutate": "bun packages/quality-tools/src/cli.ts mutate",
     "quality:report": "bun packages/quality-tools/src/cli.ts report",
+    "quality:gates": "bun packages/quality-tools/src/cli.ts gates",
     "check:fix": "oxlint --type-aware --ignore-path .gitignore --fix . && oxlint -c .oxlintrc.sonar.json --ignore-path .gitignore --fix . && bun fmt",
     "server": "bun server/preflight.ts && cd server && cargo run",
     "server:watch": "bun server/preflight.ts && bun server/dev.ts",

@@ -12,6 +12,10 @@
       "broke": 1,
       "changed": 1
     },
+    "cast_devices": {
+      "broke": 25,
+      "changed": 25
+    },
     "credential_resets": {
       "broke": 1,
       "changed": 1
@@ -53,8 +57,8 @@
       "changed": 22
     },
     "import_held_plays": {
-      "broke": 25,
-      "changed": 25
+      "broke": 26,
+      "changed": 26
     },
     "import_held_states": {
       "broke": 23,
@@ -186,7 +190,7 @@
     },
     "play_history": {
       "broke": 1,
-      "changed": 25
+      "changed": 26
     },
     "progress": {
       "broke": 1,
@@ -257,5 +261,5 @@
       "changed": 1
     }
   },
-  "version": 25
+  "version": 26
 }

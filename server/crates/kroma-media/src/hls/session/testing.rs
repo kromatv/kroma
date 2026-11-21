@@ -9,7 +9,8 @@ use std::time::{Duration, Instant};
 use tokio::process::Command;
 use tokio::sync::Mutex;
 
-use super::super::hwaccel::{HwAccel, Pipeline};
+use super::super::hwaccel::devices::SOFTWARE;
+use super::super::hwaccel::Pipeline;
 use super::super::live::Plan;
 use super::super::naming::session_dir;
 use super::super::software::Effort;
@@ -62,7 +63,7 @@ pub(in crate::hls) fn fake_session(
         0,
         mode_of(key),
         Pipeline {
-            accel: HwAccel::Software,
+            accel: SOFTWARE,
             effort: Effort::Quality,
         },
         None,

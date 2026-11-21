@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { measuredBy, measuredLanguages, unmeasuredAreas } from './coverage';
+import { measuredBy, measuredLanguages, unmeasuredAreas, unscoredFiles } from './coverage';
 
 describe('measuredBy', () => {
   it('finds a record spelled from the repository root', () => {
@@ -85,5 +85,25 @@ describe('unmeasuredAreas', () => {
       ),
     ).toEqual([]);
     expect(unmeasuredAreas(sources, measuredBy(new Set()))).toEqual([]);
+  });
+});
+
+describe('unscoredFiles', () => {
+  const sources = [
+    'packages/core/src/a.ts',
+    'packages/core/src/new.ts',
+    'packages/core/src/view.tsx',
+    'clients/desktop/src-tauri/src/main.rs',
+  ];
+  const measured = measuredBy(new Set(['packages/core/src/a.ts']));
+
+  it('scores a file with no record when a sibling of its kind is measured', () => {
+    expect(unscoredFiles(['packages/core/src/new.ts'], sources, measured)).toEqual([]);
+  });
+
+  it('leaves out a kind of file no report holds, by extension and by area', () => {
+    const judged = ['packages/core/src/view.tsx', 'clients/desktop/src-tauri/src/main.rs'];
+
+    expect(unscoredFiles(judged, sources, measured)).toEqual(judged);
   });
 });

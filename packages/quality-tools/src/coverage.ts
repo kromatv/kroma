@@ -80,3 +80,20 @@ export function unmeasuredAreas(sources: readonly string[], measured: Measured):
     .map(({ area, language, files }) => ({ area, language, files }))
     .sort((a, b) => b.files - a.files || a.area.localeCompare(b.area));
 }
+
+const kindOf = (path: string) => `${areaOf(path)}\t${path.slice(path.lastIndexOf('.'))}`;
+
+/**
+ * The files of `judged` whose CRAP cannot be scored: no source file of the
+ * same area and extension has a coverage record, so nothing measures that
+ * kind of file. A file with a measured sibling and no record of its own is
+ * scored, at 0%: no test loaded it.
+ */
+export function unscoredFiles(
+  judged: readonly string[],
+  sources: readonly string[],
+  measured: Measured,
+): string[] {
+  const scored = new Set(sources.filter(measured).map(kindOf));
+  return judged.filter((file) => !scored.has(kindOf(file)));
+}

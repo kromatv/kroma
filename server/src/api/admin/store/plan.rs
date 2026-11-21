@@ -102,7 +102,7 @@ impl<'a> Planner<'a> {
         // Fail fast with the precise blocker instead of a partial install.
         if let Err(reason) = kroma_module_manifest::engines_satisfied(
             &entry.engines,
-            entry.storage.as_ref(),
+            entry.declaration.storage.as_ref(),
             catalog::this_server(),
         ) {
             bail!("'{id}' {reason}");
@@ -291,6 +291,12 @@ pub(super) fn entry_brief(entry: &CatalogModule) -> Value {
 
 pub(super) fn plan_brief(plan: &[Planned<'_>]) -> Value {
     Value::Array(plan.iter().map(|p| entry_brief(p.entry)).collect())
+}
+
+pub(super) fn first_new<'a>(plan: &[Planned<'a>]) -> Option<&'a str> {
+    plan.iter()
+        .find(|p| p.installed.is_none())
+        .map(|p| p.entry.id.as_str())
 }
 
 fn plan_row(p: &Planned<'_>) -> Value {
@@ -671,6 +677,41 @@ mod tests {
         assert_eq!(first.get("id").and_then(Value::as_str), Some("tv.x.lib"));
         assert!(first.get("installedVersion").is_none());
         assert_eq!(entry_brief(&modules[1]), *first);
+    }
+
+    #[test]
+    fn an_update_that_brings_a_module_that_is_not_installed_names_it() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.dependencies = vec![("tv.x.lib".into(), None)];
+        let modules = vec![root, module("tv.x.lib", "1.0.0")];
+        let mut p = Planner::with_present(
+            &modules,
+            HashMap::from([("tv.x.app".to_string(), "0.9.0".to_string())]),
+            Vec::new(),
+        );
+
+        p.roots(&["tv.x.app"]).unwrap();
+
+        assert_eq!(first_new(&p.plan), Some("tv.x.lib"));
+    }
+
+    #[test]
+    fn an_update_whose_dependencies_are_all_installed_brings_nothing_new() {
+        let mut root = module("tv.x.app", "1.0.0");
+        root.dependencies = vec![("tv.x.lib".into(), None)];
+        let modules = vec![root, module("tv.x.lib", "1.0.0")];
+        let mut p = Planner::with_present(
+            &modules,
+            HashMap::from([
+                ("tv.x.app".to_string(), "0.9.0".to_string()),
+                ("tv.x.lib".to_string(), "1.0.0".to_string()),
+            ]),
+            Vec::new(),
+        );
+
+        p.roots(&["tv.x.app"]).unwrap();
+
+        assert_eq!(first_new(&p.plan), None);
     }
 
     #[test]

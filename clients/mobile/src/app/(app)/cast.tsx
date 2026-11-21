@@ -3,8 +3,7 @@
 
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import { useCast } from '@kromatv/ui';
-import { formatTimecode } from '@kromatv/ui/intl';
-import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useRouter } from 'expo-router';
 import { useRef } from 'react';
 import { Pressable, ScrollView } from 'react-native';
@@ -12,20 +11,20 @@ import { CastSheet } from '#mobile/components/cast/cast-sheet.component';
 import { RemoteActions } from '#mobile/components/cast/remote-actions.component';
 import { RemoteArtwork } from '#mobile/components/cast/remote-artwork.component';
 import { RemoteHeader } from '#mobile/components/cast/remote-header.component';
+import { RemoteScrub } from '#mobile/components/cast/remote-scrub.component';
 import { RemoteTransport } from '#mobile/components/cast/remote-transport.component';
 import { TrackPickerSheet } from '#mobile/components/cast/track-picker-sheet.component';
 import { EmptyState, Screen } from '#mobile/components/ui';
 import { useT } from '#mobile/lib/i18n';
 import { goBack } from '#mobile/lib/nav';
 import { spacing, type } from '#mobile/lib/theme';
-import { ScrubBar } from '#mobile/player/scrub-bar.component';
 
 export default function CastRemoteScreen() {
   const s = useStyles(sDefinition);
 
   const t = useT();
   const router = useRouter();
-  const { active, positionMs, send, select } = useCast();
+  const { active, position, send, select } = useCast();
   const devices = useRef<BottomSheetModal>(null);
   const audio = useRef<BottomSheetModal>(null);
   const subtitles = useRef<BottomSheetModal>(null);
@@ -66,22 +65,11 @@ export default function CastRemoteScreen() {
         <ScrollView contentContainerStyle={s.body}>
           <RemoteArtwork item={item} />
 
-          <Box style={s.scrub}>
-            <ScrubBar
-              cur={positionMs / 1000}
-              dur={durationMs / 1000}
-              buffered={0}
-              onSeek={(abs) => void send({ type: 'seek', positionMs: Math.round(abs * 1000) })}
-            />
-            <Box style={s.times}>
-              <Text style={s.time}>{formatTimecode(positionMs / 1000)}</Text>
-              <Text style={s.time}>
-                {durationMs
-                  ? `-${formatTimecode(Math.max(0, (durationMs - positionMs) / 1000))}`
-                  : ''}
-              </Text>
-            </Box>
-          </Box>
+          <RemoteScrub
+            durationMs={durationMs}
+            bufferedMs={playing.bufferedMs ?? 0}
+            onSeek={(positionMs) => void send({ type: 'seek', positionMs })}
+          />
 
           <RemoteTransport
             isPlaying={isPlaying}
@@ -98,7 +86,7 @@ export default function CastRemoteScreen() {
             onSubtitles={() => subtitles.current?.present()}
             onNext={() => void send({ type: 'skipNext' })}
             onContinueHere={() => {
-              const at = Math.round(positionMs / 1000);
+              const at = Math.round(position() / 1000);
               void send({ type: 'stop' });
               select(null);
               if (item) {
@@ -169,7 +157,4 @@ const sDefinition = styles({
   deviceRow: { row: true, align: 'center', gap: spacing.xs, py: spacing.xs, mb: spacing.sm },
   deviceText: { ...type.caption, flex: true, color: 'accentText' },
   deviceTextIdle: { color: 'textMuted' },
-  scrub: { gap: 6 },
-  times: { row: true, between: true },
-  time: { ...type.small, color: 'textMuted', fontVariant: ['tabular-nums'] },
 });

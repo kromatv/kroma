@@ -1,4 +1,5 @@
 {
+  "cast.asleep": "Off",
   "cast.connectedTo": "Connected to {device}",
   "cast.continueHere": "Continue on this phone",
   "cast.disconnect": "Disconnect",
@@ -8,6 +9,7 @@
   "cast.idleHint": "Start a movie or an episode and it plays on {device}.",
   "cast.idleTitle": "Nothing playing",
   "cast.moveToTv": "Move to TV",
+  "cast.needsPower": "Off · turn it on with its remote",
   "cast.noDevices": "No TV available",
   "cast.noDevicesHint": "Open KROMA on your TV and it shows up here.",
   "cast.openHint": "KROMA has to be open on the television: a set that moves to another source leaves the list.",
@@ -25,5 +27,6 @@
   "cast.stopHint": "Stops playback on {device}",
   "cast.thisDevice": "This device",
   "cast.title": "Play on TV",
-  "cast.titleGone": "That title is no longer in the library"
+  "cast.titleGone": "That title is no longer in the library",
+  "cast.waking": "Turning on…"
 }

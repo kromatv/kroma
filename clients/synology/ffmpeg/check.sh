@@ -38,7 +38,7 @@ run sheet $F/ffmpeg -y -hide_banner -i t%04d.png -vf tile=3x2 -frames:v 1 sheet.
 run sheet-jpg $F/ffmpeg -y -hide_banner -i sheet.png -c:v mjpeg -huffman optimal -q:v 4 sheet.jpg
 run webp $F/ffmpeg -y -hide_banner -i sheet.png -vf scale=320:-1:flags=lanczos -c:v libwebp -q:v 80 -compression_level 4 x.webp
 run png $F/ffmpeg -y -hide_banner -i sheet.png -vf "scale=200:-1,crop=200:40" y.png
-run loudness sh -c "$F/ffmpeg -hide_banner -i demo2.mkv -filter_complex '[0:a:0]asplit=2[a][b];[a]loudnorm=print_format=json[o1];[b]pan=mono|c0=FC,loudnorm=print_format=json[o2]' -map '[o1]' -f null - -map '[o2]' -f null - 2>&1 | grep -q input_i"
+run loudness sh -c "$F/ffmpeg -hide_banner -nostats -v info -i demo2.mkv -filter_complex '[0:a:0]asplit=2[a][b];[a]ebur128=peak=true:framelog=verbose[o1];[b]pan=mono|c0=FC,ebur128=framelog=verbose[o2]' -map '[o1]' -f null - -map '[o2]' -f null - 2>&1 | grep -q 'True peak'"
 run marker-audio sh -c "$F/ffmpeg -hide_banner -sseof -4 -t 2 -i demo2.mkv -vn -ac 1 -ar 11025 -f s16le - | wc -c | grep -qv '^0$'"
 run marker-video sh -c "$F/ffmpeg -hide_banner -skip_frame nokey -i demo2.mkv -vf fps=1,scale=160:90,format=gray -f rawvideo - | wc -c | grep -qv '^0$'"
 run whisper sh -c "$F/ffmpeg -hide_banner -i demo2.mkv -vn -map 0:a:0 -ac 1 -ar 16000 -f f32le - | wc -c | grep -qv '^0$'"
@@ -48,6 +48,9 @@ if [ "$ARCH" = x86_64 ]; then
   run hw-encoders sh -c "$F/ffmpeg -hide_banner -encoders | grep -c 'h264_\(vaapi\|qsv\|nvenc\)' | grep -q 3"
   run hwaccels sh -c "$F/ffmpeg -hide_banner -hwaccels | grep -q vaapi"
   run libva-api sh -c "grep -q vaMapBuffer2 $F/../lib/libva.so.2 && grep -q vaGetDisplayDRM $F/../lib/libva-drm.so.2"
+fi
+if [ "$ARCH" = aarch64 ]; then
+  run hw-encoders sh -c "$F/ffmpeg -hide_banner -encoders | grep -q h264_v4l2m2m"
 fi
 run no-network sh -c "! $F/ffmpeg -hide_banner -protocols | grep -qw https"
 echo "ok=$ok bad=$bad"

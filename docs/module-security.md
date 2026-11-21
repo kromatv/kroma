@@ -34,11 +34,16 @@ share and which modules have each. It reads the catalog row or, for an upload,
 the bundle itself. The row carries the module's `storage` and `settings` beside
 its `permissions`, so the account data, server tables and settings show before
 install too. An update that asks for more waits: a new permission, core table or
-account column, or a key in `settings.write` the installed version did not
-declare. No automatic or batch update takes it, and the operator accepts it from
-the install plan, which shows only what the update adds. A bundle must declare
-the `permissions` its catalog row showed, and an install fails when it does not.
-Its `storage` and `settings` are not yet held to the row.
+account column, a key in `settings.write` the installed version did not declare,
+or a dependency this server does not have yet. No automatic or batch update
+takes it, and the operator accepts it from the install plan, which shows only
+what the update adds. A bundle must declare what its catalog row showed: the
+same `permissions`, the same core tables and columns in `storage`, the same
+`settings` and the same `helpers`. An install fails when it does not, and a
+part the row leaves out admits only a bundle that leaves it out or leaves it
+empty. A declaration with no `permissions` block still shows the storage and
+the settings it declares, and a module that changes the accounts reaches past
+its isolation.
 
 ```json
 "permissions": {
@@ -155,7 +160,13 @@ rusqlite's API and sends every statement to the `sql` import. The host holds the
 module's own databases, which refuse `ATTACH` and every `PRAGMA` but a short
 allowlist, and the slice of the core database `storage.core` grants, enforced by
 SQLite's authorizer in the host. A module that declares no `storage` has no database:
-the host refuses every `sql.open`.
+the host refuses every `sql.open`. A module the official registry did not ship
+may not name the tables that hold a credential (`sessions`, `access_tokens`,
+`passkeys`, `identities`, `invites`, `credential_resets`,
+`email_verifications`, `reset_requests`) or `settings`, nor `users` whole or
+`users.password_hash`, nor write anything on `users`. Its install fails before
+it replaces anything, and an installed one does not start and says why in its
+log. It may still read the other account columns it declares.
 
 A module names its own database and never says where it is. `sql.open` takes a
 file name, `module.sqlite` or that name under the module's own folder as the
@@ -176,6 +187,10 @@ folder is opened where it really is and shown at the path it was named by, becau
 WASI refuses a symlink whose target is absolute, and Synology's
 `/var/packages/kroma/var` is one. `files.canonical` and `files.copy` (a reflink
 where the filesystem has one) cover what WASI lacks, inside the same folders.
+`files.copy` and `net.download` open what they write one name at a time from the
+held folder, following no link, and write only a regular file with a single
+link. A download lands in a file of the host's under `run` first, and reaches
+the module's folder only once curl is done.
 
 The server's own folders are the data folder, the modules folder, the release
 folder the Synology package starts from, the folder of the running binary, the
@@ -376,7 +391,7 @@ on Ubuntu, macOS and Windows. The `kroma-module-supervisor/tests/component_*.rs`
 suites run components under the real supervisor: a call goes through the gateway and into
 the journal, a component with no `permissions` has no network, one reads only the
 core tables it declared, a third-party one starts no program, even one it
-declared, a downloads module opens its download folders and the libraries but
+declared, nor starts at all when it declares `sessions`, a downloads module opens its download folders and the libraries but
 none of the server's own files, a helper changed after its fetch does not
 start, and the host decodes only a file a component holds and cannot write.
 `component_installed.rs` there has a module holding its own folder
@@ -397,7 +412,7 @@ the backup's tests export and restore through no link.
 `host_settings.rs` there and the server's `it_host_settings.rs` refuse a read or
 a write of a key the module did not declare, and of a key the core keeps even
 when declared, and `install_accept.rs` holds back an unattended update that
-writes a new key.
+writes a new key, and an unattended install of a module that is not installed.
 
 ## Status
 

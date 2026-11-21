@@ -1,9 +1,11 @@
 use serde::Deserialize;
 
-use super::cast::{cast_hello, cast_state, release_controller};
+use super::cast::{
+    cast_control, cast_hello, cast_kick, cast_state, release_controller, KickOrder, Seat,
+};
 use super::Viewer;
-use crate::infra::events::ServerEvent;
-use crate::model::CastPlayback;
+use crate::model::{CastPlayback, CastWakeHint};
+use crate::services::cast::Hello;
 use crate::state::SharedState;
 
 #[derive(Debug, Deserialize)]
@@ -17,6 +19,8 @@ pub(super) enum ClientMessage {
         name: String,
         #[serde(default)]
         platform: String,
+        #[serde(default)]
+        wake: Option<CastWakeHint>,
     },
     #[serde(rename = "cast.state")]
     State {
@@ -54,8 +58,14 @@ pub(super) async fn handle_client(
             receiver_id,
             name,
             platform,
+            wake,
         } => {
-            cast_hello(state, who, receiver, receiver_id, name, platform);
+            let hello = Hello {
+                receiver_id,
+                name,
+                platform,
+            };
+            cast_hello(state, who, receiver, hello, wake);
         }
         ClientMessage::State { playback } => {
             let Some(id) = receiver.clone() else { return };
@@ -66,50 +76,36 @@ pub(super) async fn handle_client(
                 state.cast.ack(id, seq);
             }
         }
-        ClientMessage::Control { receiver_id, name } => {
-            if !who.can_cast {
-                return;
-            }
-            // One socket drives one set: picking another releases the first.
-            release_controller(state, controller_id);
+        ClientMessage::Control { receiver_id, name } if who.can_cast => {
             *controlling = true;
-            // Refused silently for another account's set: only the account a
-            // receiver is signed into may pick it up.
-            if let Some(row) = state.cast.attach_controller(
-                &receiver_id,
-                controller_id,
-                &name,
-                &who.id,
-                &who.username,
-                who.avatar_url.as_deref(),
-            ) {
-                state.events.publish_to(
-                    &who.id,
-                    ServerEvent::CastReceiverChanged {
-                        receiver: Box::new(row),
-                    },
-                );
-            }
+            let controller_id = controller_id.to_string();
+            cast_control(
+                state,
+                who,
+                Seat {
+                    controller_id,
+                    receiver_id,
+                    name,
+                },
+            );
         }
+        ClientMessage::Control { .. } => {}
         ClientMessage::Release => {
             *controlling = false;
             release_controller(state, controller_id);
         }
         ClientMessage::Kick { controller_id } => {
-            // Scoped to this receiver: a set may only kick its own remotes.
-            let Some(id) = receiver.clone() else { return };
-            let Some((row, user_id)) = state.cast.kick_controller(&id, &controller_id) else {
+            let Some(receiver_id) = receiver.clone() else {
                 return;
             };
-            state.events.publish_to(
-                &who.id,
-                ServerEvent::CastReceiverChanged {
-                    receiver: Box::new(row),
+            cast_kick(
+                state,
+                who,
+                KickOrder {
+                    receiver_id,
+                    controller_id,
                 },
             );
-            state
-                .events
-                .publish_to(&user_id, ServerEvent::CastKicked { receiver_id: id });
         }
     }
 }

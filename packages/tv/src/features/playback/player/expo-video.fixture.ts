@@ -14,6 +14,7 @@ export class FakeVideoPlayer {
   asked: unknown[] = [];
   bufferOptions: unknown = null;
   plays = 0;
+  replays = 0;
   pauses = 0;
   released = false;
   replaced: string[] = [];
@@ -55,6 +56,9 @@ export class FakeVideoPlayer {
 
   play(): void {
     this.plays += 1;
+  }
+  replay(): void {
+    this.replays += 1;
   }
   pause(): void {
     this.pauses += 1;

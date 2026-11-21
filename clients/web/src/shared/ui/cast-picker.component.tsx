@@ -6,8 +6,9 @@
 
 import type { DeviceId } from '@kromatv/client';
 import { useCast, useT } from '@kromatv/ui';
-import { Box, Dialog, EmptyState, Icon, type IconName, ListRow, Text } from '@kromatv/ui/kit';
+import { Dialog, EmptyState, ListRow } from '@kromatv/ui/kit';
 import { createCallable } from 'react-call';
+import { CastReceiverRow, DeviceRow } from './cast-receiver-row.component';
 
 export interface CastPickerProps {
   offerLocal?: boolean;
@@ -32,15 +33,9 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
             />
           ) : null}
           {receivers.map((r) => (
-            <DeviceRow
+            <CastReceiverRow
               key={r.id}
-              icon="device-tv"
-              name={r.name}
-              detail={
-                r.nowPlaying
-                  ? (r.nowPlaying.item.metadata?.title ?? r.nowPlaying.item.title)
-                  : `${r.username} · ${t('cast.idle')}`
-              }
+              receiver={r}
               selected={active?.id === r.id}
               onPick={() => call.end(r.id)}
             />
@@ -52,45 +47,10 @@ export const CastPicker = createCallable<CastPickerProps, Picked>(({ call, offer
           <EmptyState.Title>{t('cast.noDevices')}</EmptyState.Title>
           <EmptyState.Hint>{t('cast.noDevicesHint')}</EmptyState.Hint>
         </EmptyState.Root>
-      ) : (
-        <Box pt={12}>
-          <Text variant="meta" color="textDim">
-            {t('cast.openHint')}
-          </Text>
-        </Box>
-      )}
+      ) : null}
     </Dialog.Root>
   );
 });
-
-function DeviceRow({
-  icon,
-  name,
-  detail,
-  selected,
-  onPick,
-}: Readonly<{
-  icon: IconName;
-  name: string;
-  detail: string;
-  selected: boolean;
-  onPick: () => void;
-}>) {
-  return (
-    <ListRow.Root size="sm" role="option" selected={selected} chevron={false} onPress={onPick}>
-      <ListRow.Label>{name}</ListRow.Label>
-      <ListRow.Hint>{detail}</ListRow.Hint>
-      <ListRow.Leading>
-        <Icon name={icon} size={22} thickness={1.8} color={selected ? 'accent' : 'text'} />
-      </ListRow.Leading>
-      {selected ? (
-        <ListRow.Trailing>
-          <Icon name="check" size={18} thickness={2.4} color="accent" />
-        </ListRow.Trailing>
-      ) : null}
-    </ListRow.Root>
-  );
-}
 
 /** Ask which screen to play on. Resolves the receiver id, `null` for "this
  * device", or `undefined` when dismissed. */

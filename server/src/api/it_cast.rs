@@ -3,6 +3,8 @@
 //! the feature honest (no capability, no such receiver, someone else's TV, an
 //! item that doesn't exist).
 
+mod wake;
+
 use axum::http::StatusCode;
 use serde_json::json;
 

@@ -18,8 +18,8 @@ const HOST: readonly [first: MessageKey, then: MessageKey] = [
 ];
 
 /** What reaches past a module's isolation, as the clauses of one sentence:
- *  the programs it starts and the server's own connection. Empty for a module
- *  that stays inside it. */
+ *  the programs it starts, the server's own connection and a change to the
+ *  accounts. Empty for a module that stays inside it. */
 export function extendedReasons(source: PermissionSource, t: Translate): string[] {
   const programs = source.permissions.run ?? [];
   return permissionGroups(source, t)
@@ -27,6 +27,9 @@ export function extendedReasons(source: PermissionSource, t: Translate): string[
     .map((group, at) => {
       if (group.category === 'run') {
         return t('modulePermissions.verdictRun', { programs: listOf(programs, t) });
+      }
+      if (group.category === 'accounts') {
+        return t('modulePermissions.verdictAccounts');
       }
       const [first, then] = HOST;
       return t(at === 0 ? first : then);

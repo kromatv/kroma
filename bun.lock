@@ -272,6 +272,7 @@
         "@kromatv/core": "workspace:*",
         "@kromatv/i18n": "workspace:*",
         "@kromatv/lan-beacon": "workspace:*",
+        "@kromatv/lan-reach": "workspace:*",
         "@kromatv/media3-ffmpeg": "workspace:*",
         "@kromatv/ui": "workspace:*",
         "@kromatv/workbench": "workspace:*",
@@ -789,6 +790,17 @@
     },
     "packages/lan-beacon": {
       "name": "@kromatv/lan-beacon",
+      "version": "0.0.0",
+      "devDependencies": {
+        "typescript": "^7.0.2",
+      },
+      "peerDependencies": {
+        "@kromatv/core": "workspace:*",
+        "expo": "^58.0.16",
+      },
+    },
+    "packages/lan-reach": {
+      "name": "@kromatv/lan-reach",
       "version": "0.0.0",
       "devDependencies": {
         "typescript": "^7.0.2",
@@ -1774,6 +1786,8 @@
     "@kromatv/kit": ["@kromatv/kit@workspace:apps/kit"],
 
     "@kromatv/lan-beacon": ["@kromatv/lan-beacon@workspace:packages/lan-beacon"],
+
+    "@kromatv/lan-reach": ["@kromatv/lan-reach@workspace:packages/lan-reach"],
 
     "@kromatv/lingua": ["@kromatv/lingua@workspace:apps/lingua"],
 

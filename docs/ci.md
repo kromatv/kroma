@@ -169,6 +169,13 @@ Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the
 quality gate scores new code, and such a change has no new Rust lines.
 
+`Quality gate` reads the same two lcov files on a pull request and runs
+`bun run quality:gates --base origin/<base>`: CRAP, the Rust size limits and
+structural duplication, judged on the functions the pull request touched
+([`quality.md`](quality.md#the-merge-gate)). It installs three pinned Python
+tools first and compares every source file of the changed languages, which
+takes a few minutes. It is not part of `required`.
+
 ### What changed, and why
 
 Measured over the last forty runs before the rebuild:

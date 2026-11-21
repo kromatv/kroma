@@ -37,6 +37,7 @@ import { ProgressQueueProvider } from '#mobile/lib/progress';
 import { PHONE_NETWORK } from '#mobile/lib/network-change';
 import { SessionProvider, useSession } from '#mobile/lib/session';
 import { MOBILE, mobileTheme } from '#mobile/lib/theme';
+import { tvReach } from '#mobile/lib/tv-reach';
 import { PlaybackOwnerProvider } from '#mobile/player/playback-owner';
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -134,6 +135,7 @@ function Shell() {
                 enabled={status === 'signedIn'}
                 deviceName={Device.modelName ?? (Platform.OS === 'ios' ? 'iPhone' : 'Android')}
                 lan={lanBeacon ?? undefined}
+                reach={tvReach}
               >
                 <NotificationStream />
                 <DirectRoute />

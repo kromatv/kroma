@@ -5,6 +5,7 @@ import {
   duplicateRows,
   parseDrySnapshot,
   type Span,
+  type SplitDuplicates,
   splitDuplicates,
   summarizeDry,
 } from './dry';
@@ -39,10 +40,9 @@ function testCode(at: Layout): (span: Span) => boolean {
     inlineTests(span.file).some((test) => span.start >= test.start && span.end <= test.end);
 }
 
-/** Compares every measured source file under the scope and writes the pairs, production apart from test, into `.metrics`. */
-export async function runDry(scope: Scope): Promise<DryReport> {
+/** Every pair dryer finds among the given source files, production apart from test. */
+export async function measureDuplicates(sources: readonly string[]): Promise<SplitDuplicates> {
   const at = layout(root);
-  const sources = await measuredSources(at.root, scope.paths);
   mkdirSync(at.metrics, { recursive: true });
   const done = await captureTool(at, 'dryer', [
     '--edn',
@@ -54,7 +54,13 @@ export async function runDry(scope: Scope): Promise<DryReport> {
     throw new Error(`dryer exited ${done.exitCode}: ${done.stderr.trim()}`);
   }
   const pairs = parseDrySnapshot(readBounded(join(at.metrics, 'dry.edn'), MAX_SNAPSHOT_BYTES));
-  const split = splitDuplicates(pairs, testCode(at));
+  return splitDuplicates(pairs, testCode(at));
+}
+
+/** Compares every measured source file under the scope and writes the pairs, production apart from test, into `.metrics`. */
+export async function runDry(scope: Scope): Promise<DryReport> {
+  const at = layout(root);
+  const split = await measureDuplicates(await measuredSources(at.root, scope.paths));
   writeFileSync(join(at.metrics, 'dry-production.tsv'), duplicateRows(split.production));
   writeFileSync(join(at.metrics, 'dry-test.tsv'), duplicateRows(split.test));
   return { threshold: THRESHOLD, summary: summarizeDry(split, LARGEST) };

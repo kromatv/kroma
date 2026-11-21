@@ -11,6 +11,7 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { createPlayheadClock } from './playhead-clock';
 
 export type CastPlaybackReport = NonNullable<CastAnnounceBody['playback']>;
 
@@ -28,6 +29,26 @@ function transportState(controller: PlayerController): 'buffering' | 'playing' |
   return controller.playing ? 'playing' : 'paused';
 }
 
+function readingOf(target: Target | null) {
+  return target
+    ? { positionMs: target.controller.cur * 1000, playing: target.controller.playing }
+    : null;
+}
+
+function changed({ materially, jumped }: { materially: boolean; jumped: boolean }): boolean {
+  return materially || jumped;
+}
+
+/** How far ahead the player holds, in ms, or `undefined` for a player with no buffered range to report. */
+export function bufferedMsOf(bufEnd: number | null): number | undefined {
+  return bufEnd === null ? undefined : Math.round(bufEnd * 1000);
+}
+
+/** Whether a report says the picture is moving. */
+export function isPlaying(report: CastPlaybackReport | null): boolean {
+  return report?.state === 'playing';
+}
+
 /** Owns the player, deferred seek and notification queue for one television. */
 export function createCastBridge() {
   let target: Target | null = null;
@@ -36,9 +57,10 @@ export function createCastBridge() {
   const listeners = new Set<() => void>();
   let signature = '';
 
-  /** Fires only on a material change (title, transport state, track selection),
-   * not position, which changes ~4 times a second and senders interpolate from
-   * the clock themselves. */
+  /** Fires on a material change (title, transport state, track selection) and
+   * when the playhead jumps, which is a seek from any source. It does not fire
+   * for the playhead simply advancing, which it does ~4 times a second: senders
+   * interpolate that from the clock themselves. */
   function onCastReportChange(listener: () => void): () => void {
     listeners.add(listener);
     return () => listeners.delete(listener);
@@ -59,6 +81,8 @@ export function createCastBridge() {
     ].join('|');
   }
 
+  const playhead = createPlayheadClock();
+
   let notifyQueued = false;
 
   // The player re-registers on every render, and React runs the previous
@@ -74,7 +98,7 @@ export function createCastBridge() {
     queueMicrotask(() => {
       notifyQueued = false;
       const now = materialSignature();
-      if (now === signature) {
+      if (!changed({ materially: now !== signature, jumped: playhead.jumped(readingOf(target)) })) {
         return;
       }
       signature = now;
@@ -123,6 +147,7 @@ export function createCastBridge() {
       itemId: item.id,
       positionMs: Math.max(0, Math.round(controller.cur * 1000)),
       durationMs: controller.dur > 0 ? Math.round(controller.dur * 1000) : null,
+      bufferedMs: bufferedMsOf(controller.bufEnd),
       state: transportState(controller),
       audioTracks: controller.audioTracks.map((track, i) => ({
         index: track.index,

@@ -1,5 +1,6 @@
 // The fast half of "connect a device": the TVs waiting on this network, one tap
-// each. Everything it decides lives in `useNearbyTvs`; this brings the rows.
+// each. Everything it decides lives in `useNearbyTvs`; this brings the rows, and
+// says that it is looking, then that nothing answered, as the phone's does.
 
 import type { DiscoveredTv, GrantResult } from '@kromatv/core';
 import { HANDOFF_CHECK_LENGTH } from '@kromatv/core';
@@ -8,12 +9,19 @@ import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
+  EmptyState,
   NearbyTvList,
   OtpField,
   REGEXP_ONLY_DIGITS_AND_CHARS,
+  Spinner,
   Text,
 } from '@kromatv/ui/kit';
+import { useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
+
+// A television answers the server in about a second, but "nothing here" the
+// instant the mode opens is a lie the reader acts on.
+const SETTLE_MS = 4000;
 
 export function NearbyTvs() {
   const t = useT();
@@ -23,36 +31,53 @@ export function NearbyTvs() {
     devices,
     connect,
   });
+  const settled = useSettled(SETTLE_MS);
 
-  if (rows.length === 0 && !asking) {
-    return null;
+  if (asking) {
+    return <CheckPrompt device={asking} onGrant={grant} onCancel={stopAsking} />;
   }
-
+  if (rows.length === 0) {
+    return <NothingYet settled={settled} />;
+  }
   return (
-    <Box role="region" mb={32}>
-      <Text variant="label" font="display" textAlign="left" mb={4}>
-        {t('handoff.nearbyTitle')}
-      </Text>
-      <Text variant="meta" color="textMuted" textAlign="left" mb={16}>
-        {t('handoff.nearbySub')}
-      </Text>
+    <NearbyTvList
+      devices={rows}
+      connectingHandle={connecting?.handle}
+      outcomeFor={outcomeFor}
+      onSelect={start}
+      t={t}
+    />
+  );
+}
 
-      {asking ? (
-        <CheckPrompt device={asking} onGrant={grant} onCancel={stopAsking} />
-      ) : (
-        <NearbyTvList
-          devices={rows}
-          connectingHandle={connecting?.handle}
-          outcomeFor={outcomeFor}
-          onSelect={start}
-          t={t}
-        />
-      )}
+function useSettled(afterMs: number): boolean {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSettled(true);
+    }, afterMs);
+    return () => clearTimeout(timer);
+  }, [afterMs]);
+  return settled;
+}
 
-      <Text variant="meta" color="textDim" textAlign="center" mt={18}>
-        {t('handoff.otherWays')}
-      </Text>
-    </Box>
+function NothingYet({ settled }: Readonly<{ settled: boolean }>) {
+  const t = useT();
+  if (!settled) {
+    return (
+      <EmptyState.Root size="sm" icon="device-tv">
+        <EmptyState.Title>{t('handoff.nearbySearching')}</EmptyState.Title>
+        <EmptyState.Actions>
+          <Spinner size={18} thickness={2} />
+        </EmptyState.Actions>
+      </EmptyState.Root>
+    );
+  }
+  return (
+    <EmptyState.Root size="sm" icon="device-tv">
+      <EmptyState.Title>{t('handoff.nearbyEmpty')}</EmptyState.Title>
+      <EmptyState.Hint>{t('handoff.nearbyEmptyHint')}</EmptyState.Hint>
+    </EmptyState.Root>
   );
 }
 

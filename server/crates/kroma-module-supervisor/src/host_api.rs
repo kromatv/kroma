@@ -18,6 +18,7 @@ use super::Supervisor;
 mod caller;
 mod job;
 mod network;
+mod one_tap;
 mod settings;
 
 use caller::{resolve_caller, Caller};
@@ -157,17 +158,37 @@ async fn notify<S: HostCtx>(
     Extension(caller): Extension<Caller>,
     Json(body): Json<NotifyBody>,
 ) -> Response {
-    if let Some(name) = body.spec.module_type.as_deref() {
-        if !caller.declares_notification(name) {
-            let refusal = format!(
-                "{} sent the notification type \"{name}\", which its module.json does not declare",
-                caller.name()
-            );
-            return kroma_module_host::json_error(StatusCode::FORBIDDEN, &refusal);
-        }
+    if let Some(refusal) = notify_refusal(&caller, &body.spec) {
+        return kroma_module_host::json_error(StatusCode::FORBIDDEN, &refusal);
     }
     let sent = host.notify(&body.audience, &body.spec);
     Json(json!({ "sent": sent })).into_response()
+}
+
+fn notify_refusal(caller: &Caller, spec: &kroma_module_host::NotificationSpec) -> Option<String> {
+    undeclared_type(caller, spec).or_else(|| refused_button(caller, spec))
+}
+
+fn undeclared_type(caller: &Caller, spec: &kroma_module_host::NotificationSpec) -> Option<String> {
+    let name = spec
+        .module_type
+        .as_deref()
+        .filter(|name| !caller.declares_notification(name))?;
+    Some(format!(
+        "{} sent the notification type \"{name}\", which its module.json does not declare",
+        caller.name()
+    ))
+}
+
+fn refused_button(caller: &Caller, spec: &kroma_module_host::NotificationSpec) -> Option<String> {
+    let action = one_tap::refused_action(caller.module(), &spec.actions)?;
+    Some(format!(
+        "{} put the button \"{}\" ({} {}) on a notification; a button may only POST to a request review or to the module's own /api/module/<id>/ routes",
+        caller.name(),
+        action.id,
+        action.method.as_deref().unwrap_or("POST"),
+        action.href
+    ))
 }
 
 #[derive(serde::Deserialize)]

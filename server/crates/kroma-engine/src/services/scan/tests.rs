@@ -4,6 +4,7 @@ use kroma_testing::TempDir;
 
 mod rescan;
 mod stored_list;
+mod unread;
 
 // A fresh, empty temp directory for one test.
 fn tmp_root(tag: &str) -> TempDir {

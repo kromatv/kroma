@@ -108,12 +108,18 @@ pub(super) fn parse_module(m: &Value) -> Option<CatalogModule> {
         forms,
         consumes,
         artifacts,
+        declaration: declaration(m),
+        newest: None,
+    })
+}
+
+fn declaration(m: &Value) -> super::Declaration {
+    super::Declaration {
         permissions: declared(m, "permissions"),
         storage: declared(m, "storage"),
         settings: declared(m, "settings"),
         helpers: declared(m, "helpers"),
-        newest: None,
-    })
+    }
 }
 
 fn declared<T: serde::de::DeserializeOwned>(m: &Value, key: &str) -> Option<T> {

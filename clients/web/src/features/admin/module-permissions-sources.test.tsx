@@ -2,7 +2,12 @@
 import { describe, expect, it } from 'vitest';
 import type { AdminModule } from '#web/features/admin/module-api';
 import { permissionGroups, type PermissionSource } from '#web/features/admin/module-permissions';
-import { addedAccess, consentOf } from '#web/features/admin/module-permissions-sources';
+import {
+  addedAccess,
+  consentOf,
+  declaredSource,
+  installedSource,
+} from '#web/features/admin/module-permissions-sources';
 import { englishT } from '#web/features/admin/module-permissions.fixture';
 
 const t = englishT();
@@ -15,6 +20,41 @@ const BEFORE: PermissionSource = {
   storage: { core: { read: ['users.email'] } },
   official: true,
 };
+
+const NOTHING: PermissionSource = { permissions: {} };
+
+describe('declaredSource', () => {
+  it('a declaration with storage and no permissions block still shows its storage', () => {
+    const source = declaredSource({
+      permissions: null,
+      storage: { core: { read: ['users.email'], write: ['downloads'] } },
+      settings: { read: ['namingCase'] },
+      helpers: null,
+    });
+
+    expect(permissionGroups(source ?? NOTHING, t).map((g) => g.category)).toEqual([
+      'accounts',
+      'data',
+      'settings',
+    ]);
+  });
+
+  it('a declaration that says nothing is no source', () => {
+    expect(
+      declaredSource({ permissions: null, storage: {}, settings: null, helpers: null }),
+    ).toBeNull();
+  });
+});
+
+describe('installedSource', () => {
+  it('an installed module with storage and no permissions block still shows its storage', () => {
+    const source = installedSource({ storage: { core: { write: ['users'] } } });
+
+    expect(permissionGroups(source ?? NOTHING, t).map((g) => [g.category, g.extended])).toEqual([
+      ['accounts', true],
+    ]);
+  });
+});
 
 describe('addedAccess', () => {
   it('keeps only what the new version asks for on top of the old one', () => {

@@ -98,6 +98,9 @@ pub async fn put_settings(
     if written.iter().any(|k| k == "mediaConcurrency") {
         kroma_media::ffmpeg_gate::set_capacity(settings::media_workers(&state.settings));
     }
+    if written.iter().any(|k| k == settings::ENCODER_KEY) {
+        settings::apply_encoder_choice(&state.settings);
+    }
     // A server that booted with the switch off has no identifier, and the moment
     // it is switched on the settings page has to name one: it is what an operator
     // quotes to have their row erased.

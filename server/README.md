@@ -80,6 +80,9 @@ the files sat there: the link's own name is what gets parsed, and the target is 
 gets streamed. A link whose target is not mounted (the usual shape in a container that
 mounts the library but not the dump) cannot be read at all; the scan logs how many
 entries it skipped and one offending path rather than reporting an empty library.
+While a library holds such an entry, or one of its folders is missing or empty, a
+scan removes none of its titles, so a file deleted from it stays listed until the
+link is fixed or removed.
 
 ## Run from source
 

@@ -4,6 +4,8 @@
 use std::path::Path;
 use std::sync::Arc;
 
+use anyhow::Context;
+use kroma_http::address::WebTarget;
 use kroma_http::egress::{Gateway, BLOCKED};
 use kroma_http::{loopback, Fetch, Loopback};
 use kroma_module_host::{NetworkAction, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkRoute};
@@ -29,6 +31,14 @@ fn header_pairs(headers: &[Header]) -> impl Iterator<Item = (&str, &str)> {
     headers
         .iter()
         .map(|header| (header.name.as_str(), header.value.as_str()))
+}
+
+fn first_bad_header(request: &FetchRequest) -> Option<&str> {
+    request
+        .headers
+        .iter()
+        .map(|header| header.name.as_str())
+        .find(|name| !kroma_http::is_field_name(name))
 }
 
 fn response_of(response: kroma_http::Response) -> Response {
@@ -133,10 +143,47 @@ impl Outside {
         })
     }
 
+    fn bad_header(&self, request: &FetchRequest, target: &WebTarget) -> Option<String> {
+        let name = first_bad_header(request)?;
+        let reason = format!("header name {name:?} is not an HTTP field name");
+        self.journal_refusal(request, &target.host, target.port, None, &reason);
+        Some(format!("{BLOCKED}: {reason}"))
+    }
+
+    fn refused(&self, request: &FetchRequest, target: &WebTarget) -> Option<String> {
+        self.bad_header(request, target).or_else(|| self.refusal(request, target))
+    }
+
     fn holds_for_writing(&self, path: &Path) -> bool {
         let held = super::files::is_within(path, &self.roots, true);
         self.watch.file(&path.to_string_lossy(), true, held);
         held
+    }
+
+    fn download_into(
+        &self,
+        request: &FetchRequest,
+        path: &Path,
+    ) -> anyhow::Result<kroma_http::Response> {
+        let username = Gateway::username(&request.purpose, request.public_only, request.sealed);
+        let scratch = self
+            .host_socket
+            .parent()
+            .context("the host socket has no folder")?;
+        let landing = tempfile::Builder::new()
+            .prefix("kroma-download-")
+            .tempfile_in(scratch)
+            .context("make room for the download")?;
+        let response = Self::carried(request).carry_download(
+            &self.gateway,
+            &username,
+            &request.url,
+            landing.path(),
+        )?;
+        let mut held = super::files::open_to_write(path, &self.roots)
+            .with_context(|| format!("{} is not a file this module may write", path.display()))?;
+        std::io::copy(&mut landing.reopen()?, &mut held).context("write the download")?;
+        Ok(response)
     }
 }
 
@@ -145,7 +192,7 @@ impl NetPolicy for Outside {
         let Some(target) = kroma_http::address::web_target(&request.url) else {
             return Verdict::Block(format!("{BLOCKED}: not a plain http or https URL"));
         };
-        if let Some(reason) = self.refusal(request, &target) {
+        if let Some(reason) = self.refused(request, &target) {
             return Verdict::Block(reason);
         }
         let username = Gateway::username(&request.purpose, request.public_only, request.sealed);
@@ -171,11 +218,10 @@ impl NetPolicy for Outside {
         if !self.holds_for_writing(path) {
             return Verdict::Block(format!("{destination} is not in a folder this module may write"));
         }
-        if let Some(reason) = self.refusal(request, &target) {
+        if let Some(reason) = self.refused(request, &target) {
             return Verdict::Block(reason);
         }
-        let username = Gateway::username(&request.purpose, request.public_only, request.sealed);
-        let outcome = Self::carried(request).carry_download(&self.gateway, &username, &request.url, path);
+        let outcome = self.download_into(request, path);
         self.annotate(request, &target.host, target.port, &outcome);
         match outcome {
             Ok(response) => Verdict::Allow(response_of(response)),

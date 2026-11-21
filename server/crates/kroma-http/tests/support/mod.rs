@@ -32,8 +32,16 @@ pub fn one_shot_server(
     status_line: &str,
     body: &str,
 ) -> (String, std::thread::JoinHandle<Vec<u8>>) {
+    one_shot_server_at("127.0.0.1:0", status_line, body)
+}
+
+pub fn one_shot_server_at(
+    address: &str,
+    status_line: &str,
+    body: &str,
+) -> (String, std::thread::JoinHandle<Vec<u8>>) {
     use std::io::Write;
-    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let listener = std::net::TcpListener::bind(address).unwrap();
     let url = format!("http://{}/", listener.local_addr().unwrap());
     let response = format!(
         "{status_line}\r\ncontent-type: application/json\r\ncontent-length: {}\r\n\r\n{body}",

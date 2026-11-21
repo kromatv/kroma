@@ -1,7 +1,7 @@
 mod support;
 
 use kroma_http::{Fetch, FormPart};
-use support::{one_shot_server, read_request, text};
+use support::{one_shot_server, one_shot_server_at, read_request, text};
 
 // The 401 closes its connection so curl's retry arrives on a second accept
 // rather than on the same keep-alive socket, which nothing would be there to read.
@@ -280,4 +280,43 @@ fn a_refused_connection_reports_the_curl_exit_code() {
         .unwrap_err()
         .to_string();
     assert!(err.contains("curl exit"), "{err}");
+}
+
+#[test]
+fn a_range_in_a_url_is_one_request() {
+    let (url, server) = one_shot_server("HTTP/1.1 200 OK", "one");
+
+    let outcome = Fetch::new().max_time(5).get(&format!("{url}p[1-3]"));
+
+    let request = text(&server.join().unwrap());
+    assert!(request.starts_with("GET /p[1-3] HTTP/"), "{request}");
+    assert_eq!(outcome.unwrap().text(), "one");
+}
+
+#[test]
+fn a_download_never_substitutes_the_output_path() {
+    let dir = kroma_testing::temp_dir("transport-glob");
+    std::fs::create_dir(dir.path().join("in")).unwrap();
+    let (url, server) = one_shot_server("HTTP/1.1 200 OK", "body");
+
+    let outcome = Fetch::new()
+        .max_time(5)
+        .download(&format!("{url}x?{{../escaped}}"), &dir.path().join("in/#1"));
+
+    server.join().unwrap();
+    assert!(!dir.path().join("escaped").exists());
+    assert_eq!(outcome.unwrap().status, 200);
+    assert_eq!(std::fs::read(dir.path().join("in/#1")).unwrap(), b"body");
+}
+
+#[test]
+fn a_bracketed_ipv6_host_is_still_reached() {
+    let (url, server) = one_shot_server_at("[::1]:0", "HTTP/1.1 200 OK", "six");
+
+    let outcome = Fetch::new().max_time(5).get(&url);
+
+    let request = text(&server.join().unwrap());
+    assert!(url.starts_with("http://[::1]:"), "{url}");
+    assert!(request.starts_with("GET / HTTP/"), "{request}");
+    assert_eq!(outcome.unwrap().text(), "six");
 }

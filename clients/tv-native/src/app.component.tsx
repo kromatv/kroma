@@ -8,12 +8,19 @@ import type { DeviceStore } from '@kromatv/ui/device-store';
 // owns is the platform's boot sequence (fonts, splash, keep-awake) and the
 // stage the app is laid out on.
 
-import { createDeepLinks, createSearchRequests, type DeviceNameSource, TvApp } from '@kromatv/tv';
+import {
+  createDeepLinks,
+  createSearchRequests,
+  type DeviceNameSource,
+  TvApp,
+  type WakeHintSource,
+} from '@kromatv/tv';
 import { NATIVE_PLAYBACK } from '@kromatv/tv/native-playback';
 import { expoImageBackend } from '@kromatv/ui/expo-image';
 import { KIT_FONTS } from '@kromatv/ui/fonts';
 import { configureKit, KitProvider, TvStage } from '@kromatv/ui/kit';
 import { BlurView } from 'expo-blur';
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { useFonts } from 'expo-font';
 import { useKeepAwake } from 'expo-keep-awake';
@@ -23,7 +30,7 @@ LogBox.ignoreAllLogs(true);
 
 import { lanBeacon } from '@kromatv/lan-beacon';
 import { useEffect, useState } from 'react';
-import { decoderFrameLimits } from '../modules/device-hardware';
+import { decoderFrameLimits, localAddress } from '../modules/device-hardware';
 import { browseForServers } from '../modules/server-discovery';
 import { startLauncherLinks } from './lib/launcher-links';
 import { nativeLauncher } from './lib/native-launcher';
@@ -31,6 +38,7 @@ import { nativeSearchShell } from './lib/native-search';
 import { startSiriSearch } from './lib/siri-search';
 import { hydrateSessionStorage } from './lib/storage';
 import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search.hook';
+import { nativeWakeHint } from './wake-hint';
 
 // What the set is called, when the platform will say. On Android TV this is the
 // name typed in setup. On tvOS it is `UIDevice.current.name`, which since
@@ -40,6 +48,8 @@ import { nativeVoiceSearch, useVoiceKey } from './lib/voice-search.hook';
 // port drops an empty answer for us. No `subscribe`: this one is already there
 // when the app starts, unlike the buses the browser shells have to ask.
 const DEVICE_NAME: DeviceNameSource = { get: () => Device.deviceName };
+const WAKE_HINT: WakeHintSource = () =>
+  Promise.resolve(nativeWakeHint({ expoConfig: Constants.expoConfig, address: localAddress() }));
 // How large a picture this set's decoders take, which decides whether a title
 // direct-plays at all. Every other client guesses from the codec alone, and a
 // television that stops at 1080p answers a 4K file with a slideshow.
@@ -129,6 +139,7 @@ export function App() {
           // their addresses. Null on a shell without the native module.
           lan={lanBeacon ?? undefined}
           deviceName={DEVICE_NAME}
+          wake={WAKE_HINT}
           playback={NATIVE_PLAYBACK}
         />
       </TvStage>

@@ -442,6 +442,11 @@ pub fn groups(
                     g("mediaConcurrency"),
                     true,
                 ),
+                super::encoder::row(
+                    settings,
+                    t("admin.videoEncoder"),
+                    t("admin.videoEncoderHint"),
+                ),
                 row(
                     "transcodeDir",
                     t("admin.transcodeDir"),
@@ -955,6 +960,10 @@ mod tests {
         assert_eq!(dir.value, json!("/data/hls"));
         let mc = find_row(&groups, "maxConcurrent").unwrap();
         assert!(mc.options.contains(&"8".to_string()));
+        let encoder = find_row(&groups, "hwDevice").unwrap();
+        assert_eq!(encoder.value, json!("Auto"));
+        assert_eq!(encoder.options.first().map(String::as_str), Some("Auto"));
+        assert_eq!(encoder.options.last().map(String::as_str), Some("software"));
     }
 
     #[test]

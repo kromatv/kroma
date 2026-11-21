@@ -146,12 +146,21 @@ it('says less for a row from a catalog that predates storage and settings', () =
   expect(screen.queryByText('Lire les comptes')).toBeNull();
 });
 
-it('calls a row with no permissions block isolated, since it gets no network', () => {
+it('calls a row with no permissions block isolated, and still shows the storage it declares', () => {
   const { permissions: _p, ...silent } = TORRENTS;
 
   showOne(silent);
 
   expect(screen.getByText('Isolé')).toBeTruthy();
+  expect(screen.queryByText('Aller sur Internet')).toBeNull();
+  expect(screen.getByText('Lire les comptes')).toBeTruthy();
+});
+
+it('calls a row that declares nothing isolated, since it gets no network', () => {
+  const { permissions: _p, storage: _s, settings: _t, ...silent } = TORRENTS;
+
+  showOne(silent);
+
+  expect(screen.getByText('Isolé')).toBeTruthy();
   expect(screen.getByText("Ne déclare rien : il n'a ni réseau ni programme.")).toBeTruthy();
-  expect(screen.queryByText('Lire les comptes')).toBeNull();
 });

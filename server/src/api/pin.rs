@@ -12,6 +12,7 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
+use crate::api::accounts::credentials_body_limit;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
@@ -24,8 +25,16 @@ use axum::Router;
 
 pub fn routes() -> Router<SharedState> {
     Router::new()
-        .route("/auth/pin/verify", post(verify_pin))
-        .route("/auth/me/pin", patch(set_pin).delete(delete_pin))
+        .route(
+            "/auth/pin/verify",
+            post(verify_pin).layer(credentials_body_limit()),
+        )
+        .route(
+            "/auth/me/pin",
+            patch(set_pin)
+                .delete(delete_pin)
+                .layer(credentials_body_limit()),
+        )
 }
 
 // Every client keypad enforces this length (auto-submit on the last digit).
