@@ -35,7 +35,7 @@ to Plex, and the owner picks one.
 **ADMIN-135** (AGREED) - A Jellyfin server on the machine KROMA runs on is found at its
 usual address.
 
-**ADMIN-182** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries,
+**ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries,
 its users, each person's watch state and the last play of each title, found at its usual
 address on the machine KROMA runs on, and refused when the address answers as a Jellyfin.
 
