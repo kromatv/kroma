@@ -2737,7 +2737,7 @@
     "status": "AGREED",
     "text": "Before the import writes anything, one review screen lists what",
     "file": "docs/spec/admin/import.md",
-    "line": 42
+    "line": 46
   },
   {
     "id": "ADMIN-137",
@@ -2747,7 +2747,7 @@
     "status": "AGREED",
     "text": "The owner can leave any library or any user out on the review",
     "file": "docs/spec/admin/import.md",
-    "line": 49
+    "line": 53
   },
   {
     "id": "ADMIN-138",
@@ -2757,7 +2757,7 @@
     "status": "AGREED",
     "text": "The review screen lists what does not come over, so nobody finds",
     "file": "docs/spec/admin/import.md",
-    "line": 52
+    "line": 56
   },
   {
     "id": "ADMIN-139",
@@ -2767,7 +2767,7 @@
     "status": "AGREED",
     "text": "One action on the review screen starts the import.",
     "file": "docs/spec/admin/import.md",
-    "line": 63
+    "line": 67
   },
   {
     "id": "ADMIN-140",
@@ -2777,7 +2777,7 @@
     "status": "AGREED",
     "text": "Each library of films or shows the owner kept becomes a source with",
     "file": "docs/spec/admin/import.md",
-    "line": 69
+    "line": 73
   },
   {
     "id": "ADMIN-141",
@@ -2787,7 +2787,7 @@
     "status": "AGREED",
     "text": "Where KROMA already has a source over the same folders, the import",
     "file": "docs/spec/admin/import.md",
-    "line": 72
+    "line": 76
   },
   {
     "id": "ADMIN-142",
@@ -2797,7 +2797,7 @@
     "status": "AGREED",
     "text": "A folder that does not exist on this machine under the name the",
     "file": "docs/spec/admin/import.md",
-    "line": 80
+    "line": 84
   },
   {
     "id": "ADMIN-143",
@@ -2807,7 +2807,7 @@
     "status": "AGREED",
     "text": "The translation is kept, so a later import asks nothing again.",
     "file": "docs/spec/admin/import.md",
-    "line": 87
+    "line": 91
   },
   {
     "id": "ADMIN-144",
@@ -2817,7 +2817,7 @@
     "status": "AGREED",
     "text": "Each user the owner kept becomes an account that waits on an",
     "file": "docs/spec/admin/import.md",
-    "line": 93
+    "line": 97
   },
   {
     "id": "ADMIN-145",
@@ -2827,7 +2827,7 @@
     "status": "AGREED",
     "text": "That account sees the libraries its user could see on the other",
     "file": "docs/spec/admin/import.md",
-    "line": 96
+    "line": 100
   },
   {
     "id": "ADMIN-146",
@@ -2837,7 +2837,7 @@
     "status": "AGREED",
     "text": "The person who signed in to the other server is the owner running",
     "file": "docs/spec/admin/import.md",
-    "line": 99
+    "line": 103
   },
   {
     "id": "ADMIN-147",
@@ -2847,7 +2847,7 @@
     "status": "AGREED",
     "text": "The owner can attach a user of the other server to an account",
     "file": "docs/spec/admin/import.md",
-    "line": 103
+    "line": 107
   },
   {
     "id": "ADMIN-148",
@@ -2857,7 +2857,7 @@
     "status": "AGREED",
     "text": "A user brought over once is found again by a later import, which",
     "file": "docs/spec/admin/import.md",
-    "line": 107
+    "line": 111
   },
   {
     "id": "ADMIN-149",
@@ -2867,7 +2867,7 @@
     "status": "AGREED",
     "text": "A user the other server limited more finely than by library, by",
     "file": "docs/spec/admin/import.md",
-    "line": 110
+    "line": 114
   },
   {
     "id": "ADMIN-150",
@@ -2877,7 +2877,7 @@
     "status": "AGREED",
     "text": "A user whose watch state the other server gives only against that",
     "file": "docs/spec/admin/import.md",
-    "line": 118
+    "line": 122
   },
   {
     "id": "ADMIN-151",
@@ -2887,7 +2887,7 @@
     "status": "AGREED",
     "text": "Each person's watched flags come over (ACCT-24).",
     "file": "docs/spec/admin/import.md",
-    "line": 126
+    "line": 130
   },
   {
     "id": "ADMIN-152",
@@ -2897,7 +2897,7 @@
     "status": "AGREED",
     "text": "Each person's resume points come over, and a resume point lands at",
     "file": "docs/spec/admin/import.md",
-    "line": 128
+    "line": 132
   },
   {
     "id": "ADMIN-153",
@@ -2907,7 +2907,7 @@
     "status": "AGREED",
     "text": "A title on the other server is matched to a KROMA title by its file",
     "file": "docs/spec/admin/import.md",
-    "line": 131
+    "line": 135
   },
   {
     "id": "ADMIN-154",
@@ -2917,7 +2917,7 @@
     "status": "AGREED",
     "text": "A title whose file matches nothing is matched by the external",
     "file": "docs/spec/admin/import.md",
-    "line": 134
+    "line": 138
   },
   {
     "id": "ADMIN-155",
@@ -2927,7 +2927,7 @@
     "status": "AGREED",
     "text": "Watch state for a file the scan has not reached yet shows on its",
     "file": "docs/spec/admin/import.md",
-    "line": 138
+    "line": 142
   },
   {
     "id": "ADMIN-156",
@@ -2937,7 +2937,7 @@
     "status": "AGREED",
     "text": "A title a person marked as a favourite on the other server is saved",
     "file": "docs/spec/admin/import.md",
-    "line": 141
+    "line": 145
   },
   {
     "id": "ADMIN-157",
@@ -2947,7 +2947,7 @@
     "status": "AGREED",
     "text": "When the import ends, a report lists what matched nothing, each",
     "file": "docs/spec/admin/import.md",
-    "line": 144
+    "line": 148
   },
   {
     "id": "ADMIN-158",
@@ -2957,7 +2957,7 @@
     "status": "AGREED",
     "text": "The plays the other server recorded come into watch history",
     "file": "docs/spec/admin/import.md",
-    "line": 155
+    "line": 159
   },
   {
     "id": "ADMIN-159",
@@ -2967,7 +2967,7 @@
     "status": "AGREED",
     "text": "A row that came from an import says so and names the server it came",
     "file": "docs/spec/admin/import.md",
-    "line": 158
+    "line": 162
   },
   {
     "id": "ADMIN-160",
@@ -2977,7 +2977,7 @@
     "status": "AGREED",
     "text": "An imported row leaves blank what the other server did not record:",
     "file": "docs/spec/admin/import.md",
-    "line": 161
+    "line": 165
   },
   {
     "id": "ADMIN-161",
@@ -2987,7 +2987,7 @@
     "status": "AGREED",
     "text": "An imported play that carries no duration counts for its title's",
     "file": "docs/spec/admin/import.md",
-    "line": 164
+    "line": 168
   },
   {
     "id": "ADMIN-162",
@@ -2997,7 +2997,7 @@
     "status": "AGREED",
     "text": "A play brought over once is not brought again by a later import.",
     "file": "docs/spec/admin/import.md",
-    "line": 172
+    "line": 176
   },
   {
     "id": "ADMIN-163",
@@ -3007,7 +3007,7 @@
     "status": "AGREED",
     "text": "The import runs in the background as a job with progress",
     "file": "docs/spec/admin/import.md",
-    "line": 178
+    "line": 182
   },
   {
     "id": "ADMIN-164",
@@ -3017,7 +3017,7 @@
     "status": "AGREED",
     "text": "The owner can cancel the import, and a cancelled import keeps what",
     "file": "docs/spec/admin/import.md",
-    "line": 181
+    "line": 185
   },
   {
     "id": "ADMIN-165",
@@ -3027,7 +3027,7 @@
     "status": "AGREED",
     "text": "A second import, run when nothing changed on the other server,",
     "file": "docs/spec/admin/import.md",
-    "line": 184
+    "line": 188
   },
   {
     "id": "ADMIN-166",
@@ -3037,7 +3037,7 @@
     "status": "AGREED",
     "text": "Where KROMA and the other server both hold watch state for one",
     "file": "docs/spec/admin/import.md",
-    "line": 190
+    "line": 194
   },
   {
     "id": "ADMIN-167",
@@ -3047,7 +3047,7 @@
     "status": "AGREED",
     "text": "An import only adds watch state or moves it forward. It removes",
     "file": "docs/spec/admin/import.md",
-    "line": 193
+    "line": 197
   },
   {
     "id": "ADMIN-168",
@@ -3057,7 +3057,7 @@
     "status": "AGREED",
     "text": "The importer stays installed after an import, so the owner can run",
     "file": "docs/spec/admin/import.md",
-    "line": 211
+    "line": 215
   },
   {
     "id": "ADMIN-169",
@@ -3067,7 +3067,7 @@
     "status": "AGREED",
     "text": "The report at the end of an import, and the import screen of the",
     "file": "docs/spec/admin/import.md",
-    "line": 214
+    "line": 218
   },
   {
     "id": "ADMIN-170",
@@ -3077,7 +3077,7 @@
     "status": "AGREED",
     "text": "Removing the importer forgets the sign-in to the other server",
     "file": "docs/spec/admin/import.md",
-    "line": 217
+    "line": 221
   },
   {
     "id": "ADMIN-171",
@@ -3087,7 +3087,7 @@
     "status": "AGREED",
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
-    "line": 221
+    "line": 225
   },
   {
     "id": "ADMIN-172",
@@ -3187,7 +3187,7 @@
     "status": "AGREED",
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
-    "line": 196
+    "line": 200
   },
   {
     "id": "ADMIN-182",
@@ -3197,7 +3197,17 @@
     "status": "AGREED",
     "text": "A kept library whose folder holds a folder of a KROMA source is not",
     "file": "docs/spec/admin/import.md",
-    "line": 75
+    "line": 79
+  },
+  {
+    "id": "ADMIN-186",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 186,
+    "status": "SHIPPED",
+    "text": "An Emby server is brought over as a Jellyfin one is: its libraries,",
+    "file": "docs/spec/admin/import.md",
+    "line": 38
   },
   {
     "id": "BROWSE-1",

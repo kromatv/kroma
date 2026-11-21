@@ -1,6 +1,6 @@
 {
-  "settings.artworkSummary": "Visuels : {value}",
-  "settings.audioSummary": "Audio : {value}",
+  "settings.artworkSummary": "Visuels : {value}",
+  "settings.audioSummary": "Audio : {value}",
   "settings.blur": "Flou d'arrière-plan",
   "settings.blurDesc": "À désactiver sur une machine qui compose le flou sur le processeur.",
   "settings.builtAt": "Compilé le",
@@ -14,13 +14,13 @@
   "settings.languages": "Langues",
   "settings.libraryCount": "{count} bibliothèques",
   "settings.libraryCount_one": "{count} bibliothèque",
-  "settings.mediaCount": "{count} médias",
-  "settings.mediaCount_one": "{count} média",
-  "settings.pinOffDesc": "Aucun code ne protège ce profil : n'importe qui devant ce téléviseur peut l'ouvrir.",
+  "settings.mediaCount": "{count} titres",
+  "settings.mediaCount_one": "{count} titre",
+  "settings.pinOffDesc": "Aucun code ne protège ce profil : n'importe qui devant ce téléviseur peut l'ouvrir.",
   "settings.pinOnDesc": "Ce profil demande son code PIN à l'ouverture.",
   "settings.playback": "Lecture",
   "settings.quitAppDesc": "Ferme KROMA sur cet appareil.",
   "settings.signOutDesc": "Retire ce profil de ce téléviseur. Il faudra vous reconnecter pour le retrouver ici.",
-  "settings.subtitleSummary": "Sous-titres : {value}",
+  "settings.subtitleSummary": "Sous-titres : {value}",
   "settings.version": "Version"
 }

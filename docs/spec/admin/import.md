@@ -35,6 +35,10 @@ to Plex, and the owner picks one.
 **ADMIN-135** (AGREED) - A Jellyfin server on the machine KROMA runs on is found at its
 usual address.
 
+**ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries,
+its users, each person's watch state and the last play of each title, found at its usual
+address on the machine KROMA runs on, and refused when the address answers as a Jellyfin.
+
 ## The review
 
 Status: **AGREED**
@@ -165,9 +169,9 @@ the device, the player, the network class, whether it was transcoded.
 runtime wherever the dashboard adds up time watched, and its row says the time is the
 runtime.
 
-Plex records when a title was played and not for how long. Jellyfin keeps only the last
-play of each title per person, so one play per title per person is all it can give, and the
-review screen says so.
+Plex records when a title was played and not for how long. Jellyfin and Emby keep only the
+last play of each title per person, so one play per title per person is all they can give,
+and the review screen says so.
 
 **ADMIN-162** (AGREED) - A play brought over once is not brought again by a later import.
 
@@ -236,8 +240,6 @@ Status: **DESIGN, NOT IMPLEMENTED**
 - **Finding the other server on the network.** Plex and Jellyfin each announce themselves
   in their own way, and a module cannot listen for either today. ADMIN-133 to ADMIN-135 are
   what the owner gets instead.
-- **Emby.** It is close enough to Jellyfin that one importer could speak both. It is not
-  promised here and has its own issue. An Emby household starts fresh until then.
 
 ## Not in scope
 

@@ -62,6 +62,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Skip | Passer cette étape, Ignorer | Sauter |
 | Sign in / Sign out | Se connecter / Se déconnecter | Login |
 | Set up, setup | Configurer, la configuration | Installation, setup |
+| Skip (a queue, a step that waits) | sans attendre | sauter |
+| A right's hint | a verb phrase: what the person can do | a list of nouns |
 | Library | Bibliothèque | Médiathèque, Librairie |
 | TV (the device, in a sentence) | téléviseur, masculine | la TV, ta TV |
 | QR (to scan) | QR code | QR |
@@ -102,6 +104,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Use at least 8 characters | 8 caractères minimum | Utilisez au moins 8 caractères |
 | Admin (the area) | l'administration | l'admin |
 | Rights, permissions | Droits | Permissions |
+| PIN | code PIN | PIN alone |
+| Link / Unlink (a sign-in provider) | Associer / Dissocier | Lier / Délier |
+| You are signed out (a state of the reader) | Déconnexion effectuée | Vous êtes déconnecté |
+| Media items (a count) | titres | médias |
 | Invitation link | Lien d'invitation | |
 | Feature | Fonctionnalité | Feature |
 | At any time | à tout moment | n'importe quand |
@@ -129,6 +135,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Retournons à votre bibliothèque | the product says *nous* | Revenez à votre bibliothèque |
 | Connexion directe (on a button) | a noun on a button | Se connecter directement |
 | Proches (the people a server is shared with) | *proche* also means *near*, so the word is read two ways | votre famille et vos amis, les personnes invitées; *Invitations* for the step |
+| Les demandes de ce compte sautent la file d'approbation | *skip the queue* word for word | Les demandes de ce compte sont approuvées sans attendre |
+| Scans, bibliothèques, métadonnées | an English list of nouns for a right | Gérer les bibliothèques, leurs analyses et leurs métadonnées |
 | Être compté | English idiom *be counted* | Statistiques anonymes |
 | Tirer plus de votre bibliothèque | *get more from* | Lecture et recherche |
 | Chercher par le sens | nobody says it | Recherche intelligente |
@@ -177,8 +185,14 @@ move the rest to the screen where it matters.
 | English | French | Never |
 |---|---|---|
 | Mail server | serveur de messagerie | serveur mail |
+| Middleware (modules that filter connections) | Modules de filtrage | Intergiciels |
+| Television (a kind of device) | Téléviseur | Télévision, which is the medium |
+| Config (a WireGuard file) | configuration | config |
 | Upload (an image, a file) | Importer | Téléverser |
 | Discard your changes? | Abandonner les modifications ? | Abandonner les changements ? |
+| No account with us (the project) | aucun compte KROMA à créer | aucun compte chez nous |
+| Muted (the volume) | coupé | muet |
+| est. (estimated) | estimée | est. |
 | Create their account (one person) | Créer son compte | Créer leur compte |
 | Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
 | Console (the admin area) | l'administration | la console |

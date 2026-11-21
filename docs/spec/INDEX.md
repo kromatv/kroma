@@ -3,7 +3,7 @@
 
 # Requirement index
 
-772 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+773 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -330,6 +330,7 @@
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-182** (AGREED) - A kept library whose folder holds a folder of a KROMA source is not <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
