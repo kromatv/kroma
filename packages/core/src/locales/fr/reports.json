@@ -1,7 +1,7 @@
 {
   "reports.actionDelete": "Supprimer",
   "reports.actionDismiss": "Rejeter",
-  "reports.actionFailed": "Échec de l'action",
+  "reports.actionFailed": "Impossible d'effectuer l'action",
   "reports.actionReopen": "Rouvrir",
   "reports.actionResolve": "Résoudre",
   "reports.colCategory": "Catégorie",
@@ -18,7 +18,7 @@
   "reports.noMessage": "Aucun détail fourni.",
   "reports.openLabel": "ouverts",
   "reports.reportedBy": "Signalé par",
-  "reports.searchPlaceholder": "Rechercher un signalement...",
+  "reports.searchPlaceholder": "Rechercher un signalement…",
   "reports.sheet": "Signalement",
   "reports.status.dismissed": "Rejeté",
   "reports.status.open": "Ouvert",
