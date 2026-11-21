@@ -1,18 +1,18 @@
 {
   "permissions.library": "Bibliothèque",
-  "permissions.libraryHint": "Scans, bibliothèques, métadonnées",
+  "permissions.libraryHint": "Gérer les bibliothèques, leurs analyses et leurs métadonnées",
   "permissions.playback": "Lecture",
-  "permissions.playbackHint": "Regarder le catalogue + reprise",
+  "permissions.playbackHint": "Regarder les films et les séries, et reprendre une lecture",
   "permissions.reportsManage": "Gérer les signalements",
   "permissions.reportsManageHint": "Traiter les signalements envoyés par les utilisateurs",
   "permissions.requestAuto": "Approbation automatique",
-  "permissions.requestAutoHint": "Les demandes de ce compte sautent la file d'approbation",
+  "permissions.requestAutoHint": "Les demandes de ce compte sont approuvées sans attendre",
   "permissions.requestCreate": "Demandes",
-  "permissions.requestCreateHint": "Rechercher sur TMDB et demander des films/séries",
+  "permissions.requestCreateHint": "Rechercher sur TMDB et demander des films ou des séries",
   "permissions.requestManage": "Gestion des demandes",
-  "permissions.requestManageHint": "Approuver/refuser les demandes, gérer les téléchargements",
+  "permissions.requestManageHint": "Approuver ou refuser les demandes, gérer les téléchargements",
   "permissions.settings": "Réglages",
-  "permissions.settingsHint": "Configuration du serveur",
+  "permissions.settingsHint": "Configurer le serveur",
   "permissions.users": "Utilisateurs",
-  "permissions.usersHint": "Gérer les comptes + inviter"
+  "permissions.usersHint": "Gérer les comptes et inviter des personnes"
 }
