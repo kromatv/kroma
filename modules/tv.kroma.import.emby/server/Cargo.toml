@@ -18,6 +18,11 @@ kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features 
 kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", features = ["storage"] }
 anyhow = "1"
 
+[dev-dependencies]
+kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }
+serde_json = "1"
+tower = { version = "0.5", features = ["util"] }
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 axum = { version = "0.8", features = ["macros"] }
 tokio = { version = "1", features = ["full"] }

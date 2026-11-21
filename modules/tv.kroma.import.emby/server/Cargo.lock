@@ -170,6 +170,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctor"
+version = "1.0.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea691ed9f36489d087419b8b2ba3ef27d89621380b4178c73e2445a379e4e0f4"
+dependencies = [
+ "link-section",
+ "linktime-proc-macro",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -479,6 +489,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-db"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "kroma-domain",
+ "kroma-primitives",
+ "kroma-sqlite",
+ "kroma-sqlite-guest",
+ "kroma-testing",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "time",
+ "tracing",
+]
+
+[[package]]
+name = "kroma-domain"
+version = "0.1.0"
+dependencies = [
+ "kroma-module-wire",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "kroma-http"
 version = "0.1.0"
 dependencies = [
@@ -511,7 +547,9 @@ dependencies = [
  "kroma-import-jellyfin",
  "kroma-module-runtime",
  "kroma-module-sdk",
+ "serde_json",
  "tokio",
+ "tower",
 ]
 
 [[package]]
@@ -538,9 +576,11 @@ dependencies = [
  "kroma-module-wire",
  "kroma-primitives",
  "kroma-sqlite",
+ "kroma-testing",
  "serde",
  "serde_json",
  "tokio",
+ "tower",
  "tracing",
 ]
 
@@ -584,14 +624,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "ctor",
+ "kroma-db",
  "kroma-http",
  "kroma-i18n",
  "kroma-module-host",
  "kroma-module-macros",
  "kroma-module-manifest",
+ "kroma-module-runtime",
  "kroma-module-wire",
  "kroma-primitives",
  "kroma-sqlite",
+ "kroma-testing",
  "serde",
  "serde_json",
  "tokio",
@@ -621,14 +665,23 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "kroma-sqlite-guest",
+ "kroma-testing",
  "rusqlite",
  "serde",
+ "serde_json",
  "tracing",
 ]
 
 [[package]]
 name = "kroma-sqlite-guest"
 version = "0.1.0"
+
+[[package]]
+name = "kroma-testing"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+]
 
 [[package]]
 name = "lazy_static"
@@ -658,6 +711,18 @@ dependencies = [
  "pkg-config",
  "vcpkg",
 ]
+
+[[package]]
+name = "link-section"
+version = "0.19.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d9aae57673c1a235149777a74d152f3210ebd3e3b13346d2cdb6809e566bd3c"
+
+[[package]]
+name = "linktime-proc-macro"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e57c38c1e860fd37c604281cdfb1dd2216977fd76a50f85ba2f388ef3219616"
 
 [[package]]
 name = "linux-raw-sys"

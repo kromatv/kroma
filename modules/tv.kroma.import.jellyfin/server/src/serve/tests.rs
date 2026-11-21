@@ -64,16 +64,20 @@ fn served(jellyfin: Recorded) -> Served {
     }
 }
 
+async fn post(app: &Router, method: &str, ask: &Value) -> (StatusCode, Value) {
+    let request = Request::post(format!("/_port/importer/{method}"))
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(ask.to_string()))
+        .unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    let status = response.status();
+    let body = to_bytes(response.into_body(), 1 << 20).await.unwrap();
+    (status, serde_json::from_slice(&body).unwrap_or(Value::Null))
+}
+
 impl Served {
     async fn posted(&self, method: &str, ask: &Value) -> (StatusCode, Value) {
-        let request = Request::post(format!("/_port/importer/{method}"))
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(Body::from(ask.to_string()))
-            .unwrap();
-        let response = self.app.clone().oneshot(request).await.unwrap();
-        let status = response.status();
-        let body = to_bytes(response.into_body(), 1 << 20).await.unwrap();
-        (status, serde_json::from_slice(&body).unwrap_or(Value::Null))
+        post(&self.app, method, ask).await
     }
 
     async fn asked(&self, method: &str, ask: Value) -> Value {
@@ -361,4 +365,18 @@ async fn a_whole_emby_import_calls_only_what_its_table_names() {
         .iter()
         .any(|call| call.method == *method && call.path == path)));
     assert_eq!(written, vec!["/emby/Users/AuthenticateByName"]);
+}
+
+#[tokio::test]
+async fn the_live_routes_refuse_a_sign_in_with_no_username_before_calling_any_server() {
+    let app = routes::<StubHost>().with_state(StubHost::with_db("import-jellyfin-live"));
+    let ask = json!({ "fields": { "url": "", "username": "" } });
+
+    let (status, answer) = post(&app, "connect", &ask).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        answer,
+        json!({ "Ok": { "status": "refused", "reason": "credentials" } })
+    );
 }
