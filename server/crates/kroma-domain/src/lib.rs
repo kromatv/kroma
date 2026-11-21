@@ -52,3 +52,6 @@ pub use releases::*;
 pub use reports::*;
 pub use requests::*;
 pub use section::*;
+
+pub mod ratings;
+pub use ratings::{AgeRating, CountryRatings};

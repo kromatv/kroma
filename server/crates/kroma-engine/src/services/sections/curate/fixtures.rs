@@ -47,6 +47,8 @@ pub(super) fn meta(rating: f32, genres: &[&str], directors: &[&str]) -> crate::m
         keywords: Vec::new(),
         tvdb_id: None,
         tmdb_url: String::new(),
+        ratings: Default::default(),
+        age_rating: None,
     }
 }
 

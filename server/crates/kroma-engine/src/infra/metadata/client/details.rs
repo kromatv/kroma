@@ -1,4 +1,5 @@
 use crate::domain::metadata::Metadata;
+use crate::domain::ratings::reader_rating;
 
 use super::super::common::{build_cast, build_crew};
 use super::certification::country_of;
@@ -49,6 +50,12 @@ fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str
     let (raw_cast, raw_crew) = d.credits.map(|c| (c.cast, c.crew)).unwrap_or_default();
     let cast = build_cast(raw_cast, MAX_CAST, false);
     let crew = build_crew(raw_crew, d.created_by, MAX_CREW);
+    let ratings = d
+        .release_dates
+        .or(d.content_ratings)
+        .map(|c| c.every_country())
+        .unwrap_or_default();
+    let age_rating = reader_rating(&ratings, country, country);
 
     Metadata {
         provider: "tmdb",
@@ -65,10 +72,7 @@ fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str
         genres: d.genres.into_iter().map(|g| g.name).collect(),
         keywords: d.keywords.map(collect_keywords).unwrap_or_default(),
         rating: d.vote_average.filter(|v| *v > 0.0),
-        certification: d
-            .release_dates
-            .or(d.content_ratings)
-            .and_then(|c| c.preferring(country)),
+        certification: age_rating.as_ref().map(|r| r.label.clone()),
         poster_url: d.poster_path.map(|p| format!("{IMG}/w500{p}")),
         backdrop_url: d.backdrop_path.map(|p| format!("{IMG}/w1280{p}")),
         logo_url: d
@@ -83,6 +87,8 @@ fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str
         theme_url: None,
         tvdb_id,
         tmdb_url: format!("https://www.themoviedb.org/{}/{id}", target.web_kind()),
+        ratings,
+        age_rating,
     }
 }
 
@@ -153,12 +159,79 @@ mod tests {
     }
 
     #[test]
+    fn a_movie_keeps_the_label_every_country_gave_it() {
+        let raw = r#"{
+            "id": 603,
+            "title": "The Matrix",
+            "release_dates": {"results": [
+                {"iso_3166_1": "FR", "release_dates": [{"certification": "12"}]},
+                {"iso_3166_1": "DE", "release_dates": [{"certification": ""}]},
+                {"iso_3166_1": "US", "release_dates": [{"certification": "R"}]}
+            ]}
+        }"#;
+        let d: Details = serde_json::from_str(raw).unwrap();
+
+        let meta = metadata_from(d, Target::Movie, 603, "fr", "FR");
+
+        let countries: Vec<(&str, &str)> = meta
+            .ratings
+            .iter()
+            .map(|(c, l)| (c.as_str(), l.as_str()))
+            .collect();
+        assert_eq!(countries, vec![("FR", "12"), ("US", "R")]);
+    }
+
+    #[test]
+    fn a_title_its_servers_country_never_rated_carries_a_borrowed_rating_naming_its_country() {
+        let raw = r#"{
+            "id": 1396,
+            "name": "Breaking Bad",
+            "content_ratings": {"results": [
+                {"iso_3166_1": "DE", "rating": "16"},
+                {"iso_3166_1": "US", "rating": "TV-MA"}
+            ]}
+        }"#;
+        let d: Details = serde_json::from_str(raw).unwrap();
+
+        let meta = metadata_from(d, Target::Tv, 1396, "fr", "FR");
+
+        let shown = meta.age_rating.unwrap();
+        assert_eq!(
+            (shown.label.as_str(), shown.country.as_str(), shown.borrowed),
+            ("TV-MA", "US", true)
+        );
+        assert_eq!(meta.certification.as_deref(), Some("TV-MA"));
+    }
+
+    #[test]
+    fn a_title_rated_by_its_servers_country_carries_that_rating_unborrowed() {
+        let raw = r#"{
+            "id": 603,
+            "title": "The Matrix",
+            "release_dates": {"results": [
+                {"iso_3166_1": "FR", "release_dates": [{"certification": "12"}]}
+            ]}
+        }"#;
+        let d: Details = serde_json::from_str(raw).unwrap();
+
+        let meta = metadata_from(d, Target::Movie, 603, "fr", "FR");
+
+        let shown = meta.age_rating.unwrap();
+        assert_eq!(
+            (shown.label.as_str(), shown.country.as_str(), shown.borrowed),
+            ("12", "FR", false)
+        );
+    }
+
+    #[test]
     fn a_title_no_provider_rated_carries_no_age_rating() {
         let d: Details = serde_json::from_str(r#"{"id": 1, "title": "X"}"#).unwrap();
 
         let meta = metadata_from(d, Target::Movie, 1, "en", "US");
 
         assert!(meta.certification.is_none());
+        assert!(meta.age_rating.is_none());
+        assert!(meta.ratings.is_empty());
     }
 
     #[test]

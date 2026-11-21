@@ -4,6 +4,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::ratings::{AgeRating, CountryRatings};
+
 /// Provider metadata for one movie or show. Serialized to clients and
 /// round-tripped through the DB's `metadata` JSON column (hence `Deserialize`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,6 +59,13 @@ pub struct Metadata {
     pub tvdb_id: Option<u64>,
     #[serde(rename = "tmdbUrl")]
     pub tmdb_url: String,
+    /// Every country's label. Kept in the database blob and never sent to a
+    /// client, so it is left out of `Serialize`: the blob writer adds it back.
+    #[serde(default, skip_serializing)]
+    pub ratings: CountryRatings,
+    /// The rating a reader is shown, picked from `ratings`.
+    #[serde(rename = "ageRating", default, skip_serializing_if = "Option::is_none")]
+    pub age_rating: Option<AgeRating>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -261,6 +270,8 @@ mod tests {
             keywords: Vec::new(),
             tvdb_id: None,
             tmdb_url: "https://themoviedb.org/movie/603".into(),
+            ratings: Default::default(),
+            age_rating: None,
         }
     }
 

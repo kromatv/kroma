@@ -1,0 +1,69 @@
+//! Age ratings: the label each country's system gave a title, the minimum age
+//! behind it, and the one a reader is shown.
+
+use std::collections::BTreeMap;
+
+use serde::{Deserialize, Serialize};
+
+mod ages;
+#[cfg(test)]
+mod tests;
+
+/// Every country's label for one title, keyed by the provider's country code.
+pub type CountryRatings = BTreeMap<String, String>;
+
+/// The rating a reader is shown: their country's label, or another country's
+/// when theirs never rated the title.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AgeRating {
+    pub label: String,
+    pub country: String,
+    pub borrowed: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LabelAge {
+    Age(u8),
+    NotARating,
+}
+
+const BORROWED_FIRST: &str = "US";
+
+/// The youngest viewer `label` is rated for in `country`'s system. `None` for a
+/// label that is not a rating, and for one the table does not know.
+pub fn minimum_age(country: &str, label: &str) -> Option<u8> {
+    match lookup(country, label) {
+        Some(LabelAge::Age(age)) => Some(age),
+        _ => None,
+    }
+}
+
+/// The rating shown to a reader whose ratings country is `reader`, on a server
+/// whose metadata country is `server`. A title the reader's country never
+/// rated borrows from `server`, then the United States, then the first other
+/// country by code.
+pub fn reader_rating(ratings: &CountryRatings, reader: &str, server: &str) -> Option<AgeRating> {
+    let country = [reader, server, BORROWED_FIRST]
+        .into_iter()
+        .chain(ratings.keys().map(String::as_str))
+        .find(|country| rated(ratings, country).is_some())?;
+    Some(AgeRating {
+        label: rated(ratings, country)?.to_string(),
+        country: country.to_string(),
+        borrowed: country != reader,
+    })
+}
+
+fn rated<'a>(ratings: &'a CountryRatings, country: &str) -> Option<&'a str> {
+    ratings
+        .get(country)
+        .map(String::as_str)
+        .filter(|label| lookup(country, label) != Some(LabelAge::NotARating))
+}
+
+fn lookup(country: &str, label: &str) -> Option<LabelAge> {
+    ages::AGES
+        .binary_search_by(|(c, l, _)| (*c, *l).cmp(&(country, label)))
+        .ok()
+        .map(|i| ages::AGES[i].2)
+}

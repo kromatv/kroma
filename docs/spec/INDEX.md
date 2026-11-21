@@ -107,13 +107,13 @@
 - **ACCT-98** (SHIPPED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-101** (AGREED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-102** (AGREED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-101** (SHIPPED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-102** (SHIPPED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-103** (AGREED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-104** (AGREED) - Every account has a ratings country. It starts as the server's <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-106** (AGREED) - A title that country never rated borrows another country's label, <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-107** (AGREED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-107** (SHIPPED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-108** (AGREED) - The badge is on a title's detail page, on the home's hero and on <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-109** (AGREED) - Every profile carries one of the six levels. 18+ is the default, and <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-110** (AGREED) - A ceiling compares ages, never labels. A title passes when the age <sub>[kids.md](accounts/kids.md)</sub>
