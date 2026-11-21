@@ -21,28 +21,17 @@ const GROUP_SCAN_LIMIT: i64 = 2_000;
 /// it had rather than vanishing.
 pub fn top_users(pool: &Pool, since: i64, limit: usize) -> Result<Vec<TopUser>> {
     let conn = pool.get()?;
-    let mut ranked = accounts(&conn)?;
-    let mut seat: HashMap<String, usize> = ranked
-        .iter()
-        .enumerate()
-        .filter_map(|(i, u)| u.user_id.clone().map(|id| (id, i)))
-        .collect();
-
-    for row in watched_since(&conn, since)? {
-        let at = *seat.entry(row.who).or_insert_with(|| {
-            ranked.push(unranked(row.username, row.user_id, None));
-            ranked.len() - 1
-        });
-        tally(&mut ranked[at], row.played);
+    let mut board = Board::of(accounts(&conn)?);
+    let mut watched = conn.prepare(&format!(
+        "SELECT COALESCE(h.user_id,h.username,'?'), MAX(h.user_id), \
+                COALESCE(MAX(h.username),'?'), h.kind, COUNT(*), SUM({TIME_WATCHED}) \
+         FROM play_history h LEFT JOIN items i ON i.id = h.item_id \
+         WHERE h.ended_at >= ?1 GROUP BY 1, h.kind"
+    ))?;
+    for row in watched.query_map(params![since], watched_row)? {
+        board.tally(row?);
     }
-
-    ranked.sort_by(|a, b| {
-        b.watched_ms
-            .cmp(&a.watched_ms)
-            .then_with(|| a.username.cmp(&b.username))
-    });
-    ranked.truncate(limit);
-    Ok(ranked)
+    Ok(board.ranked(limit))
 }
 
 struct Watched {
@@ -57,6 +46,41 @@ struct Played {
     kind: WatchKind,
     plays: i64,
     ms: i64,
+}
+
+struct Board {
+    ranked: Vec<TopUser>,
+    seat: HashMap<String, usize>,
+}
+
+impl Board {
+    fn of(ranked: Vec<TopUser>) -> Self {
+        let seat = ranked
+            .iter()
+            .enumerate()
+            .filter_map(|(i, u)| u.user_id.clone().map(|id| (id, i)))
+            .collect();
+        Self { ranked, seat }
+    }
+
+    fn tally(&mut self, row: Watched) {
+        let ranked = &mut self.ranked;
+        let at = *self.seat.entry(row.who).or_insert_with(|| {
+            ranked.push(unranked(row.username, row.user_id, None));
+            ranked.len() - 1
+        });
+        credit(&mut ranked[at], row.played);
+    }
+
+    fn ranked(mut self, limit: usize) -> Vec<TopUser> {
+        self.ranked.sort_by(|a, b| {
+            b.watched_ms
+                .cmp(&a.watched_ms)
+                .then_with(|| a.username.cmp(&b.username))
+        });
+        self.ranked.truncate(limit);
+        self.ranked
+    }
 }
 
 fn unranked(username: String, user_id: Option<String>, avatar_url: Option<String>) -> TopUser {
@@ -80,20 +104,7 @@ fn accounts(conn: &Connection) -> Result<Vec<TopUser>> {
     Ok(users)
 }
 
-fn watched_since(conn: &Connection, since: i64) -> Result<Vec<Watched>> {
-    let mut stmt = conn.prepare(&format!(
-        "SELECT COALESCE(h.user_id,h.username,'?'), MAX(h.user_id), \
-                COALESCE(MAX(h.username),'?'), h.kind, COUNT(*), SUM({TIME_WATCHED}) \
-         FROM play_history h LEFT JOIN items i ON i.id = h.item_id \
-         WHERE h.ended_at >= ?1 GROUP BY 1, h.kind"
-    ))?;
-    let rows = stmt
-        .query_map(params![since], watched)?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    Ok(rows)
-}
-
-fn watched(r: &Row<'_>) -> rusqlite::Result<Watched> {
+fn watched_row(r: &Row<'_>) -> rusqlite::Result<Watched> {
     Ok(Watched {
         who: r.get(0)?,
         user_id: r.get(1)?,
@@ -106,7 +117,7 @@ fn watched(r: &Row<'_>) -> rusqlite::Result<Watched> {
     })
 }
 
-fn tally(user: &mut TopUser, played: Played) {
+fn credit(user: &mut TopUser, played: Played) {
     user.plays += played.plays;
     user.watched_ms += played.ms;
     user.by_kind.add(played.kind, played.ms);
