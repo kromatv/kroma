@@ -40,6 +40,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | English | French | Never |
 |---|---|---|
 | Settings | Réglages | Paramétrages |
+| Build (to build a module) | compiler, recompiler, une compilation locale | build, reconstruire |
+| Build number | build {build} | compilation {build} |
+| Host updater | l'outil de mise à jour de l'hôte | l'outil hôte |
+| {count} item(s) | Éléments : {count}, or the plural forms | élément(s) |
 | Search (action) | Rechercher | Chercher |
 | Save | Enregistrer | Sauver, Sauvegarder |
 | Delete / Remove | Supprimer / Retirer | Effacer |
@@ -76,6 +80,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Où sont vos médias ? | *médias* is jargon | Où sont vos films et vos séries ? |
 | Reprendre mon serveur Plex | *reprendre* says another thing | Migrer depuis Plex ou Jellyfin |
 | Le compte n'a pas pu être créé | English passive | Impossible de créer le compte |
+| La prochaine version est prête quand vous le serez | *ready when you are* | La nouvelle version n'attend que vous |
+| Prêt à mettre à jour le serveur ? | a gendered adjective for the reader | Mettre à jour le serveur maintenant ? |
+| Nécessite le serveur 2.0, celui-ci est en 1.9 | a comma where French wants the contrast said | Nécessite le serveur 2.0, alors que celui-ci est en 1.9 |
 | Regarder le catalogue + reprise | a symbol for a word, and a noun pile | Regarder les films et les séries, et reprendre une lecture |
 | Départ (a step name) | too short to mean anything | Point de départ |
 
