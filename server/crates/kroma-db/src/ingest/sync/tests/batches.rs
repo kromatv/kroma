@@ -212,7 +212,7 @@ fn a_library_the_walk_did_not_read_whole_keeps_its_stored_kind() {
 }
 
 #[test]
-fn finishing_a_walk_removes_the_files_titles_and_libraries_it_did_not_find() {
+fn finishing_a_walk_removes_the_files_and_libraries_it_did_not_find_and_keeps_their_titles_absent() {
     let p = pool();
     let stored = vec![dune(), arrival()];
     sync_all(
@@ -238,7 +238,7 @@ fn finishing_a_walk_removes_the_files_titles_and_libraries_it_did_not_find() {
 
     assert_eq!(crate::counts(&p).unwrap(), (1, 1, 0));
     assert!(crate::get_item(&p, "m1").unwrap().is_some());
-    assert!(crate::get_item(&p, "m2").unwrap().is_none());
+    assert!(crate::get_item(&p, "m2").unwrap().unwrap().files.is_empty());
 }
 
 #[test]
