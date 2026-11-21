@@ -135,9 +135,7 @@ describe('a trailer that cannot be played', () => {
 
     renderTrailer();
 
-    expect(
-      screen.getByText('Impossible de lire cette bande-annonce pour le moment.'),
-    ).toBeTruthy();
+    expect(screen.getByText('Impossible de lire cette bande-annonce pour le moment.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Voir sur YouTube' })).toBeTruthy();
   });
 
