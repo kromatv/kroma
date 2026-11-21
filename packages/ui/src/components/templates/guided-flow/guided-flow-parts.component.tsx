@@ -1,24 +1,32 @@
+import type { MessageKey } from '@kromatv/i18n';
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
-import { Button } from '#ui/components/atoms/button';
-import { Text } from '#ui/components/atoms/text';
+import { Button, type ButtonProps } from '#ui/components/atoms/button';
+import { Text, type TextProps } from '#ui/components/atoms/text';
 import { useTDefault } from '#ui/services/i18n';
 import { useGuidedFlowPart } from './guided-flow-context';
 
+const LINE = {
+  Title: { variant: 'h1', accessibilityRole: 'header' },
+  Subtitle: { color: 'textMuted' },
+} as const satisfies Record<string, TextProps>;
+
+function HeadingLine({
+  part,
+  children,
+}: Readonly<{ part: keyof typeof LINE; children: ReactNode }>) {
+  useGuidedFlowPart(part);
+  return <Text {...LINE[part]}>{children}</Text>;
+}
+
 /** The question the screen asks. It is the screen's heading. */
 function Title({ children }: Readonly<{ children: ReactNode }>) {
-  useGuidedFlowPart('Title');
-  return (
-    <Text variant="h1" accessibilityRole="header">
-      {children}
-    </Text>
-  );
+  return <HeadingLine part="Title">{children}</HeadingLine>;
 }
 
 /** One sentence under the question, where the question alone is not enough. */
 function Subtitle({ children }: Readonly<{ children: ReactNode }>) {
-  useGuidedFlowPart('Subtitle');
-  return <Text color="textMuted">{children}</Text>;
+  return <HeadingLine part="Subtitle">{children}</HeadingLine>;
 }
 
 interface GuidedFlowMoveProps {
@@ -32,38 +40,31 @@ interface GuidedFlowMoveProps {
   loading?: boolean;
 }
 
+const MOVE = {
+  Previous: { face: { variant: 'ghost', icon: 'chevron-left' }, word: 'common.back' },
+  Next: { face: { iconRight: 'arrow-right' }, word: 'flow.continue' },
+} as const satisfies Record<string, { face: Partial<ButtonProps>; word: MessageKey }>;
+
+function Move({
+  part,
+  label,
+  ...press
+}: Readonly<GuidedFlowMoveProps & { part: keyof typeof MOVE }>) {
+  const { size } = useGuidedFlowPart(part);
+  const t = useTDefault();
+  const { face, word } = MOVE[part];
+  return <Button {...face} {...press} size={size} label={label ?? t(word)} />;
+}
+
 /** The way back, at the start of the footer. Leave it out on the first
  *  screen: the actions keep their place at the end. */
-function Previous({ onPress, label, disabled, loading }: Readonly<GuidedFlowMoveProps>) {
-  const { size } = useGuidedFlowPart('Previous');
-  const t = useTDefault();
-  return (
-    <Button
-      variant="ghost"
-      size={size}
-      icon="chevron-left"
-      label={label ?? t('common.back')}
-      disabled={disabled}
-      loading={loading}
-      onPress={onPress}
-    />
-  );
+function Previous(props: Readonly<GuidedFlowMoveProps>) {
+  return <Move part="Previous" {...props} />;
 }
 
 /** The way forward: the screen's one accent action, last in its row. */
-function Next({ onPress, label, disabled, loading }: Readonly<GuidedFlowMoveProps>) {
-  const { size } = useGuidedFlowPart('Next');
-  const t = useTDefault();
-  return (
-    <Button
-      size={size}
-      iconRight="arrow-right"
-      label={label ?? t('flow.continue')}
-      disabled={disabled}
-      loading={loading}
-      onPress={onPress}
-    />
-  );
+function Next(props: Readonly<GuidedFlowMoveProps>) {
+  return <Move part="Next" {...props} />;
 }
 
 /** The end of the footer: a secondary action, such as skipping the screen,
