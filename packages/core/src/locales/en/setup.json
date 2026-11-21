@@ -131,6 +131,7 @@
   "setup.peopleSub": "Create a link for each person. They choose their own password.",
   "setup.peopleTitle": "Who else watches here?",
   "setup.privacyConfirm": "Finish",
+  "setup.privacyReadFailed": "KROMA could not read this setting. Reload the page, then try again.",
   "setup.privacySub": "Once a day, your server sends an anonymous report: a random identifier, its version, its platform and how it was installed. No name, no address, no title.",
   "setup.privacySwitch": "Send anonymous statistics",
   "setup.privacyTitle": "Anonymous statistics",

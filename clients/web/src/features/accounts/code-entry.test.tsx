@@ -2,7 +2,7 @@
 
 import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CodeEntry } from './code-entry.component';
 
@@ -67,6 +67,7 @@ describe('the code form', () => {
     authorize.mockRejectedValueOnce(new Error('refused'));
     show('AB12');
     await screen.findByText(/Wrong or expired code/);
+    await act(async () => {});
 
     fireEvent.click(screen.getByRole('button', { name: 'Authorize' }));
 
