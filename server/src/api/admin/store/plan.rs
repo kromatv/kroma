@@ -293,8 +293,10 @@ pub(super) fn plan_brief(plan: &[Planned<'_>]) -> Value {
     Value::Array(plan.iter().map(|p| entry_brief(p.entry)).collect())
 }
 
-pub(super) fn brings_new(plan: &[Planned<'_>]) -> bool {
-    plan.iter().any(|p| p.installed.is_none())
+pub(super) fn first_new<'a>(plan: &[Planned<'a>]) -> Option<&'a str> {
+    plan.iter()
+        .find(|p| p.installed.is_none())
+        .map(|p| p.entry.id.as_str())
 }
 
 fn plan_row(p: &Planned<'_>) -> Value {
@@ -678,7 +680,7 @@ mod tests {
     }
 
     #[test]
-    fn an_update_that_brings_a_module_that_is_not_installed_brings_new() {
+    fn an_update_that_brings_a_module_that_is_not_installed_names_it() {
         let mut root = module("tv.x.app", "1.0.0");
         root.dependencies = vec![("tv.x.lib".into(), None)];
         let modules = vec![root, module("tv.x.lib", "1.0.0")];
@@ -690,7 +692,7 @@ mod tests {
 
         p.roots(&["tv.x.app"]).unwrap();
 
-        assert!(brings_new(&p.plan));
+        assert_eq!(first_new(&p.plan), Some("tv.x.lib"));
     }
 
     #[test]
@@ -709,7 +711,7 @@ mod tests {
 
         p.roots(&["tv.x.app"]).unwrap();
 
-        assert!(!brings_new(&p.plan));
+        assert_eq!(first_new(&p.plan), None);
     }
 
     #[test]
