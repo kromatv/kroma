@@ -1,8 +1,8 @@
 use crate::domain::metadata::Metadata;
-use crate::domain::ratings::reader_rating;
+use crate::domain::ratings::{reader_rating, AgeRating, CountryRatings};
 
 use super::super::common::{build_cast, build_crew};
-use super::certification::country_of;
+use super::certification::{country_of, Certifications};
 use super::details_json::{collect_keywords, pick_logo, Details};
 use super::{api, tmdb_json, Target, IMG, MAX_CAST, MAX_CREW};
 
@@ -50,12 +50,7 @@ fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str
     let (raw_cast, raw_crew) = d.credits.map(|c| (c.cast, c.crew)).unwrap_or_default();
     let cast = build_cast(raw_cast, MAX_CAST, false);
     let crew = build_crew(raw_crew, d.created_by, MAX_CREW);
-    let ratings = d
-        .release_dates
-        .or(d.content_ratings)
-        .map(|c| c.every_country())
-        .unwrap_or_default();
-    let age_rating = reader_rating(&ratings, country, country);
+    let (ratings, age_rating) = age_ratings(d.release_dates.or(d.content_ratings), country);
 
     Metadata {
         provider: "tmdb",
@@ -90,6 +85,17 @@ fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str
         ratings,
         age_rating,
     }
+}
+
+fn age_ratings(
+    certifications: Option<Certifications>,
+    country: &str,
+) -> (CountryRatings, Option<AgeRating>) {
+    let ratings = certifications
+        .map(|c| c.every_country())
+        .unwrap_or_default();
+    let shown = reader_rating(&ratings, country, country);
+    (ratings, shown)
 }
 
 #[cfg(test)]
