@@ -1000,10 +1000,10 @@
     "line": 70
   },
   {
-    "id": "ACCT-101",
+    "id": "ACCT-141",
     "domain": "ACCT",
     "space": "accounts",
-    "number": 101,
+    "number": 141,
     "status": "SHIPPED",
     "text": "The member list tells a waiting account apart from one its person",
     "file": "docs/spec/accounts/README.md",

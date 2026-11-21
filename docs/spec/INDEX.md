@@ -107,7 +107,7 @@
 - **ACCT-98** (SHIPPED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-100** (SHIPPED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-101** (SHIPPED) - The member list tells a waiting account apart from one its person <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-141** (SHIPPED) - The member list tells a waiting account apart from one its person <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 

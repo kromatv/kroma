@@ -70,7 +70,7 @@ any other.
 **ACCT-100** (SHIPPED) - An admin can mint a new invitation for a waiting account. It voids
 the one before, and the account goes on waiting until one is redeemed.
 
-**ACCT-101** (SHIPPED) - The member list tells a waiting account apart from one its person
+**ACCT-141** (SHIPPED) - The member list tells a waiting account apart from one its person
 signs in to, and says whether its invitation still works, has expired, or was never made.
 
 A waiting account is not a profile (ACCT-4). It is a real account whose owner has not
