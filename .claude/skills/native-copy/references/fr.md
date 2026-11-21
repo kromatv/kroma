@@ -57,6 +57,10 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Owner | Propriétaire | Possesseur |
 | Admin (the area) | l'administration | l'admin |
 | Rights, permissions | Droits | Permissions |
+| PIN | code PIN | PIN alone |
+| Link / Unlink (a sign-in provider) | Associer / Dissocier | Lier / Délier |
+| You are signed out (a state of the reader) | Déconnexion effectuée | Vous êtes déconnecté |
+| Media items (a count) | titres | médias |
 | Invitation link | Lien d'invitation | |
 | Feature | Fonctionnalité | Feature |
 | At any time | à tout moment | n'importe quand |
