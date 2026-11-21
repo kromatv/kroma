@@ -49,7 +49,7 @@ KROMA se trouve à cette adresse, sur le port `4040` :
      **Modifier les règles**.
    - Linux avec ufw : `sudo ufw allow 4040/tcp`.
 
-## `Le compte propriétaire se crée depuis le réseau local du serveur`
+## `Créez le compte du propriétaire depuis le réseau local du serveur`
 
 Vous avez ouvert KROMA par une adresse extérieure à votre réseau, par exemple
 un tunnel ou un nom de domaine. Le premier compte ne peut être créé que depuis
