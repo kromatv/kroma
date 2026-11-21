@@ -166,6 +166,9 @@ move the rest to the screen where it matters.
 | Mail server | serveur de messagerie | serveur mail |
 | Upload (an image, a file) | Importer | Téléverser |
 | Discard your changes? | Abandonner les modifications ? | Abandonner les changements ? |
+| No account with us (the project) | aucun compte KROMA à créer | aucun compte chez nous |
+| Muted (the volume) | coupé | muet |
+| est. (estimated) | estimée | est. |
 | Create their account (one person) | Créer son compte | Créer leur compte |
 | Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
 | Console (the admin area) | l'administration | la console |
