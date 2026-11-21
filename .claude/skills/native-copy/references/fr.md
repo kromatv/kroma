@@ -214,6 +214,9 @@ move the rest to the screen where it matters.
 | est. (estimated) | estimée | est. |
 | Create their account (one person) | Créer son compte | Créer leur compte |
 | Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
+| The server's database | la base de données du serveur | la base du serveur |
+| Go on the internet (a module's access) | Accéder à Internet | Aller sur Internet |
+| Whoever publishes it | son éditeur | qui le publie |
 | Console (the admin area) | l'administration | la console |
 | Issuer (OpenID Connect) | émetteur | issuer, except in parentheses after émetteur |
 | ID token | jeton d'identité | ID token |
