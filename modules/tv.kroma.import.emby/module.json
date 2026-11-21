@@ -1,0 +1,48 @@
+{
+  "$schema": "https://modules.kroma.tv/schemas/3/manifest.json",
+  "schemaVersion": 3,
+  "id": "tv.kroma.import.emby",
+  "name": "Emby import",
+  "version": "0.1.0",
+  "description": "Brings an Emby household over: its libraries, its users, what each person watched and where they stopped. It only reads the Emby server.",
+  "engines": {
+    "server": ">=0.1.39"
+  },
+  "contributes": [
+    {
+      "point": "importer",
+      "label": "Emby",
+      "fields": [
+        {
+          "key": "url",
+          "label": "field.url",
+          "type": "string",
+          "placeholder": "http://localhost:8096"
+        },
+        {
+          "key": "username",
+          "label": "field.username",
+          "type": "string",
+          "required": true
+        },
+        {
+          "key": "password",
+          "label": "field.password",
+          "type": "string",
+          "secret": true
+        }
+      ]
+    }
+  ],
+  "storage": {},
+  "permissions": {
+    "net": {
+      "connect": [
+        {
+          "purpose": "import",
+          "to": ["lan", "public"]
+        }
+      ]
+    }
+  }
+}

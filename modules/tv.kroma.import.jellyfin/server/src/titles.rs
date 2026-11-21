@@ -112,7 +112,8 @@ impl Importer {
         let listed = in_library(films_and_episodes(session.user()), &ask.library);
         let query = paged(with_fields(listed, TITLE_FIELDS), window);
         let Some(page) = session.visible_items(query)? else {
-            bail!("the Jellyfin account that signed in may not open this library");
+            let name = self.dialect.name;
+            bail!("the {name} account that signed in may not open this library");
         };
         let next = window.next(page.items.len());
         let items: Vec<Item> = page
