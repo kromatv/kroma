@@ -1,9 +1,11 @@
+import type { Translate } from '@kromatv/i18n';
 import { Activity, type ReactNode, useLayoutEffect, useMemo, useState } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
+import { useTDefault } from '#ui/services/i18n';
 import {
   Context,
   type StepperOrientation,
@@ -15,10 +17,13 @@ import { Hint, Item, Label } from './stepper-item';
 import { List } from './stepper-list.component';
 import { type StepperValueDetails, useSteps } from './use-steps.hook';
 
-function numberedStep({ position, count, title, complete }: StepperStep): string {
-  const at = `Étape ${position} sur ${count}`;
-  const named = title ? `${at} : ${title}` : at;
-  return complete ? `${named}, terminée` : named;
+function numberedStep(t: Translate) {
+  return ({ position, count, title, complete }: StepperStep): string => {
+    const at = title
+      ? t('flow.stepNamed', { position, count, name: title })
+      : t('flow.step', { position, count });
+    return complete ? t('flow.stepDone', { step: at }) : at;
+  };
 }
 
 // Deliberately not the direct-children walk every other compound here uses: a
@@ -80,8 +85,8 @@ interface StepperRootProps {
   orientation?: StepperOrientation;
   /** The control shell's size; see <TextField>. */
   size?: ControlSize;
-  /** The accessible name of one step, defaulting to `Étape 2 sur 4 : Compte`
-   *  with `, terminée` on a step the flow is past. */
+  /** The accessible name of one step, defaulting to `Step 2 of 4: Account`
+   *  with `, done` on a step the flow is past, in the screen's language. */
   stepLabel?: (step: StepperStep) => string;
   /** A `<Stepper.List>`, the `<Stepper.Panel>`s and whatever drives them. A
    *  step joins the flow by RENDERING, at any depth and through a component of
@@ -100,11 +105,13 @@ function Root({
   label,
   orientation = 'horizontal',
   size,
-  stepLabel = numberedStep,
+  stepLabel: askedLabel,
   children,
   style,
 }: Readonly<StepperRootProps>) {
   const entryDefaults = useEntryDefaults();
+  const t = useTDefault();
+  const stepLabel = useMemo(() => askedLabel ?? numberedStep(t), [askedLabel, t]);
   const shell = size ?? entryDefaults.size;
   const { members, join, mark } = useStepRegistry();
   const order = useMemo(() => members.map((member) => member.value), [members]);
@@ -181,33 +188,35 @@ function Panel({ value, keepMounted = false, children }: Readonly<StepperPanelPr
 
 interface StepperMoveProps {
   /** The word on the button, which is also its accessible name. Defaults to
-   *  `Précédent` and `Suivant`. */
+   *  `Previous` and `Next`, in the screen's language. */
   label?: string;
   /** The ends of the flow already disable themselves. */
   disabled?: boolean;
 }
 
-function Previous({ label = 'Précédent', disabled = false }: Readonly<StepperMoveProps>) {
+function Previous({ label, disabled = false }: Readonly<StepperMoveProps>) {
   const { flow, size } = useStepperPart('Previous');
+  const t = useTDefault();
   return (
     <Button
       variant="ghost"
       size={size}
       icon="chevron-left"
-      label={label}
+      label={label ?? t('flow.previous')}
       disabled={disabled || !flow.canGoPrevious}
       onPress={flow.previous}
     />
   );
 }
 
-function Next({ label = 'Suivant', disabled = false }: Readonly<StepperMoveProps>) {
+function Next({ label, disabled = false }: Readonly<StepperMoveProps>) {
   const { flow, size } = useStepperPart('Next');
+  const t = useTDefault();
   return (
     <Button
       size={size}
       iconRight="chevron-right"
-      label={label}
+      label={label ?? t('flow.next')}
       disabled={disabled || !flow.canGoNext}
       onPress={flow.next}
     />

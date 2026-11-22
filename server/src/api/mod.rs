@@ -102,6 +102,8 @@ mod it_images;
 #[cfg(test)]
 mod it_importer_calls;
 #[cfg(test)]
+mod it_importer_unlock;
+#[cfg(test)]
 mod it_importers;
 #[cfg(test)]
 mod it_imports;

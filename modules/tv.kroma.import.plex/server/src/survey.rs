@@ -50,6 +50,7 @@ impl Plex {
             friends: &account.friends(&sign_in.token)?,
             shares: &account.shares(&sign_in.token, key.server)?,
             machine: key.server,
+            unlocked: &store::unlocked(&self.store, key)?,
         });
         let readers: Vec<(String, String)> = listed
             .iter()

@@ -53,8 +53,8 @@ describe('a panel that has to survive the trip', () => {
       </Flow>,
     );
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
-    fireEvent.click(screen.getByLabelText('Précédent'));
+    fireEvent.click(screen.getByLabelText('Next'));
+    fireEvent.click(screen.getByLabelText('Previous'));
 
     expect(screen.getByText('built 2')).toBeTruthy();
   });
@@ -68,7 +68,7 @@ describe('a panel that has to survive the trip', () => {
       </Flow>,
     );
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
 
     const kept = screen.getByText('built 1').closest('[role="tabpanel"]');
     expect(kept?.getAttribute('style')).toBe('display: none !important;');
@@ -83,8 +83,8 @@ describe('a panel that has to survive the trip', () => {
       </Flow>,
     );
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
-    fireEvent.click(screen.getByLabelText('Précédent'));
+    fireEvent.click(screen.getByLabelText('Next'));
+    fireEvent.click(screen.getByLabelText('Previous'));
 
     expect(screen.getByText('built 1')).toBeTruthy();
   });

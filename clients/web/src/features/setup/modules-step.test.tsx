@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { StoreCatalog } from '@kromatv/client/modules';
 import { I18nProvider } from '@kromatv/ui';
+import { GuidedFlow } from '@kromatv/ui/kit';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, screen } from '@testing-library/react';
@@ -68,7 +69,9 @@ function show(locale: 'en' | 'fr') {
     <QueryClientProvider client={new QueryClient()}>
       <I18nProvider locale={locale}>
         <SetupPicks>
-          <ModulesStep onBack={() => undefined} onContinue={() => undefined} />
+          <GuidedFlow.Root label="Setup">
+            <ModulesStep onBack={() => undefined} onContinue={() => undefined} />
+          </GuidedFlow.Root>
         </SetupPicks>
       </I18nProvider>
     </QueryClientProvider>,

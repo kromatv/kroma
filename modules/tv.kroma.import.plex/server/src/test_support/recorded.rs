@@ -11,6 +11,7 @@ pub(crate) struct Seen {
     pub door: Door,
     pub url: String,
     pub sent: Vec<(String, String)>,
+    pub form: Vec<(String, String)>,
 }
 
 impl Seen {
@@ -116,18 +117,20 @@ impl Recorded {
 
 fn seen(method: &'static str, call: &Call, form: &[(&str, &str)]) -> Seen {
     let pairs = call.query.iter().chain(&call.headers);
+    let form: Vec<(String, String)> = form
+        .iter()
+        .map(|(name, value)| (name.to_string(), value.to_string()))
+        .collect();
     let mut sent: Vec<(String, String)> = pairs
         .map(|(name, value)| (name.to_string(), value.clone()))
         .collect();
-    sent.extend(
-        form.iter()
-            .map(|(name, value)| (name.to_string(), value.to_string())),
-    );
+    sent.extend(form.iter().cloned());
     Seen {
         method,
         door: call.door,
         url: call.url.clone(),
         sent,
+        form,
     }
 }
 
