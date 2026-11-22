@@ -3107,7 +3107,7 @@
     "status": "AGREED",
     "text": "The importer stays installed after an import, so the owner can run",
     "file": "docs/spec/admin/import.md",
-    "line": 227
+    "line": 235
   },
   {
     "id": "ADMIN-169",
@@ -3117,7 +3117,7 @@
     "status": "AGREED",
     "text": "The report at the end of an import, and the import screen of the",
     "file": "docs/spec/admin/import.md",
-    "line": 230
+    "line": 238
   },
   {
     "id": "ADMIN-170",
@@ -3127,7 +3127,7 @@
     "status": "AGREED",
     "text": "Removing the importer forgets the sign-in to the other server",
     "file": "docs/spec/admin/import.md",
-    "line": 233
+    "line": 241
   },
   {
     "id": "ADMIN-171",
@@ -3137,7 +3137,7 @@
     "status": "AGREED",
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
-    "line": 237
+    "line": 245
   },
   {
     "id": "ADMIN-172",
@@ -3237,7 +3237,7 @@
     "status": "AGREED",
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
-    "line": 212
+    "line": 220
   },
   {
     "id": "ADMIN-182",
@@ -3368,6 +3368,16 @@
     "text": "The backups step comes after the people step. It says in one",
     "file": "docs/spec/admin/setup.md",
     "line": 193
+  },
+  {
+    "id": "ADMIN-200",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 200,
+    "status": "AGREED",
+    "text": "What a person removed in KROMA stays removed until the other server",
+    "file": "docs/spec/admin/import.md",
+    "line": 212
   },
   {
     "id": "ADMIN-210",

@@ -3,7 +3,7 @@
 
 # Requirement index
 
-793 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+794 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -347,6 +347,7 @@
 - **ADMIN-197** (AGREED) - The folder keeps the newest backups and the server removes the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-198** (AGREED) - A backup that could not be saved fails its task and tells the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-199** (AGREED) - The backups step comes after the people step. It says in one <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-200** (AGREED) - What a person removed in KROMA stays removed until the other server <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
 

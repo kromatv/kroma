@@ -1,5 +1,6 @@
 mod finished;
 mod held;
+mod removed;
 mod review;
 
 use kroma_domain::watching::{Resume, Watching};

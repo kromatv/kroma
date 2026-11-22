@@ -70,6 +70,7 @@ const TABLES: &[&str] = &[
     "import_identities",
     "import_held_plays",
     "profile_title_rules",
+    "watch_removals",
 ];
 
 // Settings that name this machine at the statistics collector rather than

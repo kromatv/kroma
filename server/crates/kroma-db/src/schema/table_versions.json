@@ -260,6 +260,10 @@
       "broke": 1,
       "changed": 1
     },
+    "watch_removals": {
+      "broke": 32,
+      "changed": 32
+    },
     "watched": {
       "broke": 1,
       "changed": 1
@@ -269,5 +273,5 @@
       "changed": 1
     }
   },
-  "version": 31
+  "version": 32
 }

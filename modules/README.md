@@ -435,6 +435,11 @@ clock's, so a server whose clock runs ahead moves nobody back. It drops a
 `watched: true` newer than the resume point KROMA holds takes that resume
 point's place, as it does when the person marks the title as watched on KROMA.
 
+What a person removed on KROMA, a watched flag, a resume point or a favourite,
+does not come back with a `lastPlayedAt` at or before the removal. So answer the
+time the other server recorded, and not the time a row last changed: a row that
+changed for another reason must not look like a new play.
+
 The core sends `changedSince` once it has read the same states to their last
 page. It is the time that read began, less a day, so a server whose clock runs
 behind the core's loses no change. The core skips a row that comes back as it
