@@ -1,7 +1,7 @@
 import { useT } from '@kromatv/ui';
 import { Badge, Box, Icon, Row, Text } from '@kromatv/ui/kit';
-import type { PermissionGroup } from '#web/features/admin/module-permissions';
-import { ACCESS_TAG, CATEGORY_VIEW, GLYPH_SIZE } from '#web/features/admin/module-permissions-view';
+import type { PermissionGroup } from '#web/shared/lib/module-permissions';
+import { ACCESS_TAG, CATEGORY_VIEW, GLYPH_SIZE } from '#web/shared/lib/module-permissions-view';
 
 function Tile({ group }: Readonly<{ group: PermissionGroup }>) {
   const t = useT();

@@ -460,6 +460,16 @@ One row per play, for every user of the server. `id`, `user`, `title` and
 because it is how a second import skips that play. `durationMs` is how long the
 play lasted. Leave it out when the server kept none.
 
+The `id` is all that makes a play the same play. Two rows with two ids are two
+plays in watch history, also when they name one user, one title and one second.
+A play KROMA already has is never written again, so a row that comes back with
+the same `id` and another `playedAt` changes nothing: a server that keeps only
+the last play of a title puts the time in the `id`. The core reads a `playedAt`
+before 1970, or more than five minutes ahead of its own clock, as no time and
+does not bring that play. A time ahead by less is logged as its own clock's
+time. A play with no `durationMs`, or one longer than a week, counts for the
+runtime of its title wherever KROMA adds up time watched.
+
 #### `unlock`
 
 ```json
@@ -665,6 +675,32 @@ session user's `language`, which is what every other surface reads.
 A module whose strings also have to reach something that is not the web
 frontend or the server crate, a device channel it installs, ships the same JSON
 there rather than restating it in that language.
+
+What a module says about itself lives in `module.json`, not in `locales/`: the
+Store and the guided setup show a module before its bundle is on the server, and
+the registry copies these fields out of the manifest. `name` and `description`
+are English, `tagline` is one English sentence that says what the module does
+for a household, and `translations` gives the three in each other language the
+module speaks, by language tag. A word left out reads in English, and the setup
+offers a module with no `tagline` by its description.
+
+```json
+{
+  "name": "Remote access",
+  "description": "Public HTTPS access through a Cloudflare Tunnel.",
+  "tagline": "Watch your films and series away from home.",
+  "translations": {
+    "fr": {
+      "name": "Accès à distance",
+      "tagline": "Regardez vos films et vos séries loin de chez vous."
+    }
+  }
+}
+```
+
+Which modules the setup offers, and in what order, is the official registry's
+list (`SETUP_OFFER` in `apps/modules/src/lib/setup-offer.ts`), not a manifest
+field: a module cannot put itself in the setup.
 
 ### Notifications
 

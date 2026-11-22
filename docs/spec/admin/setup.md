@@ -71,17 +71,18 @@ the media step as already added.
 **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it
 takes its titles out of the catalogue and deletes no file.
 
-**ADMIN-109** (AGREED) - On the modules step each module is offered by what it does for the
+**ADMIN-109** (SHIPPED) - On the modules step each module is offered by what it does for the
 household, in one sentence, and never by its id: find this server from the television,
 watch away from home, subtitles for anything.
 
-**ADMIN-110** (AGREED) - Which modules the setup offers, and in what order, comes from the
-official registry. A module joins or leaves the offer without a server release.
+**ADMIN-110** (SHIPPED) - Which modules the setup offers, and in what order, comes from the
+official registry. A module joins or leaves the offer without a server release. A registry the
+operator added cannot put a module in the setup.
 
-**ADMIN-111** (AGREED) - Each offer shows the module's size, the permissions it asks for and
+**ADMIN-111** (SHIPPED) - Each offer shows the module's size, the permissions it asks for and
 this server's verdict on it (MOD-23).
 
-**ADMIN-173** (AGREED) - The words that offer a module are the module's own, in each language
+**ADMIN-173** (SHIPPED) - The words that offer a module are the module's own, in each language
 the module speaks. The server and the clients hold no text about a module.
 
 **ADMIN-112** (AGREED) - No module is selected by default.

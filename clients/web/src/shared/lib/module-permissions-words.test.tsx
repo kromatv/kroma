@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { englishT } from '#web/features/admin/module-permissions.fixture';
-import { listOf, opening, purposeWord } from '#web/features/admin/module-permissions-words';
+import { englishT } from '#web/shared/lib/module-permissions.fixture';
+import { listOf, opening, purposeWord } from '#web/shared/lib/module-permissions-words';
 
 const t = englishT();
 

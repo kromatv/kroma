@@ -138,3 +138,28 @@ describe('the shape a real manifest declares', () => {
     expect(Manifest.parse(full)).toEqual(full);
   });
 });
+
+describe('words', () => {
+  const translations = {
+    fr: { name: 'Accès à distance', tagline: 'Regardez vos films loin de chez vous.' },
+    'pt-BR': { description: 'Acesso remoto' },
+  };
+
+  it('keeps the sentence a module is offered by, and its words in each language it speaks', () => {
+    const parsed = Manifest.parse({ ...base, tagline: 'Watch away from home.', translations });
+
+    expect(parsed.tagline).toBe('Watch away from home.');
+    expect(parsed.translations).toEqual(translations);
+  });
+
+  it('is absent for a module that speaks English alone', () => {
+    const parsed = Manifest.parse(base);
+
+    expect(parsed.tagline).toBeUndefined();
+    expect(parsed.translations).toBeUndefined();
+  });
+
+  it('refuses a translation filed under something that is not a language', () => {
+    expect(() => Manifest.parse({ ...base, translations: { French: { name: 'X' } } })).toThrow();
+  });
+});

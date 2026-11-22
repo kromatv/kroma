@@ -34,8 +34,8 @@ pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
 pub use modules::{
-    installed_module, point_store_at, read_setting, registry_serving, store_settings,
-    write_settings,
+    installed_module, point_store_at, read_setting, registry_offering, registry_serving,
+    store_settings, write_settings,
 };
 pub use requests::{get, get_from, raw, send, send_from, text, upload};
 pub use sso::{at_provider, ProviderRound, ORIGIN};

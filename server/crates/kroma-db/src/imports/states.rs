@@ -20,8 +20,8 @@ pub enum Place<'a> {
     File(&'a str),
 }
 
-/// What became of one state. `Gone` is a state whose title or account left
-/// the server while the import ran: nothing was written for it.
+/// What became of one state or play. `Gone` is one whose title or account
+/// left the server while the import ran: nothing was written for it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Merged {
     Changed,

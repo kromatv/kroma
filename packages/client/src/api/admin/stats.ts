@@ -29,10 +29,21 @@ export const Activity = z.object({
 });
 export type Activity = z.infer<typeof Activity>;
 
+/** The other media server a play was imported from. `importer` is the id of the
+ * module that read it. Both are blank once that server is no longer on record,
+ * and `name` is blank for a server that gave none. */
+export const ImportedFrom = z.object({ importer: z.string(), name: z.string() });
+export type ImportedFrom = z.infer<typeof ImportedFrom>;
+
 /** One finished playback: who watched what, when, and on which device.
  * `inCatalog` is false where the title has left the catalog, so a row does not
  * offer a link into a page that no longer exists; `showId` opens the series
- * rather than one episode and is absent for a film. */
+ * rather than one episode and is absent for a film.
+ *
+ * `importedFrom` is set on a play an import brought, which carries no device,
+ * player, mode or network. Where `watchedIsRuntime` is true the other server
+ * recorded no duration: `watchedMs` is then the runtime of the title, and 0
+ * while the catalog holds none. */
 export const PlayEntry = z.object({
   id: z.string(),
   userId: UserId.nullish(),
@@ -55,6 +66,8 @@ export const PlayEntry = z.object({
   startedAt: z.number(),
   endedAt: z.number(),
   watchedMs: z.number(),
+  watchedIsRuntime: z.boolean().optional(),
+  importedFrom: ImportedFrom.nullish(),
 });
 export type PlayEntry = z.infer<typeof PlayEntry>;
 
