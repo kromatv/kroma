@@ -75,6 +75,7 @@ export function TvDiscoverDetail() {
       title={entry.title}
       backdrop={client.media.artwork.resolve(entry.backdropUrl ?? entry.posterUrl, STAGE_W)}
       rating={entry.rating}
+      ageRating={null}
       meta={meta}
       badge={null}
       overview={detail?.overview ?? entry.overview}

@@ -1,5 +1,7 @@
 import { posterColors } from '@kromatv/core';
 import {
+  AgeRating,
+  type AgeRatingValue,
   Badge,
   Box,
   colors,
@@ -39,6 +41,7 @@ export function TvDetailScaffold({
   title,
   backdrop,
   rating,
+  ageRating,
   meta,
   badge,
   overview,
@@ -50,6 +53,7 @@ export function TvDetailScaffold({
   title: string;
   backdrop: string | null;
   rating: number | null | undefined;
+  ageRating: AgeRatingValue | null | undefined;
   meta: string;
   badge: string | null;
   overview: string | null | undefined;
@@ -111,6 +115,7 @@ export function TvDetailScaffold({
                   </Text>
                 </>
               ) : null}
+              <AgeRating rating={ageRating} size="tv" />
               <Text variant="labelTv" color="textMuted">
                 {meta}
               </Text>
