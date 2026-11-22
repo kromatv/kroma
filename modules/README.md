@@ -236,9 +236,9 @@ declares no slice of the core database and never sees an account.
 form, and the host draws it: an importer ships no frontend. An importer whose
 sign-in is a page of the other vendor declares no field and answers `pending`.
 
-The core calls six methods at `POST /_port/importer/<method>`, each with the
+The core calls seven methods at `POST /_port/importer/<method>`, each with the
 port token. Each answers the usual envelope, `{ "Ok": ... }` or
-`{ "Err": "why" }`. These rules hold for all six:
+`{ "Err": "why" }`. These rules hold for all seven:
 
 - **An id is an opaque string of the other server.** It is never empty and at
   most 512 bytes, and the core sends back exactly what the importer gave. A
@@ -252,8 +252,8 @@ port token. Each answers the usual envelope, `{ "Ok": ... }` or
   later core sends more.
 - **The core bounds an answer before it parses it**, and refuses the whole
   answer past the bound: 64 KiB for `connect`, 2 MiB for `survey`, 4 MiB for a
-  page and 4 KiB for `forget`. `connect` has 60 seconds, `forget` 30, and the
-  others 120.
+  page and 4 KiB for `unlock` and `forget`. `connect` and `unlock` have 60
+  seconds, `forget` 30, and the others 120.
 - **The sign-in is the importer's to keep.** Store it in the module's own
   database. The core holds the `signIn` reference and nothing else, so removing
   the module removes the sign-in.
@@ -349,8 +349,9 @@ of the importer itself.
   `tag`, or a key of the importer's own. One entry is enough for the import to
   give that user no library until the owner chooses.
 - `stateLocked` says the importer cannot read this user's watch state.
-  `stateNeeds` names what would open it, as a stable key such as `pin`. Leave
-  `stateNeeds` out when nothing the owner can give opens it.
+  `stateNeeds` names what would open it, as a stable key such as `pin`, which
+  the owner gives through [`unlock`](#unlock). Leave `stateNeeds` out when
+  nothing the owner can give opens it.
 - `counts` are what the review screen shows. Leave a count out when it is not
   cheap to get: a missing count is "not counted", and 0 is "none".
 - `leftBehind` holds stable keys for what the server holds and an import does
@@ -468,6 +469,39 @@ before 1970, or more than five minutes ahead of its own clock, as no time and
 does not bring that play. A time ahead by less is logged as its own clock's
 time. A play with no `durationMs`, or one longer than a week, counts for the
 runtime of its title wherever KROMA adds up time watched.
+
+#### `unlock`
+
+```json
+{ "signIn": "s-1", "server": "srv", "user": "44", "pin": "4821" }
+```
+
+The owner typed `pin` on the review screen for a user `survey` listed with
+`stateLocked` and `stateNeeds: "pin"`. The core sends it once and keeps it
+nowhere, and an importer must do the same: keep what the PIN opened, under the
+sign-in, so that a later `survey` lists the user without `stateLocked` and
+`states` reads them. Never echo the PIN in an answer or an `Err`; the core
+masks it anyway.
+
+```json
+{ "status": "unlocked" }
+```
+
+```json
+{ "status": "refused", "reason": "pin", "message": "..." }
+```
+
+| `reason` | Means |
+| --- | --- |
+| `pin` | the other server did not take that PIN |
+| `notLocked` | this importer locks nothing for that user, so there is nothing to open |
+| `credentials` | the other server no longer takes the sign-in |
+| `unreachable` | nothing answered |
+| `other` | anything else |
+
+A wrong PIN is a `refused` answer, which the review screen shows. An importer
+whose server locks no user answers `notLocked` to every `unlock`. The core
+refuses an empty PIN, or one past 64 characters, without calling the importer.
 
 #### `forget`
 

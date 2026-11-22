@@ -78,3 +78,11 @@ fn connection(listed: &Element) -> Option<Connection> {
         relay: listed.flag("relay"),
     })
 }
+
+pub(super) fn token_for(listed: &Element, machine: &str) -> Option<String> {
+    listed
+        .every("resource")
+        .into_iter()
+        .find(|resource| resource.text("clientIdentifier").as_deref() == Some(machine))
+        .and_then(|resource| resource.text("accessToken"))
+}

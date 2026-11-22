@@ -4,7 +4,12 @@ Level 5. Page skeletons. They decide where things GO and carry no content of the
 own. A template would look identical whichever screen used it, which is exactly
 what separates it from an [organism](../organisms).
 
-There is one today, and it is the most load-bearing layout in the codebase.
+`GuidedFlow` is one screen of a flow that asks one question at a time: the
+question at the head, what it is about in the middle, the way back and the way
+forward at the foot, and where the flow is. The guided setup is built on it.
+See its story.
+
+The other is the most load-bearing layout in the codebase.
 
 `TvStage` is the fixed 1920x1080 canvas every 10-foot screen is authored against,
 scaled to whatever the platform actually hands over:

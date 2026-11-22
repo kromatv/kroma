@@ -1,0 +1,8 @@
+{
+  "flow.continue": "Continue",
+  "flow.next": "Next",
+  "flow.previous": "Previous",
+  "flow.step": "Step {position} of {count}",
+  "flow.stepDone": "{step}, done",
+  "flow.stepNamed": "Step {position} of {count}: {name}"
+}
