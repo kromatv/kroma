@@ -3,7 +3,7 @@
 
 # Requirement index
 
-772 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+773 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -106,7 +106,7 @@
 - **ACCT-97** (SHIPPED) - The person may correct the account's name and address when they <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-98** (SHIPPED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-100** (SHIPPED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-101** (SHIPPED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-102** (SHIPPED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-103** (AGREED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
@@ -147,6 +147,7 @@
 - **ACCT-138** (AGREED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-141** (SHIPPED) - The member list tells a waiting account apart from one its person <sub>[README.md](accounts/README.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
