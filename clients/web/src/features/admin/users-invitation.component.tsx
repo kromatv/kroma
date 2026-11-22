@@ -8,6 +8,7 @@ import { CopyableLink } from '#web/features/admin/copyable-link.component';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { useAuth } from '#web/shared/lib/auth';
 import { invitationLink } from '#web/shared/lib/invitation-link';
+import { InvitationMailForm } from '#web/shared/ui/invitation-mail.component';
 
 const WAITS: Record<InvitationState, MessageKey> = {
   pending: 'admin.invitationWaitsPending',
@@ -28,7 +29,10 @@ function useReplaceConsent(user: AdminUser): () => Promise<boolean> {
     });
 }
 
-function MintedLink({ minted }: Readonly<{ minted: InviteCreated }>) {
+function MintedLink({
+  minted,
+  address,
+}: Readonly<{ minted: InviteCreated; address: string | null }>) {
   const t = useT();
   const locale = useLocale();
   const until = new Date(minted.expiresAt * 1000).toLocaleDateString(locale);
@@ -39,6 +43,7 @@ function MintedLink({ minted }: Readonly<{ minted: InviteCreated }>) {
       <Text variant="meta" color="textMuted">
         {t('admin.invitationUntil', { date: until })}
       </Text>
+      <InvitationMailForm token={minted.token} address={address} />
     </Callout.Root>
   );
 }
@@ -94,7 +99,7 @@ export function WaitingInvitation({ user, onMinted }: Readonly<WaitingInvitation
           {error}
         </Text>
       ) : null}
-      {minted ? <MintedLink minted={minted} /> : null}
+      {minted ? <MintedLink minted={minted} address={user.email} /> : null}
     </Box>
   );
 }

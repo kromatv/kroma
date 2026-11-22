@@ -2247,7 +2247,7 @@
     "status": "AGREED",
     "text": "The owner can clear a user's profile PIN. Clearing is the only PIN",
     "file": "docs/spec/admin/README.md",
-    "line": 181
+    "line": 199
   },
   {
     "id": "ADMIN-85",
@@ -2257,7 +2257,7 @@
     "status": "AGREED",
     "text": "An address on an account is unverified until the mailbox proves",
     "file": "docs/spec/admin/README.md",
-    "line": 191
+    "line": 209
   },
   {
     "id": "ADMIN-86",
@@ -2267,7 +2267,7 @@
     "status": "AGREED",
     "text": "The owner sends a verification from the member editor, with the",
     "file": "docs/spec/admin/README.md",
-    "line": 196
+    "line": 214
   },
   {
     "id": "ADMIN-87",
@@ -2277,7 +2277,7 @@
     "status": "AGREED",
     "text": "Changing the address clears the verified state: the proof belongs",
     "file": "docs/spec/admin/README.md",
-    "line": 202
+    "line": 220
   },
   {
     "id": "ADMIN-88",
@@ -2297,7 +2297,7 @@
     "status": "AGREED",
     "text": "A server learns it is out of date by checking for a newer release and",
     "file": "docs/spec/admin/README.md",
-    "line": 305
+    "line": 323
   },
   {
     "id": "ADMIN-90",
@@ -2307,7 +2307,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 318
+    "line": 336
   },
   {
     "id": "ADMIN-91",
@@ -2317,7 +2317,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 322
+    "line": 340
   },
   {
     "id": "ADMIN-92",
@@ -2327,7 +2327,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 325
+    "line": 343
   },
   {
     "id": "ADMIN-93",
@@ -2337,7 +2337,7 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 330
+    "line": 348
   },
   {
     "id": "ADMIN-94",
@@ -3144,7 +3144,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 176,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The owner hands an invitation over from the step: they copy its link,",
     "file": "docs/spec/admin/setup.md",
     "line": 103
@@ -3198,6 +3198,36 @@
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
     "line": 199
+  },
+  {
+    "id": "ADMIN-183",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 183,
+    "status": "SHIPPED",
+    "text": "The server sends an invitation to the one address the owner types,",
+    "file": "docs/spec/admin/README.md",
+    "line": 181
+  },
+  {
+    "id": "ADMIN-184",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 184,
+    "status": "SHIPPED",
+    "text": "The owner learns how the message left, or why it did not and what",
+    "file": "docs/spec/admin/README.md",
+    "line": 186
+  },
+  {
+    "id": "ADMIN-185",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 185,
+    "status": "SHIPPED",
+    "text": "Under Users, every invitation nobody has redeemed offers to send it,",
+    "file": "docs/spec/admin/README.md",
+    "line": 192
   },
   {
     "id": "ADMIN-186",

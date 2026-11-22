@@ -176,6 +176,14 @@ describe('the accounts endpoints', () => {
       method: 'DELETE',
       path: '/invites/t%201',
     },
+    {
+      name: 'mailInvite',
+      call: (c) =>
+        c.accounts.mailInvite(InviteToken.parse('t/1'), { to: 'lea@kroma.tv', locale: 'fr' }),
+      method: 'POST',
+      path: '/invites/t%2F1/mail',
+      body: { to: 'lea@kroma.tv', locale: 'fr' },
+    },
   ])('$name', checkEndpoint);
 });
 

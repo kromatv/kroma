@@ -156,14 +156,14 @@ fn user_locale(user: &User) -> &'static str {
 /// Access public URL (the same fallback quick-connect links use). `None` when
 /// neither is set; the client then composes links from its own origin, which
 /// is right for an owner browsing the very server they admin.
-fn web_base(state: &SharedState) -> Option<String> {
+pub(crate) fn web_base(state: &SharedState) -> Option<String> {
     state.config.web_url.clone().or_else(|| {
         let url = crate::services::settings::public_url(&state.settings);
         (!url.is_empty()).then_some(url)
     })
 }
 
-fn relay_url(state: &SharedState) -> &str {
+pub(crate) fn relay_url(state: &SharedState) -> &str {
     state
         .config
         .mail_relay_url

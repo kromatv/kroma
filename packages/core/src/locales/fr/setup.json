@@ -120,8 +120,6 @@
   "setup.peopleDelete": "Supprimer l'invitation",
   "setup.peopleInvite": "Créer un lien d'invitation",
   "setup.peopleMail": "Envoyer par e-mail",
-  "setup.peopleMailBody": "Bonjour,\n\nVoici une invitation à rejoindre mon serveur KROMA :\n{link}\n\nCe lien est valable 7 jours et ne peut servir qu'une fois.",
-  "setup.peopleMailSubject": "Invitation à rejoindre mon serveur KROMA",
   "setup.peopleMore": "Plus d'actions",
   "setup.peopleRightsDetail": "Vous pouvez modifier les droits d'une invitation depuis son menu. Un lien est valable 7 jours et ne sert qu'une fois.",
   "setup.peopleRightsEdit": "Modifier les droits",
