@@ -1,7 +1,9 @@
+import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
+  type ButtonProps,
   Divider,
   GuidedFlow,
   type GuidedFlowMoveProps,
@@ -9,13 +11,18 @@ import {
   Surface,
   Text,
 } from '@kromatv/ui/kit';
-import { createContext, type ReactNode, useContext } from 'react';
+import { type ComponentType, createContext, type ReactNode, useContext } from 'react';
 
 type Band = Readonly<{ children?: ReactNode }>;
 type Line = Readonly<{ children: ReactNode }>;
 type Move = Readonly<GuidedFlowMoveProps>;
 
 const PAD = { base: 20, md: 28 } as const;
+
+const MOVE = {
+  previous: { face: { variant: 'ghost', icon: 'chevron-left' }, word: 'common.back' },
+  next: { face: { iconRight: 'arrow-right' }, word: 'flow.continue' },
+} as const satisfies Record<string, { face: Partial<ButtonProps>; word: MessageKey }>;
 
 const InConsole = createContext(false);
 
@@ -66,86 +73,33 @@ function ConsoleActions({ children }: Band) {
   );
 }
 
-function ConsolePrevious({ label, ...press }: Move) {
-  const t = useT();
-  return (
-    <Button variant="ghost" icon="chevron-left" {...press} label={label ?? t('common.back')} />
-  );
+function consoleMove(way: keyof typeof MOVE) {
+  return function ConsoleMove({ label, ...press }: Move) {
+    const t = useT();
+    const { face, word } = MOVE[way];
+    return <Button {...face} {...press} label={label ?? t(word)} />;
+  };
 }
 
-function ConsoleNext({ label, ...press }: Move) {
-  const t = useT();
-  return <Button iconRight="arrow-right" {...press} label={label ?? t('flow.continue')} />;
-}
-
-function Header({ children }: Band) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? (
-    <ConsoleHeader>{children}</ConsoleHeader>
-  ) : (
-    <GuidedFlow.Header>{children}</GuidedFlow.Header>
-  );
-}
-
-function Title({ children }: Line) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? (
-    <ConsoleTitle>{children}</ConsoleTitle>
-  ) : (
-    <GuidedFlow.Title>{children}</GuidedFlow.Title>
-  );
-}
-
-function Subtitle({ children }: Line) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? (
-    <ConsoleSubtitle>{children}</ConsoleSubtitle>
-  ) : (
-    <GuidedFlow.Subtitle>{children}</GuidedFlow.Subtitle>
-  );
-}
-
-function Panel({ children }: Band) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? (
-    <ConsolePanel>{children}</ConsolePanel>
-  ) : (
-    <GuidedFlow.Panel>{children}</GuidedFlow.Panel>
-  );
-}
-
-function Footer({ children }: Band) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? (
-    <ConsoleFooter>{children}</ConsoleFooter>
-  ) : (
-    <GuidedFlow.Footer>{children}</GuidedFlow.Footer>
-  );
-}
-
-function Actions({ children }: Band) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? (
-    <ConsoleActions>{children}</ConsoleActions>
-  ) : (
-    <GuidedFlow.Actions>{children}</GuidedFlow.Actions>
-  );
-}
-
-function Previous(props: Move) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? <ConsolePrevious {...props} /> : <GuidedFlow.Previous {...props} />;
-}
-
-function Next(props: Move) {
-  const inConsole = useContext(InConsole);
-  return inConsole ? <ConsoleNext {...props} /> : <GuidedFlow.Next {...props} />;
+function framed<P extends object>(ConsolePart: ComponentType<P>, GuidedPart: ComponentType<P>) {
+  return function FramePart(props: P) {
+    return useContext(InConsole) ? <ConsolePart {...props} /> : <GuidedPart {...props} />;
+  };
 }
 
 /** The parts an import screen is written in. Inside a `GuidedFlow.Root`, as
  * the setup draws them, they are the guided flow's own; inside a
  * `<ConsoleFrame>` they lay the screen out in the admin console's card. */
-export const ImportFrame = { Header, Title, Subtitle, Panel, Footer, Previous, Actions, Next };
+export const ImportFrame = {
+  Header: framed(ConsoleHeader, GuidedFlow.Header),
+  Title: framed(ConsoleTitle, GuidedFlow.Title),
+  Subtitle: framed(ConsoleSubtitle, GuidedFlow.Subtitle),
+  Panel: framed(ConsolePanel, GuidedFlow.Panel),
+  Footer: framed(ConsoleFooter, GuidedFlow.Footer),
+  Previous: framed(consoleMove('previous'), GuidedFlow.Previous),
+  Actions: framed(ConsoleActions, GuidedFlow.Actions),
+  Next: framed(consoleMove('next'), GuidedFlow.Next),
+};
 
 /** One import screen in the admin console: a card as wide as the room it is
  * given and as tall as what it holds, so the page scrolls rather than the
