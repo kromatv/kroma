@@ -29,8 +29,26 @@ impl Call {
     }
 }
 
-pub(crate) struct Dialect {
-    pub(crate) product: &'static str,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Product {
+    Is(&'static str),
+    IsNot(&'static str),
+}
+
+impl Product {
+    pub(crate) fn admits(self, named: &str) -> bool {
+        match self {
+            Self::Is(product) => named == product,
+            Self::IsNot(product) => named != product,
+        }
+    }
+}
+
+/// One server family this importer reads: what it is called, how it says what
+/// it is, and every call made to it.
+pub struct Dialect {
+    pub(crate) name: &'static str,
+    pub(crate) product: Product,
     pub(crate) local_address: &'static str,
     pub(crate) scheme: &'static str,
     pub(crate) server: Call,
@@ -43,7 +61,8 @@ pub(crate) struct Dialect {
 }
 
 pub(crate) const JELLYFIN: Dialect = Dialect {
-    product: "Jellyfin Server",
+    name: "Jellyfin",
+    product: Product::Is("Jellyfin Server"),
     local_address: "http://127.0.0.1:8096",
     scheme: "MediaBrowser",
     server: Call::get("/System/Info/Public"),
@@ -55,10 +74,26 @@ pub(crate) const JELLYFIN: Dialect = Dialect {
     counts: Call::get("/Items/Counts"),
 };
 
+/// Emby, as `docs/reference/emby-api.md` reads its documentation.
+pub const EMBY: Dialect = Dialect {
+    name: "Emby",
+    product: Product::IsNot("Jellyfin Server"),
+    local_address: "http://127.0.0.1:8096",
+    scheme: "Emby",
+    server: Call::get("/emby/System/Info/Public"),
+    sign_in: Call::post("/emby/Users/AuthenticateByName"),
+    whoami: Call::get("/emby/System/Info"),
+    users: Call::get("/emby/Users/Query"),
+    libraries: Call::get("/emby/Library/VirtualFolders/Query"),
+    items: Call::get("/emby/Items"),
+    counts: Call::get("/emby/Items/Counts"),
+};
+
 #[cfg(test)]
 impl Dialect {
     pub(crate) fn calls(&self) -> [Call; 7] {
         let Self {
+            name: _,
             product: _,
             local_address: _,
             scheme: _,
@@ -75,24 +110,4 @@ impl Dialect {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn the_sign_in_is_the_only_call_that_is_not_a_read() {
-        let writes: Vec<Call> = JELLYFIN
-            .calls()
-            .into_iter()
-            .filter(|call| call.method != Method::Get)
-            .collect();
-
-        assert_eq!(writes, vec![JELLYFIN.sign_in]);
-    }
-
-    #[test]
-    fn a_jellyfin_on_this_machine_is_looked_for_at_its_default_port() {
-        let address = JELLYFIN.local_address;
-
-        assert_eq!(address, "http://127.0.0.1:8096");
-    }
-}
+mod tests;

@@ -1,0 +1,78 @@
+{
+  "Items": [
+    {
+      "Name": "sam",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "a0000000000000000000000000000001",
+      "HasPassword": true,
+      "Policy": {
+        "IsAdministrator": true,
+        "IsDisabled": false,
+        "BlockedTags": [],
+        "IsTagBlockingModeInclusive": false,
+        "ExcludedSubFolders": [],
+        "AccessSchedules": [],
+        "BlockUnratedItems": [],
+        "EnableAllFolders": true,
+        "EnabledFolders": []
+      }
+    },
+    {
+      "Name": "ana",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "a0000000000000000000000000000002",
+      "HasPassword": true,
+      "Policy": {
+        "IsAdministrator": false,
+        "IsDisabled": false,
+        "BlockedTags": [],
+        "ExcludedSubFolders": [],
+        "AccessSchedules": [],
+        "BlockUnratedItems": [],
+        "EnableAllFolders": false,
+        "EnabledFolders": [
+          "b0000000000000000000000000000001"
+        ]
+      }
+    },
+    {
+      "Name": "leo",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "a0000000000000000000000000000003",
+      "HasPassword": false,
+      "Policy": {
+        "IsAdministrator": false,
+        "IsDisabled": false,
+        "BlockedTags": [],
+        "ExcludedSubFolders": [
+          "b0000000000000000000000000000002_/media/shows/Late"
+        ],
+        "AccessSchedules": [],
+        "BlockUnratedItems": [],
+        "EnableAllFolders": true,
+        "EnabledFolders": []
+      }
+    },
+    {
+      "Name": "kid",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "a0000000000000000000000000000005",
+      "HasPassword": false,
+      "Policy": {
+        "IsAdministrator": false,
+        "IsDisabled": false,
+        "BlockedTags": [],
+        "IncludeTags": [
+          "family"
+        ],
+        "IsTagBlockingModeInclusive": true,
+        "ExcludedSubFolders": [],
+        "AccessSchedules": [],
+        "BlockUnratedItems": [],
+        "EnableAllFolders": true,
+        "EnabledFolders": []
+      }
+    }
+  ],
+  "TotalRecordCount": 4
+}

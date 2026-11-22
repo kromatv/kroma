@@ -7,12 +7,27 @@ use kroma_domain::{ColorInfo, HdrFormat, Show, VideoStream};
 
 use crate::{parse_metadata, Pool, IN_CHUNK};
 
-// Callers append their own `WHERE`/`ORDER BY` and map rows with `row_to_show_counted`.
-pub(super) const SHOWS_COUNTED_SELECT: &str = "SELECT s.id,s.title,s.year,s.library,s.added_at,\
-    (SELECT COUNT(DISTINCT i.season) FROM items i WHERE i.show_id=s.id),\
-    (SELECT COUNT(*) FROM items i WHERE i.show_id=s.id),\
+/// The condition a show aliased `s` meets unless every episode it has is
+/// absent, as a literal a `concat!` can take.
+macro_rules! present_show {
+    () => {
+        "(EXISTS (SELECT 1 FROM items e WHERE e.show_id = s.id AND e.absent_since IS NULL) \
+         OR NOT EXISTS (SELECT 1 FROM items e WHERE e.show_id = s.id))"
+    };
+}
+pub(crate) use present_show;
+
+pub(crate) const PRESENT_SHOW: &str = present_show!();
+
+// Callers append their own `AND`/`ORDER BY` and map rows with `row_to_show_counted`.
+pub(super) const SHOWS_COUNTED_SELECT: &str = concat!(
+    "SELECT s.id,s.title,s.year,s.library,s.added_at,\
+    (SELECT COUNT(DISTINCT i.season) FROM items i WHERE i.show_id=s.id AND i.absent_since IS NULL),\
+    (SELECT COUNT(*) FROM items i WHERE i.show_id=s.id AND i.absent_since IS NULL),\
     s.metadata \
- FROM shows s";
+ FROM shows s WHERE ",
+    present_show!()
+);
 
 pub(super) fn row_to_show_counted(r: &Row) -> rusqlite::Result<Show> {
     Ok(Show {
@@ -75,7 +90,7 @@ fn row_to_video_at(r: &Row, base: usize) -> rusqlite::Result<VideoStream> {
 pub fn list_shows(pool: &Pool, library: Option<&str>) -> Result<Vec<Show>> {
     let conn = pool.get()?;
     let (where_sql, want_lib) = match library {
-        Some(_) => ("WHERE s.library = ?1", true),
+        Some(_) => ("AND s.library = ?1", true),
         None => ("", false),
     };
     let sql = format!("{SHOWS_COUNTED_SELECT} {where_sql} ORDER BY s.title COLLATE NOCASE");
@@ -102,7 +117,7 @@ pub fn get_shows_by_ids(pool: &Pool, ids: &[String]) -> Result<Vec<Show>> {
     let mut shows: Vec<Show> = Vec::with_capacity(ids.len());
     for chunk in ids.chunks(IN_CHUNK) {
         let placeholders = vec!["?"; chunk.len()].join(",");
-        let sql = format!("{SHOWS_COUNTED_SELECT} WHERE s.id IN ({placeholders})");
+        let sql = format!("{SHOWS_COUNTED_SELECT} AND s.id IN ({placeholders})");
         let mut stmt = conn.prepare(&sql)?;
         let rows = stmt.query_map(
             rusqlite::params_from_iter(chunk.iter()),

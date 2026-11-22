@@ -118,7 +118,7 @@ mod tests {
         let rows = home(strings::for_locale("fr"), &continuing, &sections);
 
         assert_eq!(rows.len(), 2);
-        assert_eq!(rows[0].title, "Reprendre");
+        assert_eq!(rows[0].title, "Reprendre la lecture");
         assert_eq!(rows[0].tiles[0].progress, 0.25);
         assert_eq!(rows[1].title, "Films");
         assert_eq!(rows[1].tiles[1].subtitle, "2022 · 12 épisodes");

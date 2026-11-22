@@ -3,8 +3,9 @@
 
 use std::collections::BTreeMap;
 
-use serde::de::IgnoredAny;
+use serde::de::{DeserializeOwned, Error, IgnoredAny};
 use serde::{Deserialize, Deserializer};
+use serde_json::Value;
 
 fn or_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
 where
@@ -57,15 +58,33 @@ pub(crate) struct Policy {
     #[serde(deserialize_with = "or_default")]
     pub(crate) blocked_media_folders: Vec<IgnoredAny>,
     #[serde(deserialize_with = "or_default")]
+    pub(crate) excluded_sub_folders: Vec<IgnoredAny>,
+    #[serde(deserialize_with = "or_default")]
     pub(crate) blocked_tags: Vec<IgnoredAny>,
     #[serde(deserialize_with = "or_default")]
     pub(crate) allowed_tags: Vec<IgnoredAny>,
+    #[serde(deserialize_with = "or_default")]
+    pub(crate) include_tags: Vec<IgnoredAny>,
     #[serde(deserialize_with = "or_default")]
     pub(crate) block_unrated_items: Vec<IgnoredAny>,
     #[serde(deserialize_with = "or_default")]
     pub(crate) access_schedules: Vec<IgnoredAny>,
     pub(crate) max_parental_rating: Option<IgnoredAny>,
     pub(crate) max_parental_sub_rating: Option<IgnoredAny>,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct Listing<T>(pub(crate) Vec<T>);
+
+impl<'de, T: DeserializeOwned> Deserialize<'de> for Listing<T> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let rows = match Value::deserialize(deserializer)? {
+            Value::Object(mut page) => page.remove("Items").unwrap_or(Value::Null),
+            bare => bare,
+        };
+        let rows: Option<Vec<T>> = serde_json::from_value(rows).map_err(D::Error::custom)?;
+        Ok(Self(rows.unwrap_or_default()))
+    }
 }
 
 #[derive(Debug, Default, Deserialize)]
