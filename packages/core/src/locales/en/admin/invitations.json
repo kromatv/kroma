@@ -1,0 +1,16 @@
+{
+  "admin.invitationExpired": "Invitation expired",
+  "admin.invitationMint": "New invitation link",
+  "admin.invitationMintFailed": "Could not make a new link. Try again.",
+  "admin.invitationNone": "No invitation",
+  "admin.invitationPending": "Invitation pending",
+  "admin.invitationReplace": "Replace",
+  "admin.invitationReplaceMessage": "The link {name} may already have stops working.",
+  "admin.invitationReplaceTitle": "Replace the invitation?",
+  "admin.invitationSection": "Invitation",
+  "admin.invitationUntil": "It works once, until {date}.",
+  "admin.invitationWaitsExpired": "Nobody has signed in to this account yet, and its invitation has expired. Make a new link and send it.",
+  "admin.invitationWaitsNone": "Nobody has signed in to this account yet. Make an invitation link and send it.",
+  "admin.invitationWaitsPending": "Nobody has signed in to this account yet. Its invitation still works, and a new link replaces it.",
+  "admin.waitingNoAddress": "No address"
+}
