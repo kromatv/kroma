@@ -5,7 +5,7 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // handled by the query key changing per (query, type).
 
 import { hasPermission } from '@kromatv/client/accounts';
-import type { DiscoverEntry, DiscoverType } from '@kromatv/client/discovery';
+import type { DiscoverEntry, DiscoverType, TmdbKind } from '@kromatv/client/discovery';
 import type { PersonHit, SearchHit } from '@kromatv/client/media';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useAuth } from '#web/shared/lib/auth';
@@ -107,22 +107,18 @@ export interface TrendingPageState {
   totalPages: number;
 }
 
-/** One page of trending titles for a single kind (`movie` | `tv`).
- * `keepPreviousData` retains the prior page (and its total) while the next loads. */
-export function useTrendingPage(
-  type: 'movie' | 'tv',
-  page: number,
-  enabled: boolean,
-): TrendingPageState {
+/** One page of trending titles for a single kind. It is `loading` until that
+ * page arrives, keeping the previous page's total so the pager stays put; a
+ * refetch of the page already shown is not loading. */
+export function useTrendingPage(type: TmdbKind, page: number): TrendingPageState {
   const webRuntime = useWebRuntime();
 
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isPlaceholderData } = useQuery({
     ...webRuntime.queries.discoverQueries.trending(type, page),
-    enabled,
     placeholderData: keepPreviousData,
   });
   return {
-    loading: enabled && isFetching,
+    loading: isFetching && (data === undefined || isPlaceholderData),
     entries: data?.results ?? [],
     totalPages: data?.totalPages ?? 1,
   };

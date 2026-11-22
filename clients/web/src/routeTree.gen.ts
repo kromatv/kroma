@@ -54,6 +54,7 @@ import { Route as AppMoviesIdRouteImport } from './routes/_app.movies.$id';
 import { Route as AppPeoplePersonRouteImport } from './routes/_app.people.$person';
 import { Route as AppShowsIndexRouteImport } from './routes/_app.shows.index';
 import { Route as AppShowsIdRouteImport } from './routes/_app.shows.$id';
+import { Route as AppTrendingIndexRouteImport } from './routes/_app.trending.index';
 import { Route as AppTrendingTypeRouteImport } from './routes/_app.trending.$type';
 import { Route as AdminModulesIndexRouteImport } from './routes/admin.modules.index';
 import { Route as AdminModulesIdRouteImport } from './routes/admin.modules.$id';
@@ -287,6 +288,11 @@ const AppShowsIdRoute = AppShowsIdRouteImport.update({
   path: '/shows/$id',
   getParentRoute: () => AppRoute,
 } as any);
+const AppTrendingIndexRoute = AppTrendingIndexRouteImport.update({
+  id: '/trending/',
+  path: '/trending/',
+  getParentRoute: () => AppRoute,
+} as any);
 const AppTrendingTypeRoute = AppTrendingTypeRouteImport.update({
   id: '/trending/$type',
   path: '/trending/$type',
@@ -382,6 +388,7 @@ export interface FileRoutesByFullPath {
   '/genres/': typeof AppGenresIndexRoute;
   '/movies/': typeof AppMoviesIndexRoute;
   '/shows/': typeof AppShowsIndexRoute;
+  '/trending/': typeof AppTrendingIndexRoute;
   '/admin/modules/': typeof AdminModulesIndexRoute;
   '/admin/monitoring/': typeof AdminMonitoringIndexRoute;
   '/watch/$id': typeof AppPlayerWatchIdRoute;
@@ -435,6 +442,7 @@ export interface FileRoutesByTo {
   '/genres': typeof AppGenresIndexRoute;
   '/movies': typeof AppMoviesIndexRoute;
   '/shows': typeof AppShowsIndexRoute;
+  '/trending': typeof AppTrendingIndexRoute;
   '/admin/modules': typeof AdminModulesIndexRoute;
   '/admin/monitoring': typeof AdminMonitoringIndexRoute;
   '/watch/$id': typeof AppPlayerWatchIdRoute;
@@ -492,6 +500,7 @@ export interface FileRoutesById {
   '/_app/genres/': typeof AppGenresIndexRoute;
   '/_app/movies/': typeof AppMoviesIndexRoute;
   '/_app/shows/': typeof AppShowsIndexRoute;
+  '/_app/trending/': typeof AppTrendingIndexRoute;
   '/admin/modules/': typeof AdminModulesIndexRoute;
   '/admin/monitoring/': typeof AdminMonitoringIndexRoute;
   '/_app/_player/watch/$id': typeof AppPlayerWatchIdRoute;
@@ -548,6 +557,7 @@ export interface FileRouteTypes {
     | '/genres/'
     | '/movies/'
     | '/shows/'
+    | '/trending/'
     | '/admin/modules/'
     | '/admin/monitoring/'
     | '/watch/$id'
@@ -601,6 +611,7 @@ export interface FileRouteTypes {
     | '/genres'
     | '/movies'
     | '/shows'
+    | '/trending'
     | '/admin/modules'
     | '/admin/monitoring'
     | '/watch/$id'
@@ -657,6 +668,7 @@ export interface FileRouteTypes {
     | '/_app/genres/'
     | '/_app/movies/'
     | '/_app/shows/'
+    | '/_app/trending/'
     | '/admin/modules/'
     | '/admin/monitoring/'
     | '/_app/_player/watch/$id'
@@ -993,6 +1005,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppShowsIdRouteImport;
       parentRoute: typeof AppRoute;
     };
+    '/_app/trending/': {
+      id: '/_app/trending/';
+      path: '/trending';
+      fullPath: '/trending/';
+      preLoaderRoute: typeof AppTrendingIndexRouteImport;
+      parentRoute: typeof AppRoute;
+    };
     '/_app/trending/$type': {
       id: '/_app/trending/$type';
       path: '/trending/$type';
@@ -1092,6 +1111,7 @@ interface AppRouteChildren {
   AppGenresIndexRoute: typeof AppGenresIndexRoute;
   AppMoviesIndexRoute: typeof AppMoviesIndexRoute;
   AppShowsIndexRoute: typeof AppShowsIndexRoute;
+  AppTrendingIndexRoute: typeof AppTrendingIndexRoute;
   AppDiscoverTypeTmdbIdRoute: typeof AppDiscoverTypeTmdbIdRoute;
 }
 
@@ -1114,6 +1134,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppGenresIndexRoute: AppGenresIndexRoute,
   AppMoviesIndexRoute: AppMoviesIndexRoute,
   AppShowsIndexRoute: AppShowsIndexRoute,
+  AppTrendingIndexRoute: AppTrendingIndexRoute,
   AppDiscoverTypeTmdbIdRoute: AppDiscoverTypeTmdbIdRoute,
 };
 

@@ -1,17 +1,27 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import type { TmdbKind } from '@kromatv/client/discovery';
+import { createFileRoute } from '@tanstack/react-router';
 import { TrendingPage } from '#web/features/requests/trending-page.component';
+import { requireTrendingKind, validateTrendingSearch } from '#web/features/requests/trending-url';
 
 export const Route = createFileRoute('/_app/trending/$type')({
-  beforeLoad: ({ params }) => {
-    if (params.type !== 'movie' && params.type !== 'tv') {
-      throw redirect({ to: '/search', search: { q: '', type: 'all' } });
-    }
-  },
+  beforeLoad: requireTrendingKind,
+  validateSearch: validateTrendingSearch,
   component: TrendingRoute,
 });
 
 function TrendingRoute() {
   const { type } = Route.useParams();
-  // Remount (resetting pagination to page 1) when switching movie <-> tv.
-  return <TrendingPage key={type} type={type as 'movie' | 'tv'} />;
+  const { page = 1 } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const kind: TmdbKind = type === 'tv' ? 'tv' : 'movie';
+  return (
+    <TrendingPage
+      kind={kind}
+      page={page}
+      onKindChange={(next) =>
+        navigate({ to: '/trending/$type', params: { type: next }, search: {} })
+      }
+      onPageChange={(next) => navigate({ search: next > 1 ? { page: next } : {} })}
+    />
+  );
 }

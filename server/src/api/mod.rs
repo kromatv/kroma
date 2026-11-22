@@ -92,6 +92,8 @@ mod it_direct;
 #[cfg(test)]
 mod it_direct_reach;
 #[cfg(test)]
+mod it_discover;
+#[cfg(test)]
 mod it_external_subtitles;
 #[cfg(test)]
 mod it_first_run;
