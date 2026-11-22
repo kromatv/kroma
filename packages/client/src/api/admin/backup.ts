@@ -13,6 +13,25 @@ export const BackupPreview = z.object({
 });
 export type BackupPreview = z.infer<typeof BackupPreview>;
 
+/** The backups the server saves by itself, each night by default. `folder` is
+ * where they go: the one the owner chose (`chosen`), else the data folder's
+ * own. `keep` is how many the folder keeps. */
+export const BackupSchedule = z.object({
+  enabled: z.boolean(),
+  folder: z.string(),
+  chosen: z.boolean(),
+  keep: z.number(),
+});
+export type BackupSchedule = z.infer<typeof BackupSchedule>;
+
+/** A change to the scheduled backups. An empty `folder` goes back to the data
+ * folder's own. */
+export interface BackupScheduleChange {
+  enabled?: boolean;
+  folder?: string;
+  keep?: number;
+}
+
 export interface BackupImportOptions {
   password?: string;
   reset?: boolean;
@@ -39,6 +58,14 @@ function headers(opts?: BackupImportOptions) {
 /** Portable backup: take one out, put one back. Requires `settings.manage`. */
 export function backupApi(ctx: RequestContext) {
   return {
+    /** The scheduled backups as the server holds them. */
+    schedule: () => ctx.get('/admin/backup/schedule', BackupSchedule),
+
+    /** Turns the scheduled backups on or off, picks their folder or how many to
+     * keep. The server refuses a folder its folder picker would not offer. */
+    changeSchedule: (change: BackupScheduleChange) =>
+      ctx.put('/admin/backup/schedule', BackupSchedule, { body: change }),
+
     /** A `password` encrypts the archive (`.kroma`), else it is a plain `.zip`. */
     export: (password?: string) =>
       ctx.blob('/admin/backup/export', { headers: { 'x-backup-password': hexUtf8(password) } }),

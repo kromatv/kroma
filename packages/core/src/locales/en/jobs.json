@@ -13,6 +13,8 @@
   "jobs.acquisition.rss.name": "RSS sync",
   "jobs.acquisition.search.desc": "Searches the indexers for what monitored titles are missing, then for better copies of what they hold, and starts the downloads.",
   "jobs.acquisition.search.name": "Missing and upgrade search",
+  "jobs.backup.save.desc": "Each night while scheduled backups are on, saves a backup into the chosen folder and removes the oldest past the number kept. A run that cannot write fails, and says why.",
+  "jobs.backup.save.name": "Scheduled backup",
   "jobs.cache.cleanup.desc": "Clears the HLS transcode cache (regenerated on playback) and trims the poster cache to the configured size (oldest first).",
   "jobs.cache.cleanup.name": "Cache cleanup",
   "jobs.cancel": "Cancel",

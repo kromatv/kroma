@@ -10,6 +10,7 @@ const LINE = {
   media: { icon: 'folder', name: 'setup.stepMedia', hint: 'admin.setupLineMedia' },
   modules: { icon: 'download', name: 'setup.stepModules', hint: 'admin.setupLineModules' },
   people: { icon: 'users', name: 'setup.stepPeople', hint: 'admin.setupLinePeople' },
+  backups: { icon: 'archive', name: 'setup.stepBackups', hint: 'admin.setupLineBackups' },
   privacy: { icon: 'shield-check', name: 'setup.stepPrivacy', hint: 'admin.setupLinePrivacy' },
 } as const satisfies Record<SetupLine, { icon: string; name: string; hint: string }>;
 

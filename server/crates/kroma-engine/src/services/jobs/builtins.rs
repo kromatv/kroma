@@ -7,6 +7,7 @@ use crate::model::Category;
 
 use super::{JobContext, JobKey, JobManager, Trigger};
 
+mod backup_save;
 mod cache_cleanup;
 mod database_tidy;
 mod household_import;
@@ -45,6 +46,7 @@ pub struct Builtin {
 const JOBS: &[Builtin] = &[
     cache_cleanup::SPEC,
     database_tidy::SPEC,
+    backup_save::SPEC,
     reco_refresh::SPEC,
     reembed::SPEC,
     sections_personalize::SPEC,

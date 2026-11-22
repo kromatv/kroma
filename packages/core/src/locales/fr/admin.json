@@ -328,6 +328,7 @@
   "admin.serverName": "Nom du serveur",
   "admin.serverNameHint": "Visible par les personnes invitées",
   "admin.setupChecklistTitle": "Terminer la configuration",
+  "admin.setupLineBackups": "Sauvegardez ce serveur chaque nuit.",
   "admin.setupLineDismiss": "Retirer {name} de la liste",
   "admin.setupLineImport": "Migrez depuis Plex ou Jellyfin les bibliothèques, les comptes et ce que chacun a regardé.",
   "admin.setupLineMedia": "Ajoutez les dossiers de vos films et de vos séries.",
@@ -456,5 +457,6 @@
   "admin.kidsPinOfferBody": "Pour quitter Kids, on passe par le choix du profil. Sans code PIN, votre profil s'y ouvre en un seul geste.",
   "admin.kidsPinOfferSet": "Définir un code PIN",
   "admin.kidsPinOfferSkip": "Plus tard",
+  "admin.kidsNameEmpty": "Pas encore de nom",
   "admin.kidsFailed": "Impossible de créer le profil Kids"
 }

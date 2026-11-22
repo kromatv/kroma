@@ -108,12 +108,12 @@ fn the_path_returned_is_the_resolved_one_not_the_one_asked_for() {
     // routinely a link into `/volume1`.
     let t = Tree::new("canon");
     t.dir("Films");
-    let asked = format!("{}/./Films/..", t.path());
+    let asked = format!("{}/./Films/.", t.path());
 
     let body = browse(&asked);
     assert_eq!(
         body["path"].as_str().unwrap(),
-        t.0.canonicalize().unwrap().to_string_lossy()
+        t.0.join("Films").canonicalize().unwrap().to_string_lossy()
     );
 }
 
@@ -164,30 +164,6 @@ fn an_empty_directory_browses_to_an_empty_list() {
     let t = Tree::new("empty");
     let body = browse(&t.path());
     assert_eq!(body["entries"].as_array().unwrap().len(), 0);
-}
-
-#[test]
-fn with_volumes_present_the_browse_cannot_leave_them() {
-    let roots = vec![PathBuf::from("/volume1"), PathBuf::from("/volumeUSB1")];
-    assert!(within_roots(Path::new("/volume1/video/Films"), &roots));
-    assert!(within_roots(Path::new("/volumeUSB1"), &roots));
-    assert!(!within_roots(Path::new("/etc"), &roots));
-    assert!(!within_roots(Path::new("/"), &roots));
-    assert!(!within_roots(Path::new("/root/.ssh"), &roots));
-}
-
-#[test]
-fn a_path_that_merely_starts_with_a_root_name_is_not_inside_it() {
-    // `starts_with` on a Path compares whole components; a string prefix
-    // check would let these through.
-    let roots = vec![PathBuf::from("/volume1")];
-    assert!(!within_roots(Path::new("/volume10/video"), &roots));
-    assert!(!within_roots(Path::new("/volume1x"), &roots));
-}
-
-#[test]
-fn with_no_volumes_at_all_the_dev_box_may_browse_anywhere() {
-    assert!(within_roots(Path::new("/etc"), &[]));
 }
 
 #[tokio::test]

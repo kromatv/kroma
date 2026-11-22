@@ -6,6 +6,8 @@ use std::sync::OnceLock;
 use kroma_module_host::SettingReach;
 use serde_json::{json, Value};
 
+use crate::services::backup::schedule;
+
 #[cfg(test)]
 mod tests;
 
@@ -86,11 +88,8 @@ fn declared() -> Declared {
     // sends, and why this is legitimate interest rather than consent, is
     // docs/anonymous-stats-gdpr.md. The two below are the detail blocks the base
     // switch carries, each droppable on its own and each silent without it.
-    m.module_declared("anonStats", json!(true));
-    m.module_declared("anonStatsUsage", json!(true));
-    m.module_declared("anonStatsStatistics", json!(true));
-    m.minted("statsId");
-    m.minted("stats.lastSentAt");
+    privacy_keys(&mut m);
+    backup_keys(&mut m);
     m.minted("update.status");
     m.minted("update.operation");
     m.minted(crate::db::UNSETTLED_SHOWS_KEY);
@@ -249,4 +248,18 @@ fn declared() -> Declared {
     m.module_declared("smtpFrom", json!(""));
     m.core_only("smtpPassword", json!(""));
     m
+}
+
+fn privacy_keys(m: &mut Declared) {
+    m.module_declared("anonStats", json!(true));
+    m.module_declared("anonStatsUsage", json!(true));
+    m.module_declared("anonStatsStatistics", json!(true));
+    m.minted("statsId");
+    m.minted("stats.lastSentAt");
+}
+
+fn backup_keys(m: &mut Declared) {
+    m.core_only(schedule::ENABLED_KEY, json!(false));
+    m.core_only(schedule::FOLDER_KEY, json!(""));
+    m.core_only(schedule::KEEP_KEY, json!(schedule::DEFAULT_KEEP));
 }

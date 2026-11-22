@@ -3,7 +3,7 @@
 
 # Requirement index
 
-789 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+794 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -142,8 +142,8 @@
 - **ACCT-133** (SHIPPED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-134** (SHIPPED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-135** (SHIPPED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests, no account <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
@@ -342,6 +342,11 @@
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-188** (AGREED) - A restore that is not a reset adds what the backup holds and removes <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-189** (AGREED) - A restore that is a reset puts the backup's sources in place of the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-195** (AGREED) - The server saves a backup by itself on a schedule once the owner <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-196** (AGREED) - Scheduled backups go to a folder the owner chose, or to a <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-197** (AGREED) - The folder keeps the newest backups and the server removes the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-198** (AGREED) - A backup that could not be saved fails its task and tells the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-199** (AGREED) - The backups step comes after the people step. It says in one <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-200** (AGREED) - What a person removed in KROMA stays removed until the other server <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>

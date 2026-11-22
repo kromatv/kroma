@@ -1,11 +1,11 @@
 // The bookmarkable sign-in entry, for when someone must be sent to sign in and
 // back (`?redirect=<path>`). Elsewhere the `AuthGate` overlay gates in place.
 
+import { kidsProfileAsked } from '@kromatv/core';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { LoginGate } from '#web/features/accounts/auth-gate.component';
 import { useAuth } from '#web/shared/lib/auth';
-import { kidsProfileAsked } from '#web/shared/lib/kids-ask';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
 
 export const Route = createFileRoute('/login')({

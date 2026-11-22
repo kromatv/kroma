@@ -12,7 +12,7 @@ import { PinEntry } from './pin-entry.component';
 export function TvPin() {
   const nav = useNav();
   const t = useT();
-  const { account } = useParams('pin');
+  const { account, next } = useParams('pin');
   const { activate, forget } = useAuth();
   const shell = useConnectionMaybe()?.platform;
   const client = useMemo(
@@ -42,7 +42,11 @@ export function TvPin() {
     client.setAuthToken(sess.token);
     await client.accounts.verifyPin(pin);
     activate(account);
-    nav.home();
+    if (next) {
+      nav.replace(next);
+    } else {
+      nav.home();
+    }
   };
 
   return (

@@ -79,6 +79,30 @@ KROMA downloads a file named `kroma-backup-DATE.kroma`. Keep it somewhere safe.
 The backup does not include the catalogue of films and series: a scan rebuilds
 it on the machine you restore to.
 
+## Back up every night
+
+KROMA can save a backup by itself each night and keep the last seven. It is
+off until you turn it on.
+
+1. Open **Server** > **Backup**.
+2. Under **Scheduled backups**, turn on **Back up every night**.
+3. Select the folder row, then choose a folder on another disk or on a share
+   you back up. Until you choose one, KROMA uses the `backups` folder inside
+   its data folder.
+4. In **Backups kept**, set how many to keep.
+
+KROMA saves `kroma-scheduled-DATE.kroma` at 3:00 and removes the oldest beyond
+the number kept. It never removes another file from that folder. To change the
+time, select **Change the time** and edit the **Scheduled backup** task.
+
+> [!WARNING]
+> A scheduled backup has no password, so it holds password hashes and API keys
+> in clear text. Choose a folder only you can read.
+
+If a backup fails, the **Scheduled backup** task shows why under **Server** >
+**Tasks**, KROMA sends you a notification, and **Scheduled backups** shows the
+reason on the Backup page.
+
 ## Restore or move to another machine
 
 1. Install KROMA on the new machine and create a first account.

@@ -1,6 +1,7 @@
 import { Navigate } from '@tanstack/react-router';
 import type { ComponentType, ReactNode } from 'react';
 import { DoneStep } from '#web/features/setup/done-step.component';
+import { BackupsStep } from '#web/features/setup/backups-step.component';
 import { LanguageStep } from '#web/features/setup/language-step.component';
 import { MediaStep } from '#web/features/setup/media-step.component';
 import { ModulesStep } from '#web/features/setup/modules-step.component';
@@ -69,6 +70,7 @@ const VIEWS: Record<SetupStep, (moves: Moves) => ReactNode> = {
   media: ({ feed, next, back }) => <MediaStep feed={feed} onBack={back} onContinue={next} />,
   modules: ({ next, back }) => <ModulesStep onBack={back} onContinue={next} />,
   people: ({ next, back }) => <PeopleStep onBack={back} onContinue={next} />,
+  backups: ({ next, back }) => <BackupsStep onBack={back} onContinue={next} />,
   privacy: ({ next, back }) => <PrivacyStep onBack={back} onContinue={next} />,
   done: ({ leave }) => <DoneStep onOpen={leave} />,
 };

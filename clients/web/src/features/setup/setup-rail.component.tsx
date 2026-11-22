@@ -16,6 +16,7 @@ const STEP_NAME = {
   media: 'setup.stepMedia',
   modules: 'setup.stepModules',
   people: 'setup.stepPeople',
+  backups: 'setup.stepBackups',
   privacy: 'setup.stepPrivacy',
   done: 'setup.stepDone',
 } as const satisfies Record<SetupStep, string>;
@@ -28,6 +29,7 @@ const STEP_ICON = {
   media: 'folder',
   modules: 'download',
   people: 'users',
+  backups: 'archive',
   privacy: 'shield-check',
   done: 'check',
 } as const satisfies Record<SetupStep, string>;

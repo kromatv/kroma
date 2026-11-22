@@ -1,8 +1,8 @@
+import { askForKidsProfile } from '@kromatv/core';
 import type { PublicUser, StoredSession } from '@kromatv/client/accounts';
 import type { ProfileChoice } from '#web/features/accounts/profile-picker.component';
 import { useKidsProfiles } from '#web/features/accounts/use-kids-profiles.hook';
 import { useAuth } from '#web/shared/lib/auth';
-import { askForKidsProfile } from '#web/shared/lib/kids-ask';
 
 /** The step the gate shows after a tile is pressed, when it is not done. */
 export type PickStep =

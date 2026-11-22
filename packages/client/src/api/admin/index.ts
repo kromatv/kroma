@@ -1,4 +1,10 @@
-export type { BackupImportOptions, BackupImportResult, BackupPreview } from './backup';
+export type {
+  BackupImportOptions,
+  BackupImportResult,
+  BackupPreview,
+  BackupScheduleChange,
+} from './backup';
+export { BackupSchedule } from './backup';
 export * from './client';
 export * from './logs';
 export * from './metrics';

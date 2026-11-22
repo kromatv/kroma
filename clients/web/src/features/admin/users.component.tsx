@@ -1,5 +1,6 @@
 import type { AdminUser } from '@kromatv/client/admin';
 import { Table } from '@kromatv/module-sdk';
+import { takeKidsProfileAsk } from '@kromatv/core';
 import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
@@ -23,7 +24,6 @@ import { MemberIdentity } from '#web/features/admin/users-member.component';
 import { PendingInvite } from '#web/features/admin/users-pending-invite.component';
 import { useEffect } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
-import { takeKidsProfileAsk } from '#web/shared/lib/kids-ask';
 
 const ROLES = ['admin.roleOwner', 'admin.roleMember', 'admin.roleRestricted'] as const;
 type Role = (typeof ROLES)[number];

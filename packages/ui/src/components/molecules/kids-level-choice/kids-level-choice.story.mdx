@@ -1,0 +1,14 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Picking } from './kids-level-choice.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: 480,
+  render: () => <Picking />,
+});
+
+The level a Kids profile is made at. Three rows, All ages, 7+ and 10+, each with the ages it suits: the bands YouTube Kids taught parents (4 and under, 5 to 8, 9 to 12). None is picked until the admin picks one. It is a `ChoiceList`, so the whole row is the control and a remote reaches each row in one press.
+
+```tsx
+<KidsLevelChoice value={level} onValueChange={setLevel} />
+```

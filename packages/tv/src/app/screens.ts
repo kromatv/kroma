@@ -1,4 +1,5 @@
 import type { TvScreens } from '#tv/app/router';
+import { TvAddKids } from '#tv/features/accounts/tv-add-kids.component';
 import { TvAddProfile } from '#tv/features/accounts/tv-add-profile.component';
 import { TvConnect } from '#tv/features/accounts/tv-connect.component';
 import { TvDeviceSettings } from '#tv/features/accounts/tv-device-settings.component';
@@ -23,6 +24,7 @@ export const SCREENS: Omit<TvScreens, 'player' | 'trailer'> = {
   connect: TvConnect,
   profiles: TvProfiles,
   addProfile: TvAddProfile,
+  addKids: TvAddKids,
   quick: TvQuickConnect,
   unowned: TvServerUnowned,
   deviceSettings: TvDeviceSettings,
