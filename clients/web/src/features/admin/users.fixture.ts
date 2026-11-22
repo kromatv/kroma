@@ -2,7 +2,7 @@ import { AdminUser } from '@kromatv/client/admin';
 
 /** One account of the member list, held by its person unless `fields` says
  * otherwise. */
-export function member(fields: Partial<Record<keyof AdminUser, unknown>> = {}): AdminUser {
+export function member(fields: Partial<Record<keyof AdminUser, unknown>>): AdminUser {
   return AdminUser.parse({
     id: 'u1',
     email: 'lea@kroma.tv',
