@@ -3004,7 +3004,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 158,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The plays the other server recorded come into watch history",
     "file": "docs/spec/admin/import.md",
     "line": 170
@@ -3014,7 +3014,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 159,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A row that came from an import says so and names the server it came",
     "file": "docs/spec/admin/import.md",
     "line": 173
@@ -3024,7 +3024,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 160,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "An imported row leaves blank what the other server did not record:",
     "file": "docs/spec/admin/import.md",
     "line": 176
@@ -3034,20 +3034,20 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 161,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "An imported play that carries no duration counts for its title's",
     "file": "docs/spec/admin/import.md",
-    "line": 179
+    "line": 180
   },
   {
     "id": "ADMIN-162",
     "domain": "ADMIN",
     "space": "admin",
     "number": 162,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A play brought over once is not brought again by a later import.",
     "file": "docs/spec/admin/import.md",
-    "line": 187
+    "line": 188
   },
   {
     "id": "ADMIN-163",
@@ -3057,7 +3057,7 @@
     "status": "AGREED",
     "text": "The import runs in the background as a job with progress",
     "file": "docs/spec/admin/import.md",
-    "line": 193
+    "line": 194
   },
   {
     "id": "ADMIN-164",
@@ -3067,7 +3067,7 @@
     "status": "AGREED",
     "text": "The owner can cancel the import, and a cancelled import keeps what",
     "file": "docs/spec/admin/import.md",
-    "line": 196
+    "line": 197
   },
   {
     "id": "ADMIN-165",
@@ -3077,7 +3077,7 @@
     "status": "AGREED",
     "text": "A second import, run when nothing changed on the other server,",
     "file": "docs/spec/admin/import.md",
-    "line": 199
+    "line": 200
   },
   {
     "id": "ADMIN-166",
@@ -3087,7 +3087,7 @@
     "status": "AGREED",
     "text": "Where KROMA and the other server both hold watch state for one",
     "file": "docs/spec/admin/import.md",
-    "line": 205
+    "line": 206
   },
   {
     "id": "ADMIN-167",
@@ -3097,7 +3097,7 @@
     "status": "AGREED",
     "text": "An import only adds watch state or moves it forward. It removes",
     "file": "docs/spec/admin/import.md",
-    "line": 208
+    "line": 209
   },
   {
     "id": "ADMIN-168",
@@ -3107,7 +3107,7 @@
     "status": "AGREED",
     "text": "The importer stays installed after an import, so the owner can run",
     "file": "docs/spec/admin/import.md",
-    "line": 226
+    "line": 227
   },
   {
     "id": "ADMIN-169",
@@ -3117,7 +3117,7 @@
     "status": "AGREED",
     "text": "The report at the end of an import, and the import screen of the",
     "file": "docs/spec/admin/import.md",
-    "line": 229
+    "line": 230
   },
   {
     "id": "ADMIN-170",
@@ -3127,7 +3127,7 @@
     "status": "AGREED",
     "text": "Removing the importer forgets the sign-in to the other server",
     "file": "docs/spec/admin/import.md",
-    "line": 232
+    "line": 233
   },
   {
     "id": "ADMIN-171",
@@ -3137,7 +3137,7 @@
     "status": "AGREED",
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
-    "line": 236
+    "line": 237
   },
   {
     "id": "ADMIN-172",
@@ -3237,7 +3237,7 @@
     "status": "AGREED",
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
-    "line": 211
+    "line": 212
   },
   {
     "id": "ADMIN-182",

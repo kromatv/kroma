@@ -1,6 +1,6 @@
 # Bringing another server over
 
-Status: **AGREED**, from [RFC 719](../../rfcs/719-guided-setup-and-import.md).
+Status: **AGREED**, and **SHIPPED** in part: each section carries its own. From [RFC 719](../../rfcs/719-guided-setup-and-import.md).
 
 Most people who install KROMA already run Plex or Jellyfin. That server knows what each
 person watched, where they stopped, who has an account and which libraries each of them may
@@ -165,18 +165,19 @@ The identity the other server held for each file comes over too, and is
 
 ## Plays
 
-Status: **AGREED**
+Status: **SHIPPED**
 
-**ADMIN-158** (AGREED) - The plays the other server recorded come into watch history
+**ADMIN-158** (SHIPPED) - The plays the other server recorded come into watch history
 (ADMIN-57), each with its account, its title and when it was played.
 
-**ADMIN-159** (AGREED) - A row that came from an import says so and names the server it came
+**ADMIN-159** (SHIPPED) - A row that came from an import says so and names the server it came
 from.
 
-**ADMIN-160** (AGREED) - An imported row leaves blank what the other server did not record:
-the device, the player, the network class, whether it was transcoded.
+**ADMIN-160** (SHIPPED) - An imported row leaves blank what the other server did not record:
+the device, the player, the network class, whether it was transcoded. Watch history reads
+such a field as unknown, never as zero.
 
-**ADMIN-161** (AGREED) - An imported play that carries no duration counts for its title's
+**ADMIN-161** (SHIPPED) - An imported play that carries no duration counts for its title's
 runtime wherever the dashboard adds up time watched, and its row says the time is the
 runtime.
 
@@ -184,7 +185,7 @@ Plex records when a title was played and not for how long. Jellyfin and Emby kee
 last play of each title per person, so one play per title per person is all they can give,
 and the review screen says so.
 
-**ADMIN-162** (AGREED) - A play brought over once is not brought again by a later import.
+**ADMIN-162** (SHIPPED) - A play brought over once is not brought again by a later import.
 
 ## Running it, and running it again
 
