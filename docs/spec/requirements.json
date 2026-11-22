@@ -1004,7 +1004,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 101,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The server keeps, for each title, the label every country's rating",
     "file": "docs/spec/accounts/kids.md",
     "line": 18
@@ -1014,7 +1014,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 102,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each label carries the minimum age it stands for, from one table",
     "file": "docs/spec/accounts/kids.md",
     "line": 21
@@ -1064,7 +1064,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 107,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A title no country rated shows no badge.",
     "file": "docs/spec/accounts/kids.md",
     "line": 39
