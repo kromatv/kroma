@@ -4,24 +4,12 @@ use tokio::sync::broadcast::Receiver;
 
 use super::super::stages::Core;
 use super::this_machine::{
-    answered, at, became, films_at, libraries, review, source_ids, sources, this_machine,
+    a_source, answered, at, became, films_at, libraries, review, source_ids, sources,
+    this_machine,
 };
 use super::*;
 use crate::infra::events::Envelope;
 use crate::model::imports::Status;
-use crate::services::settings::{self, LibraryDef};
-
-fn a_source(state: &SharedState, name: &str, folder: &str) -> String {
-    let def = LibraryDef {
-        id: format!("source-{name}"),
-        name: name.into(),
-        kind: "movies".into(),
-        folders: vec![folder.into()],
-        auto_scan: true,
-    };
-    settings::set_library_defs(&state.settings, &state.db, std::slice::from_ref(&def));
-    def.id
-}
 
 fn scans_asked_for(events: &mut Receiver<Envelope>) -> usize {
     let mut asked = 0;

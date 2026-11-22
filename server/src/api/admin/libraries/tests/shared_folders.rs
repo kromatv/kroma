@@ -13,7 +13,7 @@ async fn moved(state: &SharedState, id: &str, folders: &[&str]) -> Result<String
     let body = UpdateLibraryBody {
         name: None,
         kind: None,
-        folders: Some(folders.iter().map(|folder| folder.to_string()).collect()),
+        folders: Some(folders.iter().map(ToString::to_string).collect()),
         auto_scan: None,
     };
     update_library(

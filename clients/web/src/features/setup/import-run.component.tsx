@@ -3,7 +3,7 @@ import { JobKey } from '@kromatv/client/jobs';
 import { useT } from '@kromatv/ui';
 import { Button, ListRow, Progress, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { atWork, type TallyKind, tallies } from '#web/features/setup/import-run';
+import { atWork, refusedLibraries, type TallyKind, tallies } from '#web/features/setup/import-run';
 import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
@@ -88,13 +88,9 @@ function Tallies({ found }: Readonly<{ found: Import | undefined }>) {
 
 function RefusedLibraries({ found }: Readonly<{ found: Import | undefined }>) {
   const t = useT();
-  const refused = found?.report.refusedLibraries ?? [];
-  if (refused.length === 0) {
-    return null;
-  }
   return (
     <>
-      {refused.map((library) => (
+      {refusedLibraries(found).map((library) => (
         <Text key={library.name} variant="meta" color="danger">
           {t('setup.importLibraryRefused', {
             name: library.name,
