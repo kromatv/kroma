@@ -20,6 +20,7 @@ import { TopViewersSection } from '#web/features/admin/dashboard-top-viewers.com
 import { TranscodingSection } from '#web/features/admin/dashboard-transcoding.component';
 import { UpdateCallout } from '#web/features/admin/dashboard-update.component';
 import { RealtimeBadge } from '#web/features/admin/realtime-badge.component';
+import { SetupChecklist } from '#web/features/admin/setup-checklist.component';
 import { PageHeader, useAdmin, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -70,6 +71,7 @@ export function DashboardScreen() {
         </PageHeader.Actions>
       </PageHeader.Root>
 
+      <SetupChecklist />
       {canManageSettings ? <UpdateCallout /> : null}
       {canManageLibrary ? (
         <Box mt={24}>
