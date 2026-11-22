@@ -8,6 +8,7 @@ import { CastBar } from '#web/features/playback/cast/cast-bar.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth.hook';
+import { useKidsRoutes } from '#web/shared/lib/use-kids-routes.hook';
 import { hasRail, RAIL_WIDTH, railInset } from '#web/shared/lib/rail';
 import { tvReach } from '#web/shared/lib/tv-reach';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
@@ -48,6 +49,7 @@ function AppLayout() {
   const s = useStyles(sDefinition);
 
   const { ready, authed } = useRequireAuth();
+  useKidsRoutes();
   const step = useBreakpoint();
   const wide = hasRail(step);
   useNotificationStream();

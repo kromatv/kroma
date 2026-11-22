@@ -251,6 +251,10 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
     }
 }
 
+fn module_routes() -> Router<SharedState> {
+    Router::new().route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
+}
+
 // Reverse-proxies to the installed module's process; the module validates the
 // forwarded bearer itself against the shared DB.
 async fn module_proxy(
@@ -322,11 +326,11 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(playback::routes())
         .merge(cast::routes())
         .merge(handoff::routes())
-        .merge(discover::routes())
+        .merge(accounts::kept_from_kids(&state, discover::routes()))
         .merge(trailers::routes())
         .merge(rematch::routes())
-        .merge(monitoring::routes())
-        .merge(requests::routes())
+        .merge(accounts::kept_from_kids(&state, monitoring::routes()))
+        .merge(accounts::kept_from_kids(&state, requests::routes()))
         .merge(reports::routes())
         .merge(notifications::routes())
         .merge(releases::routes())
@@ -337,7 +341,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // outside the blanket content layer.
     let api = public
         .merge(content)
-        .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
+        .merge(accounts::kept_from_kids(&state, module_routes()))
         .nest("/admin", admin::routes(state.clone()))
         .layer(from_fn_with_state(state.clone(), remote_art::serve_art))
         .layer(Extension(supervisor));

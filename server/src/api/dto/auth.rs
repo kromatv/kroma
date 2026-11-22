@@ -13,7 +13,17 @@ pub struct AuthResult {
     pub token: String,
     pub access_token: String,
     pub media_ticket: String,
+    pub user: SessionUser,
+}
+
+/// The account a session belongs to, as the session's own routes answer it:
+/// `kids` says the session wears the Kids experience (ACCT-136), which every
+/// client reads to draw the Kids look and leave out what a Kids session loses.
+#[derive(Serialize)]
+pub struct SessionUser {
+    #[serde(flatten)]
     pub user: User,
+    pub kids: bool,
 }
 
 /// `{ token, mediaTicket, user }` from `/auth/token` a fresh session minted from
@@ -24,7 +34,7 @@ pub struct AuthResult {
 pub struct SessionResult {
     pub token: String,
     pub media_ticket: String,
-    pub user: User,
+    pub user: SessionUser,
 }
 
 /// One signed-in device in `GET /auth/me/sessions`. `id` is a non-secret handle

@@ -137,7 +137,7 @@ server's Kids profiles on its picker. Opening one gives that device a session of
 profile (ACCT-6), which its device list shows like any other.
 
 **ACCT-127** (SHIPPED) - The owner's account can never be a Kids profile, and a Kids profile
-can never be made admin.
+holds no right beyond watching: it can never be made admin, nor be let make requests.
 
 **ACCT-128** (SHIPPED) - An existing account cannot become a Kids profile. It has a
 credential of its own, and a person would lose their sign-in.
@@ -145,7 +145,7 @@ credential of its own, and a person would lose their sign-in.
 **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the
 picker and wherever its avatar is drawn.
 
-**ACCT-130** (AGREED) - A Kids profile whose ceiling an admin raises above 10+ loses the
+**ACCT-130** (SHIPPED) - A Kids profile whose ceiling an admin raises above 10+ loses the
 Kids experience. It still has no credential and still opens from the picker.
 
 ## Leaving a Kids profile
@@ -173,21 +173,23 @@ rather than locking every profile on its behalf.
 
 ## The Kids experience
 
-Status: **AGREED**
+Status: **SHIPPED** on the server and in the web and desktop apps. The television and
+phone apps cannot open a Kids profile yet (ACCT-126), so no Kids session reaches them.
 
-**ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
+**ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
 place of KROMA's, and a simpler, friendlier theme, on every surface.
 
-**ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests and no account
-settings, and the server refuses those routes to its session.
+**ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account
+settings and no way to sign another device in, and the server refuses those routes to its
+session. Its player languages stay its own.
 
-**ACCT-138** (AGREED) - A Kids session never shows a title the server does not hold.
+**ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold.
 
-**ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module
+**ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module
 routes to its session. A module draws its own pages, and the core cannot filter what they
 show.
 
-**ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile
+**ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile
 may see (ACCT-112).
 
 ## Later

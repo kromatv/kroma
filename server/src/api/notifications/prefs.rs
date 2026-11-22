@@ -2,6 +2,7 @@ use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
+use crate::api::accounts::AuthMember;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::model::PrefsUpdate;
@@ -32,7 +33,7 @@ pub async fn get_prefs(
 /// types keep what they had.
 pub async fn put_prefs(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     Json(body): Json<PrefsUpdate>,
 ) -> Result<Response, Response> {
     let locale = notify::render::locale_of(&user);

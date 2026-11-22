@@ -8,6 +8,7 @@ use axum::routing::get;
 use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
 
+use super::AuthMember;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
@@ -53,7 +54,7 @@ pub async fn ratings_country(
 /// refused.
 pub async fn set_ratings_country(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     Json(body): Json<RatingsCountryBody>,
 ) -> Result<Response, Response> {
     let country = match body.country.map(|c| c.trim().to_ascii_uppercase()) {

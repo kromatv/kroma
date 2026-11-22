@@ -16,7 +16,7 @@ use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db::{self, NewKidsProfile};
 use crate::infra::events::ServerEvent;
-use crate::model::{MaturityLevel, Permission, User};
+use crate::model::{MaturityLevel, Permission};
 use crate::state::SharedState;
 
 const MAX_NAME_CHARS: usize = 64;
@@ -75,7 +75,7 @@ fn valid_draft(body: &NewKidsBody, loc: &str) -> Result<(String, MaturityLevel),
 }
 
 /// `PATCH /api/admin/users/:id`, refused with 409 when it would give a Kids
-/// profile a management right.
+/// profile any right beyond watching (ACCT-127, ACCT-137).
 pub async fn update_member(
     State(state): State<SharedState>,
     call: MemberCall,
@@ -83,7 +83,7 @@ pub async fn update_member(
 ) -> Result<Response, Response> {
     if gives_a_kid_a_right(&state, &call, &body).await? {
         let loc = super::super::user_locale(&call.admin);
-        return Err(lerr(loc, StatusCode::CONFLICT, "admin.kidsNeverAdmin"));
+        return Err(lerr(loc, StatusCode::CONFLICT, "admin.kidsOnlyWatch"));
     }
     update_user(
         State(state),
@@ -99,14 +99,12 @@ async fn gives_a_kid_a_right(
     call: &MemberCall,
     body: &UpdateUserBody,
 ) -> Result<bool, Response> {
-    let Some(permissions) = body.permissions.clone() else {
-        return Ok(false);
-    };
-    let probe = User {
-        permissions,
-        ..call.admin.clone()
-    };
-    if !probe.is_any_admin() {
+    let watching = |right: &Permission| *right == Permission::Playback;
+    if body
+        .permissions
+        .as_ref()
+        .is_none_or(|rights| rights.iter().all(watching))
+    {
         return Ok(false);
     }
     let id = call.id.clone();
