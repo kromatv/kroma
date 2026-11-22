@@ -88,6 +88,7 @@ input device, never a boolean spelled as a string.
 | `Axis` | One edge's scale: its levels and their labels. | `edge` says which one. Not `XAxis`/`YAxis`: a name denotes a role, and there is one axis part. |
 | `Legend` | The key to a plot's colours. | Derived from the marks, so the key and the plot cannot disagree. Made of the `<Legend>` molecule, which is the same thing outside a chart. |
 | `Tooltip` | The readout for whatever the cursor is on. | Positioned inside the plot rather than mounted into the overlay host, which is why it is not a `Popup`. Same role as the `<Tooltip>` molecule. |
+| `Aside` | What stands beside a surface's main column where there is room for it, and is not drawn where there is not: the list of a flow's steps. | Its own focus group. Not `Leading`, which is the head of a row and never a focus stop. `GuidedFlow.Status` is drawn in its place on a narrow screen. |
 | `Header` / `Footer` | Layout regions of a surface. | Layout, not semantics. A chart's `Footer` is its caption, on the key's row. A table's `Header` is the same word for the same thing: the band that names its columns rather than filling them. A menu's `Header` names what it acts for, above its items, and the keys pass over it. |
 | `Body` | The rows a table is about, under its `Header`. | Only where a `Header` exists for it to be distinguished from. Not `Content`, which is banned below. |
 | `Row` | One band across a table: a record, read left to right. | The rule between two rows belongs to the row UNDER it, so the last one cannot double the frame. |

@@ -1,0 +1,7 @@
+<resources>
+  <resource name="NAS" product="Plex Media Server" productVersion="1.41.0.8994" platform="Linux" clientIdentifier="{{machine}}" provides="server" owned="0" home="1" presence="1" accessToken="{{dan_server_token}}">
+    <connections>
+      <connection protocol="https" address="192.168.1.20" port="32400" uri="https://192-168-1-20.examplehash.plex.direct:32400" local="1" relay="0" IPv6="0"/>
+    </connections>
+  </resource>
+</resources>

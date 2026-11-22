@@ -1,6 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Button, ListRow, Switch } from '@kromatv/ui/kit';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
+import { GuidedFlow, ListRow, Switch } from '@kromatv/ui/kit';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useCounted } from '#web/features/setup/use-counted.hook';
 
@@ -33,20 +32,24 @@ export function PrivacyStep({
   const { counted, setCounted, busy, confirm, failed } = useCounted(onContinue);
   return (
     <>
-      <StepHeading title={t('setup.privacyTitle')} sub={t('setup.privacySub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.privacyTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.privacySub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <StepFailure error={failed ? t('setup.privacyReadFailed') : null} />
         {counted === null ? null : <CountedSwitch counted={counted} onCounted={setCounted} />}
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.privacyConfirm')}
-          iconRight="arrow-right"
-          loading={busy}
-          onPress={() => void confirm()}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next
+            label={t('setup.privacyConfirm')}
+            loading={busy}
+            onPress={() => void confirm()}
+          />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

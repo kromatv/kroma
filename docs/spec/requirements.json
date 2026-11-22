@@ -2585,7 +2585,7 @@
     "space": "admin",
     "number": 121,
     "status": "AGREED",
-    "text": "A setup that ended before its last step leaves a checklist on the",
+    "text": "A setup that ended leaves a checklist on the admin dashboard, one",
     "file": "docs/spec/admin/setup.md",
     "line": 133
   },
@@ -2597,7 +2597,7 @@
     "status": "AGREED",
     "text": "A line leaves the checklist when its step is done, in the setup or",
     "file": "docs/spec/admin/setup.md",
-    "line": 136
+    "line": 137
   },
   {
     "id": "ADMIN-123",
@@ -2607,7 +2607,7 @@
     "status": "AGREED",
     "text": "The owner can dismiss any line, and a dismissed line does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 147
+    "line": 152
   },
   {
     "id": "ADMIN-124",
@@ -2617,7 +2617,7 @@
     "status": "AGREED",
     "text": "When no line is left the checklist is gone, and it does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 150
+    "line": 155
   },
   {
     "id": "ADMIN-125",
@@ -2627,7 +2627,7 @@
     "status": "AGREED",
     "text": "The whole setup works on a phone held upright. Nothing scrolls",
     "file": "docs/spec/admin/setup.md",
-    "line": 157
+    "line": 162
   },
   {
     "id": "ADMIN-126",
@@ -2637,7 +2637,7 @@
     "status": "AGREED",
     "text": "The whole setup works by keyboard alone, from the first screen to",
     "file": "docs/spec/admin/setup.md",
-    "line": 160
+    "line": 165
   },
   {
     "id": "ADMIN-127",
@@ -2647,7 +2647,7 @@
     "status": "AGREED",
     "text": "No step sends the owner to documentation. What a step needs to say,",
     "file": "docs/spec/admin/setup.md",
-    "line": 163
+    "line": 168
   },
   {
     "id": "ADMIN-128",
@@ -2887,7 +2887,7 @@
     "status": "AGREED",
     "text": "Each person's watched flags come over (ACCT-24).",
     "file": "docs/spec/admin/import.md",
-    "line": 130
+    "line": 134
   },
   {
     "id": "ADMIN-152",
@@ -2897,7 +2897,7 @@
     "status": "AGREED",
     "text": "Each person's resume points come over, and a resume point lands at",
     "file": "docs/spec/admin/import.md",
-    "line": 132
+    "line": 136
   },
   {
     "id": "ADMIN-153",
@@ -2907,7 +2907,7 @@
     "status": "AGREED",
     "text": "A title on the other server is matched to a KROMA title by its file",
     "file": "docs/spec/admin/import.md",
-    "line": 135
+    "line": 139
   },
   {
     "id": "ADMIN-154",
@@ -2917,7 +2917,7 @@
     "status": "AGREED",
     "text": "A title whose file matches nothing is matched by the external",
     "file": "docs/spec/admin/import.md",
-    "line": 138
+    "line": 142
   },
   {
     "id": "ADMIN-155",
@@ -2927,7 +2927,7 @@
     "status": "AGREED",
     "text": "Watch state for a file the scan has not reached yet shows on its",
     "file": "docs/spec/admin/import.md",
-    "line": 142
+    "line": 146
   },
   {
     "id": "ADMIN-156",
@@ -2937,7 +2937,7 @@
     "status": "AGREED",
     "text": "A title a person marked as a favourite on the other server is saved",
     "file": "docs/spec/admin/import.md",
-    "line": 145
+    "line": 149
   },
   {
     "id": "ADMIN-157",
@@ -2947,7 +2947,7 @@
     "status": "AGREED",
     "text": "When the import ends, a report lists what matched nothing, each",
     "file": "docs/spec/admin/import.md",
-    "line": 148
+    "line": 152
   },
   {
     "id": "ADMIN-158",
@@ -2957,7 +2957,7 @@
     "status": "AGREED",
     "text": "The plays the other server recorded come into watch history",
     "file": "docs/spec/admin/import.md",
-    "line": 159
+    "line": 163
   },
   {
     "id": "ADMIN-159",
@@ -2967,7 +2967,7 @@
     "status": "AGREED",
     "text": "A row that came from an import says so and names the server it came",
     "file": "docs/spec/admin/import.md",
-    "line": 162
+    "line": 166
   },
   {
     "id": "ADMIN-160",
@@ -2977,7 +2977,7 @@
     "status": "AGREED",
     "text": "An imported row leaves blank what the other server did not record:",
     "file": "docs/spec/admin/import.md",
-    "line": 165
+    "line": 169
   },
   {
     "id": "ADMIN-161",
@@ -2987,7 +2987,7 @@
     "status": "AGREED",
     "text": "An imported play that carries no duration counts for its title's",
     "file": "docs/spec/admin/import.md",
-    "line": 168
+    "line": 172
   },
   {
     "id": "ADMIN-162",
@@ -2997,7 +2997,7 @@
     "status": "AGREED",
     "text": "A play brought over once is not brought again by a later import.",
     "file": "docs/spec/admin/import.md",
-    "line": 176
+    "line": 180
   },
   {
     "id": "ADMIN-163",
@@ -3007,7 +3007,7 @@
     "status": "AGREED",
     "text": "The import runs in the background as a job with progress",
     "file": "docs/spec/admin/import.md",
-    "line": 182
+    "line": 186
   },
   {
     "id": "ADMIN-164",
@@ -3017,7 +3017,7 @@
     "status": "AGREED",
     "text": "The owner can cancel the import, and a cancelled import keeps what",
     "file": "docs/spec/admin/import.md",
-    "line": 185
+    "line": 189
   },
   {
     "id": "ADMIN-165",
@@ -3027,7 +3027,7 @@
     "status": "AGREED",
     "text": "A second import, run when nothing changed on the other server,",
     "file": "docs/spec/admin/import.md",
-    "line": 188
+    "line": 192
   },
   {
     "id": "ADMIN-166",
@@ -3037,7 +3037,7 @@
     "status": "AGREED",
     "text": "Where KROMA and the other server both hold watch state for one",
     "file": "docs/spec/admin/import.md",
-    "line": 194
+    "line": 198
   },
   {
     "id": "ADMIN-167",
@@ -3047,7 +3047,7 @@
     "status": "AGREED",
     "text": "An import only adds watch state or moves it forward. It removes",
     "file": "docs/spec/admin/import.md",
-    "line": 197
+    "line": 201
   },
   {
     "id": "ADMIN-168",
@@ -3057,7 +3057,7 @@
     "status": "AGREED",
     "text": "The importer stays installed after an import, so the owner can run",
     "file": "docs/spec/admin/import.md",
-    "line": 215
+    "line": 219
   },
   {
     "id": "ADMIN-169",
@@ -3067,7 +3067,7 @@
     "status": "AGREED",
     "text": "The report at the end of an import, and the import screen of the",
     "file": "docs/spec/admin/import.md",
-    "line": 218
+    "line": 222
   },
   {
     "id": "ADMIN-170",
@@ -3077,7 +3077,7 @@
     "status": "AGREED",
     "text": "Removing the importer forgets the sign-in to the other server",
     "file": "docs/spec/admin/import.md",
-    "line": 221
+    "line": 225
   },
   {
     "id": "ADMIN-171",
@@ -3087,7 +3087,7 @@
     "status": "AGREED",
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
-    "line": 225
+    "line": 229
   },
   {
     "id": "ADMIN-172",
@@ -3177,7 +3177,7 @@
     "status": "AGREED",
     "text": "The page of the setup never scrolls. A step with more than its frame",
     "file": "docs/spec/admin/setup.md",
-    "line": 166
+    "line": 171
   },
   {
     "id": "ADMIN-181",
@@ -3187,7 +3187,7 @@
     "status": "AGREED",
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
-    "line": 200
+    "line": 204
   },
   {
     "id": "ADMIN-182",
@@ -3208,6 +3208,16 @@
     "text": "An Emby server is brought over as a Jellyfin one is: its libraries,",
     "file": "docs/spec/admin/import.md",
     "line": 38
+  },
+  {
+    "id": "ADMIN-187",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 187,
+    "status": "AGREED",
+    "text": "A step stays done once the server has seen it done. A line that",
+    "file": "docs/spec/admin/setup.md",
+    "line": 148
   },
   {
     "id": "ADMIN-188",

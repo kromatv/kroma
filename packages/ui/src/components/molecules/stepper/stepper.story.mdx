@@ -11,7 +11,7 @@ export const story = defineStory({
   controls: { orientation: ['horizontal', 'vertical'] },
 });
 
-A flow walked one step at a time: an account being set up, a television being paired. A **tablist** to assistive tech, named by `label`, where each step is a tab carrying its position (`Étape 2 sur 4 : Compte`) and the step being shown claims `aria-current="step"`. Composed, in Radix's shape: **Root** owns the flow, **List** is the indicator, **Item** is one step with **Label** and **Hint** inside it, **Panel** is the region a step owns, and **Previous** and **Next** are the two moves.
+A flow walked one step at a time: an account being set up, a television being paired. A **tablist** to assistive tech, named by `label`, where each step is a tab carrying its position (`Step 2 of 4: Account`, in the language of the screen) and the step being shown claims `aria-current="step"`. Composed, in Radix's shape: **Root** owns the flow, **List** is the indicator, **Item** is one step with **Label** and **Hint** inside it, **Panel** is the region a step owns, and **Previous** and **Next** are the two moves.
 
 A step joins the flow by RENDERING, not by being typed as a direct child, so pulling the steps out into a component of your own or building them with a `map` works. A Root that ends up with no steps at all throws instead of drawing an indicator nothing can move.
 

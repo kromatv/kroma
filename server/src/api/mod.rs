@@ -104,6 +104,8 @@ mod it_images;
 #[cfg(test)]
 mod it_importer_calls;
 #[cfg(test)]
+mod it_importer_unlock;
+#[cfg(test)]
 mod it_importers;
 #[cfg(test)]
 mod it_imports;
@@ -185,6 +187,8 @@ mod it_search;
 mod it_server_restart;
 #[cfg(test)]
 mod it_server_status;
+#[cfg(test)]
+mod it_setup;
 #[cfg(test)]
 mod it_store_versions;
 #[cfg(test)]

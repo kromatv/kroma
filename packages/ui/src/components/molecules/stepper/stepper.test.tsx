@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render as renderRaw, screen } from '@testing-librar
 import type { ReactElement, ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
+import { I18nProvider } from '#ui/services/i18n';
 import { onScreen } from '#ui/testing';
 import { Stepper, type StepperRootProps } from './stepper.component';
 
@@ -65,10 +66,23 @@ describe('Stepper', () => {
   it('names each step by its position, and says so once it is done', () => {
     render(<Flow />);
 
+    fireEvent.click(screen.getByLabelText('Next'));
+
+    expect(screen.getByRole('tab', { name: 'Step 1 of 3: Compte, done' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Step 2 of 3: Bibliothèque' })).toBeTruthy();
+  });
+
+  it('speaks the language of the screen it is on', () => {
+    render(
+      <I18nProvider locale="fr">
+        <Flow />
+      </I18nProvider>,
+    );
+
     fireEvent.click(screen.getByLabelText('Suivant'));
 
-    expect(screen.getByRole('tab', { name: 'Étape 1 sur 3 : Compte, terminée' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Étape 2 sur 3 : Bibliothèque' })).toBeTruthy();
+    expect(screen.getByLabelText('Précédent')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Étape 1 sur 3 : Compte, terminée' })).toBeTruthy();
   });
 
   it('opens at the first step and draws only its panel', () => {
@@ -83,7 +97,7 @@ describe('Stepper', () => {
     const onValueChange = vi.fn();
     render(<Flow defaultValue="library" onValueChange={onValueChange} />);
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
 
     expect(onValueChange).toHaveBeenCalledWith('done', { reason: 'next' });
     expect(screen.getByText('Prêt')).toBeTruthy();
@@ -93,7 +107,7 @@ describe('Stepper', () => {
     const onValueChange = vi.fn();
     render(<Flow value="account" onValueChange={onValueChange} />);
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
 
     expect(onValueChange).toHaveBeenCalledWith('library', { reason: 'next' });
     expect(screen.getByText('Adresse')).toBeTruthy();
@@ -102,20 +116,20 @@ describe('Stepper', () => {
   it('dims the step back on the first step and the step forward on the last', () => {
     render(<Flow />);
 
-    expect(disabled(screen.getByLabelText('Précédent'))).toBe(true);
-    expect(disabled(screen.getByLabelText('Suivant'))).toBe(false);
+    expect(disabled(screen.getByLabelText('Previous'))).toBe(true);
+    expect(disabled(screen.getByLabelText('Next'))).toBe(false);
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
+    fireEvent.click(screen.getByLabelText('Next'));
 
-    expect(disabled(screen.getByLabelText('Suivant'))).toBe(true);
-    expect(disabled(screen.getByLabelText('Précédent'))).toBe(false);
+    expect(disabled(screen.getByLabelText('Next'))).toBe(true);
+    expect(disabled(screen.getByLabelText('Previous'))).toBe(false);
   });
 
   it('goes back to a step the flow has already been past', () => {
     render(<Flow />);
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
     fireEvent.click(step(/Compte/));
 
     expect(screen.getByText('Adresse')).toBeTruthy();
@@ -142,7 +156,7 @@ describe('Stepper', () => {
     const onValueChange = vi.fn();
     render(<Flow value="skip" onValueChange={onValueChange} />);
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
 
     expect(onValueChange).toHaveBeenCalledWith('done', { reason: 'next' });
   });
@@ -223,10 +237,10 @@ describe('where a step comes from', () => {
     expect(step(/Compte/).getAttribute('aria-current')).toBe('step');
     expect(screen.getByText('Adresse')).toBeTruthy();
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
 
     expect(screen.getByText('Dossiers')).toBeTruthy();
-    expect(disabled(screen.getByLabelText('Suivant'))).toBe(true);
+    expect(disabled(screen.getByLabelText('Next'))).toBe(true);
   });
 
   it('counts the steps a map rendered, in the order they were rendered', () => {
@@ -236,7 +250,7 @@ describe('where a step comes from', () => {
       </Stepper.Root>,
     );
 
-    expect(screen.getByRole('tab', { name: 'Étape 3 sur 3 : trois' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Step 3 of 3: trois' })).toBeTruthy();
   });
 
   it('says so rather than drawing a dead control when no step joined the flow', () => {

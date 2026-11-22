@@ -24,6 +24,10 @@ the first one is the check issue #750 asks for.
   `plexapi/`.
 - **T**: [Tautulli](https://github.com/Tautulli/Tautulli) at `5bab508b` (master
   on 2026-11-10). Files are under `plexpy/`.
+- **H**: "[How To] Request a X-Plex-Token token for your app", a Plex forum
+  thread, page 2, posts 25 (2016-01-03) and 27 (2016-01-14),
+  <https://forums.plex.tv/t/how-to-request-a-x-plex-token-token-for-your-app/84551?page=2>.
+  Developers describing the Home switch as they called it. Read 2026-11-21.
 
 P and T parse XML, which is the default format of both plex.tv and a server
 (D: "The default is XML, so JSON will only be returned if it's explicitly
@@ -34,7 +38,8 @@ milliseconds.
 
 ## Every call the importer makes
 
-One call creates something: the PIN, which is the sign-in itself. Every other
+Two calls create something: the PIN, which is the sign-in itself, and the
+Home switch, made only when the owner types a Home user's PIN. Every other
 call is a `GET`.
 
 | # | Call | Host | For |
@@ -52,6 +57,8 @@ call is a `GET`.
 | 11 | `GET /status/sessions/history/all` | server | the plays |
 | 12 | `GET /playlists` | server | whether playlists exist |
 | 13 | `GET /livetv/dvrs` | server | whether Live TV is set up |
+| 14 | `POST /api/home/users/{id}/switch` | plex.tv | a token for a Home user protected by a PIN |
+| 15 | `GET /api/v2/resources`, with that token | plex.tv | that user's token for the server |
 
 The importer never calls `DELETE /status/sessions/history/{id}` (P,
 `base.py`, `PlexHistory.delete`), `POST /api/v2/users/signout`, the device
@@ -175,6 +182,37 @@ with `key`, `title`, `type` and `shared`.
   `server_token` in place of the owner's for the same reason (`pmsconnect.py`,
   `PmsConnect.__init__`).
 
+## The Home switch
+
+What `unlock` does for a Home user protected by a PIN (ADMIN-150).
+
+1. `POST https://plex.tv/api/home/users/{id}/switch` with the owner's token,
+   where `id` is the user's `id` in call 5. P sends the PIN as `pin`
+   (`myplex.py`, `switchHomeUser`: `HOMEUSERS = 'https://plex.tv/api/home/users'`,
+   then `params['pin'] = pin` on a `post`). The answer's root element has
+   `authenticationToken`, the Home user's plex.tv token (P reads
+   `data.attrib.get('authenticationToken')`).
+2. That token is an account token, not a server token. H, post 27: "You need
+   to get a server access token from plex.tv using the user token", by
+   matching the server's identifier in plex.tv's list of servers and taking its
+   `accessToken`. P does the same through `MyPlexAccount(token=userToken)` and
+   `resource(...)`, which reads call 4. The importer asks call 4 with the Home
+   user's token and takes the `accessToken` of the resource whose
+   `clientIdentifier` is the server, owned or not.
+
+P puts `pin` in the query string. The importer sends it as a form field of the
+`POST` instead, so the PIN is in no address, and no log or journal of an
+address holds it. H, post 25, describes the switch as "post the password in
+the body". Inferred: plex.tv reads the form of this call as it reads the form
+of call 1, which the importer already sends as a form field where P uses the
+query string.
+
+How plex.tv answers a wrong PIN is in neither P nor H: P raises on any status
+but 200, 201 and 204, and names none for this call. The importer reads any
+refusal of the switch, while the owner's token still answers call 3 with `200`
+(F), as a PIN plex.tv did not take. When call 3 answers `401`, the owner's
+sign-in is no longer valid, and `unlock` says that instead.
+
 ## Libraries, titles and watch state
 
 `GET /library/sections` answers `Directory` elements with `key`, `type` and
@@ -249,15 +287,19 @@ Each one needs a real server. None was answered here.
    `userID` is that id and whose `accessToken` is not empty.
    - If yes, the importer already brings that person's watch state.
    - If no, the importer lists that person with a locked state, and the
-     fallback is `POST https://plex.tv/api/home/users/{id}/switch`, which
-     answers `authenticationToken` (P `switchHomeUser`). The importer does not
-     make that call today.
+     fallback is call 14 with no PIN (P `switchHomeUser` makes `pin`
+     optional). The importer makes call 14 only for a user protected by a PIN,
+     with the PIN the owner typed.
 2. **Is `protected="1"` the PIN flag, and does call 6 still give that person's
    token?** The importer reports a `protected` Home user as needing a PIN and
    reads none of their watch state, whether or not call 6 lists a token for
-   them. Issue #774 adds the PIN.
-3. **Does a PIN that ran out answer `404` on call 2?**
-4. **What does `/livetv/dvrs` answer on a server with no tuner, and on one with
+   them, until `unlock` opens it with call 14.
+3. **Which status does call 14 answer for a wrong PIN, and does it take `pin`
+   as a form field?** See [the Home switch](#the-home-switch). To check: with
+   the owner's token, switch to a protected Home user once with a wrong PIN and
+   once with the right one, both as a form field.
+4. **Does a PIN that ran out answer `404` on call 2?**
+5. **What does `/livetv/dvrs` answer on a server with no tuner, and on one with
    no Plex Pass?**
-5. **Does `sort=viewedAt:desc` keep one order between two pages when two plays
+6. **Does `sort=viewedAt:desc` keep one order between two pages when two plays
    share a second?** A play seen twice is harmless, since its id is the same.

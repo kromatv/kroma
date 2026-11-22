@@ -49,4 +49,5 @@ pub(super) const STEPS: &[Step] = &[
     sql_step!("0024_import_identities"),
     sql_step!("0025_cast_devices"),
     sql_step!("0026_absent_titles"),
+    sql_step!("0027_setup"),
 ];
