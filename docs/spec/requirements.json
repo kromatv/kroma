@@ -2337,7 +2337,7 @@
     "status": "AGREED",
     "text": "A server learns it is out of date by checking for a newer release and",
     "file": "docs/spec/admin/README.md",
-    "line": 323
+    "line": 331
   },
   {
     "id": "ADMIN-90",
@@ -2347,7 +2347,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 336
+    "line": 344
   },
   {
     "id": "ADMIN-91",
@@ -2357,7 +2357,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 340
+    "line": 348
   },
   {
     "id": "ADMIN-92",
@@ -2367,7 +2367,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 343
+    "line": 351
   },
   {
     "id": "ADMIN-93",
@@ -2377,7 +2377,7 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 348
+    "line": 356
   },
   {
     "id": "ADMIN-94",
@@ -3298,6 +3298,26 @@
     "text": "A step stays done once the server has seen it done. A line that",
     "file": "docs/spec/admin/setup.md",
     "line": 149
+  },
+  {
+    "id": "ADMIN-188",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 188,
+    "status": "AGREED",
+    "text": "A restore that is not a reset adds what the backup holds and removes",
+    "file": "docs/spec/admin/README.md",
+    "line": 319
+  },
+  {
+    "id": "ADMIN-189",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 189,
+    "status": "AGREED",
+    "text": "A restore that is a reset puts the backup's sources in place of the",
+    "file": "docs/spec/admin/README.md",
+    "line": 323
   },
   {
     "id": "ADMIN-210",
