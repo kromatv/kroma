@@ -1,18 +1,14 @@
-export const SETUP_STEPS = [
-  'language',
-  'start',
-  'owner',
-  'import',
-  'media',
-  'modules',
-  'people',
-  'privacy',
-  'done',
-] as const;
+import {
+  type SetupConfirmed,
+  SetupStart as Starts,
+  SetupStep as Steps,
+} from '@kromatv/client/setup';
+
+export const SETUP_STEPS = Steps.options;
 
 export type SetupStep = (typeof SETUP_STEPS)[number];
 
-export const SETUP_STARTS = ['fresh', 'bring'] as const;
+export const SETUP_STARTS = Starts.options;
 
 export type SetupStart = (typeof SETUP_STARTS)[number];
 
@@ -102,4 +98,10 @@ export function stepOpenTo(
     return 'language';
   }
   return stepsFor(start).includes(step) ? step : 'media';
+}
+
+/** Whether continuing from `step` is itself the owner's answer: the privacy
+ * step always, the modules step when nothing was picked. */
+export function confirmsOnContinue(step: SetupStep, picked: number): step is SetupConfirmed {
+  return step === 'privacy' || (step === 'modules' && picked === 0);
 }
