@@ -9,9 +9,9 @@ pub struct TitlePage {
     pub next: Option<String>,
 }
 
-/// One film or one episode of the other server. `title` and `year` are the
-/// title's own, an episode's included. The show an episode belongs to is in
-/// `series`.
+/// One film, one episode or one show of the other server. `title` and `year`
+/// are the title's own, an episode's included. The show an episode belongs to
+/// is in `series`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Title {
@@ -34,12 +34,14 @@ pub struct Title {
     pub episode: Option<u32>,
 }
 
-/// `Other` is a title that is neither, which an import skips.
+/// `Series` is a whole show, which brings a favourite and nothing else.
+/// `Other` is a title that is none of these, which an import skips.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum TitleKind {
     Movie,
     Episode,
+    Series,
     #[default]
     #[serde(other)]
     Other,

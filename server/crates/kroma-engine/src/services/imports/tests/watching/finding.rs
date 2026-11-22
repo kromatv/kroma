@@ -15,7 +15,7 @@ fn watched(title: &str) -> Value {
     json!({ "title": title, "watched": true, "lastPlayedAt": LAST_WEEK })
 }
 
-fn known_to_tmdb_as(world: &World, kind: &str, subject: &str, tmdb: i64) {
+pub(super) fn known_to_tmdb_as(world: &World, kind: &str, subject: &str, tmdb: i64) {
     world
         .state
         .db

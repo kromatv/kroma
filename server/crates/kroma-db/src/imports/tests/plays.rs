@@ -221,3 +221,14 @@ fn a_play_whose_title_or_account_left_the_server_is_not_written() {
         Vec::<String>::new()
     );
 }
+
+#[test]
+fn a_play_placed_on_a_whole_show_is_never_logged() {
+    let home = a_household();
+    an_episode(&home.pool, "half-loop");
+
+    let added = home.adds(&[played("p1", &home.ana, Place::Show("sev"))]);
+
+    assert_eq!(added, [Merged::Gone]);
+    assert!(logged(&home.pool).is_empty());
+}

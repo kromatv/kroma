@@ -1,0 +1,16 @@
+{
+  "Items": [
+    {
+      "Name": "The Wire",
+      "ServerId": "5f2c1d3e4b6a4c8e9d0f1a2b3c4d5e6f",
+      "Id": "e0000000000000000000000000000001",
+      "Path": "/data/shows/The Wire",
+      "ProviderIds": { "Tmdb": "1438", "Imdb": "tt0306414", "Tvdb": "79126" },
+      "ProductionYear": 2002,
+      "IsFolder": true,
+      "Type": "Series"
+    }
+  ],
+  "TotalRecordCount": 1,
+  "StartIndex": 0
+}

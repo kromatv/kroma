@@ -382,7 +382,12 @@ refuses a page with more, and a page has to fit a module call's own limits.
 }
 ```
 
-- `kind` is `movie` or `episode`. The core skips a title of any other kind.
+- `kind` is `movie`, `episode` or `series`. The core skips a title of any
+  other kind.
+- A `series` is a whole show. Its `title`, `year` and `ids` are the show's, and
+  it has no `paths`. List one where the other server lets a person mark a show
+  as a favourite: `states` then answers a row for it, and the core reads
+  `favourite` alone from that row.
 - `paths` are the title's files as the other server sees them. A title kept in
   two versions has two.
 - `title`, `year` and `ids` are the title's own. For an episode they are the
@@ -417,6 +422,9 @@ refuses a page with more, and a page has to fit a module call's own limits.
 ```
 
 One row per title the user has a state for, by the `id` that `titles` gave.
+A favourite on a `series` goes to the person's list on the show here that has
+its ids, or failing that its title and year. A series that matches no show here
+is counted as unmatched in the report, like any other row.
 `positionMs` is where the user stopped, and `durationMs` is the length of the
 title as the other server knows it. `changedSince` asks only for the states that
 changed at or after that time. An importer that cannot filter answers every

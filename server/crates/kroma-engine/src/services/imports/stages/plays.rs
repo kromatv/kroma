@@ -37,7 +37,7 @@ impl<'a> Sorted<'a> {
         let place = match found {
             Found::Title(item) => Place::Title(item),
             Found::Awaited(file) => Place::File(file),
-            Found::Nothing => return Self::Answered(Outcome::Unmatched),
+            Found::Show(_) | Found::Nothing => return Self::Answered(Outcome::Unmatched),
         };
         Self::Add(NewPlay {
             id: &row.play.id,

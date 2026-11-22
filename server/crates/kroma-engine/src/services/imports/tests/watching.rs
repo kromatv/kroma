@@ -4,6 +4,7 @@ mod home;
 mod played;
 mod removed;
 mod review;
+mod series;
 mod world;
 
 use std::sync::atomic::Ordering;

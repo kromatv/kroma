@@ -167,6 +167,7 @@ pub(crate) struct Title {
 pub(crate) enum TitleKind {
     Movie,
     Episode,
+    Series,
     Other,
 }
 

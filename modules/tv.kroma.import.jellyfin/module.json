@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.import.jellyfin",
   "name": "Jellyfin import",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Brings a Jellyfin household over: its libraries, its users, what each person watched and where they stopped. It only reads the Jellyfin server.",
   "engines": {
     "server": ">=0.1.39"

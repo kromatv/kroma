@@ -5,6 +5,7 @@ pub(crate) const MAX_PAGE_ROWS: usize = 500;
 const LOOKUP_ROWS: usize = 50;
 
 const FILMS_AND_EPISODES: &str = "Movie,Episode";
+const TITLES_AND_SHOWS: &str = "Movie,Episode,Series";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Window {
@@ -40,10 +41,20 @@ fn pair(name: &'static str, value: &str) -> (&'static str, String) {
 }
 
 pub(crate) fn films_and_episodes(user: &str) -> Query {
+    of_types(user, FILMS_AND_EPISODES)
+}
+
+/// What `titles` and `states` read: the films and episodes, and each whole
+/// show, which carries the favourite a person put on it.
+pub(crate) fn titles_and_shows(user: &str) -> Query {
+    of_types(user, TITLES_AND_SHOWS)
+}
+
+fn of_types(user: &str, types: &str) -> Query {
     vec![
         pair("userId", user),
         pair("recursive", "true"),
-        pair("includeItemTypes", FILMS_AND_EPISODES),
+        pair("includeItemTypes", types),
         pair("enableImages", "false"),
     ]
 }
