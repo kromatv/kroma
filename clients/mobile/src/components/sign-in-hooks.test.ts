@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-vi.mock('#mobile/lib/session', () => ({ useSession: () => ({ requestLocale }) }));
+vi.mock('#mobile/lib/session', () => ({ useSession: () => ({ requestLocale, adopt }) }));
 
 //
 // The data behind the sign-in screen. This is the one screen a user reaches
@@ -20,14 +20,23 @@ const createQueryClient = vi.hoisted(() =>
       accounts: {
         config: async () => api.config(baseUrl),
         users: async () => api.users(baseUrl),
+        kids: {
+          list: async (access: string) => api.kids(baseUrl, access),
+          open: async (access: string, profile: string) => api.open(baseUrl, access, profile),
+        },
       },
+      media: { splash: async () => api.splash(baseUrl) },
     };
   }),
 );
 const api = vi.hoisted(() => ({
   config: async (_url: string) => ({ publicUserList: true, hasAccounts: true }),
   users: async (_url: string) => [{ id: 'u1', username: 'max' }],
+  kids: async (_url: string, _access: string) => [{ id: 'leo', username: 'Léo' }],
+  open: async (_url: string, _access: string, _profile: string) => ({ token: 'kids-session' }),
+  splash: async (_url: string): Promise<unknown[]> => [],
 }));
+const adopt = vi.hoisted(() => vi.fn());
 // `clientUserAgent` too: these hooks build their client through
 // `#mobile/lib/device`, which stamps the phone's own User-Agent onto it.
 vi.mock('@kromatv/client/query', () => ({ createQueryClient }));
@@ -35,7 +44,9 @@ vi.mock('@kromatv/core', () => ({
   discoverServers,
   deviceLocale: () => 'fr',
   clientUserAgent: () => 'Kroma/test',
+  sizedImageUrl: (url: string, width: number) => `${url}?w=${width}`,
 }));
+vi.mock('#mobile/lib/i18n', () => ({ useT: () => (key: string) => key }));
 
 const getDeviceLocalIp = vi.hoisted(() => vi.fn(async () => '192.168.1.20' as string | null));
 vi.mock('#mobile/lib/local-ip', () => ({ getDeviceLocalIp }));
@@ -49,8 +60,10 @@ import {
   keyOf,
   useBiometricLockedKeys,
   useClientCache,
+  useDeviceKids,
   useDiscoveryLoop,
   useServerRoster,
+  useSplashCovers,
 } from './sign-in-hooks';
 
 const SWEEP_MS = 4000;
@@ -66,6 +79,7 @@ beforeEach(() => {
   isBiometricLockEnabled.mockResolvedValue(false);
   api.config = async () => ({ publicUserList: true, hasAccounts: true });
   api.users = async () => [{ id: 'u1', username: 'max' }];
+  api.splash = async () => [];
 });
 
 afterEach(() => {
@@ -112,6 +126,77 @@ describe('the per-server client cache', () => {
     const first = result.current('https://a');
     rerender();
     expect(result.current('https://a')).toBe(first);
+  });
+
+  it('is the same lookup across renders, so an effect keyed on it runs once', () => {
+    const { result, rerender } = renderHook(() => useClientCache());
+    const first = result.current;
+
+    rerender();
+
+    expect(result.current).toBe(first);
+  });
+});
+
+describe('the Kids profiles this phone can open', () => {
+  it('lists them on each server with the access of a member remembered there', async () => {
+    const accounts = [account('https://a', 'ana')];
+
+    const { result } = renderHook(() => useDeviceKids(accounts));
+
+    await waitFor(() => expect(result.current.offered).toHaveLength(1));
+    expect(result.current.offered[0]).toMatchObject({ serverUrl: 'https://a', access: 't' });
+  });
+
+  it('adopts the session an opened Kids profile gets, on its own server', async () => {
+    const accounts = [account('https://a', 'ana')];
+    const { result } = renderHook(() => useDeviceKids(accounts));
+    await waitFor(() => expect(result.current.offered).toHaveLength(1));
+
+    const choice = result.current.offered[0];
+    if (choice) {
+      await result.current.open(choice);
+    }
+
+    expect(adopt).toHaveBeenCalledWith('https://a', { token: 'kids-session' });
+  });
+});
+
+const covering = (serverUrl: string | null) =>
+  renderHook(() => useSplashCovers(serverUrl, useClientCache()));
+
+describe('the gate’s splash covers', () => {
+  it('dresses the gate in the server’s sample, a film and a series each named so', async () => {
+    api.splash = async () => [
+      { backdropUrl: '/dune.jpg', title: 'Dune', year: 2021, kind: 'movie' },
+      { backdropUrl: '/dark.jpg', title: 'Dark', year: null, kind: 'show' },
+    ];
+
+    const { result } = covering('https://a');
+
+    await waitFor(() => expect(result.current).toHaveLength(2));
+    expect(result.current).toEqual([
+      { url: '/dune.jpg?w=640', caption: 'Dune · 2021', eyebrow: 'content.film' },
+      { url: '/dark.jpg?w=640', caption: 'Dark', eyebrow: 'content.series' },
+    ]);
+  });
+
+  it('keeps the plain wash before a server is picked', () => {
+    const { result } = covering(null);
+
+    expect(result.current).toEqual([]);
+  });
+
+  it('keeps the plain wash when the server does not answer', async () => {
+    const splash = vi.fn(async () => {
+      throw new Error('down');
+    });
+    api.splash = splash;
+
+    const { result } = covering('https://a');
+
+    await waitFor(() => expect(splash).toHaveBeenCalled());
+    expect(result.current).toEqual([]);
   });
 });
 

@@ -26,8 +26,8 @@ export function useCreateKids(host: CreateKidsHost) {
     try {
       await host.createKids(draft);
       host.onCreated();
-    } catch (refused) {
-      setError(host.refusal(refused));
+    } catch (error_) {
+      setError(host.refusal(error_));
     } finally {
       setBusy(false);
     }

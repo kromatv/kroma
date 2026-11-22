@@ -57,6 +57,25 @@ afterEach(() => {
 });
 
 describe('useSearchAnswers', () => {
+  it('still answers the library when the provider fails', async () => {
+    vi.useFakeTimers();
+    provider.search.mockImplementation(async () => {
+      throw new Error('down');
+    });
+    const client = fakeClient({
+      media: { search: async () => ({ query: 'bert', results: [HIT], people: [] }) },
+      discovery: { search: provider.search },
+    });
+    const wrapper = ({ children }: Readonly<{ children: ReactNode }>) => (
+      <TvClientProvider client={client}>{children}</TvClientProvider>
+    );
+
+    const { result } = renderHook(() => useSearchAnswers('bert', NOTHING_LOCAL), { wrapper });
+    await settles(300);
+
+    expect(result.current).toEqual({ query: 'bert', library: [HIT], people: [], discover: [] });
+  });
+
   it('asks the provider nothing for a Kids session, which never sees a title the server does not hold', async () => {
     vi.useFakeTimers();
     session.kids = true;

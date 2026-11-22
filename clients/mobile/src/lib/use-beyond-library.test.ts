@@ -6,13 +6,13 @@ import { useBeyondLibrary } from './use-beyond-library.hook';
 
 interface Asked {
   kids: boolean;
-  asked: { enabled?: boolean }[];
+  asked: { enabled?: boolean; placeholderData?: (previous: string) => string }[];
 }
 
 const app: Asked = vi.hoisted(() => ({ kids: false, asked: [] }));
 
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: (options: { enabled?: boolean }) => {
+  useQuery: (options: Asked['asked'][number]) => {
     app.asked.push(options);
     return { data: undefined };
   },
@@ -40,5 +40,11 @@ describe('what the provider holds beyond the library', () => {
     renderHook(() => useBeyondLibrary('dune'));
 
     expect(app.asked.at(-1)?.enabled).toBe(false);
+  });
+
+  it('keeps the last answer on screen while the next one is asked', () => {
+    renderHook(() => useBeyondLibrary('dune'));
+
+    expect(app.asked.at(-1)?.placeholderData?.('the last answer')).toBe('the last answer');
   });
 });
