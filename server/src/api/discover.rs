@@ -24,7 +24,7 @@ use crate::infra::metadata::{discover, season_episodes};
 use crate::model::{
     DiscoverDetail, DiscoverEpisode, DiscoverResponse, Permission, RequestKind, User,
 };
-use crate::services::settings;
+use crate::services::{settings, trending_lists};
 use crate::state::SharedState;
 
 use flags::{flag_detail, flag_hits};
@@ -127,8 +127,9 @@ pub struct TrendingParams {
 }
 
 /// `GET /api/discover/trending?type=&page=` this week's trending titles. No
-/// `type` = merged movies + shows (page 1) for the discover empty-state rails;
-/// `type=movie|tv` = a paginated single-kind list backing the full page.
+/// `type` is the provider's first page of films and shows together, for the
+/// discover rails; `type=movie|tv` pages through one deep list of a kind,
+/// [`trending_lists::PAGE_SIZE`] titles at a time.
 pub async fn trending(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
@@ -137,14 +138,39 @@ pub async fn trending(
 ) -> Result<Response, Response> {
     require(&viewer.user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &viewer.user)?;
-    let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
-    let scope = scope_from_type(params.kind.as_deref());
+    let language = settings::metadata_language_for(&state.settings, &state.config, reader);
     let page = params.page.unwrap_or(1);
+    let source = trending_lists::Source {
+        key,
+        language,
+        scope: scope_from_type(params.kind.as_deref()),
+    };
+    if source.scope == discover::DiscoverScope::All {
+        warm_lists(&state, &source);
+        return flagged_page(&state, &viewer, move || {
+            discover::trending(&source.key, &source.language, source.scope, page)
+                .map_err(|()| anyhow::anyhow!("TMDB trending failed"))
+        })
+        .await;
+    }
+    let engine = state.clone();
     flagged_page(&state, &viewer, move || {
-        discover::trending(&key, &lang, scope, page)
-            .map_err(|()| anyhow::anyhow!("TMDB trending failed"))
+        engine.trending_lists.page(&source, page)
     })
     .await
+}
+
+fn warm_lists(state: &SharedState, rails: &trending_lists::Source) {
+    for scope in [
+        discover::DiscoverScope::Movies,
+        discover::DiscoverScope::Shows,
+    ] {
+        let source = trending_lists::Source {
+            scope,
+            ..rails.clone()
+        };
+        state.trending_lists.warm(&source);
+    }
 }
 
 /// `GET /api/discover/{movie|tv}/:tmdbId` detail + seasons + availability.
