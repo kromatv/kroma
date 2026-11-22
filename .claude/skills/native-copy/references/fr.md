@@ -218,6 +218,11 @@ move the rest to the screen where it matters.
 | Go on the internet (a module's access) | Accéder à Internet | Aller sur Internet |
 | Whoever publishes it | son éditeur | qui le publie |
 | Console (the admin area) | l'administration | la console |
+| The relay's question (a request to allow a server) | la demande d'autorisation du relais | la question du relais |
+| Imported (a play) | Importée | Import |
+| Remote access (the module) | Accès distant | Accès à distance |
+| An allowed title passes its rating | Un titre autorisé s'affiche malgré sa classification | passe sa classification |
+| Watch list, wanted list (titles to fetch) | titres suivis | liste des envies |
 | Issuer (OpenID Connect) | émetteur | issuer, except in parentheses after émetteur |
 | ID token | jeton d'identité | ID token |
 

@@ -28,7 +28,7 @@
   "admin.backupRestoreRemove": "Restaurer et retirer",
   "admin.backupScheduleFailed": "Impossible d'enregistrer ce changement. Réessayez.",
   "admin.backupScheduleFolder": "Choisir un dossier",
-  "admin.backupScheduleHint": "Chaque nuit, KROMA enregistre une sauvegarde dans le dossier ci-dessous et supprime les plus anciennes au-delà du nombre conservé. Comme un export sans mot de passe, elle contient les empreintes des mots de passe et les clés : choisissez un dossier que vous seul pouvez lire.",
+  "admin.backupScheduleHint": "Chaque nuit, KROMA enregistre une sauvegarde dans le dossier ci-dessous et supprime les plus anciennes au-delà du nombre conservé. Comme un export sans mot de passe, elle contient les empreintes des mots de passe et les clés : choisissez un dossier auquel personne d'autre n'a accès.",
   "admin.backupScheduleKeep": "Sauvegardes conservées",
   "admin.backupScheduleLast": "Dernière sauvegarde enregistrée {when}.",
   "admin.backupScheduleLastFailed": "La dernière sauvegarde a échoué {when}.",
