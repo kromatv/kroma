@@ -2,9 +2,9 @@ import type { Importer, ImportSignIn } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
 import { Box, Button, GuidedFlow, Icon, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { ImportRefused } from '#web/features/setup/import-refused.component';
-import { ImporterIcon } from '#web/features/setup/importer-icon.component';
-import { openPage, useImportPageSignIn } from '#web/features/setup/use-import-sign-in.hook';
+import { ImportRefused } from '#web/features/admin/import/import-refused.component';
+import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
+import { openPage, useImportPageSignIn } from '#web/features/admin/import/use-import-sign-in.hook';
 
 type StagePhase = 'ready' | 'opened';
 type StageState = 'done' | 'now' | 'next';

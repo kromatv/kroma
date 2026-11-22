@@ -85,6 +85,7 @@ on:
       - '.github/workflows/desktop-preview.yml'
       - '.github/workflows/apple-signing-doctor.yml'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/testflight-beta.yml'
   workflow_dispatch:
     inputs:
       version:
@@ -270,6 +271,48 @@ jobs:
     with:
       version: ${{ needs.version.outputs.version }}
     secrets: inherit
+
+  # The TestFlight canary: the newest iPhone and Apple TV builds go to the
+  # external `Canary` group, whose public link anyone may join, and to Beta App
+  # Review when they wait on it. It runs on every candidate push, not only one
+  # that uploaded, so a build whose run was superseded while Apple processed it
+  # still reaches the group on the next push; a group that already has the
+  # newest build is left alone. Created, link on, the first time it is missing.
+  # The public Beta group is fed each night by testflight-beta.yml.
+  testflight:
+    name: TestFlight canary
+    needs: [version, mobile, appletv]
+    if: >-
+      !cancelled()
+      && needs.version.outputs.channel == 'candidate'
+      && github.event_name == 'push'
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - name: Feed the Canary group
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          BUILD: ${{ needs.version.outputs.build }}
+          IOS: ${{ needs.mobile.outputs.uploaded }}
+          TVOS: ${{ needs.appletv.outputs.uploaded }}
+        run: |
+          wait=()
+          if [[ "$IOS" == true ]]; then wait+=(--wait IOS); fi
+          if [[ "$TVOS" == true ]]; then wait+=(--wait TV_OS); fi
+          bun run ci testflight feed --group Canary --create --build "$BUILD" "${wait[@]}"
 
   # --------------------------------------------------------------- Desktop ---
 

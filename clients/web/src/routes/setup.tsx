@@ -1,4 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { ImportSession } from '#web/features/admin/import/import-session.component';
+import { ImportStep } from '#web/features/admin/import/import-step.component';
 import { Setup } from '#web/features/setup/setup.component';
 import {
   laterStep,
@@ -30,20 +32,23 @@ function SetupPage() {
   const { step, start, reached } = Route.useSearch();
   const navigate = useNavigate();
   return (
-    <Setup
-      step={step}
-      start={start}
-      reached={reached}
-      onStep={(next) =>
-        void navigate({
-          to: '/setup',
-          search: { step: next, start, reached: laterStep(reached, next) },
-        })
-      }
-      onStart={(next) =>
-        void navigate({ to: '/setup', search: { step, start: next, reached }, replace: true })
-      }
-      onLeave={() => void navigate({ to: '/' })}
-    />
+    <ImportSession>
+      <Setup
+        step={step}
+        start={start}
+        reached={reached}
+        onStep={(next) =>
+          void navigate({
+            to: '/setup',
+            search: { step: next, start, reached: laterStep(reached, next) },
+          })
+        }
+        onStart={(next) =>
+          void navigate({ to: '/setup', search: { step, start: next, reached }, replace: true })
+        }
+        onLeave={() => void navigate({ to: '/' })}
+        importStep={ImportStep}
+      />
+    </ImportSession>
   );
 }

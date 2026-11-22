@@ -3,7 +3,7 @@ import type { ModuleId } from '@kromatv/client/modules';
 import { useQuery } from '@tanstack/react-query';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
-const IMPORTERS_QUERY = ['setup', 'importers'] as const;
+export const IMPORTERS_QUERY = ['setup', 'importers'] as const;
 const ASK_AGAIN_MS = 1500;
 
 function find(list: ImporterList | undefined, id: ModuleId | null): Importer | null {
@@ -11,10 +11,11 @@ function find(list: ImporterList | undefined, id: ModuleId | null): Importer | n
 }
 
 /** Whether the list must be asked again: the importer the owner chose is
- * known and cannot be asked yet, because it installs or it starts. */
+ * installed and cannot be asked yet, because it starts. One that waits on the
+ * owner's consent is left alone. */
 export function stillStarting(list: ImporterList | undefined, id: ModuleId | null): boolean {
   const chosen = find(list, id);
-  return chosen !== null && !chosen.running;
+  return chosen !== null && chosen.installed && !chosen.running;
 }
 
 /** The importers the server can use: the installed ones, then the ones the

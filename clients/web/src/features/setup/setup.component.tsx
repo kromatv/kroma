@@ -1,8 +1,6 @@
 import { Navigate } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { DoneStep } from '#web/features/setup/done-step.component';
-import { ImportSession } from '#web/features/setup/import-session.component';
-import { ImportStep } from '#web/features/setup/import-step.component';
 import { LanguageStep } from '#web/features/setup/language-step.component';
 import { MediaStep } from '#web/features/setup/media-step.component';
 import { ModulesStep } from '#web/features/setup/modules-step.component';
@@ -29,6 +27,13 @@ import { useSetupMemory } from '#web/features/setup/use-setup-memory.hook';
 import { useServerOwner } from '#web/features/setup/use-server-owner.hook';
 import { useAuth } from '#web/shared/lib/auth';
 
+/** How the setup's import step moves on. */
+export interface ImportMoves {
+  onBack: () => void;
+  onSkip: () => void;
+  onContinue: () => void;
+}
+
 interface SetupProps {
   step: SetupStep;
   start: SetupStart;
@@ -37,12 +42,14 @@ interface SetupProps {
   onStep: (step: SetupStep) => void;
   onStart: (start: SetupStart) => void;
   onLeave: () => void;
+  importStep: ComponentType<ImportMoves>;
 }
 
 type FlowProps = SetupProps & { visitor: SetupVisitor };
 
 interface Moves {
   feed: ScanFeed;
+  importStep: ComponentType<ImportMoves>;
   start: SetupStart;
   onStart: (start: SetupStart) => void;
   next: () => void;
@@ -56,7 +63,9 @@ const VIEWS: Record<SetupStep, (moves: Moves) => ReactNode> = {
     <StartStep start={start} onStart={onStart} onBack={back} onContinue={next} />
   ),
   owner: ({ next, back }) => <OwnerStep onBack={back} onCreated={next} />,
-  import: ({ next, back }) => <ImportStep onBack={back} onContinue={next} />,
+  import: ({ importStep: Step, next, back }) => (
+    <Step onBack={back} onSkip={next} onContinue={next} />
+  ),
   media: ({ feed, next, back }) => <MediaStep feed={feed} onBack={back} onContinue={next} />,
   modules: ({ next, back }) => <ModulesStep onBack={back} onContinue={next} />,
   people: ({ next, back }) => <PeopleStep onBack={back} onContinue={next} />,
@@ -83,9 +92,7 @@ export function Setup(props: Readonly<SetupProps>) {
   }
   return (
     <SetupPicks>
-      <ImportSession>
-        <SetupFlow {...props} visitor={user ? 'owner' : 'stranger'} />
-      </ImportSession>
+      <SetupFlow {...props} visitor={user ? 'owner' : 'stranger'} />
     </SetupPicks>
   );
 }
@@ -143,7 +150,7 @@ function SetupFlow(props: Readonly<FlowProps>) {
       onStep={moves.go}
       onFinishLater={moves.leave}
     >
-      {VIEWS[step](moves)}
+      {VIEWS[step]({ ...moves, importStep: props.importStep })}
     </SetupShell>
   );
 }

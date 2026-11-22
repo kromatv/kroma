@@ -136,6 +136,11 @@ export function TvFamily() {
             channel={m.download_tv_apple_action_hint()}
             label={m.download_join_testflight()}
           />
+          <JoinButton
+            href={join.testflightCanary}
+            channel={m.download_tv_apple_action_hint()}
+            label={m.download_join_testflight_canary()}
+          />
         </PlatformEntry>
       )}
     </PlatformFamily>

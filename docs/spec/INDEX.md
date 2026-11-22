@@ -3,7 +3,7 @@
 
 # Requirement index
 
-779 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+782 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -336,6 +336,8 @@
 - **ADMIN-185** (SHIPPED) - Under Users, every invitation nobody has redeemed offers to send it, <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
@@ -682,6 +684,7 @@
 - **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
 - **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
 - **MOD-108** (SHIPPED) - A module names and describes itself, and says in one sentence what it <sub>[README.md](modules/README.md)</sub>
+- **MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do, <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 

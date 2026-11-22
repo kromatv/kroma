@@ -15,7 +15,8 @@ Status: **AGREED**
 Plex and Jellyfin are the first two.
 
 **ADMIN-129** (AGREED) - The import is the same in the guided setup ([`setup.md`](setup.md))
-and in the admin console, where an owner who set KROMA up first finds it later.
+and in the admin console, where an owner who set KROMA up first finds it later, under its own
+entry among the media pages.
 
 **ADMIN-130** (AGREED) - The import reads the other server and changes nothing on it. The
 household can keep using that server during the import and after it.
@@ -25,6 +26,12 @@ administrators.
 
 **ADMIN-132** (AGREED) - That sign-in is kept to run the import again (MOD-106), and
 forgotten when the owner says so.
+
+**ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and
+offers to forget it. Forgetting it starts the import over.
+
+**ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA
+keeps, under the name of the server it reaches, and forgets one in one press.
 
 **ADMIN-133** (AGREED) - The owner types the other server's address only when KROMA cannot
 know it.
