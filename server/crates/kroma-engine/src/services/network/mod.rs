@@ -38,7 +38,7 @@ pub use permissions::{DeclaredListeners, DeclaredPermissions, PERMISSION_NET_CON
 pub use rules::{
     Action, DefaultAction, NetworkRules, Rule, RulesError, MAX_BODY_BYTES, SETTING_KEY,
 };
-pub use sockets::{LocalNetwork, LocalNetworks, RawSocket, SocketRefusal};
+pub use sockets::{LocalNetwork, LocalNetworks, RawSocket, SocketRefusal, GUARD_METADATA};
 pub use summary::{Summary, SummaryRow, Totals, MAX_DAYS};
 
 use middleware::Middleware;
@@ -85,7 +85,7 @@ impl Network {
             https_port: None,
             declared: Arc::new(|_| None),
             middleware: Middleware::answering(Point::absent(POLICY_POINT)),
-            local_networks: Arc::new(sockets::interface_networks),
+            local_networks: Arc::new(kroma_egress::lan::interface_networks),
         }
     }
 

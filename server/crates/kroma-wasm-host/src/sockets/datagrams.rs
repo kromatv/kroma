@@ -43,10 +43,13 @@ impl Incoming {
                 break;
             }
             match self.socket.try_recv_from(&mut buffer) {
-                Ok((read, from)) if self.admits(from) => received.push(IncomingDatagram {
-                    data: buffer[..read].to_vec(),
-                    remote_address: from.into(),
-                }),
+                Ok((read, from)) if self.admits(from) => {
+                    self.held.carried(SocketUse::Receive, from, read);
+                    received.push(IncomingDatagram {
+                        data: buffer[..read].to_vec(),
+                        remote_address: from.into(),
+                    });
+                }
                 Ok(_) => {}
                 Err(error) if error.kind() == ErrorKind::WouldBlock => break,
                 Err(error) if received.is_empty() => return Err(error.into()),
@@ -103,8 +106,14 @@ impl Outgoing {
         if !self.held.allows(SocketProto::Udp, SocketUse::Send, target) {
             return Err(ErrorCode::AccessDenied.into());
         }
+        if !self.held.spend(datagram.data.len()) {
+            return Ok(false);
+        }
         match self.socket.try_send_to(&datagram.data, target) {
-            Ok(_) => Ok(true),
+            Ok(sent) => {
+                self.held.carried(SocketUse::Send, target, sent);
+                Ok(true)
+            }
             Err(error) if error.kind() == ErrorKind::WouldBlock => Ok(false),
             Err(error) => Err(error.into()),
         }
@@ -130,6 +139,10 @@ impl Outgoing {
     }
 
     fn check_send(&mut self) -> SocketResult<u64> {
+        if self.held.spent() {
+            self.permitted = 0;
+            return Ok(0);
+        }
         let mut context = Context::from_waker(Waker::noop());
         self.permitted = match self.socket.poll_send_ready(&mut context) {
             Poll::Ready(Ok(())) => DATAGRAMS_AT_ONCE,
@@ -143,6 +156,10 @@ impl Outgoing {
 #[wasmtime_wasi::async_trait]
 impl Pollable for Outgoing {
     async fn ready(&mut self) {
+        let wait = self.held.budget_wait();
+        if !wait.is_zero() {
+            tokio::time::sleep(wait).await;
+        }
         let _ = self.socket.writable().await;
     }
 }

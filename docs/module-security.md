@@ -144,37 +144,57 @@ no socket, so a module asks for one in the open:
 ```
 
 TCP runs on wasmtime's own sockets, under the address check wasmtime calls
-before each bind, listen and connection. UDP and name lookup are the host's own:
-the stock UDP socket cannot broadcast, and the stock lookup does not tell the
-check which name an address came from. Every use is ruled where every fetch is,
-by the core's network policy, in this order:
+before each bind, listen and connection, and the host counts them as they are
+created. UDP and name lookup are the host's own: the stock UDP socket cannot
+broadcast, and the stock lookup does not tell the check which name an address
+came from. Every use is ruled where every fetch is, by the core's network
+policy, in this order:
 
-1. The first entry that names the transport, names the port (or no port) and
-   covers the address decides the purpose. `public` covers a public address.
-   `lan` covers an address on one of the networks this machine's interfaces sit
-   on, the broadcast address of each, `255.255.255.255`, and the multicast that
-   stays on the link: `224.0.0.0/24`, `239.0.0.0/8` and `ff02::/16`. A host
-   pattern or `setting:<key>` covers an address the module resolved that name to,
-   through the host. Nothing else covers anything.
-2. The guards: a link-local address is never reachable, and neither is one of
-   this server's own listeners on any address of this machine.
-3. The operator's rules, for the address and for each name resolved to it. A
-   rule that blocks refuses the socket, and so does one that sends the purpose
-   through a network: a raw socket goes direct, so it is refused rather than
-   leaked past the tunnel.
+1. Each entry that names the transport, names the port (or no port) and covers
+   the address. The first one gives the purpose the socket is filed under.
+   - `public` covers a public address that is not the broadcast address of a
+     network this machine sits on.
+   - `lan` covers an address on one of the networks this machine's interfaces
+     sit on, the broadcast address of each, `255.255.255.255`, and the
+     multicast that stays on the link: `224.0.0.0/24`, `239.0.0.0/8` and
+     `ff02::/16`. Loopback, an unspecified address and `0.0.0.0/8` are never
+     `lan`, and an interface that reports no netmask counts for nothing.
+   - A host pattern covers an address the module resolved a name it matches to,
+     through the host, and only a public one, unless that name is a local one
+     (`nas.local`, a single label). A pattern that is an address covers that
+     address. Loopback is reached only by a pattern that is a loopback address,
+     or a setting that names `localhost` or one.
+   - `setting:<key>` covers an address the setting names, or one the module
+     resolved a name the setting names to, private ones included: the operator
+     wrote it.
+   - Broadcast and multicast are covered by `lan` alone.
+2. The guards: a link-local address is never reachable, nor are the cloud
+   metadata services that are not link-local (`100.100.100.200`,
+   `fd00:ec2::254`), nor this server's own listeners on any address that lands
+   on this machine: loopback, one of its own addresses, or a broadcast or
+   multicast one.
+3. The operator's rules, for every entry that covers the socket, for the address
+   and for each name resolved to it. A rule that blocks refuses the socket, and
+   so does one that sends a purpose through a network: a raw socket goes direct,
+   so it is refused rather than leaked past the tunnel.
 
-A refusal reaches the component as `access-denied`. Each connection and each
-datagram sent is filed in the journal under the purpose of its entry, with
-`TCP` or `UDP` for a method, and each refusal with the rule that made it. A
-ruling holds for ten seconds for that transport, address and use, so a module
-sending many datagrams to one peer is ruled, and filed, once in that time.
+A refusal reaches the component as `access-denied`. A TCP connection is filed in
+the journal when it is ruled. A datagram's bytes are counted, and a peer is
+filed under the purpose of its entry with `UDP` for a method at its first
+datagram, then at most every ten seconds with the bytes since, and with what is
+left when the module stops. Each refusal is filed with the rule that made it,
+and each lookup, allowed or refused, with `LOOKUP`. A ruling holds for ten
+seconds for that transport, use, address, port and resolution, so a module
+sending many datagrams to one peer is ruled once in that time.
 
 Every way to an address the manifest does not name is closed:
 
 - **No `proto`, no socket.** A component with no such entry is refused TCP,
   UDP and name lookup outright, and one that names only `udp` has no TCP.
 - **Arrivals are ruled too.** A datagram from an address and port no entry
-  covers is dropped before the component reads it.
+  covers is dropped before the component reads it. An address that sends from
+  more than eight refused ports is refused for the rest of the ten seconds
+  without asking the rules again.
 - **No listening.** A component binds only an ephemeral port on every address,
   never a port or an interface it chose, and a TCP socket never listens.
 - **`public` never broadcasts.** Broadcast and multicast are `lan` only. WASI
@@ -183,24 +203,46 @@ Every way to an address the manifest does not name is closed:
 - **`lan` is this machine's networks.** A private address behind a router, on
   another VLAN or across a VPN, is not on them and is refused. `fetch` keeps
   its wider `lan`, any address that is not public.
+- **A name a module controls leads only to the internet.** A host pattern for a
+  name the module's author runs reaches the public addresses it resolves to,
+  never a private or loopback one it might point at. Reaching the local network
+  takes `lan`, a local name, an address or a setting the operator wrote.
 - **A name is looked up only for an entry that reaches it.** A host pattern or
   a setting that names it, or `public` for a name that is not a local one. `lan`
-  grants no lookup. The operator's rules are asked about the name too, and a
-  refused lookup is filed. A lookup sends a query out through the host's
-  resolver, so one the manifest does not name would carry data out in the name.
+  grants no lookup. The operator's rules are asked about the name too. The host
+  asks for the name as an absolute one (`tracker.example.org.`), so the
+  resolver's search domains are never tried. A lookup sends a query out through
+  the host's resolver, so one the manifest does not name would carry data out
+  in the name.
 - **A name rule is an address rule.** A socket shows no name, so an address is
-  covered by a name only once the module resolved that name to it. It stays
-  covered while the instance lives, so a host that shares its address with the
-  name (a CDN) is reachable too. HTTP keeps the precision of a name.
+  covered by a name only once the module resolved that name to it. An address
+  keeps the last eight names resolved to it, and the host forgets them all past
+  1,024 named addresses. A name stays attached while the instance lives, so a
+  host that shares its address with the name (a CDN) is reachable too. HTTP
+  keeps the precision of a name.
+- **A module holds a bounded share of the host.** An instance holds at most 64
+  sockets at once, TCP and UDP together, and the next one is refused with
+  `new-socket-limit`. It sends at most 1,000 datagrams and 1 MiB a second; past
+  that a send waits.
 - **Nothing is inherited.** Every socket is closed on exec, so a program a
   first-party module starts holds none of the component's.
 - **The audit sees them.** `kroma audit` writes down every socket and lookup a
-  module attempts, `ok` or `NOT DECLARED`, and lets none out.
+  module attempts, `ok` or `NOT DECLARED`, judging `lan` and `public` the way
+  the server does, and lets none out.
+
+Two things `lan` reaches on purpose. This machine's own addresses on any port
+but the server's own listeners, so an importer finds a Plex or Jellyfin server
+on the same NAS. And, for a server in a container on Docker's default bridge,
+the bridge network itself: its gateway (`172.17.0.1`) is the Docker host, so a
+module with a `lan` entry for the server's port could reach a KROMA port the
+host publishes there and come back to this server's own listener. The guard
+cannot tell that address from a neighbour's. A server whose modules declare
+`lan` runs better on the host's network.
 
 What a raw socket does not get: the VPN, since the host cannot route it through
-a tunnel yet (sealed traffic stays on the gateway), and byte counts, since the
-host sees no bytes on TCP. A `public` raw socket reaches any public address on
-its ports, the way a `public` fetch does.
+a tunnel yet (sealed traffic stays on the gateway), and byte counts on TCP,
+since the host sees no bytes there. A `public` raw socket reaches any public
+address on its ports, the way a `public` fetch does.
 
 **Host API.** `host-api` reaches the core's `/api/_host/*` and a peer's
 `/api/module/<id>/*`, and nothing else. The host adds the module token on the way
@@ -455,10 +497,14 @@ component try to read a path the host process can, open a TCP socket, resolve a
 name and read an environment variable the host has, and each attempt must fail.
 `sockets.rs` there grants a component one transport at a time: it reaches only
 what its rules allow, never the other transport, never a port it chose, never
-listens, drops a datagram from an address its rules refuse, broadcasts, and
-looks up only a name its rules allow, which then reaches the rules with the
-address. The engine's `raw_sockets` tests rule `lan`, `public`, ports, names,
-the guards and the operator's rules.
+listens, drops a datagram from an address its rules refuse, broadcasts only
+where the rules allow, and looks up only a name its rules allow, which then
+reaches the rules with the address. `socket_limits.rs` holds an instance to 64
+sockets and its send budget, keeps the last eight names of an address, and
+reports each datagram's bytes. The engine's `raw_sockets` and `socket_reach`
+tests rule `lan`, `public`, ports, names, host patterns pointed at private or
+loopback addresses, broadcasts, the guards and the operator's rules for every
+covering entry.
 `limits.rs` holds an instance to its memory ceiling and CPU budget. CI runs both
 on Ubuntu, macOS and Windows. The `kroma-module-supervisor/tests/component_*.rs`
 suites run components under the real supervisor: a call goes through the gateway and into

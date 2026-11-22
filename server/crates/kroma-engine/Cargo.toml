@@ -28,6 +28,7 @@ semver = "1"
 kroma-module-host = { workspace = true, features = ["storage"] }
 kroma-module-wire = { workspace = true }
 kroma-module-manifest = { workspace = true }
+kroma-egress = { workspace = true }
 kroma-http = { workspace = true }
 kroma-push = { workspace = true }
 # The request and monitoring workflows and the TMDB lookups under them, re-exported

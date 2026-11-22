@@ -10,6 +10,7 @@ license.workspace = true
 anyhow = { workspace = true }
 tokio = { workspace = true }
 kroma-http = { workspace = true }
+if-addrs = "0.15"
 
 [dev-dependencies]
 kroma-testing = { workspace = true }

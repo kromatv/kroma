@@ -29,6 +29,7 @@ pub struct Recorder {
     settings: BTreeMap<String, Value>,
     connections: Mutex<BTreeSet<Connection>>,
     asked: Mutex<Vec<Asked>>,
+    networks: Vec<kroma_egress::lan::LocalNetwork>,
 }
 
 impl Recorder {
@@ -38,7 +39,14 @@ impl Recorder {
             settings,
             connections: Mutex::default(),
             asked: Mutex::default(),
+            networks: kroma_egress::lan::interface_networks(),
         }
+    }
+
+    /// The networks a raw socket's `lan` is judged against, as the server
+    /// judges them; normally those of this machine's interfaces.
+    pub fn on_networks(self, networks: Vec<kroma_egress::lan::LocalNetwork>) -> Self {
+        Self { networks, ..self }
     }
 
     pub fn heard(&self, asked: Asked) {

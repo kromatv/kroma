@@ -74,21 +74,31 @@ pub enum SocketUse {
     Receive,
 }
 
-/// One use of a raw socket, with every name this instance resolved to the
-/// address through the host's own lookup.
+/// One use of a raw socket, with the last names this instance resolved to the
+/// address through the host's own lookup, eight at most.
 #[derive(Debug, Clone, Copy)]
 pub struct SocketCall<'a> {
     pub proto: SocketProto,
     pub using: SocketUse,
     pub address: std::net::SocketAddr,
     pub names: &'a [String],
+    /// Which resolution `names` came from: it changes whenever they do, and is
+    /// never given twice in a process, so a ruling kept under it holds only for
+    /// these names.
+    pub generation: u64,
 }
 
 /// What a component may do with raw sockets, ruled on its behalf. A refusal
 /// reaches the component as `access-denied`.
 pub trait Sockets: Send + Sync {
     fn allows(&self, call: &SocketCall<'_>) -> bool;
-    fn may_resolve(&self, name: &str) -> bool;
+
+    /// The addresses `name` resolves to, or `None` when this module may not
+    /// look it up.
+    fn resolve(&self, name: &str) -> Option<Vec<std::net::IpAddr>>;
+
+    /// A datagram of `bytes` went to or came from `call.address`.
+    fn carried(&self, _call: &SocketCall<'_>, _bytes: u64) {}
 }
 
 /// The raw sockets an instance may open: the transports its manifest declares,

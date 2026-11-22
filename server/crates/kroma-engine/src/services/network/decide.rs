@@ -114,7 +114,7 @@ fn in_range(ip: IpAddr, range: &str) -> bool {
     }
 }
 
-pub(super) fn prefix_matches(ip: u128, network: u128, width: u32, bits: u32) -> bool {
+fn prefix_matches(ip: u128, network: u128, width: u32, bits: u32) -> bool {
     let unmasked = width - bits;
     bits == 0 || ip >> unmasked == network >> unmasked
 }

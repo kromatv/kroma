@@ -9,7 +9,7 @@ use crate::bindings::kroma::module::{files, host_api, lan, net, process, setting
 use crate::capabilities::{Databases, Files, Lan, Media, Processes, SqlConnection};
 use crate::limits::Ceiling;
 use crate::policy::{FetchCall, FetchRecord, NetPolicy, Outcome, Verdict};
-use crate::sockets::{tcp_check, Held, SocketsView};
+use crate::sockets::{tcp_check, Held, SocketsView, TcpView};
 use crate::{Grant, HostError, Request, Response, Settings};
 
 const NO_DATABASE: &str = "this module declares no storage";
@@ -58,6 +58,16 @@ impl State {
             cpu_at_start: Duration::ZERO,
             cpu_budget: grant.limits.cpu_budget,
         })
+    }
+
+    pub(crate) fn tcp_view(&mut self) -> TcpView<'_> {
+        TcpView {
+            stock: wasmtime_wasi::sockets::WasiSocketsCtxView {
+                ctx: self.wasi.sockets(),
+                table: &mut self.table,
+            },
+            held: self.sockets.as_ref(),
+        }
     }
 
     pub(crate) fn sockets_view(&mut self) -> SocketsView<'_> {
