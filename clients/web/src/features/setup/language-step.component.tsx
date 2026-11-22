@@ -1,6 +1,6 @@
 import { LOCALES, localeLabel } from '@kromatv/core';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
-import { Button, ChoiceList, Field, Text } from '@kromatv/ui/kit';
+import { ChoiceList, Field, GuidedFlow, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import {
   type LanguageChoice,
@@ -9,7 +9,6 @@ import {
   preferredCodes,
 } from '#web/features/setup/language-choices';
 import { nativeLanguageName } from '#web/features/setup/native-language-name';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 
 const SEARCH_FROM = 8;
 
@@ -75,21 +74,21 @@ export function LanguageStep({ onContinue }: Readonly<{ onContinue: () => void }
   const shown = matchingChoices(choices, typed);
   return (
     <>
-      <StepHeading title={t('setup.languageTitle')} sub={t('setup.languageSub')}>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.languageTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.languageSub')}</GuidedFlow.Subtitle>
+
         {choices.length > SEARCH_FROM ? <LanguageSearch typed={typed} onType={setTyped} /> : null}
-      </StepHeading>
-      <StepBody>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <LanguageList choices={shown} />
         {shown.length === 0 ? <Text color="textMuted">{t('setup.languageNone')}</Text> : null}
-      </StepBody>
-      <StepActions>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next onPress={onContinue} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

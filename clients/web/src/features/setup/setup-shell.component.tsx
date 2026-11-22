@@ -1,19 +1,8 @@
 import { useT } from '@kromatv/ui';
-import {
-  Box,
-  Button,
-  classes,
-  Logo,
-  Row,
-  Surface,
-  styles,
-  Text,
-  useBreakpoint,
-  useStyles,
-} from '@kromatv/ui/kit';
-import type { CSSProperties, ReactNode } from 'react';
+import { Box, Button, classes, GuidedFlow, Logo, Row, styles, useStyles } from '@kromatv/ui/kit';
+import type { ReactNode } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { SetupProgress, SetupRail } from '#web/features/setup/setup-rail.component';
+import { SetupRail, useStepPosition } from '#web/features/setup/setup-rail.component';
 import { SetupStage } from '#web/features/setup/setup-stage.component';
 import { canSkip, type SetupStart, type SetupStep } from '#web/features/setup/setup-steps';
 import { useWallPosters } from '#web/features/setup/use-wall-posters.hook';
@@ -21,15 +10,8 @@ import { PosterWall } from '#web/shared/ui/poster-wall.component';
 
 const CARD = 540;
 const RAIL = 248;
-const CARD_HEIGHT = 720;
 const GUTTER = 48;
 const STAGE_ROOM = 520;
-const PAD = { base: 20, md: 36 } as const;
-const EDGE = 14;
-
-const FADES: CSSProperties = {
-  maskImage: `linear-gradient(to bottom, transparent, #000 ${EDGE}px, #000 calc(100% - ${EDGE}px), transparent)`,
-};
 
 const sDefinition = styles({
   screen: {
@@ -55,15 +37,7 @@ const sDefinition = styles({
     flexDirection: 'column',
     overflow: 'hidden',
   },
-  rail: {
-    display: 'flex',
-    flexDirection: 'column',
-    flexShrink: 0,
-    width: RAIL,
-    padding: 24,
-    overflowY: 'auto',
-    bg: 'bg',
-  },
+  card: { my: 'auto' },
   step: {
     display: 'flex',
     flexDirection: 'column',
@@ -75,18 +49,6 @@ const sDefinition = styles({
     animationTimingFunction: 'var(--ease-out)',
     animationFillMode: 'both',
   },
-  body: {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minHeight: 0,
-    gap: 20,
-    paddingBlock: EDGE,
-    paddingInline: PAD.md,
-    overflowY: 'auto',
-  },
-  bodyNarrow: { paddingInline: PAD.base },
-  foot: { borderTopWidth: 1, borderTopColor: 'border' },
 });
 
 interface ShellProps {
@@ -121,58 +83,29 @@ function ShellHeader({
   );
 }
 
-function NarrowCard({ step, start, children }: Readonly<CardProps>) {
+function SetupCard({ children, ...rail }: Readonly<CardProps>) {
+  const t = useT();
   const s = useStyles(sDefinition);
+  const where = useStepPosition(rail.step, rail.start);
+  const listed = rail.step !== 'done';
   return (
-    <Box flex minH={0} px={12} pb={12}>
-      <Surface elevated pad="none" flex minH={0} overflow="hidden">
-        {step === 'done' ? null : (
-          <Box px={PAD.base} pt={PAD.base}>
-            <SetupProgress step={step} start={start} />
-          </Box>
-        )}
-        <div key={step} className={classes(s.step)}>
-          {children}
-        </div>
-      </Surface>
-    </Box>
-  );
-}
-
-function RailSide(rail: Readonly<Omit<CardProps, 'children'>>) {
-  const s = useStyles(sDefinition);
-  return (
-    <>
-      <div className={classes(s.rail)}>
-        <SetupRail {...rail} />
-      </div>
-      <Box w={1} bg="border" />
-    </>
-  );
-}
-
-function WideCard({ children, ...rail }: Readonly<CardProps>) {
-  const s = useStyles(sDefinition);
-  const railed = rail.step !== 'done';
-  return (
-    <Row flex minH={0} px={GUTTER} pb={GUTTER}>
-      <Surface
-        elevated
-        pad="none"
-        row
-        w="100%"
-        maxW={railed ? RAIL + CARD : CARD}
-        h={CARD_HEIGHT}
-        maxH="100%"
-        my="auto"
-        overflow="hidden"
-      >
-        {railed ? <RailSide {...rail} /> : null}
+    <Box flex minH={0} px={{ base: 12, md: GUTTER }} pb={{ base: 12, md: GUTTER }}>
+      <GuidedFlow.Root label={t('setup.railLabel')} style={s.card}>
+        {listed ? (
+          <GuidedFlow.Aside>
+            <SetupRail {...rail} />
+          </GuidedFlow.Aside>
+        ) : null}
+        {listed ? (
+          <GuidedFlow.Status position={where.position} count={where.count}>
+            {where.name}
+          </GuidedFlow.Status>
+        ) : null}
         <div key={rail.step} className={classes(s.step)}>
           {children}
         </div>
-      </Surface>
-    </Row>
+      </GuidedFlow.Root>
+    </Box>
   );
 }
 
@@ -189,98 +122,18 @@ function ShellBackdrop({ step, posters }: Readonly<Pick<ShellProps, 'step' | 'po
   );
 }
 
-/** The frame every screen of the guided setup sits in. A wall of artwork
- * moves behind it, and over the wall is one card of one height: the list of
- * steps, and the question the owner is on. The page never scrolls. A step is
- * a <StepHeading>, a <StepBody> and a <StepActions>, and only the body
- * scrolls, between the other two. */
+/** The frame every screen of the guided setup sits in: one card over a wall
+ * of artwork that moves behind it. The card is the kit's `GuidedFlow`, so a
+ * step is its header, its panel and its footer, and only the panel scrolls. */
 export function SetupShell({ posters, onFinishLater, children, ...card }: Readonly<ShellProps>) {
   const s = useStyles(sDefinition);
-  const Card = useBreakpoint() === 'base' ? NarrowCard : WideCard;
   return (
     <main className={classes(s.screen)}>
       <ShellBackdrop step={card.step} posters={posters} />
       <div className={classes(s.layer)}>
         <ShellHeader step={card.step} onFinishLater={onFinishLater} />
-        <Card {...card}>{children}</Card>
+        <SetupCard {...card}>{children}</SetupCard>
       </div>
     </main>
-  );
-}
-
-function usePad(): number {
-  return useBreakpoint() === 'base' ? PAD.base : PAD.md;
-}
-
-/** What a step asks: its title and, where the title is not enough, one
- * sentence under it. It stays at the head of the card. Its children stay
- * there with it: a search field over a long list. */
-export function StepHeading({
-  title,
-  sub,
-  children,
-}: Readonly<{ title: string; sub?: string; children?: ReactNode }>) {
-  const pad = usePad();
-  return (
-    <Box gap={12} px={pad} pt={pad} pb={8} shrink={0}>
-      <Text variant="h1" accessibilityRole="header">
-        {title}
-      </Text>
-      {sub ? <Text color="textMuted">{sub}</Text> : null}
-      {children}
-    </Box>
-  );
-}
-
-/** What a step holds between its heading and its actions. It is the one part
- * of the card that scrolls. */
-export function StepBody({ children }: Readonly<{ children: ReactNode }>) {
-  const s = useStyles(sDefinition);
-  const narrow = useBreakpoint() === 'base';
-  return (
-    <div className={classes(s.body, narrow && s.bodyNarrow)} style={FADES}>
-      {children}
-    </div>
-  );
-}
-
-interface ActionsProps {
-  onBack?: () => void;
-  /** One line over the actions: what pressing forward will do. */
-  note?: ReactNode;
-  children: ReactNode;
-}
-
-function BackAction({ onBack }: Readonly<Pick<ActionsProps, 'onBack'>>) {
-  const t = useT();
-  if (!onBack) {
-    return <Box />;
-  }
-  return (
-    <Button
-      variant="ghost"
-      size="md"
-      icon="chevron-left"
-      label={t('common.back')}
-      onPress={onBack}
-    />
-  );
-}
-
-/** The actions that end a step: the way back on the left, the way forward on
- * the right. They stay at the foot of the card. */
-export function StepActions({ onBack, note, children }: Readonly<ActionsProps>) {
-  const s = useStyles(sDefinition);
-  const pad = usePad();
-  return (
-    <Box gap={12} px={pad} py={16} shrink={0} style={s.foot}>
-      {note}
-      <Row between align="center" gap={12}>
-        <BackAction onBack={onBack} />
-        <Row align="center" gap={8}>
-          {children}
-        </Row>
-      </Row>
-    </Box>
   );
 }
