@@ -20,6 +20,11 @@ so you join the beta on an iPhone or iPad, then install from the Apple TV.
 The iPhone and the Apple TV share one beta: you can install KROMA on the phone
 too, but you do not have to.
 
+That link gives a new version at most once a night. For a version after each
+change to the app, join the canary instead:
+[testflight.apple.com/join/wxUevnw1](https://testflight.apple.com/join/wxUevnw1).
+See [Beta or canary](mobile.md#beta-or-canary).
+
 ## Install on the Apple TV
 
 1. On the Apple TV, open **TestFlight**. If it is not on the home screen,

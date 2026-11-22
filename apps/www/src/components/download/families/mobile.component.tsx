@@ -56,6 +56,11 @@ export function MobileFamily() {
             channel="TestFlight"
             label={m.download_join_testflight()}
           />
+          <JoinButton
+            href={join.testflightCanary}
+            channel="TestFlight"
+            label={m.download_join_testflight_canary()}
+          />
         </PlatformEntry>
       ) : (
         <PlatformEntry
