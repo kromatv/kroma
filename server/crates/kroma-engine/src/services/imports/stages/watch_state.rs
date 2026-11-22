@@ -13,9 +13,9 @@ use anyhow::Result;
 
 use self::bounded::bounded;
 use super::found::{Found, find};
-use super::{Importing, Outcome, StatePage};
+use super::{outcome_of, Importing, Outcome, StatePage};
 use crate::db;
-use crate::db::imports::{Merged, Place};
+use crate::db::imports::Place;
 use crate::domain::watching::Watching;
 use crate::model::import::Title;
 use crate::services::jobs::now_ms;
@@ -58,13 +58,5 @@ fn place_of(found: &Found) -> Option<Place<'_>> {
         Found::Title(item) => Some(Place::Title(item)),
         Found::Awaited(file) => Some(Place::File(file)),
         Found::Nothing => None,
-    }
-}
-
-fn outcome_of(merged: Merged) -> Outcome {
-    match merged {
-        Merged::Changed => Outcome::Brought { target: None },
-        Merged::Unchanged => Outcome::AlreadyHere,
-        Merged::Gone => Outcome::Untouched,
     }
 }

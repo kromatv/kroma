@@ -43,13 +43,13 @@ fn favourite() -> Watching {
     }
 }
 
-fn an_account(pool: &Pool, name: &str) -> String {
+pub(super) fn an_account(pool: &Pool, name: &str) -> String {
     let address = format!("{name}@example.test");
     let account = crate::create_user(pool, &address, name, "", &[Permission::Playback]).unwrap();
     account.id
 }
 
-fn a_film(pool: &Pool, id: &str) {
+pub(super) fn a_film(pool: &Pool, id: &str) {
     let conn = pool.get().unwrap();
     conn.execute(
         "INSERT OR IGNORE INTO libraries (id,name,kind,path,added_at) \
@@ -76,7 +76,7 @@ fn merge(pool: &Pool, account: &str, place: Place<'_>, state: Watching) -> Merge
     merge_states(pool, account, &[(place, state)]).unwrap()[0]
 }
 
-fn rows(pool: &Pool, sql: &str) -> Vec<String> {
+pub(super) fn rows(pool: &Pool, sql: &str) -> Vec<String> {
     let conn = pool.get().unwrap();
     let mut stmt = conn.prepare(sql).unwrap();
     let rows = stmt.query_map([], |r| r.get(0)).unwrap();
