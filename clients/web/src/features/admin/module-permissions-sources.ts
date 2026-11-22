@@ -1,10 +1,7 @@
 import type { DeclaredAccess, StoreCatalog, StoreModule } from '@kromatv/client/modules';
 import type { AdminModule } from '#web/features/admin/module-api';
-import type {
-  Access,
-  ModuleAccess,
-  PermissionSource,
-} from '#web/features/admin/module-permissions';
+import type { Access, ModuleAccess, PermissionSource } from '#web/shared/lib/module-permissions';
+import { declaredSource, declaresAccess } from '#web/shared/lib/module-permissions-declared';
 
 type List<T> = readonly T[] | null | undefined;
 
@@ -28,22 +25,12 @@ const accessOf = (
   write: union(sources.map((source) => pick(source)?.write)),
 });
 
-interface Declaration extends Pick<PermissionSource, 'storage' | 'settings'> {
-  permissions?: object | null;
-}
-
-const lists = (access: Access | null | undefined) =>
-  [access?.read, access?.write].some((list) => (list?.length ?? 0) > 0);
-
-const says = (declared: Declaration) =>
-  Boolean(declared.permissions) || lists(declared.storage?.core) || lists(declared.settings);
-
 /** What an installed module declares, or null when it names no permission,
  *  core table or setting. */
 export function installedSource(
   module: Pick<AdminModule, 'permissions' | 'storage' | 'settings' | 'helpers' | 'origin'>,
 ): PermissionSource | null {
-  if (!says(module)) {
+  if (!declaresAccess(module)) {
     return null;
   }
   return {
@@ -62,24 +49,6 @@ export function fromOfficialRegistry(catalog: StoreCatalog, entry: StoreModule):
     entry.official ||
     catalog.registries.some((registry) => registry.official && registry.name === entry.source)
   );
-}
-
-/** What a catalog row, a plan row or an uploaded bundle declares: null when it
- *  names no permission, core table or setting. */
-export function declaredSource(
-  declared: DeclaredAccess & { official?: boolean },
-): PermissionSource | null {
-  if (!says(declared)) {
-    return null;
-  }
-  const { permissions, storage, settings, helpers, official } = declared;
-  return {
-    permissions: permissions ?? {},
-    storage,
-    settings,
-    helpers,
-    official: official ?? false,
-  };
 }
 
 /** Everything several modules declare, as if one module declared it all. */

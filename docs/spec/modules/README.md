@@ -143,6 +143,11 @@ will actually do, before committing. Registry precedence, https requirements, sh
 duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 [`../module-registries.md`](../../module-registries.md).
 
+**MOD-108** (SHIPPED) - A module names and describes itself, and says in one sentence what it
+does for a household, in English and in each other language it chooses to speak. The Store and
+the guided setup show those words in the reader's language, and in English where the module
+gives none. A module that gives no sentence still installs and runs.
+
 ### The newest version that runs here
 
 Status: **SHIPPED**, from [RFC 627](../../rfcs/627-version-compatibility.md).

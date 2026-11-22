@@ -56,6 +56,10 @@
       "broke": 22,
       "changed": 22
     },
+    "import_held_plays": {
+      "broke": 28,
+      "changed": 28
+    },
     "import_held_states": {
       "broke": 23,
       "changed": 23
@@ -186,7 +190,7 @@
     },
     "play_history": {
       "broke": 1,
-      "changed": 1
+      "changed": 28
     },
     "progress": {
       "broke": 1,
@@ -261,5 +265,5 @@
       "changed": 1
     }
   },
-  "version": 27
+  "version": 28
 }

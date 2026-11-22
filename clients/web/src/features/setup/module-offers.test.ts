@@ -1,6 +1,6 @@
 import { StoreCatalog } from '@kromatv/client/modules';
 import { expect, it } from 'vitest';
-import { groupedOffers, offerState, offers, pickedBytes } from './module-offers';
+import { offerState, offers, pickedBytes } from './module-offers';
 
 interface Entry {
   id: string;
@@ -37,7 +37,7 @@ const entry = ({
   source: source ?? 'Official',
 });
 
-const catalog = (entries: Entry[]) =>
+const catalog = (entries: Entry[], setup = entries.map((offered) => offered.id)) =>
   StoreCatalog.parse({
     schema: 3,
     serverVersion: '0.1.40',
@@ -53,25 +53,24 @@ const catalog = (entries: Entry[]) =>
       },
     ],
     modules: entries.map(entry),
+    setup,
   });
 
 const ids = (all: { module: { id: string } }[]) => all.map((offer) => offer.module.id);
 
-it('offers a module of use alone, and leaves a library and an extension to the Store', () => {
+it('offers what the official registry lists for the setup, in its order', () => {
   const all = offers(
-    catalog([
-      { id: 'tv.test.subtitles', points: ['transcriber'] },
-      { id: 'tv.test.parser', library: true },
-      { id: 'tv.test.engine', points: ['tv.test.downloads/client'] },
-      { id: 'tv.test.discovery' },
-    ]),
+    catalog(
+      [{ id: 'tv.test.discovery' }, { id: 'tv.test.subtitles' }, { id: 'tv.test.parser' }],
+      ['tv.test.subtitles', 'tv.test.discovery'],
+    ),
   );
 
   expect(ids(all)).toEqual(['tv.test.subtitles', 'tv.test.discovery']);
 });
 
-it('offers nothing from a registry the operator added', () => {
-  const all = offers(catalog([{ id: 'tv.other.thing', source: 'Somebody else' }]));
+it('offers nothing the catalog does not carry', () => {
+  const all = offers(catalog([{ id: 'tv.test.discovery' }], ['tv.test.gone']));
 
   expect(all).toEqual([]);
 });
@@ -106,30 +105,6 @@ it('does not count a needed module the server already holds', () => {
   );
 
   expect(offer?.needs).toEqual([]);
-});
-
-it('puts each offer under the heading of the core point it answers', () => {
-  const sections = groupedOffers(
-    offers(
-      catalog([
-        { id: 'tv.test.discovery' },
-        { id: 'tv.test.subtitles', points: ['transcriber'] },
-        { id: 'tv.test.get', points: ['acquisition'] },
-      ]),
-    ),
-  );
-
-  expect(sections.map((section) => [section.group, ids(section.offers)])).toEqual([
-    ['library', ['tv.test.get']],
-    ['watching', ['tv.test.subtitles']],
-    ['more', ['tv.test.discovery']],
-  ]);
-});
-
-it('shows no heading with nothing under it', () => {
-  const sections = groupedOffers(offers(catalog([{ id: 'tv.test.discovery' }])));
-
-  expect(sections.map((section) => section.group)).toEqual(['more']);
 });
 
 it('counts a module two selections both need once', () => {

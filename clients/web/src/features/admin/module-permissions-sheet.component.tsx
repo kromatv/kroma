@@ -6,10 +6,10 @@ import {
   type ModuleAccess,
   type PermissionGroup,
   permissionGroups,
-} from '#web/features/admin/module-permissions';
-import { CATEGORY_VIEW, GLYPH_SIZE } from '#web/features/admin/module-permissions-view';
+} from '#web/shared/lib/module-permissions';
+import { CATEGORY_VIEW, GLYPH_SIZE } from '#web/shared/lib/module-permissions-view';
 import { ModuleVerdict } from '#web/features/admin/module-permissions-verdict.component';
-import { listOf } from '#web/features/admin/module-permissions-words';
+import { listOf } from '#web/shared/lib/module-permissions-words';
 
 const FULL_SCREEN_BELOW = 640;
 

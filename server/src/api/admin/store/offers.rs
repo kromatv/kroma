@@ -26,7 +26,7 @@ pub async fn official(
     point: &str,
 ) -> (Vec<Offer>, Option<String>) {
     match catalog::fetch(sup, &catalog::registry_url(state)).await {
-        Ok(modules) => (answering(modules, point), None),
+        Ok(listing) => (answering(listing.modules, point), None),
         Err(e) => (Vec::new(), Some(format!("{e:#}"))),
     }
 }
