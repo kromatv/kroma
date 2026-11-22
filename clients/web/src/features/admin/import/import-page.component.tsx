@@ -1,26 +1,11 @@
 import { useT } from '@kromatv/ui';
-import { Box, GuidedFlow, PageHeader } from '@kromatv/ui/kit';
-import { KeptSignIns } from '#web/features/admin/import/import-kept-sign-ins.component';
-import {
-  ImportSession,
-  useImportSession,
-} from '#web/features/admin/import/import-session.component';
-import { ImportStep } from '#web/features/admin/import/import-step.component';
-
-function ImportFlow() {
-  const t = useT();
-  const { restart } = useImportSession();
-  return (
-    <Box h={{ base: 600, md: 720 }}>
-      <GuidedFlow.Root label={t('admin.importTitle')}>
-        <ImportStep onContinue={restart} />
-      </GuidedFlow.Root>
-    </Box>
-  );
-}
+import { Box, PageHeader } from '@kromatv/ui/kit';
+import { ImportConsole } from '#web/features/admin/import/import-console.component';
+import { ImportSession } from '#web/features/admin/import/import-session.component';
 
 /** The import in the admin console, for an owner who set KROMA up first: the
- * same screens the setup runs, and the sign-ins earlier imports keep. */
+ * questions the setup asks, laid out for a page of the console, and the
+ * sign-ins earlier imports keep. */
 export function ImportPage() {
   const t = useT();
   return (
@@ -29,9 +14,8 @@ export function ImportPage() {
         <PageHeader.Title>{t('admin.importTitle')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('admin.importSub')}</PageHeader.Subtitle>
       </PageHeader.Root>
-      <KeptSignIns />
       <ImportSession>
-        <ImportFlow />
+        <ImportConsole />
       </ImportSession>
     </Box>
   );

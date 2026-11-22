@@ -1,9 +1,10 @@
 import type { ImportCounts, ImportSurvey } from '@kromatv/client/importers';
 import type { ImportFolder } from '@kromatv/client/imports';
 import { useT } from '@kromatv/ui';
-import { Box, Callout, GuidedFlow, Row, Skeleton, StatCard } from '@kromatv/ui/kit';
+import { Box, Callout, Grid, Skeleton, StatCard } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import { foldersOf, placed, placesOf } from '#web/features/admin/import/import-folders';
 import {
   type ImportTarget,
@@ -26,6 +27,10 @@ interface ReviewProps {
   target: ImportTarget;
   onBack: () => void;
 }
+
+const COUNT_MIN = 140;
+const COLUMN_MIN = 320;
+const FIRST_ROOM = 480;
 
 const COUNTS = [
   ['titles', 'setup.importCountTitles'],
@@ -60,14 +65,14 @@ function usePlaces(target: ImportTarget, survey: ImportSurvey | undefined): Impo
 function Counts({ counts }: Readonly<{ counts: ImportCounts }>) {
   const t = useT();
   return (
-    <Row gap={8}>
+    <Grid min={COUNT_MIN} width={FIRST_ROOM} gap={8}>
       {COUNTS.map(([key, label]) => (
         <StatCard.Root key={key} flex pad="md">
           <StatCard.Label>{t(label)}</StatCard.Label>
           <StatCard.Value>{counts[key]?.toLocaleString() ?? '–'}</StatCard.Value>
         </StatCard.Root>
       ))}
-    </Row>
+    </Grid>
   );
 }
 
@@ -109,9 +114,13 @@ function Survey({ survey, places }: Readonly<SurveyProps>) {
   return (
     <>
       <Counts counts={survey.counts} />
-      <ReviewLibraries libraries={survey.libraries} />
-      <ReviewFolders places={placesOf(kept, places)} />
-      <ReviewUsers users={survey.users} />
+      <Grid min={COLUMN_MIN} width={FIRST_ROOM} gap={24} rowGap={20}>
+        <Box gap={20}>
+          <ReviewLibraries libraries={survey.libraries} />
+          <ReviewFolders places={placesOf(kept, places)} />
+        </Box>
+        <ReviewUsers users={survey.users} />
+      </Grid>
       <LeftBehind keys={survey.leftBehind} />
     </>
   );
@@ -147,7 +156,7 @@ interface StartActionProps {
 function StartAction({ busy, ready, onStart }: Readonly<StartActionProps>) {
   const t = useT();
   return (
-    <GuidedFlow.Next
+    <ImportFrame.Next
       label={t('setup.importStart')}
       loading={busy}
       disabled={!ready}
@@ -166,23 +175,23 @@ export function ImportReview({ target, onBack }: Readonly<ReviewProps>) {
   const { busy, failed, start } = useStart(target, { survey: data, places });
   return (
     <>
-      <GuidedFlow.Header>
-        <GuidedFlow.Title>{t('setup.importReviewTitle')}</GuidedFlow.Title>
-        <GuidedFlow.Subtitle>{t('setup.importReviewSub')}</GuidedFlow.Subtitle>
-      </GuidedFlow.Header>
-      <GuidedFlow.Panel>
+      <ImportFrame.Header>
+        <ImportFrame.Title>{t('setup.importReviewTitle')}</ImportFrame.Title>
+        <ImportFrame.Subtitle>{t('setup.importReviewSub')}</ImportFrame.Subtitle>
+      </ImportFrame.Header>
+      <ImportFrame.Panel>
         {data ? <Survey survey={data} places={places} /> : null}
         {!data && !error ? <Loading /> : null}
         <StepFailure error={error ? t('setup.importReviewFailed') : null} />
         <StepFailure error={failed ? t('setup.importStartFailed') : null} />
         <KeptSignIn />
-      </GuidedFlow.Panel>
-      <GuidedFlow.Footer>
-        <GuidedFlow.Previous onPress={onBack} />
-        <GuidedFlow.Actions>
+      </ImportFrame.Panel>
+      <ImportFrame.Footer>
+        <ImportFrame.Previous onPress={onBack} />
+        <ImportFrame.Actions>
           <StartAction busy={busy} ready={data !== undefined} onStart={() => void start()} />
-        </GuidedFlow.Actions>
-      </GuidedFlow.Footer>
+        </ImportFrame.Actions>
+      </ImportFrame.Footer>
     </>
   );
 }

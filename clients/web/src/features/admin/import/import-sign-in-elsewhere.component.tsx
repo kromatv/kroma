@@ -1,7 +1,8 @@
 import type { Importer, ImportSignIn } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Box, Button, GuidedFlow, Icon, Row, Spinner, Text } from '@kromatv/ui/kit';
+import { Box, Button, Icon, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
+import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import { ImportRefused } from '#web/features/admin/import/import-refused.component';
 import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
 import { openPage, useImportPageSignIn } from '#web/features/admin/import/use-import-sign-in.hook';
@@ -85,14 +86,13 @@ function Stages({ name, phase }: Readonly<{ name: string; phase: StagePhase }>) 
 function Forward({ name, answer, phase, onOpen, onAgain }: Readonly<ForwardProps>) {
   const t = useT();
   if (answer?.status === 'refused') {
-    return <Button size="md" icon="refresh" label={t('setup.importAgain')} onPress={onAgain} />;
+    return <Button icon="refresh" label={t('setup.importAgain')} onPress={onAgain} />;
   }
   const url = answer?.status === 'pending' ? answer.url : null;
   const opened = phase === 'opened';
   return (
     <Button
       variant={opened ? 'outline' : 'primary'}
-      size="md"
       icon="external-link"
       label={opened ? t('setup.importPageAgain') : t('setup.importSignInWith', { name })}
       loading={url === null}
@@ -118,17 +118,17 @@ export function ImportSignInElsewhere({ importer, onBack }: Readonly<ElsewherePr
   };
   return (
     <>
-      <GuidedFlow.Panel>
+      <ImportFrame.Panel>
         <ImporterIcon importer={importer} size={64} />
         <Stages name={name} phase={phase} />
         <ImportRefused answer={answer} />
-      </GuidedFlow.Panel>
-      <GuidedFlow.Footer>
-        <GuidedFlow.Previous onPress={onBack} />
-        <GuidedFlow.Actions>
+      </ImportFrame.Panel>
+      <ImportFrame.Footer>
+        <ImportFrame.Previous onPress={onBack} />
+        <ImportFrame.Actions>
           <Forward name={name} answer={answer} phase={phase} onOpen={open} onAgain={restart} />
-        </GuidedFlow.Actions>
-      </GuidedFlow.Footer>
+        </ImportFrame.Actions>
+      </ImportFrame.Footer>
     </>
   );
 }

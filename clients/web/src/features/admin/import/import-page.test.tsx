@@ -3,9 +3,9 @@
 import { ImporterList } from '@kromatv/client/importers';
 import { ImportList } from '@kromatv/client/imports';
 import { I18nProvider } from '@kromatv/ui';
-import { createInputTestHost } from '@kromatv/ui/testing';
+import { createInputTestHost, layout } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const importers = vi.hoisted(() => ({ list: vi.fn(), forget: vi.fn() }));
@@ -27,6 +27,10 @@ const SETTLE_MS = 20;
 
 const OFFERED = ImporterList.parse({
   importers: [{ id: PLEX, name: 'Plex', installed: true, running: true, fields: [] }],
+});
+
+const STARTING = ImporterList.parse({
+  importers: [{ id: PLEX, name: 'Plex', installed: true, running: false, fields: [] }],
 });
 
 function importOf(signIn?: string) {
@@ -57,6 +61,15 @@ async function settle() {
   await act(async () => {
     await new Promise((done) => setTimeout(done, SETTLE_MS));
   });
+}
+
+function measureConsole(width: number) {
+  const card = screen.getByRole('region', { name: 'Bring a server over' });
+  const room = card.parentElement?.parentElement;
+  if (!room) {
+    throw new Error('the card sits in the console');
+  }
+  layout(room, { width });
 }
 
 beforeEach(() => {
@@ -95,6 +108,64 @@ describe('the import in the admin console', () => {
     expect(screen.getByText('Migrer depuis un autre serveur')).toBeTruthy();
     expect(screen.getByText('Connexions gardées par KROMA')).toBeTruthy();
     expect(screen.getByLabelText('Oublier')).toBeTruthy();
+  });
+
+  it('says where the import stands: at the first of four stretches', async () => {
+    show();
+    await settle();
+
+    measureConsole(1200);
+
+    expect(
+      screen.getByRole('tab', { name: 'Step 1 of 4: Server' }).getAttribute('aria-current'),
+    ).toBe('step');
+    expect(screen.getByRole('tab', { name: 'Step 4 of 4: Import' })).toBeTruthy();
+  });
+
+  it('marks the choice of a server done, under the name of the one chosen', async () => {
+    importers.list.mockResolvedValue(STARTING);
+    show();
+    await settle();
+    measureConsole(1200);
+
+    fireEvent.click(screen.getByLabelText('Plex'));
+    await settle();
+
+    const behind = screen.getByRole('tab', { name: 'Step 1 of 4: Server, done' });
+    expect(within(behind).getByText('Plex')).toBeTruthy();
+    expect(
+      screen.getByRole('tab', { name: 'Step 2 of 4: Sign-in' }).getAttribute('aria-current'),
+    ).toBe('step');
+  });
+
+  it('puts the stages beside the screen once the page has room for them', async () => {
+    show();
+    await settle();
+
+    measureConsole(700);
+    measureConsole(1200);
+
+    expect(screen.getByRole('heading', { name: 'Import steps' })).toBeTruthy();
+  });
+
+  it('runs the stages over the screen where the page has no room beside it', async () => {
+    show();
+    await settle();
+
+    measureConsole(700);
+
+    expect(screen.queryByRole('heading', { name: 'Import steps' })).toBeNull();
+    expect(screen.getByRole('tablist', { name: 'Import steps' })).toBeTruthy();
+  });
+
+  it('says where it stands in one line on a page as narrow as a phone', async () => {
+    show();
+    await settle();
+
+    measureConsole(400);
+
+    expect(screen.queryByRole('tablist', { name: 'Import steps' })).toBeNull();
+    expect(screen.getByText('Step 1 of 4: Server')).toBeTruthy();
   });
 
   it('forgets a kept sign-in in one press', async () => {
