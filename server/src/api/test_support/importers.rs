@@ -54,3 +54,17 @@ pub async fn import_job_ended(events: &mut Receiver<Envelope>) -> String {
         }
     }
 }
+
+/// Whether any file under the app's data folder holds `text`.
+pub fn on_disk(t: &TestApp, text: &str) -> bool {
+    walkdir::WalkDir::new(&t.state.config.data_dir)
+        .into_iter()
+        .flatten()
+        .filter(|entry| entry.file_type().is_file())
+        .filter_map(|entry| std::fs::read(entry.path()).ok())
+        .any(|bytes| {
+            bytes
+                .windows(text.len())
+                .any(|found| found == text.as_bytes())
+        })
+}

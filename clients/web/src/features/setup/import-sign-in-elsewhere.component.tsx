@@ -1,10 +1,9 @@
 import type { Importer, ImportSignIn } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Icon, Row, Spinner, Text } from '@kromatv/ui/kit';
+import { Box, Button, GuidedFlow, Icon, Row, Spinner, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { ImportRefused } from '#web/features/setup/import-refused.component';
 import { ImporterIcon } from '#web/features/setup/importer-icon.component';
-import { StepActions, StepBody } from '#web/features/setup/setup-shell.component';
 import { openPage, useImportPageSignIn } from '#web/features/setup/use-import-sign-in.hook';
 
 type StagePhase = 'ready' | 'opened';
@@ -119,14 +118,17 @@ export function ImportSignInElsewhere({ importer, onBack }: Readonly<ElsewherePr
   };
   return (
     <>
-      <StepBody>
+      <GuidedFlow.Panel>
         <ImporterIcon importer={importer} size={64} />
         <Stages name={name} phase={phase} />
         <ImportRefused answer={answer} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Forward name={name} answer={answer} phase={phase} onOpen={open} onAgain={restart} />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <Forward name={name} answer={answer} phase={phase} onOpen={open} onAgain={restart} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

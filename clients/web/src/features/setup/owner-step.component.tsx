@@ -1,9 +1,8 @@
 import { apiErrorText } from '@kromatv/client';
 import { isEmail, isPassword, isUsername } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, Button, classes, Field, styles, useStyles } from '@kromatv/ui/kit';
+import { Box, classes, Field, GuidedFlow, styles, useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -171,21 +170,25 @@ function OwnerReady({ owner, onBack, onContinue }: Readonly<OwnerReadyProps>) {
   const valid = isUsername(profile.username) && isEmail(profile.email);
   return (
     <>
-      <StepHeading title={t('setup.ownerDoneTitle')} sub={t('setup.ownerDoneSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.ownerDoneTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.ownerDoneSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <ProfileFields profile={profile} onChange={setProfile} />
         <StepFailure error={error} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={changed ? t('setup.ownerSave') : t('setup.continue')}
-          iconRight="arrow-right"
-          loading={busy}
-          disabled={!valid}
-          onPress={() => (changed ? void save(profile) : onContinue())}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next
+            label={changed ? t('setup.ownerSave') : undefined}
+            loading={busy}
+            disabled={!valid}
+            onPress={() => (changed ? void save(profile) : onContinue())}
+          />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }
@@ -218,6 +221,30 @@ function AccountForm({
   );
 }
 
+interface CreateActionsProps {
+  busy: boolean;
+  ready: boolean;
+  onBack: () => void;
+  onCreate: () => void;
+}
+
+function CreateActions({ busy, ready, onBack, onCreate }: Readonly<CreateActionsProps>) {
+  const t = useT();
+  return (
+    <GuidedFlow.Footer>
+      <GuidedFlow.Previous onPress={onBack} />
+      <GuidedFlow.Actions>
+        <GuidedFlow.Next
+          label={busy ? t('setup.ownerCreating') : t('setup.ownerCreate')}
+          loading={busy}
+          disabled={!ready}
+          onPress={onCreate}
+        />
+      </GuidedFlow.Actions>
+    </GuidedFlow.Footer>
+  );
+}
+
 function OwnerForm({ onBack, onCreated }: Readonly<OwnerStepProps>) {
   const t = useT();
   const [values, setValues] = useState(EMPTY);
@@ -229,20 +256,15 @@ function OwnerForm({ onBack, onCreated }: Readonly<OwnerStepProps>) {
   };
   return (
     <AccountForm onSubmit={submit}>
-      <StepHeading title={t('setup.ownerTitle')} sub={t('setup.ownerSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.ownerTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.ownerSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <OwnerFields values={values} onChange={setValues} onSubmit={submit} />
         <StepFailure error={error} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={busy ? t('setup.ownerCreating') : t('setup.ownerCreate')}
-          loading={busy}
-          disabled={!complete(values)}
-          onPress={submit}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <CreateActions busy={busy} ready={complete(values)} onBack={onBack} onCreate={submit} />
     </AccountForm>
   );
 }

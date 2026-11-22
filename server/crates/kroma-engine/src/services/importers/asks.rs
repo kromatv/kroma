@@ -65,3 +65,15 @@ pub struct PlaysAsk {
 pub struct ForgetAsk {
     pub sign_in: String,
 }
+
+/// What the core sends `unlock`: the user of one server whose watch state is
+/// locked, and the PIN the owner typed for them. It carries that PIN, so it
+/// has no `Debug`.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UnlockAsk {
+    pub sign_in: String,
+    pub server: String,
+    pub user: String,
+    pub pin: String,
+}

@@ -2,5 +2,12 @@
 // with real data) are an app concern and live in `packages/tv/src/features/*`
 // and `clients/*/src`, not here.
 
+export type {
+  GuidedFlowBandProps,
+  GuidedFlowMoveProps,
+  GuidedFlowRootProps,
+  GuidedFlowStatusProps,
+} from './guided-flow';
+export { GuidedFlow } from './guided-flow';
 export type { TvStageProps } from './tv-stage';
 export { TvStage } from './tv-stage';

@@ -1,7 +1,7 @@
 import type { ImportCounts, ImportSurvey } from '@kromatv/client/importers';
 import type { ImportFolder } from '@kromatv/client/imports';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, Row, Skeleton, StatCard } from '@kromatv/ui/kit';
+import { Box, Callout, GuidedFlow, Row, Skeleton, StatCard } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { foldersOf, placed, placesOf } from '#web/features/setup/import-folders';
@@ -15,7 +15,6 @@ import { useImportSession } from '#web/features/setup/import-session.component';
 import { ReviewFolders } from '#web/features/setup/import-review-folders.component';
 import { ReviewLibraries, ReviewUsers } from '#web/features/setup/import-review-lists.component';
 import { leftBehindLine } from '#web/features/setup/import-words';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
@@ -135,6 +134,24 @@ function useStart(target: ImportTarget, review: Partial<SurveyProps>) {
   return { busy, failed, start };
 }
 
+interface StartActionProps {
+  busy: boolean;
+  ready: boolean;
+  onStart: () => void;
+}
+
+function StartAction({ busy, ready, onStart }: Readonly<StartActionProps>) {
+  const t = useT();
+  return (
+    <GuidedFlow.Next
+      label={t('setup.importStart')}
+      loading={busy}
+      disabled={!ready}
+      onPress={onStart}
+    />
+  );
+}
+
 /** What the other server holds, before anything is written: its libraries,
  * its users, how much they watched, and what an import does not bring. The
  * owner leaves out what they do not want, then starts the import. */
@@ -145,23 +162,22 @@ export function ImportReview({ target, onBack }: Readonly<ReviewProps>) {
   const { busy, failed, start } = useStart(target, { survey: data, places });
   return (
     <>
-      <StepHeading title={t('setup.importReviewTitle')} sub={t('setup.importReviewSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.importReviewTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.importReviewSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         {data ? <Survey survey={data} places={places} /> : null}
         {!data && !error ? <Loading /> : null}
         <StepFailure error={error ? t('setup.importReviewFailed') : null} />
         <StepFailure error={failed ? t('setup.importStartFailed') : null} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          icon="arrow-down-circle"
-          label={t('setup.importStart')}
-          loading={busy}
-          disabled={!data}
-          onPress={() => void start()}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <StartAction busy={busy} ready={data !== undefined} onStart={() => void start()} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

@@ -2,6 +2,7 @@
 //! servers, and the people it shares them with. Each call and its source is in
 //! `docs/reference/plex-api.md`.
 
+mod home;
 mod people;
 mod servers;
 
@@ -9,6 +10,8 @@ use crate::failure::Failure;
 use crate::web::{Call, Door, Web};
 use crate::xml::Element;
 
+#[cfg(test)]
+pub(crate) use people::FriendServer;
 pub(crate) use people::{Friend, Share};
 pub(crate) use servers::{Connection, Resource};
 
@@ -140,16 +143,7 @@ impl Account<'_> {
     /// The servers the account owns. A server shared with the account is left
     /// out: only its owner can read who it is shared with.
     pub(crate) fn servers(&self, token: &str) -> Result<Vec<Resource>, Failure> {
-        let listed = self.read(&Ask {
-            path: "/api/v2/resources",
-            token: Some(token),
-            query: vec![
-                ("includeHttps", "1".to_string()),
-                ("includeRelay", "1".to_string()),
-                ("includeIPv6", "1".to_string()),
-            ],
-            max_bytes: LARGE,
-        })?;
+        let listed = self.read(&home::resources(token))?;
         Ok(servers::owned(&listed))
     }
 

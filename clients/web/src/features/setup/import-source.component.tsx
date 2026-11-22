@@ -1,9 +1,8 @@
 import type { Importer, ImporterList } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, EmptyState, ListRow, Skeleton } from '@kromatv/ui/kit';
+import { Box, Button, Callout, EmptyState, GuidedFlow, ListRow, Skeleton } from '@kromatv/ui/kit';
 import { useImportSession } from '#web/features/setup/import-session.component';
 import { ImporterIcon } from '#web/features/setup/importer-icon.component';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useImporters } from '#web/features/setup/use-importers.hook';
 
@@ -95,15 +94,21 @@ export function ImportSource({ onBack, onSkip }: Readonly<SourceProps>) {
   const { data, error } = useImporters();
   return (
     <>
-      <StepHeading title={t('setup.importSourceTitle')} sub={t('setup.importSourceSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.importSourceTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.importSourceSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         {data ? <Sources list={data} /> : null}
         {!data && !error ? <Loading /> : null}
         <StepFailure error={error ? t('setup.importListFailed') : null} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }
