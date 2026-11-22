@@ -95,3 +95,9 @@ reconstruit sur la machine où vous restaurez.
 KROMA restaure les comptes, les réglages et l'historique, puis analyse vos
 bibliothèques. Si vos dossiers de médias ont un autre chemin sur la nouvelle
 machine, modifiez-les dans **Sources** et relancez un scan.
+
+Une restauration garde les bibliothèques que ce serveur a déjà et ajoute celles
+de la sauvegarde. Pour faire de ce serveur une copie exacte de l'ancien,
+activez **Réinitialiser avant restauration**. Si cela retire des bibliothèques
+de ce serveur, KROMA les liste d'abord, et ne les retire que lorsque vous
+sélectionnez **Restaurer et retirer**.

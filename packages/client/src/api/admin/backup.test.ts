@@ -18,6 +18,12 @@ describe('the backup endpoints', () => {
       method: 'POST',
       path: '/admin/backup/import',
     },
+    {
+      name: 'preview',
+      call: (c) => c.admin.backup.preview(archive, { reset: true }),
+      method: 'POST',
+      path: '/admin/backup/import/preview',
+    },
   ])('$name', checkEndpoint);
 });
 
@@ -40,5 +46,14 @@ describe('the backup password header', () => {
 
     expect(resetting.headers.get('x-backup-reset')).toBe('1');
     expect(merging.headers.get('x-backup-reset')).toBeNull();
+  });
+
+  it('asks a preview with the password and the reset of the restore it stands for', async () => {
+    const recorded = await recordRequest((c) =>
+      c.admin.backup.preview(archive, { password: 'clé', reset: true }),
+    );
+
+    expect(recorded.headers.get('x-backup-password')).toBe('636cc3a9');
+    expect(recorded.headers.get('x-backup-reset')).toBe('1');
   });
 });

@@ -6,13 +6,13 @@
 //! `settings`). See [`crate::services::backup`].
 
 use axum::body::{Body, Bytes};
-use axum::extract::State;
+use axum::extract::{FromRequest, Request, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde_json::json;
 
-use crate::api::error::{json_error, lerr};
+use crate::api::error::{json_error, lerr, lerr_with};
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::infra::events::ServerEvent;
@@ -30,6 +30,10 @@ pub fn routes() -> Router<SharedState> {
         .route(
             "/backup/import",
             post(import_backup).layer(DefaultBodyLimit::max(MAX_BACKUP_BYTES)),
+        )
+        .route(
+            "/backup/import/preview",
+            post(preview_backup).layer(DefaultBodyLimit::max(MAX_BACKUP_BYTES)),
         )
 }
 
@@ -82,64 +86,85 @@ pub async fn export_backup(
         .unwrap())
 }
 
+/// What a restore reads from the request: the file, its password, whether it
+/// resets, and how it treats this server's libraries.
+pub struct Restore {
+    bytes: Vec<u8>,
+    password: Option<String>,
+    plan: crate::services::backup::Plan,
+}
+
+impl FromRequest<SharedState> for Restore {
+    type Rejection = Response;
+
+    async fn from_request(request: Request, state: &SharedState) -> Result<Self, Response> {
+        let reset = header_flag(request.headers(), "x-backup-reset");
+        let password = header_password(request.headers());
+        let body = Bytes::from_request(request, state)
+            .await
+            .map_err(IntoResponse::into_response)?;
+        Ok(Restore {
+            bytes: body.to_vec(),
+            password,
+            plan: crate::services::backup::Plan::for_server(&state.settings, &state.config, reset),
+        })
+    }
+}
+
+/// `POST /api/admin/backup/import/preview` with the body and headers of an
+/// import → `{ removedLibraries }`: the libraries of this server that restoring
+/// the file would remove, each `{ id, name }`. Restores nothing.
+/// `SettingsManage`.
+pub async fn preview_backup(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    restore: Restore,
+) -> Result<Response, Response> {
+    super::require(&user, Permission::SettingsManage)?;
+    let locale = super::user_locale(&user);
+    let pool = state.db.clone();
+    let outcome = tokio::task::spawn_blocking(move || {
+        let backup = crate::services::backup::Backup {
+            bytes: &restore.bytes,
+            password: restore.password.as_deref(),
+        };
+        crate::services::backup::preview(&pool, &backup, &restore.plan)
+    })
+    .await;
+    let removed = refused(&state, locale, outcome).await?;
+    let removed: Vec<serde_json::Value> = removed
+        .into_iter()
+        .map(|library| json!({ "id": library.id, "name": library.name }))
+        .collect();
+    Ok(Json(json!({ "removedLibraries": removed })).into_response())
+}
+
 /// `POST /api/admin/backup/import` body = a backup file (`.kroma`/`.zip`/legacy
 /// `.json`) → restore it, then re-scan. `X-Backup-Password` decrypts an encrypted
-/// file; `X-Backup-Reset: 1` wipes the portable tables first (clean A→B clone).
+/// file; `X-Backup-Reset: 1` wipes the portable tables first (clean A→B clone)
+/// and restores the backup's library list in place of this server's. Without
+/// it, the backup's libraries join this server's and none is removed.
 /// `SettingsManage`.
 pub async fn import_backup(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    headers: HeaderMap,
-    body: Bytes,
+    restore: Restore,
 ) -> Result<Response, Response> {
     super::require(&user, Permission::SettingsManage)?;
     let locale = super::user_locale(&user);
-    let password = header_password(&headers);
-    let reset = header_flag(&headers, "x-backup-reset");
-
     let pool = state.db.clone();
     let data_dir = state.config.data_dir.clone();
-    let bytes = body.to_vec();
     let outcome = tokio::task::spawn_blocking(move || {
-        crate::services::backup::import(&pool, &data_dir, &bytes, password.as_deref(), reset)
+        crate::services::backup::import(
+            &pool,
+            &data_dir,
+            &restore.bytes,
+            restore.password.as_deref(),
+            &restore.plan,
+        )
     })
     .await;
-
-    let summary = match outcome {
-        Ok(Ok(summary)) => summary,
-        Ok(Err(ImportError::PasswordRequired)) => {
-            return Err(lerr(
-                locale,
-                StatusCode::BAD_REQUEST,
-                "admin.backupPasswordRequired",
-            ))
-        }
-        Ok(Err(ImportError::WrongPassword)) => {
-            return Err(lerr(
-                locale,
-                StatusCode::BAD_REQUEST,
-                "admin.backupWrongPassword",
-            ))
-        }
-        Ok(Err(ImportError::Invalid(e))) => {
-            tracing::warn!(error = %e, "rejected backup import");
-            return Err(lerr(locale, StatusCode::BAD_REQUEST, "admin.backupInvalid"));
-        }
-        Ok(Err(ImportError::Db(e))) => {
-            tracing::error!(error = %e, "backup import database error");
-            return Err(json_error(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal error",
-            ));
-        }
-        Err(e) => {
-            tracing::error!(error = %e, "backup import task join error");
-            return Err(json_error(
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "internal error",
-            ));
-        }
-    };
+    let summary = refused(&state, locale, outcome).await?;
 
     // Reflect the restored config, then regenerate the catalogue (same item IDs)
     // so progress/history re-link to their items. Route through the job manager so
@@ -160,4 +185,62 @@ pub async fn import_backup(
     let counts: serde_json::Map<String, serde_json::Value> =
         summary.into_iter().map(|(t, n)| (t, json!(n))).collect();
     Ok(Json(json!({ "imported": counts, "rescanStarted": rescan_started })).into_response())
+}
+
+async fn refused<T>(
+    state: &SharedState,
+    locale: &str,
+    outcome: Result<Result<T, ImportError>, tokio::task::JoinError>,
+) -> Result<T, Response> {
+    match outcome {
+        Ok(Ok(done)) => Ok(done),
+        Ok(Err(error)) => Err(answer(state, locale, error).await),
+        Err(e) => {
+            tracing::error!(error = %e, "backup import task join error");
+            Err(internal())
+        }
+    }
+}
+
+async fn answer(state: &SharedState, locale: &str, error: ImportError) -> Response {
+    match error {
+        ImportError::LibraryListUnreadable => unreadable_list(state, locale).await,
+        ImportError::Db(e) => {
+            tracing::error!(error = %e, "backup import database error");
+            internal()
+        }
+        other => rejected(locale, &other),
+    }
+}
+
+fn rejected(locale: &str, error: &ImportError) -> Response {
+    if let ImportError::Invalid(e) = error {
+        tracing::warn!(error = %e, "rejected backup import");
+    }
+    let key = match error {
+        ImportError::PasswordRequired => "admin.backupPasswordRequired",
+        ImportError::WrongPassword => "admin.backupWrongPassword",
+        _ => "admin.backupInvalid",
+    };
+    lerr(locale, StatusCode::BAD_REQUEST, key)
+}
+
+async fn unreadable_list(state: &SharedState, locale: &str) -> Response {
+    let notice = query(&state.db, |pool| {
+        Ok(crate::services::settings::unreadable_list_notice(&pool))
+    })
+    .await;
+    match notice {
+        Ok(notice) => lerr_with(
+            locale,
+            StatusCode::CONFLICT,
+            notice.key,
+            &[("libraries", &notice.libraries)],
+        ),
+        Err(response) => response,
+    }
+}
+
+fn internal() -> Response {
+    json_error(StatusCode::INTERNAL_SERVER_ERROR, "internal error")
 }
