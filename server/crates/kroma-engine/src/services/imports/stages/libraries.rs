@@ -6,8 +6,6 @@
 //! screen or on an earlier one. The other server's word for where a folder is
 //! places nothing.
 
-use std::path::Path;
-
 use anyhow::Result;
 
 use super::super::passage::logged;
@@ -91,11 +89,14 @@ struct Sources {
 
 impl Sources {
     fn holding(&self, folder: &str) -> Option<usize> {
-        self.defs.iter().position(|def| {
-            def.folders
-                .iter()
-                .any(|held| Path::new(folder).starts_with(held))
-        })
+        self.defs
+            .iter()
+            .position(|def| def.folders.iter().any(|held| settings::holds(held, folder)))
+    }
+
+    fn sharing_files(&self, free: &[String], home: Option<usize>) -> Option<String> {
+        let home = home.map(|at| self.defs[at].id.as_str());
+        settings::library_sharing_files(&self.defs, free, home).map(|def| def.name.clone())
     }
 
     fn take(&mut self, row: &LibraryRow<'_>, folders: Vec<String>) -> Outcome {
@@ -113,6 +114,13 @@ impl Sources {
         if own.is_some() && free.is_empty() {
             return Outcome::AlreadyHere;
         }
+        if let Some(with) = self.sharing_files(&free, home) {
+            return Outcome::SharesFiles { with };
+        }
+        self.place(row.library, home, free)
+    }
+
+    fn place(&mut self, library: &Library, home: Option<usize>, free: Vec<String>) -> Outcome {
         self.changed |= !free.is_empty();
         let at = match home {
             Some(at) => {
@@ -120,7 +128,7 @@ impl Sources {
                 at
             }
             None => {
-                self.defs.push(source_named(row.library, free));
+                self.defs.push(source_named(library, free));
                 self.defs.len() - 1
             }
         };

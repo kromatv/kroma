@@ -24,6 +24,12 @@ same content kind, and they present as one merged catalogue deduplicated by matc
 rather than by folder. Three "Movies" sources are normal: an SSD of new releases, a NAS of
 archives, a share of home video.
 
+**LIB-79** (AGREED) - A file belongs to one source. A source whose folder holds a folder of
+another source, or sits inside one, is refused when it is added or edited, and the refusal
+names that other source. Folders are compared part by part: `/media/Films` holds
+`/media/Films/4K`, and does not hold `/media/Films 4K`. Sources that already share files
+keep working: the rule refuses new overlap and removes nothing.
+
 **LIB-4** (AGREED) - A source is an input, not a category a person browses by. Filtering the
 catalogue by source is an admin and diagnostic view, never the primary navigation.
 

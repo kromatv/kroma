@@ -1,5 +1,6 @@
 mod again;
 mod finding;
+mod home;
 mod played;
 mod removed;
 mod review;

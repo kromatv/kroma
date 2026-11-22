@@ -4,7 +4,7 @@ use kroma_testing::TempDir;
 
 use super::*;
 use crate::model::imports::{KeptFolder, Kind, Tally};
-use crate::services::settings;
+use crate::services::settings::{self, LibraryDef};
 
 pub(super) fn this_machine(folders: &[&str]) -> TempDir {
     let root = kroma_testing::temp_dir("import-libraries");
@@ -69,4 +69,16 @@ pub(super) fn libraries(read: u64, brought: u64) -> Tally {
         brought,
         unmatched: 0,
     }
+}
+
+pub(super) fn a_source(state: &SharedState, name: &str, folder: &str) -> String {
+    let def = LibraryDef {
+        id: format!("source-{name}"),
+        name: name.into(),
+        kind: "movies".into(),
+        folders: vec![folder.into()],
+        auto_scan: true,
+    };
+    settings::set_library_defs(&state.settings, &state.db, std::slice::from_ref(&def));
+    def.id
 }

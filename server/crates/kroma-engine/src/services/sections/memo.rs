@@ -29,6 +29,7 @@ const DAY_MS: i64 = 86_400_000;
 struct Inputs {
     catalog: u64,
     activity: HomeActivity,
+    moved: u64,
     day: i64,
     part_of_day: PartOfDay,
     show_recent: bool,
@@ -41,6 +42,7 @@ impl Inputs {
         Ok(Self {
             catalog: state.events.catalog_version(),
             activity: db::home_activity(pool, user_id)?,
+            moved: state.home.moves.of(user_id),
             day: now_ms.div_euclid(DAY_MS),
             part_of_day: PartOfDay::at(hour),
             show_recent: state.settings.get_bool("showRecentHome", true),
@@ -137,10 +139,31 @@ impl<V: Clone> Slot<V> {
 #[derive(Default)]
 pub struct HomeMemo {
     sections: Shelf<Arc<Vec<Section>>>,
+    moves: Moves,
     hero: Shelf<SectionItem>,
     candidates: Slot<Arc<Vec<HeroCandidate>>>,
     pub(super) catalog: crate::services::reco::CatalogMemo,
     pub(crate) world: super::world::WorldTrending,
+}
+
+impl HomeMemo {
+    /// Has every remembered home and hero of `user_id` built again on the next
+    /// visit. For a write the stamps of [`HomeActivity`] cannot see: a row
+    /// rewritten with an older time keeps its table's count and newest time.
+    pub fn moved(&self, user_id: &str) {
+        let mut moves = self.moves.0.lock().unwrap_or_else(PoisonError::into_inner);
+        *moves.entry(user_id.to_string()).or_default() += 1;
+    }
+}
+
+#[derive(Default)]
+struct Moves(Mutex<HashMap<String, u64>>);
+
+impl Moves {
+    fn of(&self, user_id: &str) -> u64 {
+        let moves = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        moves.get(user_id).copied().unwrap_or_default()
+    }
 }
 
 // An empty catalogue is read again every time, so the first scan is seen at once.

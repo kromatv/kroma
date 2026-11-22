@@ -3,7 +3,7 @@
 
 # Requirement index
 
-785 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+787 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -334,6 +334,7 @@
 - **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-182** (AGREED) - A kept library whose folder holds a folder of a KROMA source is not <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-183** (SHIPPED) - The server sends an invitation to the one address the owner types, <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-184** (SHIPPED) - The owner learns how the message left, or why it did not and what <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-185** (SHIPPED) - Under Users, every invitation nobody has redeemed offers to send it, <sub>[README.md](admin/README.md)</sub>
@@ -526,6 +527,7 @@
 - **LIB-76** (AGREED) - Whoever decides what the library monitors sees every title of it in one <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-77** (AGREED) - Asking for a title's missing units to be searched now reaches whatever <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-78** (AGREED) - **A match that came from another server.** An import <sub>[README.md](library/README.md)</sub>
+- **LIB-79** (AGREED) - A file belongs to one source. A source whose folder holds a folder of <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 
