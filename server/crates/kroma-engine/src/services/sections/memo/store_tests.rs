@@ -13,6 +13,7 @@ fn inputs() -> Inputs {
             vectors: None,
             listed: (0, None),
         },
+        moved: 0,
         day: 0,
         part_of_day: PartOfDay::Morning,
         show_recent: true,
