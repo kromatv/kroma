@@ -255,3 +255,31 @@ fn a_rule_on_an_account_that_runs_the_server_binds_nothing() {
 
     assert!(admin.sees_item(&movie, &ShowRatings::new()));
 }
+
+#[test]
+fn a_profile_with_no_country_of_its_own_reads_the_households_ratings_country() {
+    let state = crate::test_support::test_state();
+    let swiss =
+        std::collections::BTreeMap::from([("ratingsCountry".to_string(), serde_json::json!("CH"))]);
+    state.settings.set_patch(&state.db, swiss);
+
+    let viewer = Viewer::load(&state, test_user("u1", vec![Permission::Playback])).unwrap();
+
+    assert_eq!(viewer.ceiling.reader, "CH");
+}
+
+#[test]
+fn a_kids_profile_in_a_swiss_household_does_not_see_a_film_switzerland_rates_twelve() {
+    let meg_2 = film(&[
+        ("FR", "TP"),
+        ("CH", "12"),
+        ("DE", "12"),
+        ("GB", "12A"),
+        ("US", "PG-13"),
+    ]);
+    let mut kid = held(MaturityLevel::Ten);
+    kid.ceiling.reader = "CH".into();
+
+    assert!(!kid.sees_item(&meg_2, &ShowRatings::new()));
+    assert!(held(MaturityLevel::Ten).sees_item(&meg_2, &ShowRatings::new()));
+}

@@ -91,9 +91,9 @@ impl Ceiling {
     }
 
     /// Whether a title rated `ratings` passes. `legacy` is the one bare label a
-    /// title enriched before every country was kept still carries, read under
-    /// the server's country; it counts only when `ratings` is empty. Under a
-    /// ceiling, a title with no age passes nothing.
+    /// title enriched before every country was kept still carries, picked for
+    /// the server's country: it counts only when `ratings` is empty and this
+    /// profile reads that country. Under a ceiling, an unaged title fails.
     pub fn admits(&self, ratings: &CountryRatings, legacy: Option<&str>) -> bool {
         self.hides_nothing()
             || self
@@ -123,7 +123,8 @@ impl Ceiling {
 
     fn age_shown(&self, ratings: &CountryRatings, legacy: Option<&str>) -> Option<u8> {
         if ratings.is_empty() {
-            return minimum_age(&self.server, legacy?);
+            let read_here = self.reader == self.server;
+            return minimum_age(&self.server, legacy.filter(|_| read_here)?);
         }
         let shown = self.shown(ratings)?;
         minimum_age(&shown.country, &shown.label)

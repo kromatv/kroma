@@ -10,6 +10,7 @@ pub mod loudness;
 pub mod markers;
 pub mod metadata;
 pub mod probe;
+pub mod ratings;
 pub mod storyboard;
 pub mod subtitles;
 

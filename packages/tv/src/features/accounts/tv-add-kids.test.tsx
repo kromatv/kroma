@@ -21,8 +21,13 @@ vi.mock('#tv/app/providers/auth', () => ({
   useAuth: () => ({ user: mocks.user, switchProfile: mocks.switchProfile }),
 }));
 vi.mock('#tv/app/providers/env', () => ({ useEnv: () => ({ physicalKeyboard: true }) }));
+const swiss = { country: 'CH', household: 'FR', countries: ['CH', 'DE', 'FR'] };
+
 vi.mock('#tv/app/router', () => ({
-  useClient: () => ({ admin: { createKids: mocks.createKids } }),
+  useClient: () => ({
+    admin: { createKids: mocks.createKids },
+    accounts: { ratings: { get: () => Promise.resolve(swiss) } },
+  }),
   useNav: () => ({ back: vi.fn(), go: vi.fn(), route: { name: 'addKids' } }),
 }));
 vi.mock('./settings/pin-panel.component', () => ({ PinPanel: () => <div>pin panel</div> }));
@@ -60,16 +65,38 @@ describe('a Kids profile made from the television’s picker', () => {
     ).toBe('true');
   });
 
-  it('makes it at the picked level, then returns to the picker', async () => {
+  it("makes it at the picked level in the admin's ratings country, then returns to the picker", async () => {
     mocks.createKids.mockResolvedValue({ user: { id: 'kid' } });
     render(onScreen(<TvAddKids />));
+    await waitFor(() => expect(screen.getByText('Switzerland')).toBeTruthy());
 
     nameLeo();
     pick(/7\+/);
     press(/Create the profile/);
 
     await waitFor(() => expect(mocks.switchProfile).toHaveBeenCalled());
-    expect(mocks.createKids).toHaveBeenCalledWith({ username: 'Léo', level: 7, libraries: null });
+    expect(mocks.createKids).toHaveBeenCalledWith({
+      username: 'Léo',
+      level: 7,
+      libraries: null,
+      ratingsCountry: 'CH',
+    });
+  });
+
+  it('takes another ratings country picked on its own step', async () => {
+    mocks.createKids.mockResolvedValue({ user: { id: 'kid' } });
+    render(onScreen(<TvAddKids />));
+    await waitFor(() => expect(screen.getByText('Switzerland')).toBeTruthy());
+
+    press(/^Ratings country/);
+    clearPressGuard();
+    fireEvent.click(screen.getByRole('radio', { name: 'Germany' }));
+    nameLeo();
+    pick(/10\+/);
+    press(/Create the profile/);
+
+    await waitFor(() => expect(mocks.createKids).toHaveBeenCalled());
+    expect(mocks.createKids.mock.calls[0]?.[0]).toMatchObject({ ratingsCountry: 'DE' });
   });
 
   it('offers an admin with no PIN to set one before returning', async () => {

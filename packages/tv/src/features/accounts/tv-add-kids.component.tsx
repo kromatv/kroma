@@ -1,6 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import { KIDS_LEVELS, type KidsForm, kidsDraft } from '@kromatv/core';
-import { useCreateKids } from '@kromatv/core/react';
+import { type KidsCountry, useCreateKids, useKidsCountry } from '@kromatv/core/react';
 import { useT } from '@kromatv/ui';
 import {
   Box,
@@ -8,6 +8,8 @@ import {
   Field,
   type FocusHandle,
   Icon,
+  KidsCountryChoice,
+  KidsCountryRow,
   ListRow,
   Text,
   useFocusNav,
@@ -19,34 +21,43 @@ import { useClient } from '#tv/app/router';
 import { AuthScreen, UrlKeyboard } from '#tv/shared/ui';
 import { PinPanel } from './settings/pin-panel.component';
 
-type Step = 'form' | 'name' | 'pin';
+type Step = 'form' | 'name' | 'country' | 'pin';
+
+const BACK_TO_FORM: ReadonlySet<Step> = new Set<Step>(['name', 'country']);
 
 type KidsLevel = NonNullable<KidsForm['level']>;
 
 /**
  * A Kids profile made from the picker (route `addKids`), by the admin the
  * picker signed in (ACCT-135): a name typed on its own step, one of the kids
- * levels, every library. An admin with no PIN is then offered one (ACCT-133).
- * Leaving returns to the picker, where the new profile waits.
+ * levels, the admin's ratings country unless another is picked on its own
+ * step (ACCT-155), every library. An admin with no PIN is then offered one
+ * (ACCT-133). Leaving returns to the picker, where the new profile waits.
  */
 export function TvAddKids() {
   const { user, switchProfile } = useAuth();
+  const client = useClient();
+  const country = useKidsCountry(() => client.accounts.ratings.get());
   const [step, setStep] = useState<Step>('form');
   const [form, setForm] = useState<KidsForm>({ name: '', level: null });
-  useStepBack(step, { toForm: () => setStep('form'), leave: switchProfile });
+  const toForm = () => setStep('form');
+  useStepBack(step, { toForm, leave: switchProfile });
 
   if (step === 'name') {
     const onName = (name: string) => setForm({ ...form, name });
-    return <KidsName name={form.name} onName={onName} onDone={() => setStep('form')} />;
+    return <KidsName name={form.name} onName={onName} onDone={toForm} />;
+  }
+  if (step === 'country') {
+    return <KidsCountryStep country={country} onDone={toForm} />;
   }
   if (step === 'pin') {
     return <KidsPinOffer onDone={switchProfile} />;
   }
   return (
     <KidsFormStep
-      form={form}
+      form={{ ...form, country: country.country }}
       onForm={setForm}
-      onName={() => setStep('name')}
+      go={{ toName: () => setStep('name'), toCountry: () => setStep('country') }}
       onCreated={() => (user?.hasPin ? switchProfile() : setStep('pin'))}
     />
   );
@@ -59,7 +70,7 @@ function useStepBack(step: Step, go: Readonly<{ toForm: () => void; leave: () =>
   });
   const onBack = useCallback(() => {
     const { step: at, go: to } = held.current;
-    if (at === 'name') {
+    if (BACK_TO_FORM.has(at)) {
       to.toForm();
     } else {
       to.leave();
@@ -96,12 +107,12 @@ function KidsName({
 function KidsFormStep({
   form,
   onForm,
-  onName,
+  go,
   onCreated,
 }: Readonly<{
   form: KidsForm;
   onForm: (form: KidsForm) => void;
-  onName: () => void;
+  go: { toName: () => void; toCountry: () => void };
   onCreated: () => void;
 }>) {
   const t = useT();
@@ -109,11 +120,12 @@ function KidsFormStep({
     <AuthScreen>
       <Box w="100%" maxW={720} gap={24}>
         <StepTitle title={t('admin.addKids')} lead={t('admin.kidsIntro')} />
-        <ListRow.Root icon="user" autoFocus onPress={onName}>
+        <ListRow.Root icon="user" autoFocus onPress={go.toName}>
           <ListRow.Label>{t('admin.name')}</ListRow.Label>
           <ListRow.Hint>{form.name.trim() || t('admin.kidsNameEmpty')}</ListRow.Hint>
         </ListRow.Root>
         <KidsLevelRows level={form.level} onLevel={(level) => onForm({ ...form, level })} />
+        <KidsCountryRow country={form.country ?? null} onPress={go.toCountry} />
         <CreateKids form={form} onCreated={onCreated} />
       </Box>
     </AuthScreen>
@@ -145,6 +157,21 @@ function KidsLevelRows({
         </ListRow.Root>
       ))}
     </Box>
+  );
+}
+
+function KidsCountryStep({
+  country,
+  onDone,
+}: Readonly<{ country: KidsCountry; onDone: () => void }>) {
+  const t = useT();
+  return (
+    <AuthScreen>
+      <Box w="100%" maxW={720} gap={24}>
+        <StepTitle title={t('admin.kidsCountry')} lead={t('admin.kidsCountryHint')} />
+        <KidsCountryChoice country={country} onPicked={onDone} />
+      </Box>
+    </AuthScreen>
   );
 }
 

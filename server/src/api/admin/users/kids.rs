@@ -22,24 +22,27 @@ use crate::model::{
     ActionKind, ActionSpec, ActionStyle, MaturityLevel, NotificationCategory, NotificationEvent,
     NotificationSpec, Permission, User,
 };
-use crate::services::notify;
+use crate::services::{notify, settings};
 use crate::state::SharedState;
 
 const MAX_NAME_CHARS: usize = 64;
 
 /// `level` has no default: the admin picks one of the kids levels (ACCT-123).
-/// `libraries` is the grant, as for any account (ACCT-124).
+/// `libraries` is the grant, as for any account (ACCT-124). `ratingsCountry`
+/// defaults to the creating admin's own (ACCT-155).
 #[derive(Debug, Deserialize)]
 pub struct NewKidsBody {
     pub username: String,
     pub level: MaturityLevel,
     #[serde(default)]
     pub libraries: Option<Vec<String>>,
+    #[serde(default, rename = "ratingsCountry")]
+    pub ratings_country: Option<String>,
 }
 
-/// `POST /api/admin/kids` `{ username, level, libraries? }` → `{ user }`. A
-/// level above 10+ or a name that is empty, too long or already taken is
-/// refused with 400 or 409.
+/// `POST /api/admin/kids` `{ username, level, libraries?, ratingsCountry? }` →
+/// `{ user }`. A level above 10+, an unknown country, or a name that is empty,
+/// too long or already taken is refused with 400 or 409.
 pub async fn create(
     State(state): State<SharedState>,
     AuthUser(admin): AuthUser,
@@ -50,6 +53,7 @@ pub async fn create(
     let (username, level) = valid_draft(&body, loc)?;
     let libraries = library_scope(body.libraries)
         .ok_or_else(|| lerr(loc, StatusCode::BAD_REQUEST, "admin.tooManyLibraries"))?;
+    let country = kids_country(&state, &admin, body.ratings_country).await?;
     name_is_free(&state, &username, loc).await?;
     let user = query(&state.db, move |pool| {
         let new = NewKidsProfile {
@@ -57,12 +61,31 @@ pub async fn create(
             level,
             libraries: &libraries,
         };
-        db::create_kids_profile(&pool, &new)
+        let user = db::create_kids_profile(&pool, &new)?;
+        db::set_ratings_country(&pool, &user.id, Some(&country))?;
+        Ok(user)
     })
     .await?;
     state.events.publish(ServerEvent::LibraryUpdated);
     tell_adults_without_a_pin(&state, &admin.id).await;
     Ok(Json(json!({ "user": user })).into_response())
+}
+
+async fn kids_country(
+    state: &SharedState,
+    admin: &User,
+    asked: Option<String>,
+) -> Result<String, Response> {
+    if let Some(asked) = asked {
+        return super::restrictions::known_country(&asked, admin);
+    }
+    let (engine, id) = (state.clone(), admin.id.clone());
+    query(&state.db, move |pool| {
+        let own = db::profile_maturity(&pool, &id)?.ratings_country;
+        let household = || settings::household_country(&engine.settings, &engine.config, &pool);
+        Ok(own.unwrap_or_else(household))
+    })
+    .await
 }
 
 async fn name_is_free(state: &SharedState, username: &str, loc: &str) -> Result<(), Response> {

@@ -38,11 +38,13 @@ export const AdminUser = User.pick({
 export type AdminUser = z.infer<typeof AdminUser>;
 
 /** `POST /api/admin/kids`: a Kids profile's name, one of the kids levels with
- * none picked in advance, and its grant (`null` for every library). */
+ * none picked in advance, its grant (`null` for every library), and its
+ * ratings country (`null` for the creating admin's own). */
 export const NewKidsProfile = z.object({
   username: z.string().trim().nonempty(),
   level: z.union([z.literal(0), z.literal(7), z.literal(10)]),
   libraries: z.array(LibraryId).nullable(),
+  ratingsCountry: z.string().nonempty().nullable().optional(),
 });
 export type NewKidsProfile = z.infer<typeof NewKidsProfile>;
 

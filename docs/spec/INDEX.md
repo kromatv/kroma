@@ -3,7 +3,7 @@
 
 # Requirement index
 
-794 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+798 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -110,7 +110,7 @@
 - **ACCT-101** (SHIPPED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-102** (SHIPPED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-103** (SHIPPED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-104** (SHIPPED) - Every account has a ratings country. It starts as the server's <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-104** (SHIPPED) - Every account has a ratings country. It starts as the household's <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-106** (AGREED) - A title that country never rated borrows another country's label, <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-107** (SHIPPED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
@@ -148,10 +148,14 @@
 - **ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-141** (SHIPPED) - The member list tells a waiting account apart from one its person <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-150** (SHIPPED) - An admin sets a Kids profile's ratings country among its <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-151** (SHIPPED) - A ceiling, a block and an allow bind only a profile with no <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-153** (AGREED) - A push notification about a title the profile may not see is not <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-154** (SHIPPED) - The household has a ratings country, an admin setting beside the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-155** (SHIPPED) - A Kids profile an admin creates takes that admin's ratings country. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-156** (SHIPPED) - A title enriched before every country's label was kept carries one <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-157** (SHIPPED) - The server fetches every country's labels for those titles in the <sub>[kids.md](accounts/kids.md)</sub>
 
 ## ADMIN - [admin](admin/)
 

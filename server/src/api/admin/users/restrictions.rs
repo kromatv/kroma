@@ -20,11 +20,19 @@ use crate::api::util::query;
 use crate::db::{self, RuledTitle};
 use crate::infra::events::ServerEvent;
 use crate::model::{MaturityLevel, Permission, TitleRule, User};
+use crate::services::settings;
 use crate::state::SharedState;
 
 #[derive(Debug, Deserialize)]
 pub struct LevelBody {
     pub level: MaturityLevel,
+    pub password: String,
+}
+
+/// `country` is `null` to follow the household's ratings country again.
+#[derive(Debug, Deserialize)]
+pub struct CountryBody {
+    pub country: Option<String>,
     pub password: String,
 }
 
@@ -64,7 +72,9 @@ impl FromRequestParts<SharedState> for MemberCall {
     }
 }
 
-/// `GET /api/admin/users/:id/restrictions` → `{ level, held, titles }`.
+/// `GET /api/admin/users/:id/restrictions` → `{ level, ratingsCountry,
+/// household, held, titles }`. `ratingsCountry` is `null` while the profile
+/// reads the household's, which `household` names.
 /// `held` is `false` for an account with a management right, which neither a
 /// ceiling nor a block binds; `titles` lists every blocked or allowed title,
 /// newest first.
@@ -82,7 +92,15 @@ pub async fn restrictions(
     .await?;
     let titles: Vec<serde_json::Value> = ruled.iter().map(ruled_json).collect();
     let held = !target.is_any_admin();
-    Ok(Json(json!({ "level": stored.level, "held": held, "titles": titles })).into_response())
+    let household = settings::household_country(&state.settings, &state.config, &state.db);
+    Ok(Json(json!({
+        "level": stored.level,
+        "ratingsCountry": stored.ratings_country,
+        "household": household,
+        "held": held,
+        "titles": titles,
+    }))
+    .into_response())
 }
 
 /// `PUT /api/admin/users/:id/restrictions/level` `{ level, password }` → 204.
@@ -140,6 +158,41 @@ pub async fn set_title_rule(
     .await?;
     state.events.publish(ServerEvent::LibraryUpdated);
     Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+/// `PUT /api/admin/users/:id/restrictions/country` `{ country, password }` →
+/// 204 (ACCT-150). A country no rating system is known for is refused with
+/// 400; otherwise refused as [`set_level`] is.
+pub async fn set_country(
+    State(state): State<SharedState>,
+    call: MemberCall,
+    Json(body): Json<CountryBody>,
+) -> Result<Response, Response> {
+    let country = match body.country.as_deref() {
+        Some(asked) => Some(known_country(asked, &call.admin)?),
+        None => None,
+    };
+    let change = Change {
+        password: &body.password,
+        restricts: false,
+    };
+    proven(&state, &call, change).await?;
+    let id = call.id;
+    query(&state.db, move |pool| {
+        db::set_ratings_country(&pool, &id, country.as_deref())
+    })
+    .await?;
+    state.events.publish(ServerEvent::LibraryUpdated);
+    Ok(StatusCode::NO_CONTENT.into_response())
+}
+
+/// `asked` as a ratings country, or the 400 a country no rating system is
+/// known for answers with.
+pub(super) fn known_country(asked: &str, admin: &User) -> Result<String, Response> {
+    settings::known_ratings_country(asked).ok_or_else(|| {
+        let loc = super::super::user_locale(admin);
+        lerr(loc, StatusCode::BAD_REQUEST, "error.ratingsCountryUnknown")
+    })
 }
 
 async fn whole_title(state: &SharedState, call: &MemberCall) -> Result<String, Response> {

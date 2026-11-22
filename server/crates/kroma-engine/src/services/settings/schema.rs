@@ -1,7 +1,8 @@
 //! The admin settings-view schema: the grouped, localised rows the console
 //! renders, with each row's current value overlaid from the store.
 
-use super::tmdb_language::tmdb_language_options;
+use super::ratings_country::ratings_country_row;
+use super::tmdb_language::metadata_language_row;
 use std::sync::OnceLock;
 
 use serde::Serialize;
@@ -166,18 +167,8 @@ pub fn groups(
                         g("serverName"),
                         true,
                     ),
-                    row(
-                        "tmdbLanguage",
-                        t("admin.tmdbLanguage"),
-                        Some(t("admin.tmdbLanguageHint")),
-                        "select",
-                        &tmdb_language_options()
-                            .iter()
-                            .map(String::as_str)
-                            .collect::<Vec<_>>(),
-                        g("tmdbLanguage"),
-                        true,
-                    ),
+                    metadata_language_row(locale, g("tmdbLanguage")),
+                    ratings_country_row(locale, g(super::RATINGS_COUNTRY_KEY)),
                     row(
                         "version",
                         t("admin.version"),
