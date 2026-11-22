@@ -1,4 +1,4 @@
-import { formatRuntime, genreLabels, qualityBadge } from '@kromatv/core';
+import { ageRatingOf, formatRuntime, genreLabels, qualityBadge } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Button, FocusRegion, FocusSlot, styles, useFocusNav, useStyles } from '@kromatv/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
@@ -40,7 +40,6 @@ export function TvMovieDetail() {
   const metaLong = [
     item.year ? String(item.year) : null,
     formatRuntime(item.durationMs),
-    meta?.certification,
     genreLabels(t, meta)[0],
   ]
     .filter(Boolean)
@@ -56,6 +55,7 @@ export function TvMovieDetail() {
         client.media.artwork.posterFor(item, STAGE_W)
       }
       rating={meta?.rating}
+      ageRating={ageRatingOf(meta)}
       meta={metaLong}
       badge={qualityBadge(item)}
       overview={meta?.overview}
