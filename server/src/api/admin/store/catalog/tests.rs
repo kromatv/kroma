@@ -344,3 +344,65 @@ fn a_module_built_against_this_core_schema_is_offered() {
 
     assert_eq!(compat_verdict(&entry), Ok(()));
 }
+
+fn worded(words: Value) -> CatalogModule {
+    let mut row = json!({ "id": "a.b", "name": "AB", "version": "1.0.0" });
+    row.as_object_mut()
+        .unwrap()
+        .extend(words.as_object().unwrap().clone());
+    parse_module(&row).unwrap()
+}
+
+#[test]
+fn a_row_carries_its_sentence_and_its_words_in_each_language() {
+    let m = worded(json!({
+        "tagline": "Watch away from home.",
+        "translations": { "fr": { "name": "Accès à distance" }, "pt-BR": { "tagline": "Assista" } }
+    }));
+
+    assert_eq!(m.tagline.as_deref(), Some("Watch away from home."));
+    assert_eq!(
+        m.translations["fr"].name.as_deref(),
+        Some("Accès à distance")
+    );
+    assert_eq!(m.translations["pt-BR"].tagline.as_deref(), Some("Assista"));
+}
+
+#[test]
+fn words_filed_under_something_that_is_not_a_language_are_dropped() {
+    let m = worded(json!({ "translations": {
+        "French": { "name": "X" }, "f": { "name": "X" }, "fr-": { "name": "X" },
+        "fr_CH": { "name": "X" }, "de": { "name": "Fernzugriff" }
+    } }));
+
+    assert_eq!(m.translations.keys().collect::<Vec<_>>(), ["de"]);
+}
+
+#[test]
+fn a_word_past_its_bound_or_not_a_string_reads_as_not_said() {
+    let long = "x".repeat(1001);
+    let m = worded(json!({
+        "tagline": long,
+        "translations": { "fr": { "name": 7, "tagline": "  " }, "de": { "name": "Fernzugriff", "tagline": long } }
+    }));
+
+    assert_eq!(m.tagline, None);
+    assert!(!m.translations.contains_key("fr"));
+    assert_eq!(m.translations["de"].tagline, None);
+}
+
+#[test]
+fn a_row_with_no_words_reads_in_its_english_alone() {
+    let m = worded(json!({}));
+
+    assert_eq!(m.tagline, None);
+    assert!(m.translations.is_empty());
+}
+
+#[test]
+fn a_descriptor_offers_the_setup_each_module_once_in_its_order() {
+    let descriptor = json!({ "setup": ["b", 3, "a", "b", null] });
+
+    assert_eq!(super::words::setup(&descriptor), ["b", "a"]);
+    assert!(super::words::setup(&json!({ "setup": "a" })).is_empty());
+}

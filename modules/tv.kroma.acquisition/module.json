@@ -3,12 +3,20 @@
   "schemaVersion": 3,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.5.7",
+  "version": "0.5.9",
   "component": {
     "instances": 4,
     "cpuSeconds": 300
   },
   "description": "The acquisition feature: interactive/manual release search, quality scoring, grab + import, and the automatic wanted-list pass. Rides on the Downloads engine and the indexers. Disable it to remove search/grab/auto and hide the settings page.",
+  "tagline": "Ask for a film or a series, and it is found and downloaded for you.",
+  "translations": {
+    "fr": {
+      "name": "Acquisition",
+      "description": "Recherche manuelle des versions, note de qualité, téléchargement et import, et passage automatique sur la liste des envies. S'appuie sur le moteur de téléchargement et les indexeurs. Désactivez-le pour retirer la recherche et l'automatisme, et masquer sa page de réglages.",
+      "tagline": "Demandez un film ou une série : il est trouvé et téléchargé pour vous."
+    }
+  },
   "engines": {
     "server": ">=0.1.39"
   },

@@ -35,3 +35,4 @@ export {
 export { DescribedModule, Manifest, speaksCurrentSchema } from './v3.ts';
 export { notificationsProblem } from './notifications.ts';
 export { Permissions } from './permissions.ts';
+export { LanguageTag, ModuleTranslations, ModuleWords } from './words.ts';

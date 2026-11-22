@@ -2494,7 +2494,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 109,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "On the modules step each module is offered by what it does for the",
     "file": "docs/spec/admin/setup.md",
     "line": 73
@@ -2504,7 +2504,7 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 110,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Which modules the setup offers, and in what order, comes from the",
     "file": "docs/spec/admin/setup.md",
     "line": 77
@@ -2514,10 +2514,10 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 111,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Each offer shows the module's size, the permissions it asks for and",
     "file": "docs/spec/admin/setup.md",
-    "line": 80
+    "line": 81
   },
   {
     "id": "ADMIN-112",
@@ -2527,7 +2527,7 @@
     "status": "AGREED",
     "text": "No module is selected by default.",
     "file": "docs/spec/admin/setup.md",
-    "line": 86
+    "line": 87
   },
   {
     "id": "ADMIN-113",
@@ -2537,7 +2537,7 @@
     "status": "AGREED",
     "text": "A selection is only a selection until the owner leaves the setup, at",
     "file": "docs/spec/admin/setup.md",
-    "line": 88
+    "line": 89
   },
   {
     "id": "ADMIN-114",
@@ -2547,7 +2547,7 @@
     "status": "AGREED",
     "text": "On the people step the owner creates invitations, under the rule of",
     "file": "docs/spec/admin/setup.md",
-    "line": 95
+    "line": 96
   },
   {
     "id": "ADMIN-117",
@@ -2557,7 +2557,7 @@
     "status": "AGREED",
     "text": "The being-counted step says in one sentence what a counted server",
     "file": "docs/spec/admin/setup.md",
-    "line": 108
+    "line": 109
   },
   {
     "id": "ADMIN-118",
@@ -2567,7 +2567,7 @@
     "status": "AGREED",
     "text": "The last step is the home.",
     "file": "docs/spec/admin/setup.md",
-    "line": 112
+    "line": 113
   },
   {
     "id": "ADMIN-119",
@@ -2577,7 +2577,7 @@
     "status": "AGREED",
     "text": "No step holds the catalogue back. A title is playable as soon as",
     "file": "docs/spec/admin/setup.md",
-    "line": 121
+    "line": 122
   },
   {
     "id": "ADMIN-120",
@@ -2587,7 +2587,7 @@
     "status": "AGREED",
     "text": "While a scan runs, every screen after the media step shows the",
     "file": "docs/spec/admin/setup.md",
-    "line": 124
+    "line": 125
   },
   {
     "id": "ADMIN-121",
@@ -2597,7 +2597,7 @@
     "status": "AGREED",
     "text": "A setup that ended leaves a checklist on the admin dashboard, one",
     "file": "docs/spec/admin/setup.md",
-    "line": 133
+    "line": 134
   },
   {
     "id": "ADMIN-122",
@@ -2607,7 +2607,7 @@
     "status": "AGREED",
     "text": "A line leaves the checklist when its step is done, in the setup or",
     "file": "docs/spec/admin/setup.md",
-    "line": 137
+    "line": 138
   },
   {
     "id": "ADMIN-123",
@@ -2617,7 +2617,7 @@
     "status": "AGREED",
     "text": "The owner can dismiss any line, and a dismissed line does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 152
+    "line": 153
   },
   {
     "id": "ADMIN-124",
@@ -2627,7 +2627,7 @@
     "status": "AGREED",
     "text": "When no line is left the checklist is gone, and it does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 155
+    "line": 156
   },
   {
     "id": "ADMIN-125",
@@ -2637,7 +2637,7 @@
     "status": "AGREED",
     "text": "The whole setup works on a phone held upright. Nothing scrolls",
     "file": "docs/spec/admin/setup.md",
-    "line": 162
+    "line": 163
   },
   {
     "id": "ADMIN-126",
@@ -2647,7 +2647,7 @@
     "status": "AGREED",
     "text": "The whole setup works by keyboard alone, from the first screen to",
     "file": "docs/spec/admin/setup.md",
-    "line": 165
+    "line": 166
   },
   {
     "id": "ADMIN-127",
@@ -2657,7 +2657,7 @@
     "status": "AGREED",
     "text": "No step sends the owner to documentation. What a step needs to say,",
     "file": "docs/spec/admin/setup.md",
-    "line": 168
+    "line": 169
   },
   {
     "id": "ADMIN-128",
@@ -3114,10 +3114,10 @@
     "domain": "ADMIN",
     "space": "admin",
     "number": 173,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The words that offer a module are the module's own, in each language",
     "file": "docs/spec/admin/setup.md",
-    "line": 83
+    "line": 84
   },
   {
     "id": "ADMIN-174",
@@ -3127,7 +3127,7 @@
     "status": "AGREED",
     "text": "A module the server already holds appears on the modules step as",
     "file": "docs/spec/admin/setup.md",
-    "line": 92
+    "line": 93
   },
   {
     "id": "ADMIN-175",
@@ -3137,7 +3137,7 @@
     "status": "AGREED",
     "text": "An invitation says what its account may do. A new one lets its",
     "file": "docs/spec/admin/setup.md",
-    "line": 99
+    "line": 100
   },
   {
     "id": "ADMIN-176",
@@ -3147,7 +3147,7 @@
     "status": "AGREED",
     "text": "The owner hands an invitation over from the step: they copy its link,",
     "file": "docs/spec/admin/setup.md",
-    "line": 102
+    "line": 103
   },
   {
     "id": "ADMIN-177",
@@ -3157,7 +3157,7 @@
     "status": "AGREED",
     "text": "The owner deletes an invitation on the people step, and its link",
     "file": "docs/spec/admin/setup.md",
-    "line": 105
+    "line": 106
   },
   {
     "id": "ADMIN-178",
@@ -3187,7 +3187,7 @@
     "status": "AGREED",
     "text": "The page of the setup never scrolls. A step with more than its frame",
     "file": "docs/spec/admin/setup.md",
-    "line": 171
+    "line": 172
   },
   {
     "id": "ADMIN-181",
@@ -3227,7 +3227,7 @@
     "status": "AGREED",
     "text": "A step stays done once the server has seen it done. A line that",
     "file": "docs/spec/admin/setup.md",
-    "line": 148
+    "line": 149
   },
   {
     "id": "BROWSE-1",
@@ -5697,7 +5697,7 @@
     "status": "AGREED",
     "text": "**First-party is trusted by default.** The official registry is",
     "file": "docs/spec/modules/README.md",
-    "line": 184
+    "line": 189
   },
   {
     "id": "MOD-25",
@@ -5707,7 +5707,7 @@
     "status": "AGREED",
     "text": "**A third-party registry is an explicit operator opt-in.** Adding one",
     "file": "docs/spec/modules/README.md",
-    "line": 186
+    "line": 191
   },
   {
     "id": "MOD-26",
@@ -5717,7 +5717,7 @@
     "status": "AGREED",
     "text": "The operator is told, in plain terms, that a module is code the server",
     "file": "docs/spec/modules/README.md",
-    "line": 188
+    "line": 193
   },
   {
     "id": "MOD-27",
@@ -5727,7 +5727,7 @@
     "status": "AGREED",
     "text": "**Checksums guarantee integrity, never safety**, and the server says so",
     "file": "docs/spec/modules/README.md",
-    "line": 191
+    "line": 196
   },
   {
     "id": "MOD-28",
@@ -5737,7 +5737,7 @@
     "status": "SHIPPED",
     "text": "**Enable.** The server starts the module, and its routes, jobs and UI",
     "file": "docs/spec/modules/README.md",
-    "line": 220
+    "line": 225
   },
   {
     "id": "MOD-29",
@@ -5747,7 +5747,7 @@
     "status": "SHIPPED",
     "text": "**Disable.** The module is stopped, and its **data is kept",
     "file": "docs/spec/modules/README.md",
-    "line": 223
+    "line": 228
   },
   {
     "id": "MOD-30",
@@ -5757,7 +5757,7 @@
     "status": "SHIPPED",
     "text": "**Update.** A newer version replaces the bundle and the module is",
     "file": "docs/spec/modules/README.md",
-    "line": 226
+    "line": 231
   },
   {
     "id": "MOD-31",
@@ -5767,7 +5767,7 @@
     "status": "SHIPPED",
     "text": "`minServer` is re-checked on update, so an update that outgrows the",
     "file": "docs/spec/modules/README.md",
-    "line": 229
+    "line": 234
   },
   {
     "id": "MOD-32",
@@ -5777,7 +5777,7 @@
     "status": "SHIPPED",
     "text": "**Uninstall.** The module is removed entirely. It is the one",
     "file": "docs/spec/modules/README.md",
-    "line": 231
+    "line": 236
   },
   {
     "id": "MOD-33",
@@ -5787,7 +5787,7 @@
     "status": "SHIPPED",
     "text": "The server refuses to uninstall a module another enabled module still",
     "file": "docs/spec/modules/README.md",
-    "line": 234
+    "line": 239
   },
   {
     "id": "MOD-34",
@@ -5797,7 +5797,7 @@
     "status": "SHIPPED",
     "text": "Uninstalling a module never touches media on disk. A downloads module",
     "file": "docs/spec/modules/README.md",
-    "line": 241
+    "line": 246
   },
   {
     "id": "MOD-35",
@@ -5807,7 +5807,7 @@
     "status": "SHIPPED",
     "text": "**A crashed module cannot take down the server.** A module runs in",
     "file": "docs/spec/modules/README.md",
-    "line": 251
+    "line": 256
   },
   {
     "id": "MOD-36",
@@ -5817,7 +5817,7 @@
     "status": "SHIPPED",
     "text": "**An incompatible module never runs by accident.** `minServer` is",
     "file": "docs/spec/modules/README.md",
-    "line": 255
+    "line": 260
   },
   {
     "id": "MOD-37",
@@ -5827,7 +5827,7 @@
     "status": "SHIPPED",
     "text": "**Failure is visible, not silent.** A module that will not start or",
     "file": "docs/spec/modules/README.md",
-    "line": 258
+    "line": 263
   },
   {
     "id": "MOD-38",
@@ -5837,7 +5837,7 @@
     "status": "SHIPPED",
     "text": "The server is forward-compatible with older modules. A module declares",
     "file": "docs/spec/modules/README.md",
-    "line": 283
+    "line": 288
   },
   {
     "id": "MOD-39",
@@ -5847,7 +5847,7 @@
     "status": "SHIPPED",
     "text": "A module installed today keeps working as the server is updated,",
     "file": "docs/spec/modules/README.md",
-    "line": 286
+    "line": 291
   },
   {
     "id": "MOD-40",
@@ -5857,7 +5857,7 @@
     "status": "SHIPPED",
     "text": "A *newer* module may raise its `minServer`, and the Store says so",
     "file": "docs/spec/modules/README.md",
-    "line": 289
+    "line": 294
   },
   {
     "id": "MOD-41",
@@ -5867,7 +5867,7 @@
     "status": "SHIPPED",
     "text": "A module **may** ship UI, and the position is deliberate: a module's",
     "file": "docs/spec/modules/README.md",
-    "line": 312
+    "line": 317
   },
   {
     "id": "MOD-42",
@@ -5877,7 +5877,7 @@
     "status": "AGREED",
     "text": "A module renders **its own admin surface**: configuration, status and",
     "file": "docs/spec/modules/README.md",
-    "line": 316
+    "line": 321
   },
   {
     "id": "MOD-43",
@@ -5887,7 +5887,7 @@
     "status": "SHIPPED",
     "text": "A module's UI is served through the same reverse proxy as its backend",
     "file": "docs/spec/modules/README.md",
-    "line": 319
+    "line": 324
   },
   {
     "id": "MOD-44",
@@ -5897,7 +5897,7 @@
     "status": "AGREED",
     "text": "**The compatibility gate is the early warning.** As the server moves",
     "file": "docs/spec/modules/README.md",
-    "line": 333
+    "line": 338
   },
   {
     "id": "MOD-45",
@@ -5907,7 +5907,7 @@
     "status": "AGREED",
     "text": "**Data is retained.** An incompatible or abandoned module is not",
     "file": "docs/spec/modules/README.md",
-    "line": 337
+    "line": 342
   },
   {
     "id": "MOD-46",
@@ -5917,7 +5917,7 @@
     "status": "AGREED",
     "text": "**The signal is honest.** The person is told the module has not kept",
     "file": "docs/spec/modules/README.md",
-    "line": 340
+    "line": 345
   },
   {
     "id": "MOD-47",
@@ -5927,7 +5927,7 @@
     "status": "SHIPPED",
     "text": "Every capability below could have been core and is a module instead,",
     "file": "docs/spec/modules/README.md",
-    "line": 360
+    "line": 365
   },
   {
     "id": "MOD-48",
@@ -5937,7 +5937,7 @@
     "status": "AGREED",
     "text": "The Store names the registry every module came from, on the listing and",
     "file": "docs/spec/modules/README.md",
-    "line": 194
+    "line": 199
   },
   {
     "id": "MOD-49",
@@ -5947,7 +5947,7 @@
     "status": "AGREED",
     "text": "Installing from a registry the operator added is gated once, per",
     "file": "docs/spec/modules/README.md",
-    "line": 197
+    "line": 202
   },
   {
     "id": "MOD-50",
@@ -5957,7 +5957,7 @@
     "status": "AGREED",
     "text": "A module that has disappeared from every configured registry is flagged",
     "file": "docs/spec/modules/README.md",
-    "line": 345
+    "line": 350
   },
   {
     "id": "MOD-51",
@@ -5977,7 +5977,7 @@
     "status": "SHIPPED",
     "text": "The server refuses to **update** a module past the range an enabled",
     "file": "docs/spec/modules/README.md",
-    "line": 236
+    "line": 241
   },
   {
     "id": "MOD-53",
@@ -6287,7 +6287,7 @@
     "status": "AGREED",
     "text": "A module runs inside the server and can call nothing but what the",
     "file": "docs/spec/modules/README.md",
-    "line": 269
+    "line": 274
   },
   {
     "id": "MOD-84",
@@ -6297,7 +6297,7 @@
     "status": "AGREED",
     "text": "A module that ships as a native program is refused at install and never",
     "file": "docs/spec/modules/README.md",
-    "line": 276
+    "line": 281
   },
   {
     "id": "MOD-85",
@@ -6307,7 +6307,7 @@
     "status": "SHIPPED",
     "text": "The official registry describes every version of a module it has",
     "file": "docs/spec/modules/README.md",
-    "line": 153
+    "line": 158
   },
   {
     "id": "MOD-86",
@@ -6317,7 +6317,7 @@
     "status": "SHIPPED",
     "text": "The Store never offers a version whose registry does not describe what",
     "file": "docs/spec/modules/README.md",
-    "line": 157
+    "line": 162
   },
   {
     "id": "MOD-87",
@@ -6327,7 +6327,7 @@
     "status": "SHIPPED",
     "text": "When a module's newest version does not run on this server, the Store",
     "file": "docs/spec/modules/README.md",
-    "line": 160
+    "line": 165
   },
   {
     "id": "MOD-88",
@@ -6337,7 +6337,7 @@
     "status": "SHIPPED",
     "text": "The Store shows the version it would install and, beside it, the newest",
     "file": "docs/spec/modules/README.md",
-    "line": 164
+    "line": 169
   },
   {
     "id": "MOD-89",
@@ -6347,7 +6347,7 @@
     "status": "SHIPPED",
     "text": "Installing, updating, updating everything and automatic updates all take",
     "file": "docs/spec/modules/README.md",
-    "line": 167
+    "line": 172
   },
   {
     "id": "MOD-90",
@@ -6357,7 +6357,7 @@
     "status": "SHIPPED",
     "text": "The Store never downgrades an installed module unless the operator asks.",
     "file": "docs/spec/modules/README.md",
-    "line": 170
+    "line": 175
   },
   {
     "id": "MOD-91",
@@ -6367,7 +6367,7 @@
     "status": "SHIPPED",
     "text": "Each dependency resolves to its own newest version that runs here. A",
     "file": "docs/spec/modules/README.md",
-    "line": 173
+    "line": 178
   },
   {
     "id": "MOD-92",
@@ -6377,7 +6377,7 @@
     "status": "SHIPPED",
     "text": "A module is checked against the module interface the server implements,",
     "file": "docs/spec/modules/README.md",
-    "line": 293
+    "line": 298
   },
   {
     "id": "MOD-93",
@@ -6387,7 +6387,7 @@
     "status": "SHIPPED",
     "text": "`minServer` is the floor for a server capability the module needs. It is",
     "file": "docs/spec/modules/README.md",
-    "line": 298
+    "line": 303
   },
   {
     "id": "MOD-94",
@@ -6487,7 +6487,7 @@
     "status": "AGREED",
     "text": "Each importer is a module, one per kind of server, and a server that",
     "file": "docs/spec/modules/README.md",
-    "line": 396
+    "line": 401
   },
   {
     "id": "MOD-104",
@@ -6497,7 +6497,7 @@
     "status": "AGREED",
     "text": "The servers KROMA can import from are the importers the official",
     "file": "docs/spec/modules/README.md",
-    "line": 400
+    "line": 405
   },
   {
     "id": "MOD-105",
@@ -6507,7 +6507,7 @@
     "status": "AGREED",
     "text": "An importer reads the other server and describes what it found. The",
     "file": "docs/spec/modules/README.md",
-    "line": 403
+    "line": 408
   },
   {
     "id": "MOD-106",
@@ -6517,7 +6517,7 @@
     "status": "AGREED",
     "text": "The sign-in to the other server is the importer's to keep, among its",
     "file": "docs/spec/modules/README.md",
-    "line": 407
+    "line": 412
   },
   {
     "id": "MOD-107",
@@ -6527,7 +6527,17 @@
     "status": "SHIPPED",
     "text": "A module that reaches the core database is checked against the core",
     "file": "docs/spec/modules/README.md",
-    "line": 301
+    "line": 306
+  },
+  {
+    "id": "MOD-108",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 108,
+    "status": "SHIPPED",
+    "text": "A module names and describes itself, and says in one sentence what it",
+    "file": "docs/spec/modules/README.md",
+    "line": 146
   },
   {
     "id": "PLAY-1",

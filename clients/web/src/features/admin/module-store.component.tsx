@@ -5,7 +5,8 @@
 // download/install progress bar.
 
 import type { StoreCatalog, StoreModule } from '@kromatv/client/modules';
-import { useFormat, useT } from '@kromatv/ui';
+import { moduleWords } from '@kromatv/core';
+import { useFormat, useLocale, useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -107,12 +108,13 @@ function StoreCard({
   const t = useT();
   const fmt = useFormat();
   const id = useId();
+  const words = moduleWords(m, useLocale());
   const refusal = useRefusalText(m);
   const newest = useNewestText(m);
   const offered = m.compatible && (!m.installedVersion || m.updateAvailable);
   const dimmed = !m.compatible && (!m.installedVersion || refusedAsInstalled(m));
   return (
-    <Focusable asChild ring="focusEdge" states={CARD_STATES} label={m.name}>
+    <Focusable asChild ring="focusEdge" states={CARD_STATES} label={words.name}>
       <Surface
         asChild
         elevated
@@ -139,7 +141,7 @@ function StoreCard({
           <Box flex minW={0}>
             <Row between gap={12}>
               <Text id={id} variant="label" lines={1}>
-                {m.name}
+                {words.name}
               </Text>
               <CardAction m={m} op={op} onInstall={onInstall} onUpdate={onUpdate} />
             </Row>
@@ -166,11 +168,11 @@ function StoreCard({
                 </Text>
               )}
             </Row>
-            {m.description && (
+            {words.description ? (
               <Text variant="meta" color="textMuted" lines={2} mt={4}>
-                {m.description}
+                {words.description}
               </Text>
-            )}
+            ) : null}
             {refusal && (
               <Text variant="meta" color={m.updateBlocked ? 'textDim' : 'danger'} mt={4}>
                 {refusal}

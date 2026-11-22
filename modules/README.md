@@ -676,6 +676,32 @@ A module whose strings also have to reach something that is not the web
 frontend or the server crate, a device channel it installs, ships the same JSON
 there rather than restating it in that language.
 
+What a module says about itself lives in `module.json`, not in `locales/`: the
+Store and the guided setup show a module before its bundle is on the server, and
+the registry copies these fields out of the manifest. `name` and `description`
+are English, `tagline` is one English sentence that says what the module does
+for a household, and `translations` gives the three in each other language the
+module speaks, by language tag. A word left out reads in English, and the setup
+offers a module with no `tagline` by its description.
+
+```json
+{
+  "name": "Remote access",
+  "description": "Public HTTPS access through a Cloudflare Tunnel.",
+  "tagline": "Watch your films and series away from home.",
+  "translations": {
+    "fr": {
+      "name": "Accès à distance",
+      "tagline": "Regardez vos films et vos séries loin de chez vous."
+    }
+  }
+}
+```
+
+Which modules the setup offers, and in what order, is the official registry's
+list (`SETUP_OFFER` in `apps/modules/src/lib/setup-offer.ts`), not a manifest
+field: a module cannot put itself in the setup.
+
 ### Notifications
 
 A module tells people through the core's inbox, never one of its own. Declare
