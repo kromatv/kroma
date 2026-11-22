@@ -5,7 +5,7 @@ mod held;
 mod here;
 
 use kroma_domain::watching::Watching;
-use rusqlite::TransactionBehavior;
+use rusqlite::{Connection, TransactionBehavior};
 
 pub(crate) use held::release as release_held_states;
 use here::{merge_into, Title, SHOWS, TITLES};
@@ -45,20 +45,37 @@ pub fn merge_states(
 ) -> Result<Vec<Merged>> {
     let mut conn = pool.get()?;
     let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
-    if !here::exists(&tx, "users", account)? {
+    let merged = merge_each(&tx, account, states)?;
+    tx.commit()?;
+    Ok(merged)
+}
+
+fn merge_each(
+    conn: &Connection,
+    account: &str,
+    states: &[(Place<'_>, Watching)],
+) -> Result<Vec<Merged>> {
+    if !here::exists(conn, "users", account)? {
         return Ok(vec![Merged::Gone; states.len()]);
     }
     let merged = states
         .iter()
-        .map(|(place, brought)| match place {
-            Place::Title(item) => merge_into(&tx, (TITLES, &Title { account, item }), brought),
-            Place::Show(item) => merge_into(&tx, (SHOWS, &Title { account, item }), brought),
-            Place::File(path) => held::hold(&tx, account, path, brought),
-        })
+        .map(|(place, brought)| merge_one(conn, account, (place, brought)))
         .collect::<Result<Vec<_>>>()?;
     if states.iter().any(|(place, _)| matches!(place, Place::File(_))) {
-        held::release(&tx)?;
+        held::release(conn)?;
     }
-    tx.commit()?;
     Ok(merged)
+}
+
+fn merge_one(
+    conn: &Connection,
+    account: &str,
+    (place, brought): (&Place<'_>, &Watching),
+) -> Result<Merged> {
+    match *place {
+        Place::Title(item) => merge_into(conn, (TITLES, &Title { account, item }), brought),
+        Place::Show(item) => merge_into(conn, (SHOWS, &Title { account, item }), brought),
+        Place::File(path) => held::hold(conn, account, path, brought),
+    }
 }
