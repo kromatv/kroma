@@ -89,6 +89,7 @@
   "admin.expiresOn": "Expires on {date}",
   "admin.films": "Movies",
   "admin.firstFolder": "First folder",
+  "admin.librarySaveFailed": "Couldn't save this library. Try again.",
   "admin.groupAcquisition": "Acquisition",
   "admin.groupMaintenance": "Maintenance",
   "admin.groupManagement": "Management",

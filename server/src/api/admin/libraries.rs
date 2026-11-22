@@ -117,20 +117,32 @@ pub async fn create_library(
     }
     let mut defs = configured(&state, &user).await?;
     defs.retain(|held| !settings::is_demo_library(&held.id));
+    let folders = clean_folders(body.folders);
+    let added = AddedFolders {
+        folders: &folders,
+        library: None,
+    };
+    refuse_shared_files(&user, &defs, added)?;
+    let library = new_library(name, body.kind.unwrap_or_default(), folders);
+    let id = library.id.clone();
+    defs.push(library);
+    settings::set_library_defs(&state.settings, &state.db, &defs);
+    spawn_rescan(state.clone());
+    Ok(Json(json!({ "id": id })).into_response())
+}
+
+fn new_library(name: String, kind: String, folders: Vec<String>) -> LibraryDef {
     let id = crate::services::scan::short_hash(&format!(
         "lib|{name}|{}",
         crate::services::auth::random_token()
     ));
-    defs.push(LibraryDef {
-        id: id.clone(),
+    LibraryDef {
+        id,
         name,
-        kind: body.kind.unwrap_or_default(),
-        folders: clean_folders(body.folders),
+        kind,
+        folders,
         auto_scan: true,
-    });
-    settings::set_library_defs(&state.settings, &state.db, &defs);
-    spawn_rescan(state.clone());
-    Ok(Json(json!({ "id": id })).into_response())
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -153,27 +165,21 @@ pub async fn update_library(
 ) -> Result<Response, Response> {
     super::require(&user, Permission::LibraryManage)?;
     let mut defs = configured(&state, &user).await?;
-    let Some(def) = defs.iter_mut().find(|d| d.id == id) else {
+    let Some(at) = defs.iter().position(|d| d.id == id) else {
         return Err(lerr(
             super::user_locale(&user),
             StatusCode::NOT_FOUND,
             "error.libraryNotFound",
         ));
     };
-    let mut needs_scan = false;
-    if let Some(name) = body.name.filter(|n| !n.trim().is_empty()) {
-        def.name = name.trim().to_string();
-    }
-    if let Some(kind) = body.kind {
-        def.kind = kind;
-    }
-    if let Some(folders) = body.folders {
-        def.folders = clean_folders(folders);
-        needs_scan = true;
-    }
-    if let Some(auto) = body.auto_scan {
-        def.auto_scan = auto;
-    }
+    let folders = body.folders.map(clean_folders);
+    let added = AddedFolders {
+        folders: &added_folders(folders.as_deref(), &defs[at].folders),
+        library: Some(&id),
+    };
+    refuse_shared_files(&user, &defs, added)?;
+    let needs_scan = folders.is_some();
+    edit(&mut defs[at], UpdateLibraryBody { folders, ..body });
     settings::set_library_defs(&state.settings, &state.db, &defs);
     if needs_scan {
         spawn_rescan(state.clone());
@@ -213,6 +219,55 @@ pub async fn scan_library(
     super::require(&user, Permission::LibraryManage)?;
     spawn_rescan(state.clone());
     Ok(Json(json!({ "started": true })).into_response())
+}
+
+fn edit(def: &mut LibraryDef, body: UpdateLibraryBody) {
+    if let Some(name) = body.name.filter(|n| !n.trim().is_empty()) {
+        def.name = name.trim().to_string();
+    }
+    if let Some(kind) = body.kind {
+        def.kind = kind;
+    }
+    if let Some(folders) = body.folders {
+        def.folders = folders;
+    }
+    if let Some(auto) = body.auto_scan {
+        def.auto_scan = auto;
+    }
+}
+
+struct AddedFolders<'a> {
+    folders: &'a [String],
+    library: Option<&'a str>,
+}
+
+fn refuse_shared_files(
+    user: &User,
+    defs: &[LibraryDef],
+    added: AddedFolders<'_>,
+) -> Result<(), Response> {
+    match settings::library_sharing_files(defs, added.folders, added.library) {
+        Some(sharing) => Err(shares_files(user, &sharing.name)),
+        None => Ok(()),
+    }
+}
+
+fn added_folders(folders: Option<&[String]>, held: &[String]) -> Vec<String> {
+    folders
+        .unwrap_or_default()
+        .iter()
+        .filter(|folder| !held.contains(folder))
+        .cloned()
+        .collect()
+}
+
+fn shares_files(user: &User, library: &str) -> Response {
+    lerr_with(
+        super::user_locale(user),
+        StatusCode::CONFLICT,
+        "error.libraryFoldersShared",
+        &[("library", library)],
+    )
 }
 
 fn clean_folders(folders: Vec<String>) -> Vec<String> {

@@ -73,6 +73,7 @@
   "setup.importStarting": "Démarrage du module d'import en cours…",
   "setup.importTally": "{brought} sur {read}",
   "setup.importTallyUnmatched": "{count} sans correspondance",
+  "setup.importLibraryRefused": "{name} n'a pas été ajoutée : ses dossiers partagent des fichiers avec la bibliothèque {library}.",
   "setup.importUserAll": "Toutes les bibliothèques",
   "setup.importUserLimited": "Accès restreint : aucune bibliothèque par défaut",
   "setup.importUserLocked": "Historique protégé par un code PIN",

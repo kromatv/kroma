@@ -16,6 +16,7 @@
   "error.itemNotFound": "Item not found",
   "error.librariesLeftOut": "This list leaves out libraries this server holds: {libraries}. Keep each one, under the ID shown in parentheses. To remove a library, delete it.",
   "error.librariesNotAList": "The \"libraries\" setting must be a list of libraries.",
+  "error.libraryFoldersShared": "The library {library} already has files in these folders. A file belongs to one library: choose other folders, or change those of {library}.",
   "error.libraryListUnreadable": "KROMA cannot read this server's list of libraries. Save the \"libraries\" setting again to go on.",
   "error.libraryListUnreadableKeep": "KROMA cannot read this server's list of libraries. Your libraries are untouched. Save the \"libraries\" setting again and keep each one, under the ID shown in parentheses: {libraries}.",
   "error.libraryNotFound": "Library not found",
