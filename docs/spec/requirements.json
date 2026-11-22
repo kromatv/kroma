@@ -1074,7 +1074,7 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 108,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "The badge is on a title's detail page, on the home's hero and on",
     "file": "docs/spec/accounts/kids.md",
     "line": 43
