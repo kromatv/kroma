@@ -1,10 +1,9 @@
 import type { Invite, Permission } from '@kromatv/client/accounts';
 import { PERMISSIONS } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Button, Callout, IconButton, ListRow, Menu } from '@kromatv/ui/kit';
+import { Button, Callout, GuidedFlow, IconButton, ListRow, Menu } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { InvitationRights } from '#web/features/setup/invitation-rights.component';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { invitationMail, useInvitations } from '#web/features/setup/use-invitations.hook';
 
 interface RowProps {
@@ -161,19 +160,20 @@ export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
   };
   return (
     <>
-      <StepHeading title={t('setup.peopleTitle')} sub={t('setup.peopleSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.peopleTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.peopleSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <InvitationList open={open} linkOf={linkOf} revoke={revoke} onEdit={setEditing} />
         <InviteMore busy={busy} onInvite={() => void create()} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next onPress={onContinue} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
       <RightsEditor invite={editing} onClose={() => setEditing(null)} onSave={save} />
     </>
   );

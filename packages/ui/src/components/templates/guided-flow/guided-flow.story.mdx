@@ -1,0 +1,55 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Question } from './guided-flow.fixtures';
+
+export const story = defineStory({
+  group: 'Layout',
+  width: { min: 320, max: 900 },
+  pad: 0,
+  render: () => <Question />,
+});
+
+One screen of a guided flow: the setup of a new server, bringing another server over. It asks **one** question, says how far along the flow is, and offers a way back, a way forward and a secondary action. Composed, in Radix's shape: **Root** is the frame, **Header** holds the **Title** and its **Subtitle**, **Panel** is what the question is about, and **Footer** holds **Previous** at its start and the **Actions** at its end, with **Next** last among them. **Status** and **Aside** say where the flow is.
+
+The frame never makes the page scroll. The header and the footer stay in view, and only the panel scrolls between them, so the way forward is never out of reach. It lays out for the room it is GIVEN, not for the window: under 600 points it fills that room, as on a phone held upright, and above it is one column of one height, so the actions keep their place from one screen to the next. Inside an admin page with a sidebar, it is the page's room that counts.
+
+```tsx
+<GuidedFlow.Root label="Configuration">
+  <GuidedFlow.Aside>
+    <Stepper.Root label="Configuration" orientation="vertical" value={step}>…</Stepper.Root>
+  </GuidedFlow.Aside>
+  <GuidedFlow.Status position={2} count={6}>Point de départ</GuidedFlow.Status>
+  <GuidedFlow.Header>
+    <GuidedFlow.Title>Par où commencer ?</GuidedFlow.Title>
+    <GuidedFlow.Subtitle>Ce choix ne décide que des étapes suivantes.</GuidedFlow.Subtitle>
+  </GuidedFlow.Header>
+  <GuidedFlow.Panel>
+    <ChoiceList.Root ground="surface" label="Point de départ" value={start} onValueChange={setStart}>…</ChoiceList.Root>
+  </GuidedFlow.Panel>
+  <GuidedFlow.Footer>
+    <GuidedFlow.Previous onPress={back} />
+    <GuidedFlow.Actions>
+      <Button variant="ghost" label="Passer cette étape" onPress={skip} />
+      <GuidedFlow.Next onPress={next} />
+    </GuidedFlow.Actions>
+  </GuidedFlow.Footer>
+</GuidedFlow.Root>
+```
+
+**Where the flow is.** A `<GuidedFlow.Aside>` stands beside the question where there is room for it, usually the flow's steps as a vertical `<Stepper>`, and is not drawn where there is not. A `<GuidedFlow.Status>` says `Step 2 of 6: Point de départ` over a bar, in the language of the screen, and is drawn wherever the aside is not. Write both, and the frame picks.
+
+**Choosing.** An option to be chosen is a `<ChoiceList>` on a `surface`: each choice is a card, the whole card is the control, and the chosen one wears the accent. `<ChoiceList.Media>` gives it a mark.
+
+**Under a remote.** The panel and the footer are one column, and the footer is one row: down walks the choices to the actions, sideways walks the actions, and up comes back to the choice that was left. Nothing in the flow is written differently for a D-pad.
+
+<Do>
+- Ask one thing per screen. A second question is a second screen.
+- Write `<GuidedFlow.Previous>` on every screen but the first, and leave it out there: the actions keep their place.
+- Put what going forward will do in a `<GuidedFlow.Hint>`, in the footer, where the press is.
+- Give `<GuidedFlow.Next>` a `label` that says the act when it is more than going on: `Créer mon compte`.
+</Do>
+
+<Dont>
+- Put a second accent action in the footer. Next is the one.
+- Hide the way forward until the question is answered: hold it back with `disabled`.
+- Write the steps inside a component of your own around the Aside: only a direct `<GuidedFlow.Aside>` is sorted.
+</Dont>

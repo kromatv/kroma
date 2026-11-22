@@ -1,6 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Button, ChoiceList } from '@kromatv/ui/kit';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
+import { ChoiceList, GuidedFlow } from '@kromatv/ui/kit';
 import { isSetupStart, type SetupStart } from '#web/features/setup/setup-steps';
 
 interface StartProps {
@@ -18,12 +17,20 @@ function StartChoice({ start, onStart }: Readonly<Pick<StartProps, 'start' | 'on
     }
   };
   return (
-    <ChoiceList.Root size="md" label={t('setup.startTitle')} value={start} onValueChange={choose}>
+    <ChoiceList.Root
+      size="md"
+      ground="surface"
+      label={t('setup.startTitle')}
+      value={start}
+      onValueChange={choose}
+    >
       <ChoiceList.Item value="fresh">
+        <ChoiceList.Media name="sparkles" />
         <ChoiceList.Label>{t('setup.startFresh')}</ChoiceList.Label>
         <ChoiceList.Hint>{t('setup.startFreshHint')}</ChoiceList.Hint>
       </ChoiceList.Item>
       <ChoiceList.Item value="bring">
+        <ChoiceList.Media name="arrows-exchange" />
         <ChoiceList.Label>{t('setup.startBring')}</ChoiceList.Label>
         <ChoiceList.Hint>{t('setup.startBringHint')}</ChoiceList.Hint>
       </ChoiceList.Item>
@@ -37,18 +44,19 @@ export function StartStep({ start, onStart, onBack, onContinue }: Readonly<Start
   const t = useT();
   return (
     <>
-      <StepHeading title={t('setup.startTitle')} sub={t('setup.startSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.startTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.startSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <StartChoice start={start} onStart={onStart} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next onPress={onContinue} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

@@ -10,7 +10,7 @@ use crate::store::{self, ServerKey, SignIn};
 use crate::web::Web;
 use crate::wire::ForgetAsk;
 
-/// The importer: the six methods of the `importer` point, each in the file
+/// The importer: the seven methods of the `importer` point, each in the file
 /// named after it, over the network and the importer's own database.
 pub(crate) struct Plex {
     pub(crate) web: Arc<dyn Web>,

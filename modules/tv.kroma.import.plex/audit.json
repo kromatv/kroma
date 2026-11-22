@@ -22,6 +22,11 @@
       "path": "/_port/importer/plays",
       "body": { "signIn": "s-1", "server": "srv", "limit": 500 }
     },
+    {
+      "method": "POST",
+      "path": "/_port/importer/unlock",
+      "body": { "signIn": "s-1", "server": "srv", "user": "44", "pin": "0000" }
+    },
     { "method": "POST", "path": "/_port/importer/forget", "body": { "signIn": "s-1" } }
   ]
 }

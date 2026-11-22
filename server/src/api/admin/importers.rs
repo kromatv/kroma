@@ -3,13 +3,13 @@
 //!
 //! An importer is whichever module answers the `importer` point. The list is
 //! the installed ones and the ones the official registry offers. A sign-in, a
-//! survey and a forget pass through to an installed one, and the core keeps no
-//! part of the sign-in: the reference the importer gives goes back to the
-//! caller.
+//! survey, an unlock and a forget pass through to an installed one, and the
+//! core keeps no part of the sign-in and no PIN: the reference the importer
+//! gives goes back to the caller.
 
 use std::sync::Arc;
 
-use axum::extract::{DefaultBodyLimit, Path, State};
+use axum::extract::{DefaultBodyLimit, FromRequest, Path, State};
 use axum::http::StatusCode;
 use axum::response::Response;
 use axum::routing::{get, post};
@@ -23,9 +23,11 @@ use super::store::offers::{self, Offer};
 use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
 use crate::api::util::blocking;
-use crate::model::import::{Connected, Survey};
+use crate::model::import::{Connected, Survey, Unlock};
 use crate::model::{Permission, User};
-use crate::services::importers::{ConnectAsk, ForgetAsk, Importers, POINT, SurveyAsk, Unanswered};
+use crate::services::importers::{
+    ConnectAsk, ForgetAsk, Importers, POINT, SurveyAsk, Unanswered, UnlockAsk,
+};
 use crate::state::SharedState;
 
 const MAX_ASK_BYTES: usize = 64 * 1024;
@@ -35,6 +37,7 @@ pub fn routes() -> Router<SharedState> {
         .route("/importers", get(list))
         .route("/importers/{id}/connect", post(connect))
         .route("/importers/{id}/survey", post(survey))
+        .route("/importers/{id}/unlock", post(unlock))
         .route("/importers/{id}/forget", post(forget))
         .layer(DefaultBodyLimit::max(MAX_ASK_BYTES))
 }
@@ -171,6 +174,24 @@ pub async fn survey(
     Json(ask): Json<SurveyAsk>,
 ) -> Result<Json<Survey>, Response> {
     asked(&state, &user, move |importers| importers.survey(&id, &ask)).await
+}
+
+#[derive(FromRequest)]
+#[from_request(state(SharedState))]
+struct UnlockRequest {
+    state: State<SharedState>,
+    user: AuthUser,
+    importer: Path<String>,
+    ask: Json<UnlockAsk>,
+}
+
+/// `POST /api/admin/importers/:id/unlock` opens the watch state of one user
+/// of a server with the PIN the owner typed. A PIN the other server does not
+/// take is a `refused` answer, not an error.
+async fn unlock(request: UnlockRequest) -> Result<Json<Unlock>, Response> {
+    let (Path(id), Json(ask)) = (request.importer, request.ask);
+    let unlocked = move |importers: &Importers| importers.unlock(&id, &ask);
+    asked(&request.state, &request.user.0, unlocked).await
 }
 
 /// `POST /api/admin/importers/:id/forget` has the importer delete a sign-in,

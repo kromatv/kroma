@@ -2,6 +2,7 @@ mod pages;
 mod sign_in;
 mod survey;
 mod unanswered;
+mod unlocking;
 
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};

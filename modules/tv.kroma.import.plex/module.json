@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.import.plex",
   "name": "Plex import",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Brings a Plex Media Server household over: its libraries, its users and what each of them watched. It only reads Plex.",
   "engines": {
     "server": ">=0.1.39"
