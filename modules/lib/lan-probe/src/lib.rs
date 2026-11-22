@@ -76,6 +76,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "a test component holds no socket")]
     fn every_answer_that_comes_back_before_the_wait_runs_out_is_kept() {
         let peer = answering(2);
 
@@ -88,6 +89,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "a test component holds no socket")]
     fn a_question_nobody_answers_comes_back_empty_once_the_wait_runs_out() {
         let peer = answering(0);
         let asked = Instant::now();
@@ -109,6 +111,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(target_family = "wasm", ignore = "a test component holds no socket")]
     fn at_most_32_answers_are_kept() {
         let peer = answering(40);
 
