@@ -1,7 +1,8 @@
-//! The age-rating block TMDB appends to a detail request, and the pick over it.
+//! The age-rating block TMDB appends to a detail request, and every country's label in it.
 
 use serde::Deserialize;
 
+use crate::domain::CountryRatings;
 use crate::i18n;
 use crate::services::settings::tmdb_region_of;
 
@@ -30,12 +31,12 @@ struct ReleaseDate {
 }
 
 impl Certifications {
-    pub(super) fn preferring(&self, country: &str) -> Option<String> {
+    pub(super) fn every_country(&self) -> CountryRatings {
         self.results
             .iter()
-            .find(|entry| entry.country == country)
-            .and_then(CountryEntry::rating)
-            .or_else(|| self.results.iter().find_map(CountryEntry::rating))
+            .filter(|entry| !entry.country.is_empty())
+            .filter_map(|entry| Some((entry.country.clone(), entry.rating()?)))
+            .collect()
     }
 }
 
@@ -70,55 +71,64 @@ mod tests {
         serde_json::from_str(raw).unwrap()
     }
 
+    fn countries(raw: &str) -> Vec<(String, String)> {
+        parse(raw).every_country().into_iter().collect()
+    }
+
+    fn pairs(expected: &[(&str, &str)]) -> Vec<(String, String)> {
+        expected
+            .iter()
+            .map(|(c, l)| (c.to_string(), l.to_string()))
+            .collect()
+    }
+
     #[test]
-    fn a_movie_carries_the_rating_the_asked_country_gave_it() {
-        let c = parse(
+    fn a_movie_carries_the_rating_every_country_gave_it() {
+        let got = countries(
             r#"{"results":[
                 {"iso_3166_1":"FR","release_dates":[{"certification":"12"}]},
                 {"iso_3166_1":"US","release_dates":[{"certification":"PG-13"}]}
             ]}"#,
         );
 
-        assert_eq!(c.preferring("US").as_deref(), Some("PG-13"));
-        assert_eq!(c.preferring("FR").as_deref(), Some("12"));
+        assert_eq!(got, pairs(&[("FR", "12"), ("US", "PG-13")]));
     }
 
     #[test]
     fn a_show_carries_its_rating_on_the_country_itself() {
-        let c = parse(r#"{"results":[{"iso_3166_1":"US","rating":"TV-MA"}]}"#);
+        let got = countries(r#"{"results":[{"iso_3166_1":"US","rating":"TV-MA"}]}"#);
 
-        assert_eq!(c.preferring("US").as_deref(), Some("TV-MA"));
+        assert_eq!(got, pairs(&[("US", "TV-MA")]));
     }
 
     #[test]
     fn a_country_rated_only_on_a_later_release_still_answers() {
-        let c = parse(
+        let got = countries(
             r#"{"results":[{"iso_3166_1":"US","release_dates":[
-                {"certification":""},{"certification":"R"}
+                {"certification":""},{"certification":" R "}
             ]}]}"#,
         );
 
-        assert_eq!(c.preferring("US").as_deref(), Some("R"));
+        assert_eq!(got, pairs(&[("US", "R")]));
     }
 
     #[test]
-    fn a_title_the_asked_country_never_rated_falls_back_to_one_that_did() {
-        let c = parse(
+    fn a_country_that_gave_no_label_is_left_out() {
+        let got = countries(
             r#"{"results":[
                 {"iso_3166_1":"DE","release_dates":[{"certification":""}]},
-                {"iso_3166_1":"JP","release_dates":[{"certification":"G"}]}
+                {"iso_3166_1":"JP","release_dates":[{"certification":"G"}]},
+                {"rating":"PG"}
             ]}"#,
         );
 
-        assert_eq!(c.preferring("US").as_deref(), Some("G"));
+        assert_eq!(got, pairs(&[("JP", "G")]));
     }
 
     #[test]
     fn a_title_nobody_rated_carries_nothing() {
-        let c = parse(r#"{"results":[{"iso_3166_1":"US","release_dates":[]}]}"#);
-
-        assert!(c.preferring("US").is_none());
-        assert!(parse(r#"{}"#).preferring("US").is_none());
+        assert!(countries(r#"{"results":[{"iso_3166_1":"US","release_dates":[]}]}"#).is_empty());
+        assert!(countries(r#"{}"#).is_empty());
     }
 
     #[test]

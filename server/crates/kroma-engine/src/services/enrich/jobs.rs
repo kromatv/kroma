@@ -152,6 +152,8 @@ mod tests {
                 keywords: Vec::new(),
                 tvdb_id: None,
                 tmdb_url: String::new(),
+                ratings: Default::default(),
+                age_rating: None,
             }),
             abs_path: None,
             files: Vec::new(),

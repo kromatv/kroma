@@ -32,6 +32,8 @@ pub(super) fn meta(rating: Option<f32>, backdrop: bool, overview: bool) -> Metad
         keywords: Vec::new(),
         tvdb_id: None,
         tmdb_url: String::new(),
+        ratings: Default::default(),
+        age_rating: None,
     }
 }
 
