@@ -34,6 +34,8 @@ pub(super) fn blank_metadata() -> Metadata {
         keywords: Vec::new(),
         tvdb_id: None,
         tmdb_url: String::new(),
+        ratings: Default::default(),
+        age_rating: None,
     }
 }
 
