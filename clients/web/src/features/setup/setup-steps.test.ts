@@ -2,6 +2,7 @@ import { expect, it } from 'vitest';
 import {
   answeredSteps,
   canSkip,
+  confirmsOnContinue,
   isSetupStep,
   laterStep,
   readSetupStart,
@@ -101,4 +102,20 @@ it('counts the import among the steps of an owner who brings a server over', () 
   expect(answeredSteps('bring')).toHaveLength(9);
   expect(stepsBehind('media', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
   expect(stepsUpTo('import', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
+});
+
+it('counts continuing as the answer on the privacy step, and on the modules step with nothing picked', () => {
+  expect(confirmsOnContinue('privacy', 0)).toBe(true);
+  expect(confirmsOnContinue('privacy', 2)).toBe(true);
+  expect(confirmsOnContinue('modules', 0)).toBe(true);
+});
+
+it('counts continuing as the answer on the backups step, whichever way the switch is', () => {
+  expect(confirmsOnContinue('backups', 0)).toBe(true);
+});
+
+it('waits for the install before the modules step is answered, and never counts another step', () => {
+  expect(confirmsOnContinue('modules', 1)).toBe(false);
+  expect(confirmsOnContinue('people', 0)).toBe(false);
+  expect(confirmsOnContinue('media', 0)).toBe(false);
 });

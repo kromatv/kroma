@@ -1,4 +1,8 @@
-import { SetupStart as Starts, SetupStep as Steps } from '@kromatv/client/setup';
+import {
+  type SetupConfirmed,
+  SetupStart as Starts,
+  SetupStep as Steps,
+} from '@kromatv/client/setup';
 
 export const SETUP_STEPS = Steps.options;
 
@@ -94,4 +98,10 @@ export function stepOpenTo(
     return 'language';
   }
   return stepsFor(start).includes(step) ? step : 'media';
+}
+
+/** Whether continuing from `step` is itself the owner's answer: the backups
+ * and privacy steps always, the modules step when nothing was picked. */
+export function confirmsOnContinue(step: SetupStep, picked: number): step is SetupConfirmed {
+  return step === 'privacy' || step === 'backups' || (step === 'modules' && picked === 0);
 }

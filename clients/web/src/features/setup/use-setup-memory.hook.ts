@@ -15,7 +15,7 @@ export function useSetupMemory() {
   const queue = useRef<Promise<void>>(Promise.resolve());
   const tell = (call: () => Promise<SetupAnswer>) => {
     if (isAuthed()) {
-      queue.current = queue.current.then(() => call().then(answered, () => undefined));
+      queue.current = queue.current.then(call).then(answered, () => undefined);
     }
     return queue.current;
   };

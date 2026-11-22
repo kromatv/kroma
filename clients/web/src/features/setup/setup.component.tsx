@@ -14,6 +14,7 @@ import type { ScanFeed } from '#web/features/setup/scan-feed';
 import { SetupPicks, useSetupPicks } from '#web/features/setup/setup-picks.component';
 import { SetupShell } from '#web/features/setup/setup-shell.component';
 import {
+  confirmsOnContinue,
   type SetupStart,
   type SetupStep,
   type SetupVisitor,
@@ -96,7 +97,7 @@ type Memory = ReturnType<typeof useSetupMemory>;
 function useAnswered(step: SetupStep, memory: Memory) {
   const { picked } = useSetupPicks();
   return () => {
-    if (step === 'privacy' || step === 'backups' || (step === 'modules' && picked.length === 0)) {
+    if (confirmsOnContinue(step, picked.length)) {
       void memory.confirm(step);
     }
   };
