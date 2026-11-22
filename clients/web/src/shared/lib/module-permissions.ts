@@ -98,31 +98,39 @@ function runGroup(source: PermissionSource, t: Translate): PermissionGroup | nul
   );
 }
 
+const rootsIn = (list: readonly string[] | null | undefined) =>
+  SHARED_ROOTS.filter((root) => list?.includes(root));
+
+const rootWords = (roots: readonly SharedRoot[], t: Translate) =>
+  listOf(
+    roots.map((root) => t(ROOT_WORD[root])),
+    t,
+  );
+
+function filesSummary(reads: SharedRoot[], writes: SharedRoot[], t: Translate): string {
+  if (writes.length === 0) {
+    return t('modulePermissions.filesRead', { roots: rootWords(reads, t) });
+  }
+  const readOnly = reads.filter((root) => !writes.includes(root));
+  if (readOnly.length === 0) {
+    return t('modulePermissions.filesChange', { roots: rootWords(writes, t) });
+  }
+  return t('modulePermissions.filesChangeRead', {
+    changed: rootWords(writes, t),
+    read: rootWords(readOnly, t),
+  });
+}
+
 function filesGroup(fs: ModulePermissions['fs'], t: Translate): PermissionGroup | null {
-  const reads = SHARED_ROOTS.filter((root) => fs?.read?.includes(root));
-  const writes = SHARED_ROOTS.filter((root) => fs?.write?.includes(root));
+  const reads = rootsIn(fs?.read);
+  const writes = rootsIn(fs?.write);
   const touched = SHARED_ROOTS.filter((root) => reads.includes(root) || writes.includes(root));
   if (touched.length === 0) {
     return null;
   }
-  const readOnly = reads.filter((root) => !writes.includes(root));
-  const words = (roots: readonly SharedRoot[]) =>
-    listOf(
-      roots.map((root) => t(ROOT_WORD[root])),
-      t,
-    );
-  let summary = t('modulePermissions.filesRead', { roots: words(reads) });
-  if (writes.length > 0 && readOnly.length > 0) {
-    summary = t('modulePermissions.filesChangeRead', {
-      changed: words(writes),
-      read: words(readOnly),
-    });
-  } else if (writes.length > 0) {
-    summary = t('modulePermissions.filesChange', { roots: words(writes) });
-  }
   return {
     category: 'files',
-    summary,
+    summary: filesSummary(reads, writes, t),
     brief: opening(
       listOf(
         touched.map((root) => t(ROOT_NOUN[root])),

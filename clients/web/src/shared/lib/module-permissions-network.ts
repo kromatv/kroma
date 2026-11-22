@@ -36,6 +36,24 @@ function purposeDetail(connect: Connect | Listen, hint: string | undefined, t: T
   return { text: opening(purposeWord(connect.purpose, t)), hint };
 }
 
+const isSetting = (target: string | undefined) => target?.startsWith('setting:') === true;
+
+function whereSaid(to: readonly string[], t: Translate): string {
+  if (to.includes('public')) {
+    return t('modulePermissions.toAnywhere');
+  }
+  const hosts = to.map((one) => destinationWord(one.replace(/^\*\./, ''), t));
+  return listOf(unique(hosts), t, HOSTS_SHOWN);
+}
+
+function internetDetail(connect: Connect, t: Translate) {
+  const targets = connect.to.filter(outward);
+  const said = listOf(unique(targets.map((one) => destinationWord(one, t))), t);
+  const [first] = targets;
+  const lead = first === 'public' || isSetting(first) ? opening(said) : said;
+  return purposeDetail(connect, withPorts(lead, connect.ports, t), t);
+}
+
 /** Where on the internet a module connects, and why. */
 export function internetGroup(connects: readonly Connect[], t: Translate): PermissionGroup | null {
   const reaching = connects.filter((connect) => connect.to.some(outward));
@@ -44,28 +62,16 @@ export function internetGroup(connects: readonly Connect[], t: Translate): Permi
     return null;
   }
   const to = reaching.flatMap((connect) => connect.to.filter(outward));
-  const anywhere = to.includes('public');
-  const where = anywhere
-    ? t('modulePermissions.toAnywhere')
-    : listOf(unique(to.map((one) => destinationWord(one.replace(/^\*\./, ''), t))), t, HOSTS_SHOWN);
-  const opensWithWord = anywhere || to[0]?.startsWith('setting:');
+  const where = whereSaid(to, t);
+  const summary =
+    reaching.length === 1
+      ? t('modulePermissions.internetFor', { to: where, why: purposeWord(only.purpose, t) })
+      : t('modulePermissions.internetSummary', { to: where });
   return {
     category: 'internet',
-    summary:
-      reaching.length === 1
-        ? t('modulePermissions.internetFor', { to: where, why: purposeWord(only.purpose, t) })
-        : t('modulePermissions.internetSummary', { to: where }),
-    brief: opensWithWord ? opening(where) : where,
-    details: reaching.map((connect) => {
-      const targets = connect.to.filter(outward);
-      const said = listOf(unique(targets.map((one) => destinationWord(one, t))), t);
-      const startsWithWord = targets[0] === 'public' || targets[0]?.startsWith('setting:');
-      return purposeDetail(
-        connect,
-        withPorts(startsWithWord ? opening(said) : said, connect.ports, t),
-        t,
-      );
-    }),
+    summary,
+    brief: to.includes('public') || isSetting(to[0]) ? opening(where) : where,
+    details: reaching.map((connect) => internetDetail(connect, t)),
     extended: false,
     access: null,
   };
@@ -77,6 +83,19 @@ const LAN_SAID = {
   searches: ['modulePermissions.lanSearch', 'modulePermissions.lanSearchBrief'],
 } as const;
 
+function lanSaid(local: readonly Connect[], discovery: readonly string[]) {
+  if (local.length > 0) {
+    return LAN_SAID.talks;
+  }
+  return discovery.includes('mdns') ? LAN_SAID.announces : LAN_SAID.searches;
+}
+
+function discoveryDetail(kind: string, t: Translate) {
+  const key =
+    kind === 'mdns' ? 'modulePermissions.discoveryMdns' : 'modulePermissions.discoverySsdp';
+  return { text: t(key) };
+}
+
 /** What a module does on the local network: devices it talks to, and the
  *  announcing and searching the host does for it. */
 export function lanGroup(net: Net | undefined, t: Translate): PermissionGroup | null {
@@ -85,23 +104,14 @@ export function lanGroup(net: Net | undefined, t: Translate): PermissionGroup | 
   if (local.length === 0 && discovery.length === 0) {
     return null;
   }
-  let said: (typeof LAN_SAID)[keyof typeof LAN_SAID] = LAN_SAID.searches;
-  if (local.length > 0) {
-    said = LAN_SAID.talks;
-  } else if (discovery.includes('mdns')) {
-    said = LAN_SAID.announces;
-  }
+  const said = lanSaid(local, discovery);
   return {
     category: 'lan',
     summary: t(said[0]),
     brief: t(said[1]),
     details: [
       ...local.map((connect) => purposeDetail(connect, withPorts(null, connect.ports, t), t)),
-      ...discovery.map((kind) => ({
-        text: t(
-          kind === 'mdns' ? 'modulePermissions.discoveryMdns' : 'modulePermissions.discoverySsdp',
-        ),
-      })),
+      ...discovery.map((kind) => discoveryDetail(kind, t)),
     ],
     extended: false,
     access: null,

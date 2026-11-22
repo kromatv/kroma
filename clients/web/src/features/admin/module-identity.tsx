@@ -82,16 +82,28 @@ export function Problems({
   );
 }
 
+type Said = Pick<AdminModule | StoreModule, 'name' | 'version' | 'description' | 'translations'>;
+
+const present = <T,>(value: T | null | undefined): value is T =>
+  value !== null && value !== undefined;
+
+function said<K extends keyof Said>(sources: readonly Said[], key: K) {
+  return sources.map((source) => source[key]).find(present);
+}
+
+/** How a module is named and described: by the manifest the server holds,
+ *  then by the catalog row, word by word, and by its id when neither knows it. */
 export function identityOf(
   id: string,
   installed: AdminModule | undefined,
   entry: StoreModule | undefined,
 ) {
+  const sources = [installed, entry].filter(present);
   return {
-    name: installed?.name ?? entry?.name ?? id,
-    version: installed?.version ?? entry?.version,
-    description: installed?.description ?? entry?.description ?? '',
-    translations: installed?.translations ?? entry?.translations,
+    name: said(sources, 'name') ?? id,
+    version: said(sources, 'version'),
+    description: said(sources, 'description') ?? '',
+    translations: said(sources, 'translations'),
   };
 }
 

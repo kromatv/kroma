@@ -197,6 +197,49 @@ describe('permissionGroups', () => {
     ]);
   });
 
+  it('says a module that only reads your files reads them, and changes nothing', () => {
+    const files = group({ permissions: { fs: { read: ['media'] } } }, 'files');
+
+    expect(files.summary).toBe('Reads your library');
+    expect(files.access).toBe('read');
+  });
+
+  it('says a module that changes every folder it reads changes them', () => {
+    const files = group(
+      { permissions: { fs: { read: ['downloads'], write: ['downloads'] } } },
+      'files',
+    );
+
+    expect(files.summary).toBe('Changes your downloads');
+    expect(files.access).toBe('write');
+  });
+
+  it('says a module that only looks for devices searches your network', () => {
+    const lan = group({ permissions: { net: { discovery: ['ssdp'] } } }, 'lan');
+
+    expect(lan.summary).toBe('Looks for devices on your network');
+    expect(lan.brief).toBe('Looks for devices');
+  });
+
+  it('says a module that reaches several sites by name lists them, without a purpose', () => {
+    const internet = group(
+      {
+        permissions: {
+          net: {
+            connect: [
+              { purpose: 'metadata', to: ['api.themoviedb.org'] },
+              { purpose: 'binary-download', to: ['github.com'] },
+            ],
+          },
+        },
+      },
+      'internet',
+    );
+
+    expect(internet.summary).toBe('Connects to api.themoviedb.org and github.com');
+    expect(internet.brief).toBe('api.themoviedb.org and github.com');
+  });
+
   it("tells a pinned program from the server's own once it knows the helpers", () => {
     const installed = group(
       { permissions: { run: ['rqbit', 'curl'] }, helpers: { rqbit: {} } },
