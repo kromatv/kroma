@@ -26,7 +26,8 @@ export function AboutPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | 
   const build = buildInfo();
   const env = useEnv();
   const hardware = clientHardware();
-  const signedIn = Boolean(useAuthMaybe()?.user);
+  const user = useAuthMaybe()?.user;
+  const releases = Boolean(user) && user?.kids !== true;
 
   return (
     <>
@@ -43,7 +44,7 @@ export function AboutPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | 
       <Fact label={t('about.branch')} value={build.branch} mono />
       <Fact label={t('about.buildDate')} value={formatBuildDate(build.buildDate, locale)} />
       <Fact label={t('about.repository')} value={repoLabel(build.repository)} />
-      {signedIn ? (
+      {releases ? (
         <ListRow.Root
           ground="surface"
           icon="sparkles"
@@ -53,7 +54,7 @@ export function AboutPanel({ entry }: Readonly<{ entry: RefObject<FocusHandle | 
           <ListRow.Label>{t('releases.title')}</ListRow.Label>
         </ListRow.Root>
       ) : null}
-      <PrivacyRow handle={signedIn ? undefined : entry} />
+      <PrivacyRow handle={releases ? undefined : entry} />
     </>
   );
 }

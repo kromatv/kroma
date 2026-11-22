@@ -16,6 +16,7 @@ import { NotificationBell } from '#mobile/components/notification-bell.component
 import { ProgressRing } from '#mobile/components/progress-ring.component';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useGutters } from '#mobile/lib/layout';
+import { useSession } from '#mobile/lib/session';
 import { spacing } from '#mobile/lib/theme';
 
 function DownloadsGlyph() {
@@ -50,10 +51,11 @@ export function HomeHeader() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const gutters = useGutters();
+  const kids = useSession().user?.kids === true;
   return (
     <Box style={[s.header, { paddingTop: insets.top + spacing.sm }, gutters.style]}>
       <Box style={s.brandRow}>
-        <KromaLockup height={20} />
+        <KromaLockup height={20} kids={kids} />
       </Box>
       <Box style={s.headerActions}>
         <CastIconButton />

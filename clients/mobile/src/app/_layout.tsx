@@ -104,7 +104,7 @@ function Shell() {
   }, [inPlayer]);
   const overArtwork = status !== 'signedIn' || inPlayer;
   const ground = useTheme();
-  const theme = overArtwork ? MOBILE : mobileTheme(ground);
+  const theme = overArtwork ? MOBILE : mobileTheme(ground, user);
   // One cache per signed-in account: switching users drops everything.
   const [clients] = useState(() => new Map<string, QueryClient>());
   const cacheKey = user?.id ?? 'anon';

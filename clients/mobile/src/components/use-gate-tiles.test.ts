@@ -97,4 +97,53 @@ describe('the gate’s tiles', () => {
 
     expect(mocks.open).toHaveBeenCalledWith(mocks.offered[0]);
   });
+
+  it('says so when an offered Kids profile cannot be opened', async () => {
+    mocks.offered = [
+      { serverUrl: SERVER, access: 'ana-access', profile: { id: 'leo', username: 'Léo' } },
+    ];
+    mocks.open.mockRejectedValue(new Error('refused'));
+    const lent = input();
+    const { result } = renderHook(() => useGateTiles(lent));
+
+    result.current.at(-1)?.onPress();
+    await vi.waitFor(() => expect(lent.onKidsFailed).toHaveBeenCalled());
+
+    expect(lent.onKidsOpened).not.toHaveBeenCalled();
+  });
+
+  it('enters a remembered profile when its tile is pressed', () => {
+    const lent = input();
+    const { result } = renderHook(() => useGateTiles(lent));
+
+    result.current[0]?.onPress();
+
+    expect(lent.onSaved).toHaveBeenCalledWith(account('ana'));
+  });
+
+  it('captions a tile whose server does not answer as offline', () => {
+    const { result } = renderHook(() => useGateTiles(input({ online: () => false })));
+
+    expect(result.current[0]).toMatchObject({ caption: 'profiles.serverOffline', offline: true });
+  });
+
+  it('lists the server’s other profiles last, each asking for its password', () => {
+    const ben = { id: UserId.parse('ben'), username: 'ben', avatarUrl: null, hasPin: true };
+    const lent = input({ roster: [ben] });
+    const { result } = renderHook(() => useGateTiles(lent));
+
+    const last = result.current.at(-1);
+    last?.onPress();
+
+    expect(last).toMatchObject({ name: 'ben', locked: true });
+    expect(lent.onRoster).toHaveBeenCalledWith(ben);
+  });
+
+  it('draws no picture for the roster before a server is picked', () => {
+    const ben = { id: UserId.parse('ben'), username: 'ben', avatarUrl: null, hasPin: false };
+
+    const { result } = renderHook(() => useGateTiles(input({ roster: [ben], serverUrl: null })));
+
+    expect(result.current.at(-1)?.avatarUri).toBeNull();
+  });
 });

@@ -37,6 +37,7 @@ export * from './player';
 export * from './player-error-status';
 export * from './progress-queue';
 export * from './push-labels';
+export * from './route-under';
 export * from './shaka-master';
 export * from './slug';
 export * from './stream-rescue';

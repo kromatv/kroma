@@ -1,4 +1,11 @@
-import { createTheme, KROMA_LIGHT, type ThemeOverrides } from '#ui/core/theme-create';
+import {
+  createTheme,
+  KROMA,
+  KROMA_LIGHT,
+  type Theme,
+  type ThemeOverrides,
+} from '#ui/core/theme-create';
+import { lightColors } from '#ui/core/tokens/colors';
 
 const rounder: ThemeOverrides['radius'] = {
   compact: 6,
@@ -12,9 +19,7 @@ const rounder: ThemeOverrides['radius'] = {
   dialog: 30,
 };
 
-/** KROMA Kids on its night ground: a sky accent over deep blue, and rounder
- *  corners. A Kids session wears it on every surface (ACCT-136). */
-export const KROMA_KIDS = createTheme({
+const NIGHT: ThemeOverrides = {
   colors: {
     bg: '#0D1130',
     surface1: '#151A3D',
@@ -34,28 +39,39 @@ export const KROMA_KIDS = createTheme({
     accentSoftHover: 'rgba(85, 189, 245, 0.28)',
   },
   radius: rounder,
-});
+};
+
+const PAPER: ThemeOverrides = {
+  colors: {
+    bg: '#F2F6FF',
+    surface1: '#FFFFFF',
+    surface2: '#E6ECFA',
+    surface3: '#D9E1F5',
+    overlay: 'rgba(242, 246, 255, 0.9)',
+    accent: '#5CC8FF',
+    accentHover: '#3DB3EE',
+    accentPress: '#2A9FD9',
+    accentBright: '#85D6FF',
+    accentPale: '#D3F0FF',
+    accentText: '#0B5E8C',
+    accentWash: '#1A7DB8',
+    accentSoft: 'rgba(26, 125, 184, 0.16)',
+    accentSoftHover: 'rgba(26, 125, 184, 0.26)',
+  },
+  radius: rounder,
+};
+
+/** The KROMA Kids edition of `base`: a sky accent over deep blue (or over
+ *  paper, for a theme on paper) and rounder corners, with every other token
+ *  `base`'s own, so a form factor's type and spacing survive it. */
+export function kidsTheme(base: Theme): Theme {
+  const paper = base.colors.tint === lightColors.tint;
+  return createTheme(paper ? PAPER : NIGHT, base);
+}
+
+/** KROMA Kids on its night ground. A Kids session wears it on every surface
+ *  (ACCT-136). */
+export const KROMA_KIDS = kidsTheme(KROMA);
 
 /** {@link KROMA_KIDS} on a paper ground. */
-export const KROMA_KIDS_LIGHT = createTheme(
-  {
-    colors: {
-      bg: '#F2F6FF',
-      surface1: '#FFFFFF',
-      surface2: '#E6ECFA',
-      surface3: '#D9E1F5',
-      overlay: 'rgba(242, 246, 255, 0.9)',
-      accent: '#5CC8FF',
-      accentHover: '#3DB3EE',
-      accentPress: '#2A9FD9',
-      accentBright: '#85D6FF',
-      accentPale: '#D3F0FF',
-      accentText: '#0B5E8C',
-      accentWash: '#1A7DB8',
-      accentSoft: 'rgba(26, 125, 184, 0.16)',
-      accentSoftHover: 'rgba(26, 125, 184, 0.26)',
-    },
-    radius: rounder,
-  },
-  KROMA_LIGHT,
-);
+export const KROMA_KIDS_LIGHT = kidsTheme(KROMA_LIGHT);

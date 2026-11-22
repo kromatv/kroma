@@ -25,6 +25,7 @@ import { PeopleStrip } from '#mobile/components/people-strip.component';
 import { EmptyState, Loading, SectionTitle } from '#mobile/components/ui';
 import { discoverCard } from '#mobile/lib/discover';
 import { useT } from '#mobile/lib/i18n';
+import { useBeyondLibrary } from '#mobile/lib/use-beyond-library.hook';
 import { useGutters } from '#mobile/lib/layout';
 import { usePlay } from '#mobile/lib/play.hook';
 import { useClient } from '#mobile/lib/session';
@@ -91,11 +92,7 @@ export default function Search() {
     enabled: q.length >= 2,
     placeholderData: (prev) => prev,
   });
-  const beyond = useQuery({
-    ...client.query.discovery.search(q),
-    enabled: q.length >= 2,
-    placeholderData: (prev) => prev,
-  });
+  const beyond = useBeyondLibrary(q);
   const suggested = useQuery({ ...client.query.playback.forYou(), staleTime: 10 * 60_000 });
 
   const cards: CardModel[] = (results.data?.results ?? []).map((hit) =>

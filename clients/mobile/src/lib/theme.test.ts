@@ -4,6 +4,7 @@
 
 import {
   KROMA,
+  KROMA_KIDS,
   KROMA_LIGHT,
   colors as kit,
   mobileRadius,
@@ -15,6 +16,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   colors,
   MOBILE,
+  MOBILE_KIDS,
+  MOBILE_KIDS_LIGHT,
   MOBILE_LIGHT,
   mobileTheme,
   posterWidth,
@@ -145,6 +148,25 @@ describe('posterWidth', () => {
 
   it('grows with the screen', () => {
     expect(posterWidth(430)).toBeGreaterThan(posterWidth(390));
+  });
+});
+
+describe('mobileTheme for a Kids session', () => {
+  it('dresses the phone in the Kids palette and keeps the phone’s type', () => {
+    const kids = mobileTheme(KROMA, { kids: true });
+
+    expect(kids).toBe(MOBILE_KIDS);
+    expect(kids.colors.accent).toBe(KROMA_KIDS.colors.accent);
+    expect(kids.typeSpec.body).toEqual(MOBILE.typeSpec.body);
+  });
+
+  it('takes the Kids paper twin on paper', () => {
+    expect(mobileTheme(KROMA_LIGHT, { kids: true })).toBe(MOBILE_KIDS_LIGHT);
+  });
+
+  it('leaves any other session on the phone’s own theme', () => {
+    expect(mobileTheme(KROMA, { kids: false })).toBe(MOBILE);
+    expect(mobileTheme(KROMA_LIGHT, null)).toBe(MOBILE_LIGHT);
   });
 });
 

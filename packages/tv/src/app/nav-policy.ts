@@ -6,7 +6,7 @@
 // without saying who may see it is a type error, not a screen that mounts and
 // bounces back to home a tick later.
 
-import type { RedirectRule } from '#tv/app/guard';
+import { type RedirectRule, resolveRedirect } from '#tv/app/guard';
 import type { OwnerState } from '#tv/app/providers/server-owner';
 import type { RouteName } from '#tv/app/router';
 
@@ -49,10 +49,14 @@ function screensFor(access: Exclude<Access, 'both'>): RouteName[] {
 
 export const AUTH_SCREENS: readonly RouteName[] = screensFor('signedOut');
 export const APP_SCREENS: readonly RouteName[] = screensFor('signedIn');
+
+const KEPT_FROM_KIDS: ReadonlySet<RouteName> = new Set(['discover', 'releases', 'addKids']);
+const KIDS_SCREENS: readonly RouteName[] = APP_SCREENS.filter((name) => !KEPT_FROM_KIDS.has(name));
 export const ALL_SCREENS: readonly RouteName[] = Object.keys(ACCESS) as RouteName[];
 
 export interface GuardState {
   signedIn: boolean;
+  kids: boolean;
 }
 
 /** The screens a rule may redirect *to*: both are param-less roots. */
@@ -60,6 +64,7 @@ export type GuardTarget = 'profiles' | 'home';
 
 export const GUARD: readonly RedirectRule<GuardState, RouteName, GuardTarget>[] = [
   { when: (s) => !s.signedIn, to: 'profiles', allow: AUTH_SCREENS },
+  { when: (s) => s.kids, to: 'home', allow: KIDS_SCREENS },
   { when: () => true, to: 'home', allow: APP_SCREENS },
 ];
 
@@ -93,4 +98,22 @@ export function ownerMove({ route, owner, profiles, noticed }: OwnerRoad): Owner
   }
   const firstRun = route === 'profiles' && profiles === 0 && !noticed;
   return firstRun ? { via: 'go', to: 'unowned' } : null;
+}
+
+/** Where the guard takes a session on `route`, `null` to leave it there.
+ *  Nothing moves before the session is resumed: routing on a session whose
+ *  exchange then fails would send the television home and back to the picker. */
+export function sessionTarget({
+  ready,
+  user,
+  route,
+}: Readonly<{
+  ready: boolean;
+  user: Readonly<{ kids?: boolean }> | null;
+  route: RouteName;
+}>): GuardTarget | null {
+  if (!ready) {
+    return null;
+  }
+  return resolveRedirect(GUARD, { signedIn: user !== null, kids: user?.kids === true }, route);
 }

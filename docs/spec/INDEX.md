@@ -142,8 +142,8 @@
 - **ACCT-133** (SHIPPED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-134** (SHIPPED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-135** (SHIPPED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests, no account <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>

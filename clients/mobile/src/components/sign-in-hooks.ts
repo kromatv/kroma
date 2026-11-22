@@ -8,7 +8,7 @@ import type { Translate } from '@kromatv/i18n';
 import { type DiscoveredServer, discoverServers, sizedImageUrl } from '@kromatv/core';
 import { type DeviceKids, useDeviceKids as useKidsOn } from '@kromatv/core/react';
 import type { SplashCover } from '@kromatv/ui/kit';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { makeClient } from '#mobile/lib/device';
 import { useT } from '#mobile/lib/i18n';
 import { getDeviceLocalIp } from '#mobile/lib/local-ip';
@@ -32,16 +32,19 @@ export function useDeviceKids(accounts: readonly MobileAccount[]): DeviceKids {
 export function useClientCache(): (url: string) => KromaClient {
   const { requestLocale } = useSession();
   const clientsRef = useRef(new Map<string, KromaClient>());
-  return (url: string) => {
-    const cached = clientsRef.current.get(url);
-    if (cached) {
-      cached.setLocale(requestLocale());
-      return cached;
-    }
-    const fresh = makeClient(url, requestLocale());
-    clientsRef.current.set(url, fresh);
-    return fresh;
-  };
+  return useCallback(
+    (url: string) => {
+      const cached = clientsRef.current.get(url);
+      if (cached) {
+        cached.setLocale(requestLocale());
+        return cached;
+      }
+      const fresh = makeClient(url, requestLocale());
+      clientsRef.current.set(url, fresh);
+      return fresh;
+    },
+    [requestLocale],
+  );
 }
 
 /** While `active`, sweeps the LAN for KROMA servers in a loop, so the local

@@ -3,6 +3,7 @@ import {
   createTheme,
   groundShade,
   KROMA_LIGHT,
+  kidsTheme,
   colors as kit,
   mobileRadius,
   mobileType,
@@ -50,9 +51,21 @@ export const MOBILE = createTheme(FORM_FACTOR);
  *  lose its type ramp and its corners. */
 export const MOBILE_LIGHT = createTheme(FORM_FACTOR, KROMA_LIGHT);
 
-/** The phone's theme for whichever ground is currently set. */
-export function mobileTheme(ground: Theme): Theme {
-  return onPaper(ground) ? MOBILE_LIGHT : MOBILE;
+/** {@link MOBILE} in the KROMA Kids look, which a Kids session wears
+ *  (ACCT-136): the phone's own type and spacing, the Kids palette. */
+export const MOBILE_KIDS = kidsTheme(MOBILE);
+
+/** {@link MOBILE_KIDS} on the paper ground. */
+export const MOBILE_KIDS_LIGHT = kidsTheme(MOBILE_LIGHT);
+
+/** The phone's theme for whichever ground is currently set, in the Kids look
+ *  while `session` wears the Kids experience. */
+export function mobileTheme(ground: Theme, session?: Readonly<{ kids?: boolean }> | null): Theme {
+  const paper = onPaper(ground);
+  if (session?.kids === true) {
+    return paper ? MOBILE_KIDS_LIGHT : MOBILE_KIDS;
+  }
+  return paper ? MOBILE_LIGHT : MOBILE;
 }
 
 // Straight pass-throughs: re-exported rather than rebound, so no local name

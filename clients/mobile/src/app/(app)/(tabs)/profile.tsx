@@ -18,6 +18,7 @@ import { Avatar } from '#mobile/components/avatar.component';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
+import { type ProfileIdentity, profileIdentity } from '#mobile/lib/profile-identity';
 import { useClient, useSession } from '#mobile/lib/session';
 import { radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
 
@@ -54,15 +55,9 @@ function Row({
 
 export default function Profile() {
   const s = useStyles(sDefinition);
-
-  const t = useT();
-  const fmt = useFormat();
-  const router = useRouter();
-  const { user, signOut, switchProfile } = useSession();
-  const client = useClient();
-  const downloads = useDownloads();
+  const { user } = useSession();
   const insets = useSafeAreaInsets();
-  const avatar = client.media.artwork.resolve(user?.avatarUrl);
+  const identity = profileIdentity(user);
 
   return (
     <ScrollView
@@ -71,57 +66,111 @@ export default function Profile() {
       style={[s.screen, { paddingLeft: insets.left, paddingRight: insets.right }]}
       contentContainerStyle={[s.body, { paddingTop: insets.top + spacing.xl }]}
     >
-      <Pressable
-        onPress={() => router.push('/edit-profile')}
-        style={({ pressed }) => [s.identity, pressed && { opacity: 0.85 }]}
-      >
-        <Box>
-          <Avatar uri={avatar} name={user?.username} size={96} />
-          <Box style={s.editBadge}>
-            <Icon name="pencil" size={13} thickness={1.8} color="accentInk" />
-          </Box>
-        </Box>
-        <Text style={s.username}>{user?.username}</Text>
-        {user?.email ? <Text style={s.email}>{user.email}</Text> : null}
-      </Pressable>
+      <Identity identity={identity} />
+      <ProfileRows kids={!identity.editable} />
+      {identity.editable ? <SignOut /> : null}
+    </ScrollView>
+  );
+}
 
-      <Box style={s.card}>
-        <Row
-          icon={<Icon name="users" size={19} thickness={2} color="accentText" />}
-          label={t('nav.changeProfile')}
-          onPress={() => switchProfile()}
-        />
+function Identity({ identity }: Readonly<{ identity: ProfileIdentity }>) {
+  const s = useStyles(sDefinition);
+  const router = useRouter();
+  return (
+    <Pressable
+      disabled={!identity.editable}
+      onPress={() => router.push('/edit-profile')}
+      style={({ pressed }) => [s.identity, pressed && s.identityPressed]}
+    >
+      <IdentityAvatar identity={identity} />
+      <Text style={s.username}>{identity.name}</Text>
+      {identity.addresses.map((address) => (
+        <Text key={address} style={s.email}>
+          {address}
+        </Text>
+      ))}
+    </Pressable>
+  );
+}
+
+function IdentityAvatar({ identity }: Readonly<{ identity: ProfileIdentity }>) {
+  const s = useStyles(sDefinition);
+  const avatar = useClient().media.artwork.resolve(identity.avatarPath);
+  return (
+    <Box>
+      <Avatar uri={avatar} name={identity.name} size={96} />
+      {identity.editable ? (
+        <Box style={s.editBadge}>
+          <Icon name="pencil" size={13} thickness={1.8} color="accentInk" />
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+function ProfileRows({ kids }: Readonly<{ kids: boolean }>) {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  const router = useRouter();
+  const { switchProfile } = useSession();
+  return (
+    <Box style={s.card}>
+      <Row
+        icon={<Icon name="users" size={19} thickness={2} color="accentText" />}
+        label={t('nav.changeProfile')}
+        onPress={() => switchProfile()}
+      />
+      {kids ? null : (
         <Row
           icon={<Icon name="lock" size={19} thickness={2.2} color="accentText" />}
           label={t('account.profileLock')}
           onPress={() => router.push('/profile-pin')}
         />
-        <Row
-          icon={<Icon name="download" size={19} thickness={2} color="accentText" />}
-          label={t('offline.downloads')}
-          value={downloads.entries.length > 0 ? fmt.bytes(downloads.totalBytes) : undefined}
-          onPress={() => router.push('/downloads')}
-        />
+      )}
+      <DownloadsRow />
+      {kids ? null : (
         <Row
           icon={<Icon name="device-tv" size={19} thickness={1.8} color="accentText" />}
           label={t('connect.title')}
           onPress={() => router.push('/connect-device')}
         />
-        <Row
-          icon={<Icon name="settings" size={19} thickness={1.8} color="accentText" />}
-          label={t('nav.settings')}
-          onPress={() => router.push('/settings')}
-        />
-      </Box>
+      )}
+      <Row
+        icon={<Icon name="settings" size={19} thickness={1.8} color="accentText" />}
+        label={t('nav.settings')}
+        onPress={() => router.push('/settings')}
+      />
+    </Box>
+  );
+}
 
-      {/* The kit ghost inks text-colored; the danger reading comes via children. */}
-      <Button variant="ghost" style={s.signOut} onPress={() => signOut()}>
-        <Icon name="logout" size={18} thickness={1.8} color="danger" />
-        <Text color="danger" style={s.signOutText}>
-          {t('auth.logout')}
-        </Text>
-      </Button>
-    </ScrollView>
+function DownloadsRow() {
+  const t = useT();
+  const fmt = useFormat();
+  const router = useRouter();
+  const downloads = useDownloads();
+  return (
+    <Row
+      icon={<Icon name="download" size={19} thickness={2} color="accentText" />}
+      label={t('offline.downloads')}
+      value={downloads.entries.length > 0 ? fmt.bytes(downloads.totalBytes) : undefined}
+      onPress={() => router.push('/downloads')}
+    />
+  );
+}
+
+function SignOut() {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  const { signOut } = useSession();
+  return (
+    // The kit ghost inks text-colored; the danger reading comes via children.
+    <Button variant="ghost" style={s.signOut} onPress={() => signOut()}>
+      <Icon name="logout" size={18} thickness={1.8} color="danger" />
+      <Text color="danger" style={s.signOutText}>
+        {t('auth.logout')}
+      </Text>
+    </Button>
   );
 }
 
@@ -129,6 +178,7 @@ const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, p: spacing.md, pb: TAB_BAR_CLEARANCE, ...boxed(contentWidth.reading) },
   identity: { align: 'center', gap: 3, mb: spacing.md },
+  identityPressed: { opacity: 0.85 },
   editBadge: {
     absolute: true,
     right: -2,

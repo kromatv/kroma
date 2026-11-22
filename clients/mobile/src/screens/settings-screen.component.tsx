@@ -19,11 +19,9 @@ export default function Settings() {
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const router = useRouter();
   const { serverUrl } = useSession();
   const client = useClient();
   const { locale } = useI18n();
-  const offered = LOCALES.find((l) => l.code === locale);
   // The server names its own version on the public health endpoint, the same
   // place the web client's sidebar reads it from.
   const health = useQuery(client.query.media.health());
@@ -33,31 +31,7 @@ export default function Settings() {
     <Screen padded={false}>
       <PageHeader title={t('nav.settings')} />
       <ScrollView contentContainerStyle={s.body}>
-        <Box style={s.card}>
-          <Box style={s.row}>
-            <Text style={s.rowLabel}>{t('appearance.title')}</Text>
-            <ThemeSwitch
-              label={t('appearance.title')}
-              labels={{
-                system: t('appearance.system'),
-                light: t('appearance.light'),
-                dark: t('appearance.dark'),
-              }}
-            />
-          </Box>
-          <Row
-            label={t('account.uiLanguage')}
-            value={offered ? localeLabel(t, offered) : locale}
-            icon="chevron-right"
-            onPress={() => router.push('/settings/language' as never)}
-          />
-          <Row
-            label={t('notifications.settings')}
-            value={t('notifications.title')}
-            icon="chevron-right"
-            onPress={() => router.push('/settings/notifications' as never)}
-          />
-        </Box>
+        <PreferencesCard />
 
         <Text style={s.group}>{t('nav.server')}</Text>
         <Box style={s.card}>
@@ -126,6 +100,52 @@ function Row({ label, value, mono, icon, onPress }: Readonly<RowProps>) {
 }
 
 const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
+
+function AppearanceRow() {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  return (
+    <Box style={s.row}>
+      <Text style={s.rowLabel}>{t('appearance.title')}</Text>
+      <ThemeSwitch
+        label={t('appearance.title')}
+        labels={{
+          system: t('appearance.system'),
+          light: t('appearance.light'),
+          dark: t('appearance.dark'),
+        }}
+      />
+    </Box>
+  );
+}
+
+function PreferencesCard() {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  const router = useRouter();
+  const { user } = useSession();
+  const { locale } = useI18n();
+  const offered = LOCALES.find((l) => l.code === locale);
+  return (
+    <Box style={s.card}>
+      <AppearanceRow />
+      <Row
+        label={t('account.uiLanguage')}
+        value={offered ? localeLabel(t, offered) : locale}
+        icon="chevron-right"
+        onPress={() => router.push('/settings/language' as never)}
+      />
+      {user?.kids === true ? null : (
+        <Row
+          label={t('notifications.settings')}
+          value={t('notifications.title')}
+          icon="chevron-right"
+          onPress={() => router.push('/settings/notifications' as never)}
+        />
+      )}
+    </Box>
+  );
+}
 
 const sDefinition = styles({
   body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },

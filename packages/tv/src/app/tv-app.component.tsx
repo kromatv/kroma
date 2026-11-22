@@ -6,10 +6,11 @@ import {
   OverlayHost,
   PerfProvider,
   Toaster,
+  useKidsLook,
   useStyleScope,
 } from '@kromatv/ui/kit';
 
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { canExitOnBack, exitOnBack } from '#tv/app/app-quit';
 import { BrandIntro } from '#tv/app/brand-intro.component';
 import { CompatBanner } from '#tv/app/compat-banner.component';
@@ -17,9 +18,7 @@ import { ClientOutdatedScreen } from '#tv/app/client-outdated-screen.component';
 import { type DeviceNameSource, useDeviceName } from '#tv/app/device-name';
 import type { WakeHintSource } from '#tv/features/cast/wake-hint';
 import { createEnginePref, EnginePrefProvider } from '#tv/app/engine-pref';
-import { resolveRedirect } from '#tv/app/guard';
 import { type LauncherBackend, LauncherProvider } from '#tv/app/launcher';
-import { GUARD } from '#tv/app/nav-policy';
 import { AuthProvider, useAuth } from '#tv/app/providers/auth';
 import { ConnectionProvider, useConnection } from '#tv/app/providers/connection';
 import { ContinueProvider } from '#tv/app/providers/continue';
@@ -31,19 +30,19 @@ import { RecommendProvider } from '#tv/app/providers/recommend';
 import { ServerOwnerProvider } from '#tv/app/providers/server-owner';
 import { WatchedProvider } from '#tv/app/providers/watched';
 import { RouteCrashBoundary } from '#tv/app/route-crash-boundary.component';
-import { TvClientProvider, TvNavProvider, TvOutlet, useNav } from '#tv/app/router';
+import { TvClientProvider, TvNavProvider, TvOutlet } from '#tv/app/router';
 import { SCREENS } from '#tv/app/screens';
 import {
   createSearchRequests,
   type SearchRequests,
   SearchRequestsProvider,
-  useSearchRequests,
 } from '#tv/app/search-request';
 import { type SearchShell, SearchShellProvider } from '#tv/app/search-shell';
 import type { ServerBrowse } from '#tv/app/server-browse';
 import { ARTWORK_SCALE, ArtworkPrefProvider, createArtworkPref } from '#tv/app/settings/store';
 import { useCatalogue } from '#tv/app/use-catalogue.hook';
 import { useOwnerRoad } from '#tv/app/use-owner-road.hook';
+import { useRouteGuards } from '#tv/app/use-route-guards.hook';
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voice-search';
 import { HandoffBeaconProvider } from '#tv/features/accounts/handoff-beacon-provider.component';
 import { CastReceiverProvider } from '#tv/features/cast/cast-receiver-provider.component';
@@ -240,61 +239,9 @@ export function TvApp({
 }
 
 function TvRouterGuard() {
-  const { onSearchRequest, onListenRequest } = useSearchRequests();
-  const nav = useNav();
-  const { deepLink, movies, shows, clearDeepLink } = useConnection();
-  const { user, ready } = useAuth();
+  const { user } = useAuth();
   useOwnerRoad();
-
-  useEffect(() => {
-    // Routing on a session that has not been resumed yet would send the TV home
-    // and back to the picker when the exchange turns out to fail.
-    if (!ready) {
-      return;
-    }
-    const target = resolveRedirect(GUARD, { signedIn: Boolean(user) }, nav.route.name);
-    if (target) {
-      nav.replace(target);
-    }
-  }, [ready, user, nav]);
-
-  // Siri search, only once signed in: there is no catalogue before that.
-  useEffect(() => {
-    if (!user) {
-      return undefined;
-    }
-    return onSearchRequest(() => nav.reset('search'));
-  }, [user, nav, onSearchRequest]);
-
-  useEffect(() => {
-    if (!user) {
-      return undefined;
-    }
-    return onListenRequest(() => {
-      if (nav.route.name !== 'search') {
-        nav.reset('search');
-      }
-    });
-  }, [user, nav, onListenRequest]);
-
-  useEffect(() => {
-    if (!user || !deepLink) {
-      return;
-    }
-    if (deepLink.type === 'movie') {
-      const movie = movies.find((m) => m.id === deepLink.id);
-      if (movie) {
-        nav.reset('movie', { item: movie });
-        clearDeepLink();
-      }
-    } else {
-      const show = shows.find((s) => s.id === deepLink.id);
-      if (show) {
-        nav.reset('show', { show });
-        clearDeepLink();
-      }
-    }
-  }, [user, deepLink, movies, shows, nav, clearDeepLink]);
-
+  useKidsLook(user);
+  useRouteGuards();
   return <TvOutlet />;
 }

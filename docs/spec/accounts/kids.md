@@ -176,15 +176,12 @@ rather than locking every profile on its behalf.
 
 ## The Kids experience
 
-Status: **SHIPPED** in part. The server and the web and desktop apps do all of it. The
-television and phone apps open a Kids profile, and the server refuses its session what it
-loses there too, but they do not wear the Kids look yet and still draw the account
-settings the server refuses.
+Status: **SHIPPED** on the server and on every surface: web, desktop, television and phone.
 
-**ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
+**ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
 place of KROMA's, and a simpler, friendlier theme, on every surface.
 
-**ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests, no account
+**ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account
 settings and no way to sign another device in, and the server refuses those routes to its
 session. Its player languages stay its own.
 

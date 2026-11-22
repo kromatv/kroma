@@ -15,7 +15,9 @@ import { TvNavProvider } from '#tv/app/router';
 import { AboutPanel } from './about-panel.component';
 
 const auth = vi.hoisted(() => {
-  const session: { current: { user: { id: string } | null } | null } = { current: null };
+  const session: { current: { user: { id: string; kids?: boolean } | null } | null } = {
+    current: null,
+  };
   return session;
 });
 vi.mock('#tv/app/providers/auth', () => ({ useAuthMaybe: () => auth.current }));
@@ -158,6 +160,15 @@ describe('AboutPanel release notes', () => {
     mount();
 
     expect(screen.getByText("What's new")).toBeTruthy();
+  });
+
+  it('keeps the release notes from a Kids session', () => {
+    withNavigator({});
+    auth.current = { user: { id: 'kid', kids: true } };
+
+    mount();
+
+    expect(screen.queryByText("What's new")).toBeNull();
   });
 });
 

@@ -1354,20 +1354,20 @@
     "domain": "ACCT",
     "space": "accounts",
     "number": 136,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A Kids session wears the KROMA Kids look: the KROMA Kids logo in",
     "file": "docs/spec/accounts/kids.md",
-    "line": 184
+    "line": 181
   },
   {
     "id": "ACCT-137",
     "domain": "ACCT",
     "space": "accounts",
     "number": 137,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A Kids session has no admin, no Store, no requests, no account",
     "file": "docs/spec/accounts/kids.md",
-    "line": 187
+    "line": 184
   },
   {
     "id": "ACCT-138",
@@ -1377,7 +1377,7 @@
     "status": "SHIPPED",
     "text": "A Kids session never shows a title the server does not hold.",
     "file": "docs/spec/accounts/kids.md",
-    "line": 191
+    "line": 188
   },
   {
     "id": "ACCT-139",
@@ -1387,7 +1387,7 @@
     "status": "SHIPPED",
     "text": "A Kids session shows no module page, and the server refuses module",
     "file": "docs/spec/accounts/kids.md",
-    "line": 193
+    "line": 190
   },
   {
     "id": "ACCT-140",
@@ -1397,7 +1397,7 @@
     "status": "SHIPPED",
     "text": "Search stays on in a Kids session and finds only what the profile",
     "file": "docs/spec/accounts/kids.md",
-    "line": 197
+    "line": 194
   },
   {
     "id": "ACCT-141",

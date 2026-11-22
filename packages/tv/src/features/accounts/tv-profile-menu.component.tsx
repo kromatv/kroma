@@ -2,7 +2,7 @@ import { Avatar, Box, Text } from '@kromatv/ui/kit';
 import { useAuth } from '#tv/app/providers/auth';
 import { useConnection } from '#tv/app/providers/connection';
 import { PROFILE_GROUPS } from '#tv/app/settings/groups';
-import { PinPanel } from './settings/pin-panel.component';
+import { accountPanes } from './settings/account-panes';
 import { appPanes } from './settings/app-panes';
 import type { SettingsPane } from './settings/panes';
 import { SettingsPanes } from './settings/settings-panes.component';
@@ -29,32 +29,7 @@ export function TvProfileMenu() {
     }
   };
 
-  const account: SettingsPane[] = [
-    {
-      kind: 'panel',
-      id: 'pin',
-      icon: 'lock',
-      label: 'profileMenu.pin',
-      hint: user.hasPin ? 'profileMenu.on' : 'profileMenu.off',
-      Panel: PinPanel,
-    },
-    {
-      kind: 'action',
-      id: 'changeProfile',
-      icon: 'users-group',
-      label: 'nav.changeProfile',
-      description: 'settings.changeProfileDesc',
-      run: switchProfile,
-    },
-    {
-      kind: 'action',
-      id: 'signOut',
-      icon: 'logout',
-      label: 'auth.logout',
-      description: 'settings.signOutDesc',
-      run: onSignOut,
-    },
-  ];
+  const account = accountPanes(user, { switchProfile, signOut: onSignOut });
 
   return (
     <SettingsPanes
