@@ -1,4 +1,5 @@
 import { defineStory } from '@kromatv/workbench/story';
+import { Box } from '#ui/components/atoms/box';
 import { Logo } from './logo.component';
 
 export const story = defineStory({
@@ -10,4 +11,21 @@ export const story = defineStory({
 
 The KROMA lockup, color wheel included. This is the only copy of the brand's vector paths in the whole repository. Everything that displays the logo goes through here.
 
-`kids` draws the KROMA Kids lockup, which a Kids session wears in place of KROMA's. The word Kids is a brand name and is never translated.
+`kids` draws the KROMA Kids lockup, which a Kids session wears in place of KROMA's. The word Kids sits on an accent tag under the end of the wordmark, so the lockup is exactly as wide as KROMA alone and fits every header KROMA fits; it is only taller. The word Kids is a brand name and is never translated.
+
+<Scene name="Both lockups at one width">
+  {story.take((props) => (
+    <Box row gap={32} align="center">
+      <Logo {...props} kids={false} />
+      <Logo {...props} kids />
+    </Box>
+  ))}
+</Scene>
+
+<Do>
+- Give the Kids lockup the room KROMA's lockup has: the same width, a little more height.
+</Do>
+
+<Dont>
+- Shrink the wordmark to make room for the tag. The wordmark keeps its size in both lockups.
+</Dont>
