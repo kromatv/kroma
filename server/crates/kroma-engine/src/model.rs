@@ -25,3 +25,4 @@ pub use crate::domain::releases::*;
 pub use crate::domain::reports::*;
 pub use crate::domain::requests::*;
 pub use crate::domain::section::*;
+pub use crate::domain::setup;
