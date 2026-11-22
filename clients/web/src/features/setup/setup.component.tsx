@@ -10,9 +10,10 @@ import { OwnerStep } from '#web/features/setup/owner-step.component';
 import { PeopleStep } from '#web/features/setup/people-step.component';
 import { PrivacyStep } from '#web/features/setup/privacy-step.component';
 import type { ScanFeed } from '#web/features/setup/scan-feed';
-import { SetupPicks } from '#web/features/setup/setup-picks.component';
+import { SetupPicks, useSetupPicks } from '#web/features/setup/setup-picks.component';
 import { SetupShell } from '#web/features/setup/setup-shell.component';
 import {
+  confirmsOnContinue,
   type SetupStart,
   type SetupStep,
   type SetupVisitor,
@@ -24,6 +25,7 @@ import {
 import { StartStep } from '#web/features/setup/start-step.component';
 import { useInstallPicks } from '#web/features/setup/use-install-picks.hook';
 import { useScanFeed } from '#web/features/setup/use-scan-feed.hook';
+import { useSetupMemory } from '#web/features/setup/use-setup-memory.hook';
 import { useServerOwner } from '#web/features/setup/use-server-owner.hook';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -88,24 +90,44 @@ export function Setup(props: Readonly<SetupProps>) {
   );
 }
 
+type Memory = ReturnType<typeof useSetupMemory>;
+
+function useAnswered(step: SetupStep, memory: Memory) {
+  const { picked } = useSetupPicks();
+  return () => {
+    if (confirmsOnContinue(step, picked.length)) {
+      void memory.confirm(step);
+    }
+  };
+}
+
 function useMoves({ step, start, onStep, onStart, onLeave }: FlowProps & { step: SetupStep }) {
   const feed = useScanFeed();
   const install = useInstallPicks();
-  const ends = (to: SetupStep) => {
-    if (to === 'done') {
-      install();
-    }
+  const memory = useSetupMemory();
+  const answered = useAnswered(step, memory);
+  const go = (to: SetupStep) => {
+    void memory.advance(to, start);
+    onStep(to);
   };
   const next = () => {
-    ends(stepAfter(step, start));
-    onStep(stepAfter(step, start));
+    answered();
+    if (stepAfter(step, start) === 'done') {
+      install();
+    }
+    go(stepAfter(step, start));
   };
-  const leave = () => {
-    ends('done');
+  const leave = async () => {
+    install();
+    await memory.end();
     onLeave();
   };
-  const back = () => onStep(stepBefore(step, start) ?? step);
-  return { feed, start, onStart, next, back, leave };
+  const begin = (to: SetupStart) => {
+    void memory.advance(step, to);
+    onStart(to);
+  };
+  const back = () => go(stepBefore(step, start) ?? step);
+  return { feed, start, onStart: begin, next, back, go, leave: () => void leave() };
 }
 
 function SetupFlow(props: Readonly<FlowProps>) {
@@ -118,7 +140,7 @@ function SetupFlow(props: Readonly<FlowProps>) {
       reached={props.reached}
       open={openSteps(props)}
       posters={moves.feed.posters}
-      onStep={props.onStep}
+      onStep={moves.go}
       onFinishLater={moves.leave}
     >
       {VIEWS[step](moves)}
