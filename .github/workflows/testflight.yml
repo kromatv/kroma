@@ -1,0 +1,79 @@
+name: TestFlight
+
+# Hands the iPhone and Apple TV builds to the two external TestFlight groups
+# testers join by their public link:
+#
+#   - Canary (testflight.apple.com/join/wxUevnw1), after every Build & Release
+#     run on main, cancelled ones included: a push cancels the run before it,
+#     and that run's upload may be the newest build. It waits until Apple has
+#     processed every build of the app, then takes the newest of each platform.
+#   - Beta (testflight.apple.com/join/ZjgQdunW), each night.
+#
+# Each build goes to Beta App Review when it waits on one. A group that already
+# has the newest build is left alone, so a run with nothing new sends nothing.
+# Release.yml uploads a build only when the app changed.
+#
+#   gh workflow run testflight.yml
+
+on:
+  workflow_run:
+    workflows: ['Build & Release']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  canary:
+    name: TestFlight canary
+    concurrency:
+      group: testflight-canary
+      cancel-in-progress: false
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - run: bun run ci testflight feed --group Canary --settle
+
+  beta:
+    name: TestFlight beta
+    if: github.event_name != 'workflow_run'
+    concurrency:
+      group: testflight-beta
+      cancel-in-progress: false
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - run: bun run ci testflight feed --link ZjgQdunW
