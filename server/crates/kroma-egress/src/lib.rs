@@ -34,13 +34,19 @@ pub struct Request {
     pub port: u16,
 }
 
+/// Where a direct connection may land. Every address its host resolves to is
+/// checked before one is dialled: never link-local or a cloud metadata service,
+/// never this machine on one of `own_ports`, never loopback for a name other
+/// than `localhost`, and public unless `private_allowed`.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Reach {
+    pub private_allowed: bool,
+    pub own_ports: Vec<u16>,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Verdict {
-    /// Unless `private_allowed`, every address the name resolves to must be
-    /// public.
-    Direct {
-        private_allowed: bool,
-    },
+    Direct(Reach),
     Upstream(Upstream),
     Block(String),
 }

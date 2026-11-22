@@ -26,7 +26,7 @@ mod rules;
 mod sockets;
 mod summary;
 
-pub use decide::{decide, CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK};
+pub use decide::{decide, CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK, GUARD_METADATA};
 use decide::is_this_machine;
 pub use flow::{Flow, FlowFilter, FlowPage, FlowReport, FlowRoute, Verdict};
 pub use history::{CallerPurpose, CORE_PURPOSES, FLUSH_EVERY};
@@ -38,7 +38,7 @@ pub use permissions::{DeclaredListeners, DeclaredPermissions, PERMISSION_NET_CON
 pub use rules::{
     Action, DefaultAction, NetworkRules, Rule, RulesError, MAX_BODY_BYTES, SETTING_KEY,
 };
-pub use sockets::{LocalNetwork, LocalNetworks, RawSocket, SocketRefusal, GUARD_METADATA};
+pub use sockets::{LocalNetwork, LocalNetworks, RawSocket, SocketRefusal};
 pub use summary::{Summary, SummaryRow, Totals, MAX_DAYS};
 
 use middleware::Middleware;
@@ -125,7 +125,9 @@ impl Network {
         self
     }
 
-    fn own_ports(&self) -> Vec<u16> {
+    /// This server's own ports: its HTTP and HTTPS ports and every listener a
+    /// module declares. No module reaches one on this machine.
+    pub fn own_ports(&self) -> Vec<u16> {
         let setting =
             |key: &str, fallback: i64| u16::try_from(self.settings.get_i64(key, fallback)).ok();
         let set_port = |key: &str| setting(key, 0).filter(|port| *port > 0);
@@ -197,6 +199,7 @@ impl Network {
 fn refusal(rule: Option<&str>) -> String {
     match rule {
         Some(GUARD_LINK_LOCAL) => "a link-local address is never reachable".to_string(),
+        Some(GUARD_METADATA) => "a cloud metadata service is never reachable".to_string(),
         Some(GUARD_LOOPBACK) => {
             "a module may not reach this server's own listeners on loopback".to_string()
         }

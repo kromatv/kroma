@@ -132,8 +132,10 @@ what enforces it. See
 
 **Network.** A component that declares no `permissions` has no network. The
 policy decides a fetch first, and a refusal names its reason. An allowed fetch is
-carried through the module's gateway, which rules again on every redirect hop. See
-[networking](networking.md#the-gateway).
+carried through the module's gateway, which rules again on every redirect hop and
+checks every address a name resolves to: never link-local or a cloud metadata
+service, never this machine on one of the server's own ports, and loopback only
+for `localhost`. See [networking](networking.md#the-gateway).
 
 **Raw sockets.** A component holds a socket only for a transport a `net.connect`
 entry names in `proto`. An entry with no `proto` is for `fetch` alone and grants

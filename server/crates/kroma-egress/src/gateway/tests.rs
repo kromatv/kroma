@@ -132,9 +132,10 @@ async fn socks_connect(
 #[tokio::test]
 async fn an_allowed_connection_is_relayed_and_reported_with_its_bytes() {
     let echo = echo_server().await;
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: true,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
 
     let (mut stream, answer) = socks_connect(gateway, CREDENTIAL, "127.0.0.1", echo.port()).await;
@@ -155,9 +156,10 @@ async fn an_allowed_connection_is_relayed_and_reported_with_its_bytes() {
 
 #[tokio::test]
 async fn a_caller_offering_no_credentials_is_refused_before_naming_a_destination() {
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: true,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
     let mut stream = dial(gateway).await;
 
@@ -171,9 +173,10 @@ async fn a_caller_offering_no_credentials_is_refused_before_naming_a_destination
 
 #[tokio::test]
 async fn a_credential_the_policy_does_not_know_is_refused() {
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: true,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
 
     let (_stream, answer) = socks_connect(gateway, "guessed", "127.0.0.1", 9).await;
@@ -199,9 +202,10 @@ async fn a_blocked_connection_is_refused_and_still_reported() {
 #[tokio::test]
 async fn a_name_that_resolves_to_this_machine_is_refused_unless_private_is_allowed() {
     let echo = echo_server().await;
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: false,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
 
     let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "localhost", echo.port()).await;
@@ -214,9 +218,10 @@ async fn a_name_that_resolves_to_this_machine_is_refused_unless_private_is_allow
 
 #[tokio::test]
 async fn link_local_stays_unreachable_even_when_private_is_allowed() {
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: true,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
 
     let (_plain, plain) = socks_connect(gateway, CREDENTIAL, "169.254.169.254", 80).await;
@@ -231,9 +236,10 @@ async fn a_destination_refusing_every_address_is_answered_connection_refused() {
     let closed = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = closed.local_addr().unwrap().port();
     drop(closed);
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: true,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
 
     let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "127.0.0.1", port).await;
@@ -249,9 +255,10 @@ async fn a_destination_refusing_every_address_is_answered_connection_refused() {
 
 #[tokio::test]
 async fn a_name_that_does_not_resolve_is_answered_host_unreachable() {
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: true,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
 
     let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "nowhere.invalid", 443).await;
@@ -267,9 +274,10 @@ async fn a_name_that_does_not_resolve_is_answered_host_unreachable() {
 
 #[tokio::test]
 async fn anything_but_connect_is_refused() {
-    let policy = TestPolicy::answering(Verdict::Direct {
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
         private_allowed: true,
-    });
+        ..Reach::default()
+    }));
     let gateway = serving(policy.clone()).await;
     let mut stream = dial(gateway).await;
     stream.write_all(&[0x05, 0x01, 0x02]).await.unwrap();
@@ -331,11 +339,142 @@ impl Policy for UpstreamPolicy {
 
     fn decide(&self, request: &Request) -> Ruling {
         self.asked.lock().unwrap().push(request.clone());
-        Verdict::Direct {
+        Verdict::Direct(Reach {
             private_allowed: true,
-        }
+            ..Reach::default()
+        })
         .into()
     }
 
     fn record(&self, _flow: Flow) {}
+}
+
+#[tokio::test]
+async fn a_name_that_resolves_to_loopback_is_refused_unless_it_is_localhost() {
+    let echo = echo_server().await;
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
+        private_allowed: true,
+        ..Reach::default()
+    }));
+    let gateway = serving(policy.clone()).await;
+
+    let (_stream, answer) = socks_connect(gateway, CREDENTIAL, "127.1", echo.port()).await;
+
+    assert_eq!(answer, 0x02);
+    let flow = policy.flow().await;
+    assert_eq!(flow.route, Route::Blocked);
+    assert!(flow.error.unwrap().contains("may not reach"));
+}
+
+#[tokio::test]
+async fn this_machine_on_one_of_its_own_ports_is_refused_even_where_private_is_allowed() {
+    let echo = echo_server().await;
+    let policy = TestPolicy::answering(Verdict::Direct(Reach {
+        private_allowed: true,
+        own_ports: vec![echo.port()],
+    }));
+    let gateway = serving(policy.clone()).await;
+
+    let (_named, named) = socks_connect(gateway, CREDENTIAL, "localhost", echo.port()).await;
+    let (_literal, literal) = socks_connect(gateway, CREDENTIAL, "127.0.0.1", echo.port()).await;
+
+    assert_eq!((named, literal), (0x02, 0x02));
+}
+
+fn landing<'a>(host: &'a Host, reach: &'a Reach) -> Landing<'a> {
+    Landing {
+        host,
+        port: 4040,
+        reach,
+        networks: vec![lan::LocalNetwork {
+            address: "192.168.1.2".parse().unwrap(),
+            prefix: 24,
+        }],
+    }
+}
+
+fn admitted(host: &Host, reach: &Reach, ips: &[&str]) -> Vec<bool> {
+    let landing = landing(host, reach);
+    ips.iter()
+        .map(|ip| landing.admits(ip.parse().unwrap()))
+        .collect()
+}
+
+#[test]
+fn a_cloud_metadata_service_is_never_admitted() {
+    let reach = Reach {
+        private_allowed: true,
+        ..Reach::default()
+    };
+    let host = Host::Name("metadata.example".into());
+
+    let answers = admitted(
+        &host,
+        &reach,
+        &["100.100.100.200", "fd00:ec2::254", "::ffff:100.100.100.200"],
+    );
+
+    assert_eq!(answers, [false, false, false]);
+}
+
+#[test]
+fn this_machine_s_own_address_is_refused_on_its_own_ports_and_admitted_on_others() {
+    let host = Host::Name("nas.local".into());
+    let guarded = Reach {
+        private_allowed: true,
+        own_ports: vec![4040],
+    };
+    let unguarded = Reach {
+        private_allowed: true,
+        own_ports: vec![8096],
+    };
+
+    let answers = (
+        admitted(
+            &host,
+            &guarded,
+            &["192.168.1.2", "192.168.1.255", "192.168.1.20"],
+        ),
+        admitted(&host, &unguarded, &["192.168.1.2"]),
+    );
+
+    assert_eq!(answers, (vec![false, false, true], vec![true]));
+}
+
+#[test]
+fn loopback_is_admitted_for_localhost_and_a_literal_and_refused_for_any_other_name() {
+    let reach = Reach {
+        private_allowed: true,
+        ..Reach::default()
+    };
+    let hosts = [
+        Host::Name("LocalHost.".into()),
+        Host::Name("kroma.localhost".into()),
+        Host::Ip("127.0.0.1".parse().unwrap()),
+        Host::Name("rebound.example".into()),
+        Host::Name("localhost.example".into()),
+    ];
+
+    let answers: Vec<bool> = hosts
+        .iter()
+        .flat_map(|host| admitted(host, &reach, &["127.0.0.1"]))
+        .collect();
+
+    assert_eq!(answers, [true, true, true, false, false]);
+}
+
+#[test]
+fn a_name_that_resolves_to_no_address_is_answered_host_unreachable() {
+    let host = Host::Name("empty.example".into());
+    let reach = Reach::default();
+
+    let checked = landing(&host, &reach).check(&[]);
+
+    assert_eq!(
+        checked,
+        Err((
+            Reply::HostUnreachable,
+            "empty.example resolved to no address".to_string()
+        ))
+    );
 }
