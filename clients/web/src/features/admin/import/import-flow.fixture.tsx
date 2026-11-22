@@ -59,7 +59,7 @@ export async function settle() {
 
 /** Presses the control a screen reader names `name`. */
 export async function press(name: string) {
-  await act(async () => {
+  act(() => {
     screen.getByLabelText(name).click();
   });
   await settle();
