@@ -1,9 +1,7 @@
 import type { AdminUser } from '@kromatv/client/admin';
-import { resolveImageUrl } from '@kromatv/core';
 import { Table } from '@kromatv/module-sdk';
 import { useFormat, useT } from '@kromatv/ui';
 import {
-  Avatar,
   Box,
   Button,
   type ColorValue,
@@ -18,11 +16,14 @@ import { accessLabel } from '#web/features/admin/library-visibility.component';
 import { Pill, PillDot } from '#web/features/admin/pill.component';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { EditUserModal } from '#web/features/admin/users-edit-modal.component';
+import { KidsModal } from '#web/features/admin/users-kids-modal.component';
 import { InviteModal } from '#web/features/admin/users-invite-modal.component';
 import { JoinRequests } from '#web/features/admin/users-join-requests.component';
+import { MemberIdentity } from '#web/features/admin/users-member.component';
 import { PendingInvite } from '#web/features/admin/users-pending-invite.component';
-import { apiBase } from '#web/shared/lib/api';
+import { useEffect } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
+import { takeKidsProfileAsk } from '#web/shared/lib/kids-ask';
 
 const ROLES = ['admin.roleOwner', 'admin.roleMember', 'admin.roleRestricted'] as const;
 type Role = (typeof ROLES)[number];
@@ -63,6 +64,12 @@ function UsersPageInner() {
       await reloadInvites();
     }
   };
+  const openKids = async () => {
+    if (await KidsModal.call()) {
+      await reload();
+    }
+  };
+  useAskedKidsForm(openKids);
   const openEdit = async (user: AdminUser) => {
     if (await EditUserModal.call({ user })) {
       await reload();
@@ -79,6 +86,7 @@ function UsersPageInner() {
         <PageHeader.Title>{t('admin.usersTitle')}</PageHeader.Title>
         <PageHeader.Subtitle>{t('admin.usersSub')}</PageHeader.Subtitle>
         <PageHeader.Actions>
+          <Button variant="glass" label={t('admin.addKids')} onPress={() => void openKids()} />
           <Button icon="plus" label={t('nav.inviteUser')} onPress={() => void openInvite()} />
         </PageHeader.Actions>
       </PageHeader.Root>
@@ -133,27 +141,7 @@ function UsersPageInner() {
             return (
               <Table.Row key={u.id}>
                 <Table.Cell row gap={14}>
-                  <Avatar
-                    name={u.username}
-                    src={resolveImageUrl(apiBase(), u.avatarUrl)}
-                    size={42}
-                    circle
-                  />
-                  <Box minW={0}>
-                    <Box row align="center" gap={8}>
-                      <Text variant="label" lines={1}>
-                        {u.username}
-                      </Text>
-                      {u.resetRequested ? (
-                        <Pill ink="accentText" bg="accentWash/16">
-                          {t('admin.resetRequested')}
-                        </Pill>
-                      ) : null}
-                    </Box>
-                    <Text variant="meta" color="textDim" lines={1}>
-                      {u.email}
-                    </Text>
-                  </Box>
+                  <MemberIdentity user={u} />
                 </Table.Cell>
                 <Table.Cell>
                   <Pill ink={rs.ink} bg={rs.bg}>
@@ -208,4 +196,14 @@ function UsersPageInner() {
       ) : null}
     </>
   );
+}
+
+function useAskedKidsForm(open: () => Promise<void>) {
+  const { user } = useAuth();
+  const userId = user?.id;
+  useEffect(() => {
+    if (userId && takeKidsProfileAsk(userId)) {
+      void open();
+    }
+  }, [userId, open]);
 }

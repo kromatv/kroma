@@ -6,7 +6,8 @@
 import type { StoreCatalog } from '@kromatv/client/modules';
 import type { MessageKey } from '@kromatv/i18n';
 import { moduleIconUrl, Table } from '@kromatv/module-sdk';
-import { useT } from '@kromatv/ui';
+import { moduleWords } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
 import {
   Badge,
   Box,
@@ -68,6 +69,7 @@ function InstalledRow({
   const s = useStyles(sDefinition);
 
   const t = useT();
+  const { name } = moduleWords(m, useLocale());
   const { busy, error, toggle } = useModuleToggle(m.id, onChanged);
   const answers = m.contributes ?? [];
   const localBuild = m.origin?.localBuild === true;
@@ -90,7 +92,7 @@ function InstalledRow({
           <Box minW={0}>
             <Row gap={8}>
               <Text variant="label" lines={1}>
-                {m.name}
+                {name}
               </Text>
               {declaresNothing(m) && (
                 <Tooltip label={t('admin.modulesUndeclaredHint')}>
@@ -139,7 +141,7 @@ function InstalledRow({
           <Switch
             checked={m.enabled}
             onCheckedChange={busy ? undefined : (v) => void toggle(v)}
-            label={m.name}
+            label={name}
           />
         </Table.Cell>
         <Table.Cell row align="center" justify="flex-end">

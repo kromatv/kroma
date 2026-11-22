@@ -95,7 +95,7 @@ schemas that describe them.
 
 | Path | What it is |
 |---|---|
-| `/registry.json` | The descriptor: `apiVersion`, a display `name`, the registry's own `url`, and the module ids it serves. |
+| `/registry.json` | The descriptor: `apiVersion`, a display `name`, the registry's own `url`, the module ids it serves, and `setup`, the ids a server's guided setup offers, in order. |
 | `/index.json` | One record per module, carrying the version a bare install resolves to. Everything the Store needs to render a listing and judge compatibility, in ONE request. |
 | `/m/{id}.json` | One module's full record: every version the registry serves, and the named channels (`distTags`) pointing into them. |
 | `/schemas/{version}/{name}.json` | The JSON Schema for `manifest`, `registry`, `index` or `module`. `/schemas/{name}.json` is the unversioned alias. |
@@ -132,6 +132,8 @@ uncompressed tar — not something an installer verifies.
   "name": "Notes",
   "version": "0.2.0",
   "description": "…",
+  "tagline": "One sentence on what it does for a household.",
+  "translations": { "fr": { "name": "…", "description": "…", "tagline": "…" } },
   "author": "…", "homepage": "…", "license": "AGPL-3.0-or-later",
   "keywords": ["notes"], "tags": ["download-client"],
   "engines": { "server": ">=0.1.4" },
@@ -150,6 +152,18 @@ uncompressed tar — not something an installer verifies.
   ]
 }
 ```
+
+`name`, `description`, `tagline` and `translations` are copied from the
+manifest, so the Store and the guided setup can show a module in the reader's
+language before it is installed. A server keeps a language tag of the form `fr`
+or `pt-BR` and a word of at most 1,000 characters, and reads anything else as
+not said.
+
+A server reads `setup` from its official registry alone. It offers the ids that
+registry serves itself, in its order, and an added registry's `setup` offers
+nothing. The first-party list is `SETUP_OFFER` in
+`apps/modules/src/lib/setup-offer.ts`, so a module joins or leaves the setup with
+a deploy of the registry and no server release.
 
 `tags` defaults to the local half of every point the module contributes, so a
 store can filter by `client` or `engine` without hand-authored tags. `schemaVersion` is the

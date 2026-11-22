@@ -35,6 +35,8 @@ pub struct AdminUser {
     /// Set for an account that waits on an invitation (ACCT-94), and says
     /// where that invitation stands. `None` for an account its person holds.
     pub invitation: Option<InvitationState>,
+    /// A Kids profile (ACCT-122): no credential, opened from a picker.
+    pub kids: bool,
 }
 
 /// Where the invitation of a waiting account stands.
@@ -149,7 +151,21 @@ pub struct PlayRecord {
     pub watched_ms: i64,
 }
 
+/// The other media server a play was imported from. `importer` is the id of
+/// the module that read it. Both are blank once that server is no longer on
+/// record, and `name` is blank for a server that gave none.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct ImportedFrom {
+    pub importer: String,
+    pub name: String,
+}
+
 /// One row of the admin watch log: a finished playback, read back.
+///
+/// `imported_from` is set on a play an import brought, which carries no
+/// device, player, mode or network. Where `watched_is_runtime` is set the
+/// other server recorded no duration: `watched_ms` is then the runtime of the
+/// title, and 0 while the catalog holds none.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayEntry {
@@ -178,6 +194,8 @@ pub struct PlayEntry {
     pub started_at: i64,
     pub ended_at: i64,
     pub watched_ms: i64,
+    pub watched_is_runtime: bool,
+    pub imported_from: Option<ImportedFrom>,
 }
 
 #[derive(Debug, Clone, Serialize)]

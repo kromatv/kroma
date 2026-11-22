@@ -80,3 +80,7 @@ mod core_schema;
 
 pub use compat::Provides;
 pub use core_schema::{CoreSchema, TableVersions};
+
+mod words;
+
+pub use words::{Translations, Words};

@@ -114,6 +114,8 @@ mod it_imports_folders;
 #[cfg(test)]
 mod it_imports_people;
 #[cfg(test)]
+mod it_invitation_mail;
+#[cfg(test)]
 mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;
@@ -123,6 +125,10 @@ mod it_settings_libraries;
 mod it_mail_relay;
 #[cfg(test)]
 mod it_account_identifiers;
+#[cfg(test)]
+mod it_kids;
+#[cfg(test)]
+mod it_maturity;
 #[cfg(test)]
 mod it_media;
 #[cfg(test)]
@@ -189,6 +195,8 @@ mod it_server_restart;
 mod it_server_status;
 #[cfg(test)]
 mod it_setup;
+#[cfg(test)]
+mod it_store_setup;
 #[cfg(test)]
 mod it_store_versions;
 #[cfg(test)]

@@ -5,8 +5,10 @@
 //! all-permissions owner session. Requests run in-process via
 //! [`tower::ServiceExt::oneshot`]: no socket, no network, no module.
 
+mod ceiling;
 mod direct;
 mod importers;
+mod mail_relay;
 mod media;
 mod modules;
 mod requests;
@@ -28,14 +30,16 @@ use crate::model::Permission;
 use crate::services::settings::{self, LibraryDef, Settings};
 use crate::state::{AppState, SharedState};
 
+pub use ceiling::{hold_at, household_where_the_viewer_is_held_at_ten, rate_item, HeldHousehold};
 pub use direct::{offer, offer_through_the_tunnel, proof_of, HOUSEHOLD_PUBLIC_IP, NEIGHBOUR};
 pub use importers::{import_job_ended, importer_answering, importer_held, on_disk, IMPORTER};
+pub use mail_relay::{relay_app, relay_paths, stub_relay};
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };
 pub use modules::{
-    installed_module, point_store_at, read_setting, registry_serving, store_settings,
-    write_settings,
+    installed_module, point_store_at, read_setting, registry_offering, registry_serving,
+    store_settings, write_settings,
 };
 pub use requests::{get, get_from, raw, send, send_from, text, upload};
 pub use sso::{at_provider, ProviderRound, ORIGIN};

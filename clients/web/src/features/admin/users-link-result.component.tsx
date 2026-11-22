@@ -1,18 +1,7 @@
 import type { Delivery } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
-import { Box, InputGroup, Text } from '@kromatv/ui/kit';
-import { useState } from 'react';
-
-// `navigator.clipboard` is undefined outside a secure context, so on a
-// plain-http LAN address this throws synchronously, not via rejection.
-async function copyText(url: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(url);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { Box, Text } from '@kromatv/ui/kit';
+import { CopyableLink } from '#web/features/admin/copyable-link.component';
 
 const LINK_KIND = {
   reset: {
@@ -59,7 +48,6 @@ export function LinkResult({
   code?: string;
 }>) {
   const t = useT();
-  const [copied, setCopied] = useState(false);
   const { path, outcome } = LINK_KIND[kind];
   const base =
     url ??
@@ -68,26 +56,7 @@ export function LinkResult({
   const shown = kind === 'reset' && byHand && base && code ? `${base}&code=${code}` : base;
   return (
     <Box gap={8}>
-      {shown ? (
-        <InputGroup.Root label={label}>
-          <InputGroup.Input value={shown} autoFocus={false} />
-          <InputGroup.Addon align="inline-end">
-            <InputGroup.Button
-              icon="copy"
-              label={copied ? t('common.copied') : t('common.copy')}
-              onPress={() => {
-                void copyText(shown).then((ok) => {
-                  if (!ok) {
-                    return;
-                  }
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
-                });
-              }}
-            />
-          </InputGroup.Addon>
-        </InputGroup.Root>
-      ) : null}
+      {shown ? <CopyableLink label={label} link={shown} /> : null}
       <Text variant="meta" color="textMuted">
         {t(outcome[delivered])}
       </Text>

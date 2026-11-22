@@ -2,6 +2,7 @@ export type { BackupImportOptions, BackupImportResult, BackupPreview } from './b
 export * from './client';
 export * from './logs';
 export * from './metrics';
+export * from './restrictions';
 export * from './settings';
 export * from './stats';
 export * from './updates';

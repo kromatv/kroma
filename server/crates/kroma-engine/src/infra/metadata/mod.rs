@@ -12,6 +12,7 @@ mod videos;
 use kroma_requests::tmdb::common;
 
 pub use cache::Cache;
+pub(crate) use client::country_of;
 pub use client::{lookup, lookup_all, lookup_all_by_id, Target};
 pub(crate) use find::{find_id, Catalogue};
 pub use videos::{title_videos, TitleVideos};

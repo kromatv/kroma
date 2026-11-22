@@ -1,3 +1,4 @@
+import { RegistryDescriptor } from '@kromatv/registry';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { machineResponse } from './api';
 import { type Env, UNAVAILABLE } from './source';
@@ -267,7 +268,18 @@ describe('the RFC-110 documents', () => {
       name: 'KROMA modules',
       url: 'https://modules.kroma.tv',
       modules: ['tv.kroma.demo'],
+      setup: [],
     });
+  });
+
+  it('offers the setup the modules it lists, in its order, and only those it serves', async () => {
+    const [demo] = CATALOG.modules;
+    const whisper = { ...demo, id: 'tv.kroma.whisper' };
+    upstreamServing({ ...CATALOG, modules: [whisper, { ...demo, id: 'tv.kroma.mdns' }] });
+
+    const descriptor = RegistryDescriptor.parse(await (await machine('/registry.json')).json());
+
+    expect(descriptor.setup).toEqual(['tv.kroma.mdns', 'tv.kroma.whisper']);
   });
 
   it('serves the installable version of every module at /index.json', async () => {

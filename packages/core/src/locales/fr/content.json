@@ -2,6 +2,8 @@
   "content.acclaimed": "Salués par la critique",
   "content.addToList": "Ajouter à ma liste",
   "content.addedToList": "Ajouté à ma liste.",
+  "content.ageRating": "Classification : {label}",
+  "content.ageRatingBorrowed": "Classification : {label} ({country})",
   "content.aiSuggestions": "Suggestions de l'IA",
   "content.aiSuggestionsLoading": "Préparation des suggestions de l'IA…",
   "content.audioHighDynamics": "Dynamique élevée",
@@ -111,6 +113,12 @@
   "content.watchAgain": "À revoir",
   "content.watched": "Vu",
   "content.watchedEmpty": "Vous n'avez encore rien marqué comme vu.",
+  "content.maturity0": "Tous publics",
+  "content.maturity10": "10+",
+  "content.maturity13": "13+",
+  "content.maturity16": "16+",
+  "content.maturity18": "18+",
+  "content.maturity7": "7+",
   "content.watchedEmptyHint": "Marquez un titre comme vu depuis sa fiche ou son affiche : il apparaîtra ici.",
   "content.withPerson": "Avec {name}"
 }

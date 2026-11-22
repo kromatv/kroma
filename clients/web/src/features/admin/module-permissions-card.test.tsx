@@ -3,7 +3,7 @@ import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import type { PermissionSource } from '#web/features/admin/module-permissions';
+import type { PermissionSource } from '#web/shared/lib/module-permissions';
 import { SecurityCard } from '#web/features/admin/module-permissions-card.component';
 import { PermissionsSheet } from '#web/features/admin/module-permissions-sheet.component';
 

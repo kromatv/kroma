@@ -13,6 +13,7 @@ const member = {
   emailVerified: false,
   hasPin: false,
   resetRequested: false,
+  kids: false,
 };
 
 describe('an account on the member list', () => {

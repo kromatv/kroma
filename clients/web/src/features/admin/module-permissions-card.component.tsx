@@ -4,7 +4,7 @@ import {
   permissionGroups,
   type PermissionSource,
   tileGroups,
-} from '#web/features/admin/module-permissions';
+} from '#web/shared/lib/module-permissions';
 import { PermissionsSheet } from '#web/features/admin/module-permissions-sheet.component';
 import { PermissionTiles } from '#web/features/admin/module-permissions-tiles.component';
 import { ModuleVerdict } from '#web/features/admin/module-permissions-verdict.component';

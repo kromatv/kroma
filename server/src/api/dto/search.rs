@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::model::{show_card, MediaCard, MediaItem, Show};
+use crate::model::{show_card, MediaCard, MediaItem, Metadata, Show};
 
 /// One ranked result of `GET /api/search` a `type`-tagged union so the client
 /// can switch on it (`movie`/`episode` carry a `MediaItem`, `show` a `Show`).
@@ -24,6 +24,15 @@ impl SearchHit {
             Self::Movie { item } | Self::Episode { item } => &item.id,
             Self::MovieCard { item } | Self::EpisodeCard { item } => &item.id,
             Self::Show { show } => &show.id,
+        }
+    }
+
+    /// The metadata a full hit carries; a card's is already cut down.
+    pub fn metadata_mut(&mut self) -> Option<&mut Metadata> {
+        match self {
+            Self::Movie { item } | Self::Episode { item } => item.metadata.as_mut(),
+            Self::Show { show } => show.metadata.as_mut(),
+            Self::MovieCard { .. } | Self::EpisodeCard { .. } => None,
         }
     }
 

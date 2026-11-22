@@ -12,10 +12,9 @@ use axum::Json;
 use serde::Serialize;
 
 use crate::api::error::json_error;
-use crate::api::extract::AuthUser;
 use crate::api::media_ticket::MediaViewer;
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::boot::transcriber::TranscriberClient;
 use crate::db;
 use crate::services::settings;
@@ -105,10 +104,10 @@ pub(super) fn transcriber_available(state: &SharedState) -> bool {
 /// `GET /api/items/:id/subtitles/downloaded` → this item's generated subtitles.
 pub async fn list(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let item = id.clone();
@@ -132,10 +131,10 @@ pub async fn list(
 /// (DB row + cached WebVTT file).
 pub async fn delete_downloaded(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path((id, dl)): Path<(String, String)>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let dl_id = dl.trim_end_matches(".vtt").to_string();
@@ -167,7 +166,7 @@ pub async fn file(
     MediaViewer(viewer): MediaViewer,
     Path((id, dl)): Path<(String, String)>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let dl_id = dl.trim_end_matches(".vtt").to_string();

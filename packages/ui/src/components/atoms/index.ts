@@ -1,5 +1,7 @@
 // The kit's atoms: each owns one visual idea and knows tokens and focus, not the app.
 
+export type { AgeRatingProps, AgeRatingValue } from './age-rating';
+export { AgeRating, ageRatingVariants } from './age-rating';
 export type { ArtScrimProps, ArtScrimVariant } from './art-scrim';
 export { ArtScrim, CARD_SCRIM, POSTER_SCRIM } from './art-scrim';
 export type { AvatarProps } from './avatar';
@@ -43,6 +45,8 @@ export type { ImgProps } from './img';
 export { IMG_FADE_MS, Img } from './img';
 export type { KbdProps } from './kbd';
 export { Kbd } from './kbd';
+export type { KidsMarkProps } from './kids-mark';
+export { KidsMark } from './kids-mark';
 export type { LogoProps } from './logo';
 export { Logo } from './logo';
 export type { NumberFieldProps } from './number-field';

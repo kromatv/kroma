@@ -7,6 +7,7 @@
 //! record, so bringing the same row twice must leave one copy.
 
 mod found;
+mod clock;
 mod identities;
 mod libraries;
 mod plays;
@@ -17,6 +18,7 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
+use crate::db::imports::Merged;
 use crate::model::import::{Library, Play, Title, User, WatchState};
 use crate::model::imports::{Import, KeptLibrary, KeptUser};
 use crate::state::SharedState;
@@ -41,6 +43,14 @@ pub(crate) enum Outcome {
     Unmatched,
     SharesFiles { with: String },
     Untouched,
+}
+
+fn outcome_of(merged: Merged) -> Outcome {
+    match merged {
+        Merged::Changed => Outcome::Brought { target: None },
+        Merged::Unchanged => Outcome::AlreadyHere,
+        Merged::Gone => Outcome::Untouched,
+    }
 }
 
 /// The import a stage works for. `server_id` is the key of the other server in
@@ -142,8 +152,4 @@ impl Stages for Core {
     fn plays(&self, importing: &Importing<'_>, page: &[PlayRow<'_>]) -> Result<Vec<Outcome>> {
         plays::add(importing, page)
     }
-}
-
-fn untouched(rows: usize) -> Vec<Outcome> {
-    vec![Outcome::Untouched; rows]
 }

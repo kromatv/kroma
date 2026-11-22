@@ -143,6 +143,11 @@ will actually do, before committing. Registry precedence, https requirements, sh
 duplicate ids and the empty-catalogue-is-a-failure rule are specified in
 [`../module-registries.md`](../../module-registries.md).
 
+**MOD-108** (SHIPPED) - A module names and describes itself, and says in one sentence what it
+does for a household, in English and in each other language it chooses to speak. The Store and
+the guided setup show those words in the reader's language, and in English where the module
+gives none. A module that gives no sentence still installs and runs.
+
 ### The newest version that runs here
 
 Status: **SHIPPED**, from [RFC 627](../../rfcs/627-version-compatibility.md).
@@ -396,6 +401,10 @@ other server changes on its own schedule.
 **MOD-103** (AGREED) - Each importer is a module, one per kind of server, and a server that
 never imports carries none. The guided setup and the admin console install the one the owner
 chose from the official registry.
+
+**MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do,
+on the screen the Store shows before any install. Nothing is fetched until the owner accepts,
+and the install is held to what that screen showed.
 
 **MOD-104** (AGREED) - The servers KROMA can import from are the importers the official
 registry lists. A new importer appears in the choice without a server release.

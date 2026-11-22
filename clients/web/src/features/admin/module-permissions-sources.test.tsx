@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { AdminModule } from '#web/features/admin/module-api';
-import { permissionGroups, type PermissionSource } from '#web/features/admin/module-permissions';
+import { permissionGroups, type PermissionSource } from '#web/shared/lib/module-permissions';
 import {
   addedAccess,
   consentOf,
-  declaredSource,
   installedSource,
 } from '#web/features/admin/module-permissions-sources';
-import { englishT } from '#web/features/admin/module-permissions.fixture';
+import { declaredSource } from '#web/shared/lib/module-permissions-declared';
+import { englishT } from '#web/shared/lib/module-permissions.fixture';
 
 const t = englishT();
 

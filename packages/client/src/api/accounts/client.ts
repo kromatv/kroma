@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
 import { adoptMediaTicket } from '../../core/http';
 import type { InviteToken, SessionId } from './ids';
+import { kidsApi } from './kids';
+import { ratingsApi } from './maturity';
 import { passkeysApi } from './passkeys';
 import { quickConnectApi } from './quick-connect';
 import {
@@ -11,6 +13,7 @@ import {
   Invite,
   InviteCheck,
   InviteCreated,
+  InviteMailed,
   type Permission,
   PublicUser,
   ResetCheck,
@@ -25,8 +28,10 @@ const AvatarUploaded = z.object({ avatarUrl: z.string() });
 /** Accounts, sessions, invitations and profile/PIN. */
 export default function accountsApi(ctx: RequestContext) {
   return {
+    kids: kidsApi(ctx),
     passkeys: passkeysApi(ctx),
     quickConnect: quickConnectApi(ctx),
+    ratings: ratingsApi(ctx),
 
     /** Create an account and open a session. After the first (owner) account,
      * `inviteToken` is required registration is invite-only. Does NOT set the
@@ -161,6 +166,14 @@ export default function accountsApi(ctx: RequestContext) {
 
     /** Revoke an invite (requires `users.manage`). */
     revokeInvite: (token: InviteToken) => ctx.delete('/invites/:token', { params: { token } }),
+
+    /** Send one invitation to one address, written in `locale` or else in the
+     * caller's own language (requires `users.manage`). Throws `KromaApiError`
+     * 400 for an address that is not one, 404 for an unknown invitation, 409
+     * for one spent or expired, and 502 when the mail could not leave. The
+     * invitation never changes. */
+    mailInvite: (token: InviteToken, mail: { to: string; locale?: string }) =>
+      ctx.post('/invites/:token/mail', InviteMailed, { params: { token }, body: mail }),
   };
 }
 

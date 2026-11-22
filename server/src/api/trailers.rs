@@ -17,13 +17,13 @@ use kroma_media::stream::stream_file;
 use kroma_module_host::pinned_resolver;
 
 use crate::api::error::{json_error, lerr};
-use crate::api::extract::AuthUser;
 use crate::api::media_ticket::MediaViewer;
 use crate::api::util::blocking;
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::i18n::{self, AskedLocale};
 use crate::infra::metadata::{title_videos, Target};
 use crate::infra::metrics::ByteSink;
-use crate::model::{rank_trailers, Trailer, User};
+use crate::model::{rank_trailers, RequestKind, Trailer, User};
 use crate::services::settings;
 use crate::services::trailers::{spoken_language, Preparation, Trailers, POINT};
 use crate::state::SharedState;
@@ -75,6 +75,14 @@ fn ranked(state: &SharedState, target: Target, tmdb_id: u64, viewer: &str) -> Ve
         .unwrap_or_default()
 }
 
+fn title_of(target: Target, tmdb_id: u64) -> Title<'static> {
+    let kind = match target {
+        Target::Movie => RequestKind::Movie,
+        Target::Tv => RequestKind::Show,
+    };
+    Title::Tmdb(kind, tmdb_id)
+}
+
 fn title_key(target: Target, tmdb_id: u64) -> String {
     match target {
         Target::Movie => format!("movie:{tmdb_id}"),
@@ -91,11 +99,12 @@ fn cache(state: &SharedState) -> Option<Arc<Trailers>> {
 pub async fn list(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
-    AuthUser(user): AuthUser,
+    AuthViewer(asker): AuthViewer,
     Path((kind, tmdb_id)): Path<(String, u64)>,
 ) -> Result<Json<TrailerList>, Response> {
     let target = target_of(&kind)?;
-    let viewer = viewer_language(&state, &user, reader);
+    visibility::gate(&state, &asker, title_of(target, tmdb_id)).await?;
+    let viewer = viewer_language(&state, &asker.user, reader);
     let playable =
         cache(&state).is_some() && pinned_resolver(state.as_ref(), POINT, None).is_some();
     let trailers = blocking({
@@ -117,10 +126,12 @@ pub async fn list(
 pub async fn prepare(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
-    AuthUser(user): AuthUser,
+    AuthViewer(asker): AuthViewer,
     Path((kind, tmdb_id, video)): Path<(String, u64, String)>,
 ) -> Result<Json<Preparation>, Response> {
     let target = target_of(&kind)?;
+    visibility::gate(&state, &asker, title_of(target, tmdb_id)).await?;
+    let user = asker.user;
     let locale = i18n::user_locale(&user);
     let resolve = crate::api::point::require(&state, &user, POINT)?;
     let cache =
@@ -147,14 +158,24 @@ pub async fn prepare(
 /// with `Range`, for a player that carries the media ticket in its URL.
 pub async fn stream(
     State(state): State<SharedState>,
-    MediaViewer(_viewer): MediaViewer,
+    MediaViewer(asker): MediaViewer,
     headers: HeaderMap,
-    Path((kind, _tmdb_id, video)): Path<(String, u64, String)>,
+    Path((kind, tmdb_id, video)): Path<(String, u64, String)>,
 ) -> Response {
-    if let Err(refused) = target_of(&kind) {
+    let target = match target_of(&kind) {
+        Ok(target) => target,
+        Err(refused) => return refused,
+    };
+    if let Err(refused) = visibility::gate(&state, &asker, title_of(target, tmdb_id)).await {
         return refused;
     }
-    match cache(&state).and_then(|cache| cache.file(&video)) {
+    let offered = |cache: &Arc<Trailers>| {
+        !asker.is_held() || cache.offered(&title_key(target, tmdb_id), &video)
+    };
+    match cache(&state)
+        .filter(offered)
+        .and_then(|cache| cache.file(&video))
+    {
         Some(path) => stream_file(&path, &headers, ByteSink::none()).await,
         None => json_error(StatusCode::NOT_FOUND, "this trailer has not been prepared"),
     }

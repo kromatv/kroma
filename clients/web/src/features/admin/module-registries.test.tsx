@@ -35,6 +35,7 @@ function runtimeListing(registries: StoreRegistry[]): WebRuntime {
     registryUrl: registries[0]?.url ?? '',
     registries,
     modules: [],
+    setup: [],
   });
   return runtime;
 }

@@ -17,6 +17,15 @@ pub(super) fn entry(id: &str, title: &str, rating: f32, director: &str) -> Catal
     }
 }
 
+fn director(name: &str) -> crate::model::CrewMember {
+    crate::model::CrewMember {
+        name: name.to_string(),
+        tmdb_id: None,
+        job: "Director".to_string(),
+        profile_url: None,
+    }
+}
+
 pub(super) fn meta(rating: f32, genres: &[&str], directors: &[&str]) -> crate::model::Metadata {
     crate::model::Metadata {
         provider: "tmdb",
@@ -35,18 +44,12 @@ pub(super) fn meta(rating: f32, genres: &[&str], directors: &[&str]) -> crate::m
         logo_url: None,
         theme_url: None,
         cast: Vec::new(),
-        crew: directors
-            .iter()
-            .map(|d| crate::model::CrewMember {
-                name: d.to_string(),
-                tmdb_id: None,
-                job: "Director".to_string(),
-                profile_url: None,
-            })
-            .collect(),
+        crew: directors.iter().copied().map(director).collect(),
         keywords: Vec::new(),
         tvdb_id: None,
         tmdb_url: String::new(),
+        ratings: Default::default(),
+        age_rating: None,
     }
 }
 

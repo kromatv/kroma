@@ -64,6 +64,10 @@ pub(super) async fn module_proxy(
     }
 }
 
+fn module_routes() -> Router<SharedState> {
+    Router::new().route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
+}
+
 /// Build the application router: `/api` route groups (public + session-gated),
 /// the module reverse proxy, static module/SPA assets, then CORS, compression
 /// and tracing layers. The host callbacks are on the core's own socket only
@@ -73,7 +77,7 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
     // outside the blanket content layer.
     let api = public_routes(&state)
         .merge(content_routes(&state))
-        .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
+        .merge(accounts::kept_from_kids(&state, module_routes()))
         .nest("/admin", admin::routes(state.clone()))
         .layer(from_fn_with_state(state.clone(), remote_art::serve_art))
         .layer(Extension(supervisor));
@@ -154,11 +158,11 @@ fn content_routes(state: &SharedState) -> Router<SharedState> {
         .merge(playback::routes())
         .merge(cast::routes())
         .merge(handoff::routes())
-        .merge(discover::routes())
+        .merge(accounts::kept_from_kids(state, discover::routes()))
         .merge(trailers::routes())
         .merge(rematch::routes())
-        .merge(monitoring::routes())
-        .merge(requests::routes())
+        .merge(accounts::kept_from_kids(state, monitoring::routes()))
+        .merge(accounts::kept_from_kids(state, requests::routes()))
         .merge(reports::routes())
         .merge(notifications::routes())
         .merge(releases::routes())

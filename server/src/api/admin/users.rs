@@ -3,7 +3,9 @@
 //! reset and verification links the owner mints live in `users/links.rs`, with
 //! the invitation of an account that waits.
 
+mod kids;
 pub(super) mod links;
+mod restrictions;
 
 use std::collections::BTreeSet;
 
@@ -27,7 +29,8 @@ use axum::Router;
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/users", get(list_users))
-        .route("/users/{id}", patch(update_user).delete(delete_user))
+        .route("/users/{id}", patch(kids::update_member).delete(delete_user))
+        .route("/kids", post(kids::create))
         .route("/users/{id}/reset", post(links::reset_user))
         .route("/users/{id}/invitation", post(links::invite_user))
         .route(
@@ -35,6 +38,15 @@ pub fn routes() -> Router<SharedState> {
             post(links::send_email_verification),
         )
         .route("/users/{id}/pin", axum::routing::delete(clear_user_pin))
+        .route("/users/{id}/restrictions", get(restrictions::restrictions))
+        .route(
+            "/users/{id}/restrictions/level",
+            axum::routing::put(restrictions::set_level),
+        )
+        .route(
+            "/users/{id}/restrictions/titles/{title}",
+            axum::routing::put(restrictions::set_title_rule),
+        )
 }
 
 async fn target_or_404(state: &SharedState, user: &User, id: &str) -> Result<User, Response> {
@@ -56,15 +68,17 @@ async fn target_that_does_not_wait(
     id: &str,
 ) -> Result<User, Response> {
     let target = target_or_404(state, user, id).await?;
-    let waiting = id.to_string();
-    if query(&state.db, move |pool| db::account_waits(&pool, &waiting)).await? {
-        return Err(lerr(
-            super::user_locale(user),
-            StatusCode::CONFLICT,
-            "admin.accountWaiting",
-        ));
-    }
-    Ok(target)
+    let named = id.to_string();
+    let (waits, kids) = query(&state.db, move |pool| {
+        Ok((db::account_waits(&pool, &named)?, db::is_kids_profile(&pool, &named)?))
+    })
+    .await?;
+    let refusal = match (waits, kids) {
+        (true, _) => "admin.accountWaiting",
+        (false, true) => "admin.kidsNoCredential",
+        (false, false) => return Ok(target),
+    };
+    Err(lerr(super::user_locale(user), StatusCode::CONFLICT, refusal))
 }
 
 /// `GET /api/admin/users` → full member list (the "Membres & partage" table).

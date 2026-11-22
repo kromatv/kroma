@@ -199,7 +199,7 @@ person as well as with their titles.
 library the asker cannot see takes no place in the results, and a person is counted only over
 the titles the asker may see.
 
-**BROWSE-62** (AGREED) - The home, search and a person's page obey the viewer's maturity
+**BROWSE-62** (SHIPPED) - The home, search and a person's page obey the viewer's maturity
 ceiling and the titles an admin blocked or allowed for them
 ([`accounts/kids.md`](../accounts/kids.md)) as they obey visibility: a title kept from the
 viewer takes no place, and a person is counted only over the titles left.
@@ -245,7 +245,7 @@ best known first.
 the library does not hold, each leading to where it can be requested. The web client does
 this; the television and mobile clients list the library titles only.
 
-**BROWSE-63** (AGREED) - Under a maturity ceiling, a person's page lists only the titles the
+**BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
 library holds. The server knows no rating for the rest, so they count as unrated.
 
 **BROWSE-51** (SHIPPED) - A guest spot as oneself on a talk show is not part of a filmography.

@@ -1,11 +1,13 @@
 // Shared domain logic, and only that: the client, the transport and the session
 // are `@kromatv/client`, a domain's schemas are `@kromatv/client/<domain>`, and what
 // is here is what neither of those owns - the rules built on top of them.
+export * from './age-rating';
 export * from './airdate';
 export * from './auth';
 export * from './browse';
 export * from './cast';
 export * from './compat';
+export * from './country-name';
 export * from './direct';
 export * from './discover';
 export * from './format';
@@ -20,6 +22,7 @@ export * from './lang';
 export * from './lang-labels';
 export * from './master-fetch';
 export * from './match';
+export * from './module-words';
 export * from './notification-labels';
 export * from './notification-prefs';
 export * from './people';

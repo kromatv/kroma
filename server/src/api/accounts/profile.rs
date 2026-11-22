@@ -8,6 +8,7 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
+use super::AuthMember;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::util::{blocking, query};
@@ -60,6 +61,9 @@ pub async fn update_me(
     AuthUser(mut user): AuthUser,
     Json(body): Json<UpdateMeBody>,
 ) -> Response {
+    if let Err(refused) = super::kids::refuse_kids_identity(&state, &user, &body).await {
+        return refused;
+    }
     if let Err(resp) = apply_username(&state, loc, &mut user, body.username).await {
         return resp;
     }
@@ -216,7 +220,7 @@ async fn apply_subtitle_language(
 pub async fn upload_avatar(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     body: Bytes,
 ) -> Response {
     if body.is_empty() {

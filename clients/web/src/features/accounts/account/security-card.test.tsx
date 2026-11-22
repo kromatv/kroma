@@ -124,4 +124,18 @@ describe('the profile lock card', () => {
 
     expect(screen.getByText('Enter your current PIN')).toBeTruthy();
   });
+
+  it('opens the new PIN dialog at once when the page is asked to', () => {
+    render(<PinCard asked />, { wrapper: Providers });
+
+    expect(screen.getByText('Choose a 4-digit PIN')).toBeTruthy();
+  });
+
+  it('opens nothing when asked on a profile that already has a PIN', () => {
+    auth.user = { id: 'u1', hasPin: true };
+
+    render(<PinCard asked />, { wrapper: Providers });
+
+    expect(screen.queryByText('Choose a 4-digit PIN')).toBeNull();
+  });
 });

@@ -8,9 +8,8 @@ use axum::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::api::error::json_error;
-use crate::api::extract::AuthUser;
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::services::settings;
 use crate::services::subtitles::{self, GenMode, GenSpec, Quality};
@@ -47,11 +46,11 @@ struct GenStarted {
 /// its `genId`. The work runs on a blocking thread; poll `generations` for progress.
 pub async fn generate(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(id): Path<String>,
     Json(req): Json<GenerateReq>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let item = match query(&state.db, {
@@ -259,10 +258,10 @@ async fn resolve_source(
 /// `GET /api/items/:id/subtitles/generations` → live + recently-finished generations.
 pub async fn generations(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     Json(state.subtitle_gen.views_for(&id)).into_response()
@@ -271,10 +270,10 @@ pub async fn generations(
 /// `DELETE /api/items/:id/subtitles/generations/:gen` → request cancellation.
 pub async fn cancel_generation(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path((id, gen)): Path<(String, String)>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let belongs = state

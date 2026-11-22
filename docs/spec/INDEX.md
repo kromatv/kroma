@@ -3,7 +3,7 @@
 
 # Requirement index
 
-776 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+788 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -106,47 +106,52 @@
 - **ACCT-97** (SHIPPED) - The person may correct the account's name and address when they <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-98** (SHIPPED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-101** (AGREED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-102** (AGREED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-103** (AGREED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-104** (AGREED) - Every account has a ratings country. It starts as the server's <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-100** (SHIPPED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-101** (SHIPPED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-102** (SHIPPED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-103** (SHIPPED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-104** (SHIPPED) - Every account has a ratings country. It starts as the server's <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-106** (AGREED) - A title that country never rated borrows another country's label, <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-107** (AGREED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-108** (AGREED) - The badge is on a title's detail page, on the home's hero and on <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-109** (AGREED) - Every profile carries one of the six levels. 18+ is the default, and <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-110** (AGREED) - A ceiling compares ages, never labels. A title passes when the age <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-111** (AGREED) - Under a ceiling, a title with no rating does not pass. A title the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-112** (AGREED) - A title that does not pass is absent for that profile from browse, <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-113** (AGREED) - A title that does not pass is refused by its id on every route that <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-114** (AGREED) - A changed ceiling bites on the profile's next request, on every <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-115** (AGREED) - Only an admin sets a profile's ceiling. No profile can change its <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-116** (AGREED) - An admin confirms their own password before changing a ceiling, as <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-117** (AGREED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-118** (AGREED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-119** (AGREED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-120** (AGREED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-121** (AGREED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-107** (SHIPPED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-108** (SHIPPED) - The badge is on a title's detail page, on the home's hero and on <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-109** (SHIPPED) - Every profile carries one of the six levels. 18+ is the default, and <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-110** (SHIPPED) - A ceiling compares ages, never labels. A title passes when the age <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-111** (SHIPPED) - Under a ceiling, a title with no rating does not pass. A title the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-112** (SHIPPED) - A title that does not pass is absent for that profile from browse, <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-113** (SHIPPED) - A title that does not pass is refused by its id on every route that <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-114** (SHIPPED) - A changed ceiling bites on the profile's next request, on every <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-115** (SHIPPED) - Only an admin sets a profile's ceiling. No profile can change its <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-116** (SHIPPED) - An admin confirms their own password before changing a ceiling, as <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-117** (SHIPPED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-118** (SHIPPED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-119** (SHIPPED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-120** (SHIPPED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-121** (SHIPPED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-123** (AGREED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-124** (AGREED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-125** (AGREED) - Nobody can sign in to a Kids profile, by any means, as nobody can <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-126** (AGREED) - A device on which a member of this server is signed in lists the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-127** (AGREED) - The owner's account can never be a Kids profile, and a Kids profile <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-128** (AGREED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-123** (SHIPPED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-124** (SHIPPED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-125** (SHIPPED) - Nobody can sign in to a Kids profile, by any means, as nobody can <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-126** (SHIPPED) - A device on which a member of this server is signed in lists the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-127** (SHIPPED) - The owner's account can never be a Kids profile, and a Kids profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-128** (SHIPPED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-130** (AGREED) - A Kids profile whose ceiling an admin raises above 10+ loses the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-131** (AGREED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-132** (AGREED) - The picker draws a lock on every profile that asks for a PIN, on <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-133** (AGREED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-134** (AGREED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-135** (AGREED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests and no account <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-138** (AGREED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-130** (SHIPPED) - A Kids profile whose ceiling an admin raises above 10+ loses the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-131** (SHIPPED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-132** (SHIPPED) - The picker draws a lock on every profile that asks for a PIN, on <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-133** (SHIPPED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-134** (SHIPPED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-135** (SHIPPED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-141** (SHIPPED) - The member list tells a waiting account apart from one its person <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-151** (SHIPPED) - A ceiling, a block and an allow bind only a profile with no <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-153** (AGREED) - A push notification about a title the profile may not see is not <sub>[kids.md](accounts/kids.md)</sub>
 
 ## ADMIN - [admin](admin/)
 
@@ -258,9 +263,9 @@
 - **ADMIN-106** (AGREED) - The server proposes a kind for each folder from what the folder <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-107** (AGREED) - The scan starts when the owner confirms the media step, and keeps <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-108** (AGREED) - A source the server already has when the setup starts appears on <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-109** (AGREED) - On the modules step each module is offered by what it does for the <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-110** (AGREED) - Which modules the setup offers, and in what order, comes from the <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-111** (AGREED) - Each offer shows the module's size, the permissions it asks for and <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-109** (SHIPPED) - On the modules step each module is offered by what it does for the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-110** (SHIPPED) - Which modules the setup offers, and in what order, comes from the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-111** (SHIPPED) - Each offer shows the module's size, the permissions it asks for and <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-112** (AGREED) - No module is selected by default. <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-113** (AGREED) - A selection is only a selection until the owner leaves the setup, at <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-114** (AGREED) - On the people step the owner creates invitations, under the rule of <sub>[setup.md](admin/setup.md)</sub>
@@ -320,20 +325,25 @@
 - **ADMIN-170** (AGREED) - Removing the importer forgets the sign-in to the other server <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-171** (AGREED) - An import after the importer was removed installs it again and asks <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-172** (AGREED) - The second screen asks one choice: start fresh, or bring another <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-173** (AGREED) - The words that offer a module are the module's own, in each language <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-173** (SHIPPED) - The words that offer a module are the module's own, in each language <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-174** (AGREED) - A module the server already holds appears on the modules step as <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-175** (AGREED) - An invitation says what its account may do. A new one lets its <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-176** (AGREED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-176** (SHIPPED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-177** (AGREED) - The owner deletes an invitation on the people step, and its link <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-178** (AGREED) - The owner opens any step they have been to, from any other step, in <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-182** (AGREED) - A kept library whose folder holds a folder of a KROMA source is not <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-183** (SHIPPED) - The server sends an invitation to the one address the owner types, <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-184** (SHIPPED) - The owner learns how the message left, or why it did not and what <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-185** (SHIPPED) - Under Users, every invitation nobody has redeemed offers to send it, <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-188** (AGREED) - A restore that is not a reset adds what the backup holds and removes <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-189** (AGREED) - A restore that is a reset puts the backup's sources in place of the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
@@ -398,8 +408,8 @@
 - **BROWSE-59** (SHIPPED) - A synopsis shown on the home is cut by sentence, never by the box:
 - **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
 - **BROWSE-61** (SHIPPED) - While a scan runs, the home gains each title as the scan matches it,
-- **BROWSE-62** (AGREED) - The home, search and a person's page obey the viewer's maturity
-- **BROWSE-63** (AGREED) - Under a maturity ceiling, a person's page lists only the titles the
+- **BROWSE-62** (SHIPPED) - The home, search and a person's page obey the viewer's maturity
+- **BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
 
 ## DISC - [discovery](discovery/)
 
@@ -679,6 +689,8 @@
 - **MOD-105** (AGREED) - An importer reads the other server and describes what it found. The <sub>[README.md](modules/README.md)</sub>
 - **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
 - **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
+- **MOD-108** (SHIPPED) - A module names and describes itself, and says in one sentence what it <sub>[README.md](modules/README.md)</sub>
+- **MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do, <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 

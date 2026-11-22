@@ -7,7 +7,7 @@ use kroma_media::Credential;
 
 use crate::api::error::json_error;
 use crate::api::media_ticket::{MediaViewer, TicketQuery};
-use crate::api::visibility;
+use crate::api::visibility::{self, Title};
 use crate::state::SharedState;
 
 pub(super) fn valid_source(source: &str) -> bool {
@@ -74,7 +74,7 @@ pub(super) async fn rendition(
     if !valid_source(&source) || duration == 0 {
         return json_error(StatusCode::BAD_REQUEST, "invalid subtitle rendition");
     }
-    if let Err(response) = visibility::gate_item(&state, &viewer, &id).await {
+    if let Err(response) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return response;
     }
     match file.as_str() {

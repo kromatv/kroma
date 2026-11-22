@@ -1,6 +1,7 @@
 import {
   Contribution,
   Helpers,
+  ModuleTranslations,
   Permissions,
   PointReq,
   SettingsScope,
@@ -52,6 +53,10 @@ export const StoreModule = DeclaredAccess.extend({
   name: z.string(),
   version: z.string(),
   description: z.string(),
+  /** One sentence, in English, that says what the module does for a household. */
+  tagline: z.string().nullish(),
+  /** The module's words in each other language it speaks, by language. */
+  translations: ModuleTranslations.nullish().catch(null),
   library: z.boolean(),
   icon: z.string().nullish(),
   engines: z.record(z.string(), z.string()).default({}),
@@ -115,6 +120,8 @@ export const StoreCatalog = z.object({
   error: z.string().nullish(),
   registries: z.array(StoreRegistry),
   modules: z.array(StoreModule),
+  /** The modules the official registry offers the guided setup, in its order. */
+  setup: z.array(ModuleId).default([]),
 });
 export type StoreCatalog = z.infer<typeof StoreCatalog>;
 

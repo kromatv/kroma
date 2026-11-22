@@ -1,27 +1,14 @@
 import type { Invite, InviteCreated, InviteToken, Permission } from '@kromatv/client/accounts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { invitationLink } from '#web/shared/lib/invitation-link';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const INVITES = ['setup', 'invites'] as const;
 
-/** The address a person opens to redeem an invitation. */
-export function invitationLink(
-  invite: { url: string | null; token: string },
-  origin: string,
-): string {
-  return invite.url ?? `${origin}/join?invite=${invite.token}`;
-}
-
 /** The invitations nobody has redeemed yet. */
 export function openInvitations(invites: readonly Invite[]): Invite[] {
   return invites.filter((invite) => !invite.used);
-}
-
-/** The address that opens the owner's mail program on a message that carries
- * an invitation. */
-export function invitationMail(words: { subject: string; body: string }): string {
-  return `mailto:?subject=${encodeURIComponent(words.subject)}&body=${encodeURIComponent(words.body)}`;
 }
 
 function useCreatedLinks() {
@@ -29,10 +16,7 @@ function useCreatedLinks() {
   const keep = (created: InviteCreated) =>
     setUrls((before) => ({ ...before, [created.token]: created.url }));
   const linkOf = (invite: Invite) =>
-    invitationLink(
-      { url: urls[invite.token] ?? null, token: invite.token },
-      window.location.origin,
-    );
+    invitationLink({ url: urls[invite.token] ?? null, token: invite.token });
   return { keep, linkOf };
 }
 

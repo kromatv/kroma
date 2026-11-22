@@ -15,6 +15,7 @@ import { WhatsNewLink } from '#web/features/catalog/whats-new-link.component';
 import { useModuleNav } from '#web/modules/module-host-provider.component';
 import { resolveModuleIcon } from '#web/modules/module-icons';
 import { useAuth } from '#web/shared/lib/auth';
+import { useKidsSession } from '#web/shared/lib/use-kids-session.hook';
 import { useNavActions } from '#web/shared/ui/nav-actions';
 import { NavMenuButton } from '#web/shared/ui/nav-menu-button.component';
 import { SideNav } from '#web/shared/ui/side-nav.component';
@@ -68,6 +69,7 @@ const sDefinition = styles({
 
 export function Sidebar() {
   const s = useStyles(sDefinition);
+  const kids = useKidsSession();
 
   const step = useBreakpoint();
   if (step !== 'lg' && step !== 'tv') {
@@ -76,7 +78,7 @@ export function Sidebar() {
   return (
     <aside className={classes(s.sidebar)}>
       <SideNav.Header>
-        <Logo size={24} />
+        <Logo size={24} kids={kids} />
       </SideNav.Header>
       <SidebarBody />
     </aside>
@@ -115,14 +117,7 @@ function SidebarNav() {
       </SideNav.Group>
       <SideNav.Footer>
         <ServerUpdateNotice />
-        <SideNav.Group label={t('nav.more')}>
-          <InviteLink />
-          <SideNav.Item to="/connect" icon="device-desktop">
-            <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
-          </SideNav.Item>
-          <AdminLink />
-          <WhatsNewLink />
-        </SideNav.Group>
+        <MoreLinks />
         <Box style={s.accountArea}>
           <UserChip />
           <Box px={4} pt={6}>
@@ -138,6 +133,7 @@ export function MobileTopbar() {
   const s = useStyles(sDefinition);
 
   const actions = useNavActions();
+  const kids = useKidsSession();
   const [open, setOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const step = useBreakpoint();
@@ -154,7 +150,7 @@ export function MobileTopbar() {
       <Box row align="center" gap={8}>
         <NavMenuButton open={open} onPress={() => setOpen(true)} />
         <Link to="/" aria-label="KROMA" className={classes(s.logoLink)}>
-          <Logo size={20} />
+          <Logo size={20} kids={kids} />
         </Link>
         <Drawer.Root
           open={open}
@@ -169,7 +165,7 @@ export function MobileTopbar() {
           <Drawer.Header style={s.drawerHead}>
             <Row between>
               <Box px={8} pb={8}>
-                <Logo size={24} />
+                <Logo size={24} kids={kids} />
               </Box>
               <Drawer.Close variant="glass" diameter={40} glyph={20} radius="md" />
             </Row>
@@ -184,6 +180,23 @@ export function MobileTopbar() {
         {actions}
       </Box>
     </header>
+  );
+}
+
+function MoreLinks() {
+  const t = useT();
+  if (useKidsSession()) {
+    return null;
+  }
+  return (
+    <SideNav.Group label={t('nav.more')}>
+      <InviteLink />
+      <SideNav.Item to="/connect" icon="device-desktop">
+        <SideNav.Label>{t('nav.connectDevice')}</SideNav.Label>
+      </SideNav.Item>
+      <AdminLink />
+      <WhatsNewLink />
+    </SideNav.Group>
   );
 }
 

@@ -15,7 +15,8 @@ const Compare = z.object({ files: FileList.default([]) });
 
 type Changed = string[] | 'all';
 
-async function api(repo: Repo, path: string): Promise<unknown> {
+/** One GET on the repository's REST API, retried on a 429 or a 5xx. */
+export async function githubGet(repo: Repo, path: string): Promise<unknown> {
   const headers: Record<string, string> = {
     accept: 'application/vnd.github+json',
     'user-agent': 'kroma-ci-tools',
@@ -62,7 +63,7 @@ async function paged(
 ): Promise<Changed> {
   const files: string[] = [];
   for (let page = 1; page <= MAX_PAGES; page++) {
-    const batch = read(await api(repo, `${path}per_page=${PER_PAGE}&page=${page}`));
+    const batch = read(await githubGet(repo, `${path}per_page=${PER_PAGE}&page=${page}`));
     files.push(...batch);
     if (batch.length < PER_PAGE) {
       return files;
