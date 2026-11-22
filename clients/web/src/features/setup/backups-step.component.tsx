@@ -1,7 +1,7 @@
 import { apiErrorText } from '@kromatv/client';
 import { useT } from '@kromatv/ui';
 import { GuidedFlow, ListRow, Switch } from '@kromatv/ui/kit';
-import { StepFailure } from '#web/features/setup/step-failure.component';
+import { StepFailure } from '#web/shared/ui/step-failure.component';
 import { useBackupsAnswer } from '#web/features/setup/use-backups-answer.hook';
 import type { Refusal } from '#web/shared/lib/use-backup-schedule.hook';
 
