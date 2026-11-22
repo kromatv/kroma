@@ -245,8 +245,9 @@ mod tests {
 
         let bytes = std::fs::read(&saved.file).unwrap();
         let target = test_state();
+        let plan = super::super::Plan::for_server(&target.settings, &target.config, false);
         assert!(
-            super::super::import(&target.db, &target.config.data_dir, &bytes, None, false).is_ok()
+            super::super::import(&target.db, &target.config.data_dir, &bytes, None, &plan).is_ok()
         );
     }
 
