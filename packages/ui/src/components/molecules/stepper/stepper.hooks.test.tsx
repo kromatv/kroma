@@ -55,7 +55,7 @@ describe('useStepper', () => {
       </Flow>,
     );
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
 
     expect(screen.getByText('2/3')).toBeTruthy();
   });
@@ -116,7 +116,7 @@ describe('useStepperItem', () => {
       </Flow>,
     );
 
-    fireEvent.click(screen.getByLabelText('Suivant'));
+    fireEvent.click(screen.getByLabelText('Next'));
     fireEvent.click(screen.getByLabelText('account 0 done'));
 
     expect(screen.getByText('Adresse')).toBeTruthy();

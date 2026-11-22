@@ -79,7 +79,7 @@ it('says once for every module what reaches past its isolation', () => {
   expect(screen.getByText('2 modules ont un accès étendu')).toBeTruthy();
   expect(screen.getByText(/^VPN lance wireproxy sur votre serveur/)).toBeTruthy();
   expect(screen.queryByText('Accès étendu')).toBeNull();
-  expect(screen.getByText('Aller sur Internet')).toBeTruthy();
+  expect(screen.getByText('Accéder à Internet')).toBeTruthy();
   expect(screen.getByText('Détail par module')).toBeTruthy();
 });
 
@@ -134,7 +134,7 @@ it('shows the account data a catalog row reaches before the module is installed'
 
   expect(screen.getByText('Lire les comptes')).toBeTruthy();
   expect(screen.getByText('Adresse e-mail')).toBeTruthy();
-  expect(screen.getByText('Lire la base du serveur')).toBeTruthy();
+  expect(screen.getByText('Lire la base de données du serveur')).toBeTruthy();
 });
 
 it('says less for a row from a catalog that predates storage and settings', () => {
@@ -142,7 +142,7 @@ it('says less for a row from a catalog that predates storage and settings', () =
 
   showOne(older);
 
-  expect(screen.getByText('Aller sur Internet')).toBeTruthy();
+  expect(screen.getByText('Accéder à Internet')).toBeTruthy();
   expect(screen.queryByText('Lire les comptes')).toBeNull();
 });
 
@@ -152,7 +152,7 @@ it('calls a row with no permissions block isolated, and still shows the storage 
   showOne(silent);
 
   expect(screen.getByText('Isolé')).toBeTruthy();
-  expect(screen.queryByText('Aller sur Internet')).toBeNull();
+  expect(screen.queryByText('Accéder à Internet')).toBeNull();
   expect(screen.getByText('Lire les comptes')).toBeTruthy();
 });
 

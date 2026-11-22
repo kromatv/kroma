@@ -90,3 +90,29 @@ function Composed() {
     </ChoiceList.Root>
   );
 }
+
+const SERVERS = [
+  { value: 'plex', label: 'Plex', hint: 'Installs before you sign in', icon: 'server' },
+  { value: 'jellyfin', label: 'Jellyfin', hint: 'Already installed', icon: 'server-2' },
+] as const;
+
+export function Cards() {
+  const [server, setServer] = useState<string | null>('plex');
+  return (
+    <ChoiceList.Root
+      size="md"
+      ground="surface"
+      label="Server"
+      value={server}
+      onValueChange={setServer}
+    >
+      {SERVERS.map((s) => (
+        <ChoiceList.Item key={s.value} value={s.value}>
+          <ChoiceList.Media name={s.icon} />
+          <ChoiceList.Label>{s.label}</ChoiceList.Label>
+          <ChoiceList.Hint>{s.hint}</ChoiceList.Hint>
+        </ChoiceList.Item>
+      ))}
+    </ChoiceList.Root>
+  );
+}

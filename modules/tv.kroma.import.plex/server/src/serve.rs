@@ -10,7 +10,7 @@ use crate::plex::Plex;
 use crate::web::{Live, Web};
 use crate::wire::{
     ConnectAsk, Connected, ForgetAsk, PlayPage, PlaysAsk, StatePage, StatesAsk, Survey, SurveyAsk,
-    TitlePage, TitlesAsk,
+    TitlePage, TitlesAsk, UnlockAsk, Unlocked,
 };
 
 const MAX_ASK_BYTES: usize = 64 * 1024;
@@ -19,7 +19,7 @@ type Network = Extension<Arc<dyn Web>>;
 type Reply<T> = Json<Result<T, String>>;
 
 /// The `importer` point as this module answers it: `connect`, `survey`,
-/// `titles`, `states`, `plays` and `forget`, each at
+/// `titles`, `states`, `plays`, `unlock` and `forget`, each at
 /// `POST /_port/importer/<method>`.
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     routes_over(Arc::new(Live))
@@ -35,6 +35,7 @@ where
         .route("/_port/importer/titles", post(titles::<S>))
         .route("/_port/importer/states", post(states::<S>))
         .route("/_port/importer/plays", post(plays::<S>))
+        .route("/_port/importer/unlock", post(unlock::<S>))
         .route("/_port/importer/forget", post(forget::<S>))
         .layer(DefaultBodyLimit::max(MAX_ASK_BYTES))
         .layer(Extension(web))
@@ -87,6 +88,15 @@ async fn plays<S: HostStorage + Clone + Send + Sync + 'static>(
 ) -> Reply<PlayPage> {
     let plex = plex(&host, web);
     port_reply(move || plex.plays(&ask)).await
+}
+
+async fn unlock<S: HostStorage + Clone + Send + Sync + 'static>(
+    State(host): State<S>,
+    Extension(web): Network,
+    Json(ask): Json<UnlockAsk>,
+) -> Reply<Unlocked> {
+    let plex = plex(&host, web);
+    port_reply(move || plex.unlock(&ask)).await
 }
 
 async fn forget<S: HostStorage + Clone + Send + Sync + 'static>(

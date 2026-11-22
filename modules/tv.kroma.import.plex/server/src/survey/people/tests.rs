@@ -1,5 +1,6 @@
 use super::*;
 
+use crate::account::FriendServer;
 use crate::test_support::mint;
 
 fn me() -> Me {
@@ -27,6 +28,7 @@ fn listed_users(friends: &[Friend], shares: &[Share]) -> Vec<Person> {
         friends,
         shares,
         machine: "machine-1",
+        unlocked: &[],
     })
 }
 
@@ -77,4 +79,32 @@ fn a_filter_plex_may_add_later_still_counts_as_a_finer_limit() {
     let users = listed_users(&[friend], &shares);
 
     assert_eq!(users[1].user.finer_limits, ["label", "filter"]);
+}
+
+#[test]
+fn a_home_user_with_a_pin_and_no_row_is_read_with_the_token_the_pin_opened() {
+    let dan = Friend {
+        id: "7004".to_string(),
+        title: Some("Dan".to_string()),
+        protected: true,
+        servers: vec![FriendServer {
+            machine: "machine-1".to_string(),
+            all_libraries: true,
+            pending: false,
+        }],
+        ..Friend::default()
+    };
+    let opened = mint("dan-server");
+
+    let users = people(&Listed {
+        me: &me(),
+        friends: std::slice::from_ref(&dan),
+        shares: &[],
+        machine: "machine-1",
+        unlocked: &[("7004".to_string(), opened.clone())],
+    });
+
+    assert!(!users[1].user.state_locked);
+    assert_eq!(users[1].user.state_needs, None);
+    assert_eq!(users[1].token, Some(opened));
 }

@@ -1,5 +1,4 @@
 {
-  "setup.continue": "Continue",
   "setup.doneOpen": "Open my library",
   "setup.doneSub": "Open your library whenever you like. Anything you skipped waits for you under Admin.",
   "setup.doneTitle": "You are all set",
@@ -165,7 +164,6 @@
   "setup.stepLanguage": "Language",
   "setup.stepMedia": "Media",
   "setup.stepModules": "Modules",
-  "setup.stepOf": "Step {step} of {count} · {name}",
   "setup.stepOwner": "Your account",
   "setup.stepPeople": "People",
   "setup.stepPrivacy": "Privacy",
