@@ -18,6 +18,7 @@ use crate::services::search::SearchEngine;
 use crate::services::sections::{HomeMemo, VectorCache};
 use crate::services::settings::Settings;
 use crate::services::subtitles::GenRegistry;
+use crate::services::trending_lists::TrendingLists;
 use kroma_media::hls;
 
 /// Resolves a point name to every module currently contributing it. The core
@@ -70,6 +71,7 @@ pub struct AppState {
     pub search: Arc<SearchEngine>,
     pub vectors: Arc<VectorCache>,
     pub home: HomeMemo,
+    pub trending_lists: TrendingLists,
     pub jobs: Arc<JobManager>,
     pub subtitle_gen: Arc<GenRegistry>,
     pub instance_id: String,
@@ -192,6 +194,7 @@ impl AppState {
             search: Arc::new(SearchEngine::new().expect("init search index")),
             vectors: Arc::new(VectorCache::new()),
             home: HomeMemo::default(),
+            trending_lists: TrendingLists::default(),
             jobs: Arc::new(jobs),
             subtitle_gen: Arc::new(GenRegistry::default()),
             instance_id,

@@ -1,22 +1,20 @@
-// A paginated grid of this week's trending movies OR shows, reached from the
-// discover rails. TMDB-gated on `requests.create`.
-
 import { hasPermission } from '@kromatv/client/accounts';
+import type { TmdbKind } from '@kromatv/client/discovery';
 import { useT } from '@kromatv/ui';
 import {
   Box,
-  Button,
   classes,
   EmptyState,
   Icon,
   PageHeader,
+  Pagination,
   Row,
+  SegmentGroup,
   styles,
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
 import { DiscoverCard } from '#web/features/requests/discover-card.component';
 import {
   type TrendingPageState,
@@ -26,8 +24,12 @@ import { useAuth } from '#web/shared/lib/auth';
 import { PageFrame, SkeletonRow } from '#web/shared/ui';
 import { TileGrid } from '#web/shared/ui/tile-grid.component';
 
+const KINDS: { value: TmdbKind; labelKey: 'discover.movies' | 'discover.shows' }[] = [
+  { value: 'movie', labelKey: 'discover.movies' },
+  { value: 'tv', labelKey: 'discover.shows' },
+];
+
 const sDefinition = styles({
-  count: { fontVariant: ['tabular-nums'] },
   backLink: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -38,48 +40,102 @@ const sDefinition = styles({
   },
 });
 
-export function TrendingPage({ type }: Readonly<{ type: 'movie' | 'tv' }>) {
-  const s = useStyles(sDefinition);
+interface TrendingPageProps {
+  kind: TmdbKind;
+  page: number;
+  onKindChange: (next: TmdbKind) => void;
+  onPageChange: (next: number) => void;
+}
 
+/** This week's trending films or shows, a page at a time. Gated on `requests.create`. */
+export function TrendingPage({
+  kind,
+  page,
+  onKindChange,
+  onPageChange,
+}: Readonly<TrendingPageProps>) {
   const t = useT();
   const { user } = useAuth();
   const canDiscover = !!user && hasPermission(user, 'requests.create');
-  const [page, setPage] = useState(1);
-  const state = useTrendingPage(type, page, canDiscover);
-  const title = type === 'movie' ? t('discover.trendingMovies') : t('discover.trendingShows');
-
-  // Paging is the only page-change path, so the scroll-to-top belongs here
-  // rather than in an effect.
-  const go = (next: number) => {
-    setPage(Math.min(Math.max(1, next), state.totalPages));
-    window.scrollTo({ top: 0 });
-  };
+  const title = kind === 'movie' ? t('discover.trendingMovies') : t('discover.trendingShows');
 
   return (
     <PageFrame>
-      <Link to="/search" search={{ q: '', type: 'all' }} className={classes(s.backLink)}>
-        <Icon name="arrow-left" size={16} thickness={2.2} color="textDim" />
-        <Text variant="meta" color="textDim">
-          {t('discover.back')}
-        </Text>
-      </Link>
-
+      <BackToSearch />
       <PageHeader.Root>
         <PageHeader.Title icon="flame">{title}</PageHeader.Title>
+        {canDiscover ? (
+          <PageHeader.Actions>
+            <KindSwitch kind={kind} onKindChange={onKindChange} />
+          </PageHeader.Actions>
+        ) : null}
       </PageHeader.Root>
-
-      {!canDiscover ? (
-        <EmptyState.Root icon="mood-empty">
-          <EmptyState.Title>{t('discover.empty')}</EmptyState.Title>
-        </EmptyState.Root>
+      {canDiscover ? (
+        <Listing kind={kind} page={page} title={title} onPageChange={onPageChange} />
       ) : (
-        <>
-          <Body state={state} />
-          {/* totalPages is retained while the next page loads. */}
-          <Pager page={page} totalPages={state.totalPages} onGo={go} />
-        </>
+        <NothingToDiscover />
       )}
     </PageFrame>
+  );
+}
+
+function NothingToDiscover() {
+  const t = useT();
+  return (
+    <EmptyState.Root icon="mood-empty">
+      <EmptyState.Title>{t('discover.empty')}</EmptyState.Title>
+    </EmptyState.Root>
+  );
+}
+
+function BackToSearch() {
+  const s = useStyles(sDefinition);
+  const t = useT();
+  return (
+    <Link to="/search" search={{ q: '', type: 'all' }} className={classes(s.backLink)}>
+      <Icon name="arrow-left" size={16} thickness={2.2} color="textDim" />
+      <Text variant="meta" color="textDim">
+        {t('discover.back')}
+      </Text>
+    </Link>
+  );
+}
+
+function KindSwitch({
+  kind,
+  onKindChange,
+}: Readonly<{ kind: TmdbKind; onKindChange: (next: TmdbKind) => void }>) {
+  const t = useT();
+  return (
+    <SegmentGroup.Root
+      size="md"
+      label={t('discover.trending')}
+      value={kind}
+      onValueChange={onKindChange}
+    >
+      {KINDS.map((option) => (
+        <SegmentGroup.Item key={option.value} value={option.value}>
+          <SegmentGroup.Label>{t(option.labelKey)}</SegmentGroup.Label>
+        </SegmentGroup.Item>
+      ))}
+    </SegmentGroup.Root>
+  );
+}
+
+interface ListingProps {
+  kind: TmdbKind;
+  page: number;
+  title: string;
+  onPageChange: (next: number) => void;
+}
+
+function Listing({ kind, page, title, onPageChange }: Readonly<ListingProps>) {
+  const state = useTrendingPage(kind, page);
+  return (
+    <>
+      <Body state={state} />
+      <Pager title={title} page={page} pageCount={state.totalPages} onPageChange={onPageChange} />
+    </>
   );
 }
 
@@ -88,7 +144,7 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
   if (state.loading) {
     return (
       <Box mt={32}>
-        <SkeletonRow count={12} />
+        <SkeletonRow count={18} />
       </Box>
     );
   }
@@ -112,38 +168,33 @@ function Body({ state }: Readonly<{ state: TrendingPageState }>) {
   );
 }
 
-function Pager({
-  page,
-  totalPages,
-  onGo,
-}: Readonly<{ page: number; totalPages: number; onGo: (n: number) => void }>) {
-  const s = useStyles(sDefinition);
+interface PagerProps {
+  title: string;
+  page: number;
+  pageCount: number;
+  onPageChange: (next: number) => void;
+}
 
+function Pager({ title, page, pageCount, onPageChange }: Readonly<PagerProps>) {
   const t = useT();
-  if (totalPages <= 1) {
+  if (pageCount <= 1) {
     return null;
   }
+  const pageLabel = (at: number) =>
+    t('discover.pageOf', { page: String(at), total: String(pageCount) });
   return (
-    <Row justify="center" gap={16} mt={40}>
-      <Button
-        variant="glass"
-        size="sm"
-        icon="chevron-left"
-        label={t('discover.prev')}
-        onPress={() => onGo(page - 1)}
-        disabled={page <= 1}
-      />
-      <Text variant="meta" color="textDim" style={s.count}>
-        {t('discover.pageOf', { page: String(page), total: String(totalPages) })}
-      </Text>
-      <Button
-        variant="glass"
-        size="sm"
-        iconRight="chevron-right"
-        label={t('discover.next')}
-        onPress={() => onGo(page + 1)}
-        disabled={page >= totalPages}
-      />
+    <Row justify="center" mt={40}>
+      <Pagination.Root
+        page={page}
+        pageCount={pageCount}
+        onPageChange={onPageChange}
+        label={title}
+        pageLabel={pageLabel}
+      >
+        <Pagination.Previous label={t('discover.prev')} />
+        <Pagination.Pages />
+        <Pagination.Next label={t('discover.next')} />
+      </Pagination.Root>
     </Row>
   );
 }

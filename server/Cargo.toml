@@ -280,6 +280,8 @@ kroma-testing = { workspace = true }
 kroma-db = { workspace = true, features = ["testing"] }
 # `services::sso::testing`: the provider the sign-in tests go through.
 kroma-engine = { workspace = true, features = ["testing"] }
+# `testing::FakeTmdb`: the provider the discover tests read from.
+kroma-requests = { workspace = true, features = ["testing"] }
 
 # musl's malloc serializes under our thread mix (tokio + rayon + candle + tantivy);
 # mimalloc removes that contention. Linux-only; macOS dev keeps the system

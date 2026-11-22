@@ -148,18 +148,18 @@ export function createI18n<
 
   type Bound = (key: K | (string & {}), vars?: TVars) => string;
 
-  // One translator per locale and scope, until a dev switch moves or a message
-  // is rewritten under a dev server. The closure reads the chain
+  // One translator per locale and scope, until the version moves: a catalog
+  // lands, a scope comes or goes, or a dev switch moves. The closure reads the chain
   // on every call rather than capturing it, so an added catalog still reaches
   // it. Identity matters: a React hook hands this straight to callers who put
   // it in a `useMemo` dependency list, and a fresh closure per render would
   // quietly defeat all of them.
   const bound = new Map<string, Bound>();
-  const identity = () => overridesRevision() + store.rewrites();
-  let revision = identity();
+  const version = () => store.version() + overridesRevision();
+  let revision = version();
 
   const translator = (locale: L, scope?: string) => {
-    const current = identity();
+    const current = version();
     if (current !== revision) {
       bound.clear();
       revision = current;
@@ -207,7 +207,7 @@ export function createI18n<
     warm: (locale) => namespaces.warm(locale),
     pending: (locale) => namespaces.pending(locale),
     ready: (locale) => namespaces.ready(locale),
-    version: () => store.version() + overridesRevision(),
+    version,
     subscribe: (listener) => {
       const stopStore = store.subscribe(listener);
       const stopInspector = onOverridesChange(listener);

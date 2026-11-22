@@ -24,7 +24,7 @@ use crate::infra::metadata::{discover, season_episodes};
 use crate::model::{
     DiscoverDetail, DiscoverEpisode, DiscoverResponse, Permission, RequestKind, User,
 };
-use crate::services::settings;
+use crate::services::{settings, trending_lists};
 use crate::state::SharedState;
 
 use flags::{flag_detail, flag_hits};
@@ -127,8 +127,9 @@ pub struct TrendingParams {
 }
 
 /// `GET /api/discover/trending?type=&page=` this week's trending titles. No
-/// `type` = merged movies + shows (page 1) for the discover empty-state rails;
-/// `type=movie|tv` = a paginated single-kind list backing the full page.
+/// `type` is the provider's first page of films and shows together, for the
+/// discover rails; `type=movie|tv` pages through one deep list of a kind,
+/// [`trending_lists::PAGE_SIZE`] titles at a time.
 pub async fn trending(
     State(state): State<SharedState>,
     AskedLocale(reader): AskedLocale,
@@ -140,6 +141,19 @@ pub async fn trending(
     let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
     let scope = scope_from_type(params.kind.as_deref());
     let page = params.page.unwrap_or(1);
+    if scope != discover::DiscoverScope::All {
+        let source = trending_lists::Source {
+            key,
+            language: lang,
+            scope,
+        };
+        let engine = state.clone();
+        return flagged_page(&state, &viewer, move || {
+            engine.trending_lists.page(&source, page)
+        })
+        .await;
+    }
+    state.trending_lists.warm(&key, &lang);
     flagged_page(&state, &viewer, move || {
         discover::trending(&key, &lang, scope, page)
             .map_err(|()| anyhow::anyhow!("TMDB trending failed"))

@@ -1,15 +1,18 @@
 import type { Importer, ImportSignIn } from '@kromatv/client/importers';
 import { FieldForm } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, GuidedFlow } from '@kromatv/ui/kit';
+import { Box, Button, Callout } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import {
   ADDRESS_FIELD,
   ImportFoundServers,
 } from '#web/features/admin/import/import-found-servers.component';
+import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import { ImportRefused } from '#web/features/admin/import/import-refused.component';
 import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
 import { openPage, useImportSignIn } from '#web/features/admin/import/use-import-sign-in.hook';
+
+const FORM_MAX = 520;
 
 interface FormProps {
   importer: Importer;
@@ -38,57 +41,54 @@ function Waiting({ answer }: Readonly<{ answer: ImportSignIn | null }>) {
   );
 }
 
-interface FooterProps {
-  onBack: () => void;
-  busy: boolean;
-  missing: boolean;
-  onSend: () => void;
+interface PanelProps {
+  importer: Importer;
+  values: Record<string, string>;
+  answer: ImportSignIn | null;
+  onType: (key: string, value: string) => void;
 }
 
-function SignInFooter({ onBack, busy, missing, onSend }: Readonly<FooterProps>) {
-  const t = useT();
+function FormPanel({ importer, values, answer, onType }: Readonly<PanelProps>) {
   return (
-    <GuidedFlow.Footer>
-      <GuidedFlow.Previous onPress={onBack} />
-      <GuidedFlow.Actions>
-        <GuidedFlow.Next
-          label={t('setup.importSignIn')}
-          loading={busy}
-          disabled={missing}
-          onPress={onSend}
+    <ImportFrame.Panel>
+      <ImporterIcon importer={importer} size={64} />
+      <Box gap={20} maxW={FORM_MAX}>
+        <ImportFoundServers
+          importer={importer}
+          address={values[ADDRESS_FIELD]}
+          onPick={(address) => onType(ADDRESS_FIELD, address)}
         />
-      </GuidedFlow.Actions>
-    </GuidedFlow.Footer>
+        <Box gap={16}>
+          <FieldForm fields={importer.fields} values={values} onChange={onType} />
+        </Box>
+        <Waiting answer={answer} />
+        <ImportRefused answer={answer} />
+      </Box>
+    </ImportFrame.Panel>
   );
 }
 
 /** The sign-in to a server through the form its importer declares. */
 export function ImportSignInForm({ importer, onBack }: Readonly<FormProps>) {
+  const t = useT();
   const [values, setValues] = useState<Record<string, string>>({});
   const { answer, busy, connect } = useImportSignIn(importer);
   const missing = importer.fields.some((field) => field.required && !values[field.key]);
   const type = (key: string, value: string) => setValues((before) => ({ ...before, [key]: value }));
   return (
     <>
-      <GuidedFlow.Panel>
-        <ImporterIcon importer={importer} size={64} />
-        <ImportFoundServers
-          importer={importer}
-          address={values[ADDRESS_FIELD]}
-          onPick={(address) => type(ADDRESS_FIELD, address)}
-        />
-        <Box gap={16}>
-          <FieldForm fields={importer.fields} values={values} onChange={type} />
-        </Box>
-        <Waiting answer={answer} />
-        <ImportRefused answer={answer} />
-      </GuidedFlow.Panel>
-      <SignInFooter
-        onBack={onBack}
-        busy={busy}
-        missing={missing}
-        onSend={() => void connect(values)}
-      />
+      <FormPanel importer={importer} values={values} answer={answer} onType={type} />
+      <ImportFrame.Footer>
+        <ImportFrame.Previous onPress={onBack} />
+        <ImportFrame.Actions>
+          <ImportFrame.Next
+            label={t('setup.importSignIn')}
+            loading={busy}
+            disabled={missing}
+            onPress={() => void connect(values)}
+          />
+        </ImportFrame.Actions>
+      </ImportFrame.Footer>
     </>
   );
 }

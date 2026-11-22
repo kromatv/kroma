@@ -1,7 +1,7 @@
 import type { Importer } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { GuidedFlow } from '@kromatv/ui/kit';
 import { useState } from 'react';
+import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import {
   useHeldModules,
   useImporterInstall,
@@ -26,17 +26,17 @@ interface InstallActionsProps {
 function InstallActions({ ready, busy, onBack, onInstall }: Readonly<InstallActionsProps>) {
   const t = useT();
   return (
-    <GuidedFlow.Footer>
-      <GuidedFlow.Previous onPress={onBack} />
-      <GuidedFlow.Actions>
-        <GuidedFlow.Next
+    <ImportFrame.Footer>
+      <ImportFrame.Previous onPress={onBack} />
+      <ImportFrame.Actions>
+        <ImportFrame.Next
           label={t('admin.modulesInstall')}
           loading={busy}
           disabled={!ready}
           onPress={onInstall}
         />
-      </GuidedFlow.Actions>
-    </GuidedFlow.Footer>
+      </ImportFrame.Actions>
+    </ImportFrame.Footer>
   );
 }
 
@@ -75,14 +75,14 @@ export function ImportConsent({ importer, onBack }: Readonly<ConsentProps>) {
   const install = useImporterInstall(importer.id);
   return (
     <>
-      <GuidedFlow.Header>
-        <GuidedFlow.Title>{t('admin.modulesInstallTitle', { name })}</GuidedFlow.Title>
-        <GuidedFlow.Subtitle>{t('setup.importConsentSub', { name })}</GuidedFlow.Subtitle>
-      </GuidedFlow.Header>
-      <GuidedFlow.Panel>
+      <ImportFrame.Header>
+        <ImportFrame.Title>{t('admin.modulesInstallTitle', { name })}</ImportFrame.Title>
+        <ImportFrame.Subtitle>{t('setup.importConsentSub', { name })}</ImportFrame.Subtitle>
+      </ImportFrame.Header>
+      <ImportFrame.Panel>
         <ConsentPlan importer={importer} include={include} onInclude={setInclude} />
         <StepFailure error={install.isError ? t('setup.importInstallFailed') : null} />
-      </GuidedFlow.Panel>
+      </ImportFrame.Panel>
       <InstallActions
         ready={plan.data !== undefined}
         busy={install.isPending}

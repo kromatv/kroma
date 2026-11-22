@@ -40,6 +40,7 @@ pub mod sso;
 pub mod stats;
 pub mod subtitles;
 pub mod trailers;
+pub mod trending_lists;
 pub mod updates;
 pub mod upgrade_tasks;
 pub mod viewer;

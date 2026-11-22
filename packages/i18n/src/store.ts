@@ -26,16 +26,6 @@ function withoutSchema(catalogs: Record<string, Catalog | undefined>): Record<st
   return out;
 }
 
-function rewrites(own: Catalog, incoming: Catalog): boolean {
-  for (const key in incoming) {
-    const held = own[key];
-    if (held !== undefined && held !== incoming[key]) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /** The catalogs an instance can currently reach: the ones it was built with,
  *  plus whatever has been added since.
  *
@@ -51,7 +41,6 @@ export class CatalogStore<L extends string> {
   private readonly listeners = new Set<() => void>();
   private readonly waiting = new Map<string, () => Catalog>();
   private revision = 0;
-  private rewritten = 0;
 
   constructor(
     catalogs: Catalogs<L>,
@@ -158,23 +147,12 @@ export class CatalogStore<L extends string> {
     );
     for (const [locale, catalog] of Object.entries(part)) {
       const own = this.base[locale] ?? {};
-      if (rewrites(own, catalog)) {
-        this.rewritten += 1;
-      }
       Object.assign(own, catalog);
       forgetStems(own);
       this.base[locale] = own;
     }
     this.chains.clear();
     this.origins.clear();
-  }
-
-  /** How many times a message that already had a text was given another: a
-   *  catalog saved under a dev server. A translator handed out before then
-   *  still answers correctly, but a view that memoised on it will not ask
-   *  again, so the instance hands out new ones when this moves. */
-  rewrites(): number {
-    return this.rewritten;
   }
 
   /** Bumped whenever a scope is added or removed or a locale's fetches have

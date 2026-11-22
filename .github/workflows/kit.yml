@@ -20,19 +20,34 @@ on:
     branches: [main]
     paths:
       - 'apps/kit/**'
-      - 'packages/ui/**'
-      - 'packages/core/**'
-      # vite.config.ts imports @kromatv/bundler/props-docs.
+      - 'clients/build-info/**'
       - 'packages/bundler/**'
-      - 'clients/tv-build/rnw.ts'
+      - 'packages/client/**'
+      - 'packages/core/**'
+      - 'packages/i18n/**'
+      - 'packages/i18n-devtools/**'
+      - 'packages/i18n-tools/**'
+      - 'packages/react-audit/**'
+      - 'packages/registry/**'
+      - 'packages/spatial-nav/**'
+      - 'packages/ui/**'
+      - 'packages/workbench/**'
       - '.github/workflows/kit.yml'
   pull_request:
     paths:
       - 'apps/kit/**'
-      - 'packages/ui/**'
-      - 'packages/core/**'
+      - 'clients/build-info/**'
       - 'packages/bundler/**'
-      - 'clients/tv-build/rnw.ts'
+      - 'packages/client/**'
+      - 'packages/core/**'
+      - 'packages/i18n/**'
+      - 'packages/i18n-devtools/**'
+      - 'packages/i18n-tools/**'
+      - 'packages/react-audit/**'
+      - 'packages/registry/**'
+      - 'packages/spatial-nav/**'
+      - 'packages/ui/**'
+      - 'packages/workbench/**'
       - '.github/workflows/kit.yml'
   workflow_dispatch:
 
@@ -82,7 +97,7 @@ jobs:
           # refuses to read them from a truncated one.
           git fetch --no-tags origin "$last" 2>/dev/null || true
           # An unfetchable sha (force-push, expired) errors the diff -> deploy.
-          if git diff --quiet "$last" HEAD -- apps/kit packages/ui packages/core packages/bundler clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
+          if git diff --quiet "$last" HEAD -- apps/kit clients/build-info packages/bundler packages/client packages/core packages/i18n packages/i18n-devtools packages/i18n-tools packages/react-audit packages/registry packages/spatial-nav packages/ui packages/workbench .github/workflows/kit.yml 2>/dev/null; then
             echo "::notice::ui.kroma.tv is already serving this tree (last deployed $last); skipping."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
