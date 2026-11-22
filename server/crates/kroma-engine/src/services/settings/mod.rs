@@ -21,6 +21,10 @@
 /// defers to the server's own default.
 pub const TMDB_LANGUAGE_AUTO: &str = "Auto";
 
+/// Whether the server measures its requests, jobs and statements. On unless
+/// the owner switched it off; `KROMA_PROFILING=off` overrides it.
+pub const PROFILING_KEY: &str = "performanceProfiling";
+
 mod accessors;
 mod email_delivery;
 mod encoder;

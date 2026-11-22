@@ -150,6 +150,8 @@ kroma-module-host = { path = "crates/kroma-module-host" }
 # every module's manifest + collects their ServerModule behaviors).
 kroma-module-kernel = { path = "crates/kroma-module-kernel" }
 kroma-engine = { path = "crates/kroma-engine" }
+# Request, job, statement and span timing. No module links it.
+kroma-perf = { path = "crates/kroma-perf" }
 # No module is named here. Every one of them is reached at runtime over HTTP by
 # the supervisor, resolved from a point name the core holds and a manifest it
 # reads, so nothing in this tree links a module or knows what one is for.
@@ -178,6 +180,7 @@ default = []
 # The binary is now a thin HTTP shell: the router + handlers (src/api) over the
 # business logic in kroma-engine. It pulls only what api/main touch directly.
 kroma-engine = { workspace = true }
+kroma-perf = { workspace = true }
 # The host seam: shared HTTP extractors (AuthUser) + the HostCtx contract. The
 # binary re-exports the extractors from their historical `crate::api::extract`
 # path; module crates depend on this leaf instead of the whole engine.

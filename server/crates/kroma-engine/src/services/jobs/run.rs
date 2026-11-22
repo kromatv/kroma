@@ -36,6 +36,8 @@ pub(super) fn run_job(
     info!(job = key, run = %run_id, trigger, "job started");
 
     let ctx = JobContext::new(state.clone(), handle.clone());
+    let profiled = kroma_perf::profiler().job(key);
+    let entered = profiled.as_ref().map(kroma_perf::Scope::enter);
     let result = catch_unwind(AssertUnwindSafe(|| match &runner {
         Runner::Local(f) => f(&ctx),
         Runner::Remote(f) => f(&ctx),
@@ -43,6 +45,10 @@ pub(super) fn run_job(
 
     let finished_ms = now_ms();
     let (status, error) = classify_result(result, &handle);
+    drop(entered);
+    if let Some(scope) = &profiled {
+        kroma_perf::profiler().finish(scope, (status == "failed").then_some(500), None);
+    }
 
     // Mirror a terminal failure into the run's own log stream, not only the
     // `error` column, so the log view explains a panic or an early `?` that

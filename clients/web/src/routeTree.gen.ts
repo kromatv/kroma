@@ -39,6 +39,7 @@ import { Route as AdminLibrariesRouteImport } from './routes/admin.libraries';
 import { Route as AdminLogsRouteImport } from './routes/admin.logs';
 import { Route as AdminNetworkRouteImport } from './routes/admin.network';
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications';
+import { Route as AdminPerformanceRouteImport } from './routes/admin.performance';
 import { Route as AdminPipelineRouteImport } from './routes/admin.pipeline';
 import { Route as AdminReportsRouteImport } from './routes/admin.reports';
 import { Route as AdminSignInRouteImport } from './routes/admin.sign-in';
@@ -213,6 +214,11 @@ const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => AdminRoute,
 } as any);
+const AdminPerformanceRoute = AdminPerformanceRouteImport.update({
+  id: '/performance',
+  path: '/performance',
+  getParentRoute: () => AdminRoute,
+} as any);
 const AdminPipelineRoute = AdminPipelineRouteImport.update({
   id: '/pipeline',
   path: '/pipeline',
@@ -369,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/admin/logs': typeof AdminLogsRoute;
   '/admin/network': typeof AdminNetworkRoute;
   '/admin/notifications': typeof AdminNotificationsRoute;
+  '/admin/performance': typeof AdminPerformanceRoute;
   '/admin/pipeline': typeof AdminPipelineRoute;
   '/admin/reports': typeof AdminReportsRoute;
   '/admin/sign-in': typeof AdminSignInRoute;
@@ -423,6 +430,7 @@ export interface FileRoutesByTo {
   '/admin/logs': typeof AdminLogsRoute;
   '/admin/network': typeof AdminNetworkRoute;
   '/admin/notifications': typeof AdminNotificationsRoute;
+  '/admin/performance': typeof AdminPerformanceRoute;
   '/admin/pipeline': typeof AdminPipelineRoute;
   '/admin/reports': typeof AdminReportsRoute;
   '/admin/sign-in': typeof AdminSignInRoute;
@@ -480,6 +488,7 @@ export interface FileRoutesById {
   '/admin/logs': typeof AdminLogsRoute;
   '/admin/network': typeof AdminNetworkRoute;
   '/admin/notifications': typeof AdminNotificationsRoute;
+  '/admin/performance': typeof AdminPerformanceRoute;
   '/admin/pipeline': typeof AdminPipelineRoute;
   '/admin/reports': typeof AdminReportsRoute;
   '/admin/sign-in': typeof AdminSignInRoute;
@@ -538,6 +547,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/network'
     | '/admin/notifications'
+    | '/admin/performance'
     | '/admin/pipeline'
     | '/admin/reports'
     | '/admin/sign-in'
@@ -592,6 +602,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/network'
     | '/admin/notifications'
+    | '/admin/performance'
     | '/admin/pipeline'
     | '/admin/reports'
     | '/admin/sign-in'
@@ -648,6 +659,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/network'
     | '/admin/notifications'
+    | '/admin/performance'
     | '/admin/pipeline'
     | '/admin/reports'
     | '/admin/sign-in'
@@ -898,6 +910,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications';
       fullPath: '/admin/notifications';
       preLoaderRoute: typeof AdminNotificationsRouteImport;
+      parentRoute: typeof AdminRoute;
+    };
+    '/admin/performance': {
+      id: '/admin/performance';
+      path: '/performance';
+      fullPath: '/admin/performance';
+      preLoaderRoute: typeof AdminPerformanceRouteImport;
       parentRoute: typeof AdminRoute;
     };
     '/admin/pipeline': {
@@ -1152,6 +1171,7 @@ interface AdminRouteChildren {
   AdminLogsRoute: typeof AdminLogsRoute;
   AdminNetworkRoute: typeof AdminNetworkRoute;
   AdminNotificationsRoute: typeof AdminNotificationsRoute;
+  AdminPerformanceRoute: typeof AdminPerformanceRoute;
   AdminPipelineRoute: typeof AdminPipelineRoute;
   AdminReportsRoute: typeof AdminReportsRoute;
   AdminSignInRoute: typeof AdminSignInRoute;
@@ -1180,6 +1200,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLogsRoute: AdminLogsRoute,
   AdminNetworkRoute: AdminNetworkRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminPerformanceRoute: AdminPerformanceRoute,
   AdminPipelineRoute: AdminPipelineRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminSignInRoute: AdminSignInRoute,

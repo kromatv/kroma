@@ -40,6 +40,7 @@ mod permission;
 mod pin;
 mod plugin;
 mod point;
+mod profiling;
 mod recommend;
 mod releases;
 mod rematch;
@@ -165,6 +166,8 @@ mod it_online_subs;
 mod it_passkeys;
 #[cfg(test)]
 mod it_people;
+#[cfg(test)]
+mod it_performance;
 #[cfg(test)]
 mod it_pin;
 #[cfg(test)]

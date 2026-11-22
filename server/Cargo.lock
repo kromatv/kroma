@@ -2155,6 +2155,7 @@ dependencies = [
  "kroma-module-host",
  "kroma-module-manifest",
  "kroma-module-wire",
+ "kroma-perf",
  "kroma-primitives",
  "kroma-push",
  "kroma-requests",
@@ -2391,6 +2392,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-perf"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "kroma-testing",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "twox-hash",
+]
+
+[[package]]
 name = "kroma-primitives"
 version = "0.1.0"
 dependencies = [
@@ -2458,6 +2474,7 @@ dependencies = [
  "kroma-module-kernel",
  "kroma-module-manifest",
  "kroma-module-supervisor",
+ "kroma-perf",
  "kroma-requests",
  "kroma-testing",
  "libmimalloc-sys",

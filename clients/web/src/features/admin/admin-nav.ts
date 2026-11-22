@@ -154,6 +154,13 @@ export const NAV_GROUPS: AdminNavGroup[] = [
         icon: 'sitemap',
       },
       { to: '/admin/storage', labelKey: 'admin.navStorage', cap: null, icon: 'database' },
+      {
+        to: '/admin/performance',
+        labelKey: 'admin.navPerformance',
+        cap: null,
+        icon: 'gauge',
+        keywords: 'profiling profilage speed vitesse slow lent sql query requête',
+      },
       { to: '/admin/logs', labelKey: 'admin.navLogs', cap: null, icon: 'terminal-2' },
       {
         to: '/admin/backup',
