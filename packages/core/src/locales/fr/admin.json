@@ -424,7 +424,7 @@
   "admin.titleLift": "Retirer",
   "admin.titleFind": "Rechercher un titre",
   "admin.kidsInvalid": "Un profil Kids a besoin d'un nom et d'un niveau : Tous publics, 7+ ou 10+",
-  "admin.kidsNeverAdmin": "Impossible de donner un droit de gestion à un profil Kids",
+  "admin.kidsOnlyWatch": "Un profil Kids n'a aucun autre droit que regarder",
   "admin.kidsNoCredential": "Un profil Kids n'a pas d'identifiants à réinitialiser ni à vérifier",
   "admin.addKids": "Ajouter un profil Kids",
   "admin.kidsIntro": "Un profil Kids n'a ni e-mail ni mot de passe. Il s'ouvre depuis le choix du profil de tout appareil où un membre de ce serveur est connecté.",
@@ -432,5 +432,9 @@
   "admin.kidsBand7": "5 à 8 ans",
   "admin.kidsBand10": "9 à 12 ans",
   "admin.addKidsConfirm": "Créer le profil",
+  "admin.kidsPinOfferTitle": "Verrouiller votre profil avec un code PIN ?",
+  "admin.kidsPinOfferBody": "Pour quitter Kids, on passe par le choix du profil. Sans code PIN, votre profil s'y ouvre en un seul geste.",
+  "admin.kidsPinOfferSet": "Définir un code PIN",
+  "admin.kidsPinOfferSkip": "Plus tard",
   "admin.kidsFailed": "Impossible de créer le profil Kids"
 }

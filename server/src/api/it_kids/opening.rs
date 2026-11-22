@@ -10,12 +10,12 @@ async fn listed(t: &TestApp, access: &str) -> (StatusCode, Value) {
     send(&t.app, "POST", "/api/kids/list", None, body).await
 }
 
-async fn open(t: &TestApp, (kid, access): (&str, &str)) -> (StatusCode, Value) {
+pub(super) async fn open(t: &TestApp, (kid, access): (&str, &str)) -> (StatusCode, Value) {
     let body = Some(json!({ "accessToken": access, "profile": kid }));
     send(&t.app, "POST", "/api/kids/open", None, body).await
 }
 
-fn member_device(t: &TestApp) -> String {
+pub(super) fn member_device(t: &TestApp) -> String {
     let (id, _) = seed_session(&t.state, "m@test.dev", "member", &[Permission::Playback]);
     seed_access_token(&t.state, &id, false)
 }

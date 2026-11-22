@@ -39,6 +39,7 @@ export function ProfilePicker({
   onPick,
   onForget,
   onAdd,
+  onAddKids,
   onForgot,
 }: Readonly<{
   tiles: ProfileChoice[];
@@ -46,6 +47,7 @@ export function ProfilePicker({
   onPick: (tile: ProfileChoice) => void;
   onForget: (userId: UserId) => void;
   onAdd: () => void;
+  onAddKids?: () => void;
   onForgot?: () => void;
 }>) {
   const s = useStyles(sDefinition);
@@ -97,6 +99,11 @@ export function ProfilePicker({
         <Box w={150} align="center">
           <AddTile label={t('auth.addProfile')} onPress={onAdd} />
         </Box>
+        {onAddKids ? (
+          <Box w={150} align="center">
+            <AddTile label={t('admin.addKids')} onPress={onAddKids} />
+          </Box>
+        ) : null}
       </Box>
 
       {error ? (

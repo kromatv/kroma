@@ -9,8 +9,9 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
+use super::AuthMember;
 use crate::api::error::lerr;
-use crate::api::extract::{AuthToken, AuthUser};
+use crate::api::extract::AuthToken;
 use crate::api::util::{client_ip, query};
 use crate::db;
 use crate::i18n::{self, ReqLocale};
@@ -265,7 +266,7 @@ pub async fn change_password(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     AuthToken(keep): AuthToken,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     Json(body): Json<ChangePasswordBody>,
 ) -> Response {
     if body.next.len() < MIN_PASSWORD_LEN {

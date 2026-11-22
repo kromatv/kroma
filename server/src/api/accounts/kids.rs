@@ -5,7 +5,8 @@
 
 use axum::Json;
 use axum::Router;
-use axum::extract::{DefaultBodyLimit, FromRequestParts, State};
+use axum::extract::{DefaultBodyLimit, FromRequestParts, Request, State};
+use axum::middleware::{Next, from_fn_with_state};
 use axum::http::StatusCode;
 use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
@@ -13,9 +14,11 @@ use axum::routing::post;
 use serde::Deserialize;
 use serde_json::json;
 
+use super::profile::UpdateMeBody;
 use super::{ThisDevice, auth_result};
 use crate::api::error::json_error;
-use crate::api::extract::AuthUser;
+use crate::api::dto::SessionUser;
+use crate::api::extract::{AuthUser, bearer_from_headers};
 use crate::api::util::query;
 use crate::db::{self, KidsProfile};
 use crate::model::User;
@@ -122,4 +125,70 @@ impl FromRequestParts<SharedState> for AuthMember {
         }
         Ok(AuthMember(user))
     }
+}
+
+/// `user` as its own session's routes answer it, with whether the session
+/// wears the Kids experience.
+pub(crate) async fn session_user(state: &SharedState, user: User) -> Result<SessionUser, Response> {
+    let kids = wears_kids(state, &user).await?;
+    Ok(SessionUser { user, kids })
+}
+
+/// Whether `user`'s session wears the Kids experience: a Kids profile held at
+/// 10+ or below (ACCT-130).
+pub(crate) async fn wears_kids(state: &SharedState, user: &User) -> Result<bool, Response> {
+    let id = user.id.clone();
+    query(&state.db, move |pool| kids_experience(&pool, &id)).await
+}
+
+fn kids_experience(pool: &db::Pool, user_id: &str) -> anyhow::Result<bool> {
+    Ok(db::is_kids_profile(pool, user_id)? && db::profile_maturity(pool, user_id)?.level.is_kids())
+}
+
+/// `routes` refused to a session that wears the Kids experience (ACCT-137,
+/// ACCT-139).
+pub(crate) fn kept_from_kids(
+    state: &SharedState,
+    routes: Router<SharedState>,
+) -> Router<SharedState> {
+    routes.route_layer(from_fn_with_state(state.clone(), refuse_kids_session))
+}
+
+async fn refuse_kids_session(
+    State(state): State<SharedState>,
+    request: Request,
+    next: Next,
+) -> Response {
+    let Some(token) = bearer_from_headers(request.headers()) else {
+        return next.run(request).await;
+    };
+    let kids = query(&state.db, move |pool| {
+        let Some(user) = db::session_user(&pool, &token)? else {
+            return Ok(false);
+        };
+        kids_experience(&pool, &user.id)
+    })
+    .await;
+    match kids {
+        Ok(false) => next.run(request).await,
+        Ok(true) => json_error(StatusCode::FORBIDDEN, "a Kids session cannot do this"),
+        Err(refused) => refused,
+    }
+}
+
+/// Refuse a change of name or address on a Kids profile's own session: it has
+/// no account settings (ACCT-137). Its player languages stay its own.
+pub(crate) async fn refuse_kids_identity(
+    state: &SharedState,
+    user: &User,
+    body: &UpdateMeBody,
+) -> Result<(), Response> {
+    if body.username.is_none() && body.email.is_none() {
+        return Ok(());
+    }
+    let id = user.id.clone();
+    if query(&state.db, move |pool| db::is_kids_profile(&pool, &id)).await? {
+        return Err(json_error(StatusCode::FORBIDDEN, "a Kids profile cannot do this"));
+    }
+    Ok(())
 }

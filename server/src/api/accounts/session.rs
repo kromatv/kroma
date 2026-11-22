@@ -8,6 +8,7 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
+use super::AuthMember;
 use crate::api::error::lerr;
 use crate::api::extract::{bearer_from_headers, AuthToken, AuthUser};
 use crate::api::pin;
@@ -129,12 +130,26 @@ pub async fn exchange_token(
     {
         return resp;
     }
-    Json(crate::api::dto::SessionResult {
-        media_ticket: crate::services::media_ticket::for_access_token(&state.media_ticket_key, &access),
-        token,
-        user,
-    })
-    .into_response()
+    session_result(&state, (token, access), user).await
+}
+
+async fn session_result(
+    state: &SharedState,
+    (token, access): (String, String),
+    user: User,
+) -> Response {
+    match super::kids::session_user(state, user).await {
+        Ok(user) => Json(crate::api::dto::SessionResult {
+            media_ticket: crate::services::media_ticket::for_access_token(
+                &state.media_ticket_key,
+                &access,
+            ),
+            token,
+            user,
+        })
+        .into_response(),
+        Err(refused) => refused,
+    }
 }
 
 async fn enforce_pin_gate(
@@ -223,7 +238,7 @@ pub async fn list_sessions(
 pub async fn revoke_other_sessions(
     State(state): State<SharedState>,
     AuthToken(bearer): AuthToken,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
 ) -> Response {
     let uid = user.id.clone();
     match query(&state.db, move |pool| {
@@ -241,7 +256,7 @@ pub async fn revoke_other_sessions(
 pub async fn revoke_session(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     Path(id): Path<String>,
 ) -> Response {
     let uid = user.id.clone();
@@ -301,6 +316,7 @@ pub(crate) async fn auth_result(
         Ok(())
     })
     .await;
+    let user = super::kids::session_user(state, user).await?;
     Ok(crate::api::dto::AuthResult {
         media_ticket: crate::services::media_ticket::for_access_token(
             &state.media_ticket_key,
