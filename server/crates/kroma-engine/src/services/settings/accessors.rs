@@ -170,55 +170,80 @@ pub fn library_defs(
     settings: &Settings,
     config: &crate::config::Config,
 ) -> Result<Vec<LibraryDef>, super::UnreadableLibraryList> {
-    if let Some(saved) = super::stored_library_defs(settings)? {
-        return Ok(saved);
+    match super::stored_library_defs(settings)? {
+        Some(saved) => Ok(saved),
+        None => Ok(seeded_library_defs(config)),
     }
-    let mut defs = Vec::new();
-    if !config.movies_dirs.is_empty() {
-        defs.push(LibraryDef {
-            id: crate::services::scan::short_hash("lib|movies"),
-            name: "Films".to_string(),
-            kind: "movies".to_string(),
-            folders: config
-                .movies_dirs
-                .iter()
-                .map(|d| d.to_string_lossy().to_string())
-                .collect(),
-            auto_scan: true,
-        });
-    }
-    if !config.series_dirs.is_empty() {
-        defs.push(LibraryDef {
-            id: crate::services::scan::short_hash("lib|shows"),
-            name: "Séries".to_string(),
-            kind: "shows".to_string(),
-            folders: config
-                .series_dirs
-                .iter()
-                .map(|d| d.to_string_lossy().to_string())
-                .collect(),
-            auto_scan: true,
-        });
-    }
-    defs.extend(config.media_dirs.iter().map(|dir| {
-        let path = dir.to_string_lossy().to_string();
-        let name = dir
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("Bibliothèque")
-            .to_string();
-        LibraryDef {
-            id: crate::services::scan::short_hash(&path),
-            name,
-            kind: String::new(),
-            folders: vec![path],
-            auto_scan: true,
-        }
-    }));
+}
+
+/// The list [`library_defs`] gives while none is saved: the environment's
+/// folders, else the demo library.
+pub fn seeded_library_defs(config: &crate::config::Config) -> Vec<LibraryDef> {
+    let typed = [
+        (MOVIES_ROOT, &config.movies_dirs),
+        (SERIES_ROOT, &config.series_dirs),
+    ];
+    let mut defs: Vec<LibraryDef> = typed
+        .into_iter()
+        .filter_map(|(root, dirs)| root.library(dirs))
+        .collect();
+    defs.extend(config.media_dirs.iter().map(|dir| folder_library(dir)));
     if defs.is_empty() {
-        return Ok(demo_defs(config));
+        return demo_defs(config);
     }
-    Ok(defs)
+    defs
+}
+
+struct TypedRoot {
+    seed: &'static str,
+    name: &'static str,
+    kind: &'static str,
+}
+
+const MOVIES_ROOT: TypedRoot = TypedRoot {
+    seed: "lib|movies",
+    name: "Films",
+    kind: "movies",
+};
+
+const SERIES_ROOT: TypedRoot = TypedRoot {
+    seed: "lib|shows",
+    name: "Séries",
+    kind: "shows",
+};
+
+impl TypedRoot {
+    fn library(&self, dirs: &[std::path::PathBuf]) -> Option<LibraryDef> {
+        if dirs.is_empty() {
+            return None;
+        }
+        Some(LibraryDef {
+            id: crate::services::scan::short_hash(self.seed),
+            name: self.name.to_string(),
+            kind: self.kind.to_string(),
+            folders: dirs
+                .iter()
+                .map(|d| d.to_string_lossy().to_string())
+                .collect(),
+            auto_scan: true,
+        })
+    }
+}
+
+fn folder_library(dir: &std::path::Path) -> LibraryDef {
+    let path = dir.to_string_lossy().to_string();
+    let name = dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("Bibliothèque")
+        .to_string();
+    LibraryDef {
+        id: crate::services::scan::short_hash(&path),
+        name,
+        kind: String::new(),
+        folders: vec![path],
+        auto_scan: true,
+    }
 }
 
 // Only the ones that EXIST. A definition for a folder nobody wrote would scan as

@@ -15,20 +15,13 @@ use self::bounded::bounded;
 use super::found::{Found, find};
 use super::{outcome_of, Importing, Outcome, StatePage};
 use crate::db;
-use crate::db::imports::Place;
+use crate::db::imports::{Merged, Place};
 use crate::domain::watching::Watching;
 use crate::model::import::Title;
 use crate::services::jobs::now_ms;
 
 pub(super) fn merge(importing: &Importing<'_>, page: &StatePage<'_>) -> Result<Vec<Outcome>> {
-    let now_secs = now_ms() / 1000;
-    let carrying: Vec<(usize, Watching)> = page
-        .rows
-        .iter()
-        .map(|row| bounded(row.state, now_secs))
-        .enumerate()
-        .filter(|(_, state)| !state.is_empty())
-        .collect();
+    let carrying = carried(page, now_ms() / 1000);
     let titles: Vec<&Title> = carrying
         .iter()
         .map(|(row, _)| page.rows[*row].title)
@@ -46,11 +39,32 @@ pub(super) fn merge(importing: &Importing<'_>, page: &StatePage<'_>) -> Result<V
             None => outcomes[*row] = Outcome::Unmatched,
         }
     }
-    let merged = db::imports::merge_states(&importing.state.db, page.account, &placed)?;
+    let merged = written(importing, page.account, &placed)?;
     for (row, merged) in rows.into_iter().zip(merged) {
         outcomes[row] = outcome_of(merged);
     }
     Ok(outcomes)
+}
+
+fn carried(page: &StatePage<'_>, now_secs: i64) -> Vec<(usize, Watching)> {
+    page.rows
+        .iter()
+        .map(|row| bounded(row.state, now_secs))
+        .enumerate()
+        .filter(|(_, state)| !state.is_empty())
+        .collect()
+}
+
+fn written(
+    importing: &Importing<'_>,
+    account: &str,
+    placed: &[(Place<'_>, Watching)],
+) -> Result<Vec<Merged>> {
+    let merged = db::imports::merge_states(&importing.state.db, account, placed)?;
+    if merged.contains(&Merged::Changed) {
+        importing.state.home.moved(account);
+    }
+    Ok(merged)
 }
 
 fn place_of(found: &Found) -> Option<Place<'_>> {

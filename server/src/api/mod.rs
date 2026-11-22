@@ -76,6 +76,7 @@ mod it_auth_faults;
 #[cfg(test)]
 mod it_backup;
 #[cfg(test)]
+mod it_backup_libraries;
 mod it_backup_schedule;
 #[cfg(test)]
 mod it_cast;

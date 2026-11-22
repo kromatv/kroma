@@ -252,3 +252,20 @@ fn an_empty_catalogue_is_read_again_for_its_candidates() {
 
     assert_eq!(reads.get(), 2);
 }
+
+#[test]
+fn a_viewer_whose_watch_state_moved_where_no_stamp_sees_is_built_again() {
+    let state = test_state();
+    catalogue(&state);
+    let ann = viewer(&state, "ann");
+    let bob = viewer(&state, "bob");
+    home(&state, &state.db, "en", &ann);
+    let bobs = home(&state, &state.db, "en", &bob);
+    retitle_silently(&state, "m0", "Renamed");
+
+    state.home.moved(&ann);
+    let anns = home(&state, &state.db, "en", &ann);
+
+    assert!(titles(&anns).contains(&"Renamed".to_string()));
+    assert!(Arc::ptr_eq(&bobs, &home(&state, &state.db, "en", &bob)));
+}

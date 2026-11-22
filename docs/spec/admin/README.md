@@ -316,6 +316,13 @@ server at a backup and it becomes the old server, then re-scans sources to rebui
 caches it deliberately did not carry. The restored server re-matches files to the identities
 the backup remembers, so watch history reattaches to media the moment it is scanned back in.
 
+**ADMIN-188** (AGREED) - A restore that is not a reset adds what the backup holds and removes
+nothing the server holds. The server keeps its own sources, and gains each source of the
+backup that it has neither by its identity nor by its folders (LIB-79).
+
+**ADMIN-189** (AGREED) - A restore that is a reset puts the backup's sources in place of the
+server's. Before it runs, it names each source of the server it will remove, and it runs only
+once the owner confirms.
 ### Scheduled backups
 
 Status: **AGREED**

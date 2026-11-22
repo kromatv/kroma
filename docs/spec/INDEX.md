@@ -3,7 +3,7 @@
 
 # Requirement index
 
-791 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+793 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -340,6 +340,8 @@
 - **ADMIN-185** (SHIPPED) - Under Users, every invitation nobody has redeemed offers to send it, <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-188** (AGREED) - A restore that is not a reset adds what the backup holds and removes <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-189** (AGREED) - A restore that is a reset puts the backup's sources in place of the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-195** (AGREED) - The server saves a backup by itself on a schedule once the owner <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-196** (AGREED) - Scheduled backups go to a folder the owner chose, or to a <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-197** (AGREED) - The folder keeps the newest backups and the server removes the <sub>[README.md](admin/README.md)</sub>

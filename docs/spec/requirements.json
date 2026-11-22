@@ -2337,7 +2337,7 @@
     "status": "AGREED",
     "text": "A server learns it is out of date by checking for a newer release and",
     "file": "docs/spec/admin/README.md",
-    "line": 349
+    "line": 356
   },
   {
     "id": "ADMIN-90",
@@ -2347,7 +2347,7 @@
     "status": "AGREED",
     "text": "A server update migrates the persistent store forward",
     "file": "docs/spec/admin/README.md",
-    "line": 362
+    "line": 369
   },
   {
     "id": "ADMIN-91",
@@ -2357,7 +2357,7 @@
     "status": "AGREED",
     "text": "Module updates are independent of the server and carry their own",
     "file": "docs/spec/admin/README.md",
-    "line": 366
+    "line": 373
   },
   {
     "id": "ADMIN-92",
@@ -2367,7 +2367,7 @@
     "status": "AGREED",
     "text": "Active playback neither blocks an update nor is stopped by one",
     "file": "docs/spec/admin/README.md",
-    "line": 369
+    "line": 376
   },
   {
     "id": "ADMIN-93",
@@ -2377,7 +2377,7 @@
     "status": "AGREED",
     "text": "The rule above is identical on every host. Only the delivery vehicle",
     "file": "docs/spec/admin/README.md",
-    "line": 374
+    "line": 381
   },
   {
     "id": "ADMIN-94",
@@ -3300,6 +3300,26 @@
     "line": 151
   },
   {
+    "id": "ADMIN-188",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 188,
+    "status": "AGREED",
+    "text": "A restore that is not a reset adds what the backup holds and removes",
+    "file": "docs/spec/admin/README.md",
+    "line": 319
+  },
+  {
+    "id": "ADMIN-189",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 189,
+    "status": "AGREED",
+    "text": "A restore that is a reset puts the backup's sources in place of the",
+    "file": "docs/spec/admin/README.md",
+    "line": 323
+  },
+  {
     "id": "ADMIN-195",
     "domain": "ADMIN",
     "space": "admin",
@@ -3307,7 +3327,7 @@
     "status": "AGREED",
     "text": "The server saves a backup by itself on a schedule once the owner",
     "file": "docs/spec/admin/README.md",
-    "line": 325
+    "line": 332
   },
   {
     "id": "ADMIN-196",
@@ -3317,7 +3337,7 @@
     "status": "AGREED",
     "text": "Scheduled backups go to a folder the owner chose, or to a",
     "file": "docs/spec/admin/README.md",
-    "line": 328
+    "line": 335
   },
   {
     "id": "ADMIN-197",
@@ -3327,7 +3347,7 @@
     "status": "AGREED",
     "text": "The folder keeps the newest backups and the server removes the",
     "file": "docs/spec/admin/README.md",
-    "line": 333
+    "line": 340
   },
   {
     "id": "ADMIN-198",
@@ -3337,7 +3357,7 @@
     "status": "AGREED",
     "text": "A backup that could not be saved fails its task and tells the",
     "file": "docs/spec/admin/README.md",
-    "line": 338
+    "line": 345
   },
   {
     "id": "ADMIN-199",
