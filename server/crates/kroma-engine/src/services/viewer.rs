@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 use crate::db::{self, TitleAccess};
 use crate::domain::{
     Ceiling, CountryRatings, Kind, LibraryScope, MediaItem, Metadata, SectionItem, Show, TitleRule,
-    User,
+    User, Weighed,
 };
 use crate::services::settings;
 use crate::state::SharedState;
@@ -137,26 +137,37 @@ impl Viewer {
     }
 
     fn admits_title(&self, title: &TitleAccess) -> bool {
-        let rated = (&title.ratings, title.certification.as_deref());
-        self.admits(&title.title, rated)
+        let weighed = Weighed {
+            ratings: &title.ratings,
+            legacy: title.certification.as_deref(),
+            genres: &title.genres,
+        };
+        self.admits(&title.title, weighed)
     }
 
     fn admits_metadata(&self, title: &str, meta: Option<&Metadata>) -> bool {
         let no_ratings = CountryRatings::new();
-        let rated = meta.map_or((&no_ratings, None), |m| {
-            (&m.ratings, m.certification.as_deref())
+        let unknown = Weighed {
+            ratings: &no_ratings,
+            legacy: None,
+            genres: &[],
+        };
+        let weighed = meta.map_or(unknown, |m| Weighed {
+            ratings: &m.ratings,
+            legacy: m.certification.as_deref(),
+            genres: &m.tmdb_genre_ids,
         });
-        self.admits(title, rated)
+        self.admits(title, weighed)
     }
 
-    fn admits(&self, title: &str, (ratings, legacy): (&CountryRatings, Option<&str>)) -> bool {
+    fn admits(&self, title: &str, weighed: Weighed<'_>) -> bool {
         if !self.is_held() {
             return true;
         }
         match self.rules.get(title) {
             Some(TitleRule::Block) => false,
             Some(TitleRule::Allow) => true,
-            None => self.ceiling.admits(ratings, legacy),
+            None => self.ceiling.admits_title(weighed),
         }
     }
 }

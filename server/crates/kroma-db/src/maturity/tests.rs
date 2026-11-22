@@ -10,7 +10,7 @@ fn seeded() -> TempPool {
            INSERT INTO items (id,kind,title,container,library,added_at,metadata) VALUES ('m1','movie','A','mkv','films','t','{"ratings":{"FR":"12","US":"PG-13"},"certification":"12"}');
            INSERT INTO items (id,kind,title,container,library,added_at,metadata) VALUES ('m2','movie','Old','mkv','films','t','{"certification":"16"}');
            INSERT INTO items (id,kind,title,container,library,added_at) VALUES ('m3','movie','Home video','mkv','films','t');
-           INSERT INTO shows (id,title,library,added_at,metadata) VALUES ('s1','S','series','t','{"ratings":{"US":"TV-Y7"}}');
+           INSERT INTO shows (id,title,library,added_at,metadata) VALUES ('s1','S','series','t','{"ratings":{"US":"TV-Y7"},"tmdbGenreIds":[10762,16]}');
            INSERT INTO items (id,kind,title,container,library,show_id,added_at,metadata) VALUES ('e1','episode','B','mkv','series','s1','t','{"ratings":{"US":"TV-MA"}}');
            INSERT INTO users (id,email,username,password_hash,permissions,created_at) VALUES ('u1','a@b.c','alice','h','["playback"]','t');"#,
     )
@@ -106,6 +106,7 @@ fn a_film_is_held_to_its_own_ratings_and_an_episode_to_its_shows() {
     assert_eq!(found["e1"].library, "series");
     assert_eq!(found["e1"].title, "s1");
     assert_eq!(found["e1"].ratings, ratings(&[("US", "TV-Y7")]));
+    assert_eq!(found["e1"].genres, vec![10762, 16]);
 }
 
 #[test]

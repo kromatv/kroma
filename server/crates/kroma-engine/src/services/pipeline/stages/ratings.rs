@@ -1,12 +1,13 @@
-//! Pipeline stage `ratings`: every country's age rating for a film or a show
-//! enriched before they were kept (ACCT-157), one TMDB request per title.
+//! Pipeline stage `ratings`: every country's age rating and the genre ids for
+//! a film or a show enriched before they were kept (ACCT-157, ACCT-183), one
+//! TMDB request per title.
 
 use anyhow::Result;
 
 use crate::db;
 use crate::domain::ratings::reader_rating;
-use crate::infra::metadata::{Target, ratings_by_id};
-use crate::model::{Kind, Metadata};
+use crate::infra::metadata::{Target, facts_by_id};
+use crate::model::{CountryRatings, Kind, Metadata};
 use crate::services::jobs::{JobContext, JobKey, Trigger};
 use crate::services::settings;
 use crate::state::SharedState;
@@ -34,13 +35,18 @@ fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {
 }
 
 fn unrated(id: String, meta: Option<&Metadata>) -> Option<(String, String)> {
-    let meta = meta.filter(|meta| meta.tmdb_id != 0 && meta.ratings.is_empty())?;
+    let meta = meta.filter(|meta| meta.tmdb_id != 0 && lacks_facts(meta))?;
     Some((id, format!("tmdb:{}", meta.tmdb_id)))
+}
+
+fn lacks_facts(meta: &Metadata) -> bool {
+    meta.ratings.is_empty() || meta.tmdb_genre_ids.is_empty()
 }
 
 struct Asked<'a> {
     api_key: &'a str,
     server: String,
+    language: String,
 }
 
 fn process(ctx: &JobContext, id: &str) -> Result<()> {
@@ -48,8 +54,11 @@ fn process(ctx: &JobContext, id: &str) -> Result<()> {
     let Some(api_key) = state.config.tmdb_api_key.as_deref() else {
         return Ok(());
     };
-    let server = settings::metadata_country(&state.settings, &state.config);
-    let asked = Asked { api_key, server };
+    let asked = Asked {
+        api_key,
+        server: settings::metadata_country(&state.settings, &state.config),
+        language: settings::metadata_language(&state.settings, &state.config),
+    };
     if let Some(item) = db::get_item(&state.db, id)? {
         let rated = asked.rate(Target::Movie, item.metadata)?;
         return rated.map_or(Ok(()), |meta| db::set_item_metadata(&state.db, id, &meta));
@@ -63,16 +72,31 @@ impl Asked<'_> {
         let Some(mut meta) = stored.filter(|meta| meta.tmdb_id != 0) else {
             return Ok(None);
         };
-        let ratings = ratings_by_id(self.api_key, target, meta.tmdb_id)
+        let facts = facts_by_id(self.api_key, target, (meta.tmdb_id, &self.language))
             .ok_or_else(|| anyhow::anyhow!("TMDB did not answer for {}", meta.tmdb_id))?;
-        if ratings.is_empty() {
-            return Ok(None);
+        let rated = self.fill_ratings(&mut meta, facts.ratings);
+        let sorted = fill_genres(&mut meta, (facts.genres, facts.genre_ids));
+        Ok((rated || sorted).then_some(meta))
+    }
+
+    fn fill_ratings(&self, meta: &mut Metadata, ratings: CountryRatings) -> bool {
+        if ratings.is_empty() || !meta.ratings.is_empty() {
+            return false;
         }
         meta.age_rating = reader_rating(&ratings, &self.server, &self.server);
         meta.certification = meta.age_rating.as_ref().map(|shown| shown.label.clone());
         meta.ratings = ratings;
-        Ok(Some(meta))
+        true
     }
+}
+
+fn fill_genres(meta: &mut Metadata, (names, ids): (Vec<String>, Vec<u32>)) -> bool {
+    if ids.is_empty() || !meta.tmdb_genre_ids.is_empty() {
+        return false;
+    }
+    meta.genres = names;
+    meta.tmdb_genre_ids = ids;
+    true
 }
 
 #[cfg(test)]

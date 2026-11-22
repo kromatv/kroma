@@ -195,6 +195,7 @@ fn credit(h: &HeldHousehold, (item_id, tmdb_id): (&str, u64), ratings: &[(&str, 
         "tmdbUrl": "",
         "cast": [{ "name": "Ada Lovelace" }],
         "ratings": ratings,
+        "tmdbGenreIds": [16],
     }))
     .expect("a credited metadata blob");
     crate::db::set_item_metadata(&h.app.state.db, item_id, &meta).expect("credit the title");

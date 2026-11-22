@@ -169,3 +169,25 @@ fn a_title_enriched_before_every_country_was_kept_keeps_what_it_carries() {
     assert_eq!(meta.certification.as_deref(), Some("12"));
     assert!(meta.age_rating.is_none());
 }
+
+#[test]
+fn a_kids_level_admits_only_a_title_made_for_children_and_thirteen_weighs_the_rating_alone() {
+    let rated = ratings(&[("FR", "TP")]);
+    let weighed = |genres: &'static [u32]| Weighed {
+        ratings: &rated,
+        legacy: None,
+        genres,
+    };
+
+    assert!(ceiling(MaturityLevel::Ten, "FR").admits_title(weighed(&[16])));
+    assert!(!ceiling(MaturityLevel::Ten, "FR").admits_title(weighed(&[28])));
+    assert!(ceiling(MaturityLevel::Thirteen, "FR").admits_title(weighed(&[28])));
+    assert!(!ceiling(MaturityLevel::Seven, "FR").admits_metadata(Some(&rated_genres(&[27, 16]))));
+}
+
+fn rated_genres(genres: &[u32]) -> Metadata {
+    Metadata {
+        tmdb_genre_ids: genres.to_vec(),
+        ..rated(ratings(&[("FR", "TP")]))
+    }
+}

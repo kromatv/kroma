@@ -20,6 +20,7 @@ fn metadata(rated: &[(&str, &str)]) -> Metadata {
     }))
     .unwrap();
     meta.ratings = ratings(rated);
+    meta.tmdb_genre_ids = vec![16];
     meta
 }
 
@@ -77,6 +78,7 @@ fn show_rated(show_id: &str, rated: &[(&str, &str)]) -> ShowRatings {
             library: String::new(),
             ratings: ratings(rated),
             certification: None,
+            genres: vec![16],
         },
     )])
 }
@@ -158,6 +160,7 @@ fn the_ids_seen_are_the_titles_that_pass_both_rules() {
                 library: "films".into(),
                 ratings: ratings(&[("FR", "TP")]),
                 certification: None,
+                genres: vec![16],
             },
         ),
         (
@@ -167,6 +170,7 @@ fn the_ids_seen_are_the_titles_that_pass_both_rules() {
                 library: "films".into(),
                 ratings: ratings(&[("FR", "16")]),
                 certification: None,
+                genres: Vec::new(),
             },
         ),
     ]);
@@ -282,4 +286,74 @@ fn a_kids_profile_in_a_swiss_household_does_not_see_a_film_switzerland_rates_twe
 
     assert!(!kid.sees_item(&meg_2, &ShowRatings::new()));
     assert!(held(MaturityLevel::Ten).sees_item(&meg_2, &ShowRatings::new()));
+}
+
+const ACTION: u32 = 28;
+const ANIMATION: u32 = 16;
+const FAMILY: u32 = 10751;
+const HORROR: u32 = 27;
+
+fn film_of(genres: &[u32]) -> MediaItem {
+    let mut item = film(&[("FR", "TP")]);
+    if let Some(meta) = item.metadata.as_mut() {
+        meta.tmdb_genre_ids = genres.to_vec();
+    }
+    item
+}
+
+#[test]
+fn a_profile_at_a_kids_level_sees_only_titles_made_for_children() {
+    let kid = held(MaturityLevel::All);
+
+    assert!(!kid.sees_item(&film_of(&[ACTION]), &ShowRatings::new()));
+    assert!(kid.sees_item(&film_of(&[FAMILY]), &ShowRatings::new()));
+    assert!(kid.sees_item(&film_of(&[ANIMATION, ACTION]), &ShowRatings::new()));
+}
+
+#[test]
+fn a_title_with_a_genre_kept_from_children_never_passes_a_kids_level() {
+    let kid = held(MaturityLevel::Ten);
+
+    assert!(!kid.sees_item(&film_of(&[ANIMATION, HORROR]), &ShowRatings::new()));
+}
+
+#[test]
+fn a_title_with_no_genre_kept_is_not_one_made_for_children() {
+    assert!(!held(MaturityLevel::Seven).sees_item(&film_of(&[]), &ShowRatings::new()));
+}
+
+#[test]
+fn levels_from_thirteen_up_weigh_the_rating_alone() {
+    assert!(held(MaturityLevel::Thirteen).sees_item(&film_of(&[ACTION]), &ShowRatings::new()));
+    assert!(held(MaturityLevel::Sixteen).sees_item(&film_of(&[HORROR]), &ShowRatings::new()));
+}
+
+#[test]
+fn a_title_allowed_for_the_profile_passes_a_kids_level_whatever_its_genres() {
+    let horror = MediaItem {
+        id: "allowed".into(),
+        ..film_of(&[HORROR])
+    };
+    let kid = ruling(held(MaturityLevel::All), "allowed", TitleRule::Allow);
+
+    assert!(kid.sees_item(&horror, &ShowRatings::new()));
+}
+
+#[test]
+fn a_show_and_its_episodes_answer_by_the_shows_genres() {
+    let kid = held(MaturityLevel::Ten);
+    let mut show = demo_data().shows.remove(0);
+    let mut drama = metadata(&[("FR", "TP")]);
+    drama.tmdb_genre_ids = vec![18];
+    show.metadata = Some(drama);
+    let ep = episode();
+    let show_id = ep.show_id.clone().unwrap_or_default();
+    let mut crime = show_rated(&show_id, &[("FR", "TP")]);
+    if let Some(access) = crime.get_mut(&show_id) {
+        access.genres = vec![10762, 80];
+    }
+
+    assert!(!kid.sees_show(&show));
+    assert!(!kid.sees_item(&ep, &crime));
+    assert!(kid.sees_item(&ep, &show_rated(&show_id, &[("FR", "TP")])));
 }

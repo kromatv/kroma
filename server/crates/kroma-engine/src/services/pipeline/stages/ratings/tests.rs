@@ -18,11 +18,15 @@ fn legacy(tmdb_id: u64, certification: &str) -> Metadata {
 }
 
 fn meg_2_rated() -> Value {
-    json!({ "results": [
-        { "iso_3166_1": "FR", "release_dates": [{ "certification": "TP" }] },
-        { "iso_3166_1": "CH", "release_dates": [{ "certification": "12" }] },
-        { "iso_3166_1": "US", "release_dates": [{ "certification": "PG-13" }] },
-    ]})
+    json!({
+        "id": 615656,
+        "genres": [{ "id": 28, "name": "Action" }, { "id": 27, "name": "Horreur" }],
+        "release_dates": { "results": [
+            { "iso_3166_1": "FR", "release_dates": [{ "certification": "TP" }] },
+            { "iso_3166_1": "CH", "release_dates": [{ "certification": "12" }] },
+            { "iso_3166_1": "US", "release_dates": [{ "certification": "PG-13" }] },
+        ]},
+    })
 }
 
 fn context(state: &SharedState) -> JobContext {
@@ -30,13 +34,14 @@ fn context(state: &SharedState) -> JobContext {
 }
 
 #[test]
-fn only_a_title_with_no_country_kept_is_queued() {
+fn only_a_title_missing_its_countries_or_its_genre_ids_is_queued() {
     let state = test_state_with_tmdb("test-key");
     seed_movie(&state, "old");
     seed_movie(&state, "new");
     db::set_item_metadata(&state.db, "old", &legacy(615656, "TP")).unwrap();
     let mut rated = legacy(603, "R");
     rated.ratings.insert("US".into(), "R".into());
+    rated.tmdb_genre_ids = vec![878];
     db::set_item_metadata(&state.db, "new", &rated).unwrap();
 
     let queued = enumerate(&state).unwrap();
@@ -50,7 +55,7 @@ fn a_title_enriched_before_every_country_was_kept_gains_them() {
     seed_movie(&state, "meg");
     db::set_item_metadata(&state.db, "meg", &legacy(615656, "TP")).unwrap();
     let _tmdb = FakeTmdb::start(|path| match path {
-        "/movie/615656/release_dates" => (200, meg_2_rated()),
+        "/movie/615656" => (200, meg_2_rated()),
         _ => (404, json!({})),
     });
 
@@ -71,9 +76,13 @@ fn a_show_gains_every_countrys_label_from_its_content_ratings() {
     seed_show_episode(&state, "show", "ep");
     db::set_show_metadata(&state.db, "show", &legacy(1396, "TV-MA")).unwrap();
     let _tmdb = FakeTmdb::start(|path| match path {
-        "/tv/1396/content_ratings" => (
+        "/tv/1396" => (
             200,
-            json!({ "results": [{ "iso_3166_1": "CH", "rating": "16" }] }),
+            json!({
+                "id": 1396,
+                "genres": [{ "id": 80, "name": "Crime" }],
+                "content_ratings": { "results": [{ "iso_3166_1": "CH", "rating": "16" }] },
+            }),
         ),
         _ => (404, json!({})),
     });
@@ -89,7 +98,7 @@ fn a_title_nobody_rated_keeps_what_it_had() {
     let state = test_state_with_tmdb("test-key");
     seed_movie(&state, "home");
     db::set_item_metadata(&state.db, "home", &legacy(42, "TP")).unwrap();
-    let _tmdb = FakeTmdb::start(|_| (200, json!({ "results": [] })));
+    let _tmdb = FakeTmdb::start(|_| (200, json!({ "id": 42, "genres": [] })));
 
     process(&context(&state), "home").unwrap();
 
@@ -133,4 +142,34 @@ fn a_server_without_a_metadata_key_and_a_title_never_matched_ask_nothing() {
         .unwrap();
     assert!(stored.ratings.is_empty());
     assert!(enumerate(&state).unwrap().is_empty());
+}
+
+#[test]
+fn a_title_rated_before_its_genre_ids_were_kept_is_queued_and_gains_them() {
+    let state = test_state_with_tmdb("test-key");
+    seed_movie(&state, "meg");
+    let mut rated = legacy(615656, "TP");
+    rated.ratings.insert("FR".into(), "TP".into());
+    rated.genres = vec!["Action".into()];
+    db::set_item_metadata(&state.db, "meg", &rated).unwrap();
+    let _tmdb = FakeTmdb::start(|path| match path {
+        "/movie/615656" => (200, meg_2_rated()),
+        _ => (404, json!({})),
+    });
+
+    let queued = enumerate(&state).unwrap();
+    process(&context(&state), "meg").unwrap();
+
+    assert_eq!(queued, vec![("meg".to_string(), "tmdb:615656".to_string())]);
+    let stored = db::get_item(&state.db, "meg")
+        .unwrap()
+        .unwrap()
+        .metadata
+        .unwrap();
+    assert_eq!(stored.tmdb_genre_ids, vec![28, 27]);
+    assert_eq!(
+        stored.genres,
+        vec!["Action".to_string(), "Horreur".to_string()]
+    );
+    assert_eq!(stored.ratings.len(), 1);
 }

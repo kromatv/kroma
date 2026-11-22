@@ -20,13 +20,15 @@ pub struct ProfileMaturity {
 
 /// What the gate weighs one title by. `title` is the film or the show a rule
 /// names, an episode answering as its show; `certification` is the bare label
-/// a title enriched before every country was kept still carries.
+/// a title enriched before every country was kept still carries; `genres` are
+/// its TMDB genre ids, an episode's being its show's.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TitleAccess {
     pub title: String,
     pub library: String,
     pub ratings: CountryRatings,
     pub certification: Option<String>,
+    pub genres: Vec<u32>,
 }
 
 /// An unknown account reads as one that never chose anything.
@@ -151,6 +153,8 @@ struct StoredRating {
     ratings: CountryRatings,
     #[serde(default)]
     certification: Option<String>,
+    #[serde(default, rename = "tmdbGenreIds")]
+    genres: Vec<u32>,
 }
 
 fn access((title, library): (Option<String>, String), blob: Option<&str>) -> TitleAccess {
@@ -162,6 +166,7 @@ fn access((title, library): (Option<String>, String), blob: Option<&str>) -> Tit
         library,
         ratings: stored.ratings,
         certification: stored.certification,
+        genres: stored.genres,
     }
 }
 

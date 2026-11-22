@@ -429,7 +429,7 @@
   "admin.restrictionsAdmin": "A profile that runs the server can't be held to a maturity rating",
   "admin.restrictionsOwnProfile": "Another admin has to change your own profile's restrictions",
   "admin.maturity": "Maturity rating",
-  "admin.maturityHint": "Titles rated above this level, and titles with no rating, are hidden from this profile on all of its devices.",
+  "admin.maturityHint": "Titles rated above this level, and titles with no rating, are hidden from this profile on all of its devices. At All ages, 7+ and 10+, so is every title not made for children.",
   "admin.maturityChange": "Change",
   "admin.maturityPasswordHint": "Type your own password to change this profile's restrictions.",
   "admin.maturityPassword": "Your password",

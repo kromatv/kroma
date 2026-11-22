@@ -87,7 +87,10 @@ fn age_row(line: &'static str) -> Option<AgeRow> {
 }
 
 mod ceiling;
-pub use ceiling::{Ceiling, MaturityLevel};
+pub use ceiling::{Ceiling, MaturityLevel, Weighed};
+
+mod children;
+pub use children::{MADE_FOR_CHILDREN, NEVER_FOR_CHILDREN, made_for_children};
 
 /// Every country the table knows a rating system for, by code: the countries a
 /// reader may pick as theirs.
