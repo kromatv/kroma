@@ -78,6 +78,17 @@ fn methods_of(module_dir: &Path, own: &ModuleManifest, point: &str) -> Vec<Strin
         .unwrap_or_default()
 }
 
+fn record_into(supervisor: &Supervisor, recorder: &Arc<Recorder>, runtime: &tokio::runtime::Runtime) {
+    let hearing = recorder.clone();
+    supervisor.watch(Arc::new(move |_, asked| hearing.heard(asked)));
+    supervisor.serve_gateways(
+        NetworkPolicyOf(recorder.clone()),
+        runtime.handle().clone(),
+        FolderRoots::none(),
+    );
+    supervisor.rule_sockets_with(recorder.clone());
+}
+
 /// Audits the module in `module_dir`, whose built component is at `component`.
 /// It reads `module.json` there, and [`FIXTURES_FILE`] when the module has one.
 /// Nothing the module does leaves this machine.
@@ -105,13 +116,7 @@ pub fn audit(module_dir: &Path, component: &Path) -> anyhow::Result<Report> {
         core_schema: Default::default(),
         log_line: None,
     });
-    let hearing = recorder.clone();
-    supervisor.watch(Arc::new(move |_, asked| hearing.heard(asked)));
-    supervisor.serve_gateways(
-        NetworkPolicyOf(recorder.clone()),
-        runtime.handle().clone(),
-        FolderRoots::none(),
-    );
+    record_into(&supervisor, &recorder, &runtime);
     let stub = fixtures
         .settings
         .iter()

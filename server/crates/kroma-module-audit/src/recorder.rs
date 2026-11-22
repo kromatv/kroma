@@ -107,6 +107,8 @@ impl NetworkPolicy for Recorder {
     fn record_flows(&self, _caller: &str, _flows: Vec<NetworkFlow>) {}
 }
 
+mod sockets;
+
 #[cfg(test)]
 mod tests {
     use super::*;

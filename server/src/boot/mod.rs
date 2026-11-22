@@ -12,6 +12,8 @@ pub mod https;
 pub mod scan;
 pub mod seam;
 pub mod serve;
+#[cfg(unix)]
+pub mod sockets;
 pub mod startup;
 pub mod state;
 pub mod tracing;

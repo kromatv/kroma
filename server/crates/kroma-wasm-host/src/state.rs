@@ -3,12 +3,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use wasmtime::component::ResourceTable;
-use wasmtime_wasi::{FsPerms, WasiCtx, WasiCtxView, WasiView};
+use wasmtime_wasi::{FsPerms, WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use crate::bindings::kroma::module::{files, host_api, lan, net, process, settings, sql, types};
-use crate::capabilities::{Databases, Files, Lan, Media, Preopen, Processes, SqlConnection};
+use crate::capabilities::{Databases, Files, Lan, Media, Processes, SqlConnection};
 use crate::limits::Ceiling;
 use crate::policy::{FetchCall, FetchRecord, NetPolicy, Outcome, Verdict};
+use crate::sockets::{tcp_check, Held, SocketsView};
 use crate::{Grant, HostError, Request, Response, Settings};
 
 const NO_DATABASE: &str = "this module declares no storage";
@@ -27,6 +28,7 @@ pub(crate) struct State {
     lan: Option<Arc<dyn Lan>>,
     files: Option<Arc<dyn Files>>,
     pub(crate) media: Option<Arc<dyn Media>>,
+    sockets: Option<Arc<Held>>,
     connections: HashMap<u32, Box<dyn SqlConnection>>,
     next_connection: u32,
     pub(crate) fetches: VecDeque<FetchRecord>,
@@ -36,7 +38,8 @@ pub(crate) struct State {
 
 impl State {
     pub(crate) fn new(grant: Grant, args: &[String]) -> Result<Self, HostError> {
-        let wasi = wasi_of(&grant.env, args, grant.log, &grant.preopens)?;
+        let sockets = grant.sockets.clone().map(Held::new);
+        let wasi = wasi_of(&grant, args, sockets.clone())?;
         Ok(Self {
             wasi,
             table: ResourceTable::new(),
@@ -48,12 +51,20 @@ impl State {
             lan: grant.lan,
             files: grant.files,
             media: grant.media,
+            sockets,
             connections: HashMap::new(),
             next_connection: 0,
             fetches: VecDeque::new(),
             cpu_at_start: Duration::ZERO,
             cpu_budget: grant.limits.cpu_budget,
         })
+    }
+
+    pub(crate) fn sockets_view(&mut self) -> SocketsView<'_> {
+        SocketsView {
+            table: &mut self.table,
+            held: self.sockets.as_ref(),
+        }
     }
 
     fn record(&mut self, request: &net::FetchRequest, answer: &Result<Response, String>) {
@@ -75,24 +86,23 @@ impl State {
     }
 }
 
-fn wasi_of(
-    env: &[(String, String)],
-    args: &[String],
-    log: Option<crate::LogSink>,
-    preopens: &[Preopen],
-) -> Result<WasiCtx, HostError> {
-    let mut builder = WasiCtx::builder();
+fn hold_sockets(builder: &mut WasiCtxBuilder, sockets: Option<Arc<Held>>) {
     builder
-        .envs(env)
-        .args(args)
-        .allow_tcp(false)
+        .allow_tcp(sockets.as_ref().is_some_and(|held| held.tcp()))
         .allow_udp(false)
-        .allow_ip_name_lookup(false);
-    if let Some(sink) = log {
+        .allow_ip_name_lookup(false)
+        .socket_addr_check(tcp_check(sockets));
+}
+
+fn wasi_of(grant: &Grant, args: &[String], sockets: Option<Arc<Held>>) -> Result<WasiCtx, HostError> {
+    let mut builder = WasiCtx::builder();
+    builder.envs(&grant.env).args(args);
+    hold_sockets(&mut builder, sockets);
+    if let Some(sink) = grant.log.clone() {
         let lines = crate::log::LineStream::new(sink);
         builder.stdout(lines.clone()).stderr(lines);
     }
-    for preopen in preopens {
+    for preopen in &grant.preopens {
         let perms = if preopen.writable {
             FsPerms::ReadWrite
         } else {

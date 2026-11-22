@@ -3,7 +3,7 @@ name = "kroma-wasm-host"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "Runs a module as a WebAssembly component: wasmtime, a small WIT world, an empty WASI context, and a memory ceiling and CPU budget per instance."
+description = "Runs a module as a WebAssembly component: wasmtime, a small WIT world, a WASI context holding only what its grant names (raw sockets included, each use ruled), and a memory ceiling and CPU budget per instance."
 license.workspace = true
 
 [dependencies]
@@ -15,6 +15,7 @@ tracing = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 tokio = { workspace = true }
+socket2 = "0.6"
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

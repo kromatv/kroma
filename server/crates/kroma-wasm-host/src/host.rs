@@ -63,6 +63,7 @@ impl WasmHost {
         let engine = Engine::new(&config).map_err(HostError::Link)?;
         let mut linker = Linker::new(&engine);
         wasmtime_wasi::p2::add_to_linker_sync(&mut linker).map_err(HostError::Link)?;
+        crate::sockets::link(&mut linker).map_err(HostError::Link)?;
         Module::add_to_linker::<State, HasSelf<State>>(&mut linker, |state| state)
             .map_err(HostError::Link)?;
         let ticker = Arc::new(EpochTicker::start(engine.clone()));

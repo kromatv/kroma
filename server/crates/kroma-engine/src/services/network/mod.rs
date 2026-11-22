@@ -23,6 +23,7 @@ mod middleware;
 mod offers;
 mod permissions;
 mod rules;
+mod sockets;
 mod summary;
 
 pub use decide::{decide, CORE, GUARD_LINK_LOCAL, GUARD_LOOPBACK};
@@ -37,6 +38,7 @@ pub use permissions::{DeclaredListeners, DeclaredPermissions, PERMISSION_NET_CON
 pub use rules::{
     Action, DefaultAction, NetworkRules, Rule, RulesError, MAX_BODY_BYTES, SETTING_KEY,
 };
+pub use sockets::{LocalNetwork, LocalNetworks, RawSocket, SocketRefusal};
 pub use summary::{Summary, SummaryRow, Totals, MAX_DAYS};
 
 use middleware::Middleware;
@@ -63,6 +65,7 @@ pub struct Network {
     https_port: Option<u16>,
     declared: DeclaredPermissions,
     middleware: Middleware,
+    local_networks: LocalNetworks,
 }
 
 impl Network {
@@ -82,6 +85,7 @@ impl Network {
             https_port: None,
             declared: Arc::new(|_| None),
             middleware: Middleware::answering(Point::absent(POLICY_POINT)),
+            local_networks: Arc::new(sockets::interface_networks),
         }
     }
 

@@ -11,7 +11,8 @@ use kroma_module_host::{
     NetworkAction, NetworkAnswer, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkPolicyOf,
 };
 use kroma_module_supervisor::{
-    Endpoint, FolderRoots, INSTALLED_DIR, MODULE_COMPONENT, Supervisor, SupervisorConfig,
+    Endpoint, FolderRoots, INSTALLED_DIR, MODULE_COMPONENT, SocketAsk, SocketRefused, SocketRules,
+    Supervisor, SupervisorConfig,
 };
 use sha2::Digest;
 
@@ -21,6 +22,7 @@ pub const GUEST: &str = "tv.example.guest";
 pub const FIRST_PARTY: &str = r#"{"kind":"registry","installedAt":0,"official":true}"#;
 pub const THIRD_PARTY: &str = r#"{"kind":"upload","installedAt":0}"#;
 pub const DECLARES: &str = r#", "storage": {}, "permissions": { "net": { "connect": [{ "purpose": "probe", "to": ["lan"] }] } }"#;
+pub const RAW_UDP: &str = r#", "storage": {}, "permissions": { "net": { "connect": [{ "purpose": "discovery", "to": ["lan"], "proto": ["udp"] }] } }"#;
 pub const STORES: &str = r#", "storage": { "core": { "read": ["granted"] } }"#;
 const LIBRARY: &str = "library";
 
@@ -36,6 +38,27 @@ impl NetworkPolicy for Ruled {
 
     fn record_flows(&self, _caller: &str, flows: Vec<NetworkFlow>) {
         self.flows.lock().unwrap().extend(flows);
+    }
+}
+
+pub struct LoopbackSockets;
+
+impl SocketRules for LoopbackSockets {
+    fn decide_socket(&self, _caller: &str, ask: &SocketAsk<'_>) -> Result<String, SocketRefused> {
+        if ask.address.ip().is_loopback() {
+            return Ok("discovery".to_string());
+        }
+        Err(SocketRefused {
+            rule: None,
+            reason: "only loopback in this test".to_string(),
+        })
+    }
+
+    fn decide_lookup(&self, _caller: &str, _name: &str) -> Result<String, SocketRefused> {
+        Err(SocketRefused {
+            rule: None,
+            reason: "no lookup in this test".to_string(),
+        })
     }
 }
 
@@ -131,6 +154,7 @@ impl Server {
             runtime.handle().clone(),
             folders,
         );
+        supervisor.rule_sockets_with(Arc::new(LoopbackSockets));
         Self {
             supervisor,
             network,
@@ -287,6 +311,22 @@ pub fn http_server(body: &'static str) -> (u16, Arc<AtomicUsize>) {
         }
     });
     (port, hits)
+}
+
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the test's own peer, answering the component on loopback"
+)]
+pub fn udp_echo() -> std::net::SocketAddr {
+    let socket = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
+    let address = socket.local_addr().unwrap();
+    std::thread::spawn(move || {
+        let mut datagram = [0u8; 64];
+        if let Ok((_, from)) = socket.recv_from(&mut datagram) {
+            let _ = socket.send_to(b"pong", from);
+        }
+    });
+    address
 }
 
 pub fn seed_core(server: &Server) {

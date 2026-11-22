@@ -2520,6 +2520,7 @@ dependencies = [
  "kroma-testing",
  "libc",
  "sha2 0.10.9",
+ "socket2",
  "thiserror 2.0.21",
  "tokio",
  "tracing",

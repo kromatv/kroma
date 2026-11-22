@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use kroma_wasm_host::{
     FetchRequest, Grant, Limits, Media, ModuleComponent, ModuleInstance, NetPolicy, Request,
-    Response, Settings, Verdict, WasmHost,
+    Response, Settings, SocketGrant, Verdict, WasmHost,
 };
 
 pub const MEMORY_CEILING_BYTES: usize = 32 * 1024 * 1024;
@@ -87,6 +87,7 @@ fn grant(
         lan: None,
         files: None,
         media,
+        sockets: None,
     }
 }
 
@@ -98,6 +99,14 @@ fn granted(
 ) -> ModuleInstance {
     component()
         .instantiate(grant(policy, settings, limits, media))
+        .expect("instantiate the test guest")
+}
+
+pub fn with_sockets(sockets: SocketGrant) -> ModuleInstance {
+    let mut grant = grant(Arc::new(BlockEverything), Settings::default(), LIMITS, None);
+    grant.sockets = Some(sockets);
+    component()
+        .instantiate(grant)
         .expect("instantiate the test guest")
 }
 

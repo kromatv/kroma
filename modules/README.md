@@ -852,6 +852,44 @@ An update that adds a key to `settings.write` asks for more, like one that widen
 `permissions`: no automatic update takes it, and the operator accepts it from the
 install plan.
 
+### Raw sockets
+
+`kroma_module_sdk::http::Fetch` is the way out for HTTP. A protocol that is not
+HTTP (a discovery datagram, a tracker, a peer) uses plain `std::net`, and a
+component holds a socket only for a transport a `net.connect` entry names in
+`proto`. Ask for the narrowest one that does the job:
+
+```jsonc
+"permissions": { "net": { "connect": [
+  { "purpose": "discovery", "to": ["lan"], "ports": [7359], "proto": ["udp"] }
+] } }
+```
+
+An entry with no `proto` gives `Fetch` and no socket. With one, every connection,
+datagram and name lookup is ruled before it happens, the way a fetch is, and a
+refusal is `ErrorKind::PermissionDenied`:
+
+- `to` decides where it may go. `lan` is the networks the server's interfaces sit
+  on, their broadcast addresses, `255.255.255.255` and the multicast that stays
+  on the link (`224.0.0.0/24`, `239.0.0.0/8`, `ff02::/16`). `public` is a public
+  address, and never a broadcast or a multicast one. A host pattern or a setting
+  covers an address only once your module resolved that name to it.
+- `ports` holds both ends: what you send to, and what an answer may come from. A
+  datagram from an address or a port no entry covers never reaches you.
+- Bind `0.0.0.0:0`. A socket binds only an ephemeral port and never listens.
+- Resolve a name with `std` (`ToSocketAddrs`), which asks the host. A name is
+  looked up only when an entry with a `proto` names it, or reaches `public` and
+  the name is not a local one. tokio resolves on a thread a component does not
+  have.
+- A broadcast needs nothing from you: the host's UDP sockets may broadcast, and
+  the rules say where.
+- A blocking `recv_from` with `set_read_timeout` works. So does a non-blocking
+  socket polled in a loop.
+
+Each socket is filed in the network journal under the purpose of the entry that
+covers it. One the operator's rules block, or send through a VPN, is refused: a
+raw socket goes direct. See [module security](../docs/module-security.md#raw-sockets).
+
 - **`dependencies`** is a hard dependency, as a `{ "<id>": "<range>" }` map.
   The backend enforces it, and the Store's install plan installs missing ones.
   An automatic or batch update that would bring one waits for the operator.

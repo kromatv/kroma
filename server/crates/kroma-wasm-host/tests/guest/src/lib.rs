@@ -1,5 +1,6 @@
 use std::hint::black_box;
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
+use std::time::{Duration, Instant};
 
 use exports::kroma::module::route::{Guest, Request, Response};
 use kroma::module::{media, net, settings};
@@ -22,6 +23,12 @@ impl Guest for Probes {
             "/fs/read" => answer(read_file(&argument)),
             "/net/connect" => answer(connect(&argument)),
             "/net/resolve" => answer(resolve(&argument)),
+            "/tcp/listen" => answer(listen(&argument)),
+            "/udp/bind" => answer(bind_udp(&argument)),
+            "/udp/send" => answer(send_datagram(&argument)),
+            "/udp/exchange" => answer(exchange(&argument)),
+            "/udp/connected" => answer(connected(&argument)),
+            "/udp/options" => answer(udp_options()),
             "/env" => answer(std::env::var(&argument).map_err(|error| format!("{error:?}"))),
             "/memory" => answer(allocate(&argument)),
             "/spin" => spin(),
@@ -71,6 +78,87 @@ fn connect(address: &str) -> Result<String, String> {
 fn resolve(host_and_port: &str) -> Result<String, String> {
     let addresses = host_and_port.to_socket_addrs().map_err(kind)?;
     Ok(format!("{:?}", addresses.collect::<Vec<_>>()))
+}
+
+fn listen(address: &str) -> Result<String, String> {
+    let listener = TcpListener::bind(address).map_err(kind)?;
+    Ok(format!("listening on {:?}", listener.local_addr()))
+}
+
+fn bind_udp(address: &str) -> Result<String, String> {
+    let socket = UdpSocket::bind(address).map_err(kind)?;
+    Ok(format!("bound to {:?}", socket.local_addr()))
+}
+
+fn ephemeral() -> Result<UdpSocket, String> {
+    UdpSocket::bind("0.0.0.0:0").map_err(kind)
+}
+
+fn send_datagram(address: &str) -> Result<String, String> {
+    let sent = ephemeral()?.send_to(b"ping", address).map_err(kind)?;
+    Ok(format!("sent {sent} bytes"))
+}
+
+fn exchange(address: &str) -> Result<String, String> {
+    let socket = ephemeral()?;
+    socket.send_to(b"ping", address).map_err(kind)?;
+    socket.set_nonblocking(true).map_err(kind)?;
+    let deadline = Instant::now() + Duration::from_millis(1500);
+    let mut reply = [0u8; 64];
+    while Instant::now() < deadline {
+        match socket.recv_from(&mut reply) {
+            Ok((read, from)) => return Ok(format!("{} from {from}", String::from_utf8_lossy(&reply[..read]))),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => std::thread::sleep(Duration::from_millis(10)),
+            Err(error) => return Err(kind(error)),
+        }
+    }
+    Err("nothing came back".to_string())
+}
+
+fn connected(address: &str) -> Result<String, String> {
+    let socket = ephemeral()?;
+    socket.set_ttl(4).map_err(kind)?;
+    socket.connect(address).map_err(kind)?;
+    socket.send(b"ping").map_err(kind)?;
+    let mut reply = [0u8; 64];
+    let read = socket.recv(&mut reply).map_err(kind)?;
+    let ttl = socket.ttl().map_err(kind)?;
+    let peer = socket.peer_addr().map_err(kind)?;
+    let local = socket.local_addr().map_err(kind)?;
+    Ok(format!(
+        "{} from {peer} at hop limit {ttl} on port {}",
+        String::from_utf8_lossy(&reply[..read]),
+        u16::from(local.port() != 0)
+    ))
+}
+
+fn udp_options() -> Result<String, String> {
+    use wasip2::sockets::instance_network::instance_network;
+    use wasip2::sockets::network::{IpAddressFamily, IpSocketAddress, Ipv4SocketAddress};
+    use wasip2::sockets::udp_create_socket::create_udp_socket;
+
+    let failed = |error: wasip2::sockets::network::ErrorCode| error.name().to_string();
+    let named = |error: Option<wasip2::sockets::network::ErrorCode>| error.map_or("none", |error| error.name());
+    let socket = create_udp_socket(IpAddressFamily::Ipv6).map_err(failed)?;
+    let v4 = IpSocketAddress::Ipv4(Ipv4SocketAddress { port: 0, address: (0, 0, 0, 0) });
+    let wrong_family = named(socket.start_bind(&instance_network(), v4).err());
+    let zero_buffer = named(socket.set_receive_buffer_size(0).err());
+    let zero_hops = named(socket.set_unicast_hop_limit(0).err());
+    socket.set_receive_buffer_size(65_536).map_err(failed)?;
+    socket.set_send_buffer_size(65_536).map_err(failed)?;
+    socket.set_unicast_hop_limit(8).map_err(failed)?;
+    let buffers = socket.receive_buffer_size().map_err(failed)? > 0 && socket.send_buffer_size().map_err(failed)? > 0;
+    let unbound = named(socket.local_address().err());
+    let streams = socket.stream(None).map_err(failed)?;
+    let bound = matches!(socket.local_address().map_err(failed)?, IpSocketAddress::Ipv6(_));
+    let unconnected = named(socket.remote_address().err());
+    drop(streams);
+    let finished = named(socket.finish_bind().err());
+    Ok(format!(
+        "{wrong_family} {zero_buffer} {zero_hops} hops {} buffers {buffers} {:?} {unbound} bound {bound} {unconnected} {finished}",
+        socket.unicast_hop_limit().map_err(failed)?,
+        socket.address_family(),
+    ))
 }
 
 fn sleep(millis: &str) -> Result<String, String> {

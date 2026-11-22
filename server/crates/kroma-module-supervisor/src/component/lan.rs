@@ -4,11 +4,11 @@
 use std::collections::HashMap;
 use std::net::{SocketAddr, UdpSocket};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Mutex, PoisonError};
+use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use kroma_http::address::primary_address;
-use kroma_module_manifest::Discovery;
+use kroma_module_manifest::{Discovery, ModuleManifest};
 use kroma_wasm_host::{Lan, Reply, Service};
 use mdns_sd::{ServiceDaemon, ServiceInfo};
 
@@ -44,6 +44,11 @@ fn is_plain_target(target: &str) -> bool {
 }
 
 impl ModuleLan {
+    pub(super) fn declared(module: &str, manifest: &ModuleManifest) -> Option<Arc<Self>> {
+        let discovery = &manifest.permissions.as_ref()?.net.discovery;
+        (!discovery.is_empty()).then(|| Arc::new(Self::new(module, discovery)))
+    }
+
     pub(super) fn new(module: &str, discovery: &[Discovery]) -> Self {
         Self {
             module: module.to_string(),

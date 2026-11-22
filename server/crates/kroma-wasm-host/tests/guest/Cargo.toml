@@ -11,6 +11,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wit-bindgen = { version = "0.63", default-features = false, features = ["macros", "realloc", "std"] }
+wasip2 = "1"
 
 # Its own workspace: it builds for wasm32-wasip2 only, never as a member of server/.
 [workspace]

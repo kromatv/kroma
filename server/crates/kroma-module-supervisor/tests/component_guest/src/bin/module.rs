@@ -21,6 +21,7 @@ fn routes() -> Router<RemoteHost> {
         .route("/read", get(read_at))
         .route("/write", get(write_at))
         .route("/fetch", get(fetch))
+        .route("/udp", get(datagram))
         .route("/fetch-header", get(fetch_with_a_file_for_a_header))
         .route("/download/{name}", get(download_into))
         .route(
@@ -67,6 +68,17 @@ async fn fetch(RawQuery(url): RawQuery) -> String {
         Ok(response) => format!("{} {}", response.status, response.text()),
         Err(error) => format!("refused: {error:#}"),
     }
+}
+
+async fn datagram(RawQuery(address): RawQuery) -> String {
+    let exchanged = std::net::UdpSocket::bind("0.0.0.0:0").and_then(|socket| {
+        socket.send_to(b"ping", address.unwrap_or_default())?;
+        socket.set_read_timeout(Some(Duration::from_secs(2)))?;
+        let mut reply = [0u8; 64];
+        let (read, from) = socket.recv_from(&mut reply)?;
+        Ok(format!("{} from {from}", String::from_utf8_lossy(&reply[..read])))
+    });
+    exchanged.unwrap_or_else(|error| format!("{:?}", error.kind()))
 }
 
 async fn fetch_with_a_file_for_a_header(RawQuery(url): RawQuery) -> String {

@@ -65,7 +65,7 @@ its isolation.
 
 | Permission | Grants | Notes |
 |---|---|---|
-| `net.connect` | connections for a purpose to a set of destinations | `to` is `public`, `lan`, a host pattern, or `setting:<key>`, which makes the operator's own configuration the allowlist |
+| `net.connect` | connections for a purpose to a set of destinations | `to` is `public`, `lan`, a host pattern, or `setting:<key>`, which makes the operator's own configuration the allowlist. An entry that names a transport in `proto` (`tcp`, `udp`) also gives the component raw sockets of that transport, see [raw sockets](#raw-sockets) |
 | `net.discovery` | `mdns` to publish a service, `ssdp` to search for devices | the host sends and listens for the module, which holds no socket |
 | `net.listen` | a port a program the module starts listens on, a number or `setting:<key>`, and with `count` (1 to 16) that port and the ones after it | a component cannot listen. Shown at consent, and an update that adds one or widens its run asks again. No other module may dial these ports on this machine |
 | `net.host` | the host's network, for the programs the module starts | a tunnel (`wireproxy`, `cloudflared`) and the torrent engine reach the internet from the host. Marked as extended access |
@@ -121,7 +121,7 @@ what enforces it. See
 
 | | How the host holds it |
 |---|---|
-| `net` | `net.fetch`, `fetch-all` and `download` go through the policy and the module's own gateway, and are journaled; `lan` answers only what `net.discovery` names |
+| `net` | `net.fetch`, `fetch-all` and `download` go through the policy and the module's own gateway, and are journaled; `lan` answers only what `net.discovery` names; `wasi:sockets` only for a transport an entry names in `proto`, each bind, connection, datagram and name lookup ruled before it happens |
 | `fs` | WASI preopens: only the declared roots, read-only where declared |
 | `run` | `process` starts only what `run` names, for a first-party module |
 | `env` | only the declared variables exist |
@@ -134,6 +134,73 @@ what enforces it. See
 policy decides a fetch first, and a refusal names its reason. An allowed fetch is
 carried through the module's gateway, which rules again on every redirect hop. See
 [networking](networking.md#the-gateway).
+
+**Raw sockets.** A component holds a socket only for a transport a `net.connect`
+entry names in `proto`. An entry with no `proto` is for `fetch` alone and grants
+no socket, so a module asks for one in the open:
+
+```json
+{ "purpose": "discovery", "to": ["lan"], "ports": [7359], "proto": ["udp"] }
+```
+
+TCP runs on wasmtime's own sockets, under the address check wasmtime calls
+before each bind, listen and connection. UDP and name lookup are the host's own:
+the stock UDP socket cannot broadcast, and the stock lookup does not tell the
+check which name an address came from. Every use is ruled where every fetch is,
+by the core's network policy, in this order:
+
+1. The first entry that names the transport, names the port (or no port) and
+   covers the address decides the purpose. `public` covers a public address.
+   `lan` covers an address on one of the networks this machine's interfaces sit
+   on, the broadcast address of each, `255.255.255.255`, and the multicast that
+   stays on the link: `224.0.0.0/24`, `239.0.0.0/8` and `ff02::/16`. A host
+   pattern or `setting:<key>` covers an address the module resolved that name to,
+   through the host. Nothing else covers anything.
+2. The guards: a link-local address is never reachable, and neither is one of
+   this server's own listeners on any address of this machine.
+3. The operator's rules, for the address and for each name resolved to it. A
+   rule that blocks refuses the socket, and so does one that sends the purpose
+   through a network: a raw socket goes direct, so it is refused rather than
+   leaked past the tunnel.
+
+A refusal reaches the component as `access-denied`. Each connection and each
+datagram sent is filed in the journal under the purpose of its entry, with
+`TCP` or `UDP` for a method, and each refusal with the rule that made it. A
+ruling holds for ten seconds for that transport, address and use, so a module
+sending many datagrams to one peer is ruled, and filed, once in that time.
+
+Every way to an address the manifest does not name is closed:
+
+- **No `proto`, no socket.** A component with no such entry is refused TCP,
+  UDP and name lookup outright, and one that names only `udp` has no TCP.
+- **Arrivals are ruled too.** A datagram from an address and port no entry
+  covers is dropped before the component reads it.
+- **No listening.** A component binds only an ephemeral port on every address,
+  never a port or an interface it chose, and a TCP socket never listens.
+- **`public` never broadcasts.** Broadcast and multicast are `lan` only. WASI
+  has no option for a multicast hop limit, so a multicast datagram leaves with
+  the system's default of one hop, and no call joins a group.
+- **`lan` is this machine's networks.** A private address behind a router, on
+  another VLAN or across a VPN, is not on them and is refused. `fetch` keeps
+  its wider `lan`, any address that is not public.
+- **A name is looked up only for an entry that reaches it.** A host pattern or
+  a setting that names it, or `public` for a name that is not a local one. `lan`
+  grants no lookup. The operator's rules are asked about the name too, and a
+  refused lookup is filed. A lookup sends a query out through the host's
+  resolver, so one the manifest does not name would carry data out in the name.
+- **A name rule is an address rule.** A socket shows no name, so an address is
+  covered by a name only once the module resolved that name to it. It stays
+  covered while the instance lives, so a host that shares its address with the
+  name (a CDN) is reachable too. HTTP keeps the precision of a name.
+- **Nothing is inherited.** Every socket is closed on exec, so a program a
+  first-party module starts holds none of the component's.
+- **The audit sees them.** `kroma audit` writes down every socket and lookup a
+  module attempts, `ok` or `NOT DECLARED`, and lets none out.
+
+What a raw socket does not get: the VPN, since the host cannot route it through
+a tunnel yet (sealed traffic stays on the gateway), and byte counts, since the
+host sees no bytes on TCP. A `public` raw socket reaches any public address on
+its ports, the way a `public` fetch does.
 
 **Host API.** `host-api` reaches the core's `/api/_host/*` and a peer's
 `/api/module/<id>/*`, and nothing else. The host adds the module token on the way
@@ -386,6 +453,12 @@ it holds, so only what it asks of the host's own file calls can be refused.
 Containment is tested, not assumed. `kroma-wasm-host/tests/escape.rs` has a
 component try to read a path the host process can, open a TCP socket, resolve a
 name and read an environment variable the host has, and each attempt must fail.
+`sockets.rs` there grants a component one transport at a time: it reaches only
+what its rules allow, never the other transport, never a port it chose, never
+listens, drops a datagram from an address its rules refuse, broadcasts, and
+looks up only a name its rules allow, which then reaches the rules with the
+address. The engine's `raw_sockets` tests rule `lan`, `public`, ports, names,
+the guards and the operator's rules.
 `limits.rs` holds an instance to its memory ceiling and CPU budget. CI runs both
 on Ubuntu, macOS and Windows. The `kroma-module-supervisor/tests/component_*.rs`
 suites run components under the real supervisor: a call goes through the gateway and into
@@ -443,4 +516,5 @@ writes a new key, and an unattended install of a module that is not installed.
 | Strict tier by uid, Watch scanner | dropped: no module is a native process (#489, #490) |
 | Escape suite on Ubuntu, macOS and Windows | on `main` (#523) |
 | Per-module network view | on `main` (#496) |
+| Raw sockets for a transport an entry names in `proto`, each use ruled and journaled | on `main` (RFC 567, step 7) |
 | `kroma audit` | on `main` (#495) |

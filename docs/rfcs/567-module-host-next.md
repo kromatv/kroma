@@ -183,6 +183,38 @@ connect reached the guest as `Permission denied`, and the check saw
 - tokio resolves names on `spawn_blocking`, which panics in a component (no threads).
   Names must resolve through std, which is WASI `ip-name-lookup`. **Proven**.
 
+#### Step 7 as built
+
+Step 7 needed nothing from steps 5 and 6: TCP sockets block under WASI 0.2 like
+any other import. What building it decided:
+
+- **The host owns UDP.** WASI 0.2 has no broadcast option and the stock UDP
+  socket never sets `SO_BROADCAST`, so a component could multicast but never
+  broadcast, and Jellyfin's and Emby's discovery answer only a broadcast. The
+  host links its own `wasi:sockets/udp` over the stock one, the way spike 2b
+  linked `ip-name-lookup`, and rules every datagram both ways. TCP stays on
+  wasmtime's socket under `socket_addr_check`.
+- **A raw protocol is a `proto` someone wrote.** An entry with no `proto` keeps
+  meaning `fetch` over TCP and grants no socket.
+- **`lan` is narrower on a socket.** It is the networks this machine's
+  interfaces sit on, their broadcasts and the multicast that stays on the link,
+  where `fetch` takes any address that is not public. `public` and a named
+  destination never cover a broadcast or a multicast address.
+- **A lookup is egress.** The host's lookup runs only for a name an entry with a
+  `proto` names, or reaches through `public`, and the operator's rules are asked
+  about the name.
+- **The ruling is the core's.** The engine rules each use (the entry, the guards,
+  the operator's rules for the address and each name resolved to it), and a rule
+  that routes through a network refuses the socket. The supervisor holds a
+  ruling for ten seconds and files each socket in the journal.
+- **No crate a module links changed.** The ruling reaches the supervisor through
+  a trait of its own, `SocketRules`, which the server implements over the
+  engine, rather than through `NetworkPolicy`: a method added there moved every
+  module bundle.
+
+Left for later: byte counts on sockets, sealed traffic over a host-owned tunnel
+(step 8), and a component that listens.
+
 **The SOCKS gateway stays for programs only** (`{gateway:<purpose>}`) and goes with the last
 one.
 
@@ -330,7 +362,7 @@ nobody has to rebuild for, then interface changes, then the programs.
 | 4 | In-process seam: the core calls the instance directly, and host calls reach the core's router without `host.sock` | most of the 1,480-line socket seam, the Unix-only gate on the component host | M | the seam's "never a local client" rule must hold in-process too | Read |
 | 5 | `wasi:http` for outgoing calls, one decision in the hook, hyper instead of `curl`. Blocking at first, so the guest executor does not change | `net.*` and `host-api.*` (669 lines), a `curl` process per module call, the second decision | M to L | `kroma:module@0.3.0` linked beside `@0.2.0`, first-party modules rebuilt | Proven, spike 5 |
 | 6 | Async guests: component-model async exports and imports, wit-bindgen's executor, `kroma::spawn` and `kroma::sleep`, opt-in per module | the tick, the `curl` add in torrents, an announce that holds the module | L | wasmtime calls component async "very incomplete" | Proven, spike 1 |
-| 7 | `wasi:sockets` for modules that declare a raw protocol, with the address check, the host's name lookup and a purpose taken from the declaration | direct peer traffic through the SOCKS gateway | M | name rules are address rules on sockets | Proven, spikes 2 and 2b |
+| 7 | `wasi:sockets` for modules that declare a raw protocol, with the address check, the host's name lookup and a purpose taken from the declaration | direct peer traffic through the SOCKS gateway | M | name rules are address rules on sockets | **Shipped**, see [step 7 as built](#step-7-as-built) |
 | 8 | WireGuard in the host (boringtun or gotatun, plus smoltcp) as the tunnel for sealed purposes | `wireproxy`, `net.host` for `tv.kroma.vpn` | L | owning a WireGuard implementation: handshakes, timers, roaming | compile Proven for wasm; native is ordinary Rust |
 | 9 | The torrent engine, after a spike on the NAS: librqbit as a component with the two dependencies patched, or rqbit kept native behind the host's tunnel | `rqbit` native, `net.host` for torrents; the peer parser contained | L | single-thread hashing caps throughput | compile blockers Proven, speed Guess |
 | 10 | `kroma test` (and `kroma audit`), Winch for dev uploads, typed host errors, point schemas | the native test path, slow NAS dev loops, string errors | S to M each | low | Proven for compile times, spike 6 |

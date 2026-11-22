@@ -57,3 +57,45 @@ pub trait Lan: Send + Sync {
     fn search(&self, target: &str, wait: Duration) -> Result<Vec<Reply>, String>;
     fn addresses(&self) -> Vec<String>;
 }
+
+/// The transport a raw socket speaks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SocketProto {
+    Tcp,
+    Udp,
+}
+
+/// What a component does with a raw socket at one remote address: open a
+/// connection to it, send it a datagram, or take a datagram it sent.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SocketUse {
+    Connect,
+    Send,
+    Receive,
+}
+
+/// One use of a raw socket, with every name this instance resolved to the
+/// address through the host's own lookup.
+#[derive(Debug, Clone, Copy)]
+pub struct SocketCall<'a> {
+    pub proto: SocketProto,
+    pub using: SocketUse,
+    pub address: std::net::SocketAddr,
+    pub names: &'a [String],
+}
+
+/// What a component may do with raw sockets, ruled on its behalf. A refusal
+/// reaches the component as `access-denied`.
+pub trait Sockets: Send + Sync {
+    fn allows(&self, call: &SocketCall<'_>) -> bool;
+    fn may_resolve(&self, name: &str) -> bool;
+}
+
+/// The raw sockets an instance may open: the transports its manifest declares,
+/// every use of one ruled by `rules`.
+#[derive(Clone)]
+pub struct SocketGrant {
+    pub tcp: bool,
+    pub udp: bool,
+    pub rules: std::sync::Arc<dyn Sockets>,
+}

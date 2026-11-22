@@ -3,7 +3,7 @@
 
 # Requirement index
 
-804 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+806 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -707,6 +707,8 @@
 - **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
 - **MOD-108** (SHIPPED) - A module names and describes itself, and says in one sentence what it <sub>[README.md](modules/README.md)</sub>
 - **MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do, <sub>[README.md](modules/README.md)</sub>
+- **MOD-110** (AGREED) - A module opens a socket of its own only for a transport (TCP or UDP) <sub>[README.md](modules/README.md)</sub>
+- **MOD-111** (AGREED) - A socket a module opens obeys the operator's network rules: one they <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 
