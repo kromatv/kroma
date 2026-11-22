@@ -1,7 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import { useT } from '@kromatv/ui';
-import { Button, ListRow, Switch } from '@kromatv/ui/kit';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
+import { GuidedFlow, ListRow, Switch } from '@kromatv/ui/kit';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useBackupsAnswer } from '#web/features/setup/use-backups-answer.hook';
 import type { Refusal } from '#web/shared/lib/use-backup-schedule.hook';
@@ -45,20 +44,20 @@ export function BackupsStep({
   const error = useFailure({ failed, refusal });
   return (
     <>
-      <StepHeading title={t('setup.backupsTitle')} sub={t('setup.backupsSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.backupsTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.backupsSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <StepFailure error={error} />
         {enabled === null ? null : <BackupsSwitch enabled={enabled} onEnabled={setEnabled} />}
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          loading={busy}
-          onPress={() => void confirm()}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next loading={busy} onPress={() => void confirm()} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

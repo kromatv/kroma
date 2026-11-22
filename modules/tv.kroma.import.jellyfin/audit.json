@@ -37,6 +37,11 @@
     },
     {
       "method": "POST",
+      "path": "/_port/importer/unlock",
+      "body": { "signIn": "none", "server": "none", "user": "none", "pin": "0000" }
+    },
+    {
+      "method": "POST",
       "path": "/_port/importer/forget",
       "body": { "signIn": "none" }
     }

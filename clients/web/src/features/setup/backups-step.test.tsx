@@ -2,6 +2,7 @@
 
 import { KromaApiError } from '@kromatv/client';
 import { BackupSchedule } from '@kromatv/client/admin';
+import { GuidedFlow } from '@kromatv/ui/kit';
 import { onScreen } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -29,7 +30,9 @@ function renderStep(onContinue = vi.fn()) {
   render(
     onScreen(
       <QueryClientProvider client={client}>
-        <BackupsStep onBack={vi.fn()} onContinue={onContinue} />
+        <GuidedFlow.Root label="Setup">
+          <BackupsStep onBack={vi.fn()} onContinue={onContinue} />
+        </GuidedFlow.Root>
       </QueryClientProvider>,
     ),
   );

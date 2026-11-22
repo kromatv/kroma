@@ -58,3 +58,13 @@ pub(crate) struct PlaysAsk {
 pub(crate) struct ForgetAsk {
     pub sign_in: String,
 }
+
+/// It carries the PIN the owner typed, so it has no `Debug`.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UnlockAsk {
+    pub sign_in: String,
+    pub server: String,
+    pub user: String,
+    pub pin: String,
+}

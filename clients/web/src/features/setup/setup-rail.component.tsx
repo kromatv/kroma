@@ -1,5 +1,5 @@
 import { useT } from '@kromatv/ui';
-import { Box, Progress, Stepper, Text } from '@kromatv/ui/kit';
+import { Stepper } from '@kromatv/ui/kit';
 import {
   answeredSteps,
   isSetupStep,
@@ -84,22 +84,10 @@ export function SetupRail({ step, reached, open, start, onStep }: Readonly<RailP
   );
 }
 
-/** The same position on a narrow screen, where a list of steps has no room. */
-export function SetupProgress({ step, start }: Readonly<{ step: SetupStep; start: SetupStart }>) {
+/** Where the owner is, for the line over the question on a screen with no
+ * room for the list of steps. */
+export function useStepPosition(step: SetupStep, start: SetupStart) {
   const t = useT();
   const steps = answeredSteps(start);
-  const position = steps.indexOf(step) + 1;
-  const where = t('setup.stepOf', {
-    step: position,
-    count: steps.length,
-    name: t(STEP_NAME[step]),
-  });
-  return (
-    <Box gap={10}>
-      <Text variant="overline" color="textDim">
-        {where}
-      </Text>
-      <Progress value={position / steps.length} label={where} />
-    </Box>
-  );
+  return { position: steps.indexOf(step) + 1, count: steps.length, name: t(STEP_NAME[step]) };
 }
