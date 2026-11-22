@@ -3,7 +3,7 @@
 
 # Requirement index
 
-798 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+804 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -156,6 +156,12 @@
 - **ACCT-155** (SHIPPED) - A Kids profile an admin creates takes that admin's ratings country. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-156** (SHIPPED) - A title enriched before every country's label was kept carries one <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-157** (SHIPPED) - The server fetches every country's labels for those titles in the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-180** (SHIPPED) - A profile at a kids level (All, 7+ or 10+) sees only titles made for <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-181** (SHIPPED) - A title among whose genres are Horror, Thriller, Crime or War, or for <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-182** (SHIPPED) - Genres are read by the metadata provider's own identifiers, never by <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-183** (SHIPPED) - A title enriched before its genre identifiers were kept counts as not <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-184** (SHIPPED) - A title an admin allowed for the profile passes a kids level whatever <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-185** (SHIPPED) - 13+, 16+ and 18+ weigh a title's rating alone. <sub>[kids.md](accounts/kids.md)</sub>
 
 ## ADMIN - [admin](admin/)
 

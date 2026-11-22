@@ -73,8 +73,22 @@ fn rate_show(pool: &db::Pool, show_id: &str, ratings: &[(&str, &str)]) {
     db::set_show_metadata(pool, show_id, &rated(ratings)).expect("rate the show");
 }
 
+/// A film or a show rated for every age in the United States, of `genres`
+/// (TMDB ids).
+pub fn of_genres(pool: &db::Pool, (id, show): (&str, bool), genres: &[u32]) {
+    let mut meta = rated(&[("US", "G")]);
+    meta.tmdb_genre_ids = genres.to_vec();
+    let stored = if show {
+        db::set_show_metadata(pool, id, &meta)
+    } else {
+        db::set_item_metadata(pool, id, &meta)
+    };
+    stored.expect("store the genres");
+}
+
 /// What enrichment stores on a server whose metadata country is the United
 /// States: every country's label, and the household's badge picked from them.
+/// Every title is an animation, so a kids level weighs its rating alone.
 fn rated(ratings: &[(&str, &str)]) -> Metadata {
     let ratings: serde_json::Map<String, serde_json::Value> = ratings
         .iter()
@@ -87,6 +101,7 @@ fn rated(ratings: &[(&str, &str)]) -> Metadata {
         "genres": [],
         "tmdbUrl": "",
         "ratings": ratings,
+        "tmdbGenreIds": [16],
     }))
     .expect("a rated metadata blob");
     let household = Ceiling {

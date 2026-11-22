@@ -212,6 +212,33 @@ show.
 **ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile
 may see (ACCT-112).
 
+### Titles made for children
+
+Status: **SHIPPED** on the server, so every surface shows only what it lets through.
+
+As on Netflix Kids, a profile at a kids level sees what was made for children, not
+everything its rating would allow. A family film and a war drama can share a 10+ rating.
+
+**ACCT-180** (SHIPPED) - A profile at a kids level (All, 7+ or 10+) sees only titles made for
+children: a film among whose genres are Animation or Family, and a show among whose genres
+are Kids, Family or Animation. The title must pass the profile's ceiling as well.
+
+**ACCT-181** (SHIPPED) - A title among whose genres are Horror, Thriller, Crime or War, or for
+a show Crime or War & Politics, never passes a kids level, whatever its rating and its other
+genres.
+
+**ACCT-182** (SHIPPED) - Genres are read by the metadata provider's own identifiers, never by
+their names, so the rule is the same in every language.
+
+**ACCT-183** (SHIPPED) - A title enriched before its genre identifiers were kept counts as not
+made for children until the server fetches them in the background, with its age ratings
+(ACCT-157).
+
+**ACCT-184** (SHIPPED) - A title an admin allowed for the profile passes a kids level whatever
+its genres, and one an admin blocked never passes (ACCT-117, ACCT-118).
+
+**ACCT-185** (SHIPPED) - 13+, 16+ and 18+ weigh a title's rating alone.
+
 ## Later
 
 Status: **DESIGN, NOT IMPLEMENTED**

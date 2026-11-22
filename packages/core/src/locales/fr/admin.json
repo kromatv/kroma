@@ -429,7 +429,7 @@
   "admin.restrictionsAdmin": "Impossible de limiter l'âge d'un profil qui gère le serveur",
   "admin.restrictionsOwnProfile": "Les restrictions de votre propre profil se changent depuis le compte d'un autre administrateur",
   "admin.maturity": "Classification par âge",
-  "admin.maturityHint": "Les titres classés au-dessus de ce niveau, et ceux sans classification, sont masqués pour ce profil sur tous ses appareils.",
+  "admin.maturityHint": "Les titres classés au-dessus de ce niveau, et ceux sans classification, sont masqués pour ce profil sur tous ses appareils. À Tous publics, 7+ et 10+, tout titre qui n'est pas destiné aux enfants l'est aussi.",
   "admin.maturityChange": "Modifier",
   "admin.maturityPasswordHint": "Saisissez votre mot de passe pour modifier les restrictions de ce profil.",
   "admin.maturityPassword": "Votre mot de passe",

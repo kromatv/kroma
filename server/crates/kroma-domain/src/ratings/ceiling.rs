@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{AgeRating, CountryRatings, minimum_age, reader_rating};
+use super::{AgeRating, CountryRatings, made_for_children, minimum_age, reader_rating};
 use crate::metadata::Metadata;
 
 /// One of the six levels a profile is held at, the ones Netflix uses. It reads
@@ -70,6 +70,16 @@ impl From<MaturityLevel> for u8 {
     }
 }
 
+/// What a title is weighed by: every country's label, the one bare label a
+/// title enriched before every country was kept carries, and its TMDB genre
+/// ids.
+#[derive(Debug, Clone, Copy)]
+pub struct Weighed<'a> {
+    pub ratings: &'a CountryRatings,
+    pub legacy: Option<&'a str>,
+    pub genres: &'a [u32],
+}
+
 /// What a profile is held to: its level, the country whose labels it reads,
 /// and the server's metadata country a title borrows from first.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -101,11 +111,22 @@ impl Ceiling {
                 .is_some_and(|age| age <= self.level.age())
     }
 
-    /// [`Self::admits`] for a title's stored metadata; a title with none is
-    /// unrated.
+    /// [`Self::admits`], and at a kids level only a title made for children
+    /// (ACCT-180, ACCT-181). 13+ and above weigh the rating alone.
+    pub fn admits_title(&self, title: Weighed<'_>) -> bool {
+        self.admits(title.ratings, title.legacy)
+            && (!self.level.is_kids() || made_for_children(title.genres))
+    }
+
+    /// [`Self::admits_title`] for a title's stored metadata; a title with none
+    /// is unrated.
     pub fn admits_metadata(&self, meta: Option<&Metadata>) -> bool {
         match meta {
-            Some(meta) => self.admits(&meta.ratings, meta.certification.as_deref()),
+            Some(meta) => self.admits_title(Weighed {
+                ratings: &meta.ratings,
+                legacy: meta.certification.as_deref(),
+                genres: &meta.tmdb_genre_ids,
+            }),
             None => self.hides_nothing(),
         }
     }

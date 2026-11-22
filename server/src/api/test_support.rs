@@ -30,7 +30,9 @@ use crate::model::Permission;
 use crate::services::settings::{self, LibraryDef, Settings};
 use crate::state::{AppState, SharedState};
 
-pub use ceiling::{hold_at, household_where_the_viewer_is_held_at_ten, rate_item, HeldHousehold};
+pub use ceiling::{
+    hold_at, household_where_the_viewer_is_held_at_ten, of_genres, rate_item, HeldHousehold,
+};
 pub use direct::{offer, offer_through_the_tunnel, proof_of, HOUSEHOLD_PUBLIC_IP, NEIGHBOUR};
 pub use importers::{import_job_ended, importer_answering, importer_held, on_disk, IMPORTER};
 pub use mail_relay::{relay_app, relay_paths, stub_relay};

@@ -1490,6 +1490,66 @@
     "line": 78
   },
   {
+    "id": "ACCT-180",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 180,
+    "status": "SHIPPED",
+    "text": "A profile at a kids level (All, 7+ or 10+) sees only titles made for",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 222
+  },
+  {
+    "id": "ACCT-181",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 181,
+    "status": "SHIPPED",
+    "text": "A title among whose genres are Horror, Thriller, Crime or War, or for",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 226
+  },
+  {
+    "id": "ACCT-182",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 182,
+    "status": "SHIPPED",
+    "text": "Genres are read by the metadata provider's own identifiers, never by",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 230
+  },
+  {
+    "id": "ACCT-183",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 183,
+    "status": "SHIPPED",
+    "text": "A title enriched before its genre identifiers were kept counts as not",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 233
+  },
+  {
+    "id": "ACCT-184",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 184,
+    "status": "SHIPPED",
+    "text": "A title an admin allowed for the profile passes a kids level whatever",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 237
+  },
+  {
+    "id": "ACCT-185",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 185,
+    "status": "SHIPPED",
+    "text": "13+, 16+ and 18+ weigh a title's rating alone.",
+    "file": "docs/spec/accounts/kids.md",
+    "line": 240
+  },
+  {
     "id": "ADMIN-1",
     "domain": "ADMIN",
     "space": "admin",
