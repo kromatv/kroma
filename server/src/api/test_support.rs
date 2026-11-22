@@ -8,6 +8,7 @@
 mod ceiling;
 mod direct;
 mod importers;
+mod mail_relay;
 mod media;
 mod modules;
 mod requests;
@@ -32,6 +33,7 @@ use crate::state::{AppState, SharedState};
 pub use ceiling::{hold_at, household_where_the_viewer_is_held_at_ten, rate_item, HeldHousehold};
 pub use direct::{offer, offer_through_the_tunnel, proof_of, HOUSEHOLD_PUBLIC_IP, NEIGHBOUR};
 pub use importers::{import_job_ended, importer_answering, importer_held, on_disk, IMPORTER};
+pub use mail_relay::{relay_app, relay_paths, stub_relay};
 pub use media::{
     byte_routes, device_of, household_where_the_viewer_only_sees_films, ticketed, FILM,
 };

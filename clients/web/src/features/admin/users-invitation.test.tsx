@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
 import { I18nProvider } from '@kromatv/ui';
-import { createInputTestHost } from '@kromatv/ui/testing';
+import { KitProvider } from '@kromatv/ui/kit';
+import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { member } from '#web/features/admin/users.fixture';
@@ -43,7 +44,9 @@ beforeEach(() => {
 function show(fields: Parameters<typeof member>[0]) {
   inputHost.render(
     <I18nProvider locale="en">
-      <WaitingInvitation user={member(fields)} onMinted={api.onMinted} />
+      <KitProvider config={{ entry: { physicalKeyboard: true } }}>
+        {onScreen(<WaitingInvitation user={member(fields)} onMinted={api.onMinted} />)}
+      </KitProvider>
     </I18nProvider>,
   );
 }
@@ -65,11 +68,21 @@ describe('the invitation of an account that waits', () => {
 
     mint();
 
-    await waitFor(() => expect(screen.getByText(LINK)).toBeTruthy());
+    await waitFor(() => expect(screen.getByDisplayValue(LINK)).toBeTruthy());
     expect(api.inviteUser).toHaveBeenCalledWith('u1');
     expect(api.confirm).not.toHaveBeenCalled();
     expect(api.onMinted).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Copy' })).toBeTruthy();
+  });
+
+  it('offers to send the new link to the address the account waits under', async () => {
+    show({ invitation: 'expired' });
+
+    mint();
+
+    await waitFor(() => expect(screen.getByLabelText('E-mail address')).toBeTruthy());
+    expect(screen.getByDisplayValue('lea@kroma.tv')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Send' })).toBeTruthy();
   });
 
   it('asks before replacing an invitation that still works, and keeps it when the owner backs out', async () => {

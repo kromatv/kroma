@@ -2,6 +2,8 @@
 //! invite-only: an admin with `users.manage` mints a single-use token the
 //! invitee redeems on the join page.
 
+mod mail;
+
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -22,6 +24,7 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/invites", post(create_invite).get(list_invites))
         .route("/invites/{token}", get(check_invite).delete(delete_invite))
+        .route("/invites/{token}/mail", post(mail::mail_invite))
 }
 
 /// The join page's address for an invitation, when the server knows its own.

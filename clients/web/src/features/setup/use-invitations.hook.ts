@@ -11,12 +11,6 @@ export function openInvitations(invites: readonly Invite[]): Invite[] {
   return invites.filter((invite) => !invite.used);
 }
 
-/** The address that opens the owner's mail program on a message that carries
- * an invitation. */
-export function invitationMail(words: { subject: string; body: string }): string {
-  return `mailto:?subject=${encodeURIComponent(words.subject)}&body=${encodeURIComponent(words.body)}`;
-}
-
 function useCreatedLinks() {
   const [urls, setUrls] = useState<Record<string, string | null>>({});
   const keep = (created: InviteCreated) =>

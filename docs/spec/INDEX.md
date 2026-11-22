@@ -3,7 +3,7 @@
 
 # Requirement index
 
-778 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+781 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -328,12 +328,15 @@
 - **ADMIN-173** (SHIPPED) - The words that offer a module are the module's own, in each language <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-174** (AGREED) - A module the server already holds appears on the modules step as <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-175** (AGREED) - An invitation says what its account may do. A new one lets its <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-176** (AGREED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-176** (SHIPPED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-177** (AGREED) - The owner deletes an invitation on the people step, and its link <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-178** (AGREED) - The owner opens any step they have been to, from any other step, in <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-183** (SHIPPED) - The server sends an invitation to the one address the owner types, <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-184** (SHIPPED) - The owner learns how the message left, or why it did not and what <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-185** (SHIPPED) - Under Users, every invitation nobody has redeemed offers to send it, <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
 

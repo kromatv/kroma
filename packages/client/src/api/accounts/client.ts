@@ -13,6 +13,7 @@ import {
   Invite,
   InviteCheck,
   InviteCreated,
+  InviteMailed,
   type Permission,
   PublicUser,
   ResetCheck,
@@ -165,6 +166,14 @@ export default function accountsApi(ctx: RequestContext) {
 
     /** Revoke an invite (requires `users.manage`). */
     revokeInvite: (token: InviteToken) => ctx.delete('/invites/:token', { params: { token } }),
+
+    /** Send one invitation to one address, written in `locale` or else in the
+     * caller's own language (requires `users.manage`). Throws `KromaApiError`
+     * 400 for an address that is not one, 404 for an unknown invitation, 409
+     * for one spent or expired, and 502 when the mail could not leave. The
+     * invitation never changes. */
+    mailInvite: (token: InviteToken, mail: { to: string; locale?: string }) =>
+      ctx.post('/invites/:token/mail', InviteMailed, { params: { token }, body: mail }),
   };
 }
 

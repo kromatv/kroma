@@ -101,6 +101,11 @@ peut pas.
    valide.
 3. Sélectionnez **Créer le lien d'invitation**, puis envoyez-lui le lien.
 
+KROMA peut aussi envoyer le lien à votre place. Dans **Serveur** >
+**Utilisateurs**, sélectionnez l'icône d'enveloppe, **Envoyer par e-mail**, à
+côté de l'invitation, puis saisissez l'adresse de la personne. Si KROMA ne peut
+pas encore envoyer d'e-mails, il vous le dit et vous indique où le régler.
+
 La personne ouvre le lien, crée son compte et voit vos bibliothèques.
 
 ## Étapes suivantes

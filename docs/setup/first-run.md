@@ -95,6 +95,10 @@ screen that can play it, and converts it only when a screen cannot.
 2. Choose what they may do, and how long the link stays valid.
 3. Select **Create invitation link**, then send them the link.
 
+KROMA can also send the link for you. Under **Server** > **Users**, select the
+envelope icon, **Send by e-mail**, beside the invitation, then enter their
+address. If KROMA cannot send e-mail yet, it says so and where to set it up.
+
 They open the link, create their account, and see your libraries.
 
 ## Next steps
