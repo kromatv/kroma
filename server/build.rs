@@ -11,7 +11,10 @@ fn main() {
     // refuses to read as a repository nobody in there owns, so asking git at
     // this point answered "unknown" for every published build.
     let commit = from_env("KROMA_GIT_HASH")
-        .or_else(|| output("git", &["rev-parse", "--short", "HEAD"]))
+        .or_else(|| {
+            watch_head();
+            output("git", &["rev-parse", "--short", "HEAD"])
+        })
         .unwrap_or_else(|| "unknown".to_owned());
     println!("cargo:rustc-env=KROMA_GIT_HASH={commit}");
 
@@ -30,7 +33,20 @@ fn main() {
     println!("cargo:rerun-if-env-changed=KROMA_GIT_HASH");
     println!("cargo:rerun-if-env-changed=KROMA_VERSION");
     println!("cargo:rerun-if-env-changed=KROMA_BUILD");
-    println!("cargo:rerun-if-changed=../.git/HEAD");
+}
+
+fn watch_head() {
+    let branch = output("git", &["symbolic-ref", "-q", "HEAD"]);
+    let reflog = branch.as_ref().map(|name| format!("logs/{name}"));
+    let mut args = vec!["rev-parse", "--git-path", "HEAD"];
+    for name in branch.iter().chain(&reflog) {
+        args.extend(["--git-path", name.as_str()]);
+    }
+    for path in output("git", &args).unwrap_or_default().lines() {
+        if std::path::Path::new(path).exists() {
+            println!("cargo:rerun-if-changed={path}");
+        }
+    }
 }
 
 fn from_env(key: &str) -> Option<String> {
