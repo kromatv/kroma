@@ -24,3 +24,6 @@ pub use probe_result::*;
 pub use prune::drop_unconfigured_libraries;
 pub use sync::*;
 pub use unsettled::{unsettle_shows, unsettled_shows, UNSETTLED_SHOWS_KEY};
+
+#[cfg(test)]
+mod stored_ratings_tests;

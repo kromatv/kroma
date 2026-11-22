@@ -14,7 +14,7 @@ use crate::Pool;
 
 pub fn set_item_metadata(pool: &Pool, id: &str, meta: &Metadata) -> Result<()> {
     let conn = pool.get()?;
-    let json = serde_json::to_string(meta)?;
+    let json = stored_json(meta)?;
     conn.execute(
         "UPDATE items SET metadata = ?2 WHERE id = ?1",
         params![id, json],
@@ -191,7 +191,7 @@ pub fn season_casts(pool: &Pool, show_id: &str) -> Result<HashMap<u32, Vec<CastM
 
 pub fn set_show_metadata(pool: &Pool, id: &str, meta: &Metadata) -> Result<()> {
     let conn = pool.get()?;
-    let json = serde_json::to_string(meta)?;
+    let json = stored_json(meta)?;
     conn.execute(
         "UPDATE shows SET metadata = ?2 WHERE id = ?1",
         params![id, json],
@@ -237,6 +237,14 @@ pub fn clear_subject_metadata(pool: &Pool, kind: &str, id: &str) -> Result<()> {
     translations::delete_all(&tx, kind, id)?;
     tx.commit()?;
     Ok(())
+}
+
+fn stored_json(meta: &Metadata) -> Result<String> {
+    let mut blob = serde_json::to_value(meta)?;
+    if !meta.ratings.is_empty() {
+        blob["ratings"] = serde_json::to_value(&meta.ratings)?;
+    }
+    Ok(blob.to_string())
 }
 
 #[cfg(test)]

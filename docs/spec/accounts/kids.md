@@ -1,7 +1,7 @@
 # KROMA Kids and maturity ratings
 
-Status: **AGREED**, from [RFC 696](../../rfcs/696-kroma-kids.md). Sections carry their own
-status below.
+Status: **SHIPPED** in part, from [RFC 696](../../rfcs/696-kroma-kids.md). Sections carry
+their own status below, and requirements carry theirs.
 
 What age each title is rated for, how a profile is kept below an age, and the profile a
 household makes for a child. The model is the one Netflix and YouTube Kids already taught
@@ -13,12 +13,12 @@ account too, so ACCT-4 holds. What sets it apart is that it has no credential of
 
 ## A title's age rating
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
-**ACCT-101** (AGREED) - The server keeps, for each title, the label every country's rating
+**ACCT-101** (SHIPPED) - The server keeps, for each title, the label every country's rating
 system gave it, for each country the metadata provider knows.
 
-**ACCT-102** (AGREED) - Each label carries the minimum age it stands for, from one table
+**ACCT-102** (SHIPPED) - Each label carries the minimum age it stands for, from one table
 that covers every system the provider returns
 ([`docs/reference/content-ratings.md`](../../reference/content-ratings.md)). A label that is
 not a rating, such as "not rated" or "exempt", has no age.
@@ -36,7 +36,7 @@ reader's ratings country.
 and the badge names that country. It borrows from the server's metadata country first, then
 the United States, then the first other country, in alphabetical order, that rated it.
 
-**ACCT-107** (AGREED) - A title no country rated shows no badge.
+**ACCT-107** (SHIPPED) - A title no country rated shows no badge.
 
 **ACCT-108** (AGREED) - The badge is on a title's detail page, on the home's hero and on
 the phone's billboard, on web, television, phone and desktop, and it looks the same on each.
