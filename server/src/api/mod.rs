@@ -188,6 +188,8 @@ mod it_server_status;
 #[cfg(test)]
 mod it_setup;
 #[cfg(test)]
+mod it_store_setup;
+#[cfg(test)]
 mod it_store_versions;
 #[cfg(test)]
 mod it_sso;

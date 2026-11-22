@@ -13,11 +13,7 @@ pub struct Form {
 }
 
 pub(super) fn parse(module: &Value) -> Vec<Form> {
-    module
-        .get("contributes")
-        .and_then(Value::as_array)
-        .map(|list| list.iter().filter_map(form_of).collect())
-        .unwrap_or_default()
+    super::parse::each(module, "contributes", form_of)
 }
 
 fn form_of(contribution: &Value) -> Option<Form> {

@@ -50,6 +50,8 @@ function metaOf(entry: DescribedModule) {
     id: entry.id,
     name: entry.name,
     description: entry.description,
+    tagline: entry.tagline,
+    translations: entry.translations,
     author: entry.author,
     homepage: entry.homepage,
     license: entry.license,
@@ -138,4 +140,13 @@ export function buildDescriptor(
     url,
     modules: entries.map((e) => e.id).sort(byCodeUnit),
   };
+}
+
+/** A descriptor that offers `setup` to a server's guided setup, in that order,
+ *  less any module the registry does not serve. */
+export function withSetup(
+  descriptor: RegistryDescriptor,
+  setup: readonly string[],
+): RegistryDescriptor {
+  return { ...descriptor, setup: setup.filter((id) => descriptor.modules.includes(id)) };
 }

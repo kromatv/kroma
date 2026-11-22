@@ -2,7 +2,7 @@ import type { MessageKey, Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Callout, IconWell } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
-import { permissionGroups, type PermissionSource } from '#web/features/admin/module-permissions';
+import { permissionGroups, type PermissionSource } from '#web/shared/lib/module-permissions';
 import { extendedSentence } from '#web/features/admin/module-permissions-overview';
 
 /** The verdict a security summary opens with: amber when something reaches past

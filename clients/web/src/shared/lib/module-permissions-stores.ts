@@ -3,7 +3,7 @@ import type {
   Access,
   PermissionCategory,
   PermissionGroup,
-} from '#web/features/admin/module-permissions';
+} from '#web/shared/lib/module-permissions';
 import {
   accessWord,
   accountWord,
@@ -13,7 +13,7 @@ import {
   settingWord,
   tableWord,
   type Word,
-} from '#web/features/admin/module-permissions-words';
+} from '#web/shared/lib/module-permissions-words';
 
 const NAMES_SHOWN = 2;
 const NAMES_IN_BRIEF = 1;

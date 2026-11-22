@@ -56,6 +56,16 @@ pub fn store_settings(t: &TestApp, values: &[(&str, Value)]) {
 /// A registry on loopback serving `index`, and each `(module id, record)` as
 /// that module's full record. Answers with the URL of its descriptor.
 pub async fn registry_serving(index: Value, records: &[(&str, Value)]) -> String {
+    serve_registry(index, records, None).await
+}
+
+/// A registry on loopback serving `index`, whose descriptor offers `setup` to a
+/// server's guided setup. Answers with the URL of its descriptor.
+pub async fn registry_offering(index: Value, setup: &[&str]) -> String {
+    serve_registry(index, &[], Some(json!(setup))).await
+}
+
+async fn serve_registry(index: Value, records: &[(&str, Value)], setup: Option<Value>) -> String {
     let serve = |body: Value| {
         axum::routing::get(move || {
             let body = body.clone();
@@ -66,7 +76,11 @@ pub async fn registry_serving(index: Value, records: &[(&str, Value)]) -> String
         .as_array()
         .map(|rows| rows.iter().map(|row| row["id"].clone()).collect())
         .unwrap_or_default();
-    let descriptor = json!({ "apiVersion": 1, "name": "Test", "url": "https://test", "modules": ids });
+    let mut descriptor =
+        json!({ "apiVersion": 1, "name": "Test", "url": "https://test", "modules": ids });
+    if let Some(setup) = setup {
+        descriptor["setup"] = setup;
+    }
     let mut app = axum::Router::new()
         .route("/registry.json", serve(descriptor))
         .route("/index.json", serve(index));

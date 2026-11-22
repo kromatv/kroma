@@ -4,6 +4,7 @@ export {
   buildModuleRecord,
   type KnownVersions,
   sriFromHex,
+  withSetup,
 } from './build.ts';
 export {
   createRegistryClient,
@@ -44,6 +45,8 @@ export {
   optionalDependenciesOf,
   REVERSE_DNS_ID,
   SettingsScope,
+  ModuleTranslations,
+  ModuleWords,
   Storage,
   speaksCurrentSchema,
 } from './manifest/index.ts';

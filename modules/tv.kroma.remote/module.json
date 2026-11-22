@@ -3,8 +3,16 @@
   "schemaVersion": 3,
   "id": "tv.kroma.remote",
   "name": "Remote access",
-  "version": "0.3.31",
+  "version": "0.3.32",
   "description": "Public HTTPS access: the share / Quick Connect URL plus an optional managed Cloudflare Tunnel connector. Disable it to hide the page + routes.",
+  "tagline": "Watch your films and series away from home.",
+  "translations": {
+    "fr": {
+      "name": "Accès à distance",
+      "description": "Accès HTTPS public : l'adresse de partage et de Quick Connect, et au choix un connecteur Cloudflare Tunnel géré. Désactivez-le pour masquer sa page et ses routes.",
+      "tagline": "Regardez vos films et vos séries loin de chez vous."
+    }
+  },
   "engines": {
     "server": ">=0.1.39"
   },
