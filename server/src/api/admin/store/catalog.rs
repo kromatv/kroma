@@ -18,10 +18,12 @@ use crate::state::SharedState;
 
 mod forms;
 mod parse;
+mod row;
 mod versions;
+mod words;
 
 pub use forms::Form;
-pub use parse::fetch;
+pub use parse::{fetch, Listing};
 
 const SERVER_VERSION: &str = crate::VERSION;
 
@@ -51,6 +53,10 @@ pub struct CatalogModule {
     pub name: String,
     pub version: String,
     pub description: String,
+    /// One sentence that says what the module does for a household.
+    pub tagline: Option<String>,
+    /// The module's words in each other language it speaks, by language tag.
+    pub translations: kroma_module_manifest::Translations,
     /// What the module needs from its host, by engine name and semver range.
     pub engines: std::collections::BTreeMap<String, String>,
     pub library: bool,
@@ -144,56 +150,11 @@ pub fn compat_verdict(m: &CatalogModule) -> Result<(), Refusal> {
 /// registry, which is the only one an older client knew about.
 pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> Value {
     let manifests = kroma_module_kernel::manifests(state);
-    let installed: std::collections::HashMap<String, String> = manifests
-        .iter()
-        .map(|m| (m.id.clone(), m.version.clone()))
-        .collect();
-    let granted = |id: &str| manifests.iter().find(|m| m.id == id);
+    let installed = |id: &str| manifests.iter().find(|m| m.id == id);
     let entries: Vec<Value> = fetched
         .iter()
         .flat_map(|f| f.modules.iter().map(move |m| (m, f.registry.name.as_str())))
-        .map(|(m, source)| {
-            let artifact = pick_artifact(m);
-            let installed_version = installed.get(&m.id);
-            let refusal = compat_verdict(m).err();
-            let newer = installed_version
-                .is_some_and(|current| kroma_module_manifest::is_newer(&m.version, current));
-            let mut row = json!({
-                "schemaVersion": m.schema_version,
-                "id": m.id,
-                "name": m.name,
-                "version": m.version,
-                "description": m.description,
-                "library": m.library,
-                "icon": m.icon,
-                "engines": m.engines,
-                "dependencies": dep_map(&m.dependencies),
-                "optionalDependencies": dep_map(&m.optional_dependencies),
-                "contributes": point_rows(&m.contributes),
-                "consumes": point_rows(&m.consumes),
-                "url": artifact.map(|a| a.url.clone()),
-                "size": artifact.and_then(|a| a.size),
-                "sha256": artifact.and_then(|a| a.sha256.clone()),
-                "installedVersion": installed_version,
-                "updateAvailable": newer && refusal.is_none(),
-                "updateBlocked": newer && refusal.is_some(),
-                "compatible": refusal.is_none(),
-                "reason": refusal.as_ref().map(Refusal::reason),
-                "refusal": refusal,
-                "source": source,
-                "widensPermissions": widens_access(m, granted(&m.id)),
-                "official": m.official,
-                "newest": m.newest.as_ref().map(|n| json!({
-                    "version": n.version,
-                    "refusal": n.refusal,
-                    "reason": n.refusal.reason(),
-                })),
-            });
-            if let Value::Object(fields) = &mut row {
-                fields.extend(declared_fields(m));
-            }
-            row
-        })
+        .map(|(m, source)| row::store_row(m, source, installed(&m.id)))
         .collect();
     let official = fetched.iter().find(|f| f.registry.official);
     json!({
@@ -203,6 +164,7 @@ pub fn enriched(state: &SharedState, fetched: &[super::registries::Fetched]) -> 
         "error": official.and_then(|f| f.error.clone()),
         "registries": super::registries::status(fetched),
         "modules": entries,
+        "setup": super::registries::setup_offer(fetched),
     })
 }
 
@@ -217,6 +179,8 @@ pub(super) fn test_module(id: &str, version: &str) -> CatalogModule {
         name: id.into(),
         version: version.into(),
         description: String::new(),
+        tagline: None,
+        translations: kroma_module_manifest::Translations::new(),
         engines: std::collections::BTreeMap::new(),
         library: false,
         icon: None,

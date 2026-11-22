@@ -7,6 +7,7 @@ import { Permissions } from '../manifest/permissions.ts';
 import { Helpers } from '../manifest/helpers.ts';
 import { SettingsScope } from '../manifest/settings-scope.ts';
 import { Storage } from '../manifest/storage.ts';
+import { ModuleTranslations } from '../manifest/words.ts';
 
 /** Subresource-Integrity form of a sha256 digest: `sha256-<base64>`. */
 export const Integrity = z.string().regex(/^sha256-[A-Za-z0-9+/]{43}=$/, 'not an sha256 SRI');
@@ -85,6 +86,8 @@ const ModuleMeta = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullish(),
+  tagline: z.string().nullish(),
+  translations: ModuleTranslations.nullish(),
   author: z.string().nullish(),
   homepage: z.string().nullish(),
   license: z.string().nullish(),
@@ -118,5 +121,11 @@ export const RegistryDescriptor = z.object({
   name: z.string(),
   url: z.string(),
   modules: z.array(z.string()),
+  setup: z
+    .array(z.string())
+    .nullish()
+    .describe(
+      "The modules a server's guided setup offers, in the order it offers them. A server reads it from its official registry alone.",
+    ),
 });
 export type RegistryDescriptor = z.infer<typeof RegistryDescriptor>;

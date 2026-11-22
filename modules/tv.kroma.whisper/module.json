@@ -3,8 +3,16 @@
   "schemaVersion": 3,
   "id": "tv.kroma.whisper",
   "name": "Whisper transcription",
-  "version": "0.3.25",
+  "version": "0.3.26",
   "description": "In-process Whisper subtitle transcription (candle).",
+  "tagline": "Subtitles for anything you watch, even when none exist.",
+  "translations": {
+    "fr": {
+      "name": "Transcription Whisper",
+      "description": "Sous-titres transcrits par Whisper, sur le serveur lui-même (candle).",
+      "tagline": "Des sous-titres pour tout ce que vous regardez, même quand il n'en existe aucun."
+    }
+  },
   "component": {
     "instances": 2,
     "memoryMib": 2048,

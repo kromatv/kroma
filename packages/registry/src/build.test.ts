@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDescriptor, buildIndex, buildModuleRecord, sriFromHex } from './build.ts';
+import { buildDescriptor, buildIndex, buildModuleRecord, sriFromHex, withSetup } from './build.ts';
 import { ModuleRecord, RegistryDescriptor, RegistryIndex } from './documents/index.ts';
 import type { DescribedModule } from './manifest/index.ts';
 
@@ -244,5 +244,39 @@ describe('what a version reaches', () => {
 
     expect(record.versions['0.1.7']?.storage).toEqual(storage);
     expect(record.versions['0.1.7']?.settings).toEqual(settings);
+  });
+});
+
+describe('words', () => {
+  const translations = { fr: { name: 'Torrents', tagline: 'Téléchargez ce qui manque.' } };
+
+  it('the index and the module record carry the sentence and the translations', () => {
+    const worded = entry({ tagline: 'Download what is missing.', translations });
+
+    const [row] = RegistryIndex.parse(buildIndex([worded]));
+    const record = ModuleRecord.parse(buildModuleRecord(worded));
+
+    expect(row).toMatchObject({ tagline: 'Download what is missing.', translations });
+    expect(record).toMatchObject({ tagline: 'Download what is missing.', translations });
+  });
+});
+
+const descriptor = () =>
+  buildDescriptor('KROMA modules', 'https://h', [
+    entry({ id: 'tv.kroma.mdns' }),
+    entry({ id: 'tv.kroma.remote' }),
+  ]);
+
+describe('withSetup', () => {
+  it('lists the modules a setup offers in the order given', () => {
+    const offered = withSetup(descriptor(), ['tv.kroma.remote', 'tv.kroma.mdns']);
+
+    expect(RegistryDescriptor.parse(offered).setup).toEqual(['tv.kroma.remote', 'tv.kroma.mdns']);
+  });
+
+  it('leaves out a module the registry does not serve', () => {
+    const offered = withSetup(descriptor(), ['tv.kroma.whisper', 'tv.kroma.mdns']);
+
+    expect(offered.setup).toEqual(['tv.kroma.mdns']);
   });
 });

@@ -1,5 +1,6 @@
 import type { StoreCatalog, StoreModule } from '@kromatv/client/modules';
-import { useT } from '@kromatv/ui';
+import { moduleWords } from '@kromatv/core';
+import { useLocale, useT } from '@kromatv/ui';
 import { Box, Button, EmptyState, Skeleton, Surface } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -23,13 +24,13 @@ import {
   OpProgress,
   RestartCallout,
 } from '#web/features/admin/module-detail-sections.component';
-import type { PermissionSource } from '#web/features/admin/module-permissions';
+import type { PermissionSource } from '#web/shared/lib/module-permissions';
 import { SecurityCard } from '#web/features/admin/module-permissions-card.component';
 import {
-  declaredSource,
   fromOfficialRegistry,
   installedSource,
 } from '#web/features/admin/module-permissions-sources';
+import { declaredSource } from '#web/shared/lib/module-permissions-declared';
 import {
   IdentityCard,
   identityOf,
@@ -53,6 +54,7 @@ export function ModuleDetailPage({ id }: Readonly<{ id: string }>) {
 
 function ModuleDetailInner({ id }: Readonly<{ id: string }>) {
   const t = useT();
+  const locale = useLocale();
   const navigate = useNavigate();
   const { modules, catalog, reload, refreshAll } = useModuleData();
   const { activeByModule } = useStoreOps();
@@ -79,7 +81,8 @@ function ModuleDetailInner({ id }: Readonly<{ id: string }>) {
     return <Gone onBack={back} />;
   }
 
-  const { name, version, description } = identityOf(id, installed, entry);
+  const { version, ...identity } = identityOf(id, installed, entry);
+  const { name, description } = moduleWords(identity, locale);
   const metaRows = metaRowsFor(t, installed, entry, update, version);
 
   return (

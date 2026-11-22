@@ -21,6 +21,7 @@ export * from './lang';
 export * from './lang-labels';
 export * from './master-fetch';
 export * from './match';
+export * from './module-words';
 export * from './notification-labels';
 export * from './notification-prefs';
 export * from './people';

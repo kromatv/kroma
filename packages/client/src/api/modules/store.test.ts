@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { StoreModule, StorePlanModule } from './store';
+import { StoreCatalog, StoreModule, StorePlanModule } from './store';
 
 const ENTRY = {
   id: 'tv.kroma.acquisition',
@@ -78,5 +78,45 @@ describe('what a catalog row says a module reaches', () => {
     expect(parsed.storage).toBeNull();
     expect(parsed.settings).toBeNull();
     expect(parsed.permissions?.run).toEqual(['rqbit', 'curl']);
+  });
+});
+
+describe('words', () => {
+  it('keeps the sentence a module is offered by and its words in each language', () => {
+    const translations = {
+      fr: { name: 'Accès à distance', tagline: 'Regardez loin de chez vous.' },
+    };
+
+    const parsed = StoreModule.parse({ ...ENTRY, tagline: 'Watch away from home.', translations });
+
+    expect(parsed.tagline).toBe('Watch away from home.');
+    expect(parsed.translations).toEqual(translations);
+  });
+
+  it('reads translations it cannot parse as none, keeping the row', () => {
+    const parsed = StoreModule.parse({ ...ENTRY, translations: { French: 'oui' } });
+
+    expect(parsed.translations).toBeNull();
+    expect(parsed.id).toBe('tv.kroma.acquisition');
+  });
+});
+
+describe('StoreCatalog', () => {
+  const catalog = {
+    schema: 2,
+    serverVersion: '0.1.40',
+    registryUrl: '',
+    registries: [],
+    modules: [],
+  };
+
+  it('keeps the modules the official registry offers the setup, in its order', () => {
+    const parsed = StoreCatalog.parse({ ...catalog, setup: ['tv.kroma.remote', 'tv.kroma.mdns'] });
+
+    expect(parsed.setup).toEqual(['tv.kroma.remote', 'tv.kroma.mdns']);
+  });
+
+  it('reads a server that predates the offer as offering nothing', () => {
+    expect(StoreCatalog.parse(catalog).setup).toEqual([]);
   });
 });
