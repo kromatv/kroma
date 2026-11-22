@@ -6,7 +6,7 @@
 // without saying who may see it is a type error, not a screen that mounts and
 // bounces back to home a tick later.
 
-import type { RedirectRule } from '#tv/app/guard';
+import { type RedirectRule, resolveRedirect } from '#tv/app/guard';
 import type { OwnerState } from '#tv/app/providers/server-owner';
 import type { RouteName } from '#tv/app/router';
 
@@ -98,4 +98,22 @@ export function ownerMove({ route, owner, profiles, noticed }: OwnerRoad): Owner
   }
   const firstRun = route === 'profiles' && profiles === 0 && !noticed;
   return firstRun ? { via: 'go', to: 'unowned' } : null;
+}
+
+/** Where the guard takes a session on `route`, `null` to leave it there.
+ *  Nothing moves before the session is resumed: routing on a session whose
+ *  exchange then fails would send the television home and back to the picker. */
+export function sessionTarget({
+  ready,
+  user,
+  route,
+}: Readonly<{
+  ready: boolean;
+  user: Readonly<{ kids?: boolean }> | null;
+  route: RouteName;
+}>): GuardTarget | null {
+  if (!ready) {
+    return null;
+  }
+  return resolveRedirect(GUARD, { signedIn: user !== null, kids: user?.kids === true }, route);
 }

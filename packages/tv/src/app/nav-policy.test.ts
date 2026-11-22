@@ -10,6 +10,7 @@ import {
   GUARD,
   type OwnerRoad,
   ownerMove,
+  sessionTarget,
 } from './nav-policy';
 
 const signedIn = { signedIn: true, kids: false };
@@ -52,6 +53,24 @@ describe('navigation policy', () => {
     // Classifying a new route is compiler-enforced; this checks the derivation.
     const reachable = new Set([...AUTH_SCREENS, ...APP_SCREENS]);
     expect([...ALL_SCREENS].sort()).toEqual([...reachable].sort());
+  });
+});
+
+describe('where the guard takes a session', () => {
+  it('moves nothing before the session is resumed', () => {
+    expect(sessionTarget({ ready: false, user: null, route: 'home' })).toBeNull();
+  });
+
+  it('sends a signed-out television to the picker', () => {
+    expect(sessionTarget({ ready: true, user: null, route: 'home' })).toBe('profiles');
+  });
+
+  it('sends a Kids session home from discovery', () => {
+    expect(sessionTarget({ ready: true, user: { kids: true }, route: 'discover' })).toBe('home');
+  });
+
+  it('leaves a viewer on a screen its session may be on', () => {
+    expect(sessionTarget({ ready: true, user: { kids: false }, route: 'discover' })).toBeNull();
   });
 });
 

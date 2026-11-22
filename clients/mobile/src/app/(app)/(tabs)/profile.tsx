@@ -18,6 +18,7 @@ import { Avatar } from '#mobile/components/avatar.component';
 import { useDownloads } from '#mobile/lib/downloads';
 import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
+import { type ProfileIdentity, profileIdentity } from '#mobile/lib/profile-identity';
 import { useClient, useSession } from '#mobile/lib/session';
 import { radius, spacing, TAB_BAR_CLEARANCE, type } from '#mobile/lib/theme';
 
@@ -56,7 +57,7 @@ export default function Profile() {
   const s = useStyles(sDefinition);
   const { user } = useSession();
   const insets = useSafeAreaInsets();
-  const kids = user?.kids === true;
+  const identity = profileIdentity(user);
 
   return (
     <ScrollView
@@ -65,35 +66,45 @@ export default function Profile() {
       style={[s.screen, { paddingLeft: insets.left, paddingRight: insets.right }]}
       contentContainerStyle={[s.body, { paddingTop: insets.top + spacing.xl }]}
     >
-      <Identity editable={!kids} />
-      <ProfileRows kids={kids} />
-      {kids ? null : <SignOut />}
+      <Identity identity={identity} />
+      <ProfileRows kids={!identity.editable} />
+      {identity.editable ? <SignOut /> : null}
     </ScrollView>
   );
 }
 
-function Identity({ editable }: Readonly<{ editable: boolean }>) {
+function Identity({ identity }: Readonly<{ identity: ProfileIdentity }>) {
   const s = useStyles(sDefinition);
   const router = useRouter();
-  const { user } = useSession();
-  const avatar = useClient().media.artwork.resolve(user?.avatarUrl);
   return (
     <Pressable
-      disabled={!editable}
+      disabled={!identity.editable}
       onPress={() => router.push('/edit-profile')}
-      style={({ pressed }) => [s.identity, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [s.identity, pressed && s.identityPressed]}
     >
-      <Box>
-        <Avatar uri={avatar} name={user?.username} size={96} />
-        {editable ? (
-          <Box style={s.editBadge}>
-            <Icon name="pencil" size={13} thickness={1.8} color="accentInk" />
-          </Box>
-        ) : null}
-      </Box>
-      <Text style={s.username}>{user?.username}</Text>
-      {user?.email ? <Text style={s.email}>{user.email}</Text> : null}
+      <IdentityAvatar identity={identity} />
+      <Text style={s.username}>{identity.name}</Text>
+      {identity.addresses.map((address) => (
+        <Text key={address} style={s.email}>
+          {address}
+        </Text>
+      ))}
     </Pressable>
+  );
+}
+
+function IdentityAvatar({ identity }: Readonly<{ identity: ProfileIdentity }>) {
+  const s = useStyles(sDefinition);
+  const avatar = useClient().media.artwork.resolve(identity.avatarPath);
+  return (
+    <Box>
+      <Avatar uri={avatar} name={identity.name} size={96} />
+      {identity.editable ? (
+        <Box style={s.editBadge}>
+          <Icon name="pencil" size={13} thickness={1.8} color="accentInk" />
+        </Box>
+      ) : null}
+    </Box>
   );
 }
 
@@ -167,6 +178,7 @@ const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
   body: { gap: spacing.md, p: spacing.md, pb: TAB_BAR_CLEARANCE, ...boxed(contentWidth.reading) },
   identity: { align: 'center', gap: 3, mb: spacing.md },
+  identityPressed: { opacity: 0.85 },
   editBadge: {
     absolute: true,
     right: -2,
