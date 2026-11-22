@@ -1,0 +1,11 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { KidsMark } from './kids-mark.component';
+
+export const story = defineStory({
+  group: 'Brand',
+  component: KidsMark,
+  args: { size: 'sm' },
+  controls: { size: ['sm', 'md'] },
+});
+
+The KROMA Kids mark. It sits on a Kids profile's avatar wherever the avatar is drawn, on the picker first, so a parent across the room sees which profile is on screen.

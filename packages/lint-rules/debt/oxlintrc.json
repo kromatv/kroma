@@ -2061,7 +2061,6 @@
       "files": [
         "clients/web/src/features/admin/jobs-schedule.component.tsx",
         "clients/web/src/features/admin/libraries-modals.tsx",
-        "clients/web/src/features/admin/library-visibility.component.tsx",
         "clients/web/src/features/admin/modal-hosts.component.tsx",
         "clients/web/src/features/admin/shell.tsx",
         "clients/web/src/features/admin/users-approve-modal.component.tsx",

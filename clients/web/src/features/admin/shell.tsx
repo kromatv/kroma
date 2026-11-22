@@ -98,13 +98,13 @@ export function AdminLayout({ children }: Readonly<{ children: ReactNode }>) {
   const wide = step === 'lg' || step === 'tv';
   return (
     <AdminProvider>
+      <AdminModalHosts />
       <Box row={wide} h="100%" bg="bg">
         {wide ? <AdminSidebar /> : <AdminMobileTopbar />}
         <ScrollView style={ADMIN_SCROLLER} contentContainerStyle={ADMIN_SCROLLER_CONTENT}>
           <PageFrame>{children}</PageFrame>
         </ScrollView>
       </Box>
-      <AdminModalHosts />
     </AdminProvider>
   );
 }

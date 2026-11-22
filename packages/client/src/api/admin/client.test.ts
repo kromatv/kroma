@@ -77,6 +77,13 @@ describe('the admin console endpoints', () => {
     },
     { name: 'users', call: (c) => c.admin.users(), method: 'GET', path: '/admin/users' },
     {
+      name: 'createKids',
+      call: (c) => c.admin.createKids({ username: 'Léo', level: 7, libraries: null }),
+      method: 'POST',
+      path: '/admin/kids',
+      body: { username: 'Léo', level: 7, libraries: null },
+    },
+    {
       name: 'restrictions',
       call: (c) => c.admin.restrictions.get(user),
       method: 'GET',

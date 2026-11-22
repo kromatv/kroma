@@ -32,6 +32,7 @@ vi.mock('#web/features/playback/cast/cast-bar.component', () => ({
 vi.mock('#web/shared/lib/require-auth.hook', () => ({
   useRequireAuth: () => ({ ready: hold.ready, authed: hold.authed }),
 }));
+vi.mock('#web/shared/lib/use-kids-routes.hook', () => ({ useKidsRoutes: () => undefined }));
 vi.mock('#web/shared/lib/web-runtime', () => ({ useWebRuntime: () => ({ client: {} }) }));
 vi.mock('#web/shared/ui/cast-picker.component', () => ({ CastPicker: () => null }));
 vi.mock('#web/shared/ui/direct-offer.component', () => ({ DirectOffer: () => null }));

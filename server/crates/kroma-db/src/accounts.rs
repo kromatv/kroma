@@ -144,7 +144,7 @@ pub fn find_user_by_login(pool: &Pool, identifier: &str) -> Result<Option<(User,
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
         "SELECT id,email,username,avatar_url,created_at,permissions,language,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,password_hash FROM users \
-         WHERE (email = ?1 COLLATE NOCASE OR username = ?1) AND waiting = 0 LIMIT 1",
+         WHERE (email = ?1 COLLATE NOCASE OR username = ?1) AND waiting = 0 AND kids = 0 LIMIT 1",
     )?;
     let mut rows = stmt.query_map(params![identifier], |r| {
         Ok((row_to_user(r)?, r.get::<_, String>(11)?))
@@ -173,7 +173,7 @@ pub fn list_users(pool: &Pool) -> Result<Vec<PublicUser>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
         "SELECT id,username,avatar_url,(pin_hash IS NOT NULL) FROM users \
-         WHERE waiting = 0 ORDER BY created_at",
+         WHERE waiting = 0 AND kids = 0 ORDER BY created_at",
     )?;
     let rows = stmt.query_map([], |r| {
         Ok(PublicUser {

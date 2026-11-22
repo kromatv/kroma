@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { checkEndpoint, type Endpoint } from '../../endpoints.fixture';
 import { recordingClient } from '../../kroma-client.fixture';
-import { CeremonyId, InviteToken, PasskeyId, SessionId } from './ids';
+import { CeremonyId, InviteToken, PasskeyId, SessionId, UserId } from './ids';
 
 const ceremonyId = CeremonyId.parse('cer1');
 const credential = { id: 'cred', type: 'public-key' };
@@ -48,6 +48,22 @@ describe('the accounts endpoints', () => {
       body: { accessToken: 'access' },
     },
     { name: 'me', call: (c) => c.accounts.me(), method: 'GET', path: '/auth/me' },
+    {
+      name: 'the kids profiles a member device lists',
+      call: (c) => c.accounts.kids.list('member-access'),
+      method: 'POST',
+      path: '/kids/list',
+      auth: 'public',
+      body: { accessToken: 'member-access' },
+    },
+    {
+      name: 'opening a kids profile',
+      call: (c) => c.accounts.kids.open('member-access', UserId.parse('kid1')),
+      method: 'POST',
+      path: '/kids/open',
+      auth: 'public',
+      body: { accessToken: 'member-access', profile: 'kid1' },
+    },
     {
       name: 'the ratings country',
       call: (c) => c.accounts.ratings.get(),
