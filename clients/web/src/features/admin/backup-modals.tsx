@@ -18,8 +18,8 @@ import { useT } from '@kromatv/ui';
 
 import { useState } from 'react';
 import { createCallable } from 'react-call';
-import type { KromaClient } from '@kromatv/client';
-import type { BackupImportOptions, BackupPreview } from '@kromatv/client/admin';
+import { confirmLabelKey, type RemovedLibraries } from '#web/features/admin/backup-restore';
+import { useBackupRestore } from '#web/features/admin/use-backup-restore.hook';
 import { useAuth } from '#web/shared/lib/auth';
 
 // "KROMABK1\n": the encrypted-backup envelope magic (see services/backup/crypto).
@@ -159,60 +159,6 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
   );
 });
 
-type RemovedLibraries = BackupPreview['removedLibraries'];
-
-type Restored = { users: number } | { removing: RemovedLibraries };
-
-async function previewThenRestore(
-  client: KromaClient,
-  restore: { file: File; options: BackupImportOptions; removing: RemovedLibraries | null },
-): Promise<Restored> {
-  const { file, options, removing } = restore;
-  if (options.reset && removing === null) {
-    const { removedLibraries } = await client.admin.backup.preview(file, options);
-    if (removedLibraries.length > 0) {
-      return { removing: removedLibraries };
-    }
-  }
-  const res = await client.admin.backup.import(file, options);
-  return { users: res.imported.users ?? 0 };
-}
-
-interface RestoreProps {
-  file: File;
-  encrypted: boolean;
-  onDone: (message: string) => void;
-}
-
-function useRestore({ file, encrypted, onDone }: RestoreProps) {
-  const t = useT();
-  const { client } = useAuth();
-  const [password, setPassword] = useState('');
-  const [reset, setReset] = useState(false);
-  const [removing, setRemoving] = useState<RemovedLibraries | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const options = { password: encrypted ? password.trim() || undefined : undefined, reset };
-
-  async function run() {
-    setBusy(true);
-    setError(null);
-    try {
-      const restored = await previewThenRestore(client, { file, options, removing });
-      if ('users' in restored) {
-        onDone(t('admin.backupImported', { users: restored.users }));
-      } else {
-        setRemoving(restored.removing);
-      }
-    } catch (e) {
-      setError(errMessage(e, t('admin.backupImportFailed')));
-    } finally {
-      setBusy(false);
-    }
-  }
-  return { password, setPassword, reset, setReset, removing, busy, error, run };
-}
-
 function RemovedList({ libraries }: Readonly<{ libraries: RemovedLibraries }>) {
   const t = useT();
   return (
@@ -230,7 +176,7 @@ function RemovedList({ libraries }: Readonly<{ libraries: RemovedLibraries }>) {
 export const ImportModal = createCallable<{ file: File; encrypted: boolean }, string | null>(
   ({ call, file, encrypted }) => {
     const t = useT();
-    const restore = useRestore({ file, encrypted, onDone: (message) => call.end(message) });
+    const restore = useBackupRestore({ file, encrypted, onDone: (message) => call.end(message) });
     const { password, setPassword, reset, setReset, removing, busy, error } = restore;
 
     const canImport = !encrypted || password.trim().length > 0;
@@ -276,7 +222,7 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
           onCancel={() => call.end(null)}
           cancelLabel={t('common.cancel')}
           onConfirm={() => void restore.run()}
-          confirmLabel={confirmLabel(t, { busy, removing })}
+          confirmLabel={t(confirmLabelKey({ busy, removing }))}
           destructive={removing !== null}
           busy={busy}
           disabled={!canImport}
@@ -285,13 +231,3 @@ export const ImportModal = createCallable<{ file: File; encrypted: boolean }, st
     );
   },
 );
-
-function confirmLabel(
-  t: ReturnType<typeof useT>,
-  { busy, removing }: { busy: boolean; removing: RemovedLibraries | null },
-): string {
-  if (busy) {
-    return t('admin.backupImporting');
-  }
-  return removing ? t('admin.backupRestoreRemove') : t('admin.backupRestoreConfirm');
-}

@@ -1,4 +1,9 @@
-import type { Import, ImportReport, ImportStatus } from '@kromatv/client/imports';
+import type {
+  Import,
+  ImportRefusedLibrary,
+  ImportReport,
+  ImportStatus,
+} from '@kromatv/client/imports';
 
 /** The kinds an import counts, in the order the owner reads them. */
 export const TALLY_KINDS = [
@@ -21,4 +26,9 @@ export function tallies(found: Import | undefined) {
   return TALLY_KINDS.map((kind) => ({ kind, tally: found?.report[kind] })).filter(
     (row) => (row.tally?.read ?? 0) > 0,
   );
+}
+
+/** The libraries the import did not make, none while it has not answered. */
+export function refusedLibraries(found: Import | undefined): ImportRefusedLibrary[] {
+  return found?.report.refusedLibraries ?? [];
 }

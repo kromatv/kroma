@@ -1,6 +1,6 @@
 import { Import } from '@kromatv/client/imports';
 import { expect, it } from 'vitest';
-import { atWork, tallies } from './import-run';
+import { atWork, refusedLibraries, tallies } from './import-run';
 
 const none = { read: 0, brought: 0, unmatched: 0 };
 
@@ -39,4 +39,20 @@ it('lists only the kinds the import read something of, in reading order', () => 
 
   expect(tallies(found({ report })).map((row) => row.kind)).toEqual(['libraries', 'titles']);
   expect(tallies(undefined)).toEqual([]);
+});
+
+it('lists the libraries the import did not make, and none before it answers', () => {
+  const refused = { name: 'Films', sharesFilesWith: 'Films 4K' };
+  const report = {
+    libraries: none,
+    users: none,
+    titles: none,
+    states: none,
+    plays: none,
+    refusedLibraries: [refused],
+  };
+
+  expect(refusedLibraries(found({ report }))).toEqual([refused]);
+  expect(refusedLibraries(found({}))).toEqual([]);
+  expect(refusedLibraries(undefined)).toEqual([]);
 });
