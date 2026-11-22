@@ -82,9 +82,9 @@ function useRestrictionChange(user: AdminUser) {
       async () => {
         try {
           await write();
-        } catch (refused) {
+        } catch (error_) {
           setPassword(null);
-          throw refused;
+          throw error_;
         }
         setPassword(proof);
         await queryClient.invalidateQueries({ queryKey: restrictionsKey(user) });
