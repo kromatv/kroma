@@ -1,8 +1,9 @@
 import type { Import, ImportId, ImportStatus, ImportTally } from '@kromatv/client/imports';
 import { JobKey } from '@kromatv/client/jobs';
 import { useT } from '@kromatv/ui';
-import { Button, GuidedFlow, ListRow, Progress, Text } from '@kromatv/ui/kit';
+import { Button, ListRow, Progress, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
+import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import {
   atWork,
   refusedLibraries,
@@ -115,7 +116,6 @@ function CancelAction({ working }: Readonly<{ working: boolean }>) {
   return (
     <Button
       variant="ghost"
-      size="md"
       label={t('setup.importCancel')}
       onPress={() => void client.jobs.cancel(JOB).catch(() => undefined)}
     />
@@ -132,21 +132,21 @@ export function ImportRun({ id, onContinue }: Readonly<RunProps>) {
   const working = atWork(data?.status);
   return (
     <>
-      <GuidedFlow.Header>
-        <GuidedFlow.Title>{t(TITLE[status])}</GuidedFlow.Title>
-        <GuidedFlow.Subtitle>{t(SUB[status])}</GuidedFlow.Subtitle>
-      </GuidedFlow.Header>
-      <GuidedFlow.Panel>
+      <ImportFrame.Header>
+        <ImportFrame.Title>{t(TITLE[status])}</ImportFrame.Title>
+        <ImportFrame.Subtitle>{t(SUB[status])}</ImportFrame.Subtitle>
+      </ImportFrame.Header>
+      <ImportFrame.Panel>
         {working ? <Progress value={0} waiting label={t(TITLE[status])} /> : null}
         <Tallies found={data} />
         <RefusedLibraries found={data} />
-      </GuidedFlow.Panel>
-      <GuidedFlow.Footer>
-        <GuidedFlow.Actions>
+      </ImportFrame.Panel>
+      <ImportFrame.Footer>
+        <ImportFrame.Actions>
           <CancelAction working={working} />
-          <GuidedFlow.Next onPress={onContinue} />
-        </GuidedFlow.Actions>
-      </GuidedFlow.Footer>
+          <ImportFrame.Next onPress={onContinue} />
+        </ImportFrame.Actions>
+      </ImportFrame.Footer>
     </>
   );
 }

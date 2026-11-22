@@ -16,8 +16,8 @@ interface ImportStepProps {
 /** Bringing another media server over, one question at a time: which server,
  * what its importer may do when the server does not hold it yet, the sign-in,
  * which of its servers, and what comes over. Each answer is kept, so the owner
- * comes back to where they were. The same screens run in the setup and in the
- * admin console, inside a `GuidedFlow.Root`. */
+ * comes back to where they were. The setup draws these screens inside a
+ * `GuidedFlow.Root`, and the admin console inside a `<ConsoleFrame>`. */
 export function ImportStep({ onBack, onSkip, onContinue }: Readonly<ImportStepProps>) {
   const { session, update, restart } = useImportSession();
   const importer = useImporter(session.importer);

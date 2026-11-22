@@ -1,6 +1,7 @@
 import type { Importer } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { GuidedFlow, Row, Spinner, Text } from '@kromatv/ui/kit';
+import { Row, Spinner, Text } from '@kromatv/ui/kit';
+import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import { ImportSignInElsewhere } from '#web/features/admin/import/import-sign-in-elsewhere.component';
 import { ImportSignInForm } from '#web/features/admin/import/import-sign-in-form.component';
 
@@ -13,15 +14,15 @@ function Starting({ onBack }: Readonly<Pick<ConnectProps, 'onBack'>>) {
   const t = useT();
   return (
     <>
-      <GuidedFlow.Panel>
+      <ImportFrame.Panel>
         <Row align="center" gap={12}>
           <Spinner size={22} />
           <Text color="textMuted">{t('setup.importStarting')}</Text>
         </Row>
-      </GuidedFlow.Panel>
-      <GuidedFlow.Footer>
-        <GuidedFlow.Previous onPress={onBack} />
-      </GuidedFlow.Footer>
+      </ImportFrame.Panel>
+      <ImportFrame.Footer>
+        <ImportFrame.Previous onPress={onBack} />
+      </ImportFrame.Footer>
     </>
   );
 }
@@ -49,10 +50,10 @@ export function ImportConnect({ importer, onBack }: Readonly<ConnectProps>) {
       : t('setup.importConnectElsewhere', { name });
   return (
     <>
-      <GuidedFlow.Header>
-        <GuidedFlow.Title>{t('setup.importConnectTitle', { name })}</GuidedFlow.Title>
-        <GuidedFlow.Subtitle>{sub}</GuidedFlow.Subtitle>
-      </GuidedFlow.Header>
+      <ImportFrame.Header>
+        <ImportFrame.Title>{t('setup.importConnectTitle', { name })}</ImportFrame.Title>
+        <ImportFrame.Subtitle>{sub}</ImportFrame.Subtitle>
+      </ImportFrame.Header>
       <SignIn importer={importer} onBack={onBack} />
     </>
   );

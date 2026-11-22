@@ -1,11 +1,26 @@
 import type { Importer, ImporterList } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, EmptyState, GuidedFlow, ListRow } from '@kromatv/ui/kit';
+import {
+  Box,
+  Button,
+  Callout,
+  EmptyState,
+  Grid,
+  ListRow,
+  styles,
+  useStyles,
+} from '@kromatv/ui/kit';
+import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import { useImportSession } from '#web/features/admin/import/import-session.component';
 import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
 import { ListSkeleton } from '#web/shared/ui';
 import { StepFailure } from '#web/shared/ui/step-failure.component';
 import { useImporters } from '#web/features/admin/import/use-importers.hook';
+
+const CHOICE_MIN = 240;
+const FIRST_ROOM = 480;
+
+const sDefinition = styles({ fill: { flex: 1 } });
 
 interface SourceProps {
   onBack?: () => void;
@@ -14,8 +29,9 @@ interface SourceProps {
 
 function ImporterRow({ importer, onPick }: Readonly<{ importer: Importer; onPick: () => void }>) {
   const t = useT();
+  const s = useStyles(sDefinition);
   return (
-    <ListRow.Root size="md" ground="surface" onPress={onPick}>
+    <ListRow.Root size="md" ground="surface" onPress={onPick} style={s.fill}>
       <ListRow.Leading>
         <ImporterIcon importer={importer} />
       </ListRow.Leading>
@@ -62,7 +78,7 @@ function Sources({ list }: Readonly<{ list: ImporterList }>) {
   }
   return (
     <>
-      <Box gap={8}>
+      <Grid min={CHOICE_MIN} width={FIRST_ROOM} gap={12}>
         {list.importers.map((importer) => (
           <ImporterRow
             key={importer.id}
@@ -70,7 +86,7 @@ function Sources({ list }: Readonly<{ list: ImporterList }>) {
             onPick={() => update({ importer: importer.id })}
           />
         ))}
-      </Box>
+      </Grid>
       <RegistryDown error={list.registryError} />
     </>
   );
@@ -82,14 +98,12 @@ function SourceActions({ onBack, onSkip }: Readonly<SourceProps>) {
     return null;
   }
   return (
-    <GuidedFlow.Footer>
-      {onBack ? <GuidedFlow.Previous onPress={onBack} /> : null}
-      <GuidedFlow.Actions>
-        {onSkip ? (
-          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
-        ) : null}
-      </GuidedFlow.Actions>
-    </GuidedFlow.Footer>
+    <ImportFrame.Footer>
+      {onBack ? <ImportFrame.Previous onPress={onBack} /> : null}
+      <ImportFrame.Actions>
+        {onSkip ? <Button variant="ghost" label={t('setup.skip')} onPress={onSkip} /> : null}
+      </ImportFrame.Actions>
+    </ImportFrame.Footer>
   );
 }
 
@@ -100,15 +114,15 @@ export function ImportSource({ onBack, onSkip }: Readonly<SourceProps>) {
   const { data, error } = useImporters();
   return (
     <>
-      <GuidedFlow.Header>
-        <GuidedFlow.Title>{t('setup.importSourceTitle')}</GuidedFlow.Title>
-        <GuidedFlow.Subtitle>{t('setup.importSourceSub')}</GuidedFlow.Subtitle>
-      </GuidedFlow.Header>
-      <GuidedFlow.Panel>
+      <ImportFrame.Header>
+        <ImportFrame.Title>{t('setup.importSourceTitle')}</ImportFrame.Title>
+        <ImportFrame.Subtitle>{t('setup.importSourceSub')}</ImportFrame.Subtitle>
+      </ImportFrame.Header>
+      <ImportFrame.Panel>
         {data ? <Sources list={data} /> : null}
         {!data && !error ? <ListSkeleton count={2} height={84} /> : null}
         <StepFailure error={error ? t('setup.importListFailed') : null} />
-      </GuidedFlow.Panel>
+      </ImportFrame.Panel>
       <SourceActions onBack={onBack} onSkip={onSkip} />
     </>
   );
