@@ -93,6 +93,7 @@ describe('the watch history table', () => {
       'Chrome',
       'macOS',
       expect.any(String),
+      expect.any(String),
     ]);
   });
 
@@ -170,5 +171,64 @@ describe('the watch history table', () => {
 
     expect(when).toContain('2023');
     expect(when).not.toMatch(/ago/);
+  });
+});
+
+const HOME_NAS = { importer: 'tv.kroma.jellyfin', name: 'Home NAS' };
+const ONE_HOUR_FIFTY_TWO = 6_720_000;
+
+const cellsOf = (row: HTMLElement) =>
+  within(row)
+    .getAllByRole('cell')
+    .map((cell) => cell.textContent);
+
+describe('the time a play lasted', () => {
+  it('is written in hours and minutes', async () => {
+    await mount([play({ watchedMs: 3_000_000 })]);
+
+    expect(cellsOf(firstRow())[6]).toBe('50 min');
+  });
+});
+
+describe('a play an import brought', () => {
+  it('says so beside the person who watched', async () => {
+    await mount([play({ importedFrom: HOME_NAS })]);
+
+    expect(cellsOf(firstRow())[0]).toBe('maximeImported');
+  });
+
+  it('names the server it came from where the player goes', async () => {
+    await mount([play({ importedFrom: HOME_NAS })]);
+
+    expect(cellsOf(firstRow())[3]).toBe('From Home NAS');
+  });
+
+  it('says another server when that server gave no name', async () => {
+    await mount([play({ importedFrom: { importer: '', name: '' } })]);
+
+    expect(cellsOf(firstRow())[3]).toBe('From another server');
+  });
+
+  it('reads unknown for the platform the other server did not record', async () => {
+    await mount([play({ importedFrom: HOME_NAS }), play({ id: 'p2' })]);
+
+    const [imported, ours] = screen.getAllByRole('row').slice(1).map(cellsOf);
+
+    expect(imported?.[4]).toBe('Unknown');
+    expect(ours?.[4]).toBe('-');
+  });
+
+  it("says its time is the title's runtime when the other server kept no duration", async () => {
+    await mount([
+      play({ importedFrom: HOME_NAS, watchedMs: ONE_HOUR_FIFTY_TWO, watchedIsRuntime: true }),
+    ]);
+
+    expect(cellsOf(firstRow())[6]).toBe('1 h 52 minRuntime');
+  });
+
+  it('reads unknown, not zero, when the catalog holds no runtime either', async () => {
+    await mount([play({ importedFrom: HOME_NAS, watchedMs: 0, watchedIsRuntime: true })]);
+
+    expect(cellsOf(firstRow())[6]).toBe('Unknown');
   });
 });

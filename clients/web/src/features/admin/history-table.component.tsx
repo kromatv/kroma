@@ -10,8 +10,10 @@ import {
   type TitleLines,
   titleLines,
   titlePage,
+  watchedTime,
 } from '#web/features/admin/history-columns';
 import type { HistorySort } from '#web/features/admin/history-query';
+import { Pill } from '#web/features/admin/pill.component';
 import { RouteLink } from '#web/shared/ui/route-link.component';
 
 const ABSENT = '-';
@@ -21,10 +23,18 @@ interface CellProps {
 }
 
 function UserCell({ play }: Readonly<CellProps>) {
+  const t = useT();
   return (
-    <Text variant="label" lines={1}>
-      {play.username}
-    </Text>
+    <Box row align="center" gap={8} wrap minW={0}>
+      <Text variant="label" lines={1}>
+        {play.username}
+      </Text>
+      {play.importedFrom ? (
+        <Pill ink="textMuted" bg="tint/6" variant="overline">
+          {t('admin.historyImported')}
+        </Pill>
+      ) : null}
+    </Box>
   );
 }
 
@@ -56,19 +66,49 @@ function TitleCell({ play }: Readonly<CellProps>) {
   return <TitleFace {...titleLines(play)} />;
 }
 
+function usePlayer(play: PlayEntry): string {
+  const t = useT();
+  const server = play.importedFrom?.name;
+  if (!play.importedFrom) {
+    return play.player ?? ABSENT;
+  }
+  return server ? t('admin.historyFrom', { name: server }) : t('admin.historyFromUnnamed');
+}
+
 function PlayerCell({ play }: Readonly<CellProps>) {
   return (
     <Text variant="meta" color="textMuted" lines={1}>
-      {play.player ?? ABSENT}
+      {usePlayer(play)}
     </Text>
   );
 }
 
 function PlatformCell({ play }: Readonly<CellProps>) {
+  const t = useT();
+  const unknown = play.importedFrom ? t('admin.historyUnknown') : ABSENT;
   return (
     <Text variant="meta" color="textDim" lines={1}>
-      {play.device ?? ABSENT}
+      {play.device ?? unknown}
     </Text>
+  );
+}
+
+function WatchedCell({ play }: Readonly<CellProps>) {
+  const t = useT();
+  const fmt = useFormat();
+  const time = watchedTime(play);
+  if (time.kind === 'unknown') {
+    return (
+      <Text variant="meta" color="textDim" lines={1}>
+        {t('admin.historyUnknown')}
+      </Text>
+    );
+  }
+  return (
+    <TitleFace
+      lead={fmt.duration(time.ms)}
+      detail={time.kind === 'runtime' ? t('admin.historyRuntime') : null}
+    />
   );
 }
 
@@ -88,6 +128,7 @@ const CELLS: Record<HistorySort, ComponentType<CellProps>> = {
   player: PlayerCell,
   device: PlatformCell,
   endedAt: WhenCell,
+  watchedMs: WatchedCell,
 };
 
 interface HistoryRowProps extends CellProps {

@@ -3,7 +3,7 @@
 
 # Requirement index
 
-781 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+784 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -310,11 +310,11 @@
 - **ADMIN-155** (AGREED) - Watch state for a file the scan has not reached yet shows on its <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-156** (AGREED) - A title a person marked as a favourite on the other server is saved <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-157** (AGREED) - When the import ends, a report lists what matched nothing, each <sub>[import.md](admin/import.md)</sub>
-- **ADMIN-158** (AGREED) - The plays the other server recorded come into watch history <sub>[import.md](admin/import.md)</sub>
-- **ADMIN-159** (AGREED) - A row that came from an import says so and names the server it came <sub>[import.md](admin/import.md)</sub>
-- **ADMIN-160** (AGREED) - An imported row leaves blank what the other server did not record: <sub>[import.md](admin/import.md)</sub>
-- **ADMIN-161** (AGREED) - An imported play that carries no duration counts for its title's <sub>[import.md](admin/import.md)</sub>
-- **ADMIN-162** (AGREED) - A play brought over once is not brought again by a later import. <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-158** (SHIPPED) - The plays the other server recorded come into watch history <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-159** (SHIPPED) - A row that came from an import says so and names the server it came <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-160** (SHIPPED) - An imported row leaves blank what the other server did not record: <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-161** (SHIPPED) - An imported play that carries no duration counts for its title's <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-162** (SHIPPED) - A play brought over once is not brought again by a later import. <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-163** (AGREED) - The import runs in the background as a job with progress <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-164** (AGREED) - The owner can cancel the import, and a cancelled import keeps what <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-165** (AGREED) - A second import, run when nothing changed on the other server, <sub>[import.md](admin/import.md)</sub>
