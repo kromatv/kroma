@@ -21,7 +21,7 @@ vi.mock('#mobile/lib/i18n', () => ({
     ({
       'trailer.watch': 'Bande-annonce',
       'trailer.preparing': 'Préparation de la bande-annonce…',
-      'trailer.failed': 'Cette bande-annonce ne peut pas être lue pour le moment.',
+      'trailer.failed': 'Impossible de lire cette bande-annonce pour le moment.',
       'trailer.openOnYoutube': 'Voir sur YouTube',
       'player.back': 'Retour',
     })[key] ?? key,
@@ -135,9 +135,7 @@ describe('a trailer that cannot be played', () => {
 
     renderTrailer();
 
-    expect(
-      screen.getByText('Cette bande-annonce ne peut pas être lue pour le moment.'),
-    ).toBeTruthy();
+    expect(screen.getByText('Impossible de lire cette bande-annonce pour le moment.')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Voir sur YouTube' })).toBeTruthy();
   });
 
