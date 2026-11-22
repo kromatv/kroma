@@ -17,10 +17,12 @@ const SlimUser = User.pick({
   email: true,
   avatarUrl: true,
   hasPin: true,
+  permissions: true,
 }).extend({
   username: z.string().catch(''),
   email: z.string().catch(''),
   hasPin: z.boolean().catch(false),
+  permissions: z.array(z.string()).catch([]),
 });
 export type SlimUser = z.infer<typeof SlimUser>;
 
@@ -63,6 +65,7 @@ function slim(user: SlimUser): SlimUser {
     email: user.email,
     avatarUrl: user.avatarUrl,
     hasPin: user.hasPin,
+    permissions: user.permissions,
   };
 }
 

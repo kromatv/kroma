@@ -7,6 +7,7 @@ export function stubScreens(screens: Partial<TvScreens> = {}): TvScreens {
     connect: stub('connect'),
     profiles: stub('profiles'),
     addProfile: stub('addProfile'),
+    addKids: stub('addKids'),
     quick: stub('quick'),
     unowned: stub('unowned'),
     deviceSettings: stub('deviceSettings'),

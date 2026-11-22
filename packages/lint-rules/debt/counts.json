@@ -1242,7 +1242,7 @@
     "packages/tv/src/features/accounts/tv-connect.component.tsx": 2,
     "packages/tv/src/features/accounts/tv-pin.component.tsx": 1,
     "packages/tv/src/features/accounts/tv-profile-menu.component.tsx": 1,
-    "packages/tv/src/features/accounts/tv-profiles.component.tsx": 2,
+    "packages/tv/src/features/accounts/tv-profiles.component.tsx": 1,
     "packages/tv/src/features/accounts/tv-quick-connect.component.tsx": 3,
     "packages/tv/src/features/cast/apply-command.ts": 1,
     "packages/tv/src/features/cast/cast-bridge.ts": 1,
@@ -3527,7 +3527,7 @@
     "packages/i18n/src/messages.test.ts": 5
   },
   "typescript/no-unnecessary-boolean-literal-compare": {
-    "clients/mobile/src/app/sign-in.tsx": 2,
+    "clients/mobile/src/app/sign-in.tsx": 1,
     "clients/web/src/shared/ui/poster-tile.component.tsx": 1,
     "packages/cli/src/style.ts": 1,
     "packages/cli/src/subcommands/audit.ts": 1,

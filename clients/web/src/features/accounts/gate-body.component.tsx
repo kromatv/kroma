@@ -6,16 +6,16 @@ import {
   type SignInButton,
   type StoredSession,
 } from '@kromatv/client/accounts';
+import { dropKidsProfileAsk, kidsDoor } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { ForgotForm, RegisterForm } from '#web/features/accounts/auth-forms.component';
 import { LoginForm } from '#web/features/accounts/login-form.component';
-import { kidsDoor, pickerTiles } from '#web/features/accounts/picker-tiles';
+import { pickerTiles } from '#web/features/accounts/picker-tiles';
 import { PinEntry } from '#web/features/accounts/pin-entry.component';
 import { ProfilePicker } from '#web/features/accounts/profile-picker.component';
 import { useAuth } from '#web/shared/lib/auth';
 import { useProfilePick } from '#web/features/accounts/use-profile-pick.hook';
-import { dropKidsProfileAsk } from '#web/shared/lib/kids-ask';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
 import { useAuthFlows } from '#web/shared/lib/use-auth-flows.hook';
 import { passkeysSupported } from '#web/shared/lib/webauthn';

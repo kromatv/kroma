@@ -18,6 +18,7 @@ export type GateTile = {
   busy?: boolean;
   offline?: boolean;
   locked?: boolean;
+  kids?: boolean;
   onPress: () => void;
 };
 
@@ -26,11 +27,13 @@ export function ProfileGate({
   disabled,
   error,
   onAdd,
+  onAddKids,
 }: Readonly<{
   tiles: GateTile[];
   disabled: boolean;
   error: string | null;
   onAdd(): void;
+  onAddKids?: () => void;
 }>) {
   const s = useStyles(sDefinition);
 
@@ -49,10 +52,12 @@ export function ProfileGate({
             disabled={disabled}
             offline={tile.offline}
             locked={tile.locked}
+            kids={tile.kids}
             onPress={tile.onPress}
           />
         ))}
         <AddTile size="md" label={t('profiles.add')} onPress={onAdd} />
+        {onAddKids ? <AddTile size="md" label={t('admin.addKids')} onPress={onAddKids} /> : null}
       </ScrollView>
       <ErrorBanner message={error} />
     </OnboardingBox>

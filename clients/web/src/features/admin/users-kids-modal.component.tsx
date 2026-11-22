@@ -1,8 +1,9 @@
 import { apiErrorText } from '@kromatv/client';
 import type { NewKidsProfile } from '@kromatv/client/admin';
 import type { LibraryId } from '@kromatv/client/media';
+import { kidsDraft } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { ChoiceList, Dialog, Field, Text } from '@kromatv/ui/kit';
+import { Dialog, Field, KidsLevelChoice, Text } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
@@ -12,8 +13,6 @@ import { KidsPinOffer } from '#web/features/admin/kids-pin-offer.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 type KidsLevel = NewKidsProfile['level'];
-
-const KIDS_LEVELS: readonly KidsLevel[] = [0, 7, 10];
 
 /** Create a Kids profile (ACCT-122 to ACCT-124): a name, one of the kids levels
  * with none picked in advance, and the libraries it sees. It has no email and
@@ -54,7 +53,7 @@ function KidsDraft({
       <Field.Root label={t('admin.name')}>
         <Field.Input icon="user" value={draft.name} onValueChange={draft.setName} />
       </Field.Root>
-      <KidsLevelChoice level={draft.level} onChange={draft.setLevel} />
+      <KidsLevelChoice size="md" value={draft.level} onValueChange={draft.setLevel} />
       <LibraryVisibility granted={draft.granted} onChange={draft.setGranted} />
       {draft.error ? (
         <Text variant="meta" color="danger">
@@ -85,7 +84,7 @@ function useKidsDraft(onCreated: () => void) {
     setGranted,
     busy,
     error,
-    ready: level !== null && name.trim() !== '',
+    ready: kidsDraft({ name, level }) !== null,
     submit: () => void create({ name, level, granted }),
   };
 }
@@ -127,45 +126,18 @@ function useCreateKids(onCreated: () => void) {
   const { client } = useAuth();
   const { busy, error, run } = useAsyncAction();
   const create = ({ name, level, granted }: Draft) => {
-    if (level === null) {
+    const draft = kidsDraft({ name, level });
+    if (!draft) {
       return Promise.resolve();
     }
     const libraries = granted === null ? null : [...granted];
     return run(
       async () => {
-        await client.admin.createKids({ username: name.trim(), level, libraries });
+        await client.admin.createKids({ ...draft, libraries });
         onCreated();
       },
       (refused) => apiErrorText(refused, t('admin.kidsFailed')),
     );
   };
   return { busy, error, create };
-}
-
-function KidsLevelChoice({
-  level,
-  onChange,
-}: Readonly<{ level: KidsLevel | null; onChange: (level: KidsLevel) => void }>) {
-  const t = useT();
-  const pick = (value: string) => {
-    const next = KIDS_LEVELS.find((candidate) => String(candidate) === value);
-    if (next !== undefined) {
-      onChange(next);
-    }
-  };
-  return (
-    <ChoiceList.Root
-      size="md"
-      label={t('admin.maturity')}
-      value={level === null ? '' : String(level)}
-      onValueChange={pick}
-    >
-      {KIDS_LEVELS.map((candidate) => (
-        <ChoiceList.Item key={candidate} value={String(candidate)}>
-          <ChoiceList.Label>{t(`content.maturity${candidate}`)}</ChoiceList.Label>
-          <ChoiceList.Hint>{t(`admin.kidsBand${candidate}`)}</ChoiceList.Hint>
-        </ChoiceList.Item>
-      ))}
-    </ChoiceList.Root>
-  );
 }

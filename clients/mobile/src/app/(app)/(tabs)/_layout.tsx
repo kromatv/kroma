@@ -3,6 +3,7 @@ import { type BottomTabBarProps, Tabs } from 'expo-router/js-tabs';
 import type { ColorValue } from 'react-native';
 import { PillTabBar } from '#mobile/components/pill-tab-bar.component';
 import { useT } from '#mobile/lib/i18n';
+import { useAskedKidsForm } from '#mobile/lib/use-asked-kids-form.hook';
 
 const renderTabBar = (props: BottomTabBarProps) => <PillTabBar {...props} />;
 
@@ -25,6 +26,7 @@ const SCREENS = TABS.map((tab) => ({
 }));
 
 export default function TabsLayout() {
+  useAskedKidsForm();
   const t = useT();
   const theme = useTheme();
   return (

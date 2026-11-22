@@ -30,7 +30,8 @@ export interface TvRoutes {
   quick: undefined;
   unowned: undefined;
   deviceSettings: undefined;
-  pin: { account: StoredSession };
+  pin: { account: StoredSession; next?: 'addKids' };
+  addKids: undefined;
   profileMenu: undefined;
   home: undefined;
   grid: { kind: 'films' | 'series' | 'mylist' };

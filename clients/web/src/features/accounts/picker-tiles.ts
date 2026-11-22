@@ -1,9 +1,4 @@
-import {
-  hasPermission,
-  type KidsProfile,
-  type PublicUser,
-  type StoredSession,
-} from '@kromatv/client/accounts';
+import type { KidsProfile, PublicUser, StoredSession } from '@kromatv/client/accounts';
 import type { ProfileChoice } from '#web/features/accounts/profile-picker.component';
 
 /** What the picker offers, in order: the profiles remembered on this device,
@@ -45,10 +40,4 @@ function unremembered(p: PublicUser | KidsProfile, kidIds: ReadonlySet<string>):
     locked: !kids,
     kids,
   };
-}
-
-/** The member signed in here through whom the picker adds a Kids profile: the
- * first remembered account that manages users, `null` without one (ACCT-135). */
-export function kidsDoor(accounts: readonly StoredSession[]): StoredSession | null {
-  return accounts.find((account) => hasPermission(account.user, 'users.manage')) ?? null;
 }
