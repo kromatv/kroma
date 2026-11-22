@@ -22,6 +22,7 @@ on:
       - 'apps/kit/**'
       - 'packages/ui/**'
       - 'packages/core/**'
+      - 'packages/i18n/**'
       # vite.config.ts imports @kromatv/bundler/props-docs.
       - 'packages/bundler/**'
       - 'clients/tv-build/rnw.ts'
@@ -31,6 +32,7 @@ on:
       - 'apps/kit/**'
       - 'packages/ui/**'
       - 'packages/core/**'
+      - 'packages/i18n/**'
       - 'packages/bundler/**'
       - 'clients/tv-build/rnw.ts'
       - '.github/workflows/kit.yml'
@@ -82,7 +84,7 @@ jobs:
           # refuses to read them from a truncated one.
           git fetch --no-tags origin "$last" 2>/dev/null || true
           # An unfetchable sha (force-push, expired) errors the diff -> deploy.
-          if git diff --quiet "$last" HEAD -- apps/kit packages/ui packages/core packages/bundler clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
+          if git diff --quiet "$last" HEAD -- apps/kit packages/ui packages/core packages/i18n packages/bundler clients/tv-build/rnw.ts .github/workflows/kit.yml 2>/dev/null; then
             echo "::notice::ui.kroma.tv is already serving this tree (last deployed $last); skipping."
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
