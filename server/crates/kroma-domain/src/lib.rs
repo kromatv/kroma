@@ -52,3 +52,4 @@ pub use releases::*;
 pub use reports::*;
 pub use requests::*;
 pub use section::*;
+pub mod setup;
