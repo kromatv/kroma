@@ -1,7 +1,6 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import { openTrendingFilms } from '#web/features/requests/trending-url';
 
 export const Route = createFileRoute('/_app/trending/')({
-  beforeLoad: () => {
-    throw redirect({ to: '/trending/$type', params: { type: 'movie' }, replace: true });
-  },
+  beforeLoad: openTrendingFilms,
 });

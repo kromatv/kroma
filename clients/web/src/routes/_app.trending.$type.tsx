@@ -1,14 +1,10 @@
 import type { TmdbKind } from '@kromatv/client/discovery';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { TrendingPage } from '#web/features/requests/trending-page.component';
-import { validateTrendingSearch } from '#web/features/requests/trending-search';
+import { requireTrendingKind, validateTrendingSearch } from '#web/features/requests/trending-url';
 
 export const Route = createFileRoute('/_app/trending/$type')({
-  beforeLoad: ({ params }) => {
-    if (params.type !== 'movie' && params.type !== 'tv') {
-      throw redirect({ to: '/search', search: { q: '', type: 'all' } });
-    }
-  },
+  beforeLoad: requireTrendingKind,
   validateSearch: validateTrendingSearch,
   component: TrendingRoute,
 });

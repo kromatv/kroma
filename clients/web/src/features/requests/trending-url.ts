@@ -1,3 +1,4 @@
+import { redirect } from '@tanstack/react-router';
 import { z } from 'zod';
 
 const TrendingSearchParams = z
@@ -13,4 +14,16 @@ export interface TrendingSearch {
 export function validateTrendingSearch(s: Record<string, unknown>): TrendingSearch {
   const { page } = TrendingSearchParams.parse(s);
   return page === undefined ? {} : { page };
+}
+
+/** Send a trending url naming neither films nor shows to the search. */
+export function requireTrendingKind({ params }: { params: { type: string } }): void {
+  if (params.type !== 'movie' && params.type !== 'tv') {
+    throw redirect({ to: '/search', search: { q: '', type: 'all' } });
+  }
+}
+
+/** Send the bare `/trending` to the trending films. */
+export function openTrendingFilms(): never {
+  throw redirect({ to: '/trending/$type', params: { type: 'movie' }, replace: true });
 }

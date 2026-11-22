@@ -2455,6 +2455,7 @@ dependencies = [
  "kroma-module-kernel",
  "kroma-module-manifest",
  "kroma-module-supervisor",
+ "kroma-requests",
  "kroma-testing",
  "libmimalloc-sys",
  "mimalloc",

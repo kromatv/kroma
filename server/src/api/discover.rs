@@ -138,39 +138,27 @@ pub async fn trending(
 ) -> Result<Response, Response> {
     require(&viewer.user, Permission::RequestsCreate)?;
     let key = require_tmdb(&state, &viewer.user)?;
-    let language = settings::metadata_language_for(&state.settings, &state.config, reader);
+    let lang = settings::metadata_language_for(&state.settings, &state.config, reader);
+    let scope = scope_from_type(params.kind.as_deref());
     let page = params.page.unwrap_or(1);
-    let source = trending_lists::Source {
-        key,
-        language,
-        scope: scope_from_type(params.kind.as_deref()),
-    };
-    if source.scope == discover::DiscoverScope::All {
-        warm_lists(&state, &source);
+    if scope != discover::DiscoverScope::All {
+        let source = trending_lists::Source {
+            key,
+            language: lang,
+            scope,
+        };
+        let engine = state.clone();
         return flagged_page(&state, &viewer, move || {
-            discover::trending(&source.key, &source.language, source.scope, page)
-                .map_err(|()| anyhow::anyhow!("TMDB trending failed"))
+            engine.trending_lists.page(&source, page)
         })
         .await;
     }
-    let engine = state.clone();
+    state.trending_lists.warm(&key, &lang);
     flagged_page(&state, &viewer, move || {
-        engine.trending_lists.page(&source, page)
+        discover::trending(&key, &lang, scope, page)
+            .map_err(|()| anyhow::anyhow!("TMDB trending failed"))
     })
     .await
-}
-
-fn warm_lists(state: &SharedState, rails: &trending_lists::Source) {
-    for scope in [
-        discover::DiscoverScope::Movies,
-        discover::DiscoverScope::Shows,
-    ] {
-        let source = trending_lists::Source {
-            scope,
-            ..rails.clone()
-        };
-        state.trending_lists.warm(&source);
-    }
 }
 
 /// `GET /api/discover/{movie|tv}/:tmdbId` detail + seasons + availability.

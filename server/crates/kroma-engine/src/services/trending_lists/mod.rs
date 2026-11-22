@@ -45,14 +45,27 @@ impl TrendingLists {
         Ok(slice(&hits, page))
     }
 
-    /// Read `source`'s list in the background when nothing is held for it and
-    /// nobody is reading it, so the first page asked of it does not wait on the
-    /// provider. Never blocks. Returns the read it started, if any.
-    pub fn warm(&self, source: &Source) -> Option<JoinHandle<()>> {
-        let list = self.list(source);
+    /// Read the films and the shows lists in `language` in the background, each
+    /// one that nothing is held for and nobody is reading, so the first page
+    /// asked of them does not wait on the provider. Never blocks. Returns the
+    /// reads it started.
+    pub fn warm(&self, key: &str, language: &str) -> Vec<JoinHandle<()>> {
+        [DiscoverScope::Movies, DiscoverScope::Shows]
+            .into_iter()
+            .filter_map(|scope| {
+                self.warm_list(Source {
+                    key: key.to_owned(),
+                    language: language.to_owned(),
+                    scope,
+                })
+            })
+            .collect()
+    }
+
+    fn warm_list(&self, source: Source) -> Option<JoinHandle<()>> {
+        let list = self.list(&source);
         let cold = list.held.try_lock().is_ok_and(|held| held.is_none());
         cold.then(|| {
-            let source = source.clone();
             std::thread::spawn(move || {
                 let _ = list.hits(&source);
             })

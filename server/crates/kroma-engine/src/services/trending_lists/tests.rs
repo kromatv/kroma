@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
 
 use anyhow::anyhow;
 use serde_json::json;
@@ -227,18 +228,26 @@ fn a_list_the_provider_cannot_read_fails_and_the_next_page_asks_again() {
 }
 
 #[test]
-fn warming_a_list_reads_it_before_any_page_is_asked() {
+fn warming_reads_the_films_and_the_shows_before_any_page_is_asked() {
     let tmdb = FakeTmdb::start_shared(|_| (200, two_films()));
     let lists = TrendingLists::default();
+    let shows = Source {
+        scope: DiscoverScope::Shows,
+        ..movies()
+    };
 
-    lists.warm(&movies()).unwrap().join().unwrap();
+    for read in lists.warm("test-key", "fr-FR") {
+        read.join().unwrap();
+    }
 
     assert_eq!(ids(&lists.page(&movies(), 1).unwrap().hits), [603, 604]);
-    assert_eq!(tmdb.requests().len(), 2);
+    assert_eq!(ids(&lists.page(&shows, 1).unwrap().hits), [603, 604]);
+    assert_eq!(tmdb.requests().len(), 4);
 }
 
 #[test]
-fn warming_a_list_already_held_reads_nothing() {
+fn warming_reads_only_the_lists_nothing_is_held_for() {
+    let _tmdb = FakeTmdb::start_shared(|_| (200, two_films()));
     let lists = TrendingLists::default();
     let held = Held {
         hits: Arc::new(films([1])),
@@ -246,9 +255,13 @@ fn warming_a_list_already_held_reads_nothing() {
     };
     *lists.list(&movies()).held.lock().unwrap() = Some(held);
 
-    let started = lists.warm(&movies());
+    let started = lists.warm("test-key", "fr-FR");
 
-    assert!(started.is_none());
+    let finished = started
+        .into_iter()
+        .map(JoinHandle::join)
+        .filter(Result::is_ok);
+    assert_eq!(finished.count(), 1);
 }
 
 #[test]
