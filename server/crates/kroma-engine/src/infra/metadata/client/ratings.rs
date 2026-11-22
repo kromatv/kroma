@@ -4,7 +4,7 @@
 use crate::domain::CountryRatings;
 
 use super::certification::Certifications;
-use super::{api, tmdb_json, Target};
+use super::{Target, api, tmdb_json};
 
 /// The label every country gave the film or show `id`, one request. `None`
 /// when TMDB did not answer.

@@ -59,6 +59,12 @@ impl Declared {
     }
 }
 
+fn metadata_keys(m: &mut Declared) {
+    // Empty → the env-configured `KROMA_TMDB_LANGUAGE` (default "en-US").
+    m.module_declared("tmdbLanguage", json!(super::TMDB_LANGUAGE_AUTO));
+    m.core_only(super::RATINGS_COUNTRY_KEY, json!(super::TMDB_LANGUAGE_AUTO));
+}
+
 fn declared() -> Declared {
     let mut m = Declared::new();
     m.module_declared("serverName", json!("KROMA"));
@@ -74,9 +80,7 @@ fn declared() -> Declared {
     // third-party catalogs of native code.
     m.core_only("moduleRegistries", json!([]));
     m.module_declared("uiLanguage", json!("Français"));
-    // Empty → the env-configured `KROMA_TMDB_LANGUAGE` (default "en-US").
-    m.module_declared("tmdbLanguage", json!(super::TMDB_LANGUAGE_AUTO));
-    m.core_only(super::RATINGS_COUNTRY_KEY, json!(super::TMDB_LANGUAGE_AUTO));
+    metadata_keys(&mut m);
     m.module_declared("timezone", json!("Europe/Zurich (UTC+1)"));
     m.module_declared("autoUpdate", json!(true));
     m.module_declared("autoInstallUpdates", json!(null));

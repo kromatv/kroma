@@ -22,13 +22,10 @@ export function RestrictionsCountry({
     queryKey: ['account', 'ratings-country'],
     queryFn: () => client.accounts.ratings.get(),
   });
-  const household = read.household ?? ratings.data?.household;
-  const follow = household
-    ? {
-        value: HOUSEHOLD,
-        label: t('account.ratingsCountryHousehold', { country: countryName(household, locale) }),
-      }
-    : undefined;
+  const follow = {
+    value: HOUSEHOLD,
+    label: t('account.ratingsCountryHousehold', { country: countryName(read.household, locale) }),
+  };
   return (
     <KidsCountrySelect
       countries={ratings.data?.countries ?? []}

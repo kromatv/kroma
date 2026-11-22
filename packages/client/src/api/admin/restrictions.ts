@@ -23,7 +23,7 @@ export type RuledTitle = z.infer<typeof RuledTitle>;
 export const Restrictions = z.object({
   level: MaturityLevel,
   ratingsCountry: z.string().nonempty().nullable().default(null),
-  household: z.string().nonempty().nullish(),
+  household: z.string().nonempty(),
   held: z.boolean(),
   titles: z.array(RuledTitle).default([]),
 });

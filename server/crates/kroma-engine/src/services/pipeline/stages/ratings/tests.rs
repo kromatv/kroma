@@ -1,8 +1,8 @@
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::*;
 use crate::db;
-use crate::test_support::{seed_movie, seed_show_episode, test_state_with_tmdb, FakeTmdb};
+use crate::test_support::{FakeTmdb, seed_movie, seed_show_episode, test_state_with_tmdb};
 
 fn legacy(tmdb_id: u64, certification: &str) -> Metadata {
     let mut meta: Metadata = serde_json::from_value(json!({
@@ -56,7 +56,11 @@ fn a_title_enriched_before_every_country_was_kept_gains_them() {
 
     process(&context(&state), "meg").unwrap();
 
-    let stored = db::get_item(&state.db, "meg").unwrap().unwrap().metadata.unwrap();
+    let stored = db::get_item(&state.db, "meg")
+        .unwrap()
+        .unwrap()
+        .metadata
+        .unwrap();
     assert_eq!(stored.ratings.get("CH").map(String::as_str), Some("12"));
     assert_eq!(stored.ratings.len(), 3);
 }
@@ -89,7 +93,11 @@ fn a_title_nobody_rated_keeps_what_it_had() {
 
     process(&context(&state), "home").unwrap();
 
-    let stored = db::get_item(&state.db, "home").unwrap().unwrap().metadata.unwrap();
+    let stored = db::get_item(&state.db, "home")
+        .unwrap()
+        .unwrap()
+        .metadata
+        .unwrap();
     assert!(stored.ratings.is_empty());
     assert_eq!(stored.certification.as_deref(), Some("TP"));
 }
@@ -118,7 +126,11 @@ fn a_server_without_a_metadata_key_and_a_title_never_matched_ask_nothing() {
     process(&context(&keyless), "meg").unwrap();
     process(&context(&state), "bare").unwrap();
 
-    let stored = db::get_item(&keyless.db, "meg").unwrap().unwrap().metadata.unwrap();
+    let stored = db::get_item(&keyless.db, "meg")
+        .unwrap()
+        .unwrap()
+        .metadata
+        .unwrap();
     assert!(stored.ratings.is_empty());
     assert!(enumerate(&state).unwrap().is_empty());
 }

@@ -42,7 +42,10 @@ pub(super) fn ratings_country_row(locale: &str, value: serde_json::Value) -> Set
         label: i18n::t(locale, "admin.ratingsCountry", &[]),
         desc: Some(i18n::t(locale, "admin.ratingsCountryHint", &[])),
         kind: "select",
-        options: auto.chain(ratings_countries()).map(str::to_string).collect(),
+        options: auto
+            .chain(ratings_countries())
+            .map(str::to_string)
+            .collect(),
         value,
         applied: true,
         configured: None,

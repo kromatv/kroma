@@ -1,0 +1,14 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Picking } from './kids-country-choice.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: 480,
+  render: () => <Picking />,
+});
+
+The list a Kids form's ratings country is picked from: a `CountryChoice` whose pick changes the form's country and leaves the list. It takes what `useKidsCountry` holds.
+
+```tsx
+<KidsCountryChoice country={country} onPicked={backToForm} />
+```

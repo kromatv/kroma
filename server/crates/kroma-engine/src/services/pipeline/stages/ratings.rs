@@ -5,7 +5,7 @@ use anyhow::Result;
 
 use crate::db;
 use crate::domain::ratings::reader_rating;
-use crate::infra::metadata::{ratings_by_id, Target};
+use crate::infra::metadata::{Target, ratings_by_id};
 use crate::model::{Kind, Metadata};
 use crate::services::jobs::{JobContext, JobKey, Trigger};
 use crate::services::settings;
@@ -38,40 +38,41 @@ fn unrated(id: String, meta: Option<&Metadata>) -> Option<(String, String)> {
     Some((id, format!("tmdb:{}", meta.tmdb_id)))
 }
 
+struct Asked<'a> {
+    api_key: &'a str,
+    server: String,
+}
+
 fn process(ctx: &JobContext, id: &str) -> Result<()> {
     let state = &ctx.state;
     let Some(api_key) = state.config.tmdb_api_key.as_deref() else {
         return Ok(());
     };
-    match db::get_item(&state.db, id)? {
-        Some(item) => rate(state, (api_key, Target::Movie), item.metadata, |meta| {
-            db::set_item_metadata(&state.db, id, meta)
-        }),
-        None => rate(state, (api_key, Target::Tv), db::show_metadata(&state.db, id)?, |meta| {
-            db::set_show_metadata(&state.db, id, meta)
-        }),
+    let server = settings::metadata_country(&state.settings, &state.config);
+    let asked = Asked { api_key, server };
+    if let Some(item) = db::get_item(&state.db, id)? {
+        let rated = asked.rate(Target::Movie, item.metadata)?;
+        return rated.map_or(Ok(()), |meta| db::set_item_metadata(&state.db, id, &meta));
     }
+    let rated = asked.rate(Target::Tv, db::show_metadata(&state.db, id)?)?;
+    rated.map_or(Ok(()), |meta| db::set_show_metadata(&state.db, id, &meta))
 }
 
-fn rate(
-    state: &SharedState,
-    (api_key, target): (&str, Target),
-    stored: Option<Metadata>,
-    store: impl FnOnce(&Metadata) -> Result<()>,
-) -> Result<()> {
-    let Some(mut meta) = stored.filter(|meta| meta.tmdb_id != 0) else {
-        return Ok(());
-    };
-    let ratings = ratings_by_id(api_key, target, meta.tmdb_id)
-        .ok_or_else(|| anyhow::anyhow!("TMDB did not answer for {}", meta.tmdb_id))?;
-    if ratings.is_empty() {
-        return Ok(());
+impl Asked<'_> {
+    fn rate(&self, target: Target, stored: Option<Metadata>) -> Result<Option<Metadata>> {
+        let Some(mut meta) = stored.filter(|meta| meta.tmdb_id != 0) else {
+            return Ok(None);
+        };
+        let ratings = ratings_by_id(self.api_key, target, meta.tmdb_id)
+            .ok_or_else(|| anyhow::anyhow!("TMDB did not answer for {}", meta.tmdb_id))?;
+        if ratings.is_empty() {
+            return Ok(None);
+        }
+        meta.age_rating = reader_rating(&ratings, &self.server, &self.server);
+        meta.certification = meta.age_rating.as_ref().map(|shown| shown.label.clone());
+        meta.ratings = ratings;
+        Ok(Some(meta))
     }
-    let server = settings::metadata_country(&state.settings, &state.config);
-    meta.age_rating = reader_rating(&ratings, &server, &server);
-    meta.certification = meta.age_rating.as_ref().map(|shown| shown.label.clone());
-    meta.ratings = ratings;
-    store(&meta)
 }
 
 #[cfg(test)]

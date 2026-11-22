@@ -1,14 +1,15 @@
 import { apiErrorText } from '@kromatv/client';
-import { countryName, KIDS_LEVELS, type KidsForm, kidsDraft } from '@kromatv/core';
+import { KIDS_LEVELS, type KidsForm, kidsDraft } from '@kromatv/core';
 import { type KidsCountry, useCreateKids, useKidsCountry } from '@kromatv/core/react';
-import { useLocale, useT } from '@kromatv/ui';
+import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
-  CountryChoice,
   Field,
   type FocusHandle,
   Icon,
+  KidsCountryChoice,
+  KidsCountryRow,
   ListRow,
   Text,
   useFocusNav,
@@ -21,6 +22,8 @@ import { AuthScreen, UrlKeyboard } from '#tv/shared/ui';
 import { PinPanel } from './settings/pin-panel.component';
 
 type Step = 'form' | 'name' | 'country' | 'pin';
+
+const BACK_TO_FORM: ReadonlySet<Step> = new Set<Step>(['name', 'country']);
 
 type KidsLevel = NonNullable<KidsForm['level']>;
 
@@ -67,7 +70,7 @@ function useStepBack(step: Step, go: Readonly<{ toForm: () => void; leave: () =>
   });
   const onBack = useCallback(() => {
     const { step: at, go: to } = held.current;
-    if (at === 'name' || at === 'country') {
+    if (BACK_TO_FORM.has(at)) {
       to.toForm();
     } else {
       to.leave();
@@ -157,42 +160,16 @@ function KidsLevelRows({
   );
 }
 
-function KidsCountryRow({
-  country,
-  onPress,
-}: Readonly<{ country: string | null; onPress: () => void }>) {
-  const t = useT();
-  const locale = useLocale();
-  if (country === null) {
-    return null;
-  }
-  return (
-    <ListRow.Root icon="world" onPress={onPress}>
-      <ListRow.Label>{t('admin.kidsCountry')}</ListRow.Label>
-      <ListRow.Hint>{countryName(country, locale)}</ListRow.Hint>
-    </ListRow.Root>
-  );
-}
-
 function KidsCountryStep({
   country,
   onDone,
 }: Readonly<{ country: KidsCountry; onDone: () => void }>) {
   const t = useT();
-  const pick = (picked: string) => {
-    country.pick(picked);
-    onDone();
-  };
   return (
     <AuthScreen>
       <Box w="100%" maxW={720} gap={24}>
         <StepTitle title={t('admin.kidsCountry')} lead={t('admin.kidsCountryHint')} />
-        <CountryChoice
-          label={t('admin.kidsCountry')}
-          countries={country.countries}
-          value={country.country}
-          onValueChange={pick}
-        />
+        <KidsCountryChoice country={country} onPicked={onDone} />
       </Box>
     </AuthScreen>
   );

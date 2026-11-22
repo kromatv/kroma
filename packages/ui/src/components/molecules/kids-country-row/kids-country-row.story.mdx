@@ -1,0 +1,14 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Picking } from './kids-country-row.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: 480,
+  render: () => <Picking />,
+});
+
+A Kids form's ratings country as one row, named in the reader's language. It opens the list the country is picked from, on the phone and the television. Not drawn until the country is known.
+
+```tsx
+<KidsCountryRow country={country.country} onPress={toCountryStep} />
+```

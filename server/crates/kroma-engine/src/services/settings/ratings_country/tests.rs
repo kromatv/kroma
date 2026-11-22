@@ -9,14 +9,27 @@ use crate::state::SharedState;
 use crate::test_support::test_state;
 
 fn member(state: &SharedState, name: &str, device_language: Option<&str>) {
-    let user = db::create_user(&state.db, &format!("{name}@x.test"), name, "h", &[Permission::Playback])
-        .unwrap();
+    let user = db::create_user(
+        &state.db,
+        &format!("{name}@x.test"),
+        name,
+        "h",
+        &[Permission::Playback],
+    )
+    .unwrap();
     let hints = DeviceHints {
         language: device_language.map(str::to_string),
         ..DeviceHints::default()
     };
-    db::create_access_token(&state.db, &format!("t-{name}"), &user.id, i64::MAX, false, &hints)
-        .unwrap();
+    db::create_access_token(
+        &state.db,
+        &format!("t-{name}"),
+        &user.id,
+        i64::MAX,
+        false,
+        &hints,
+    )
+    .unwrap();
 }
 
 fn household(state: &SharedState) -> String {
@@ -49,7 +62,10 @@ fn an_owners_locale_with_no_region_leaves_the_country_of_the_metadata_language()
     let state = test_state();
     member(&state, "owner", Some("fr"));
 
-    assert_eq!(household(&state), metadata_country(&state.settings, &state.config));
+    assert_eq!(
+        household(&state),
+        metadata_country(&state.settings, &state.config)
+    );
 }
 
 #[test]
@@ -57,7 +73,10 @@ fn a_region_no_rating_system_is_known_for_is_passed_over() {
     let state = test_state();
     member(&state, "owner", Some("fr-zz"));
 
-    assert_eq!(household(&state), metadata_country(&state.settings, &state.config));
+    assert_eq!(
+        household(&state),
+        metadata_country(&state.settings, &state.config)
+    );
     assert_eq!(known("zz"), None);
     assert_eq!(known(" ch "), Some("CH".to_string()));
 }
@@ -66,5 +85,8 @@ fn a_region_no_rating_system_is_known_for_is_passed_over() {
 fn a_server_with_no_account_takes_the_country_of_the_metadata_language() {
     let state = test_state();
 
-    assert_eq!(household(&state), metadata_country(&state.settings, &state.config));
+    assert_eq!(
+        household(&state),
+        metadata_country(&state.settings, &state.config)
+    );
 }

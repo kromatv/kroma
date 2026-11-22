@@ -49,19 +49,24 @@ function RestrictionsBody({
       <Text variant="meta" color="textDim" mt={8}>
         {hintFor(t, { held: read.held, self })}
       </Text>
-      {locked ? null : (
-        <>
-          <RestrictionsCountry
-            read={read}
-            disabled={change.password === null || change.busy}
-            onPick={change.setCountry}
-          />
-          <TitleRules
-            titles={read.titles}
-            onRule={change.password === null ? undefined : change.setRule}
-          />
-        </>
-      )}
+      {locked ? null : <HeldRestrictions read={read} change={change} />}
+    </>
+  );
+}
+
+function HeldRestrictions({
+  read,
+  change,
+}: Readonly<{ read: Restrictions; change: RestrictionChange }>) {
+  const unlocked = change.password !== null;
+  return (
+    <>
+      <RestrictionsCountry
+        read={read}
+        disabled={!unlocked || change.busy}
+        onPick={change.setCountry}
+      />
+      <TitleRules titles={read.titles} onRule={unlocked ? change.setRule : undefined} />
     </>
   );
 }

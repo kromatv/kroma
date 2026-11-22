@@ -1,12 +1,12 @@
 import { apiErrorText } from '@kromatv/client';
-import { countryName, type KidsForm, kidsDraft } from '@kromatv/core';
+import { type KidsForm, kidsDraft } from '@kromatv/core';
 import { type KidsCountry, useCreateKids, useKidsCountry } from '@kromatv/core/react';
 import {
   Button,
-  CountryChoice,
   Field,
+  KidsCountryChoice,
+  KidsCountryRow,
   KidsLevelChoice,
-  ListRow,
   styles,
   Text,
   useStyles,
@@ -16,7 +16,7 @@ import { type ReactNode, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/page-header.component';
 import { ErrorBanner, Screen } from '#mobile/components/ui';
-import { useI18n, useT } from '#mobile/lib/i18n';
+import { useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
@@ -87,40 +87,14 @@ function KidsFields({ form, onForm, onCountry, onCreated }: Readonly<KidsFieldsP
   );
 }
 
-function KidsCountryRow({
-  country,
-  onPress,
-}: Readonly<{ country: string | null; onPress: () => void }>) {
-  const t = useT();
-  const { locale } = useI18n();
-  if (country === null) {
-    return null;
-  }
-  return (
-    <ListRow.Root icon="world" onPress={onPress}>
-      <ListRow.Label>{t('admin.kidsCountry')}</ListRow.Label>
-      <ListRow.Hint>{countryName(country, locale)}</ListRow.Hint>
-    </ListRow.Root>
-  );
-}
-
 function KidsCountryScreen({
   country,
   onDone,
 }: Readonly<{ country: KidsCountry; onDone: () => void }>) {
   const t = useT();
-  const pick = (picked: string) => {
-    country.pick(picked);
-    onDone();
-  };
   return (
     <KidsScreen title={t('admin.kidsCountry')} lead={t('admin.kidsCountryHint')}>
-      <CountryChoice
-        label={t('admin.kidsCountry')}
-        countries={country.countries}
-        value={country.country}
-        onValueChange={pick}
-      />
+      <KidsCountryChoice country={country} onPicked={onDone} />
     </KidsScreen>
   );
 }
