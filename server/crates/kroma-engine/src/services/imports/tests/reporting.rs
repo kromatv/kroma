@@ -76,7 +76,7 @@ fn the_stages_of_this_build_bring_the_users_and_settle_nothing_else() {
             users: tally(3, 2, 0),
             titles: tally(5, 0, 0),
             states: tally(2, 0, 1),
-            plays: tally(5, 0, 0),
+            plays: tally(5, 0, 2),
         }
     );
     assert_eq!(settled.len(), 2);

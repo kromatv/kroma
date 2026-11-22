@@ -40,6 +40,8 @@ pub struct Fetched {
     pub modules: Vec<CatalogModule>,
     pub error: Option<String>,
     pub shadowed: Vec<String>,
+    /// What this registry's descriptor offers a server's guided setup.
+    pub setup: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -149,6 +151,7 @@ fn merge_one(
         modules,
         error,
         shadowed,
+        setup: Vec::new(),
     }
 }
 
@@ -168,14 +171,17 @@ pub async fn fetch_all(state: &SharedState, sup: &Supervisor) -> Vec<Fetched> {
                 modules: Vec::new(),
                 error: None,
                 shadowed: Vec::new(),
+                setup: Vec::new(),
             });
             continue;
         }
-        let (modules, error) = match catalog::fetch(sup, &registry.url).await {
-            Ok(modules) => (modules, None),
-            Err(e) => (Vec::new(), Some(format!("{e:#}"))),
+        let (listing, error) = match catalog::fetch(sup, &registry.url).await {
+            Ok(listing) => (listing, None),
+            Err(e) => (catalog::Listing::default(), Some(format!("{e:#}"))),
         };
-        out.push(merge_one(registry, modules, error, &mut claimed));
+        let mut fetched = merge_one(registry, listing.modules, error, &mut claimed);
+        fetched.setup = listing.setup;
+        out.push(fetched);
     }
     out
 }
@@ -208,6 +214,20 @@ pub async fn fetch_merged(
             })
         })
         .collect())
+}
+
+/// What the official registry offers a server's guided setup, in its order: the
+/// modules it serves itself and nothing else. An added registry offers nothing.
+pub fn setup_offer(fetched: &[Fetched]) -> Vec<String> {
+    let Some(official) = fetched.iter().find(|f| f.registry.official) else {
+        return Vec::new();
+    };
+    official
+        .setup
+        .iter()
+        .filter(|id| official.modules.iter().any(|m| &m.id == *id))
+        .cloned()
+        .collect()
 }
 
 /// Every registry row the admin editor shows, straight off the one pass that
@@ -395,6 +415,43 @@ mod tests {
             .collect(),
         );
         assert!(stored(&t.state).is_empty());
+    }
+
+    fn offering(registry: Registry, ids: &[&str], setup: &[&str]) -> Fetched {
+        Fetched {
+            setup: setup.iter().map(|id| (*id).to_string()).collect(),
+            ..merge_one(
+                registry,
+                ids.iter().map(|id| module(id, "1.0.0")).collect(),
+                None,
+                &mut HashSet::new(),
+            )
+        }
+    }
+
+    #[test]
+    fn the_setup_offer_is_the_official_registrys_less_what_it_does_not_serve() {
+        let fetched = [offering(
+            reg("Official", "https://o", true),
+            &["tv.kroma.mdns", "tv.kroma.remote"],
+            &["tv.kroma.remote", "tv.kroma.gone", "tv.kroma.mdns"],
+        )];
+
+        assert_eq!(setup_offer(&fetched), ["tv.kroma.remote", "tv.kroma.mdns"]);
+    }
+
+    #[test]
+    fn an_added_registry_puts_nothing_in_the_setup() {
+        let fetched = [
+            offering(reg("Official", "https://o", true), &["tv.kroma.mdns"], &[]),
+            offering(
+                reg("Extra", "https://e", false),
+                &["com.acme.x"],
+                &["com.acme.x"],
+            ),
+        ];
+
+        assert!(setup_offer(&fetched).is_empty());
     }
 
     #[test]

@@ -10,10 +10,12 @@ import {
   publishesSchema,
   SCHEMA_NAMES,
   type SchemaName,
+  withSetup,
 } from '@kromatv/registry';
 import type { ModuleEntry } from '#site/catalog';
 import { releaseHistory } from '#site/lib/releases';
 import { type Env, jsonResponse, loadCatalog } from '#site/lib/source';
+import { SETUP_OFFER } from '#site/lib/setup-offer';
 import { describedVersions, withDescriptions } from '#site/lib/version-history';
 
 const REGISTRY_NAME = 'KROMA modules';
@@ -53,7 +55,8 @@ export async function descriptorResponse(env: Env, waitUntil: WaitUntil, origin:
   if (!found) {
     return unavailable();
   }
-  return jsonResponse(JSON.stringify(buildDescriptor(REGISTRY_NAME, origin, found)), DOCUMENT_TTL);
+  const descriptor = withSetup(buildDescriptor(REGISTRY_NAME, origin, found), SETUP_OFFER);
+  return jsonResponse(JSON.stringify(descriptor), DOCUMENT_TTL);
 }
 
 /** `GET /index.json`: one record per module, the version a bare install gets. */

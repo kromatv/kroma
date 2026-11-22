@@ -1,6 +1,6 @@
 import type { MessageKey } from '@kromatv/i18n';
 import type { IconName } from '@kromatv/ui/kit';
-import type { PermissionAccess, PermissionCategory } from '#web/features/admin/module-permissions';
+import type { PermissionAccess, PermissionCategory } from '#web/shared/lib/module-permissions';
 
 interface CategoryView {
   icon: IconName;

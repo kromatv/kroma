@@ -3,8 +3,16 @@
   "schemaVersion": 3,
   "id": "tv.kroma.vector",
   "name": "Embeddings",
-  "version": "0.3.20",
+  "version": "0.3.21",
   "description": "Content embeddings for recommendations and semantic search.",
+  "tagline": "Find a film by what it is about, and get suggestions to your taste.",
+  "translations": {
+    "fr": {
+      "name": "Recherche intelligente",
+      "description": "Représentations du contenu, pour les recommandations et la recherche intelligente.",
+      "tagline": "Retrouvez un film à partir de ce qu'il raconte, et recevez des suggestions à votre goût."
+    }
+  },
   "component": {
     "instances": 2,
     "memoryMib": 1024,

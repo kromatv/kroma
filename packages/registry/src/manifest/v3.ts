@@ -6,11 +6,21 @@
 import { z } from 'zod';
 import { Helpers } from './helpers.ts';
 import { ArtifactRef, Manifest as V2 } from './v2.ts';
+import { ModuleTranslations } from './words.ts';
 
 const SCHEMA_VERSION = 3;
 
 /** A module's `module.json`, as authored. */
 export const Manifest = V2.omit({ seam: true }).extend({
+  tagline: z
+    .string()
+    .nullish()
+    .describe(
+      'One sentence, in English, that says what this module does for a household. The guided setup offers the module by it.',
+    ),
+  translations: ModuleTranslations.nullish().describe(
+    'The name, description and tagline in each other language the module speaks, by language tag such as fr or pt-BR. A word left out, and a language not listed, read in English.',
+  ),
   dataDirs: z
     .array(z.string().regex(/^[A-Za-z0-9_-]+$/))
     .nullish()

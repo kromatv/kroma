@@ -18,7 +18,7 @@ mod scan_paths;
 mod settle;
 #[expect(
     dead_code,
-    reason = "the plays stage reads nothing of what it is given yet"
+    reason = "a stage is given more than the stages of this build read"
 )]
 mod stages;
 mod start;

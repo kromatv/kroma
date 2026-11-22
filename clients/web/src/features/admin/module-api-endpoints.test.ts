@@ -60,6 +60,7 @@ describe('the module endpoints', () => {
       registryUrl: 'https://modules.kroma.tv',
       registries: [],
       modules: [],
+      setup: [],
     };
     stubFetch(new Response(JSON.stringify(catalog), { status: 200 }));
     await expect(fetchStoreCatalog()).resolves.toEqual(catalog);

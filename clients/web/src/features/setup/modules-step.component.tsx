@@ -1,4 +1,5 @@
-import { useFormat, useT } from '@kromatv/ui';
+import { moduleWords } from '@kromatv/core';
+import { useFormat, useLocale, useT } from '@kromatv/ui';
 import {
   Box,
   GuidedFlow,
@@ -12,25 +13,19 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
+import { offerReach, offerWords } from '#web/features/setup/module-offer-words';
 import {
-  groupedOffers,
   OFFERS_QUERY,
   type Offer,
-  type OfferGroup,
   type OfferState,
   offerState,
   offers,
   pickedBytes,
 } from '#web/features/setup/module-offers';
 import { useSetupPicks } from '#web/features/setup/setup-picks.component';
+import { listOf } from '#web/shared/lib/module-permissions-words';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { Image, ListSkeleton } from '#web/shared/ui';
-
-const GROUP_TITLE = {
-  library: 'setup.modulesGroupLibrary',
-  watching: 'setup.modulesGroupWatching',
-  more: 'setup.modulesGroupMore',
-} as const satisfies Record<OfferGroup, string>;
 
 const STATE_LINE = {
   installed: 'setup.modulesInstalled',
@@ -54,18 +49,15 @@ function useOffers() {
   return useQuery({ queryKey: OFFERS_QUERY, queryFn: () => moduleApi.fetchStoreCatalog() });
 }
 
-function offerSentence({ module }: Offer): string {
-  return module.compatible ? module.description : (module.reason ?? module.description);
-}
-
 function useOfferFacts(offer: Offer, state: OfferState): string {
   const t = useT();
   const fmt = useFormat();
+  const locale = useLocale();
   if (state === 'installed' || state === 'leaving' || state === 'installing') {
     return t(STATE_LINE[state]);
   }
   const size = fmt.bytes(pickedBytes([offer], [String(offer.module.id)]));
-  const names = offer.needs.map((needed) => needed.name).join(', ');
+  const names = offer.needs.map((needed) => moduleWords(needed, locale).name).join(', ');
   return names ? `${size} · ${t('setup.modulesNeeds', { names })}` : size;
 }
 
@@ -104,8 +96,22 @@ function OfferIcon({ icon }: Readonly<{ icon: Offer['module']['icon'] }>) {
   );
 }
 
+function OfferReach({ offer }: Readonly<{ offer: Offer }>) {
+  const t = useT();
+  const reach = offerReach(offer, t);
+  if (reach.length === 0) {
+    return null;
+  }
+  return (
+    <Text variant="meta" color="textDim" lines={2}>
+      {t('setup.modulesReaches', { list: listOf(reach, t) })}
+    </Text>
+  );
+}
+
 function OfferRow({ offer, state, onToggle }: Readonly<OfferRowProps>) {
   const s = useStyles(sDefinition);
+  const words = offerWords(offer, useLocale());
   const facts = useOfferFacts(offer, state);
   const control = pickControl({ offer, state, onToggle });
   return (
@@ -121,11 +127,12 @@ function OfferRow({ offer, state, onToggle }: Readonly<OfferRowProps>) {
       <ListRow.Leading>
         <OfferIcon icon={offer.module.icon} />
       </ListRow.Leading>
-      <ListRow.Label>{offer.module.name}</ListRow.Label>
-      <ListRow.Hint lines={2}>{offerSentence(offer)}</ListRow.Hint>
+      <ListRow.Label>{words.name}</ListRow.Label>
+      <ListRow.Hint lines={2}>{words.sentence}</ListRow.Hint>
       <Text variant="meta" color="textDim" lines={1}>
         {facts}
       </Text>
+      <OfferReach offer={offer} />
       <ListRow.Trailing>
         <PickMark state={state} />
       </ListRow.Trailing>
@@ -150,27 +157,19 @@ function useChoices() {
   return { picks, toggle };
 }
 
-function OfferSections({ all }: Readonly<{ all: readonly Offer[] }>) {
-  const t = useT();
+function OfferList({ all }: Readonly<{ all: readonly Offer[] }>) {
   const { picks, toggle } = useChoices();
   return (
-    <>
-      {groupedOffers(all).map((section) => (
-        <Box key={section.group} gap={8}>
-          <Text variant="overline" color="textDim">
-            {t(GROUP_TITLE[section.group])}
-          </Text>
-          {section.offers.map((offer) => (
-            <OfferRow
-              key={offer.module.id}
-              offer={offer}
-              state={offerState(offer, picks)}
-              onToggle={() => toggle(offer)}
-            />
-          ))}
-        </Box>
+    <Box gap={8}>
+      {all.map((offer) => (
+        <OfferRow
+          key={offer.module.id}
+          offer={offer}
+          state={offerState(offer, picks)}
+          onToggle={() => toggle(offer)}
+        />
       ))}
-    </>
+    </Box>
   );
 }
 
@@ -251,7 +250,7 @@ export function ModulesStep({
             <Skeleton w={160} h={12} radius="sm" />
           </ListSkeleton>
         ) : (
-          <OfferSections all={all} />
+          <OfferList all={all} />
         )}
         {!isPending && all.length === 0 ? (
           <Text color="textMuted">{t('setup.modulesNone')}</Text>

@@ -1,7 +1,7 @@
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout, Icon, Row, Text } from '@kromatv/ui/kit';
-import type { ModuleAccess } from '#web/features/admin/module-permissions';
+import type { ModuleAccess } from '#web/shared/lib/module-permissions';
 import {
   consentOverview,
   extendedSentence,
@@ -9,8 +9,8 @@ import {
 } from '#web/features/admin/module-permissions-overview';
 import { PermissionsSheet } from '#web/features/admin/module-permissions-sheet.component';
 import { ModuleVerdict, Verdict } from '#web/features/admin/module-permissions-verdict.component';
-import { CATEGORY_VIEW, GLYPH_SIZE, lineKey } from '#web/features/admin/module-permissions-view';
-import { listOf } from '#web/features/admin/module-permissions-words';
+import { CATEGORY_VIEW, GLYPH_SIZE, lineKey } from '#web/shared/lib/module-permissions-view';
+import { listOf } from '#web/shared/lib/module-permissions-words';
 
 function whoSays(line: SharedAccess, declared: number, t: Translate): string | null {
   if (declared < 2) {

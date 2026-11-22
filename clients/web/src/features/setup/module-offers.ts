@@ -3,49 +3,13 @@ import type { StoreCatalog, StoreModule } from '@kromatv/client/modules';
 /** The cache key of the catalog the offers are read from. */
 export const OFFERS_QUERY = ['setup', 'modules'] as const;
 
-/** The points the core calls. A module that answers one is offered by what
- * that point does for the owner. */
-export const OFFER_KINDS = [
-  'acquisition',
-  'network',
-  'transcriber',
-  'embedder',
-  'trailer',
-] as const;
-
-export type OfferKind = (typeof OFFER_KINDS)[number];
-
-export const OFFER_GROUPS = ['library', 'watching', 'more'] as const;
-
-export type OfferGroup = (typeof OFFER_GROUPS)[number];
-
-const GROUP_OF: Record<OfferKind, OfferGroup> = {
-  acquisition: 'library',
-  network: 'library',
-  transcriber: 'watching',
-  embedder: 'watching',
-  trailer: 'watching',
-};
-
 /** One module the setup offers. */
 export interface Offer {
   module: StoreModule;
-  /** The core point the module answers, or none. */
-  kind: OfferKind | null;
   /** The modules it cannot run without and the server does not hold yet. */
   needs: StoreModule[];
   /** Whether the server holds the module already. */
   installed: boolean;
-}
-
-function extendsAnotherModule(module: StoreModule): boolean {
-  const points = module.contributes.map((answer) => answer.point);
-  return points.length > 0 && points.every((point) => point.includes('/'));
-}
-
-function offerKind(module: StoreModule): OfferKind | null {
-  const points = new Set(module.contributes.map((answer) => answer.point));
-  return OFFER_KINDS.find((kind) => points.has(kind)) ?? null;
 }
 
 function needsOf(module: StoreModule, catalog: StoreCatalog): StoreModule[] {
@@ -63,31 +27,19 @@ function needsOf(module: StoreModule, catalog: StoreCatalog): StoreModule[] {
   return [...found.values()];
 }
 
-/** The modules the setup may offer: from an official registry and of use
- * alone. A shared library and a module that only extends another one are left
- * to the Store. One the server holds already stays in the list, as installed. */
+/** The modules the setup offers: the ones the official registry lists for it,
+ * in its order. One the server holds already stays in the list, as installed. */
 export function offers(catalog: StoreCatalog): Offer[] {
-  const official = new Set(
-    catalog.registries.filter((registry) => registry.official).map((registry) => registry.name),
-  );
-  return catalog.modules
-    .filter(
-      (module) => official.has(module.source) && !module.library && !extendsAnotherModule(module),
-    )
-    .map((module) => ({
-      module,
-      kind: offerKind(module),
-      needs: needsOf(module, catalog),
-      installed: Boolean(module.installedVersion),
-    }));
-}
-
-/** The offers under the heading each one belongs to, and no empty heading. */
-export function groupedOffers(all: readonly Offer[]): { group: OfferGroup; offers: Offer[] }[] {
-  return OFFER_GROUPS.map((group) => ({
-    group,
-    offers: all.filter((offer) => (offer.kind ? GROUP_OF[offer.kind] : 'more') === group),
-  })).filter((section) => section.offers.length > 0);
+  const byId = new Map(catalog.modules.map((entry) => [String(entry.id), entry]));
+  return catalog.setup.flatMap((id) => {
+    const module = byId.get(String(id));
+    if (!module) {
+      return [];
+    }
+    return [
+      { module, needs: needsOf(module, catalog), installed: Boolean(module.installedVersion) },
+    ];
+  });
 }
 
 /** What the picked offers download, in bytes: each module once, with what it

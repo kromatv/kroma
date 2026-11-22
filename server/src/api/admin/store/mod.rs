@@ -180,7 +180,7 @@ async fn registry_preview(
         return Err(bad("a registry URL must be https"));
     }
     let (modules, error) = match catalog::fetch(&sup, url).await {
-        Ok(modules) => (modules, None),
+        Ok(listing) => (listing.modules, None),
         Err(e) => (Vec::new(), Some(format!("{e:#}"))),
     };
     let sample: Vec<Value> = modules

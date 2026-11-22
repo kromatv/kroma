@@ -3,7 +3,7 @@
 
 # Requirement index
 
-776 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+777 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -259,9 +259,9 @@
 - **ADMIN-106** (AGREED) - The server proposes a kind for each folder from what the folder <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-107** (AGREED) - The scan starts when the owner confirms the media step, and keeps <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-108** (AGREED) - A source the server already has when the setup starts appears on <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-109** (AGREED) - On the modules step each module is offered by what it does for the <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-110** (AGREED) - Which modules the setup offers, and in what order, comes from the <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-111** (AGREED) - Each offer shows the module's size, the permissions it asks for and <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-109** (SHIPPED) - On the modules step each module is offered by what it does for the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-110** (SHIPPED) - Which modules the setup offers, and in what order, comes from the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-111** (SHIPPED) - Each offer shows the module's size, the permissions it asks for and <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-112** (AGREED) - No module is selected by default. <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-113** (AGREED) - A selection is only a selection until the owner leaves the setup, at <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-114** (AGREED) - On the people step the owner creates invitations, under the rule of <sub>[setup.md](admin/setup.md)</sub>
@@ -321,7 +321,7 @@
 - **ADMIN-170** (AGREED) - Removing the importer forgets the sign-in to the other server <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-171** (AGREED) - An import after the importer was removed installs it again and asks <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-172** (AGREED) - The second screen asks one choice: start fresh, or bring another <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-173** (AGREED) - The words that offer a module are the module's own, in each language <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-173** (SHIPPED) - The words that offer a module are the module's own, in each language <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-174** (AGREED) - A module the server already holds appears on the modules step as <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-175** (AGREED) - An invitation says what its account may do. A new one lets its <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-176** (AGREED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
@@ -678,6 +678,7 @@
 - **MOD-105** (AGREED) - An importer reads the other server and describes what it found. The <sub>[README.md](modules/README.md)</sub>
 - **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
 - **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
+- **MOD-108** (SHIPPED) - A module names and describes itself, and says in one sentence what it <sub>[README.md](modules/README.md)</sub>
 - **MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do, <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
