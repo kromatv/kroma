@@ -704,7 +704,7 @@ offers a module with no `tagline` by its description.
   "tagline": "Watch your films and series away from home.",
   "translations": {
     "fr": {
-      "name": "Accès à distance",
+      "name": "Accès distant",
       "tagline": "Regardez vos films et vos séries loin de chez vous."
     }
   }

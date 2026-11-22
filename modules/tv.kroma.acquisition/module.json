@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.acquisition",
   "name": "Acquisition",
-  "version": "0.5.16",
+  "version": "0.5.17",
   "component": {
     "instances": 4,
     "cpuSeconds": 300
@@ -13,7 +13,7 @@
   "translations": {
     "fr": {
       "name": "Acquisition",
-      "description": "Recherche manuelle des versions, note de qualité, téléchargement et import, et passage automatique sur la liste des envies. S'appuie sur le moteur de téléchargement et les indexeurs. Désactivez-le pour retirer la recherche et l'automatisme, et masquer sa page de réglages.",
+      "description": "Recherche manuelle des versions, note de qualité, téléchargement et import, et recherche automatique des titres suivis. S'appuie sur le moteur de téléchargement et les indexeurs. Désactivez-le pour retirer la recherche et l'automatisme, et masquer sa page de réglages.",
       "tagline": "Demandez un film ou une série : il est trouvé et téléchargé pour vous."
     }
   },

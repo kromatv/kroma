@@ -30,5 +30,5 @@
   "email.verify.intro": "Cette adresse a été renseignée pour votre compte sur {name}. Confirmez qu'elle vous appartient.",
   "email.verify.preheader": "Un clic suffit pour confirmer votre adresse.",
   "email.verify.subject": "Confirmez votre adresse e-mail · {name}",
-  "email.verify.text": "Cette adresse a été renseignée pour votre compte sur {name}.\n\nOuvrez ce lien pour confirmer qu'elle vous appartient :\n{url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce courriel : rien ne change."
+  "email.verify.text": "Cette adresse a été renseignée pour votre compte sur {name}.\n\nOuvrez ce lien pour confirmer qu'elle vous appartient :\n{url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce e-mail : rien ne change."
 }
