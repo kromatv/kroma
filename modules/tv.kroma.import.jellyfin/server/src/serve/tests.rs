@@ -1,3 +1,4 @@
+mod discovering;
 mod unlocking;
 
 use std::sync::Arc;

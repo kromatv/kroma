@@ -1,5 +1,10 @@
 {
   "requests": [
+    {
+      "method": "POST",
+      "path": "/_port/importer/discover",
+      "body": { "waitMs": 200 }
+    },
     { "method": "POST", "path": "/_port/importer/connect", "body": {} },
     { "method": "POST", "path": "/_port/importer/connect", "body": { "pending": "p-7" } },
     {

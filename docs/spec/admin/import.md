@@ -46,6 +46,16 @@ usual address.
 its users, each person's watch state and the last play of each title, found at its usual
 address on the machine KROMA runs on, and refused when the address answers as a Jellyfin.
 
+**ADMIN-230** (AGREED) - Before the owner signs in to Jellyfin or Emby, the import looks for
+servers of that kind on the network KROMA sits on, and lists each one it finds by name and
+address. Picking one fills in its address, and typing an address still works.
+
+**ADMIN-231** (AGREED) - Once a Plex account lists its servers, the import marks each one it
+also found on the network KROMA sits on, with its address there.
+
+**ADMIN-232** (AGREED) - Looking for servers takes a moment and holds nothing up. When none
+answers, or KROMA cannot look on that network, the owner types the address as before.
+
 ## The review
 
 Status: **AGREED**
@@ -257,9 +267,6 @@ Status: **DESIGN, NOT IMPLEMENTED**
   It would also tie the import to an internal layout that changes between releases, and
   both servers changed theirs recently. The import asks the other server, so that server
   has to be running.
-- **Finding the other server on the network.** Plex and Jellyfin each announce themselves
-  in their own way, and a module cannot listen for either today. ADMIN-133 to ADMIN-135 are
-  what the owner gets instead.
 
 ## Not in scope
 

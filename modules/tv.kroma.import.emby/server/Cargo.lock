@@ -558,12 +558,17 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "kroma-lan-probe",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "serde",
  "serde_json",
  "tokio",
 ]
+
+[[package]]
+name = "kroma-lan-probe"
+version = "0.1.0"
 
 [[package]]
 name = "kroma-module-host"

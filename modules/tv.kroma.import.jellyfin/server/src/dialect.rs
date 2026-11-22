@@ -58,6 +58,7 @@ pub struct Dialect {
     pub(crate) libraries: Call,
     pub(crate) items: Call,
     pub(crate) counts: Call,
+    pub(crate) discovery: &'static str,
 }
 
 pub(crate) const JELLYFIN: Dialect = Dialect {
@@ -72,6 +73,7 @@ pub(crate) const JELLYFIN: Dialect = Dialect {
     libraries: Call::get("/Library/VirtualFolders"),
     items: Call::get("/Items"),
     counts: Call::get("/Items/Counts"),
+    discovery: "who is JellyfinServer?",
 };
 
 /// Emby, as `docs/reference/emby-api.md` reads its documentation.
@@ -87,6 +89,7 @@ pub const EMBY: Dialect = Dialect {
     libraries: Call::get("/emby/Library/VirtualFolders/Query"),
     items: Call::get("/emby/Items"),
     counts: Call::get("/emby/Items/Counts"),
+    discovery: "who is EmbyServer?",
 };
 
 #[cfg(test)]
@@ -104,6 +107,7 @@ impl Dialect {
             libraries,
             items,
             counts,
+            discovery: _,
         } = *self;
         [server, sign_in, whoami, users, libraries, items, counts]
     }

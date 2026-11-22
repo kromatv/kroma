@@ -68,3 +68,9 @@ pub(crate) struct UnlockAsk {
     pub user: String,
     pub pin: String,
 }
+
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub(crate) struct DiscoverAsk {
+    pub(crate) wait_ms: Option<u32>,
+}

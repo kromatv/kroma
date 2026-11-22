@@ -3,25 +3,23 @@ import { useT } from '@kromatv/ui';
 import { ChoiceList, GuidedFlow } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { KeptSignIn } from '#web/features/admin/import/import-kept-sign-in.component';
+import { ImportServerChoice } from '#web/features/admin/import/import-server-choice.component';
 import { useImportSession } from '#web/features/admin/import/import-session.component';
-
-function ServerChoice({ server }: Readonly<{ server: ImportServer }>) {
-  return (
-    <ChoiceList.Item value={server.id}>
-      <ChoiceList.Label>{server.name}</ChoiceList.Label>
-      {server.address ? <ChoiceList.Hint>{server.address}</ChoiceList.Hint> : null}
-    </ChoiceList.Item>
-  );
-}
+import { useFoundServers } from '#web/features/admin/import/use-found-servers.hook';
 
 interface ListProps {
   servers: readonly ImportServer[];
+  found: readonly ImportServer[];
   picked: string | null;
   onPick: (id: string) => void;
 }
 
-function ServerList({ servers, picked, onPick }: Readonly<ListProps>) {
+function ServerList({ servers, found, picked, onPick }: Readonly<ListProps>) {
   const t = useT();
+  const hintOf = (server: ImportServer) => {
+    const here = found.find((near) => near.id === server.id)?.address;
+    return here ? t('setup.importFoundAt', { address: here }) : undefined;
+  };
   return (
     <ChoiceList.Root
       size="md"
@@ -30,7 +28,7 @@ function ServerList({ servers, picked, onPick }: Readonly<ListProps>) {
       onValueChange={onPick}
     >
       {servers.map((server) => (
-        <ServerChoice key={server.id} server={server} />
+        <ImportServerChoice key={server.id} server={server} hint={hintOf(server)} />
       ))}
     </ChoiceList.Root>
   );
@@ -42,6 +40,7 @@ export function ImportServers({ onBack }: Readonly<{ onBack: () => void }>) {
   const { session, update } = useImportSession();
   const [picked, setPicked] = useState<string | null>(null);
   const chosen = session.servers.find((server) => server.id === picked);
+  const { servers: found } = useFoundServers(session.importer);
   return (
     <>
       <GuidedFlow.Header>
@@ -49,7 +48,7 @@ export function ImportServers({ onBack }: Readonly<{ onBack: () => void }>) {
         <GuidedFlow.Subtitle>{t('setup.importServersSub')}</GuidedFlow.Subtitle>
       </GuidedFlow.Header>
       <GuidedFlow.Panel>
-        <ServerList servers={session.servers} picked={picked} onPick={setPicked} />
+        <ServerList servers={session.servers} found={found} picked={picked} onPick={setPicked} />
         <KeptSignIn />
       </GuidedFlow.Panel>
       <GuidedFlow.Footer>

@@ -6,6 +6,7 @@
 mod client;
 mod connect;
 mod dialect;
+mod discover;
 mod jellyfin;
 mod module;
 mod plays;

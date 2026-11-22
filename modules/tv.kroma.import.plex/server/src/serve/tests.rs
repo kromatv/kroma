@@ -122,3 +122,31 @@ async fn an_ask_past_the_size_any_ask_has_is_refused_before_it_is_read() {
 
     assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
 }
+
+struct OneServerAnswers;
+
+impl Lan for OneServerAnswers {
+    fn ask(
+        &self,
+        _to: std::net::SocketAddr,
+        _question: &[u8],
+        _wait: std::time::Duration,
+    ) -> std::io::Result<Vec<kroma_lan_probe::Answer>> {
+        let answer = "HTTP/1.0 200 OK\r\nContent-Type: plex/media-server\r\nResource-Identifier: srv\r\nName: Den\r\nPort: 32400\r\n";
+        Ok(vec![("192.168.1.2:32414".parse().unwrap(), answer.as_bytes().to_vec())])
+    }
+}
+
+#[tokio::test]
+async fn discover_answers_the_servers_found_on_the_network() {
+    let home = Household::new();
+    let host = StubHost::with_store(home.pool.clone());
+    let app = routes_reaching::<StubHost>(home.web.clone(), Arc::new(OneServerAnswers)).with_state(host);
+
+    let answered = answer(app, "discover", json!({ "waitMs": 500 })).await;
+
+    assert_eq!(
+        answered,
+        json!({ "Ok": { "servers": [{ "id": "srv", "name": "Den", "address": "http://192.168.1.2:32400" }] } })
+    );
+}

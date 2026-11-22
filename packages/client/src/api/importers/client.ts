@@ -1,13 +1,18 @@
 import type { RequestContext } from '../../core/client';
 import type { ModuleId } from '../modules';
 import type { ImportServerId, ImportSignInId } from './ids';
-import { ImporterList, ImportSignIn, ImportSurvey } from './schemas';
+import { ImporterList, ImportFound, ImportSignIn, ImportSurvey } from './schemas';
 
 /** The modules that read another media server, and the owner's sign-in to
  * that server through one of them. */
 export default function importersApi(ctx: RequestContext) {
   return {
     list: () => ctx.get('/admin/importers', ImporterList),
+
+    /** The servers of its kind the importer finds on the local network. The
+     * importer looks for about a second and a half. */
+    discover: (id: ModuleId) =>
+      ctx.get('/admin/importers/:id/discover', ImportFound, { params: { id } }),
 
     /** Sign in to another server with the form the owner filled, by field key. */
     connect: (id: ModuleId, fields: Record<string, string>) =>

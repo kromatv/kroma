@@ -1,3 +1,4 @@
+mod discovering;
 mod pages;
 mod sign_in;
 mod survey;

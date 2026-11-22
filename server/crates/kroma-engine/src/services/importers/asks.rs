@@ -77,3 +77,17 @@ pub struct UnlockAsk {
     pub user: String,
     pub pin: String,
 }
+
+/// What the core sends `discover`: how long to look, in milliseconds.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoverAsk {
+    pub wait_ms: u32,
+}
+
+/// What `discover` answers: the servers found on the local network.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(default)]
+pub struct Discovered {
+    pub servers: Vec<crate::domain::import::Server>,
+}

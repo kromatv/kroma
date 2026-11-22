@@ -8,6 +8,7 @@
 
 mod account;
 mod connect;
+mod discover;
 mod failure;
 mod ids;
 mod library;

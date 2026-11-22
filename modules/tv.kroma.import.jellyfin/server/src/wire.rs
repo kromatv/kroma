@@ -83,6 +83,17 @@ pub(crate) enum Refusal {
     Other,
 }
 
+#[derive(Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub(crate) struct DiscoverAsk {
+    pub(crate) wait_ms: Option<u32>,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub(crate) struct Discovered {
+    pub(crate) servers: Vec<Server>,
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub(crate) struct Server {
     pub(crate) id: String,

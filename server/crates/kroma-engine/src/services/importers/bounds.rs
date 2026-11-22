@@ -1,4 +1,4 @@
-use crate::domain::import::{Connected, PlayPage, StatePage, Survey, TitlePage};
+use crate::domain::import::{Connected, PlayPage, Server, StatePage, Survey, TitlePage};
 
 pub const MAX_PAGE_ROWS: usize = 500;
 
@@ -108,4 +108,27 @@ pub(super) fn plays(answer: &PlayPage) -> Result<(), String> {
         id("title", &play.title)?;
     }
     Ok(())
+}
+
+const MAX_FOUND_SERVERS: usize = 32;
+
+fn web_address(address: Option<&str>) -> Result<(), String> {
+    let address = address.unwrap_or_default();
+    let web = address.starts_with("http://") || address.starts_with("https://");
+    let plain = !address.chars().any(|c| c.is_whitespace() || c.is_control());
+    if web && plain && address.len() <= MAX_LINK_BYTES {
+        Ok(())
+    } else {
+        Err("a found server with no plain http or https address".to_string())
+    }
+}
+
+pub(super) fn discovered(servers: &[Server]) -> Result<(), String> {
+    if servers.len() > MAX_FOUND_SERVERS {
+        return Err(format!("{} found servers, past {MAX_FOUND_SERVERS}", servers.len()));
+    }
+    servers.iter().try_for_each(|server| {
+        id("found server", &server.id)?;
+        web_address(server.address.as_deref())
+    })
 }

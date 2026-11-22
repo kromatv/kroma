@@ -539,6 +539,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-lan-probe"
+version = "0.1.0"
+
+[[package]]
 name = "kroma-module-host"
 version = "0.1.0"
 dependencies = [
@@ -578,6 +582,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "kroma-lan-probe",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "quick-xml",

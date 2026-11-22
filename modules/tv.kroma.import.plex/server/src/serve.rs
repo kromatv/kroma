@@ -6,11 +6,14 @@ use axum::{Extension, Json, Router};
 use kroma_module_sdk::host::{port_reply, HostStorage};
 use kroma_module_sdk::primitives::now_ms;
 
+use kroma_lan_probe::{Lan, Udp};
+
+use crate::discover::discover;
 use crate::plex::Plex;
 use crate::web::{Live, Web};
 use crate::wire::{
-    ConnectAsk, Connected, ForgetAsk, PlayPage, PlaysAsk, StatePage, StatesAsk, Survey, SurveyAsk,
-    TitlePage, TitlesAsk, UnlockAsk, Unlocked,
+    ConnectAsk, Connected, DiscoverAsk, Discovered, ForgetAsk, PlayPage, PlaysAsk, StatePage,
+    StatesAsk, Survey, SurveyAsk, TitlePage, TitlesAsk, UnlockAsk, Unlocked,
 };
 
 const MAX_ASK_BYTES: usize = 64 * 1024;
@@ -18,8 +21,8 @@ const MAX_ASK_BYTES: usize = 64 * 1024;
 type Network = Extension<Arc<dyn Web>>;
 type Reply<T> = Json<Result<T, String>>;
 
-/// The `importer` point as this module answers it: `connect`, `survey`,
-/// `titles`, `states`, `plays`, `unlock` and `forget`, each at
+/// The `importer` point as this module answers it: `discover`, `connect`,
+/// `survey`, `titles`, `states`, `plays`, `unlock` and `forget`, each at
 /// `POST /_port/importer/<method>`.
 pub fn routes<S: HostStorage + Clone + Send + Sync + 'static>() -> Router<S> {
     routes_over(Arc::new(Live))
@@ -29,7 +32,15 @@ pub(crate) fn routes_over<S>(web: Arc<dyn Web>) -> Router<S>
 where
     S: HostStorage + Clone + Send + Sync + 'static,
 {
+    routes_reaching(web, Arc::new(Udp))
+}
+
+fn routes_reaching<S>(web: Arc<dyn Web>, lan: Arc<dyn Lan>) -> Router<S>
+where
+    S: HostStorage + Clone + Send + Sync + 'static,
+{
     Router::new()
+        .route("/_port/importer/discover", post(discover_servers))
         .route("/_port/importer/connect", post(connect::<S>))
         .route("/_port/importer/survey", post(survey::<S>))
         .route("/_port/importer/titles", post(titles::<S>))
@@ -39,6 +50,14 @@ where
         .route("/_port/importer/forget", post(forget::<S>))
         .layer(DefaultBodyLimit::max(MAX_ASK_BYTES))
         .layer(Extension(web))
+        .layer(Extension(lan))
+}
+
+async fn discover_servers(
+    Extension(lan): Extension<Arc<dyn Lan>>,
+    Json(ask): Json<DiscoverAsk>,
+) -> Reply<Discovered> {
+    port_reply(move || discover(lan.as_ref(), &ask)).await
 }
 
 fn plex<S: HostStorage>(host: &S, web: Arc<dyn Web>) -> Plex {

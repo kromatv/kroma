@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "id": "tv.kroma.import.emby",
   "name": "Emby import",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Brings an Emby household over: its libraries, its users, what each person watched and where they stopped. It only reads the Emby server.",
   "engines": {
     "server": ">=0.1.39"
@@ -41,6 +41,12 @@
         {
           "purpose": "import",
           "to": ["lan", "public"]
+        },
+        {
+          "purpose": "discovery",
+          "to": ["lan"],
+          "ports": [7359],
+          "proto": ["udp"]
         }
       ]
     }

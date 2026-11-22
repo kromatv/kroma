@@ -23,6 +23,9 @@ run against answers written from these shapes.
   <https://github.com/jellyfin/jellyfin/releases>.
 - **T**: .NET documentation, `TimeSpan.Ticks`,
   <https://learn.microsoft.com/en-us/dotnet/api/system.timespan.ticks>.
+- **K**: the Jellyfin client SDK, jellyfin-sdk-kotlin at `fd742cb6` (master on
+  2026-11-22), <https://github.com/jellyfin/jellyfin-sdk-kotlin>. Read
+  2026-11-22.
 
 ## Versions
 
@@ -75,6 +78,33 @@ run against answers written from these shapes.
   that gives another name.
 - `Id` is the server's own id. The sign-in answers the same value as
   `ServerId` (S `SystemManager.cs`, `SessionManager.cs`).
+
+## Discovery
+
+Read 2026-11-22, in S and K.
+
+- The server listens for UDP on port 7359 on every address while the
+  `AutoDiscovery` network setting is on (S
+  `src/Jellyfin.Networking/AutoDiscoveryHost.cs`: `PortNumber`,
+  `ListenForAutoDiscoveryMessage(IPAddress.Any, ...)`).
+- It answers a datagram whose text contains `who is JellyfinServer?`, compared
+  without case, and ignores any other (S, same file).
+- The answer goes to the address and port the question came from, from the
+  same socket, so from port 7359 (S, `RespondToV2Message`).
+- The answer is the JSON of `ServerDiscoveryInfo`: `Address`, `Id`, `Name` and
+  `EndpointAddress` (S `MediaBrowser.Model/ApiClient/ServerDiscoveryInfo.cs`).
+  `Address` is the URL the server builds for the asker's address
+  (`GetSmartApiUrl`, S `Emby.Server.Implementations/ApplicationHost.cs`), `Id`
+  the server's id and `Name` its friendly name. The server leaves
+  `EndpointAddress` empty.
+- Jellyfin's own client sends `who is JellyfinServer?` to `255.255.255.255`
+  on port 7359, waits 500 ms for each answer and keeps 15 servers at most (K
+  `jellyfin-core/src/jvmCommonMain/kotlin/org/jellyfin/sdk/discovery/LocalServerDiscovery.kt`).
+
+The importer broadcasts the same question once and keeps each answer from port
+7359 that carries an `Id` and an `http` or `https` `Address`. It takes the
+scheme and the port from `Address`, and the host from the address the answer
+came from, so an answer cannot point the owner's password at another host.
 
 ## Sign-in
 

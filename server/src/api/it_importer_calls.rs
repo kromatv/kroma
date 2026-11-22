@@ -181,3 +181,20 @@ async fn a_form_past_the_size_a_sign_in_may_have_never_reaches_the_importer() {
     assert_eq!(status, StatusCode::PAYLOAD_TOO_LARGE);
     assert!(sent.lock().unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn discover_lists_the_servers_the_importer_found_on_the_network() {
+    let (t, sent) = importer_answering(json!({ "Ok": {
+        "servers": [{ "id": "srv", "name": "Den", "address": "http://192.168.1.2:8096" }],
+    }}));
+    let uri = format!("/api/admin/importers/{IMPORTER}/discover");
+
+    let (status, body) = send(&t.app, "GET", &uri, Some(&t.token), None).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        body,
+        json!({ "servers": [{ "id": "srv", "name": "Den", "address": "http://192.168.1.2:8096" }] })
+    );
+    assert_eq!(sent.lock().unwrap()[0].0, "discover");
+}
