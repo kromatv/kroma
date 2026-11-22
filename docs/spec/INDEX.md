@@ -3,7 +3,7 @@
 
 # Requirement index
 
-788 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+793 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -342,6 +342,11 @@
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-188** (AGREED) - A restore that is not a reset adds what the backup holds and removes <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-189** (AGREED) - A restore that is a reset puts the backup's sources in place of the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-195** (AGREED) - The server saves a backup by itself on a schedule once the owner <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-196** (AGREED) - Scheduled backups go to a folder the owner chose, or to a <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-197** (AGREED) - The folder keeps the newest backups and the server removes the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-198** (AGREED) - A backup that could not be saved fails its task and tells the <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-199** (AGREED) - The backups step comes after the people step. It says in one <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
 

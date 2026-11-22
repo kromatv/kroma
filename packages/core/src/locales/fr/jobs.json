@@ -13,6 +13,8 @@
   "jobs.acquisition.rss.name": "Synchronisation RSS",
   "jobs.acquisition.search.desc": "Recherche sur les indexeurs ce qui manque aux titres suivis, puis de meilleures versions de ce qu'ils ont, et lance les téléchargements.",
   "jobs.acquisition.search.name": "Recherche des manquants et des améliorations",
+  "jobs.backup.save.desc": "Chaque nuit, tant que les sauvegardes automatiques sont activées, enregistre une sauvegarde dans le dossier choisi et supprime les plus anciennes au-delà du nombre conservé. Une exécution qui ne peut pas écrire échoue, et dit pourquoi.",
+  "jobs.backup.save.name": "Sauvegarde automatique",
   "jobs.cache.cleanup.desc": "Vide le cache de transcodage HLS, recréé à la lecture, et ramène le cache d'affiches à la taille configurée en supprimant d'abord les plus anciennes.",
   "jobs.cache.cleanup.name": "Nettoyage du cache",
   "jobs.cancel": "Annuler",

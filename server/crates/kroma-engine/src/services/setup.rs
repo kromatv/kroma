@@ -39,6 +39,9 @@ pub fn facts(state: &SharedState, module: bool) -> Result<Facts> {
         source: has_source(state),
         module,
         people: has_people(state)?,
+        backups: state
+            .settings
+            .get_bool(crate::services::backup::schedule::ENABLED_KEY, false),
     })
 }
 

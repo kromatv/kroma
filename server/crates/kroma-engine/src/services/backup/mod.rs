@@ -6,6 +6,7 @@ mod archive;
 mod assets;
 mod crypto;
 mod libraries;
+pub mod schedule;
 
 #[cfg(test)]
 mod test_support;

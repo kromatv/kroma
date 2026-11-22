@@ -41,7 +41,7 @@ it('lets a person skip every step after the owner account, and none before', () 
 });
 
 it('counts every screen as a step but the last one', () => {
-  expect(answeredSteps()).toHaveLength(7);
+  expect(answeredSteps()).toHaveLength(8);
   expect(answeredSteps()).not.toContain('done');
 });
 
@@ -99,7 +99,7 @@ it('has no import step for an owner who starts fresh', () => {
 });
 
 it('counts the import among the steps of an owner who brings a server over', () => {
-  expect(answeredSteps('bring')).toHaveLength(8);
+  expect(answeredSteps('bring')).toHaveLength(9);
   expect(stepsBehind('media', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
   expect(stepsUpTo('import', 'bring')).toEqual(['language', 'start', 'owner', 'import']);
 });
@@ -108,6 +108,10 @@ it('counts continuing as the answer on the privacy step, and on the modules step
   expect(confirmsOnContinue('privacy', 0)).toBe(true);
   expect(confirmsOnContinue('privacy', 2)).toBe(true);
   expect(confirmsOnContinue('modules', 0)).toBe(true);
+});
+
+it('counts continuing as the answer on the backups step, whichever way the switch is', () => {
+  expect(confirmsOnContinue('backups', 0)).toBe(true);
 });
 
 it('waits for the install before the modules step is answered, and never counts another step', () => {

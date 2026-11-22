@@ -37,7 +37,7 @@ describe('the setup shell', () => {
     show('media');
 
     expect(screen.getByText('the step')).toBeTruthy();
-    expect(screen.getByText(/Step 4 of 7/)).toBeTruthy();
+    expect(screen.getByText(/Step 4 of 8/)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Finish later' })).toBeTruthy();
   });
 

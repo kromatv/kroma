@@ -15,6 +15,7 @@ use crate::api::admin::{require, user_locale};
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::model::Permission;
+use crate::services::folders::{self, FolderRefusal, volume_roots};
 
 #[cfg(test)]
 mod tests;
@@ -78,13 +79,10 @@ fn browse_dirs(raw: String) -> Result<Value, BrowseErr> {
         return Ok(json!({ "path": "/", "parent": Value::Null, "entries": entries }));
     }
 
-    let canon = std::fs::canonicalize(raw).map_err(|_| BrowseErr::NotFound)?;
-    if !canon.is_dir() {
-        return Err(BrowseErr::NotFound);
-    }
-    if !within_roots(&canon, &roots) {
-        return Err(BrowseErr::Forbidden);
-    }
+    let canon = folders::picked_folder(raw).map_err(|why| match why {
+        FolderRefusal::Outside => BrowseErr::Forbidden,
+        FolderRefusal::Missing => BrowseErr::NotFound,
+    })?;
 
     let entries = read_subdirs(&canon)?;
     let is_root = canon == Path::new("/") || roots.contains(&canon);
@@ -97,28 +95,6 @@ fn browse_dirs(raw: String) -> Result<Value, BrowseErr> {
             .unwrap_or(Value::Null)
     };
     Ok(json!({ "path": canon.to_string_lossy(), "parent": parent, "entries": entries }))
-}
-
-// Confines the browse to the volume roots; with none (a dev box, not a DSM
-// one) anywhere is allowed.
-fn within_roots(path: &Path, roots: &[PathBuf]) -> bool {
-    roots.is_empty() || roots.iter().any(|r| path.starts_with(r))
-}
-
-fn volume_roots() -> Vec<PathBuf> {
-    std::fs::read_dir("/")
-        .into_iter()
-        .flatten()
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| {
-            p.is_dir()
-                && p.file_name()
-                    .and_then(OsStr::to_str)
-                    .map(|n| n.starts_with("volume"))
-                    .unwrap_or(false)
-        })
-        .collect()
 }
 
 // Skips hidden and DSM system names (`@eaDir`, `#recycle`).

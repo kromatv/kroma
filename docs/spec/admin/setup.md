@@ -54,7 +54,8 @@ with the setup is asked nothing. It opens no setup and shows no checklist.
 Status: **SHIPPED** in part; each requirement carries its own.
 
 In order: the language, the choice, the owner account, the import for an owner who chose it
-([`import.md`](import.md)), then media, modules, people, being counted, and the home.
+([`import.md`](import.md)), then media, modules, people, backups, being counted, and the
+home.
 
 **ADMIN-105** (AGREED) - On the media step the owner picks folders in the folder picker.
 
@@ -144,6 +145,7 @@ anywhere else in the admin console.
 | Media | the server has a source |
 | Modules | the owner installed a module, or confirmed the step with none. The importer the import step installed does not count |
 | People | the server has an invitation or a second account |
+| Backups | scheduled backups are on, or the owner confirmed the step |
 | Being counted | the owner confirmed the step |
 
 **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that
@@ -183,12 +185,14 @@ the setup has none.
 
 ## Backups in the setup
 
-Status: **DESIGN, NOT IMPLEMENTED**
+Status: **AGREED**
 
-Issue #719 asked for a backup switch beside the statistics one. A switch needs something to
-switch on, and the server has no scheduled backup: [Backup and restore](README.md#backup-and-restore)
-is an export and an import the owner runs by hand. The setup therefore has no backup step.
-It gains one when scheduled backups exist, as one sentence and one switch.
+Issue #719 asked for a backup switch beside the statistics one. It waited for scheduled
+backups to exist ([Scheduled backups](README.md#scheduled-backups)).
+
+**ADMIN-199** (AGREED) - The backups step comes after the people step. It says in one
+sentence what a scheduled backup saves and holds the switch that turns them on
+(ADMIN-195), in the state the server holds: off on a new server.
 
 ## Not in scope
 

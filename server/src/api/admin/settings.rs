@@ -31,7 +31,12 @@ pub fn routes() -> Router<SharedState> {
         .route("/settings/relay-test", post(relay_test))
 }
 
-const KEYS_WITH_THEIR_OWN_ENDPOINT: &[&str] = &[settings::SIGN_IN_KEY];
+const KEYS_WITH_THEIR_OWN_ENDPOINT: &[&str] = &[
+    settings::SIGN_IN_KEY,
+    crate::services::backup::schedule::ENABLED_KEY,
+    crate::services::backup::schedule::FOLDER_KEY,
+    crate::services::backup::schedule::KEEP_KEY,
+];
 
 #[derive(Debug, Deserialize)]
 pub struct SettingsQuery {
