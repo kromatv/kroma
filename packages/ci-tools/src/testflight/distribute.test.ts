@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { z } from 'zod';
 import { type Asc, AscError } from './asc-client';
 import type { BetaGroup } from './beta-groups';
-import { feed, needsReview, processed } from './distribute';
+import { feed, needsReview, settled } from './distribute';
 
 vi.mock('node:timers/promises', () => ({ setTimeout: vi.fn(async () => {}) }));
 
@@ -124,37 +124,24 @@ describe('needsReview', () => {
   });
 });
 
-const polling = (...states: string[]) => {
+const polling = (...counts: number[]) => {
   const asc: Asc = {
-    get: async <T>(_path: string, schema: z.ZodType<T>) => {
-      const state = states.shift();
-      const data = state
-        ? [{ ...build, attributes: { ...build.attributes, processingState: state } }]
-        : [];
-      return schema.parse({ data });
-    },
+    get: async <T>(_path: string, schema: z.ZodType<T>) =>
+      schema.parse({ data: Array.from({ length: counts.shift() ?? 0 }, () => build) }),
     post: vi.fn(),
     create: vi.fn(),
   };
   return asc;
 };
 
-describe('processed', () => {
-  const wanted = { app: 'app-1', platform: 'IOS' as const, version: '3500000' };
+describe('settled', () => {
+  it('waits until Apple is processing no build of the app', async () => {
+    const asc = polling(2, 1, 0);
 
-  it('waits through processing until Apple marks the build valid', async () => {
-    expect(await processed(polling('', 'PROCESSING', 'VALID'), wanted, Date.now() + 60_000)).toBe(
-      true,
-    );
-  });
-
-  it('throws when Apple refuses the build', async () => {
-    await expect(processed(polling('INVALID'), wanted, Date.now() + 60_000)).rejects.toThrow(
-      /IOS build 3500000 INVALID/,
-    );
+    expect(await settled(asc, 'app-1', Date.now() + 60_000)).toBe(true);
   });
 
   it('gives up once the deadline has passed', async () => {
-    expect(await processed(polling('PROCESSING'), wanted, Date.now() - 1)).toBe(false);
+    expect(await settled(polling(1), 'app-1', Date.now() - 1)).toBe(false);
   });
 });

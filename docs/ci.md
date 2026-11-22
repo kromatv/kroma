@@ -290,15 +290,16 @@ that testers join by their public link, with no invitation:
   since its commit. A file counts when it sits in the app's workspace or in one
   it depends on, through `workspace:` dependencies, or is `bun.lock`, the root
   manifest, the iOS build scripts or the app's own workflow. Tests and prose do
-  not count. A run that cannot list the files uploads. Release.yml's
-  `testflight` job then runs `ci testflight feed --group Canary --create`: it
-  waits for Apple to process what this run uploaded, puts the newest valid
-  build of each platform in the group, and submits it to Beta App Review when
-  it waits on one. It runs on every candidate push, so a build whose run was
-  superseded during processing still reaches the group.
+  not count. A run that cannot list the files uploads. When a Build & Release
+  run ends, cancelled ones included, `testflight.yml` runs `ci testflight feed
+  --group Canary --settle`: it waits until Apple has processed every build of
+  the app, puts the newest valid build of each platform in the group, and
+  submits it to Beta App Review when it waits on one. It is a workflow of its
+  own because a push to main cancels the Build & Release run before it, which
+  is usually still waiting on Apple.
 - **Beta**, the group behind `testflight.apple.com/join/ZjgQdunW`, gets the
-  newest build once a night from `testflight-beta.yml` (02:17 UTC, or `gh
-  workflow run testflight-beta.yml`). A group that already has the newest build
+  newest build once a night from `testflight.yml` (02:17 UTC, or `gh
+  workflow run testflight.yml`). A group that already has the newest build
   is left alone, so a night after a day with no app change sends nothing.
 
 The internal group still gets every upload. What Apple documents about groups,
@@ -438,7 +439,7 @@ environment secrets, and both environments allow one branch, `main`:
 
 | environment | holds | read by |
 |---|---|---|
-| `release` | the Apple certificates, profiles and App Store Connect key, the Android keystore, the desktop update key, the Play service account | the build and TestFlight jobs of `release.yml` and `deploy.yml`, `testflight-beta.yml`, `desktop-autoupdate.yml`, `apple-signing-doctor.yml` |
+| `release` | the Apple certificates, profiles and App Store Connect key, the Android keystore, the desktop update key, the Play service account | the build and TestFlight jobs of `release.yml` and `deploy.yml`, `testflight.yml`, `desktop-autoupdate.yml`, `apple-signing-doctor.yml` |
 | `sites` | `CLOUDFLARE_API_TOKEN` | `kit.yml`, `site.yml`, `tv-web.yml`, `repo-worker.yml` |
 | `production` | nothing: it is the approval before a Release | `deploy.yml`'s `publish` |
 | `snyk` | `SNYK_TOKEN` | `snyk.yml` |

@@ -15,6 +15,7 @@ export const HISTORY_COLUMNS: readonly HistoryColumn[] = [
   { column: 'player', labelKey: 'admin.colPlayer', flex: 1.1, min: 120 },
   { column: 'device', labelKey: 'admin.colPlatform', flex: 1, min: 120 },
   { column: 'endedAt', labelKey: 'admin.colWhen', flex: 1, min: 132 },
+  { column: 'watchedMs', labelKey: 'admin.colWatched', flex: 0.9, min: 120 },
 ];
 
 export const ITEM_HISTORY_COLUMNS: readonly HistoryColumn[] = HISTORY_COLUMNS.filter(
@@ -54,4 +55,19 @@ export function titlePage(play: PlayEntry): TitlePage | null {
     return { page: 'movie', id: play.itemId };
   }
   return null;
+}
+
+/** How long a play lasted: as measured, as the runtime of its title where the
+ * other server kept no duration, or unknown where the catalog holds no runtime
+ * either. */
+export type WatchedTime = { kind: 'measured' | 'runtime'; ms: number } | { kind: 'unknown' };
+
+export function watchedTime(play: PlayEntry): WatchedTime {
+  if (!play.watchedIsRuntime) {
+    return { kind: 'measured', ms: play.watchedMs };
+  }
+  if (play.watchedMs <= 0) {
+    return { kind: 'unknown' };
+  }
+  return { kind: 'runtime', ms: play.watchedMs };
 }

@@ -23,7 +23,7 @@ const play = (fields: Partial<PlayEntry>): PlayEntry => ({
 });
 
 describe("the watch history's columns", () => {
-  it('reads the account, the kind, the title, the player, the platform and when', () => {
+  it('reads the account, the kind, the title, the player, the platform, when and for how long', () => {
     expect(HISTORY_COLUMNS.map((column) => column.column)).toEqual([
       'username',
       'kind',
@@ -31,6 +31,7 @@ describe("the watch history's columns", () => {
       'player',
       'device',
       'endedAt',
+      'watchedMs',
     ]);
   });
 

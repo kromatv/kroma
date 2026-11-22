@@ -77,7 +77,7 @@ describe("the table's order", () => {
   });
 
   it('ignores a column the table cannot order by', () => {
-    const search = historyOrderedBy({}, [{ column: 'watchedMs', direction: 'asc' }]);
+    const search = historyOrderedBy({}, [{ column: 'network', direction: 'asc' }]);
 
     expect(search.sort).toBeUndefined();
   });

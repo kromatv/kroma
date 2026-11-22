@@ -10,7 +10,15 @@ export const HISTORY_PAGE = 50;
 
 const NEWEST_FIRST: SortColumn = { column: 'endedAt', direction: 'desc' };
 
-export const HISTORY_SORTS = ['username', 'kind', 'title', 'device', 'player', 'endedAt'] as const;
+export const HISTORY_SORTS = [
+  'username',
+  'kind',
+  'title',
+  'device',
+  'player',
+  'endedAt',
+  'watchedMs',
+] as const;
 
 export type HistorySort = (typeof HISTORY_SORTS)[number];
 
