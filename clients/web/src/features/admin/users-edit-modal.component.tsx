@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { LibraryVisibility } from '#web/features/admin/library-visibility.component';
 import { useAsyncAction } from '#web/features/admin/hooks';
+import { ProfileRestrictions } from '#web/features/admin/profile-restrictions.component';
 import { useAuth } from '#web/shared/lib/auth';
 import { AccountLinks } from '#web/features/admin/users-account-links.component';
 import { WaitingInvitation } from '#web/features/admin/users-invitation.component';
@@ -83,6 +84,8 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
       </Box>
 
       <LibraryVisibility granted={granted} onChange={setGranted} />
+
+      <ProfileRestrictions user={user} />
 
       {user.invitation ? (
         <WaitingInvitation user={user} onMinted={() => setInvited(true)} />

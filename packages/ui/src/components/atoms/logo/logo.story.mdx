@@ -4,8 +4,10 @@ import { Logo } from './logo.component';
 export const story = defineStory({
   group: 'Brand',
   component: Logo,
-  args: { size: 48, markOnly: false, spin: 'none' },
+  args: { size: 48, markOnly: false, kids: false, spin: 'none' },
   controls: { size: { min: 16, max: 160, step: 8 }, spin: ['none', 'once', 'loop'] },
 });
 
 The KROMA lockup, color wheel included. This is the only copy of the brand's vector paths in the whole repository. Everything that displays the logo goes through here.
+
+`kids` draws the KROMA Kids lockup, which a Kids session wears in place of KROMA's. The word Kids is a brand name and is never translated.

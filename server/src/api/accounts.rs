@@ -18,8 +18,10 @@ use axum::routing::{get, patch, post};
 use axum::Router;
 
 mod credentials;
+mod kids;
 mod profile;
 mod quick_connect;
+mod ratings;
 mod registration;
 mod reset;
 mod session;
@@ -35,6 +37,7 @@ use session::{
 };
 use verify_email::{check_verification, confirm_verification};
 
+pub(crate) use kids::{AuthMember, kept_from_kids, wears_kids};
 pub(crate) use session::{auth_result, issue_tokens};
 pub(super) use session::mint_device_tokens;
 
@@ -66,6 +69,8 @@ pub fn routes() -> Router<SharedState> {
             post(upload_avatar).layer(DefaultBodyLimit::max(MAX_AVATAR_BYTES)),
         )
         .merge(credential_routes())
+        .merge(ratings::routes())
+        .merge(kids::routes())
 }
 
 fn credential_routes() -> Router<SharedState> {
@@ -203,8 +208,12 @@ pub async fn auth_config(State(state): State<SharedState>) -> Response {
     .into_response()
 }
 
-pub async fn me(AuthUser(user): AuthUser) -> Response {
-    Json(json!({ "user": user })).into_response()
+pub async fn me(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Response, Response> {
+    let user = kids::session_user(&state, user).await?;
+    Ok(Json(json!({ "user": user })).into_response())
 }
 
 /// `GET /api/users` → `PublicUser[]` for the profile picker. Gated by the

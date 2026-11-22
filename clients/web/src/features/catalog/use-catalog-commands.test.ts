@@ -6,11 +6,12 @@ import { forgetCommands, listedCommands } from '#web/shared/lib/command-menu.fix
 import { CATALOG_NAV } from './catalog-nav';
 import { useCatalogCommands } from './use-catalog-commands.hook';
 
-const mocks = vi.hoisted(() => ({ modulePages: [] as ModuleNav[] }));
+const mocks = vi.hoisted(() => ({ modulePages: [] as ModuleNav[], kids: false }));
 vi.mock('@kromatv/ui', () => ({ useT: () => (key: string) => key }));
 vi.mock('#web/modules/module-host-provider.component', () => ({
   useModuleNav: () => mocks.modulePages,
 }));
+vi.mock('#web/shared/lib/use-kids-session.hook', () => ({ useKidsSession: () => mocks.kids }));
 vi.mock('#web/shared/lib/command-menu', async () => ({
   useCommands: (await import('#web/shared/lib/command-menu.fixture')).useFakeCommands,
 }));
@@ -19,6 +20,7 @@ const at = (to: string) => listedCommands().find((command) => command.to === to)
 
 beforeEach(() => {
   mocks.modulePages = [];
+  mocks.kids = false;
 });
 
 afterEach(() => {
@@ -73,5 +75,15 @@ describe('the catalogue in the command menu', () => {
       group: 'nav.yourSpace',
       icon: 'chart-bar',
     });
+  });
+
+  it('offers a Kids session neither pairing a device nor what is new', () => {
+    mocks.kids = true;
+
+    renderHook(() => useCatalogCommands());
+
+    expect(at('/connect')).toBeUndefined();
+    expect(at('/whats-new')).toBeUndefined();
+    expect(at('/')).toBeDefined();
   });
 });

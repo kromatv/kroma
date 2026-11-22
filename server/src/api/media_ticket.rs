@@ -12,6 +12,7 @@ use serde::Deserialize;
 use crate::api::error::json_error;
 use crate::api::extract::bearer_from_headers;
 use crate::api::util::query;
+use crate::api::visibility::{self, Viewer};
 use crate::db;
 use crate::model::User;
 use crate::services::media_ticket;
@@ -57,11 +58,12 @@ pub fn opener(key: &str, headers: &HeaderMap, ticket: &TicketQuery) -> Option<St
     media_ticket::device_of(key, ticket.ticket()?, now)
 }
 
-/// The account a media byte request may be answered for. Resolved from the
-/// session bearer when there is one, otherwise from the ticket in the URL. The
-/// library grant is NOT checked here: a handler still holds the caller to it, so
-/// one answer covers an unknown id and an ungranted one alike.
-pub struct MediaViewer(pub User);
+/// The account a media byte request may be answered for, with what is kept
+/// from it. Resolved from the session bearer when there is one, otherwise from
+/// the ticket in the URL. Neither the grant nor the ceiling is checked here: a
+/// handler holds the caller to both, so one answer covers an unknown id and a
+/// hidden one alike.
+pub struct MediaViewer(pub Viewer);
 
 impl FromRequestParts<SharedState> for MediaViewer {
     type Rejection = Response;
@@ -72,7 +74,7 @@ impl FromRequestParts<SharedState> for MediaViewer {
     ) -> Result<Self, Self::Rejection> {
         if let Some(token) = bearer_from_headers(&parts.headers) {
             let user = query(&state.db, move |pool| db::session_user(&pool, &token)).await?;
-            return user.map(MediaViewer).ok_or_else(refused);
+            return media_viewer(state, user).await;
         }
         let presented = Query::<TicketQuery>::from_request_parts(parts, state)
             .await
@@ -85,8 +87,13 @@ impl FromRequestParts<SharedState> for MediaViewer {
             db::access_token_user_by_id(&pool, &device)
         })
         .await?;
-        user.map(MediaViewer).ok_or_else(refused)
+        media_viewer(state, user).await
     }
+}
+
+async fn media_viewer(state: &SharedState, user: Option<User>) -> Result<MediaViewer, Response> {
+    let user = user.ok_or_else(refused)?;
+    visibility::viewer_of(state, user).await.map(MediaViewer)
 }
 
 fn refused() -> Response {

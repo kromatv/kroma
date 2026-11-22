@@ -85,3 +85,17 @@ fn age_row(line: &'static str) -> Option<AgeRow> {
     };
     Some((country, label, age))
 }
+
+mod ceiling;
+pub use ceiling::{Ceiling, MaturityLevel};
+
+/// Every country the table knows a rating system for, by code: the countries a
+/// reader may pick as theirs.
+pub fn countries() -> Vec<&'static str> {
+    let mut out: Vec<&'static str> = table().iter().map(|(country, _, _)| *country).collect();
+    out.dedup();
+    out
+}
+
+mod rules;
+pub use rules::TitleRule;

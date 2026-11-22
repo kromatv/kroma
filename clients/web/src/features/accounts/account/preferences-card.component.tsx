@@ -7,6 +7,7 @@ import { prefValue } from '@kromatv/core/react';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
 import { ListRow, Select, Switch, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
+import { RatingsCountryRow } from '#web/features/accounts/account/ratings-country-row.component';
 import { PrefRow, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { useBlurPreference } from '#web/shared/lib/blur-pref';
@@ -125,6 +126,7 @@ export function PreferencesCard() {
           </Select.Root>
         }
       />
+      <RatingsCountryRow />
       {save.status === 'error' ? (
         <ListRow.Root>
           <Text variant="meta" color="danger">

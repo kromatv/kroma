@@ -12,6 +12,7 @@ use axum::Json;
 use serde::Deserialize;
 use serde_json::json;
 
+use crate::api::accounts::AuthMember;
 use crate::api::accounts::credentials_body_limit;
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
@@ -164,7 +165,7 @@ pub struct SetPinBody {
 pub async fn set_pin(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    AuthUser(mut user): AuthUser,
+    AuthMember(mut user): AuthMember,
     Json(body): Json<SetPinBody>,
 ) -> Response {
     if !is_valid_pin(&body.pin) {
@@ -206,7 +207,9 @@ pub struct DeletePinBody {
     pub password: Option<String>,
 }
 
-async fn check_password(
+/// Refuse unless `password` is `uid`'s own, under the same cooldown a wrong
+/// PIN earns.
+pub(crate) async fn check_password(
     state: &SharedState,
     uid: &str,
     password: &str,
@@ -232,7 +235,7 @@ async fn check_password(
 pub async fn delete_pin(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    AuthUser(mut user): AuthUser,
+    AuthMember(mut user): AuthMember,
     Json(body): Json<DeletePinBody>,
 ) -> Response {
     let existing = match fetch_hash(&state, &user.id).await {

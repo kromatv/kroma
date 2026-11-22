@@ -16,7 +16,7 @@ pub use admin::{
 };
 pub use auth::{
     AuthConfig, AuthResult, InviteCheck, InviteCreated, PasskeyInfo, ResetCheck, ResetCreated,
-    SessionInfo, SessionResult, VerificationCreated,
+    SessionInfo, SessionResult, SessionUser, VerificationCreated,
 };
 pub use pairing::{PairingPoll, QuickConnectInit};
 pub use sso::{

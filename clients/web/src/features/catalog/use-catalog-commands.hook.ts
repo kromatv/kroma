@@ -3,11 +3,13 @@ import { CATALOG_NAV } from '#web/features/catalog/catalog-nav';
 import { useModuleNav } from '#web/modules/module-host-provider.component';
 import { modulePageCommand } from '#web/modules/module-page-command';
 import { useCommands } from '#web/shared/lib/command-menu';
+import { useKidsSession } from '#web/shared/lib/use-kids-session.hook';
 
 /** The catalogue's pages in the command menu, the same ones its sidebar draws. */
 export function useCatalogCommands(): void {
   const t = useT();
   const modulePages = useModuleNav('library');
+  const kids = useKidsSession();
 
   useCommands(
     CATALOG_NAV.map(({ labelKey, icon, to }) => ({ label: t(labelKey), icon, to })),
@@ -25,14 +27,14 @@ export function useCatalogCommands(): void {
 
   useCommands(
     [
-      {
+      !kids && {
         label: t('nav.connectDevice'),
         icon: 'device-desktop',
         keywords: 'tv pair television appairer',
         to: '/connect',
       },
       { label: t('nav.inviteUser'), icon: 'user-plus', cap: 'users.manage', to: '/invite' },
-      {
+      !kids && {
         label: t('releases.title'),
         icon: 'sparkles',
         keywords: 'changelog release notes',

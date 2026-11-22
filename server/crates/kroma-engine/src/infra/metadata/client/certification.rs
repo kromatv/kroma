@@ -55,7 +55,7 @@ impl CountryEntry {
     }
 }
 
-pub(super) fn country_of(language: &str, household: &str) -> String {
+pub(crate) fn country_of(language: &str, household: &str) -> String {
     i18n::region(language)
         .or_else(|| i18n::region(household))
         .or_else(|| i18n::region(tmdb_region_of(i18n::language(language))))

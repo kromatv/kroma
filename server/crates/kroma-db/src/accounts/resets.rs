@@ -78,7 +78,7 @@ pub fn get_reset(pool: &Pool, token: &str) -> Result<Option<CredentialReset>> {
         .query_row(
             "SELECT r.token,r.user_id,r.code_hash,r.attempts,r.created_by,r.created_at,r.expires_at,r.used_at \
              FROM credential_resets r JOIN users u ON u.id = r.user_id \
-             WHERE r.token = ?1 AND u.waiting = 0",
+             WHERE r.token = ?1 AND u.waiting = 0 AND u.kids = 0",
             params![token],
             row_to_reset,
         )
