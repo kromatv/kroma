@@ -8,6 +8,7 @@ const COMMANDS = {
   build: async (args: string[]) => (await import('./build')).main(args),
   version: async (args: string[]) => (await import('./version')).main(args),
   canary: async (args: string[]) => (await import('./canary-command')).main(args),
+  testflight: async (args: string[]) => (await import('./testflight-command')).main(args),
   'desktop-feed': async (args: string[]) => (await import('./desktop-feed-command')).main(args),
   changelog: async (args: string[]) => (await import('./changelog-command')).main(args),
   notes: async (args: string[]) => (await import('./notes-command')).main(args),

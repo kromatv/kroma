@@ -27,7 +27,11 @@ and an invitation from its owner. To install a server, see the
 The links you need to join:
 
 - TestFlight, for iPhone, iPad and Apple TV:
-  [testflight.apple.com/join/ZjgQdunW](https://testflight.apple.com/join/ZjgQdunW)
+  [testflight.apple.com/join/ZjgQdunW](https://testflight.apple.com/join/ZjgQdunW),
+  a new version each night the app changed. Or the canary,
+  [testflight.apple.com/join/wxUevnw1](https://testflight.apple.com/join/wxUevnw1),
+  a new version after each change
+  ([which one to pick](docs/setup/mobile.md#beta-or-canary))
 - Google Play, for Android phones and TVs: first the
   [tester group](https://groups.google.com/g/kroma-android-beta), then the
   [test page](https://play.google.com/apps/testing/tv.kroma.app)
