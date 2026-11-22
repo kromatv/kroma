@@ -5,6 +5,7 @@ import { CatalogModalHosts } from '#web/features/catalog/modal-hosts.component';
 import { MobileTopbar, Sidebar } from '#web/features/catalog/sidebar.component';
 import { useNotificationStream } from '#web/features/notifications/use-notifications';
 import { CastBar } from '#web/features/playback/cast/cast-bar.component';
+import { ResumeSetup } from '#web/features/setup/resume-setup.component';
 import { isAuthed } from '#web/shared/lib/api';
 import { deviceInfo } from '#web/shared/lib/device';
 import { useRequireAuth } from '#web/shared/lib/require-auth.hook';
@@ -72,6 +73,7 @@ function AppLayout() {
         <CatalogModalHosts />
         <CastBar inset={railInset(step)} />
         <DirectOffer />
+        <ResumeSetup />
       </Box>
       <Box z={CAST_PICKER_Z}>
         <CastPicker />

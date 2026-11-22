@@ -13,13 +13,17 @@
 // thing a reader is aiming at. The indicator is drawn as a face and the ROW
 // carries `radio`/`checkbox` with its state to assistive tech.
 
-import { type ReactNode, useMemo } from 'react';
+import { Children, isValidElement, type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { CheckboxFace, type CheckboxSize } from '#ui/components/atoms/checkbox';
+import type { IconName } from '#ui/components/atoms/icon';
+import { IconWell } from '#ui/components/atoms/icon-well';
 import { RadioFace } from '#ui/components/atoms/radio';
 import { Text } from '#ui/components/atoms/text';
-import { ListRow } from '#ui/components/molecules/list-row';
+import { ListRow, type RowGround } from '#ui/components/molecules/list-row';
+import { styles } from '#ui/core';
+import { useStyles } from '#ui/core/styles';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
@@ -29,6 +33,7 @@ const FACE: Record<ControlSize, CheckboxSize> = { sm: 'sm', md: 'sm', tv: 'tv' }
 interface ChoiceContext {
   mode: 'single' | 'multiple';
   size: ControlSize;
+  ground: RowGround;
   picked: (value: string) => boolean;
   toggle: (value: string) => void;
 }
@@ -42,6 +47,9 @@ interface RootBase {
   /** Names the group to assistive tech: what the choices are choices OF. */
   label: string;
   size?: ControlSize;
+  /** What the rows are drawn on, as `<ListRow.Root ground>` says. On a
+   *  `surface` each choice is a card, and the chosen one wears the accent. */
+  ground?: RowGround;
   gap?: number;
   style?: StyleProp<ViewStyle>;
   children: ReactNode;
@@ -62,7 +70,7 @@ interface MultipleRootProps extends RootBase {
 type ChoiceRootProps = SingleRootProps | MultipleRootProps;
 
 function Root(props: Readonly<ChoiceRootProps>) {
-  const { label, size = 'sm', gap = 8, style, children } = props;
+  const { label, size = 'sm', ground = 'artwork', gap = 8, style, children } = props;
   const many = props.mode === 'multiple';
   const value = props.value;
   const onValueChange = props.onValueChange;
@@ -84,10 +92,11 @@ function Root(props: Readonly<ChoiceRootProps>) {
     () => ({
       mode: many ? 'multiple' : 'single',
       size,
+      ground,
       picked: (v) => (many ? (value as readonly string[]).includes(v) : value === v),
       toggle,
     }),
-    [many, size, value, toggle],
+    [many, size, ground, value, toggle],
   );
 
   return (
@@ -110,31 +119,46 @@ interface ItemProps {
   value: string;
   disabled?: boolean;
   /** The row: a <ChoiceList.Label>, and a <ChoiceList.Hint> under it. The
-   *  label's plain text is also the row's accessible name. */
+   *  label's plain text is also the row's accessible name. A DIRECT
+   *  <ChoiceList.Media> leads the row, and the indicator moves to its end. */
   children?: ReactNode;
   /** Trailing controls (an edit or delete button); they keep their own focus. */
   actions?: ReactNode;
 }
 
+function isMedia(child: ReactNode): boolean {
+  return isValidElement(child) && child.type === Media;
+}
+
+function splitMedia(children: ReactNode) {
+  const all = Children.toArray(children);
+  return { media: all.find(isMedia), rest: all.filter((child) => !isMedia(child)) };
+}
+
 function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
-  const { mode, size, picked, toggle } = useChoice('Item');
+  const s = useStyles(sDefinition);
+  const { mode, size, ground, picked, toggle } = useChoice('Item');
   const on = picked(value);
   const item = useMemo(() => ({ value, on }), [value, on]);
+  const { media, rest } = splitMedia(children);
   return (
     <ItemContext.Provider value={item}>
       <ListRow.Root
         size={size}
+        ground={ground}
         disabled={disabled}
         role={mode === 'multiple' ? 'checkbox' : 'radio'}
         checked={on}
         chevron={false}
         onPress={() => toggle(value)}
+        style={on && ground === 'surface' ? s.chosen : undefined}
       >
-        <ListRow.Leading>
-          <Indicator />
-        </ListRow.Leading>
-        {children}
-        {actions ? <ListRow.Trailing>{actions}</ListRow.Trailing> : null}
+        <ListRow.Leading>{media ?? <Indicator />}</ListRow.Leading>
+        {rest}
+        <ListRow.Trailing>
+          {actions}
+          {media ? <Indicator /> : null}
+        </ListRow.Trailing>
       </ListRow.Root>
     </ItemContext.Provider>
   );
@@ -152,27 +176,58 @@ function Indicator() {
   );
 }
 
-/** The row's title. */
+/** The row's title: one line, or two on a card. */
 function Label({ children }: Readonly<{ children: ReactNode }>) {
-  const { size } = useChoice('Label');
+  const { size, ground } = useChoice('Label');
   return (
-    <Text variant={size === 'tv' ? 'title' : 'label'} lines={1}>
+    <Text variant={size === 'tv' ? 'title' : 'label'} lines={ground === 'surface' ? 2 : 1}>
       {children}
     </Text>
   );
 }
 
-/** The quieter second line: the fact that settles the choice. */
+/** The quieter second line: the fact that settles the choice. Two lines at
+ *  most on a row, whole on a card. */
 function Hint({ children }: Readonly<{ children: ReactNode }>) {
-  const { size } = useChoice('Hint');
+  const { size, ground } = useChoice('Hint');
   return (
-    <Text variant={size === 'tv' ? 'body' : 'meta'} color="textDim" lines={2}>
+    <Text
+      variant={size === 'tv' ? 'body' : 'meta'}
+      color="textDim"
+      lines={ground === 'surface' ? undefined : 2}
+    >
       {children}
     </Text>
   );
 }
 
-const ChoiceList = { Root, Item, Indicator, Label, Hint };
+interface ChoiceMediaProps {
+  /** A glyph, sunk into the kit's icon well. Media that is not a glyph, such
+   *  as a logo, goes in as children instead. */
+  name?: IconName;
+  children?: ReactNode;
+}
 
-export type { ChoiceRootProps, ItemProps as ChoiceItemProps, MultipleRootProps, SingleRootProps };
+/** The mark that stands for the choice: a glyph, a logo, a poster. */
+function Media({ name, children }: Readonly<ChoiceMediaProps>) {
+  const { size } = useChoice('Media');
+  if (name) {
+    return <IconWell name={name} size={FACE[size]} />;
+  }
+  return <>{children}</>;
+}
+
+const sDefinition = styles({
+  chosen: { bg: 'accentSoft', border: 'accent' },
+});
+
+const ChoiceList = { Root, Item, Media, Indicator, Label, Hint };
+
+export type {
+  ChoiceMediaProps,
+  ChoiceRootProps,
+  ItemProps as ChoiceItemProps,
+  MultipleRootProps,
+  SingleRootProps,
+};
 export { ChoiceList };

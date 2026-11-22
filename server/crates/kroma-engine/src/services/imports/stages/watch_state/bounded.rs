@@ -1,11 +1,11 @@
 //! What the other server says one person did with one title, as the state
 //! KROMA merges. It is the importer's word, so each number is bounded here.
 
+use super::super::clock::believed;
 use crate::domain::watching::{Resume, Watching};
 use crate::model::import::WatchState;
 
 const LONGEST_RUNTIME_MS: u64 = 7 * 24 * 60 * 60 * 1000;
-const CLOCK_AHEAD_TOLERANCE_SECS: i64 = 5 * 60;
 
 /// A time before the epoch, or ahead of this server's clock by more than two
 /// set clocks differ, is no time: the state is as old as a state can be, and
@@ -13,11 +13,10 @@ const CLOCK_AHEAD_TOLERANCE_SECS: i64 = 5 * 60;
 /// time, so no state is ever dated later than now. A resume point at nothing,
 /// or past the end of its title, is no resume point.
 pub(super) fn bounded(state: &WatchState, now_secs: i64) -> Watching {
-    let believable = 1..=now_secs.saturating_add(CLOCK_AHEAD_TOLERANCE_SECS);
     let at = state
         .last_played_at
-        .filter(|at| believable.contains(at))
-        .map_or(0, |at| at.min(now_secs));
+        .and_then(|at| believed(at, now_secs))
+        .unwrap_or(0);
     let duration_ms = state
         .duration_ms
         .filter(|duration| (1..=LONGEST_RUNTIME_MS).contains(duration));
@@ -40,6 +39,7 @@ pub(super) fn bounded(state: &WatchState, now_secs: i64) -> Watching {
 mod tests {
     use serde_json::{Value, json};
 
+    use super::super::super::clock::CLOCK_AHEAD_TOLERANCE_SECS;
     use super::*;
 
     const NOW: i64 = 1_700_600_000;

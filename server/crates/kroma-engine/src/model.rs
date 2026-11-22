@@ -28,3 +28,4 @@ pub use crate::domain::section::*;
 pub use crate::domain::ratings::{
     countries as ratings_countries, AgeRating, Ceiling, CountryRatings, MaturityLevel, TitleRule,
 };
+pub use crate::domain::setup;

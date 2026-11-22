@@ -56,6 +56,10 @@
       "broke": 22,
       "changed": 22
     },
+    "import_held_plays": {
+      "broke": 28,
+      "changed": 28
+    },
     "import_held_states": {
       "broke": 23,
       "changed": 23
@@ -102,7 +106,7 @@
     },
     "items": {
       "broke": 5,
-      "changed": 5
+      "changed": 26
     },
     "job_logs": {
       "broke": 1,
@@ -186,11 +190,11 @@
     },
     "play_history": {
       "broke": 1,
-      "changed": 1
+      "changed": 28
     },
     "profile_title_rules": {
-      "broke": 27,
-      "changed": 27
+      "broke": 30,
+      "changed": 30
     },
     "progress": {
       "broke": 1,
@@ -224,6 +228,10 @@
       "broke": 1,
       "changed": 1
     },
+    "setup": {
+      "broke": 27,
+      "changed": 27
+    },
     "shows": {
       "broke": 1,
       "changed": 1
@@ -246,7 +254,7 @@
     },
     "users": {
       "broke": 20,
-      "changed": 28
+      "changed": 31
     },
     "wanted": {
       "broke": 1,
@@ -261,5 +269,5 @@
       "changed": 1
     }
   },
-  "version": 28
+  "version": 31
 }

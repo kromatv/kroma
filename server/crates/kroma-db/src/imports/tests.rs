@@ -2,6 +2,7 @@ mod catalogue;
 mod folders;
 mod identities;
 mod newcomers;
+mod plays;
 mod records;
 mod runs;
 mod states;

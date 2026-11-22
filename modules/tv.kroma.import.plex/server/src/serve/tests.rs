@@ -74,12 +74,22 @@ async fn every_method_of_the_point_answers_for_a_signed_in_owner() {
     )
     .await;
     let plays = answer(app(&home), "plays", with(json!({ "limit": 500 }))).await;
+    let unlocked = answer(
+        app(&home),
+        "unlock",
+        with(json!({ "user": "7002", "pin": "4821" })),
+    )
+    .await;
     let forgotten = answer(app(&home), "forget", json!({ "signIn": sign_in })).await;
 
     assert_eq!(survey["Ok"]["users"].as_array().unwrap().len(), 5);
     assert_eq!(titles["Ok"]["titles"].as_array().unwrap().len(), 3);
     assert_eq!(states["Ok"]["states"].as_array().unwrap().len(), 2);
     assert_eq!(plays["Ok"]["plays"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        unlocked,
+        json!({ "Ok": { "status": "refused", "reason": "notLocked" } })
+    );
     assert_eq!(forgotten, json!({ "Ok": null }));
 }
 

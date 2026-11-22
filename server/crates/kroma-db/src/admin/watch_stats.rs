@@ -6,8 +6,9 @@ use anyhow::Result;
 use kroma_domain::{
     HistoryRow, MostWatchedColumn, MostWatchedEntry, TopUser, WatchKind, WatchTotals,
 };
-use rusqlite::params;
+use rusqlite::{params, Connection, Row};
 
+use super::time_watched::TIME_WATCHED;
 use crate::Pool;
 
 // Enough groups that a per-kind ranking is never starved by another kind's
@@ -20,74 +21,108 @@ const GROUP_SCAN_LIMIT: i64 = 2_000;
 /// it had rather than vanishing.
 pub fn top_users(pool: &Pool, since: i64, limit: usize) -> Result<Vec<TopUser>> {
     let conn = pool.get()?;
-    let mut accounts = conn.prepare("SELECT id,username,avatar_url FROM users")?;
-    let mut ranked: Vec<TopUser> = accounts
-        .query_map([], |r| {
-            Ok(TopUser {
-                username: r.get(1)?,
-                user_id: Some(r.get(0)?),
-                avatar_url: r.get(2)?,
-                plays: 0,
-                watched_ms: 0,
-                films_ms: 0,
-                tv_ms: 0,
-                by_kind: WatchTotals::default(),
-            })
-        })?
-        .collect::<rusqlite::Result<Vec<_>>>()?;
-    let mut seat: HashMap<String, usize> = ranked
-        .iter()
-        .enumerate()
-        .filter_map(|(i, u)| u.user_id.clone().map(|id| (id, i)))
-        .collect();
+    let mut board = Board::of(accounts(&conn)?);
+    let mut watched = conn.prepare(&format!(
+        "SELECT COALESCE(h.user_id,h.username,'?'), MAX(h.user_id), \
+                COALESCE(MAX(h.username),'?'), h.kind, COUNT(*), SUM({TIME_WATCHED}) \
+         FROM play_history h LEFT JOIN items i ON i.id = h.item_id \
+         WHERE h.ended_at >= ?1 GROUP BY 1, h.kind"
+    ))?;
+    for row in watched.query_map(params![since], watched_row)? {
+        board.tally(row?);
+    }
+    Ok(board.ranked(limit))
+}
 
-    let mut watched = conn.prepare(
-        "SELECT COALESCE(user_id,username,'?'), MAX(user_id), COALESCE(MAX(username),'?'), \
-                kind, COUNT(*), SUM(watched_ms) \
-         FROM play_history WHERE ended_at >= ?1 GROUP BY 1, kind",
-    )?;
-    let rows = watched.query_map(params![since], |r| {
-        Ok((
-            r.get::<_, String>(0)?,
-            r.get::<_, Option<String>>(1)?,
-            r.get::<_, String>(2)?,
-            r.get::<_, String>(3)?,
-            r.get::<_, i64>(4)?,
-            r.get::<_, Option<i64>>(5)?.unwrap_or(0),
-        ))
-    })?;
+struct Watched {
+    who: String,
+    user_id: Option<String>,
+    username: String,
+    played: Played,
+}
 
-    for row in rows {
-        let (who, user_id, username, kind, plays, ms) = row?;
-        let at = *seat.entry(who).or_insert_with(|| {
-            ranked.push(TopUser {
-                username,
-                user_id,
-                avatar_url: None,
-                plays: 0,
-                watched_ms: 0,
-                films_ms: 0,
-                tv_ms: 0,
-                by_kind: WatchTotals::default(),
-            });
-            ranked.len() - 1
-        });
-        let kind = WatchKind::from_media_kind(&kind);
-        let user = &mut ranked[at];
-        user.plays += plays;
-        user.watched_ms += ms;
-        user.by_kind.add(kind, ms);
-        user.films_ms = user.by_kind.movie;
-        user.tv_ms = user.by_kind.tv;
+#[derive(Clone, Copy)]
+struct Played {
+    kind: WatchKind,
+    plays: i64,
+    ms: i64,
+}
+
+struct Board {
+    ranked: Vec<TopUser>,
+    seat: HashMap<String, usize>,
+}
+
+impl Board {
+    fn of(ranked: Vec<TopUser>) -> Self {
+        let seat = ranked
+            .iter()
+            .enumerate()
+            .filter_map(|(i, u)| u.user_id.clone().map(|id| (id, i)))
+            .collect();
+        Self { ranked, seat }
     }
 
-    ranked.sort_by(|a, b| {
-        b.watched_ms
-            .cmp(&a.watched_ms)
-            .then_with(|| a.username.cmp(&b.username))
-    });
-    ranked.truncate(limit);
-    Ok(ranked)
+    fn tally(&mut self, row: Watched) {
+        let ranked = &mut self.ranked;
+        let at = *self.seat.entry(row.who).or_insert_with(|| {
+            ranked.push(unranked(row.username, row.user_id, None));
+            ranked.len() - 1
+        });
+        credit(&mut ranked[at], row.played);
+    }
+
+    fn ranked(mut self, limit: usize) -> Vec<TopUser> {
+        self.ranked.sort_by(|a, b| {
+            b.watched_ms
+                .cmp(&a.watched_ms)
+                .then_with(|| a.username.cmp(&b.username))
+        });
+        self.ranked.truncate(limit);
+        self.ranked
+    }
+}
+
+fn unranked(username: String, user_id: Option<String>, avatar_url: Option<String>) -> TopUser {
+    TopUser {
+        username,
+        user_id,
+        avatar_url,
+        plays: 0,
+        watched_ms: 0,
+        films_ms: 0,
+        tv_ms: 0,
+        by_kind: WatchTotals::default(),
+    }
+}
+
+fn accounts(conn: &Connection) -> Result<Vec<TopUser>> {
+    let mut stmt = conn.prepare("SELECT id,username,avatar_url FROM users")?;
+    let users = stmt
+        .query_map([], |r| Ok(unranked(r.get(1)?, Some(r.get(0)?), r.get(2)?)))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    Ok(users)
+}
+
+fn watched_row(r: &Row<'_>) -> rusqlite::Result<Watched> {
+    Ok(Watched {
+        who: r.get(0)?,
+        user_id: r.get(1)?,
+        username: r.get(2)?,
+        played: Played {
+            kind: WatchKind::from_media_kind(&r.get::<_, String>(3)?),
+            plays: r.get(4)?,
+            ms: r.get::<_, Option<i64>>(5)?.unwrap_or(0),
+        },
+    })
+}
+
+fn credit(user: &mut TopUser, played: Played) {
+    user.plays += played.plays;
+    user.watched_ms += played.ms;
+    user.by_kind.add(played.kind, played.ms);
+    user.films_ms = user.by_kind.movie;
+    user.tv_ms = user.by_kind.tv;
 }
 
 /// Raw history rows since `since` (unix-seconds), oldest first.
@@ -98,10 +133,11 @@ pub fn history_since(
     kind: Option<WatchKind>,
 ) -> Result<Vec<HistoryRow>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "SELECT ended_at,kind,watched_ms FROM play_history \
-         WHERE ended_at >= ?1 AND (?2 IS NULL OR user_id = ?2) ORDER BY ended_at",
-    )?;
+    let mut stmt = conn.prepare(&format!(
+        "SELECT h.ended_at,h.kind,{TIME_WATCHED} \
+         FROM play_history h LEFT JOIN items i ON i.id = h.item_id \
+         WHERE h.ended_at >= ?1 AND (?2 IS NULL OR h.user_id = ?2) ORDER BY h.ended_at"
+    ))?;
     let rows = stmt.query_map(params![since, user], |r| {
         Ok(HistoryRow {
             ended_at: r.get(0)?,

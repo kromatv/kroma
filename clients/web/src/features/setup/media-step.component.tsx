@@ -2,12 +2,11 @@ import { apiErrorText } from '@kromatv/client';
 import type { AdminLibrary } from '@kromatv/client/library';
 import type { LibraryId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
-import { Button, IconButton, ListRow, Text } from '@kromatv/ui/kit';
+import { Button, GuidedFlow, IconButton, ListRow, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { ScanFeed } from '#web/features/setup/scan-feed';
 import { ScanLive } from '#web/features/setup/scan-live.component';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { StepFailure } from '#web/features/setup/step-failure.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { FolderListEditor } from '#web/shared/ui/folder-field.component';
@@ -85,32 +84,58 @@ interface PickFoldersProps {
   onAdded: () => void;
 }
 
+interface PickActionsProps {
+  busy: boolean;
+  ready: boolean;
+  onBack: () => void;
+  onSkip?: () => void;
+  onAdd: () => void;
+}
+
+function PickActions({ busy, ready, onBack, onSkip, onAdd }: Readonly<PickActionsProps>) {
+  const t = useT();
+  return (
+    <GuidedFlow.Footer>
+      <GuidedFlow.Previous onPress={onBack} />
+      <GuidedFlow.Actions>
+        {onSkip ? (
+          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
+        ) : null}
+        <GuidedFlow.Next
+          label={t('setup.mediaStart')}
+          loading={busy}
+          disabled={!ready}
+          onPress={onAdd}
+        />
+      </GuidedFlow.Actions>
+    </GuidedFlow.Footer>
+  );
+}
+
 function PickFolders({ onBack, onSkip, onAdded }: Readonly<PickFoldersProps>) {
   const t = useT();
   const [folders, setFolders] = useState<string[]>([]);
   const { busy, error, add } = useAddFolders(onAdded);
   return (
     <>
-      <StepHeading title={t('setup.mediaTitle')} sub={t('setup.mediaSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.mediaTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.mediaSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <FolderListEditor folders={folders} onChange={setFolders} />
         <Text variant="meta" color="textDim">
           {t('setup.mediaHint')}
         </Text>
         <StepFailure error={error} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        {onSkip ? (
-          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
-        ) : null}
-        <Button
-          size="md"
-          label={t('setup.mediaStart')}
-          loading={busy}
-          disabled={folders.length === 0}
-          onPress={() => void add(folders)}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <PickActions
+        busy={busy}
+        ready={folders.length > 0}
+        onBack={onBack}
+        onSkip={onSkip}
+        onAdd={() => void add(folders)}
+      />
     </>
   );
 }
@@ -177,20 +202,21 @@ function LibraryArriving({
   const t = useT();
   return (
     <>
-      <StepHeading title={t('setup.mediaLiveTitle')} sub={t('setup.mediaLiveSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.mediaLiveTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.mediaLiveSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <ScanLive feed={feed} />
         <LibraryRows libraries={libraries} />
         <AddMore onAddMore={onAddMore} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next onPress={onContinue} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

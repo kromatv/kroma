@@ -47,7 +47,7 @@
     "status": "SHIPPED",
     "text": "A person proves who they are with a **username and password**, a",
     "file": "docs/spec/accounts/README.md",
-    "line": 88
+    "line": 90
   },
   {
     "id": "ACCT-6",
@@ -57,7 +57,7 @@
     "status": "SHIPPED",
     "text": "A successful authentication mints a **session**: a long-lived,",
     "file": "docs/spec/accounts/README.md",
-    "line": 94
+    "line": 96
   },
   {
     "id": "ACCT-7",
@@ -67,7 +67,7 @@
     "status": "SHIPPED",
     "text": "**Sessions do not expire on a clock.** A session lives until it is",
     "file": "docs/spec/accounts/README.md",
-    "line": 98
+    "line": 100
   },
   {
     "id": "ACCT-8",
@@ -77,7 +77,7 @@
     "status": "SHIPPED",
     "text": "A session is per device, not per account, so one can be revoked without",
     "file": "docs/spec/accounts/README.md",
-    "line": 102
+    "line": 104
   },
   {
     "id": "ACCT-9",
@@ -87,7 +87,7 @@
     "status": "SHIPPED",
     "text": "A **device** is where a session lives. Signing in on a phone, a browser",
     "file": "docs/spec/accounts/README.md",
-    "line": 171
+    "line": 173
   },
   {
     "id": "ACCT-10",
@@ -97,7 +97,7 @@
     "status": "AGREED",
     "text": "Every session appears in the account's **device list** with enough to",
     "file": "docs/spec/accounts/README.md",
-    "line": 174
+    "line": 176
   },
   {
     "id": "ACCT-11",
@@ -107,7 +107,7 @@
     "status": "SHIPPED",
     "text": "A television binds to an account through the pairing handshake rather",
     "file": "docs/spec/accounts/README.md",
-    "line": 177
+    "line": 179
   },
   {
     "id": "ACCT-12",
@@ -117,7 +117,7 @@
     "status": "AGREED",
     "text": "A paired television is not a special class of trust. It lands in the",
     "file": "docs/spec/accounts/README.md",
-    "line": 181
+    "line": 183
   },
   {
     "id": "ACCT-13",
@@ -127,7 +127,7 @@
     "status": "SHIPPED",
     "text": "**Unbinding is revocation.** Revoking a device's session ends its",
     "file": "docs/spec/accounts/README.md",
-    "line": 203
+    "line": 205
   },
   {
     "id": "ACCT-14",
@@ -137,7 +137,7 @@
     "status": "SHIPPED",
     "text": "A revoked device that returns must pair or sign in afresh.",
     "file": "docs/spec/accounts/README.md",
-    "line": 207
+    "line": 209
   },
   {
     "id": "ACCT-15",
@@ -147,7 +147,7 @@
     "status": "SHIPPED",
     "text": "A television session is long-lived and revocable, and is **never",
     "file": "docs/spec/accounts/README.md",
-    "line": 221
+    "line": 223
   },
   {
     "id": "ACCT-16",
@@ -157,7 +157,7 @@
     "status": "AGREED",
     "text": "The device list is the control that replaces expiry: security comes",
     "file": "docs/spec/accounts/README.md",
-    "line": 224
+    "line": 226
   },
   {
     "id": "ACCT-17",
@@ -167,7 +167,7 @@
     "status": "SHIPPED",
     "text": "An **owner or admin** runs the server: users, settings, jobs and",
     "file": "docs/spec/accounts/README.md",
-    "line": 237
+    "line": 239
   },
   {
     "id": "ACCT-18",
@@ -177,7 +177,7 @@
     "status": "AGREED",
     "text": "The owner is the founding admin, the owner may grant admin to another",
     "file": "docs/spec/accounts/README.md",
-    "line": 240
+    "line": 242
   },
   {
     "id": "ACCT-19",
@@ -187,7 +187,7 @@
     "status": "SHIPPED",
     "text": "A **user** uses the server: browses and plays what they are permitted",
     "file": "docs/spec/accounts/README.md",
-    "line": 243
+    "line": 245
   },
   {
     "id": "ACCT-20",
@@ -197,7 +197,7 @@
     "status": "SHIPPED",
     "text": "**Library visibility is per user.** An admin decides which libraries a",
     "file": "docs/spec/accounts/README.md",
-    "line": 246
+    "line": 248
   },
   {
     "id": "ACCT-21",
@@ -207,7 +207,7 @@
     "status": "SHIPPED",
     "text": "Visibility gates browsing, search and playback alike. A title a user",
     "file": "docs/spec/accounts/README.md",
-    "line": 254
+    "line": 256
   },
   {
     "id": "ACCT-22",
@@ -217,7 +217,7 @@
     "status": "SHIPPED",
     "text": "Installing a module is an **admin** right, because it runs new",
     "file": "docs/spec/accounts/README.md",
-    "line": 295
+    "line": 297
   },
   {
     "id": "ACCT-23",
@@ -227,7 +227,7 @@
     "status": "AGREED",
     "text": "The matrix below is the whole of what each role may do. A user's power",
     "file": "docs/spec/accounts/README.md",
-    "line": 304
+    "line": 306
   },
   {
     "id": "ACCT-24",
@@ -237,7 +237,7 @@
     "status": "SHIPPED",
     "text": "**Per-user**: watch state, meaning resume points, watched flags and",
     "file": "docs/spec/accounts/README.md",
-    "line": 335
+    "line": 337
   },
   {
     "id": "ACCT-25",
@@ -247,7 +247,7 @@
     "status": "SHIPPED",
     "text": "**Per-server**: the libraries and their contents, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 340
+    "line": 342
   },
   {
     "id": "ACCT-26",
@@ -257,7 +257,7 @@
     "status": "SHIPPED",
     "text": "Watch state is per user and never per device: resume a film on the",
     "file": "docs/spec/accounts/README.md",
-    "line": 344
+    "line": 346
   },
   {
     "id": "ACCT-27",
@@ -267,7 +267,7 @@
     "status": "SHIPPED",
     "text": "Deletion destroys the account's credentials, all of its sessions and",
     "file": "docs/spec/accounts/README.md",
-    "line": 354
+    "line": 356
   },
   {
     "id": "ACCT-28",
@@ -277,7 +277,7 @@
     "status": "SHIPPED",
     "text": "Everything per-server survives. Libraries, media, metadata and",
     "file": "docs/spec/accounts/README.md",
-    "line": 358
+    "line": 360
   },
   {
     "id": "ACCT-29",
@@ -287,7 +287,7 @@
     "status": "AGREED",
     "text": "The owner account cannot be deleted while it is the only admin.",
     "file": "docs/spec/accounts/README.md",
-    "line": 362
+    "line": 364
   },
   {
     "id": "ACCT-30",
@@ -297,7 +297,7 @@
     "status": "AGREED",
     "text": "A user may request deletion of their own account, which revokes their",
     "file": "docs/spec/accounts/README.md",
-    "line": 366
+    "line": 368
   },
   {
     "id": "ACCT-31",
@@ -307,7 +307,7 @@
     "status": "SHIPPED",
     "text": "Revocation stops a session doing anything new. It cannot fetch, refresh",
     "file": "docs/spec/accounts/README.md",
-    "line": 375
+    "line": 377
   },
   {
     "id": "ACCT-32",
@@ -317,7 +317,7 @@
     "status": "AGREED",
     "text": "Bytes already downloaded for offline viewing sit in local storage the",
     "file": "docs/spec/accounts/README.md",
-    "line": 378
+    "line": 380
   },
   {
     "id": "ACCT-33",
@@ -327,7 +327,7 @@
     "status": "AGREED",
     "text": "The guarantee is that a revoked device gains nothing new and loses its",
     "file": "docs/spec/accounts/README.md",
-    "line": 382
+    "line": 384
   },
   {
     "id": "ACCT-34",
@@ -337,7 +337,7 @@
     "status": "SHIPPED",
     "text": "A title outside a person's grant is absent from browse, search, every",
     "file": "docs/spec/accounts/README.md",
-    "line": 260
+    "line": 262
   },
   {
     "id": "ACCT-35",
@@ -347,7 +347,7 @@
     "status": "SHIPPED",
     "text": "Every request for media bytes carries a credential the grant can be",
     "file": "docs/spec/accounts/README.md",
-    "line": 265
+    "line": 267
   },
   {
     "id": "ACCT-36",
@@ -717,7 +717,7 @@
     "status": "SHIPPED",
     "text": "The device list shows the app version each device last used",
     "file": "docs/spec/accounts/README.md",
-    "line": 185
+    "line": 187
   },
   {
     "id": "ACCT-73",
@@ -727,7 +727,7 @@
     "status": "SHIPPED",
     "text": "A device whose app is older than the oldest version its server serves",
     "file": "docs/spec/accounts/README.md",
-    "line": 188
+    "line": 190
   },
   {
     "id": "ACCT-74",
@@ -737,7 +737,7 @@
     "status": "SHIPPED",
     "text": "A device that never sent its app version shows \"version unknown\", never",
     "file": "docs/spec/accounts/README.md",
-    "line": 191
+    "line": 193
   },
   {
     "id": "ACCT-75",
@@ -747,7 +747,7 @@
     "status": "SHIPPED",
     "text": "An admin may add sign-in providers that speak OpenID Connect. Each one",
     "file": "docs/spec/accounts/README.md",
-    "line": 115
+    "line": 117
   },
   {
     "id": "ACCT-76",
@@ -757,7 +757,7 @@
     "status": "SHIPPED",
     "text": "A provider's button appears only after an admin's test sign-in passed",
     "file": "docs/spec/accounts/README.md",
-    "line": 118
+    "line": 120
   },
   {
     "id": "ACCT-77",
@@ -767,7 +767,7 @@
     "status": "SHIPPED",
     "text": "A provider sign-in ends in an ordinary session (ACCT-6), like a",
     "file": "docs/spec/accounts/README.md",
-    "line": 122
+    "line": 124
   },
   {
     "id": "ACCT-78",
@@ -777,7 +777,7 @@
     "status": "SHIPPED",
     "text": "An account is tied to a person at a provider by that provider's own",
     "file": "docs/spec/accounts/README.md",
-    "line": 125
+    "line": 127
   },
   {
     "id": "ACCT-79",
@@ -787,7 +787,7 @@
     "status": "SHIPPED",
     "text": "A person the provider vouches for and the server has never seen gets",
     "file": "docs/spec/accounts/README.md",
-    "line": 129
+    "line": 131
   },
   {
     "id": "ACCT-80",
@@ -797,7 +797,7 @@
     "status": "SHIPPED",
     "text": "A provider may require a group. A person outside it is refused at every",
     "file": "docs/spec/accounts/README.md",
-    "line": 133
+    "line": 135
   },
   {
     "id": "ACCT-81",
@@ -807,7 +807,7 @@
     "status": "SHIPPED",
     "text": "An admin who declines a join request stops that person asking again,",
     "file": "docs/spec/accounts/README.md",
-    "line": 136
+    "line": 138
   },
   {
     "id": "ACCT-82",
@@ -817,7 +817,7 @@
     "status": "SHIPPED",
     "text": "An admin may turn password sign-in and passkey sign-in off. Passwords",
     "file": "docs/spec/accounts/README.md",
-    "line": 139
+    "line": 141
   },
   {
     "id": "ACCT-83",
@@ -827,7 +827,7 @@
     "status": "SHIPPED",
     "text": "An account that can change server settings keeps its password",
     "file": "docs/spec/accounts/README.md",
-    "line": 150
+    "line": 152
   },
   {
     "id": "ACCT-84",
@@ -837,7 +837,7 @@
     "status": "SHIPPED",
     "text": "An account cannot remove its last way to sign in.",
     "file": "docs/spec/accounts/README.md",
-    "line": 153
+    "line": 155
   },
   {
     "id": "ACCT-85",
@@ -847,7 +847,7 @@
     "status": "SHIPPED",
     "text": "No claim from a provider grants a permission or a library.",
     "file": "docs/spec/accounts/README.md",
-    "line": 155
+    "line": 157
   },
   {
     "id": "ACCT-86",
@@ -857,7 +857,7 @@
     "status": "SHIPPED",
     "text": "The phone app offers the provider buttons. It opens the provider in",
     "file": "docs/spec/accounts/README.md",
-    "line": 158
+    "line": 160
   },
   {
     "id": "ACCT-87",
@@ -867,7 +867,7 @@
     "status": "SHIPPED",
     "text": "Passwords, passkeys and each provider are one list of sign-in methods.",
     "file": "docs/spec/accounts/README.md",
-    "line": 142
+    "line": 144
   },
   {
     "id": "ACCT-88",
@@ -877,7 +877,7 @@
     "status": "SHIPPED",
     "text": "A provider's button shows the logo of the provider it was set up as,",
     "file": "docs/spec/accounts/README.md",
-    "line": 147
+    "line": 149
   },
   {
     "id": "ACCT-89",
@@ -887,7 +887,7 @@
     "status": "AGREED",
     "text": "The desktop app offers the provider buttons the same way.",
     "file": "docs/spec/accounts/README.md",
-    "line": 161
+    "line": 163
   },
   {
     "id": "ACCT-90",
@@ -897,7 +897,7 @@
     "status": "SHIPPED",
     "text": "A device opens onto what the server knows of it: the address it last",
     "file": "docs/spec/accounts/README.md",
-    "line": 194
+    "line": 196
   },
   {
     "id": "ACCT-91",
@@ -907,7 +907,7 @@
     "status": "SHIPPED",
     "text": "The device list puts the device in hand first, then the others by most",
     "file": "docs/spec/accounts/README.md",
-    "line": 198
+    "line": 200
   },
   {
     "id": "ACCT-92",
@@ -917,7 +917,7 @@
     "status": "SHIPPED",
     "text": "One action signs out every device except the one in hand.",
     "file": "docs/spec/accounts/README.md",
-    "line": 201
+    "line": 203
   },
   {
     "id": "ACCT-93",
@@ -927,7 +927,7 @@
     "status": "SHIPPED",
     "text": "An account holder who no longer knows their profile PIN turns the lock",
     "file": "docs/spec/accounts/README.md",
-    "line": 213
+    "line": 215
   },
   {
     "id": "ACCT-94",
@@ -937,7 +937,7 @@
     "status": "SHIPPED",
     "text": "An account can exist before its person has signed in. It **waits on",
     "file": "docs/spec/accounts/README.md",
-    "line": 59
+    "line": 58
   },
   {
     "id": "ACCT-95",
@@ -947,7 +947,7 @@
     "status": "SHIPPED",
     "text": "Nobody can sign in to a waiting account, by any means. Its invitation",
     "file": "docs/spec/accounts/README.md",
-    "line": 63
+    "line": 62
   },
   {
     "id": "ACCT-96",
@@ -957,7 +957,7 @@
     "status": "SHIPPED",
     "text": "Redeeming the invitation gives the account its credential, and the",
     "file": "docs/spec/accounts/README.md",
-    "line": 66
+    "line": 65
   },
   {
     "id": "ACCT-97",
@@ -967,7 +967,7 @@
     "status": "SHIPPED",
     "text": "The person may correct the account's name and address when they",
     "file": "docs/spec/accounts/README.md",
-    "line": 69
+    "line": 68
   },
   {
     "id": "ACCT-98",
@@ -977,7 +977,7 @@
     "status": "SHIPPED",
     "text": "It is the same account before and after the invitation is redeemed,",
     "file": "docs/spec/accounts/README.md",
-    "line": 72
+    "line": 71
   },
   {
     "id": "ACCT-99",
@@ -987,17 +987,17 @@
     "status": "SHIPPED",
     "text": "The invitation of a waiting account is single-use and expires like",
     "file": "docs/spec/accounts/README.md",
-    "line": 75
+    "line": 74
   },
   {
     "id": "ACCT-100",
     "domain": "ACCT",
     "space": "accounts",
     "number": 100,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "An admin can mint a new invitation for a waiting account. It voids",
     "file": "docs/spec/accounts/README.md",
-    "line": 78
+    "line": 77
   },
   {
     "id": "ACCT-101",
@@ -1398,6 +1398,16 @@
     "text": "Search stays on in a Kids session and finds only what the profile",
     "file": "docs/spec/accounts/kids.md",
     "line": 195
+  },
+  {
+    "id": "ACCT-141",
+    "domain": "ACCT",
+    "space": "accounts",
+    "number": 141,
+    "status": "SHIPPED",
+    "text": "The member list tells a waiting account apart from one its person",
+    "file": "docs/spec/accounts/README.md",
+    "line": 80
   },
   {
     "id": "ACCT-150",
@@ -2625,7 +2635,7 @@
     "space": "admin",
     "number": 121,
     "status": "AGREED",
-    "text": "A setup that ended before its last step leaves a checklist on the",
+    "text": "A setup that ended leaves a checklist on the admin dashboard, one",
     "file": "docs/spec/admin/setup.md",
     "line": 133
   },
@@ -2637,7 +2647,7 @@
     "status": "AGREED",
     "text": "A line leaves the checklist when its step is done, in the setup or",
     "file": "docs/spec/admin/setup.md",
-    "line": 136
+    "line": 137
   },
   {
     "id": "ADMIN-123",
@@ -2647,7 +2657,7 @@
     "status": "AGREED",
     "text": "The owner can dismiss any line, and a dismissed line does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 147
+    "line": 152
   },
   {
     "id": "ADMIN-124",
@@ -2657,7 +2667,7 @@
     "status": "AGREED",
     "text": "When no line is left the checklist is gone, and it does not come",
     "file": "docs/spec/admin/setup.md",
-    "line": 150
+    "line": 155
   },
   {
     "id": "ADMIN-125",
@@ -2667,7 +2677,7 @@
     "status": "AGREED",
     "text": "The whole setup works on a phone held upright. Nothing scrolls",
     "file": "docs/spec/admin/setup.md",
-    "line": 157
+    "line": 162
   },
   {
     "id": "ADMIN-126",
@@ -2677,7 +2687,7 @@
     "status": "AGREED",
     "text": "The whole setup works by keyboard alone, from the first screen to",
     "file": "docs/spec/admin/setup.md",
-    "line": 160
+    "line": 165
   },
   {
     "id": "ADMIN-127",
@@ -2687,7 +2697,7 @@
     "status": "AGREED",
     "text": "No step sends the owner to documentation. What a step needs to say,",
     "file": "docs/spec/admin/setup.md",
-    "line": 163
+    "line": 168
   },
   {
     "id": "ADMIN-128",
@@ -2777,7 +2787,7 @@
     "status": "AGREED",
     "text": "Before the import writes anything, one review screen lists what",
     "file": "docs/spec/admin/import.md",
-    "line": 42
+    "line": 46
   },
   {
     "id": "ADMIN-137",
@@ -2787,7 +2797,7 @@
     "status": "AGREED",
     "text": "The owner can leave any library or any user out on the review",
     "file": "docs/spec/admin/import.md",
-    "line": 49
+    "line": 53
   },
   {
     "id": "ADMIN-138",
@@ -2797,7 +2807,7 @@
     "status": "AGREED",
     "text": "The review screen lists what does not come over, so nobody finds",
     "file": "docs/spec/admin/import.md",
-    "line": 52
+    "line": 56
   },
   {
     "id": "ADMIN-139",
@@ -2807,7 +2817,7 @@
     "status": "AGREED",
     "text": "One action on the review screen starts the import.",
     "file": "docs/spec/admin/import.md",
-    "line": 63
+    "line": 67
   },
   {
     "id": "ADMIN-140",
@@ -2817,7 +2827,7 @@
     "status": "AGREED",
     "text": "Each library of films or shows the owner kept becomes a source with",
     "file": "docs/spec/admin/import.md",
-    "line": 69
+    "line": 73
   },
   {
     "id": "ADMIN-141",
@@ -2827,7 +2837,7 @@
     "status": "AGREED",
     "text": "Where KROMA already has a source over the same folders, the import",
     "file": "docs/spec/admin/import.md",
-    "line": 72
+    "line": 76
   },
   {
     "id": "ADMIN-142",
@@ -2837,7 +2847,7 @@
     "status": "AGREED",
     "text": "A folder that does not exist on this machine under the name the",
     "file": "docs/spec/admin/import.md",
-    "line": 75
+    "line": 79
   },
   {
     "id": "ADMIN-143",
@@ -2847,7 +2857,7 @@
     "status": "AGREED",
     "text": "The translation is kept, so a later import asks nothing again.",
     "file": "docs/spec/admin/import.md",
-    "line": 82
+    "line": 86
   },
   {
     "id": "ADMIN-144",
@@ -2857,7 +2867,7 @@
     "status": "AGREED",
     "text": "Each user the owner kept becomes an account that waits on an",
     "file": "docs/spec/admin/import.md",
-    "line": 88
+    "line": 92
   },
   {
     "id": "ADMIN-145",
@@ -2867,7 +2877,7 @@
     "status": "AGREED",
     "text": "That account sees the libraries its user could see on the other",
     "file": "docs/spec/admin/import.md",
-    "line": 91
+    "line": 95
   },
   {
     "id": "ADMIN-146",
@@ -2877,7 +2887,7 @@
     "status": "AGREED",
     "text": "The person who signed in to the other server is the owner running",
     "file": "docs/spec/admin/import.md",
-    "line": 94
+    "line": 98
   },
   {
     "id": "ADMIN-147",
@@ -2887,7 +2897,7 @@
     "status": "AGREED",
     "text": "The owner can attach a user of the other server to an account",
     "file": "docs/spec/admin/import.md",
-    "line": 98
+    "line": 102
   },
   {
     "id": "ADMIN-148",
@@ -2897,7 +2907,7 @@
     "status": "AGREED",
     "text": "A user brought over once is found again by a later import, which",
     "file": "docs/spec/admin/import.md",
-    "line": 102
+    "line": 106
   },
   {
     "id": "ADMIN-149",
@@ -2907,7 +2917,7 @@
     "status": "AGREED",
     "text": "A user the other server limited more finely than by library, by",
     "file": "docs/spec/admin/import.md",
-    "line": 105
+    "line": 109
   },
   {
     "id": "ADMIN-150",
@@ -2917,7 +2927,7 @@
     "status": "AGREED",
     "text": "A user whose watch state the other server gives only against that",
     "file": "docs/spec/admin/import.md",
-    "line": 113
+    "line": 117
   },
   {
     "id": "ADMIN-151",
@@ -2927,7 +2937,7 @@
     "status": "AGREED",
     "text": "Each person's watched flags come over (ACCT-24).",
     "file": "docs/spec/admin/import.md",
-    "line": 121
+    "line": 129
   },
   {
     "id": "ADMIN-152",
@@ -2937,7 +2947,7 @@
     "status": "AGREED",
     "text": "Each person's resume points come over, and a resume point lands at",
     "file": "docs/spec/admin/import.md",
-    "line": 123
+    "line": 131
   },
   {
     "id": "ADMIN-153",
@@ -2947,7 +2957,7 @@
     "status": "AGREED",
     "text": "A title on the other server is matched to a KROMA title by its file",
     "file": "docs/spec/admin/import.md",
-    "line": 126
+    "line": 134
   },
   {
     "id": "ADMIN-154",
@@ -2957,7 +2967,7 @@
     "status": "AGREED",
     "text": "A title whose file matches nothing is matched by the external",
     "file": "docs/spec/admin/import.md",
-    "line": 129
+    "line": 137
   },
   {
     "id": "ADMIN-155",
@@ -2967,7 +2977,7 @@
     "status": "AGREED",
     "text": "Watch state for a file the scan has not reached yet shows on its",
     "file": "docs/spec/admin/import.md",
-    "line": 133
+    "line": 141
   },
   {
     "id": "ADMIN-156",
@@ -2977,7 +2987,7 @@
     "status": "AGREED",
     "text": "A title a person marked as a favourite on the other server is saved",
     "file": "docs/spec/admin/import.md",
-    "line": 136
+    "line": 144
   },
   {
     "id": "ADMIN-157",
@@ -2987,7 +2997,7 @@
     "status": "AGREED",
     "text": "When the import ends, a report lists what matched nothing, each",
     "file": "docs/spec/admin/import.md",
-    "line": 139
+    "line": 147
   },
   {
     "id": "ADMIN-158",
@@ -2997,7 +3007,7 @@
     "status": "AGREED",
     "text": "The plays the other server recorded come into watch history",
     "file": "docs/spec/admin/import.md",
-    "line": 150
+    "line": 158
   },
   {
     "id": "ADMIN-159",
@@ -3007,7 +3017,7 @@
     "status": "AGREED",
     "text": "A row that came from an import says so and names the server it came",
     "file": "docs/spec/admin/import.md",
-    "line": 153
+    "line": 161
   },
   {
     "id": "ADMIN-160",
@@ -3017,7 +3027,7 @@
     "status": "AGREED",
     "text": "An imported row leaves blank what the other server did not record:",
     "file": "docs/spec/admin/import.md",
-    "line": 156
+    "line": 164
   },
   {
     "id": "ADMIN-161",
@@ -3027,7 +3037,7 @@
     "status": "AGREED",
     "text": "An imported play that carries no duration counts for its title's",
     "file": "docs/spec/admin/import.md",
-    "line": 159
+    "line": 167
   },
   {
     "id": "ADMIN-162",
@@ -3037,7 +3047,7 @@
     "status": "AGREED",
     "text": "A play brought over once is not brought again by a later import.",
     "file": "docs/spec/admin/import.md",
-    "line": 167
+    "line": 175
   },
   {
     "id": "ADMIN-163",
@@ -3047,7 +3057,7 @@
     "status": "AGREED",
     "text": "The import runs in the background as a job with progress",
     "file": "docs/spec/admin/import.md",
-    "line": 173
+    "line": 181
   },
   {
     "id": "ADMIN-164",
@@ -3057,7 +3067,7 @@
     "status": "AGREED",
     "text": "The owner can cancel the import, and a cancelled import keeps what",
     "file": "docs/spec/admin/import.md",
-    "line": 176
+    "line": 184
   },
   {
     "id": "ADMIN-165",
@@ -3067,7 +3077,7 @@
     "status": "AGREED",
     "text": "A second import, run when nothing changed on the other server,",
     "file": "docs/spec/admin/import.md",
-    "line": 179
+    "line": 187
   },
   {
     "id": "ADMIN-166",
@@ -3077,7 +3087,7 @@
     "status": "AGREED",
     "text": "Where KROMA and the other server both hold watch state for one",
     "file": "docs/spec/admin/import.md",
-    "line": 185
+    "line": 193
   },
   {
     "id": "ADMIN-167",
@@ -3087,7 +3097,7 @@
     "status": "AGREED",
     "text": "An import only adds watch state or moves it forward. It removes",
     "file": "docs/spec/admin/import.md",
-    "line": 188
+    "line": 196
   },
   {
     "id": "ADMIN-168",
@@ -3097,7 +3107,7 @@
     "status": "AGREED",
     "text": "The importer stays installed after an import, so the owner can run",
     "file": "docs/spec/admin/import.md",
-    "line": 206
+    "line": 214
   },
   {
     "id": "ADMIN-169",
@@ -3107,7 +3117,7 @@
     "status": "AGREED",
     "text": "The report at the end of an import, and the import screen of the",
     "file": "docs/spec/admin/import.md",
-    "line": 209
+    "line": 217
   },
   {
     "id": "ADMIN-170",
@@ -3117,7 +3127,7 @@
     "status": "AGREED",
     "text": "Removing the importer forgets the sign-in to the other server",
     "file": "docs/spec/admin/import.md",
-    "line": 212
+    "line": 220
   },
   {
     "id": "ADMIN-171",
@@ -3127,7 +3137,7 @@
     "status": "AGREED",
     "text": "An import after the importer was removed installs it again and asks",
     "file": "docs/spec/admin/import.md",
-    "line": 216
+    "line": 224
   },
   {
     "id": "ADMIN-172",
@@ -3217,7 +3227,7 @@
     "status": "AGREED",
     "text": "The page of the setup never scrolls. A step with more than its frame",
     "file": "docs/spec/admin/setup.md",
-    "line": 166
+    "line": 171
   },
   {
     "id": "ADMIN-181",
@@ -3227,7 +3237,27 @@
     "status": "AGREED",
     "text": "A title a person finished on the other server after they stopped",
     "file": "docs/spec/admin/import.md",
-    "line": 191
+    "line": 199
+  },
+  {
+    "id": "ADMIN-186",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 186,
+    "status": "SHIPPED",
+    "text": "An Emby server is brought over as a Jellyfin one is: its libraries,",
+    "file": "docs/spec/admin/import.md",
+    "line": 38
+  },
+  {
+    "id": "ADMIN-187",
+    "domain": "ADMIN",
+    "space": "admin",
+    "number": 187,
+    "status": "AGREED",
+    "text": "A step stays done once the server has seen it done. A line that",
+    "file": "docs/spec/admin/setup.md",
+    "line": 148
   },
   {
     "id": "BROWSE-1",
@@ -4644,7 +4674,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 45,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
     "line": 260
@@ -4654,7 +4684,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 46,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
     "line": 265
@@ -4664,7 +4694,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 47,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
     "line": 269
@@ -4674,7 +4704,7 @@
     "domain": "LIB",
     "space": "library",
     "number": 48,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
     "line": 273
@@ -4687,7 +4717,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 275
+    "line": 279
   },
   {
     "id": "LIB-50",

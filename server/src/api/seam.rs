@@ -7,7 +7,8 @@ use axum::{Extension, Router};
 use kroma_module_supervisor::Supervisor;
 use tower_http::trace::TraceLayer;
 
-use super::{host_events, host_jobs, module_proxy};
+use super::router::module_proxy;
+use super::{host_events, host_jobs};
 use crate::state::SharedState;
 
 /// The router on the core's own Unix socket, where a module calls back: the host

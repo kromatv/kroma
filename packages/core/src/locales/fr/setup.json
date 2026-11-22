@@ -1,5 +1,4 @@
 {
-  "setup.continue": "Continuer",
   "setup.doneOpen": "Ouvrir ma bibliothèque",
   "setup.doneSub": "Votre bibliothèque vous attend. Les étapes que vous avez passées restent accessibles dans l'administration.",
   "setup.doneTitle": "Tout est prêt",
@@ -133,6 +132,7 @@
   "setup.peopleSub": "Créez un lien d'invitation par personne. Chacun crée son compte et choisit son mot de passe.",
   "setup.peopleTitle": "Invitez votre famille et vos amis",
   "setup.privacyConfirm": "Terminer",
+  "setup.privacyReadFailed": "Impossible de lire ce réglage. Rechargez la page, puis réessayez.",
   "setup.privacySub": "Une fois par jour, votre serveur envoie un relevé anonyme : un identifiant aléatoire, sa version, sa plateforme et son mode d'installation. Aucun nom, aucune adresse, aucun titre.",
   "setup.privacySwitch": "Envoyer des statistiques anonymes",
   "setup.privacyTitle": "Statistiques anonymes",
@@ -164,7 +164,6 @@
   "setup.stepLanguage": "Langue",
   "setup.stepMedia": "Bibliothèque",
   "setup.stepModules": "Modules",
-  "setup.stepOf": "Étape {step} sur {count} · {name}",
   "setup.stepOwner": "Votre compte",
   "setup.stepPeople": "Invitations",
   "setup.stepPrivacy": "Confidentialité",

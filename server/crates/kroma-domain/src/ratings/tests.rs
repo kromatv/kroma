@@ -101,16 +101,21 @@ fn the_same_label_means_the_age_its_own_country_gives_it() {
 
 #[test]
 fn the_table_is_sorted_so_every_label_can_be_found() {
-    assert!(ages::AGES
+    assert!(table()
         .windows(2)
         .all(|w| (w[0].0, w[0].1) < (w[1].0, w[1].1)));
+}
+
+#[test]
+fn every_line_of_the_table_is_a_row() {
+    assert_eq!(table().len(), AGES.lines().count());
 }
 
 #[test]
 fn every_row_of_the_reference_table_has_the_same_age_here() {
     let rows = reference_rows();
 
-    assert_eq!(rows.len(), ages::AGES.len());
+    assert_eq!(rows.len(), table().len());
     for (country, label, age) in rows {
         assert_eq!(minimum_age(&country, &label), age, "{country} {label}");
         assert!(lookup(&country, &label).is_some(), "{country} {label}");

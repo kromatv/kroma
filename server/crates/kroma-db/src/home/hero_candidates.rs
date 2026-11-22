@@ -4,6 +4,7 @@
 use anyhow::Result;
 use rusqlite::Row;
 
+use crate::media::present_show;
 use crate::Pool;
 
 /// One movie or show the hero may be picked from. `width` and `hdr` describe the
@@ -41,7 +42,7 @@ const MOVIE_FILES: &str = "SELECT f.item_id AS owner, \
 
 const MOVIES: &str = "SELECT id, added_at, \
        CASE WHEN json_valid(metadata) THEN metadata END AS meta \
-     FROM items WHERE kind != 'episode'";
+     FROM items WHERE kind != 'episode' AND absent_since IS NULL";
 
 // A show wears its widest probed episode, the same pick its listing makes.
 const SHOW_FILES: &str = "SELECT i.show_id AS owner, COALESCE(f.v_width, 0) AS width, \
@@ -51,8 +52,11 @@ const SHOW_FILES: &str = "SELECT i.show_id AS owner, COALESCE(f.v_width, 0) AS w
      FROM files f JOIN items i ON i.id = f.item_id \
      WHERE i.show_id IS NOT NULL AND f.probed = 1 AND f.v_codec IS NOT NULL";
 
-const SHOWS: &str = "SELECT id, added_at, \
-       CASE WHEN json_valid(metadata) THEN metadata END AS meta FROM shows";
+const SHOWS: &str = concat!(
+    "SELECT s.id, s.added_at, \
+       CASE WHEN json_valid(s.metadata) THEN s.metadata END AS meta FROM shows s WHERE ",
+    present_show!()
+);
 
 /// Every movie and loose video (never an episode) as a [`HeroCandidate`].
 pub fn hero_movie_candidates(pool: &Pool) -> Result<Vec<HeroCandidate>> {

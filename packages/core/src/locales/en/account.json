@@ -44,7 +44,7 @@
   "account.passkeys": "Passkeys",
   "account.passkeysDesc": "Sign in without a password using Face ID, Touch ID or a security key.",
   "account.passkeysEmpty": "No passkey registered yet.",
-  "account.passkeysInsecure": "Passkeys need a secure (HTTPS) connection this device is on plain HTTP.",
+  "account.passkeysInsecure": "Passkeys need a secure (HTTPS) connection, and this device is on plain HTTP.",
   "account.password": "Password",
   "account.passwordMismatch": "Passwords don't match",
   "account.passwordStrengthFair": "Fair",

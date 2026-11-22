@@ -24,8 +24,19 @@ const posting = (body: string) => (url: string) => {
 
 function occupy(port: number): Promise<void> {
   const server = createServer();
-  blockers.push(server);
-  return new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
+  return new Promise((resolve, reject) => {
+    server.once('error', (error) => {
+      if ('code' in error && error.code === 'EADDRINUSE') {
+        resolve();
+      } else {
+        reject(error);
+      }
+    });
+    server.listen(port, '127.0.0.1', () => {
+      blockers.push(server);
+      resolve();
+    });
+  });
 }
 
 afterEach(async () => {

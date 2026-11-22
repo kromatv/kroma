@@ -47,7 +47,7 @@ ainsi vérifier que la lecture fonctionne.
 
 > [!IMPORTANT]
 > Créez le compte propriétaire depuis votre réseau domestique. Depuis
-> l'extérieur, KROMA le refuse avec le message **Le compte propriétaire se crée
+> l'extérieur, KROMA le refuse avec le message **Créez le compte du propriétaire
 > depuis le réseau local du serveur**. Ainsi, personne sur Internet ne peut
 > s'approprier un nouveau serveur avant vous.
 
@@ -96,7 +96,7 @@ peut pas.
 
 ## Inviter les personnes avec qui vous partagez
 
-1. Dans le menu, sélectionnez **Inviter un utilisateur**.
+1. Dans le menu, sélectionnez **Inviter quelqu'un**.
 2. Choisissez ce que la personne peut faire, et combien de temps le lien reste
    valide.
 3. Sélectionnez **Créer le lien d'invitation**, puis envoyez-lui le lien.

@@ -29,6 +29,7 @@ vi.mock('#web/features/notifications/use-notifications', () => ({
 vi.mock('#web/features/playback/cast/cast-bar.component', () => ({
   CastBar: ({ inset }: { inset: number }) => <div data-testid="bar" data-inset={inset} />,
 }));
+vi.mock('#web/features/setup/resume-setup.component', () => ({ ResumeSetup: () => null }));
 vi.mock('#web/shared/lib/require-auth.hook', () => ({
   useRequireAuth: () => ({ ready: hold.ready, authed: hold.authed }),
 }));

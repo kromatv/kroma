@@ -1,9 +1,7 @@
 import type { AdminUser } from '@kromatv/client/admin';
-import { resolveImageUrl } from '@kromatv/core';
 import { Table } from '@kromatv/module-sdk';
 import { useFormat, useT } from '@kromatv/ui';
 import {
-  Avatar,
   Box,
   Button,
   type ColorValue,
@@ -19,11 +17,10 @@ import { Pill, PillDot } from '#web/features/admin/pill.component';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { EditUserModal } from '#web/features/admin/users-edit-modal.component';
 import { KidsModal } from '#web/features/admin/users-kids-modal.component';
-import { MemberMarks } from '#web/features/admin/member-marks.component';
 import { InviteModal } from '#web/features/admin/users-invite-modal.component';
 import { JoinRequests } from '#web/features/admin/users-join-requests.component';
+import { MemberIdentity } from '#web/features/admin/users-member.component';
 import { PendingInvite } from '#web/features/admin/users-pending-invite.component';
-import { apiBase } from '#web/shared/lib/api';
 import { useEffect } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { takeKidsProfileAsk } from '#web/shared/lib/kids-ask';
@@ -144,23 +141,7 @@ function UsersPageInner() {
             return (
               <Table.Row key={u.id}>
                 <Table.Cell row gap={14}>
-                  <Avatar
-                    name={u.username}
-                    src={resolveImageUrl(apiBase(), u.avatarUrl)}
-                    size={42}
-                    circle
-                  />
-                  <Box minW={0}>
-                    <Box row align="center" gap={8}>
-                      <Text variant="label" lines={1}>
-                        {u.username}
-                      </Text>
-                      <MemberMarks user={u} />
-                    </Box>
-                    <Text variant="meta" color="textDim" lines={1}>
-                      {u.email}
-                    </Text>
-                  </Box>
+                  <MemberIdentity user={u} />
                 </Table.Cell>
                 <Table.Cell>
                   <Pill ink={rs.ink} bg={rs.bg}>

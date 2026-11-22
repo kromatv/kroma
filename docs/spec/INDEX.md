@@ -3,7 +3,7 @@
 
 # Requirement index
 
-774 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+777 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -106,7 +106,7 @@
 - **ACCT-97** (SHIPPED) - The person may correct the account's name and address when they <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-98** (SHIPPED) - It is the same account before and after the invitation is redeemed, <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-99** (SHIPPED) - The invitation of a waiting account is single-use and expires like <sub>[README.md](accounts/README.md)</sub>
-- **ACCT-100** (AGREED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
+- **ACCT-100** (SHIPPED) - An admin can mint a new invitation for a waiting account. It voids <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-101** (SHIPPED) - The server keeps, for each title, the label every country's rating <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-102** (SHIPPED) - Each label carries the minimum age it stands for, from one table <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-103** (SHIPPED) - A show's rating is the rating of every one of its episodes. <sub>[kids.md](accounts/kids.md)</sub>
@@ -147,6 +147,7 @@
 - **ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-141** (SHIPPED) - The member list tells a waiting account apart from one its person <sub>[README.md](accounts/README.md)</sub>
 - **ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-151** (SHIPPED) - A ceiling, a block and an allow bind only a profile with no <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may <sub>[kids.md](accounts/kids.md)</sub>
@@ -272,7 +273,7 @@
 - **ADMIN-118** (AGREED) - The last step is the home. <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-119** (AGREED) - No step holds the catalogue back. A title is playable as soon as <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-120** (AGREED) - While a scan runs, every screen after the media step shows the <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-121** (AGREED) - A setup that ended before its last step leaves a checklist on the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-121** (AGREED) - A setup that ended leaves a checklist on the admin dashboard, one <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-122** (AGREED) - A line leaves the checklist when its step is done, in the setup or <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-123** (AGREED) - The owner can dismiss any line, and a dismissed line does not come <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-124** (AGREED) - When no line is left the checklist is gone, and it does not come <sub>[setup.md](admin/setup.md)</sub>
@@ -333,6 +334,8 @@
 - **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
@@ -483,10 +486,10 @@
 - **LIB-42** (AGREED) - Running series are re-checked on a slow cadence, so a new episode's air <sub>[README.md](library/README.md)</sub>
 - **LIB-43** (AGREED) - A "Refresh metadata" action on any title, season or whole source <sub>[README.md](library/README.md)</sub>
 - **LIB-44** (AGREED) - A forced refresh **never** discards a manual match or user-chosen <sub>[README.md](library/README.md)</sub>
-- **LIB-45** (AGREED) - When a file disappears from a source, its title is **marked absent**: <sub>[README.md](library/README.md)</sub>
-- **LIB-46** (AGREED) - Content that reappears, because a NAS remounts or a file is moved back <sub>[README.md](library/README.md)</sub>
-- **LIB-47** (AGREED) - A **move** is therefore not a special case. It is an absent path plus a <sub>[README.md](library/README.md)</sub>
-- **LIB-48** (AGREED) - A rescan **only ever marks absent**. It never deletes user data. <sub>[README.md](library/README.md)</sub>
+- **LIB-45** (SHIPPED) - When a file disappears from a source, its title is **marked absent**: <sub>[README.md](library/README.md)</sub>
+- **LIB-46** (SHIPPED) - Content that reappears, because a NAS remounts or a file is moved back <sub>[README.md](library/README.md)</sub>
+- **LIB-47** (SHIPPED) - A **move** is therefore not a special case. It is an absent path plus a <sub>[README.md](library/README.md)</sub>
+- **LIB-48** (SHIPPED) - A rescan **only ever marks absent**. It never deletes user data. <sub>[README.md](library/README.md)</sub>
 - **LIB-49** (AGREED) - Permanently deleting a title's history is an explicit, person-initiated <sub>[README.md](library/README.md)</sub>
 - **LIB-50** (SHIPPED) - Refreshing metadata and re-running identification are two actions, and <sub>[README.md](library/README.md)</sub>
 - **LIB-51** (AGREED) - A movie or a show can be **monitored**: the server wants to hold it. <sub>[monitoring.md](library/monitoring.md)</sub>

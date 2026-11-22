@@ -22,6 +22,7 @@ mod kids;
 mod profile;
 mod quick_connect;
 mod ratings;
+mod registration;
 mod reset;
 mod session;
 mod verify_email;

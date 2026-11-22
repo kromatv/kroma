@@ -4,9 +4,11 @@
 
 mod catalogue;
 mod folders;
+mod held;
 mod identities;
 mod newcomers;
 mod passes;
+mod plays;
 mod records;
 mod states;
 mod titles;
@@ -16,16 +18,17 @@ mod tests;
 
 pub use catalogue::*;
 pub use folders::*;
+pub(crate) use held::release as release_held_states;
 pub use identities::*;
 pub use newcomers::*;
 pub use passes::*;
+pub use plays::{add_plays, NewPlay};
 pub use records::*;
-pub(crate) use states::release_held_states;
 pub use states::{merge_states, Merged, Place};
 pub use titles::*;
 
 use kroma_domain::imports::{Failure, FailureReason, Import, Origin, Report, Selection, Status};
-use rusqlite::OptionalExtension;
+use rusqlite::{OptionalExtension, TransactionBehavior};
 use serde::de::DeserializeOwned;
 
 use super::{Connection, Pool, Result, Row, params};
@@ -139,7 +142,7 @@ pub fn withdraw(pool: &Pool, id: &str) -> Result<bool> {
 /// when no import is queued.
 pub fn claim(pool: &Pool, run_id: &str, now_ms: i64) -> Result<Option<Import>> {
     let mut conn = pool.get()?;
-    let tx = conn.transaction()?;
+    let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let queued: Option<String> = tx
         .query_row(
             "SELECT id FROM imports WHERE status = 'queued' ORDER BY created_at LIMIT 1",

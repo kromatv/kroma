@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { Invite, InviteToken } from '@kromatv/client/accounts';
+import { Invite } from '@kromatv/client/accounts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -19,12 +19,7 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
-import {
-  invitationLink,
-  invitationMail,
-  openInvitations,
-  useInvitations,
-} from './use-invitations.hook';
+import { invitationMail, openInvitations, useInvitations } from './use-invitations.hook';
 
 const HERE = 'http://localhost';
 const NOTIFY_MS = 1;
@@ -74,20 +69,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-});
-
-describe('the address of an invitation', () => {
-  it('is the one the server made for it', () => {
-    const token = InviteToken.parse(crypto.randomUUID());
-
-    expect(invitationLink({ url: SERVER_LINK, token }, HERE)).toBe(SERVER_LINK);
-  });
-
-  it('is the join page of this address when the server made none', () => {
-    const token = InviteToken.parse(crypto.randomUUID());
-
-    expect(invitationLink({ url: null, token }, HERE)).toBe(`${HERE}/join?invite=${token}`);
-  });
 });
 
 describe('the invitations still open', () => {

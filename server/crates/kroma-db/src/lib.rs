@@ -108,6 +108,7 @@ pub(crate) fn now_or_blank() -> String {
 }
 
 pub use schema::CORE_TABLE_VERSIONS;
+pub mod setup;
 
 mod maturity;
 pub use maturity::*;

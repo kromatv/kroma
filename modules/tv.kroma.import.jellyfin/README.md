@@ -18,6 +18,7 @@ Layout: `server/` (the crate), `module.json` (manifest), `audit.json` (what
 | `titles` | `GET /Items` | films and episodes with their files, ids, and the show of each episode |
 | `states` | `GET /Items` with the user's data | watched, play count, resume point, last played, favourite |
 | `plays` | `GET /Users`, `GET /Items` | one play for each title a user watched or started |
+| `unlock` | nothing | `refused` as `notLocked`: an administrator reads every user, so no user is locked |
 | `forget` | nothing | nothing: the sign-in is deleted here |
 
 Every endpoint, with the fields read and the source of each fact, is in
@@ -70,7 +71,9 @@ no sentence: the point gives an importer no language to write one in.
 
 ## Another dialect
 
-Emby speaks an API of the same family. The paths, the name the server gives
-itself, the default address and the authorization scheme are the rows of
-`Dialect` in `server/src/dialect.rs`. An Emby importer is a second `Dialect`
-and the header it needs. It is not written.
+Emby speaks an API of the same family. The paths, how the server says what it
+is, the default address and the authorization scheme are the rows of `Dialect`
+in `server/src/dialect.rs`, and `EMBY` is the second one. The module
+`tv.kroma.import.emby` runs this crate's routes with it (`routes_for`). A change
+here reaches both importers; a change to the Emby module alone reaches Emby
+alone.

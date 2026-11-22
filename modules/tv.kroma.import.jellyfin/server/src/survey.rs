@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use crate::client::Session;
-use crate::jellyfin;
+use crate::jellyfin::{self, Listing};
 use crate::queries::{counted, films_and_episodes, filtered, playlists};
 use crate::wire::{Counts, Library, LibraryKind, Survey, SurveyAsk, User};
 use crate::Importer;
@@ -29,16 +29,26 @@ fn library(folder: jellyfin::Library) -> Option<Library> {
     })
 }
 
+fn blocks_folders(policy: &jellyfin::Policy) -> bool {
+    !policy.blocked_media_folders.is_empty() || !policy.excluded_sub_folders.is_empty()
+}
+
 fn finer_limits(policy: &jellyfin::Policy) -> Vec<&'static str> {
     let rated = policy.max_parental_rating.is_some()
         || policy.max_parental_sub_rating.is_some()
         || !policy.block_unrated_items.is_empty();
-    let tagged = !policy.blocked_tags.is_empty() || !policy.allowed_tags.is_empty();
+    let tagged = [
+        &policy.blocked_tags,
+        &policy.allowed_tags,
+        &policy.include_tags,
+    ]
+    .iter()
+    .any(|tags| !tags.is_empty());
     [
         ("rating", rated),
         ("tag", tagged),
         ("schedule", !policy.access_schedules.is_empty()),
-        ("blockedFolders", !policy.blocked_media_folders.is_empty()),
+        ("blockedFolders", blocks_folders(policy)),
         ("disabled", policy.is_disabled),
     ]
     .into_iter()
@@ -98,16 +108,17 @@ impl Importer {
     pub(crate) fn survey(&self, ask: &SurveyAsk) -> Result<Survey> {
         let session = self.session(&ask.sign_in, &ask.server)?;
         let dialect = self.dialect;
-        let folders: Vec<jellyfin::Library> = session.get(dialect.libraries, Vec::new())?;
-        let found: Vec<jellyfin::User> = session.get(dialect.users, Vec::new())?;
+        let folders: Listing<jellyfin::Library> = session.get(dialect.libraries, Vec::new())?;
+        let found: Listing<jellyfin::User> = session.get(dialect.users, Vec::new())?;
         let held: jellyfin::Counts = session.get(dialect.counts, Vec::new())?;
         let users: Vec<User> = found
+            .0
             .into_iter()
             .filter_map(|one| user(one, session.user()))
             .collect();
         let watched = watched(&session, &users)?;
         Ok(Survey {
-            libraries: folders.into_iter().filter_map(library).collect(),
+            libraries: folders.0.into_iter().filter_map(library).collect(),
             counts: Counts {
                 titles: Some(held.movie_count + held.episode_count),
                 states: watched,

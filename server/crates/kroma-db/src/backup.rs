@@ -27,6 +27,8 @@ mod module_stores;
 mod rows;
 
 #[cfg(test)]
+mod imported;
+#[cfg(test)]
 mod left_out;
 #[cfg(test)]
 mod test_support;
@@ -66,6 +68,7 @@ const TABLES: &[&str] = &[
     "import_folders",
     "import_held_states",
     "import_identities",
+    "import_held_plays",
     "profile_title_rules",
 ];
 
