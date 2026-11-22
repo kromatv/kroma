@@ -1,7 +1,7 @@
 import type { ImportSignIn } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
 import { Callout } from '@kromatv/ui/kit';
-import { REFUSAL_LINE } from '#web/features/setup/import-words';
+import { REFUSAL_LINE } from '#web/features/admin/import/import-words';
 
 /** Why the other server turned the sign-in down, in the owner's words. It
  * draws nothing for any other answer. */

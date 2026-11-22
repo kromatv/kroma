@@ -1,0 +1,50 @@
+name: TestFlight beta
+
+# Each night, the newest iPhone and Apple TV builds go to the public Beta
+# group, the one behind testflight.apple.com/join/ZjgQdunW, and to Beta App
+# Review when they wait on it. A group that already has the newest build is
+# left alone, so a day with no change to either app sends testers nothing.
+#
+# Builds reach App Store Connect from release.yml, on a push that changed the
+# app; that run also hands them to the Canary group. This run feeds Canary as
+# well, which catches a build whose push was superseded before it got there.
+#
+#   gh workflow run testflight-beta.yml
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: testflight-beta
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  beta:
+    name: Nightly TestFlight beta
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'release' || '' }}
+      deployment: false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 15
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+          no-cache: true
+      - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
+      - name: Feed the Beta group
+        run: bun run ci testflight feed --link ZjgQdunW
+      - name: Feed the Canary group
+        if: ${{ !cancelled() }}
+        run: bun run ci testflight feed --group Canary

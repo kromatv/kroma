@@ -19,9 +19,9 @@ name: Release Apple TV beta channel
 # iOS and tvOS as two platforms of one listing (a universal purchase), which is
 # why both sign as `tv.kroma.app` - see clients/tv-native/app.config.ts.
 #
-# Stable tags or an explicit manual run, never an untagged build: a TestFlight
-# number is spent for good, and a build that burned one would also mail every
-# tester about it.
+# A push to main uploads when the app changed since its last TestFlight build,
+# the same rule as the phone's: a TestFlight number is spent for good, and each
+# upload mails every tester.
 #
 # `expo prebuild` runs under NODE, never under the bun runtime: bun's runtime
 # corrupts the template extraction (NUL-padded files). bun stays the package
@@ -43,13 +43,17 @@ on:
         type: string
         required: true
       channel:
-        description: 'stable | candidate | none. Only `stable` reaches TestFlight.'
+        description: 'stable | candidate | none. A candidate reaches TestFlight from a push that changed the app.'
         type: string
         required: true
       build:
         description: 'The monotonic build number every store-bound package in this run carries (minutes since 2020).'
         type: string
         required: true
+    outputs:
+      uploaded:
+        description: 'Whether this run sent a build to TestFlight.'
+        value: ${{ jobs.appletv.outputs.uploaded }}
 
 jobs:
   appletv:
@@ -62,6 +66,8 @@ jobs:
     # covered tvOS too (tvOS 26 from April 2026), and the macos-26 image tops
     # out at Xcode 26.6.
     runs-on: xcode-27
+    outputs:
+      uploaded: ${{ steps.upload.outcome == 'success' }}
     permissions:
       contents: read # only reads the repo and uploads run artifacts
       actions: write # retires the previous DerivedData cache entry
@@ -361,16 +367,27 @@ jobs:
           MODE: validate
         run: .github/scripts/upload-to-testflight.sh
 
+      # A push uploads only when something the app is built from moved since
+      # its last TestFlight build, so a server-only push mails no tester an
+      # identical app.
+      - name: The app changed since its last TestFlight build
+        id: changed
+        if: steps.signing.outputs.ready == 'true' && inputs.channel == 'candidate' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bun run ci testflight changed --app appletv
+
       - name: Upload to TestFlight
-        # A CANDIDATE from a push to main goes to TestFlight too, where only the
-        # internal group picks it up: the public-link testers get a build when
-        # it is added to their group by hand.
+        id: upload
+        # A CANDIDATE from a push to main goes to TestFlight when the app
+        # changed, then to the Canary group (release.yml's `testflight` job)
+        # and each night to the public Beta group (testflight-beta.yml).
         # `targets` says what to BUILD; it must not also mean "ship it".
         # A dispatch with targets=mobile, run to time the archive, pushed a
         # real build to TestFlight and burned a build number - distribution
         # was riding on a selector that only ever meant scope. It now needs
         # the explicit `distribute` input, so a build-only run stays one.
-        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || (inputs.channel == 'candidate' && github.event_name == 'push') || github.event.inputs.distribute == 'true') }}
+        if: ${{ steps.signing.outputs.ready == 'true' && (inputs.channel == 'stable' || (inputs.channel == 'candidate' && github.event_name == 'push' && steps.changed.outputs.changed == 'true') || github.event.inputs.distribute == 'true') }}
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}

@@ -1,7 +1,7 @@
 import type { Importer, ImportSignIn } from '@kromatv/client/importers';
 import { skipToken, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { useImportSession } from '#web/features/setup/import-session.component';
+import { useImportSession } from '#web/features/admin/import/import-session.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const ASK_AGAIN_MS = 2000;

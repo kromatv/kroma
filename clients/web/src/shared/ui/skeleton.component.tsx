@@ -8,10 +8,13 @@ import {
   styles,
   useStyles,
 } from '@kromatv/ui/kit';
+import type { ReactNode } from 'react';
 import { PAGE_GUTTER, PageFrame } from '#web/shared/ui/page';
 import { TileGrid } from '#web/shared/ui/tile-grid.component';
 
 export { CardSkeleton, Skeleton, TableSkeleton } from '@kromatv/ui/kit';
+
+const LIST_ROWS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth'];
 
 const sDefinition = styles({
   homeBand: { width: '100%', height: '46vh', minHeight: 320 },
@@ -23,6 +26,23 @@ const sDefinition = styles({
     overflow: 'hidden',
   },
 });
+
+/** A list's cards while it loads: `count` of them, at most six, each
+ *  `height` tall, under whatever stands over the list. */
+export function ListSkeleton({
+  count,
+  height,
+  children,
+}: Readonly<{ count: number; height: number; children?: ReactNode }>) {
+  return (
+    <Box gap={8}>
+      {children}
+      {LIST_ROWS.slice(0, count).map((row) => (
+        <Skeleton key={row} w="100%" h={height} radius="lg" />
+      ))}
+    </Box>
+  );
+}
 
 export function SkeletonRow({ count = 7 }: Readonly<{ count?: number }>) {
   return (

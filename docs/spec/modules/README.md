@@ -402,6 +402,10 @@ other server changes on its own schedule.
 never imports carries none. The guided setup and the admin console install the one the owner
 chose from the official registry.
 
+**MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do,
+on the screen the Store shows before any install. Nothing is fetched until the owner accepts,
+and the install is held to what that screen showed.
+
 **MOD-104** (AGREED) - The servers KROMA can import from are the importers the official
 registry lists. A new importer appears in the choice without a server release.
 

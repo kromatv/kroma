@@ -14,6 +14,7 @@ bun run ci lcov merge <out> <report or folder...>   one lcov from several, a fil
 bun run ci build <target> [--slice]       a fleet build, with its dist path as a step output
 bun run ci version                        version, triplet, channel, build number, canary name
 bun run ci canary publish [--rename] ...  files onto the rolling `canary` prerelease, with retention
+bun run ci testflight changed | feed       whether an Apple app changed since its last upload; a TestFlight group fed
 bun run ci cache prune --prefix X         retire older Actions cache entries under a key prefix
 bun run ci tools ffmpeg | tauri-deps      apt installs with retries
 bun run ci sonar prepare                  the tree as the scanner wants it
@@ -278,6 +279,32 @@ The two `.ipa` bundles are not on the channel: TestFlight is the only way onto
 an Apple device. The channel is not a gate either: a failed upload does not
 make a candidate unpromotable.
 
+### TestFlight: Canary on a push, Beta each night
+
+The two `.ipa` bundles go to TestFlight instead, through two external groups
+that testers join by their public link, with no invitation:
+
+- **Canary** gets a build from every push that changed the app. The upload
+  step asks `ci testflight changed`, which finds the last Build & Release run
+  whose `Upload to TestFlight` step succeeded and lists the files changed
+  since its commit. A file counts when it sits in the app's workspace or in one
+  it depends on, through `workspace:` dependencies, or is `bun.lock`, the root
+  manifest, the iOS build scripts or the app's own workflow. Tests and prose do
+  not count. A run that cannot list the files uploads. Release.yml's
+  `testflight` job then runs `ci testflight feed --group Canary --create`: it
+  waits for Apple to process what this run uploaded, puts the newest valid
+  build of each platform in the group, and submits it to Beta App Review when
+  it waits on one. It runs on every candidate push, so a build whose run was
+  superseded during processing still reaches the group.
+- **Beta**, the group behind `testflight.apple.com/join/ZjgQdunW`, gets the
+  newest build once a night from `testflight-beta.yml` (02:17 UTC, or `gh
+  workflow run testflight-beta.yml`). A group that already has the newest build
+  is left alone, so a night after a day with no app change sends nothing.
+
+The internal group still gets every upload. What Apple documents about groups,
+review and the API calls is in
+[reference/testflight.md](reference/testflight.md).
+
 Android TV builds in `_release-androidtv.yml`, apart from the other TVs, so
 that the Google Play job waits for the Android TV bundle alone: a Samsung or
 LG package that fails to build does not hold the Play drafts back.
@@ -411,7 +438,7 @@ environment secrets, and both environments allow one branch, `main`:
 
 | environment | holds | read by |
 |---|---|---|
-| `release` | the Apple certificates, profiles and App Store Connect key, the Android keystore, the desktop update key, the Play service account | the build and TestFlight jobs of `release.yml` and `deploy.yml`, `desktop-autoupdate.yml`, `apple-signing-doctor.yml` |
+| `release` | the Apple certificates, profiles and App Store Connect key, the Android keystore, the desktop update key, the Play service account | the build and TestFlight jobs of `release.yml` and `deploy.yml`, `testflight-beta.yml`, `desktop-autoupdate.yml`, `apple-signing-doctor.yml` |
 | `sites` | `CLOUDFLARE_API_TOKEN` | `kit.yml`, `site.yml`, `tv-web.yml`, `repo-worker.yml` |
 | `production` | nothing: it is the approval before a Release | `deploy.yml`'s `publish` |
 | `snyk` | `SNYK_TOKEN` | `snyk.yml` |

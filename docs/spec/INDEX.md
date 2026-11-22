@@ -3,7 +3,7 @@
 
 # Requirement index
 
-782 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+785 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -340,6 +340,8 @@
 - **ADMIN-197** (AGREED) - The folder keeps the newest backups and the server removes the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-198** (AGREED) - A backup that could not be saved fails its task and tells the <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-199** (AGREED) - The backups step comes after the people step. It says in one <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 
@@ -685,6 +687,7 @@
 - **MOD-106** (AGREED) - The sign-in to the other server is the importer's to keep, among its <sub>[README.md](modules/README.md)</sub>
 - **MOD-107** (SHIPPED) - A module that reaches the core database is checked against the core <sub>[README.md](modules/README.md)</sub>
 - **MOD-108** (SHIPPED) - A module names and describes itself, and says in one sentence what it <sub>[README.md](modules/README.md)</sub>
+- **MOD-109** (AGREED) - Before an importer installs, the owner sees what it will be able to do, <sub>[README.md](modules/README.md)</sub>
 
 ## PLAY - [playback](playback/)
 

@@ -3,7 +3,7 @@ import { isEmail, isPassword, isUsername } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
 import { Box, classes, Field, GuidedFlow, styles, useStyles } from '@kromatv/ui/kit';
 import { type ReactNode, useState } from 'react';
-import { StepFailure } from '#web/features/setup/step-failure.component';
+import { StepFailure } from '#web/shared/ui/step-failure.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 interface OwnerValues {

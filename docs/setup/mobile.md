@@ -20,6 +20,20 @@ updated.
 
 The same beta gives you KROMA on your Apple TV. See [Apple TV](apple-tv.md).
 
+### Beta or canary
+
+KROMA has two TestFlight links, and you choose one:
+
+- **Beta**, the link above. A new version comes at most once a night, after a
+  day in which the app changed.
+- **Canary**:
+  [testflight.apple.com/join/wxUevnw1](https://testflight.apple.com/join/wxUevnw1).
+  A new version comes after each change to the app. It has had less testing,
+  and Apple reviews each one first, so it can arrive a few hours after the
+  change.
+
+If you join both, TestFlight offers the newest version of either.
+
 ## Android phone and tablet
 
 ### From Google Play

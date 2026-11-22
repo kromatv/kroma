@@ -2,8 +2,8 @@ import type { ImportFolder } from '@kromatv/client/imports';
 import { useT } from '@kromatv/ui';
 import { Box, ListRow, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { answered } from '#web/features/setup/import-folders';
-import { useImportSession } from '#web/features/setup/import-session.component';
+import { answered } from '#web/features/admin/import/import-folders';
+import { useImportSession } from '#web/features/admin/import/import-session.component';
 import { FolderPicker } from '#web/shared/ui/folder-picker.component';
 
 interface PlaceProps {

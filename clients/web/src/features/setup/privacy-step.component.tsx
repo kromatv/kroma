@@ -1,6 +1,6 @@
 import { useT } from '@kromatv/ui';
 import { GuidedFlow, ListRow, Switch } from '@kromatv/ui/kit';
-import { StepFailure } from '#web/features/setup/step-failure.component';
+import { StepFailure } from '#web/shared/ui/step-failure.component';
 import { useCounted } from '#web/features/setup/use-counted.hook';
 
 interface CountedProps {
