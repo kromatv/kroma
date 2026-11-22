@@ -1,10 +1,9 @@
 import type { Invite, Permission } from '@kromatv/client/accounts';
 import { PERMISSIONS } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Button, Callout, IconButton, ListRow, Menu } from '@kromatv/ui/kit';
+import { Button, Callout, GuidedFlow, IconButton, ListRow, Menu } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { InvitationRights } from '#web/features/setup/invitation-rights.component';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { useInvitations } from '#web/features/setup/use-invitations.hook';
 import { InvitationMailDialog } from '#web/shared/ui/invitation-mail.component';
 
@@ -178,8 +177,11 @@ export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
   const people = usePeople();
   return (
     <>
-      <StepHeading title={t('setup.peopleTitle')} sub={t('setup.peopleSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.peopleTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.peopleSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <InvitationList
           open={people.open}
           linkOf={people.linkOf}
@@ -188,15 +190,13 @@ export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
           onEdit={people.setEditing}
         />
         <InviteMore busy={people.busy} onInvite={() => void people.create()} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next onPress={onContinue} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
       <PeopleDialogs people={people} />
     </>
   );

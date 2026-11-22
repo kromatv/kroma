@@ -1,5 +1,4 @@
 {
-  "setup.continue": "Continuer",
   "setup.doneOpen": "Ouvrir ma bibliothèque",
   "setup.doneSub": "Votre bibliothèque vous attend. Les étapes que vous avez passées restent accessibles dans l'administration.",
   "setup.doneTitle": "Tout est prêt",
@@ -163,7 +162,6 @@
   "setup.stepLanguage": "Langue",
   "setup.stepMedia": "Bibliothèque",
   "setup.stepModules": "Modules",
-  "setup.stepOf": "Étape {step} sur {count} · {name}",
   "setup.stepOwner": "Votre compte",
   "setup.stepPeople": "Invitations",
   "setup.stepPrivacy": "Confidentialité",

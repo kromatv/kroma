@@ -130,8 +130,9 @@ The home does the same once the owner is on it (BROWSE-61).
 
 Status: **AGREED**
 
-**ADMIN-121** (AGREED) - A setup that ended before its last step leaves a checklist on the
-admin dashboard, one line per step not done. A line opens its step.
+**ADMIN-121** (AGREED) - A setup that ended leaves a checklist on the admin dashboard, one
+line per step not done. A line opens its step. The owner who reached the last screen past
+a step they skipped finds that step on it too, as the last screen promises.
 
 **ADMIN-122** (AGREED) - A line leaves the checklist when its step is done, in the setup or
 anywhere else in the admin console.
@@ -140,9 +141,13 @@ anywhere else in the admin console.
 |---|---|
 | Import | an import has run. The line exists only for an owner who chose to bring a server over |
 | Media | the server has a source |
-| Modules | the owner installed a module, or confirmed the step with none |
+| Modules | the owner installed a module, or confirmed the step with none. The importer the import step installed does not count |
 | People | the server has an invitation or a second account |
 | Being counted | the owner confirmed the step |
+
+**ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that
+left the checklist does not come back when its result goes, for instance when the owner
+removes the only source.
 
 **ADMIN-123** (AGREED) - The owner can dismiss any line, and a dismissed line does not come
 back.

@@ -109,6 +109,9 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | Port forwarding | redirection de port | ouverture de port |
 | Supervise (a process) | surveiller | superviser |
 | Owner | Propriétaire | Possesseur |
+| Seeding (a torrent) | En partage | Seed |
+| The swarm | les pairs | le swarm |
+| 1-50 of 200 (a page) | 1 à 50 sur 200 | 1-50 sur 200 |
 | Required (a form field) | Ce champ est obligatoire | Ce champ est requis |
 | Use at least 8 characters | 8 caractères minimum | Utilisez au moins 8 caractères |
 | Admin (the area) | l'administration | l'admin |
@@ -118,6 +121,8 @@ Never *n'a pas pu être* + participle for an error: it is the English passive.
 | You are signed out (a state of the reader) | Déconnexion effectuée | Vous êtes déconnecté |
 | Media items (a count) | titres | médias |
 | Invitation link | Lien d'invitation | |
+| Seeders | sources | seeders |
+| To score (a release) | avoir un score | scorer |
 | Feature | Fonctionnalité | Feature |
 | LAN address | adresse sur le réseau local | adresse LAN |
 | Roku (the device) | boîtier Roku | les Roku |
@@ -209,6 +214,9 @@ move the rest to the screen where it matters.
 | est. (estimated) | estimée | est. |
 | Create their account (one person) | Créer son compte | Créer leur compte |
 | Allowed on the relay (a server) | autorisé sur le relais | le relais a été autorisé pour ce serveur |
+| The server's database | la base de données du serveur | la base du serveur |
+| Go on the internet (a module's access) | Accéder à Internet | Aller sur Internet |
+| Whoever publishes it | son éditeur | qui le publie |
 | Console (the admin area) | l'administration | la console |
 | Issuer (OpenID Connect) | émetteur | issuer, except in parentheses after émetteur |
 | ID token | jeton d'identité | ID token |

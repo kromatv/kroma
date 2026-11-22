@@ -13,7 +13,9 @@ mod bounds;
 use serde::Serialize;
 use serde::de::{DeserializeOwned, IgnoredAny};
 
-use crate::domain::import::{Connected, PlayPage, StatePage, Survey, TitlePage};
+use crate::domain::import::{
+    Connected, PlayPage, StatePage, Survey, TitlePage, Unlock, UnlockRefusal,
+};
 use crate::point::{Allowance, Point, Silence};
 
 pub use asks::*;
@@ -24,6 +26,8 @@ pub const POINT: &str = "importer";
 
 const KIB: usize = 1024;
 const MAX_REASON_CHARS: usize = 300;
+const MAX_PIN_CHARS: usize = 64;
+const HIDDEN: &str = "****";
 
 struct Method {
     name: &'static str,
@@ -60,6 +64,13 @@ const FORGET: Method = Method {
     name: "forget",
     allowance: Allowance {
         seconds: 30,
+        bytes: 4 * KIB,
+    },
+};
+const UNLOCK: Method = Method {
+    name: "unlock",
+    allowance: Allowance {
+        seconds: 60,
         bytes: 4 * KIB,
     },
 };
@@ -145,6 +156,26 @@ impl Importers {
             .map(|_| ())
     }
 
+    /// Open a user's locked watch state with the PIN the owner typed. The PIN
+    /// reaches the importer once, and is taken out of anything the importer
+    /// says back. One that is empty or past 64 characters is refused here.
+    pub fn unlock(&self, importer: &str, ask: &UnlockAsk) -> Result<Unlock, Unanswered> {
+        if ask.pin.is_empty() || ask.pin.chars().count() > MAX_PIN_CHARS {
+            return Ok(Unlock::Refused {
+                reason: UnlockRefusal::Pin,
+                message: None,
+            });
+        }
+        match self.ask(importer, &UNLOCK, ask) {
+            Ok(Unlock::Refused { reason, message }) => Ok(Unlock::Refused {
+                reason,
+                message: message.map(|said| clipped(&said.replace(&ask.pin, HIDDEN))),
+            }),
+            Ok(unlocked) => Ok(unlocked),
+            Err(why) => Err(without(why, &ask.pin)),
+        }
+    }
+
     fn page<A: Serialize, T: DeserializeOwned>(
         &self,
         importer: &str,
@@ -182,6 +213,14 @@ fn unanswered(method: &Method, silence: Silence) -> Unanswered {
             "an answer to {} past {} bytes",
             method.name, method.allowance.bytes
         )),
+    }
+}
+
+fn without(why: Unanswered, pin: &str) -> Unanswered {
+    match why {
+        Unanswered::Absent => Unanswered::Absent,
+        Unanswered::Failed(said) => Unanswered::Failed(said.replace(pin, HIDDEN)),
+        Unanswered::Unreadable(said) => Unanswered::Unreadable(said.replace(pin, HIDDEN)),
     }
 }
 

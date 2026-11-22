@@ -2,7 +2,7 @@
 
 import { Invite } from '@kromatv/client/accounts';
 import { I18nProvider } from '@kromatv/ui';
-import { KitProvider } from '@kromatv/ui/kit';
+import { GuidedFlow, KitProvider } from '@kromatv/ui/kit';
 import { createInputTestHost, onScreen } from '@kromatv/ui/testing';
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -50,7 +50,11 @@ it('has the server send an invitation from its menu, to the address the owner ty
   inputHost.render(
     <I18nProvider locale="en">
       <KitProvider config={{ entry: { physicalKeyboard: true } }}>
-        {onScreen(<PeopleStep onBack={vi.fn()} onContinue={vi.fn()} />)}
+        {onScreen(
+          <GuidedFlow.Root label="Setup">
+            <PeopleStep onBack={vi.fn()} onContinue={vi.fn()} />
+          </GuidedFlow.Root>,
+        )}
       </KitProvider>
     </I18nProvider>,
   );

@@ -154,3 +154,55 @@ fn each_refusal_is_a_reason_the_core_knows() {
         .map(|reason| json!({ "status": "refused", "reason": reason }))
     );
 }
+
+#[test]
+fn an_unlock_ask_names_the_user_and_carries_the_pin() {
+    let wire =
+        json!({ "signIn": "s-1", "server": "srv", "user": "7004", "pin": "4821", "later": 1 });
+
+    let ask: UnlockAsk = read(wire);
+
+    assert_eq!(
+        (ask.sign_in, ask.server, ask.user, ask.pin),
+        ("s-1".into(), "srv".into(), "7004".into(), "4821".into())
+    );
+}
+
+#[test]
+fn an_unlock_answers_unlocked_or_a_reason_the_core_knows() {
+    let answers = [
+        Unlocked::Unlocked,
+        Unlocked::Refused {
+            reason: UnlockRefusal::Pin,
+        },
+        Unlocked::Refused {
+            reason: UnlockRefusal::NotLocked,
+        },
+        Unlocked::Refused {
+            reason: UnlockRefusal::Credentials,
+        },
+        Unlocked::Refused {
+            reason: UnlockRefusal::Unreachable,
+        },
+        Unlocked::Refused {
+            reason: UnlockRefusal::Other,
+        },
+    ];
+
+    let wire: Vec<serde_json::Value> = answers
+        .iter()
+        .map(|answer| serde_json::to_value(answer).unwrap())
+        .collect();
+
+    assert_eq!(
+        wire,
+        [
+            json!({ "status": "unlocked" }),
+            json!({ "status": "refused", "reason": "pin" }),
+            json!({ "status": "refused", "reason": "notLocked" }),
+            json!({ "status": "refused", "reason": "credentials" }),
+            json!({ "status": "refused", "reason": "unreachable" }),
+            json!({ "status": "refused", "reason": "other" }),
+        ]
+    );
+}

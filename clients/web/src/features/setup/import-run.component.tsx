@@ -1,10 +1,9 @@
 import type { Import, ImportId, ImportStatus, ImportTally } from '@kromatv/client/imports';
 import { JobKey } from '@kromatv/client/jobs';
 import { useT } from '@kromatv/ui';
-import { Button, ListRow, Progress, Text } from '@kromatv/ui/kit';
+import { Button, GuidedFlow, ListRow, Progress, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { atWork, type TallyKind, tallies } from '#web/features/setup/import-run';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const ASK_AGAIN_MS = 1000;
@@ -112,20 +111,20 @@ export function ImportRun({ id, onContinue }: Readonly<RunProps>) {
   const working = atWork(data?.status);
   return (
     <>
-      <StepHeading title={t(TITLE[status])} sub={t(SUB[status])} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t(TITLE[status])}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t(SUB[status])}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         {working ? <Progress value={0} waiting label={t(TITLE[status])} /> : null}
         <Tallies found={data} />
-      </StepBody>
-      <StepActions>
-        <CancelAction working={working} />
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          onPress={onContinue}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Actions>
+          <CancelAction working={working} />
+          <GuidedFlow.Next onPress={onContinue} />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

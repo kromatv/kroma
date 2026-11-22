@@ -26,6 +26,7 @@ mod test_support;
 #[cfg(test)]
 mod tests;
 mod titles;
+mod unlock;
 mod web;
 mod wire;
 mod xml;

@@ -11,7 +11,7 @@ use kroma_module_sdk::db::Pool;
 use kroma_module_sdk::primitives::random_token;
 
 pub(crate) use pending::{drop_pending, open_pending, pending, sweep_pending, Pending};
-pub(crate) use readers::{keep_readers, reader_token};
+pub(crate) use readers::{keep_readers, keep_unlocked, reader_token, unlocked};
 pub(crate) use sign_ins::{
     forget, keep_sign_in, server, servers, set_route, sign_in, Finished, ServerRow, SignIn,
 };
@@ -43,6 +43,13 @@ pub(crate) const MIGRATIONS: &str = "
         PRIMARY KEY (sign_in, id)
     );
     CREATE TABLE IF NOT EXISTS readers (
+        sign_in TEXT NOT NULL,
+        server  TEXT NOT NULL,
+        user    TEXT NOT NULL,
+        token   TEXT NOT NULL,
+        PRIMARY KEY (sign_in, server, user)
+    );
+    CREATE TABLE IF NOT EXISTS unlocked (
         sign_in TEXT NOT NULL,
         server  TEXT NOT NULL,
         user    TEXT NOT NULL,

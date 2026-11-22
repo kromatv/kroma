@@ -1,9 +1,8 @@
 import type { ImportServer } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Button, ChoiceList } from '@kromatv/ui/kit';
+import { ChoiceList, GuidedFlow } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { useImportSession } from '#web/features/setup/import-session.component';
-import { StepActions, StepBody, StepHeading } from '#web/features/setup/setup-shell.component';
 
 function ServerChoice({ server }: Readonly<{ server: ImportServer }>) {
   return (
@@ -44,19 +43,22 @@ export function ImportServers({ onBack }: Readonly<{ onBack: () => void }>) {
   const chosen = session.servers.find((server) => server.id === picked);
   return (
     <>
-      <StepHeading title={t('setup.importServersTitle')} sub={t('setup.importServersSub')} />
-      <StepBody>
+      <GuidedFlow.Header>
+        <GuidedFlow.Title>{t('setup.importServersTitle')}</GuidedFlow.Title>
+        <GuidedFlow.Subtitle>{t('setup.importServersSub')}</GuidedFlow.Subtitle>
+      </GuidedFlow.Header>
+      <GuidedFlow.Panel>
         <ServerList servers={session.servers} picked={picked} onPick={setPicked} />
-      </StepBody>
-      <StepActions onBack={onBack}>
-        <Button
-          size="md"
-          label={t('setup.continue')}
-          iconRight="arrow-right"
-          disabled={!chosen}
-          onPress={() => update({ server: chosen?.id ?? null })}
-        />
-      </StepActions>
+      </GuidedFlow.Panel>
+      <GuidedFlow.Footer>
+        <GuidedFlow.Previous onPress={onBack} />
+        <GuidedFlow.Actions>
+          <GuidedFlow.Next
+            disabled={!chosen}
+            onPress={() => update({ server: chosen?.id ?? null })}
+          />
+        </GuidedFlow.Actions>
+      </GuidedFlow.Footer>
     </>
   );
 }

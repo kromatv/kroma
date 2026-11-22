@@ -227,3 +227,17 @@ pub(crate) struct Play {
     pub(crate) title: String,
     pub(crate) played_at: i64,
 }
+
+/// Jellyfin locks no user's watch state, so every unlock is refused as
+/// `notLocked`, and the ask is never read.
+#[derive(Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "status", rename_all = "camelCase")]
+pub(crate) enum Unlocked {
+    Refused { reason: UnlockRefusal },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum UnlockRefusal {
+    NotLocked,
+}

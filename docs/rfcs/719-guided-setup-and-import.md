@@ -120,6 +120,7 @@ not have today, and it keeps every call inside a module's time limits.
 | `titles` | a library and a cursor | a page of titles: file paths, kind, title, year or season and episode, external ids |
 | `states` | a user, a library, a cursor, an optional "changed since" | a page of watch state: watched, position, last played, favourite |
 | `plays` | a cursor, an optional "changed since" | a page of plays: user, title, when, duration where the server kept one |
+| `unlock` | a sign-in, a server, a user and the PIN the owner typed | `unlocked`, or `refused` with a reason, a wrong PIN among them; the importer keeps what the PIN opened |
 | `forget` | a sign-in | nothing; the importer has deleted it |
 
 An importer ships no frontend. Its contribution lists the fields of its sign-in form, and
@@ -168,7 +169,7 @@ Tautulli and JellyPlex-Watched. Nobody's password is involved. The server's hist
 every account's plays with a time and no duration.
 
 A Plex Home user protected by a PIN is the exception: switching to that user asks for the
-PIN (ADMIN-150).
+PIN (ADMIN-150). The core passes the PIN to `unlock` once and keeps it nowhere.
 
 **Jellyfin.** An administrator's sign-in reads every user's state, in ticks of 100
 nanoseconds. A user's policy lists the libraries they may open. Jellyfin keeps no log of
