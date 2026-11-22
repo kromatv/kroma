@@ -12,6 +12,17 @@ use crate::boot::https::{
 };
 use crate::boot::seam::{SeamSocket, Served};
 
+fn rule_module_traffic(state: &state::SharedState, supervisor: &kroma_module_supervisor::Supervisor) {
+    supervisor.serve_gateways(
+        kroma_module_host::NetworkPolicyOf(state.network.clone()),
+        tokio::runtime::Handle::current(),
+        crate::boot::folders::folder_roots(state),
+    );
+    supervisor.rule_sockets_with(std::sync::Arc::new(crate::boot::sockets::NetworkSockets(
+        state.network.clone(),
+    )));
+}
+
 /// Serve until a shutdown signal, then stop the jobs and every module.
 /// Takes ownership of both: nothing outlives this call.
 pub async fn run(
@@ -58,11 +69,7 @@ pub async fn run(
         info!("KROMA listening on http://{addr}  (API under /api)");
     }
 
-    supervisor.serve_gateways(
-        kroma_module_host::NetworkPolicyOf(state.network.clone()),
-        tokio::runtime::Handle::current(),
-        crate::boot::folders::folder_roots(&state),
-    );
+    rule_module_traffic(&state, &supervisor);
     let seam = open_seam(&state, &supervisor, subscriptions);
     supervisor.spawn_enabled(&*state);
     supervisor.spawn_watchdog();

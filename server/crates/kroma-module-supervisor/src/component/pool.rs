@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 use kroma_module_wire::{Role, ROLE_ENV};
-use kroma_wasm_host::{Grant, Limits, ModuleComponent, ModuleInstance, Preopen, Request, Settings};
+use kroma_wasm_host::{Grant, Limits, ModuleComponent, ModuleInstance, Preopen, Request, Settings, SocketGrant};
 use tokio::sync::Semaphore;
 
 use super::{database, files, lan, media, outside, programs};
@@ -45,6 +45,7 @@ pub(crate) struct Pool {
     pub(super) programs: Arc<programs::Programs>,
     pub(super) lan: Option<Arc<lan::ModuleLan>>,
     pub(super) media: Option<Arc<media::ModuleMedia>>,
+    pub(super) sockets: Option<SocketGrant>,
     pub(super) files: Arc<files::ModuleFiles>,
     pub(super) idle: Mutex<Vec<Parked>>,
     pub(super) slots: Arc<Semaphore>,
@@ -114,6 +115,7 @@ impl Pool {
                 lan: self.lan.clone().map(|lan| lan as _),
                 files: Some(self.files.clone()),
                 media: self.media.clone().map(|media| media as _),
+                sockets: self.sockets.clone(),
             })
             .map_err(|error| error.to_string())?;
         Ok(Parked {

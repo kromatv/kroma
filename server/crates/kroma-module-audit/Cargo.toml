@@ -15,6 +15,7 @@ anyhow = { workspace = true }
 axum = { workspace = true }
 hex = { workspace = true }
 kroma-http = { workspace = true }
+kroma-egress = { workspace = true }
 kroma-module-host = { workspace = true, features = ["testing"] }
 kroma-module-manifest = { workspace = true }
 kroma-module-supervisor = { path = "../kroma-module-supervisor", default-features = false }

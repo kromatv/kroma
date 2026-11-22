@@ -7,7 +7,7 @@ use kroma_module_host::{NetworkAction, NetworkRoute};
 mod component_support;
 
 use component_support::wasm::guest_component;
-use component_support::{DECLARES, GUEST, Server, http_server};
+use component_support::{DECLARES, GUEST, RAW_UDP, Server, http_server, udp_echo};
 
 const NOTHING: &str = r#", "storage": {}"#;
 
@@ -118,4 +118,31 @@ fn a_download_to_a_link_a_module_planted_lands_nowhere_else() {
     assert_eq!(planted, "Some(Ok(()))");
     assert!(answered.text().starts_with("refused"), "{}", answered.text());
     assert!(!server.data_dir.join("modules/escaped").exists());
+}
+
+#[test]
+fn a_component_that_declares_udp_exchanges_a_datagram_filed_under_its_purpose() {
+    let server = Server::new("component-udp", NetworkAction::Direct);
+    let endpoint = server.started(GUEST, guest_component(), RAW_UDP);
+    let peer = udp_echo();
+
+    let answered = server.get(&endpoint, &format!("/udp?{peer}"));
+
+    assert_eq!(answered.text(), format!("pong from {peer}"));
+    let flows = server.network.flows.lock().unwrap();
+    assert_eq!(
+        (flows[0].purpose.as_str(), flows[0].method.as_str(), flows[0].port),
+        ("discovery", "UDP", peer.port())
+    );
+}
+
+#[test]
+fn a_component_whose_entries_name_no_protocol_holds_no_socket() {
+    let server = Server::new("component-no-socket", NetworkAction::Direct);
+    let endpoint = server.started(GUEST, guest_component(), DECLARES);
+    let peer = udp_echo();
+
+    let answered = server.get(&endpoint, &format!("/udp?{peer}"));
+
+    assert_eq!(answered.text(), "PermissionDenied");
 }

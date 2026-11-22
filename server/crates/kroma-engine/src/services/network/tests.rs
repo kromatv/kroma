@@ -7,6 +7,8 @@ mod journal;
 mod middleware;
 mod module_asks;
 mod offers;
+mod raw_sockets;
+mod socket_reach;
 mod ruling;
 
 fn network(tag: &str, vpn: Point) -> (Network, TempPool) {

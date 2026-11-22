@@ -2,6 +2,7 @@
 //! asks a [`Policy`] where it may go, and reports what crossed.
 
 mod gateway;
+pub mod lan;
 mod protocol;
 mod upstream;
 

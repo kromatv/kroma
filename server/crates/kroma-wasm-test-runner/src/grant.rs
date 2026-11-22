@@ -79,6 +79,7 @@ impl TestWorld {
             lan: None,
             files: None,
             media: None,
+            sockets: None,
         }
     }
 }

@@ -13,9 +13,10 @@ names the pull request behind each part, and the few that were dropped.
 **Every connection leaves through one door, named, decided and recorded.** The
 core and every module open their connections through that door. A connection the
 door did not decide does not happen. A module has no other route: it is a
-WebAssembly component with no socket of its own. The exception is a program a
-first-party module starts with the host's network (`net.host`), and its manifest
-says so.
+WebAssembly component, and the only sockets it holds are the
+[raw sockets](module-security.md#raw-sockets) its manifest asks for, each use
+decided at the same door. The exception is a program a first-party module starts
+with the host's network (`net.host`), and its manifest says so.
 
 Three questions are asked of every connection, in this order:
 
@@ -218,8 +219,8 @@ on macOS does not see it, and CI's Linux job does.
 
 `server/clippy.toml` does not reach the module workspaces: clippy looks for it
 in the folders above the crate, and `modules/` is not under `server/`. A module
-is held at run time instead: a component opens no socket, so every call it makes
-goes through the host.
+is held at run time instead: a component's sockets are the host's, so every call
+it makes goes through the host.
 
 ## Artwork comes from this server
 

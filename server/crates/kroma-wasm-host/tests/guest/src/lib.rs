@@ -1,10 +1,13 @@
 use std::hint::black_box;
-use std::net::{TcpStream, ToSocketAddrs};
+use std::net::{TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
+use std::time::{Duration, Instant};
 
 use exports::kroma::module::route::{Guest, Request, Response};
 use kroma::module::{media, net, settings};
 
 wit_bindgen::generate!({ path: "../../../kroma-module-runtime/wit", world: "module" });
+
+mod wasi_udp;
 
 struct Probes;
 
@@ -22,6 +25,21 @@ impl Guest for Probes {
             "/fs/read" => answer(read_file(&argument)),
             "/net/connect" => answer(connect(&argument)),
             "/net/resolve" => answer(resolve(&argument)),
+            "/tcp/listen" => answer(listen(&argument)),
+            "/udp/bind" => answer(bind_udp(&argument)),
+            "/udp/send" => answer(send_datagram(&argument)),
+            "/udp/exchange" => answer(exchange(&argument)),
+            "/udp/connected" => answer(connected(&argument)),
+            "/udp/options" => answer(wasi_udp::options()),
+            "/udp/misuse" => answer(wasi_udp::misuse(&argument)),
+            "/udp/stream-twice" => answer(wasi_udp::stream_twice()),
+            "/udp/wasi-flood" => answer(wasi_udp::flood(&argument)),
+            "/net/lookup-literal" => answer(wasi_udp::lookup_literal(&argument)),
+            "/udp/many" => answer(many_udp(&argument)),
+            "/udp/churn" => answer(churn_udp(&argument)),
+            "/udp/flood" => answer(flood(&argument)),
+            "/tcp/many" => answer(many_tcp(&argument)),
+            "/net/resolve-many" => answer(resolve_many(&argument)),
             "/env" => answer(std::env::var(&argument).map_err(|error| format!("{error:?}"))),
             "/memory" => answer(allocate(&argument)),
             "/spin" => spin(),
@@ -71,6 +89,111 @@ fn connect(address: &str) -> Result<String, String> {
 fn resolve(host_and_port: &str) -> Result<String, String> {
     let addresses = host_and_port.to_socket_addrs().map_err(kind)?;
     Ok(format!("{:?}", addresses.collect::<Vec<_>>()))
+}
+
+fn listen(address: &str) -> Result<String, String> {
+    let listener = TcpListener::bind(address).map_err(kind)?;
+    Ok(format!("listening on {:?}", listener.local_addr()))
+}
+
+fn bind_udp(address: &str) -> Result<String, String> {
+    let socket = UdpSocket::bind(address).map_err(kind)?;
+    Ok(format!("bound to {:?}", socket.local_addr()))
+}
+
+fn ephemeral() -> Result<UdpSocket, String> {
+    UdpSocket::bind("0.0.0.0:0").map_err(kind)
+}
+
+fn send_datagram(address: &str) -> Result<String, String> {
+    let sent = ephemeral()?.send_to(b"ping", address).map_err(kind)?;
+    Ok(format!("sent {sent} bytes"))
+}
+
+fn exchange(address: &str) -> Result<String, String> {
+    let socket = ephemeral()?;
+    socket.send_to(b"ping", address).map_err(kind)?;
+    socket.set_nonblocking(true).map_err(kind)?;
+    let deadline = Instant::now() + Duration::from_millis(1500);
+    let mut reply = [0u8; 64];
+    while Instant::now() < deadline {
+        match socket.recv_from(&mut reply) {
+            Ok((read, from)) => return Ok(format!("{} from {from}", String::from_utf8_lossy(&reply[..read]))),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => std::thread::sleep(Duration::from_millis(10)),
+            Err(error) => return Err(kind(error)),
+        }
+    }
+    Err("nothing came back".to_string())
+}
+
+fn connected(address: &str) -> Result<String, String> {
+    let socket = ephemeral()?;
+    socket.set_ttl(4).map_err(kind)?;
+    socket.connect(address).map_err(kind)?;
+    socket.send(b"ping").map_err(kind)?;
+    let mut reply = [0u8; 64];
+    let read = socket.recv(&mut reply).map_err(kind)?;
+    let ttl = socket.ttl().map_err(kind)?;
+    let peer = socket.peer_addr().map_err(kind)?;
+    let local = socket.local_addr().map_err(kind)?;
+    Ok(format!(
+        "{} from {peer} at hop limit {ttl} on port {}",
+        String::from_utf8_lossy(&reply[..read]),
+        u16::from(local.port() != 0)
+    ))
+}
+
+fn count(text: &str) -> Result<usize, String> {
+    text.parse().map_err(|_| format!("not a count: {text}"))
+}
+
+fn many_udp(limit: &str) -> Result<String, String> {
+    let mut held = Vec::new();
+    for _ in 0..count(limit)? {
+        match ephemeral() {
+            Ok(socket) => held.push(socket),
+            Err(error) => return Ok(format!("opened {} then {error}", held.len())),
+        }
+    }
+    Ok(format!("opened {}", held.len()))
+}
+
+fn churn_udp(limit: &str) -> Result<String, String> {
+    let wanted = count(limit)?;
+    for opened in 0..wanted {
+        if let Err(error) = ephemeral() {
+            return Ok(format!("opened {opened} then {error}"));
+        }
+    }
+    Ok(format!("opened {wanted}"))
+}
+
+fn flood(address: &str) -> Result<String, String> {
+    let socket = ephemeral()?;
+    socket.set_nonblocking(true).map_err(kind)?;
+    let sent = (0..3000)
+        .filter(|_| socket.send_to(&[0u8; 16], address).is_ok())
+        .count();
+    Ok(sent.to_string())
+}
+
+fn many_tcp(address: &str) -> Result<String, String> {
+    let mut held = Vec::new();
+    for _ in 0..100 {
+        match TcpStream::connect(address) {
+            Ok(stream) => held.push(stream),
+            Err(error) => return Ok(format!("opened {} then {:?}", held.len(), error.kind())),
+        }
+    }
+    Ok(format!("opened {}", held.len()))
+}
+
+fn resolve_many(argument: &str) -> Result<String, String> {
+    let (names, address) = argument.split_once(' ').ok_or("names and an address")?;
+    for n in 0..count(names)? {
+        (format!("n{n}.example.test"), 0).to_socket_addrs().map_err(kind)?;
+    }
+    send_datagram(address)
 }
 
 fn sleep(millis: &str) -> Result<String, String> {

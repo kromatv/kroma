@@ -272,14 +272,27 @@ Status: **AGREED**
 module becomes a WebAssembly component the server runs. None of it is released yet.
 
 **MOD-83** (AGREED) - A module runs inside the server and can call nothing but what the
-server provides for what its manifest declares. It has no socket, file, environment variable
-or process of its own, on any platform the server runs on.
+server provides for what its manifest declares. It has no file, environment variable or
+process of its own, and no socket but those MOD-110 allows, on any platform the server runs
+on.
 
 Work that needs the operating system, such as ffmpeg, inference, a VPN tunnel or LAN
 discovery, becomes a capability the server provides, never code inside the module.
 
 **MOD-84** (AGREED) - A module that ships as a native program is refused at install and never
 started, and its log says why.
+
+**MOD-110** (AGREED) - A module opens a socket of its own only for a transport (TCP or UDP)
+that one of its declared connections names, and only to the addresses and ports that
+declaration covers. On the local network that is the networks the server sits on, their
+broadcast addresses and the multicast that stays on the link. On the internet it is public
+addresses alone. Every other module opens none.
+
+**MOD-111** (AGREED) - A socket a module opens obeys the operator's network rules: one they
+block, or send through a VPN, is refused, since a module's own socket cannot be carried
+through one. The server's own listeners are never reachable this way. Each socket a module
+opens, and each it was refused, is in its network journal, under the purpose of the
+declaration that covers it.
 
 ## The compatibility promise
 

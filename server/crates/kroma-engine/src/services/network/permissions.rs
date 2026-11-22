@@ -48,7 +48,7 @@ impl Network {
     }
 }
 
-fn hosts_named(value: &Value) -> Vec<String> {
+pub(super) fn hosts_named(value: &Value) -> Vec<String> {
     match value {
         Value::String(url) => web_target(url)
             .map(|target| target.host)

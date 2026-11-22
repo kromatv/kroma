@@ -11,6 +11,7 @@ mod outside;
 mod pool;
 mod programs;
 mod roots;
+mod sockets;
 mod startup;
 
 use answer::answer;
@@ -174,10 +175,7 @@ impl Supervisor {
                 },
             ))
         });
-        let net = manifest.permissions.as_ref().map(|p| &p.net);
-        let lan = net
-            .filter(|net| !net.discovery.is_empty())
-            .map(|net| Arc::new(lan::ModuleLan::new(id, &net.discovery)));
+        let lan = lan::ModuleLan::declared(id, &manifest);
         let media_tools = manifest
             .permissions
             .as_ref()
@@ -238,6 +236,7 @@ impl Supervisor {
             programs,
             lan,
             media: media_tools,
+            sockets: sockets::socket_grant(&manifest, self.sockets.get().cloned(), wiring.network.0.clone()),
             idle: Mutex::new(Vec::new()),
             slots: Arc::new(Semaphore::new(1)),
             capacity: AtomicU32::new(1),

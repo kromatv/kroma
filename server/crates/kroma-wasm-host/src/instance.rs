@@ -27,6 +27,8 @@ pub struct Grant {
     pub lan: Option<Arc<dyn crate::Lan>>,
     pub files: Option<Arc<dyn crate::Files>>,
     pub media: Option<Arc<dyn crate::Media>>,
+    /// The raw sockets it may open. None, when absent.
+    pub sockets: Option<crate::SocketGrant>,
 }
 
 /// A call that traps or runs past a limit stops the instance: later calls

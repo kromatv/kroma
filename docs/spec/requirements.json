@@ -6107,7 +6107,7 @@
     "status": "SHIPPED",
     "text": "The server is forward-compatible with older modules. A module declares",
     "file": "docs/spec/modules/README.md",
-    "line": 288
+    "line": 301
   },
   {
     "id": "MOD-39",
@@ -6117,7 +6117,7 @@
     "status": "SHIPPED",
     "text": "A module installed today keeps working as the server is updated,",
     "file": "docs/spec/modules/README.md",
-    "line": 291
+    "line": 304
   },
   {
     "id": "MOD-40",
@@ -6127,7 +6127,7 @@
     "status": "SHIPPED",
     "text": "A *newer* module may raise its `minServer`, and the Store says so",
     "file": "docs/spec/modules/README.md",
-    "line": 294
+    "line": 307
   },
   {
     "id": "MOD-41",
@@ -6137,7 +6137,7 @@
     "status": "SHIPPED",
     "text": "A module **may** ship UI, and the position is deliberate: a module's",
     "file": "docs/spec/modules/README.md",
-    "line": 317
+    "line": 330
   },
   {
     "id": "MOD-42",
@@ -6147,7 +6147,7 @@
     "status": "AGREED",
     "text": "A module renders **its own admin surface**: configuration, status and",
     "file": "docs/spec/modules/README.md",
-    "line": 321
+    "line": 334
   },
   {
     "id": "MOD-43",
@@ -6157,7 +6157,7 @@
     "status": "SHIPPED",
     "text": "A module's UI is served through the same reverse proxy as its backend",
     "file": "docs/spec/modules/README.md",
-    "line": 324
+    "line": 337
   },
   {
     "id": "MOD-44",
@@ -6167,7 +6167,7 @@
     "status": "AGREED",
     "text": "**The compatibility gate is the early warning.** As the server moves",
     "file": "docs/spec/modules/README.md",
-    "line": 338
+    "line": 351
   },
   {
     "id": "MOD-45",
@@ -6177,7 +6177,7 @@
     "status": "AGREED",
     "text": "**Data is retained.** An incompatible or abandoned module is not",
     "file": "docs/spec/modules/README.md",
-    "line": 342
+    "line": 355
   },
   {
     "id": "MOD-46",
@@ -6187,7 +6187,7 @@
     "status": "AGREED",
     "text": "**The signal is honest.** The person is told the module has not kept",
     "file": "docs/spec/modules/README.md",
-    "line": 345
+    "line": 358
   },
   {
     "id": "MOD-47",
@@ -6197,7 +6197,7 @@
     "status": "SHIPPED",
     "text": "Every capability below could have been core and is a module instead,",
     "file": "docs/spec/modules/README.md",
-    "line": 365
+    "line": 378
   },
   {
     "id": "MOD-48",
@@ -6227,7 +6227,7 @@
     "status": "AGREED",
     "text": "A module that has disappeared from every configured registry is flagged",
     "file": "docs/spec/modules/README.md",
-    "line": 350
+    "line": 363
   },
   {
     "id": "MOD-51",
@@ -6567,7 +6567,7 @@
     "status": "AGREED",
     "text": "A module that ships as a native program is refused at install and never",
     "file": "docs/spec/modules/README.md",
-    "line": 281
+    "line": 282
   },
   {
     "id": "MOD-85",
@@ -6647,7 +6647,7 @@
     "status": "SHIPPED",
     "text": "A module is checked against the module interface the server implements,",
     "file": "docs/spec/modules/README.md",
-    "line": 298
+    "line": 311
   },
   {
     "id": "MOD-93",
@@ -6657,7 +6657,7 @@
     "status": "SHIPPED",
     "text": "`minServer` is the floor for a server capability the module needs. It is",
     "file": "docs/spec/modules/README.md",
-    "line": 303
+    "line": 316
   },
   {
     "id": "MOD-94",
@@ -6757,7 +6757,7 @@
     "status": "AGREED",
     "text": "Each importer is a module, one per kind of server, and a server that",
     "file": "docs/spec/modules/README.md",
-    "line": 401
+    "line": 414
   },
   {
     "id": "MOD-104",
@@ -6767,7 +6767,7 @@
     "status": "AGREED",
     "text": "The servers KROMA can import from are the importers the official",
     "file": "docs/spec/modules/README.md",
-    "line": 409
+    "line": 422
   },
   {
     "id": "MOD-105",
@@ -6777,7 +6777,7 @@
     "status": "AGREED",
     "text": "An importer reads the other server and describes what it found. The",
     "file": "docs/spec/modules/README.md",
-    "line": 412
+    "line": 425
   },
   {
     "id": "MOD-106",
@@ -6787,7 +6787,7 @@
     "status": "AGREED",
     "text": "The sign-in to the other server is the importer's to keep, among its",
     "file": "docs/spec/modules/README.md",
-    "line": 416
+    "line": 429
   },
   {
     "id": "MOD-107",
@@ -6797,7 +6797,7 @@
     "status": "SHIPPED",
     "text": "A module that reaches the core database is checked against the core",
     "file": "docs/spec/modules/README.md",
-    "line": 306
+    "line": 319
   },
   {
     "id": "MOD-108",
@@ -6817,7 +6817,27 @@
     "status": "AGREED",
     "text": "Before an importer installs, the owner sees what it will be able to do,",
     "file": "docs/spec/modules/README.md",
-    "line": 405
+    "line": 418
+  },
+  {
+    "id": "MOD-110",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 110,
+    "status": "AGREED",
+    "text": "A module opens a socket of its own only for a transport (TCP or UDP)",
+    "file": "docs/spec/modules/README.md",
+    "line": 285
+  },
+  {
+    "id": "MOD-111",
+    "domain": "MOD",
+    "space": "modules",
+    "number": 111,
+    "status": "AGREED",
+    "text": "A socket a module opens obeys the operator's network rules: one they",
+    "file": "docs/spec/modules/README.md",
+    "line": 291
   },
   {
     "id": "PLAY-1",

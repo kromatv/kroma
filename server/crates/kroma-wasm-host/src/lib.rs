@@ -1,6 +1,8 @@
 //! Runs a module as a WebAssembly component that reaches nothing but what
-//! [`WasmHost`] links into it: an empty WASI context, a [`NetPolicy`] that
-//! decides every fetch, and the settings its [`Grant`] declares.
+//! [`WasmHost`] links into it: a WASI context holding only its [`Grant`]'s
+//! folders and environment, a [`NetPolicy`] that decides every fetch, and raw
+//! sockets only where the grant holds a [`SocketGrant`], each use ruled by its
+//! [`Sockets`].
 
 mod bindings;
 mod capabilities;
@@ -14,13 +16,14 @@ mod log;
 mod media;
 mod policy;
 mod settings;
+mod sockets;
 mod state;
 
 pub use bindings::kroma::module::net::FetchRequest;
 pub use bindings::kroma::module::types::{Header, Request, Response};
 pub use capabilities::{
     AudioDecode, Command, Databases, Files, Lan, Media, Output, Preopen, Processes, Reply, SampleFormat, Service,
-    SqlConnection, SqlFailure, SqlOutcome, SqlValue,
+    SocketCall, SocketGrant, SocketProto, SocketUse, Sockets, SqlConnection, SqlFailure, SqlOutcome, SqlValue,
 };
 pub use command::CommandComponent;
 pub use error::HostError;
