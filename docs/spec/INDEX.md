@@ -3,7 +3,7 @@
 
 # Requirement index
 
-777 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+778 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
