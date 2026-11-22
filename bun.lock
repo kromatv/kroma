@@ -82,7 +82,7 @@
         "@kromatv/ui": "workspace:*",
         "@tanstack/react-router": "^1.170.45",
         "@tanstack/react-start": "^1.169.3",
-        "hono": "^4.13.13",
+        "hono": "^4.13.18",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "zod": "^4.6.7",
@@ -111,7 +111,7 @@
         "@kromatv/ui": "workspace:*",
         "@tanstack/react-router": "^1.170.45",
         "@tanstack/react-start": "^1.169.3",
-        "hono": "^4.13.13",
+        "hono": "^4.13.18",
         "react": "19.3.0",
         "react-dom": "19.3.0",
         "zod": "^4.6.7",
@@ -642,7 +642,7 @@
         "@kromatv/registry": "workspace:*",
         "citty": "0.2.2",
         "es-module-lexer": "^3.0.4",
-        "hono": "^4.13.13",
+        "hono": "^4.13.18",
         "magic-string": "^1.4.3",
         "smol-toml": "^1.9.1",
         "vite": "8.3.5",
@@ -823,7 +823,7 @@
       "dependencies": {
         "@hono/zod-validator": "^0.9.1",
         "@kromatv/relay-grant": "workspace:*",
-        "hono": "^4.13.13",
+        "hono": "^4.13.18",
         "zod": "^4.6.7",
       },
       "devDependencies": {
@@ -877,7 +877,7 @@
       "dependencies": {
         "@hono/zod-validator": "^0.9.1",
         "@kromatv/relay-grant": "workspace:*",
-        "hono": "^4.13.13",
+        "hono": "^4.13.18",
         "zod": "^4.6.7",
       },
       "devDependencies": {
@@ -1016,7 +1016,7 @@
       "name": "@kromatv/stats-relay",
       "version": "0.0.0",
       "dependencies": {
-        "hono": "^4.13.13",
+        "hono": "^4.13.18",
         "zod": "^4.6.7",
       },
       "devDependencies": {
@@ -2619,7 +2619,7 @@
 
     "blake3-wasm": ["blake3-wasm@2.1.5", "", {}, "sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g=="],
 
-    "body-parser": ["body-parser@1.20.8", "", { "dependencies": { "bytes": "~3.1.2", "content-type": "~1.0.5", "debug": "2.6.9", "depd": "2.0.0", "destroy": "~1.2.0", "http-errors": "~2.0.1", "iconv-lite": "~0.4.24", "on-finished": "~2.4.1", "qs": "~6.16.0", "raw-body": "~2.5.3", "type-is": "~1.6.18", "unpipe": "~1.0.0" } }, "sha512-JNcyFQ64OiijEkPzUBTCe+hyPXUD/3LEldGQ6iF5LR1w00mx9o7xtDWHXBY2iItjdCFGoilOLNQbH943ut7pHA=="],
+    "body-parser": ["body-parser@1.20.9", "", { "dependencies": { "bytes": "~3.1.2", "content-type": "~1.0.5", "debug": "2.6.9", "depd": "2.0.0", "destroy": "~1.2.0", "http-errors": "~2.0.1", "iconv-lite": "~0.4.24", "on-finished": "~2.4.1", "qs": "~6.16.0", "raw-body": "~2.5.3", "type-is": "~1.6.18", "unpipe": "~1.0.0" } }, "sha512-FISIQxV5u91Y9gvuFq3q/tA/qTqLJn3AhRcEvyozyhJTh5OBFFtv827AdHU7Rbyct4r+Ba1/99oFa1Y3yuFsdw=="],
 
     "boolbase": ["boolbase@1.0.0", "", {}, "sha512-JZOSA7Mo9sNGB8+UjSgzdLtokWAky1zbztM3WRLCbZ70/3cTANmQmOdR7y2g+J0e2WXywy1yS468tY+IruqEww=="],
 
@@ -3109,7 +3109,7 @@
 
     "hls.js": ["hls.js@1.7.3", "", {}, "sha512-MsPlx6yVW4Qv4C7mEVou4/gk/5cN2dVxOTnrNjPSmyH2f0Ln+/UkG10Ax1PE6OvrmTVPKgQYozTtBaPOuCzq7A=="],
 
-    "hono": ["hono@4.13.13", "", {}, "sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA=="],
+    "hono": ["hono@4.13.18", "", {}, "sha512-H9q/E1XizaWstJxUW881dmLxEj+t/TrGGnyxINkm4+sK0qUwsMtFdo2BWI9Vs3cIS19MU6b6iCijoUoEf4f3DA=="],
 
     "hookified": ["hookified@1.15.1", "", {}, "sha512-MvG/clsADq1GPM2KGo2nyfaWVyn9naPiXrqIe4jYjXNZQt238kWyOGrsyc/DmRAQ+Re6yeo6yX/yoNCG5KAEVg=="],
 
@@ -3479,7 +3479,7 @@
 
     "node-fetch": ["node-fetch@2.7.0", "", { "dependencies": { "whatwg-url": "^5.0.0" }, "peerDependencies": { "encoding": "^0.1.0" }, "optionalPeers": ["encoding"] }, "sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A=="],
 
-    "node-forge": ["node-forge@1.4.0", "", {}, "sha512-LarFH0+6VfriEhqMMcLX2F7SwSXeWwnEAJEsYm5QKWchiVYVvJyV9v7UDvUv+w5HO23ZpQTXDv/GxdDdMyOuoQ=="],
+    "node-forge": ["node-forge@1.4.3", "", {}, "sha512-P6wzfh6t70avmV8FrVEAd/36sOPJQ+hkaJVX1Laap9J/77m7M0eyozDvc8SwnDf4P7MP94gwbAAo0rg3YVXT+g=="],
 
     "node-int64": ["node-int64@0.4.0", "", {}, "sha512-O5lz91xSOeoXP6DulyHfllpq+Eg00MWitZIbtPfoSEvqIHdl5gfcY6hYzDWnj0qD5tz52PI08u9qUvSVeUBeHw=="],
 
