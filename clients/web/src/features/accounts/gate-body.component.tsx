@@ -10,11 +10,12 @@ import { useT } from '@kromatv/ui';
 import { useEffect, useState } from 'react';
 import { ForgotForm, RegisterForm } from '#web/features/accounts/auth-forms.component';
 import { LoginForm } from '#web/features/accounts/login-form.component';
-import { pickerTiles } from '#web/features/accounts/picker-tiles';
+import { kidsDoor, pickerTiles } from '#web/features/accounts/picker-tiles';
 import { PinEntry } from '#web/features/accounts/pin-entry.component';
-import { type ProfileChoice, ProfilePicker } from '#web/features/accounts/profile-picker.component';
+import { ProfilePicker } from '#web/features/accounts/profile-picker.component';
 import { useAuth } from '#web/shared/lib/auth';
-import { useKidsProfiles } from '#web/features/accounts/use-kids-profiles.hook';
+import { useProfilePick } from '#web/features/accounts/use-profile-pick.hook';
+import { dropKidsProfileAsk } from '#web/shared/lib/kids-ask';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
 import { useAuthFlows } from '#web/shared/lib/use-auth-flows.hook';
 import { passkeysSupported } from '#web/shared/lib/webauthn';
@@ -44,8 +45,7 @@ function entryMode(config: AuthConfig, accounts: readonly StoredSession[]): Mode
 
 export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
   const t = useT();
-  const { client, accounts, login, loginPasskey, register, activate, enter, forget } = useAuth();
-  const kids = useKidsProfiles(accounts);
+  const { client, accounts, login, loginPasskey, register, activate, forget } = useAuth();
   const [profiles, setProfiles] = useState<PublicUser[]>([]);
   const [mode, setMode] = useState<Mode>(() => entryMode(config, accounts));
   const [entryAccounts, setEntryAccounts] = useState(accounts);
@@ -56,6 +56,12 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
   const methods = config.signIn ?? DEFAULT_SIGN_IN_METHODS;
   const flows = useAuthFlows();
   const listsProfiles = config.hasAccounts && config.publicUserList;
+  const { kids, pick, addKids } = useProfilePick(setMode);
+  const backToPick = () => {
+    setError(null);
+    dropKidsProfileAsk();
+    setMode({ kind: 'pick' });
+  };
 
   if (entryAccounts !== accounts) {
     setEntryAccounts(accounts);
@@ -183,10 +189,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
         canUsePasskey={passkeysSupported()}
         methods={methods}
         onProvider={(provider) => void doProvider(provider)}
-        onBack={() => {
-          setError(null);
-          setMode({ kind: 'pick' });
-        }}
+        onBack={backToPick}
         onSubmit={doLogin}
         onPasskey={doPasskeyLogin}
         onForgot={(identifier) => {
@@ -219,10 +222,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
         busy={busy}
         error={error}
         canGoBack={profiles.length > 0}
-        onBack={() => {
-          setError(null);
-          setMode({ kind: 'pick' });
-        }}
+        onBack={backToPick}
         onSubmit={doRegister}
       />
     );
@@ -233,10 +233,7 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
     return (
       <PinEntry
         account={account}
-        onBack={() => {
-          setError(null);
-          setMode({ kind: 'pick' });
-        }}
+        onBack={backToPick}
         onSubmit={(pin) => activate(account, pin)}
         onExpired={() => {
           setError(null);
@@ -247,46 +244,17 @@ export function GateBody({ config }: Readonly<{ config: AuthConfig }>) {
   }
 
   const tiles = pickerTiles({ accounts, profiles, kids: kids.profiles });
-
-  const pick = async (tile: ProfileChoice) => {
-    setError(null);
-    if (tile.kids && !tile.remembered && kids.access) {
-      enter(await client.accounts.kids.open(kids.access, tile.id));
-      return;
-    }
-    const acc = tile.remembered;
-    if (!acc) {
-      setMode({
-        kind: 'login',
-        user: {
-          id: tile.id,
-          username: tile.username,
-          avatarUrl: tile.avatarUrl,
-          hasPin: false,
-        },
-      });
-      return;
-    }
-    // Probe with a no-PIN exchange to let the server decide what's needed,
-    // rather than trusting the cached `hasPin`.
-    const r = await activate(acc);
-    if (r.ok) {
-      return;
-    }
-    if (r.needsPin) {
-      setMode({ kind: 'pin', account: acc });
-      return;
-    }
-    // Dead token: send them to sign-in (pre-filled) instead of a dead-end PIN
-    // prompt.
-    setMode({ kind: 'login', user: acc.user, expired: true });
-  };
+  const door = kidsDoor(accounts);
 
   return (
     <ProfilePicker
       tiles={tiles}
       error={error}
-      onPick={(tile) => void pick(tile)}
+      onPick={(tile) => {
+        setError(null);
+        void pick(tile);
+      }}
+      onAddKids={door ? () => void addKids(door) : undefined}
       onForget={forget}
       onAdd={() => {
         setError(null);

@@ -5,6 +5,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { LoginGate } from '#web/features/accounts/auth-gate.component';
 import { useAuth } from '#web/shared/lib/auth';
+import { kidsProfileAsked } from '#web/shared/lib/kids-ask';
 import { safeRedirect } from '#web/shared/lib/safe-redirect';
 
 export const Route = createFileRoute('/login')({
@@ -41,7 +42,8 @@ function LoginPage() {
       return;
     }
     if (user) {
-      void navigate({ to: redirect ?? '/', replace: true });
+      const next = kidsProfileAsked(user.id) ? '/admin/users' : (redirect ?? '/');
+      void navigate({ to: next, replace: true });
     }
   }, [armed, ready, user, redirect, navigate]);
 

@@ -432,5 +432,9 @@
   "admin.kidsBand7": "5 à 8 ans",
   "admin.kidsBand10": "9 à 12 ans",
   "admin.addKidsConfirm": "Créer le profil",
+  "admin.kidsPinOfferTitle": "Verrouiller votre profil avec un code PIN ?",
+  "admin.kidsPinOfferBody": "Pour quitter Kids, on passe par le choix du profil. Sans code PIN, votre profil s'y ouvre en un seul geste.",
+  "admin.kidsPinOfferSet": "Définir un code PIN",
+  "admin.kidsPinOfferSkip": "Plus tard",
   "admin.kidsFailed": "Impossible de créer le profil Kids"
 }

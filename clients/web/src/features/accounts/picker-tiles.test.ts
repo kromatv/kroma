@@ -1,11 +1,11 @@
 import type { KidsProfile, PublicUser, StoredSession } from '@kromatv/client/accounts';
 import { UserId } from '@kromatv/client/accounts';
 import { describe, expect, it } from 'vitest';
-import { pickerTiles } from './picker-tiles';
+import { kidsDoor, pickerTiles } from './picker-tiles';
 
 const id = (raw: string) => UserId.parse(raw);
 
-function remembered(raw: string): StoredSession {
+function remembered(raw: string, permissions: string[] = []): StoredSession {
   return {
     accessToken: `access-${raw}`,
     user: {
@@ -14,7 +14,7 @@ function remembered(raw: string): StoredSession {
       username: raw,
       createdAt: '',
       hasPin: raw === 'ana',
-      permissions: [],
+      permissions,
       libraries: null,
     },
   };
@@ -54,5 +54,21 @@ describe('the picker tiles', () => {
       ['ana', false, true],
       ['leo', true, true],
     ]);
+  });
+});
+
+describe('the picker’s door to a new Kids profile', () => {
+  it('opens through the first member here who manages users', () => {
+    const accounts = [
+      remembered('ana'),
+      remembered('max', ['users.manage']),
+      remembered('zoe', ['users.manage']),
+    ];
+
+    expect(kidsDoor(accounts)?.user.id).toBe(id('max'));
+  });
+
+  it('stays shut while no admin is signed in on the device', () => {
+    expect(kidsDoor([remembered('ana'), remembered('ben', ['playback'])])).toBeNull();
   });
 });

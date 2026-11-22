@@ -1,6 +1,8 @@
-//! Kids profiles as an admin makes them (ACCT-122 to ACCT-124), and the one
-//! change the member editor may never make to one: a management right
-//! (ACCT-127).
+//! Kids profiles as an admin makes them (ACCT-122 to ACCT-124), the notice
+//! the other adults without a PIN get (ACCT-134), and the one change the
+//! member editor may never make to one: a right beyond watching (ACCT-127).
+
+use std::collections::HashSet;
 
 use axum::Json;
 use axum::extract::{Path as AxPath, State};
@@ -13,10 +15,14 @@ use super::restrictions::MemberCall;
 use super::{UpdateUserBody, library_scope, update_user};
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
-use crate::api::util::query;
+use crate::api::util::{blocking, query};
 use crate::db::{self, NewKidsProfile};
 use crate::infra::events::ServerEvent;
-use crate::model::{MaturityLevel, Permission};
+use crate::model::{
+    ActionKind, ActionSpec, ActionStyle, MaturityLevel, NotificationCategory, NotificationEvent,
+    NotificationSpec, Permission, User,
+};
+use crate::services::notify;
 use crate::state::SharedState;
 
 const MAX_NAME_CHARS: usize = 64;
@@ -44,14 +50,7 @@ pub async fn create(
     let (username, level) = valid_draft(&body, loc)?;
     let libraries = library_scope(body.libraries)
         .ok_or_else(|| lerr(loc, StatusCode::BAD_REQUEST, "admin.tooManyLibraries"))?;
-    let taken = username.clone();
-    if query(&state.db, move |pool| {
-        db::username_taken(&pool, &taken, None)
-    })
-    .await?
-    {
-        return Err(lerr(loc, StatusCode::CONFLICT, "auth.usernameTaken"));
-    }
+    name_is_free(&state, &username, loc).await?;
     let user = query(&state.db, move |pool| {
         let new = NewKidsProfile {
             username: &username,
@@ -62,7 +61,59 @@ pub async fn create(
     })
     .await?;
     state.events.publish(ServerEvent::LibraryUpdated);
+    tell_adults_without_a_pin(&state, &admin.id).await;
     Ok(Json(json!({ "user": user })).into_response())
+}
+
+async fn name_is_free(state: &SharedState, username: &str, loc: &str) -> Result<(), Response> {
+    let taken = username.to_string();
+    if query(&state.db, move |pool| db::username_taken(&pool, &taken, None)).await? {
+        return Err(lerr(loc, StatusCode::CONFLICT, "auth.usernameTaken"));
+    }
+    Ok(())
+}
+
+const SECURITY: &str = "/account?section=security&pin=set";
+
+async fn tell_adults_without_a_pin(state: &SharedState, admin_id: &str) {
+    let engine = state.clone();
+    let admin_id = admin_id.to_string();
+    let _ = blocking(move || {
+        let adults = adults_without_a_pin(&engine, &admin_id)?;
+        Ok(notify::emit_to(&engine, &adults, &pin_notice()))
+    })
+    .await;
+}
+
+fn adults_without_a_pin(state: &SharedState, admin_id: &str) -> anyhow::Result<Vec<User>> {
+    let kids: HashSet<String> = db::kids_profiles(&state.db)?
+        .into_iter()
+        .map(|kid| kid.id)
+        .collect();
+    let everyone = db::notifications::recipients(&*state.db.get()?)?;
+    Ok(everyone
+        .into_iter()
+        .filter(|user| user.id != admin_id && !user.has_pin && !kids.contains(&user.id))
+        .collect())
+}
+
+fn pin_notice() -> NotificationSpec {
+    NotificationSpec::new(
+        NotificationEvent::Custom,
+        "notifications.kids.created.title",
+        "notifications.kids.created.body",
+    )
+    .in_category(NotificationCategory::System)
+    .dedupe_key("kids.pin-offer")
+    .link(SECURITY)
+    .action(ActionSpec {
+        id: "set-pin".into(),
+        label_key: "notifications.action.setPin".into(),
+        kind: ActionKind::Link,
+        href: SECURITY.into(),
+        method: None,
+        style: ActionStyle::Primary,
+    })
 }
 
 fn valid_draft(body: &NewKidsBody, loc: &str) -> Result<(String, MaturityLevel), Response> {

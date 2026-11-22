@@ -137,11 +137,11 @@
 - **ACCT-128** (SHIPPED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-130** (SHIPPED) - A Kids profile whose ceiling an admin raises above 10+ loses the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-131** (AGREED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-132** (AGREED) - The picker draws a lock on every profile that asks for a PIN, on <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-133** (AGREED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-134** (AGREED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-135** (AGREED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-131** (SHIPPED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-132** (SHIPPED) - The picker draws a lock on every profile that asks for a PIN, on <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-133** (SHIPPED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-134** (SHIPPED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-135** (SHIPPED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
