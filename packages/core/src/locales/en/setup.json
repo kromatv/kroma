@@ -121,8 +121,6 @@
   "setup.peopleDelete": "Delete the invitation",
   "setup.peopleInvite": "Create an invitation link",
   "setup.peopleMail": "Send by e-mail",
-  "setup.peopleMailBody": "Hello,\n\nHere is an invitation to my KROMA server:\n{link}\n\nThe link works once, for 7 days.",
-  "setup.peopleMailSubject": "An invitation to my KROMA server",
   "setup.peopleMore": "More actions",
   "setup.peopleRightsDetail": "You change the rights of an invitation from its menu. A link works once, for 7 days.",
   "setup.peopleRightsEdit": "Change the rights",

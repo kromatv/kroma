@@ -2,6 +2,8 @@ import type { CrewMember, ItemId, MediaItem } from '@kromatv/client/media';
 import { canDirectPlay, posterColors } from '@kromatv/core';
 import { useT, useThemeAudio } from '@kromatv/ui';
 import {
+  AgeRating,
+  type AgeRatingValue,
   BackButton,
   Badge,
   Box,
@@ -82,6 +84,7 @@ export interface DetailHeroProps {
   overline: string;
   title: string;
   rating?: number | null;
+  ageRating?: AgeRatingValue | null;
   meta: string;
   badges: QualityTone[];
   audioFlag?: string | null;
@@ -113,6 +116,7 @@ export function DetailHero({
   overline,
   title,
   rating,
+  ageRating,
   meta,
   badges,
   audioFlag,
@@ -211,6 +215,7 @@ export function DetailHero({
                   </Text>
                 </>
               ) : null}
+              <AgeRating rating={ageRating} />
               <Text variant="meta" color="white/72">
                 {meta}
               </Text>

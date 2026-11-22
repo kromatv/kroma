@@ -29,6 +29,7 @@ pub enum EmailKind {
     Reset,
     Verify,
     Activate,
+    Invite,
 }
 
 pub struct OutboundEmail {

@@ -228,6 +228,10 @@ export const ResetCreated = z.object({
 });
 export type ResetCreated = z.infer<typeof ResetCreated>;
 
+/** `POST /api/invites/:token/mail`: how one invitation left for one address. */
+export const InviteMailed = z.object({ delivered: Delivery });
+export type InviteMailed = z.infer<typeof InviteMailed>;
+
 /** `POST /api/admin/users/:id/email-verification` the verification link. No
  * code: reaching the mailbox is itself the proof. */
 export const VerificationCreated = ResetCreated.omit({ code: true });

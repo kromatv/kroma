@@ -3,7 +3,7 @@
 
 # Requirement index
 
-776 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+779 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -114,7 +114,7 @@
 - **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-106** (AGREED) - A title that country never rated borrows another country's label, <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-107** (SHIPPED) - A title no country rated shows no badge. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-108** (AGREED) - The badge is on a title's detail page, on the home's hero and on <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-108** (SHIPPED) - The badge is on a title's detail page, on the home's hero and on <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-109** (AGREED) - Every profile carries one of the six levels. 18+ is the default, and <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-110** (AGREED) - A ceiling compares ages, never labels. A title passes when the age <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-111** (AGREED) - Under a ceiling, a title with no rating does not pass. A title the <sub>[kids.md](accounts/kids.md)</sub>
@@ -324,13 +324,16 @@
 - **ADMIN-173** (SHIPPED) - The words that offer a module are the module's own, in each language <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-174** (AGREED) - A module the server already holds appears on the modules step as <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-175** (AGREED) - An invitation says what its account may do. A new one lets its <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-176** (AGREED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-176** (SHIPPED) - The owner hands an invitation over from the step: they copy its link, <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-177** (AGREED) - The owner deletes an invitation on the people step, and its link <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-178** (AGREED) - The owner opens any step they have been to, from any other step, in <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-179** (AGREED) - On the media step the owner removes a source they added. Removing it <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-182** (AGREED) - A kept library whose folder holds a folder of a KROMA source is not <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-183** (SHIPPED) - The server sends an invitation to the one address the owner types, <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-184** (SHIPPED) - The owner learns how the message left, or why it did not and what <sub>[README.md](admin/README.md)</sub>
+- **ADMIN-185** (SHIPPED) - Under Users, every invitation nobody has redeemed offers to send it, <sub>[README.md](admin/README.md)</sub>
 - **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
 

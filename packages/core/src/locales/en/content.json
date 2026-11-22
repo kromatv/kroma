@@ -2,6 +2,8 @@
   "content.acclaimed": "Critically acclaimed",
   "content.addToList": "Add to my list",
   "content.addedToList": "Added to my list.",
+  "content.ageRating": "Rated {label}",
+  "content.ageRatingBorrowed": "Rated {label} ({country})",
   "content.aiSuggestions": "AI suggestions",
   "content.aiSuggestionsLoading": "Preparing AI suggestions…",
   "content.audioHighDynamics": "High dynamics",

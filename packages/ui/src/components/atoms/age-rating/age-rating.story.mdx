@@ -1,0 +1,35 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { AgeRating, ageRatingVariants } from './age-rating.component';
+
+export const story = defineStory({
+  group: 'Feedback',
+  variants: ageRatingVariants,
+  matrix: true,
+  component: AgeRating,
+  args: { rating: { label: '12', country: 'FR', borrowed: false } },
+});
+
+A title's age rating, as the server picked it for the reader: their country's label, or another country's followed by that country when theirs never rated the title. A title nobody rated draws nothing.
+
+```tsx
+<AgeRating rating={item.metadata?.ageRating} />
+```
+
+<Scene name="Own and borrowed">
+  {story.take((props) => (
+    <Box row wrap gap={12} align="center">
+      <AgeRating {...props} rating={{ label: '12', country: 'FR', borrowed: false }} />
+      <AgeRating {...props} rating={{ label: 'TV-MA', country: 'US', borrowed: true }} />
+      <AgeRating {...props} rating={{ label: 'FSK 16', country: 'DE', borrowed: true }} />
+    </Box>
+  ))}
+</Scene>
+
+<Do>
+- Pass `metadata.ageRating` as it came. The component draws nothing when it is missing.
+</Do>
+
+<Dont>
+- Fall back to the bare `certification`: it carries no country, so a borrowed label would pass for the reader's own.
+</Dont>
