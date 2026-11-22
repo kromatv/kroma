@@ -3,10 +3,12 @@ import type { NewKidsProfile } from '@kromatv/client/admin';
 import type { LibraryId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import { ChoiceList, Dialog, Field, Text } from '@kromatv/ui/kit';
+import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/hooks';
 import { LibraryVisibility } from '#web/features/admin/library-visibility.component';
+import { KidsPinOffer } from '#web/features/admin/kids-pin-offer.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 type KidsLevel = NewKidsProfile['level'];
@@ -15,37 +17,78 @@ const KIDS_LEVELS: readonly KidsLevel[] = [0, 7, 10];
 
 /** Create a Kids profile (ACCT-122 to ACCT-124): a name, one of the kids levels
  * with none picked in advance, and the libraries it sees. It has no email and
- * no password. Resolves `true` once created, `false` when dismissed. */
+ * no password. An admin with no profile PIN is then offered one, and taken to
+ * it on their account page (ACCT-133).
+ * Resolves `true` once created, `false` when dismissed. */
 export const KidsModal = createCallable<void, boolean>(({ call }) => {
-  const t = useT();
-  const [name, setName] = useState('');
-  const [level, setLevel] = useState<KidsLevel | null>(null);
-  const [granted, setGranted] = useState<readonly LibraryId[] | null>(null);
-  const { busy, error, create } = useCreateKids(() => call.end(true));
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [offering, setOffering] = useState(false);
+  const done = () => call.end(true);
+  if (offering) {
+    const toPin = () => {
+      done();
+      void navigate({ to: '/account', search: { section: 'security', pin: 'set' } });
+    };
+    return <KidsPinOffer onSkip={done} onAccept={toPin} />;
+  }
   return (
-    <Dialog.Root open title={t('admin.addKids')} onClose={() => call.end(false)} width="lg">
+    <KidsDraft
+      onCancel={() => call.end(false)}
+      onCreated={() => (user?.hasPin ? done() : setOffering(true))}
+    />
+  );
+});
+
+function KidsDraft({
+  onCancel,
+  onCreated,
+}: Readonly<{ onCancel: () => void; onCreated: () => void }>) {
+  const t = useT();
+  const draft = useKidsDraft(onCreated);
+  return (
+    <Dialog.Root open title={t('admin.addKids')} onClose={onCancel} width="lg">
       <Text variant="meta" color="textDim">
         {t('admin.kidsIntro')}
       </Text>
       <Field.Root label={t('admin.name')}>
-        <Field.Input icon="user" value={name} onValueChange={setName} />
+        <Field.Input icon="user" value={draft.name} onValueChange={draft.setName} />
       </Field.Root>
-      <KidsLevelChoice level={level} onChange={setLevel} />
-      <LibraryVisibility granted={granted} onChange={setGranted} />
-      {error ? (
+      <KidsLevelChoice level={draft.level} onChange={draft.setLevel} />
+      <LibraryVisibility granted={draft.granted} onChange={draft.setGranted} />
+      {draft.error ? (
         <Text variant="meta" color="danger">
-          {error}
+          {draft.error}
         </Text>
       ) : null}
       <KidsFooter
-        busy={busy}
-        ready={level !== null && name.trim() !== ''}
-        onCancel={() => call.end(false)}
-        onCreate={() => void create({ name, level, granted })}
+        busy={draft.busy}
+        ready={draft.ready}
+        onCancel={onCancel}
+        onCreate={draft.submit}
       />
     </Dialog.Root>
   );
-});
+}
+
+function useKidsDraft(onCreated: () => void) {
+  const [name, setName] = useState('');
+  const [level, setLevel] = useState<KidsLevel | null>(null);
+  const [granted, setGranted] = useState<readonly LibraryId[] | null>(null);
+  const { busy, error, create } = useCreateKids(onCreated);
+  return {
+    name,
+    setName,
+    level,
+    setLevel,
+    granted,
+    setGranted,
+    busy,
+    error,
+    ready: level !== null && name.trim() !== '',
+    submit: () => void create({ name, level, granted }),
+  };
+}
 
 function KidsFooter({
   busy,

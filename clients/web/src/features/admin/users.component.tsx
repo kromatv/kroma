@@ -24,7 +24,9 @@ import { InviteModal } from '#web/features/admin/users-invite-modal.component';
 import { JoinRequests } from '#web/features/admin/users-join-requests.component';
 import { PendingInvite } from '#web/features/admin/users-pending-invite.component';
 import { apiBase } from '#web/shared/lib/api';
+import { useEffect } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
+import { takeKidsProfileAsk } from '#web/shared/lib/kids-ask';
 
 const ROLES = ['admin.roleOwner', 'admin.roleMember', 'admin.roleRestricted'] as const;
 type Role = (typeof ROLES)[number];
@@ -70,6 +72,7 @@ function UsersPageInner() {
       await reload();
     }
   };
+  useAskedKidsForm(openKids);
   const openEdit = async (user: AdminUser) => {
     if (await EditUserModal.call({ user })) {
       await reload();
@@ -212,4 +215,14 @@ function UsersPageInner() {
       ) : null}
     </>
   );
+}
+
+function useAskedKidsForm(open: () => Promise<void>) {
+  const { user } = useAuth();
+  const userId = user?.id;
+  useEffect(() => {
+    if (userId && takeKidsProfileAsk(userId)) {
+      void open();
+    }
+  }, [userId, open]);
 }
