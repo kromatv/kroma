@@ -4,11 +4,15 @@ import { formatClock } from '@kromatv/ui/intl';
 import { Logo } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
 
-/** The KROMA brand lockup: the wordmark with the chromatic-wheel O. `size` keeps
- * its historical meaning (rough lockup height) and maps onto the shared Logo's
- * lockup height (= wheel diameter). */
-export function KromaMark({ size = 30 }: Readonly<{ size?: number }>) {
-  return <Logo size={Math.round(size * 0.82)} />;
+/** The KROMA brand lockup: the wordmark with the chromatic-wheel O, or the
+ * KROMA Kids lockup with `kids`. `size` keeps its historical meaning (rough
+ * lockup height) and maps onto the shared Logo's lockup height (= wheel
+ * diameter). */
+export function KromaMark({
+  size = 30,
+  kids = false,
+}: Readonly<{ size?: number; kids?: boolean }>) {
+  return <Logo size={Math.round(size * 0.82)} kids={kids} />;
 }
 
 /** The lockup's size on the gate: the sign-in screens are read across a room

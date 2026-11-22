@@ -49,10 +49,14 @@ function screensFor(access: Exclude<Access, 'both'>): RouteName[] {
 
 export const AUTH_SCREENS: readonly RouteName[] = screensFor('signedOut');
 export const APP_SCREENS: readonly RouteName[] = screensFor('signedIn');
+
+const KEPT_FROM_KIDS: ReadonlySet<RouteName> = new Set(['discover', 'releases', 'addKids']);
+const KIDS_SCREENS: readonly RouteName[] = APP_SCREENS.filter((name) => !KEPT_FROM_KIDS.has(name));
 export const ALL_SCREENS: readonly RouteName[] = Object.keys(ACCESS) as RouteName[];
 
 export interface GuardState {
   signedIn: boolean;
+  kids: boolean;
 }
 
 /** The screens a rule may redirect *to*: both are param-less roots. */
@@ -60,6 +64,7 @@ export type GuardTarget = 'profiles' | 'home';
 
 export const GUARD: readonly RedirectRule<GuardState, RouteName, GuardTarget>[] = [
   { when: (s) => !s.signedIn, to: 'profiles', allow: AUTH_SCREENS },
+  { when: (s) => s.kids, to: 'home', allow: KIDS_SCREENS },
   { when: () => true, to: 'home', allow: APP_SCREENS },
 ];
 

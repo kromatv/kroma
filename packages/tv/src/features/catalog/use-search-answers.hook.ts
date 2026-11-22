@@ -1,6 +1,8 @@
+import type { KromaClient } from '@kromatv/client';
 import type { DiscoverEntry } from '@kromatv/client/discovery';
 import type { MediaCard, PersonHit, SearchHit } from '@kromatv/client/media';
 import { useEffect, useRef, useState } from 'react';
+import { useAuthMaybe } from '#tv/app/providers/auth';
 import { useClient } from '#tv/app/router';
 
 const DEBOUNCE_MS = 250;
@@ -26,6 +28,7 @@ export function useSearchAnswers(
   offline: (query: string) => LibraryHit[],
 ): SearchAnswers {
   const client = useClient();
+  const kids = useAuthMaybe()?.user?.kids === true;
   const [answers, setAnswers] = useState<SearchAnswers>(NOTHING);
   const seq = useRef(0);
   const empty = !typed.trim();
@@ -53,10 +56,7 @@ export function useSearchAnswers(
           }),
           () => ({ library: offline(query), people: [] }),
         ),
-        client.discovery.search(query).then(
-          (answer) => answer.results,
-          () => [] as DiscoverEntry[],
-        ),
+        askProvider(client, { query, kids }),
       ]).then(([found, discover]) => {
         if (mine === seq.current) {
           setAnswers({ query, ...found, discover });
@@ -64,7 +64,22 @@ export function useSearchAnswers(
       });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [typed, client, offline]);
+  }, [typed, client, offline, kids]);
 
   return answers;
+}
+
+const NO_ENTRIES: DiscoverEntry[] = [];
+
+function askProvider(
+  client: KromaClient,
+  { query, kids }: Readonly<{ query: string; kids: boolean }>,
+): Promise<DiscoverEntry[]> {
+  if (kids) {
+    return Promise.resolve(NO_ENTRIES);
+  }
+  return client.discovery.search(query).then(
+    (answer) => answer.results,
+    () => NO_ENTRIES,
+  );
 }

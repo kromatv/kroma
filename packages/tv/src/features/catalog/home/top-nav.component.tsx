@@ -62,7 +62,7 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
         <FocusSlot>
           <Box row align="center" gap={16}>
             {nav.canGoBack ? <BackButton onPress={nav.back} label={t('common.back')} /> : null}
-            <KromaMark size={28} />
+            <KromaMark size={28} kids={user?.kids === true} />
           </Box>
         </FocusSlot>
         <NavPill.Root size="tv" label={t('nav.menu')}>

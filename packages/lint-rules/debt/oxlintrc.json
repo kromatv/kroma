@@ -3245,7 +3245,6 @@
         "packages/tv/src/features/catalog/screen-style.test.ts",
         "packages/tv/src/features/catalog/title-menu.test.tsx",
         "packages/tv/src/features/catalog/tv-genres.test.tsx",
-        "packages/tv/src/features/catalog/use-search-answers.hook.ts",
         "packages/tv/src/features/catalog/use-search-answers.test.tsx",
         "packages/tv/src/features/playback/browser/backend.test.ts",
         "packages/tv/src/features/playback/browser/surface-pip.test.ts",

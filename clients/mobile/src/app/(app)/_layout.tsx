@@ -4,6 +4,7 @@ import type { ComponentProps } from 'react';
 import { CompatGate } from '#mobile/components/compat-gate.component';
 import { lockUpright, PLAYER_ORIENTATION, UPRIGHT } from '#mobile/lib/orientation';
 import { useSession } from '#mobile/lib/session';
+import { useKidsRoutes } from '#mobile/lib/use-kids-routes.hook';
 
 const PLAYER_SCREEN = {
   dangerouslySingular: true,
@@ -29,6 +30,7 @@ export default function AppLayout() {
   useThemeVersion();
 
   const { status, serverUrl } = useSession();
+  useKidsRoutes();
   if (status === 'booting') {
     return null;
   }

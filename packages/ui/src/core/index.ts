@@ -44,7 +44,8 @@ export {
   themedCache,
   themeVersion,
 } from './theme';
-export { KROMA_KIDS, KROMA_KIDS_LIGHT } from './theme-kids';
+export { KROMA_KIDS, KROMA_KIDS_LIGHT, kidsTheme } from './theme-kids';
+export { useKidsLook } from './use-kids-look.hook';
 export type { ThemeMode } from './theme-mode';
 export { applyMode, readMode, resolveMode, writeMode } from './theme-mode';
 export * from './tokens';

@@ -6,6 +6,7 @@ import {
   OverlayHost,
   PerfProvider,
   Toaster,
+  useKidsLook,
   useStyleScope,
 } from '@kromatv/ui/kit';
 
@@ -245,6 +246,7 @@ function TvRouterGuard() {
   const { deepLink, movies, shows, clearDeepLink } = useConnection();
   const { user, ready } = useAuth();
   useOwnerRoad();
+  useKidsLook(user);
 
   useEffect(() => {
     // Routing on a session that has not been resumed yet would send the TV home
@@ -252,7 +254,8 @@ function TvRouterGuard() {
     if (!ready) {
       return;
     }
-    const target = resolveRedirect(GUARD, { signedIn: Boolean(user) }, nav.route.name);
+    const session = { signedIn: Boolean(user), kids: user?.kids === true };
+    const target = resolveRedirect(GUARD, session, nav.route.name);
     if (target) {
       nav.replace(target);
     }

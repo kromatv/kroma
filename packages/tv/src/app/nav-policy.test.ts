@@ -12,8 +12,9 @@ import {
   ownerMove,
 } from './nav-policy';
 
-const signedIn = { signedIn: true };
-const signedOut = { signedIn: false };
+const signedIn = { signedIn: true, kids: false };
+const signedOut = { signedIn: false, kids: false };
+const kidsSession = { signedIn: true, kids: true };
 
 describe('navigation policy', () => {
   it('lets a signed-in viewer stay on every screen of the app', () => {
@@ -51,6 +52,19 @@ describe('navigation policy', () => {
     // Classifying a new route is compiler-enforced; this checks the derivation.
     const reachable = new Set([...AUTH_SCREENS, ...APP_SCREENS]);
     expect([...ALL_SCREENS].sort()).toEqual([...reachable].sort());
+  });
+});
+
+describe('a Kids session', () => {
+  it('is sent home from discovery and from what is new on the server', () => {
+    expect(resolveRedirect(GUARD, kidsSession, 'discover')).toBe('home');
+    expect(resolveRedirect(GUARD, kidsSession, 'releases')).toBe('home');
+  });
+
+  it('stays on the catalogue, search, the player and its settings', () => {
+    for (const screen of ['home', 'search', 'movie', 'show', 'player', 'profileMenu'] as const) {
+      expect(resolveRedirect(GUARD, kidsSession, screen)).toBeNull();
+    }
   });
 });
 

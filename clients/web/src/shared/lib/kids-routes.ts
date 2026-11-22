@@ -1,3 +1,5 @@
+import { routeUnder } from '@kromatv/core';
+
 const KEPT = [
   '/account',
   '/connect',
@@ -11,5 +13,5 @@ const KEPT = [
 /** Whether `pathname` is a page a Kids session never opens: account settings,
  *  pairing a device, discovery and requests (ACCT-137, ACCT-138). */
 export function keptFromKids(pathname: string): boolean {
-  return KEPT.some((root) => pathname === root || pathname.startsWith(`${root}/`));
+  return routeUnder(pathname, KEPT);
 }

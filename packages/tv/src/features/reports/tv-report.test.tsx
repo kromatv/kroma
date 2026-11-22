@@ -30,7 +30,7 @@ afterEach(() => {
 function Guard({ signedIn }: Readonly<{ signedIn: boolean }>) {
   const nav = useNav();
   useEffect(() => {
-    const target = resolveRedirect(GUARD, { signedIn }, nav.route.name);
+    const target = resolveRedirect(GUARD, { signedIn, kids: false }, nav.route.name);
     if (target) {
       nav.replace(target);
     }

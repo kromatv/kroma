@@ -39,6 +39,7 @@ export {
   KROMA,
   KROMA_KIDS,
   KROMA_KIDS_LIGHT,
+  kidsTheme,
   KROMA_LIGHT,
   onPaper,
   readMode,
@@ -65,6 +66,7 @@ export { DEFAULT_STYLE_SCOPE } from './core/style-scope';
 export { resolveStyles, useStyles } from './core/styles';
 export { createThemeRuntime } from './core/theme';
 export * from './core/tokens';
+export { useKidsLook } from './core/use-kids-look.hook';
 export { useThemeControls, useThemeVersion } from './core/use-theme.hook';
 export type { AnchorPlacement, AnchorRect, AnchorViewport } from './lib/anchor';
 export { placeUnder } from './lib/anchor';

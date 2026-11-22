@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { blend, contrast } from '#ui/testing-contrast';
-import type { Theme } from './theme';
-import { KROMA_KIDS, KROMA_KIDS_LIGHT } from './theme-kids';
+import { createTheme, KROMA, KROMA_LIGHT, type Theme } from './theme';
+import { KROMA_KIDS, KROMA_KIDS_LIGHT, kidsTheme } from './theme-kids';
 import { colors as night, lightColors as paper } from './tokens/colors';
 import { radius } from './tokens/layout';
 
@@ -50,5 +50,21 @@ describe('the Kids theme', () => {
   it('keeps the paper half on paper and the night half at night', () => {
     expect(inkOf(KROMA_KIDS_LIGHT, paper)('tint')).toBe(paper.tint);
     expect(inkOf(KROMA_KIDS, night)('tint')).toBe(night.tint);
+  });
+});
+
+describe('the Kids edition of a theme', () => {
+  it('keeps the theme’s own type and dresses it in the Kids palette', () => {
+    const phone = createTheme({ typeSpec: { body: { ...KROMA.typeSpec.body, size: 15 } } });
+
+    const kids = kidsTheme(phone);
+
+    expect(kids.typeSpec.body.size).toBe(15);
+    expect(kids.colors.accent).toBe(KROMA_KIDS.colors.accent);
+  });
+
+  it('takes the paper palette for a theme on paper, the night one otherwise', () => {
+    expect(kidsTheme(KROMA_LIGHT).colors.bg).toBe(KROMA_KIDS_LIGHT.colors.bg);
+    expect(kidsTheme(KROMA).colors.bg).toBe(KROMA_KIDS.colors.bg);
   });
 });
