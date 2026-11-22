@@ -3,7 +3,12 @@ import { JobKey } from '@kromatv/client/jobs';
 import { useT } from '@kromatv/ui';
 import { Button, GuidedFlow, ListRow, Progress, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
-import { atWork, type TallyKind, tallies } from '#web/features/admin/import/import-run';
+import {
+  atWork,
+  type TallyKind,
+  type TallyRow,
+  tallies,
+} from '#web/features/admin/import/import-run';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const ASK_AGAIN_MS = 1000;
@@ -47,16 +52,15 @@ function useImport(id: ImportId) {
   });
 }
 
-function useTallyLine(tally: ImportTally | undefined): string {
+function useTallyLine(tally: ImportTally): string {
   const t = useT();
-  const counts = t('setup.importTally', { brought: tally?.brought ?? 0, read: tally?.read ?? 0 });
-  const unmatched = tally?.unmatched ?? 0;
-  return unmatched > 0
-    ? `${counts} · ${t('setup.importTallyUnmatched', { count: unmatched })}`
+  const counts = t('setup.importTally', { brought: tally.brought, read: tally.read });
+  return tally.unmatched > 0
+    ? `${counts} · ${t('setup.importTallyUnmatched', { count: tally.unmatched })}`
     : counts;
 }
 
-function TallyRow({ kind, tally }: Readonly<{ kind: TallyKind; tally: ImportTally | undefined }>) {
+function TallyLine({ kind, tally }: Readonly<TallyRow>) {
   const t = useT();
   const line = useTallyLine(tally);
   return (
@@ -79,7 +83,7 @@ function Tallies({ found }: Readonly<{ found: Import | undefined }>) {
   return (
     <ListRow.Group>
       {rows.map((row) => (
-        <TallyRow key={row.kind} kind={row.kind} tally={row.tally} />
+        <TallyLine key={row.kind} kind={row.kind} tally={row.tally} />
       ))}
     </ListRow.Group>
   );
