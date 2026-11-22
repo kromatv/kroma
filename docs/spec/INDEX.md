@@ -3,7 +3,7 @@
 
 # Requirement index
 
-774 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+775 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -268,7 +268,7 @@
 - **ADMIN-118** (AGREED) - The last step is the home. <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-119** (AGREED) - No step holds the catalogue back. A title is playable as soon as <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-120** (AGREED) - While a scan runs, every screen after the media step shows the <sub>[setup.md](admin/setup.md)</sub>
-- **ADMIN-121** (AGREED) - A setup that ended before its last step leaves a checklist on the <sub>[setup.md](admin/setup.md)</sub>
+- **ADMIN-121** (AGREED) - A setup that ended leaves a checklist on the admin dashboard, one <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-122** (AGREED) - A line leaves the checklist when its step is done, in the setup or <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-123** (AGREED) - The owner can dismiss any line, and a dismissed line does not come <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-124** (AGREED) - When no line is left the checklist is gone, and it does not come <sub>[setup.md](admin/setup.md)</sub>
@@ -330,6 +330,7 @@
 - **ADMIN-180** (AGREED) - The page of the setup never scrolls. A step with more than its frame <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-181** (AGREED) - A title a person finished on the other server after they stopped <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-186** (SHIPPED) - An Emby server is brought over as a Jellyfin one is: its libraries, <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-187** (AGREED) - A step stays done once the server has seen it done. A line that <sub>[setup.md](admin/setup.md)</sub>
 - **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
 
