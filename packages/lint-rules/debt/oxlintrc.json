@@ -133,7 +133,6 @@
         "clients/web/src/features/admin/sign-in-preview.component.tsx",
         "clients/web/src/features/admin/sign-in-provider-connection.component.tsx",
         "clients/web/src/features/admin/sign-in-provider-test.component.tsx",
-        "clients/web/src/features/admin/users-edit-modal.component.tsx",
         "clients/web/src/features/admin/users-link-result.component.tsx",
         "clients/web/src/features/catalog/browse-bar.component.tsx",
         "clients/web/src/features/catalog/browse-screen.component.tsx",
