@@ -4,11 +4,13 @@ import { useT } from '@kromatv/ui';
 import { Button, Callout, GuidedFlow, IconButton, ListRow, Menu } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { InvitationRights } from '#web/features/setup/invitation-rights.component';
-import { invitationMail, useInvitations } from '#web/features/setup/use-invitations.hook';
+import { useInvitations } from '#web/features/setup/use-invitations.hook';
+import { InvitationMailDialog } from '#web/shared/ui/invitation-mail.component';
 
 interface RowProps {
   invite: Invite;
   link: string;
+  onMail: () => void;
   onEdit: () => void;
   onRevoke: () => void;
 }
@@ -20,17 +22,8 @@ function useRights(rights: readonly Permission[]): string {
     .join(' · ');
 }
 
-function useMailTo(link: string): string {
+function InvitationMenu({ onMail, onEdit, onRevoke }: Readonly<Omit<RowProps, 'invite' | 'link'>>) {
   const t = useT();
-  return invitationMail({
-    subject: t('setup.peopleMailSubject'),
-    body: t('setup.peopleMailBody', { link }),
-  });
-}
-
-function InvitationMenu({ link, onEdit, onRevoke }: Readonly<Omit<RowProps, 'invite'>>) {
-  const t = useT();
-  const mail = useMailTo(link);
   return (
     <Menu.Root label={t('setup.peopleMore')} align="end">
       <Menu.Trigger
@@ -46,11 +39,7 @@ function InvitationMenu({ link, onEdit, onRevoke }: Readonly<Omit<RowProps, 'inv
           />
         )}
       />
-      <Menu.Item
-        icon="mail"
-        label={t('setup.peopleMail')}
-        onSelect={() => window.location.assign(mail)}
-      />
+      <Menu.Item icon="mail" label={t('setup.peopleMail')} onSelect={onMail} />
       <Menu.Item icon="pencil" label={t('setup.peopleRightsEdit')} onSelect={onEdit} />
       <Menu.Separator />
       <Menu.Item icon="trash" label={t('setup.peopleDelete')} tone="danger" onSelect={onRevoke} />
@@ -58,7 +47,7 @@ function InvitationMenu({ link, onEdit, onRevoke }: Readonly<Omit<RowProps, 'inv
   );
 }
 
-function InvitationRow({ invite, link, onEdit, onRevoke }: Readonly<RowProps>) {
+function InvitationRow({ invite, link, onMail, onEdit, onRevoke }: Readonly<RowProps>) {
   const t = useT();
   const rights = useRights(invite.permissions);
   return (
@@ -74,17 +63,18 @@ function InvitationRow({ invite, link, onEdit, onRevoke }: Readonly<RowProps>) {
           label={t('setup.peopleCopy')}
           onPress={() => void navigator.clipboard.writeText(link)}
         />
-        <InvitationMenu link={link} onEdit={onEdit} onRevoke={onRevoke} />
+        <InvitationMenu onMail={onMail} onEdit={onEdit} onRevoke={onRevoke} />
       </ListRow.Trailing>
     </ListRow.Root>
   );
 }
 
 interface ListProps extends Pick<ReturnType<typeof useInvitations>, 'open' | 'linkOf' | 'revoke'> {
+  onMail: (invite: Invite) => void;
   onEdit: (invite: Invite) => void;
 }
 
-function InvitationList({ open, linkOf, revoke, onEdit }: Readonly<ListProps>) {
+function InvitationList({ open, linkOf, revoke, onMail, onEdit }: Readonly<ListProps>) {
   if (open.length === 0) {
     return null;
   }
@@ -95,6 +85,7 @@ function InvitationList({ open, linkOf, revoke, onEdit }: Readonly<ListProps>) {
           key={held.token}
           invite={held}
           link={linkOf(held)}
+          onMail={() => onMail(held)}
           onEdit={() => onEdit(held)}
           onRevoke={() => void revoke(held.token)}
         />
@@ -147,17 +138,43 @@ interface PeopleStepProps {
   onContinue: () => void;
 }
 
-/** Who else watches here. Each invitation is a link, and the person who opens
- * it sets their own password. A link says what its account may do. The owner
- * changes those rights, sends the link by mail, or deletes it. */
-export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
-  const t = useT();
-  const { open, busy, create, revoke, change, linkOf } = useInvitations();
+function MailDialog({ invite, onClose }: Readonly<{ invite: Invite | null; onClose: () => void }>) {
+  if (!invite) {
+    return null;
+  }
+  return <InvitationMailDialog token={invite.token} onClose={onClose} />;
+}
+
+function usePeople() {
+  const invitations = useInvitations();
   const [editing, setEditing] = useState<Invite | null>(null);
+  const [mailing, setMailing] = useState<Invite | null>(null);
   const save = (invite: Invite, rights: Permission[]) => {
     setEditing(null);
-    void change(invite.token, rights);
+    void invitations.change(invite.token, rights);
   };
+  return { ...invitations, editing, setEditing, mailing, setMailing, save };
+}
+
+function PeopleDialogs({ people }: Readonly<{ people: ReturnType<typeof usePeople> }>) {
+  return (
+    <>
+      <RightsEditor
+        invite={people.editing}
+        onClose={() => people.setEditing(null)}
+        onSave={people.save}
+      />
+      <MailDialog invite={people.mailing} onClose={() => people.setMailing(null)} />
+    </>
+  );
+}
+
+/** Who else watches here. Each invitation is a link, and the person who opens
+ * it sets their own password. A link says what its account may do. The owner
+ * changes those rights, has the server send the link by mail, or deletes it. */
+export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
+  const t = useT();
+  const people = usePeople();
   return (
     <>
       <GuidedFlow.Header>
@@ -165,8 +182,14 @@ export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
         <GuidedFlow.Subtitle>{t('setup.peopleSub')}</GuidedFlow.Subtitle>
       </GuidedFlow.Header>
       <GuidedFlow.Panel>
-        <InvitationList open={open} linkOf={linkOf} revoke={revoke} onEdit={setEditing} />
-        <InviteMore busy={busy} onInvite={() => void create()} />
+        <InvitationList
+          open={people.open}
+          linkOf={people.linkOf}
+          revoke={people.revoke}
+          onMail={people.setMailing}
+          onEdit={people.setEditing}
+        />
+        <InviteMore busy={people.busy} onInvite={() => void people.create()} />
       </GuidedFlow.Panel>
       <GuidedFlow.Footer>
         <GuidedFlow.Previous onPress={onBack} />
@@ -174,7 +197,7 @@ export function PeopleStep({ onBack, onContinue }: Readonly<PeopleStepProps>) {
           <GuidedFlow.Next onPress={onContinue} />
         </GuidedFlow.Actions>
       </GuidedFlow.Footer>
-      <RightsEditor invite={editing} onClose={() => setEditing(null)} onSave={save} />
+      <PeopleDialogs people={people} />
     </>
   );
 }

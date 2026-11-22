@@ -73,6 +73,7 @@ export function TitleHero({
       overline={overline}
       title={view.title}
       rating={view.rating}
+      ageRating={view.ageRating}
       meta={metaLine(t, view)}
       badges={view.video ? qualityBadges(view.video) : []}
       audioFlag={owned ? audioFlagLabel(t, view.playable) : null}
@@ -155,7 +156,6 @@ function metaLine(t: ReturnType<typeof useT>, view: TitleView): string {
     return [
       view.year ? String(view.year) : null,
       formatRuntime(view.playable.durationMs),
-      view.playable.metadata?.certification,
       langName(t, view.playable.audio?.language),
     ]
       .filter(Boolean)

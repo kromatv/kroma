@@ -174,6 +174,24 @@ per source. The request marks the member for the owner, who mints the reset by h
 clears the mark, and a stale one fades on its own. There is no self-service reset: the code
 an owner reads aloud is what keeps a mailbox from being enough.
 
+### Sending an invitation
+
+Status: **SHIPPED**
+
+**ADMIN-183** (SHIPPED) - The server sends an invitation to the one address the owner types,
+the way it sends a reset (ADMIN-82): through the operator's mail server or the kroma.tv
+relay. The message is written in the language the owner reads KROMA in, carries no code,
+and its one link leads to the server's own public address.
+
+**ADMIN-184** (SHIPPED) - The owner learns how the message left, or why it did not and what
+to do: allow the server at the relay, choose a way for the server to send mail, or copy the
+link. An owner who holds the settings asks for the relay's question from there, and it goes
+to their own address (ADMIN-95). A message that could not leave changes nothing: the
+invitation works as before.
+
+**ADMIN-185** (SHIPPED) - Under Users, every invitation nobody has redeemed offers to send it,
+the new invitation of an account that waits included, with that account's address filled in.
+
 ### PIN reset
 
 Status: **AGREED**

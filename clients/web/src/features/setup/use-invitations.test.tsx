@@ -19,7 +19,7 @@ vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   return { ...original, useWebRuntime: () => runtime, useKromaClient: () => runtime.client };
 });
 
-import { invitationMail, openInvitations, useInvitations } from './use-invitations.hook';
+import { openInvitations, useInvitations } from './use-invitations.hook';
 
 const HERE = 'http://localhost';
 const NOTIFY_MS = 1;
@@ -76,19 +76,6 @@ describe('the invitations still open', () => {
     const open = invitation();
 
     expect(openInvitations([invitation({ used: true }), open])).toEqual([open]);
-  });
-});
-
-describe('the mail that carries an invitation', () => {
-  it('opens the mail program of the owner with the subject and the body escaped', () => {
-    const mail = invitationMail({
-      subject: 'Join us & watch',
-      body: 'Open https://kroma.test/?a=b',
-    });
-
-    expect(mail).toBe(
-      'mailto:?subject=Join%20us%20%26%20watch&body=Open%20https%3A%2F%2Fkroma.test%2F%3Fa%3Db',
-    );
   });
 });
 
