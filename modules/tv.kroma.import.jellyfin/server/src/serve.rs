@@ -6,10 +6,13 @@ use axum::{Extension, Json, Router};
 use kroma_module_sdk::host::{port_reply, HostStorage};
 
 use crate::dialect::{Dialect, JELLYFIN};
+use kroma_lan_probe::{Lan, Udp};
+
+use crate::discover::discover;
 use crate::web::{Live, Web};
 use crate::wire::{
-    ConnectAsk, Connected, ForgetAsk, PlayPage, PlaysAsk, StatePage, StatesAsk, Survey, SurveyAsk,
-    TitlePage, TitlesAsk, UnlockRefusal, Unlocked,
+    ConnectAsk, Connected, DiscoverAsk, Discovered, ForgetAsk, PlayPage, PlaysAsk, StatePage,
+    StatesAsk, Survey, SurveyAsk, TitlePage, TitlesAsk, UnlockRefusal, Unlocked,
 };
 use crate::{sign_ins, Importer};
 
@@ -21,6 +24,7 @@ type Shared = Extension<Reach>;
 #[derive(Clone)]
 struct Reach {
     web: Arc<dyn Web>,
+    lan: Arc<dyn Lan>,
     dialect: &'static Dialect,
 }
 
@@ -40,7 +44,16 @@ pub(crate) fn routes_over<S: HostStorage + Clone + Send + Sync + 'static>(
     dialect: &'static Dialect,
     web: Arc<dyn Web>,
 ) -> Router<S> {
+    routes_reaching(Reach {
+        web,
+        lan: Arc::new(Udp),
+        dialect,
+    })
+}
+
+fn routes_reaching<S: HostStorage + Clone + Send + Sync + 'static>(reach: Reach) -> Router<S> {
     Router::new()
+        .route("/_port/importer/discover", post(discover_servers))
         .route("/_port/importer/connect", post(connect::<S>))
         .route("/_port/importer/survey", post(survey::<S>))
         .route("/_port/importer/titles", post(titles::<S>))
@@ -48,7 +61,7 @@ pub(crate) fn routes_over<S: HostStorage + Clone + Send + Sync + 'static>(
         .route("/_port/importer/plays", post(plays::<S>))
         .route("/_port/importer/unlock", post(unlock))
         .route("/_port/importer/forget", post(forget::<S>))
-        .layer(Extension(Reach { web, dialect }))
+        .layer(Extension(reach))
         .layer(DefaultBodyLimit::max(MAX_ASK_BYTES))
 }
 
@@ -67,6 +80,10 @@ async fn connect<S: HostStorage + Clone>(
 ) -> Reply<Connected> {
     let importer = importer(&host, reach);
     port_reply(move || importer.connect(&ask)).await
+}
+
+async fn discover_servers(Extension(reach): Shared, Json(ask): Json<DiscoverAsk>) -> Reply<Discovered> {
+    port_reply(move || discover(reach.lan.as_ref(), reach.dialect, &ask)).await
 }
 
 async fn survey<S: HostStorage + Clone>(

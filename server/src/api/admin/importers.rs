@@ -23,7 +23,7 @@ use super::store::offers::{self, Offer};
 use crate::api::error::{json_error, lerr};
 use crate::api::extract::AuthUser;
 use crate::api::util::blocking;
-use crate::model::import::{Connected, Survey, Unlock};
+use crate::model::import::{Connected, Server, Survey, Unlock};
 use crate::model::{Permission, User};
 use crate::services::importers::{
     ConnectAsk, ForgetAsk, Importers, POINT, SurveyAsk, Unanswered, UnlockAsk,
@@ -35,6 +35,7 @@ const MAX_ASK_BYTES: usize = 64 * 1024;
 pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/importers", get(list))
+        .route("/importers/{id}/discover", get(discover))
         .route("/importers/{id}/connect", post(connect))
         .route("/importers/{id}/survey", post(survey))
         .route("/importers/{id}/unlock", post(unlock))
@@ -151,6 +152,22 @@ fn unanswered(user: &User, why: Unanswered) -> Response {
             )
         }
     }
+}
+
+#[derive(Serialize)]
+struct Found {
+    servers: Vec<Server>,
+}
+
+/// `GET /api/admin/importers/:id/discover` the servers the importer finds on
+/// the local network, after looking for about a second and a half.
+async fn discover(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+    Path(id): Path<String>,
+) -> Result<Json<Found>, Response> {
+    let found = move |importers: &Importers| importers.discover(&id).map(|servers| Found { servers });
+    asked(&state, &user, found).await
 }
 
 /// `POST /api/admin/importers/:id/connect` signs in to another server with the

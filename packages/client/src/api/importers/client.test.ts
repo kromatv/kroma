@@ -11,6 +11,12 @@ describe('the importer endpoints', () => {
   it.each<Endpoint>([
     { name: 'list', call: (c) => c.importers.list(), method: 'GET', path: '/admin/importers' },
     {
+      name: 'discover',
+      call: (c) => c.importers.discover(IMPORTER),
+      method: 'GET',
+      path: '/admin/importers/tv.x.import/discover',
+    },
+    {
       name: 'connect',
       call: (c) => c.importers.connect(IMPORTER, { url: 'http://nas:8096', password: 'x' }),
       method: 'POST',

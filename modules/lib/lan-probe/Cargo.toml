@@ -1,0 +1,7 @@
+[package]
+name = "kroma-lan-probe"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "One question asked of the local network: a datagram sent to a broadcast address or a multicast group, and every datagram that answers it before a wait runs out."
+license.workspace = true

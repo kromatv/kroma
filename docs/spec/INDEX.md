@@ -3,7 +3,7 @@
 
 # Requirement index
 
-806 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+809 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -360,6 +360,9 @@
 - **ADMIN-200** (AGREED) - What a person removed in KROMA stays removed until the other server <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-210** (AGREED) - Once signed in, the import says that KROMA keeps the sign-in and <sub>[import.md](admin/import.md)</sub>
 - **ADMIN-211** (AGREED) - The import screen of the admin console lists each sign-in KROMA <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-230** (AGREED) - Before the owner signs in to Jellyfin or Emby, the import looks for <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-231** (AGREED) - Once a Plex account lists its servers, the import marks each one it <sub>[import.md](admin/import.md)</sub>
+- **ADMIN-232** (AGREED) - Looking for servers takes a moment and holds nothing up. When none <sub>[import.md](admin/import.md)</sub>
 
 ## BROWSE - [browse](browse/)
 

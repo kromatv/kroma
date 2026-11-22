@@ -325,6 +325,14 @@ Les applications cherchent un serveur sur le port `4040` de votre réseau. Si
 vous avez changé le port, ou si le téléviseur est sur un autre réseau, comme un
 Wi-Fi invité, saisissez l'adresse dans l'application : `http://SERVER_IP:4040`.
 
+### L'import ne trouve aucun serveur sur le réseau
+
+Pour reprendre un foyer depuis Plex, Jellyfin ou Emby, KROMA cherche ces
+serveurs sur votre réseau. Dans un conteneur relié au réseau par défaut de
+Docker, KROMA se trouve sur le réseau de Docker et non sur le vôtre, et ne les
+entend donc pas. Saisissez l'adresse de l'autre serveur dans le formulaire de
+connexion, par exemple `http://SERVER_IP:8096` pour Jellyfin ou Emby.
+
 ## Étapes suivantes
 
 - [Premier démarrage](first-run.md) : créez votre compte et ajoutez vos

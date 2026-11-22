@@ -32,6 +32,12 @@ export const ImportServer = z.object({
 });
 export type ImportServer = z.infer<typeof ImportServer>;
 
+/** The servers an importer found on the local network. */
+export const ImportFound = z.object({
+  servers: z.array(ImportServer),
+});
+export type ImportFound = z.infer<typeof ImportFound>;
+
 /** Why a sign-in was turned down. A reason this client does not know reads as
  * `other`. */
 export const ImportRefusal = z

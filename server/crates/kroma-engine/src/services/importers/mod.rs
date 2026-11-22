@@ -14,7 +14,7 @@ use serde::Serialize;
 use serde::de::{DeserializeOwned, IgnoredAny};
 
 use crate::domain::import::{
-    Connected, PlayPage, StatePage, Survey, TitlePage, Unlock, UnlockRefusal,
+    Connected, PlayPage, Server, StatePage, Survey, TitlePage, Unlock, UnlockRefusal,
 };
 use crate::point::{Allowance, Point, Silence};
 
@@ -74,6 +74,14 @@ const UNLOCK: Method = Method {
         bytes: 4 * KIB,
     },
 };
+const DISCOVER: Method = Method {
+    name: "discover",
+    allowance: Allowance {
+        seconds: 10,
+        bytes: 16 * KIB,
+    },
+};
+const DISCOVERY_WAIT_MS: u32 = 1500;
 const PAGE: Allowance = Allowance {
     seconds: 120,
     bytes: 4 * KIB * KIB,
@@ -109,6 +117,17 @@ impl Importers {
     /// The id of every importer running right now.
     pub fn answering(&self) -> Vec<String> {
         self.point.answering()
+    }
+
+    /// The servers of its kind the importer finds on the local network, asked
+    /// to look for a second and a half.
+    pub fn discover(&self, importer: &str) -> Result<Vec<Server>, Unanswered> {
+        let ask = DiscoverAsk {
+            wait_ms: DISCOVERY_WAIT_MS,
+        };
+        let answer: Discovered = self.ask(importer, &DISCOVER, &ask)?;
+        bounds::discovered(&answer.servers).map_err(Unanswered::Unreadable)?;
+        Ok(answer.servers)
     }
 
     /// Start a sign-in to another server, or ask how one in progress stands.

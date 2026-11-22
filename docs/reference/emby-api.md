@@ -27,6 +27,11 @@ from these shapes.
   `MediaBrowser.Model.Users.UserPolicy`.
 - **T**: "Item Types",
   <https://dev.emby.media/doc/restapi/Item-Types.html>. Read 2026-11-22.
+- **E**: Emby's .NET client, Emby.ApiClient at `b2e124f7` (master on
+  2026-11-22), <https://github.com/MediaBrowser/Emby.ApiClient>.
+- **V**: the Emby server source as it was last published,
+  <https://github.com/MediaBrowser/Emby> at `1d7c2ab4`. It is older than any
+  current release.
 
 ## Versions
 
@@ -67,6 +72,27 @@ None of these pages names the server version it describes. Their footer reads
   refuses one that names no product.
 - U says to keep a token with the server's `Id`, from the `SystemInfo` object.
   The importer keeps the token with the `Id` of `PublicSystemInfo`.
+
+## Discovery
+
+Read 2026-11-22, in E and V.
+
+- A client sends `who is EmbyServer?` to the broadcast address,
+  `255.255.255.255`, on port 7359 ("must be IPAddress.Broadcast, 7359"), and
+  keeps only an answer whose source port is 7359 (E
+  `Emby.ApiClient/Net/ServerLocator.cs`, `FindServers`).
+- The answer is the JSON of `ServerDiscoveryInfo`. The client reads its `Id`,
+  keeps one answer per `Id`, and sets `EndpointAddress` itself from where the
+  answer came (E, same file).
+- The server answers `who is EmbyServer?` and `who is MediaBrowserServer_v2?`
+  with `Address`, `Id` and `Name` (V
+  `Emby.Server.Implementations/Udp/UdpServer.cs`, `RespondToV2Message`). V is
+  old, and no newer server source is public, so this is what a current server
+  is taken to do.
+
+The importer asks `who is EmbyServer?` and reads the answer as the Jellyfin
+importer does (see [`jellyfin-api.md`](jellyfin-api.md#discovery)): the scheme
+and port from `Address`, the host from where the answer came.
 
 ## Sign-in
 

@@ -201,3 +201,8 @@ pub(crate) enum UnlockRefusal {
     Unreachable,
     Other,
 }
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub(crate) struct Discovered {
+    pub(crate) servers: Vec<ServerRef>,
+}

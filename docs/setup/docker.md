@@ -312,6 +312,14 @@ The apps search your network for a server on port `4040`. If you changed the
 port, or the TV is on another network such as a guest Wi-Fi, type the address
 in the app: `http://SERVER_IP:4040`.
 
+### The import finds no server on the network
+
+When you bring a household over from Plex, Jellyfin or Emby, KROMA looks for
+those servers on your network. In a container on Docker's default network,
+KROMA sits on Docker's own network instead, so it does not hear them. Type the
+other server's address in the sign-in form, for example
+`http://SERVER_IP:8096` for Jellyfin or Emby.
+
 ## Next steps
 
 - [First run](first-run.md): create your account and add your libraries.

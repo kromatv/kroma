@@ -4,7 +4,7 @@ import { Importer, ImportSignIn } from '@kromatv/client/importers';
 import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const importers = vi.hoisted(() => ({ connect: vi.fn(), resume: vi.fn() }));
+const importers = vi.hoisted(() => ({ connect: vi.fn(), resume: vi.fn(), discover: vi.fn() }));
 
 vi.mock('#web/shared/lib/web-runtime', async (importOriginal) => {
   const original = await importOriginal<typeof import('#web/shared/lib/web-runtime')>();
@@ -34,6 +34,11 @@ const FORM = importerOf({
   fields: [{ key: 'address', label: 'Address', type: 'string', required: true }],
 });
 const PAGE_ONLY = importerOf({});
+const WITH_URL = importerOf({
+  label: 'Jellyfin',
+  fields: [{ key: 'url', label: 'Address', type: 'string' }],
+});
+const DEN = { id: 'srv', name: 'Den', address: 'http://192.168.1.2:8096' };
 
 const PENDING = ImportSignIn.parse({ status: 'pending', pending: 'wait-1', url: PAGE });
 
@@ -50,6 +55,7 @@ beforeEach(() => {
   vi.spyOn(window, 'open').mockReturnValue(null);
   importers.connect.mockResolvedValue(PENDING);
   importers.resume.mockResolvedValue(PENDING);
+  importers.discover.mockResolvedValue({ servers: [] });
 });
 
 afterEach(() => {
@@ -130,5 +136,41 @@ describe('a sign-in on a page of the other server', () => {
 
     expect(screen.getByText('The name or the password is wrong.')).toBeTruthy();
     expect(importers.connect).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('the servers found on the network', () => {
+  it('lists each one, and one press fills its address', async () => {
+    importers.discover.mockResolvedValue({ servers: [DEN] });
+    await connectWith(WITH_URL);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Den' }));
+
+    expect(screen.getByText('On this network')).toBeTruthy();
+    expect(screen.getByRole<HTMLInputElement>('textbox').value).toBe('http://192.168.1.2:8096');
+    expect(importers.discover).toHaveBeenCalledWith('tv.test.other');
+  });
+
+  it('shows nothing when the network holds no server of that kind', async () => {
+    await connectWith(WITH_URL);
+
+    expect(screen.queryByText('On this network')).toBeNull();
+    expect(screen.getByRole('textbox')).toBeTruthy();
+  });
+
+  it('keeps the address the owner types when the search fails', async () => {
+    importers.discover.mockRejectedValue(new Error('502'));
+    await connectWith(WITH_URL);
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'http://nas:8096' } });
+
+    expect(screen.queryByText('On this network')).toBeNull();
+    expect(screen.getByRole<HTMLInputElement>('textbox').value).toBe('http://nas:8096');
+  });
+
+  it('is not looked for when the form asks for no address', async () => {
+    await connectWith(FORM);
+
+    expect(importers.discover).not.toHaveBeenCalled();
   });
 });

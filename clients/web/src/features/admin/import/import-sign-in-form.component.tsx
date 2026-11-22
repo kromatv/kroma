@@ -3,6 +3,10 @@ import { FieldForm } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Callout } from '@kromatv/ui/kit';
 import { useState } from 'react';
+import {
+  ADDRESS_FIELD,
+  ImportFoundServers,
+} from '#web/features/admin/import/import-found-servers.component';
 import { ImportFrame } from '#web/features/admin/import/import-frame.component';
 import { ImportRefused } from '#web/features/admin/import/import-refused.component';
 import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
@@ -49,6 +53,11 @@ function FormPanel({ importer, values, answer, onType }: Readonly<PanelProps>) {
     <ImportFrame.Panel>
       <ImporterIcon importer={importer} size={64} />
       <Box gap={20} maxW={FORM_MAX}>
+        <ImportFoundServers
+          importer={importer}
+          address={values[ADDRESS_FIELD]}
+          onPick={(address) => onType(ADDRESS_FIELD, address)}
+        />
         <Box gap={16}>
           <FieldForm fields={importer.fields} values={values} onChange={onType} />
         </Box>

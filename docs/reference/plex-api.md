@@ -24,6 +24,10 @@ the first one is the check issue #750 asks for.
   `plexapi/`.
 - **T**: [Tautulli](https://github.com/Tautulli/Tautulli) at `5bab508b` (master
   on 2026-11-10). Files are under `plexpy/`.
+- **G**: Home Assistant's Plex integration at `70c88a20` (the last change to
+  the file, read 2026-11-22),
+  `homeassistant/components/plex/config_flow.py` in
+  <https://github.com/home-assistant/core>.
 - **H**: "[How To] Request a X-Plex-Token token for your app", a Plex forum
   thread, page 2, posts 25 (2016-01-03) and 27 (2016-01-14),
   <https://forums.plex.tv/t/how-to-request-a-x-plex-token-token-for-your-app/84551?page=2>.
@@ -112,6 +116,29 @@ kind, "expire[s] after 7 days but can be refreshed at any time", and that flow
 needs a device key the importer does not have (P `MyPlexJWTLogin`). When
 plex.tv answers `401`, the importer says the sign-in is no longer valid, and
 the owner signs in again.
+
+## Discovery
+
+GDM, read 2026-11-22 in P `gdm.py` (`GDM.update`) and G.
+
+- To find servers, P sends `M-SEARCH * HTTP/1.0` to the multicast group
+  `239.0.0.250` on port 32414, with a multicast hop limit of 1, and reads every
+  answer until none comes for a second.
+- An answer whose first line holds `200 OK` is a server or a player. Each later
+  line is `Name: value`. A server's answer, in the example P gives, holds
+  `Content-Type: plex/media-server`, `Host`, `Name`, `Port` (`32400`),
+  `Resource-Identifier`, `Updated-At` and `Version`, and comes from port
+  32414. P keeps one answer per `Resource-Identifier`.
+- Players are found another way: a broadcast to `255.255.255.255` on port
+  32412. The importer does not look for players.
+- G reads `Resource-Identifier` as the server's machine identifier, the
+  `clientIdentifier` of the account's servers below (`async_step_integration_discovery`).
+
+The importer sends the same search once and keeps each answer from port 32414
+whose `Content-Type` is `plex/media-server` and that has a
+`Resource-Identifier` and a `Port`. It names the server at
+`http://<the address the answer came from>:<Port>`. It cannot set the hop
+limit, and the system's default for multicast is one hop.
 
 ## The account's servers
 

@@ -18,6 +18,7 @@ kroma-module-runtime = { path = "../../../server/crates/kroma-module-runtime", f
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
+kroma-lan-probe = { path = "../../lib/lan-probe" }
 
 [dev-dependencies]
 kroma-module-sdk = { path = "../../../server/crates/kroma-module-sdk", features = ["testing"] }

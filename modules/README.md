@@ -236,9 +236,9 @@ declares no slice of the core database and never sees an account.
 form, and the host draws it: an importer ships no frontend. An importer whose
 sign-in is a page of the other vendor declares no field and answers `pending`.
 
-The core calls seven methods at `POST /_port/importer/<method>`, each with the
+The core calls eight methods at `POST /_port/importer/<method>`, each with the
 port token. Each answers the usual envelope, `{ "Ok": ... }` or
-`{ "Err": "why" }`. These rules hold for all seven:
+`{ "Err": "why" }`. These rules hold for all eight:
 
 - **An id is an opaque string of the other server.** It is never empty and at
   most 512 bytes, and the core sends back exactly what the importer gave. A
@@ -251,12 +251,42 @@ port token. Each answers the usual envelope, `{ "Ok": ... }` or
   ignores a field it does not know. An importer must do the same, because a
   later core sends more.
 - **The core bounds an answer before it parses it**, and refuses the whole
-  answer past the bound: 64 KiB for `connect`, 2 MiB for `survey`, 4 MiB for a
-  page and 4 KiB for `unlock` and `forget`. `connect` and `unlock` have 60
-  seconds, `forget` 30, and the others 120.
+  answer past the bound: 16 KiB for `discover`, 64 KiB for `connect`, 2 MiB for
+  `survey`, 4 MiB for a page and 4 KiB for `unlock` and `forget`. `discover`
+  has 10 seconds, `connect` and `unlock` 60, `forget` 30, and the others 120.
 - **The sign-in is the importer's to keep.** Store it in the module's own
   database. The core holds the `signIn` reference and nothing else, so removing
   the module removes the sign-in.
+
+#### `discover`
+
+The core asks which servers of its kind the importer finds on the local
+network, and how long to look:
+
+```json
+{ "waitMs": 1500 }
+```
+
+```json
+{ "servers": [{ "id": "srv", "name": "Living room", "address": "http://192.168.1.2:8096" }] }
+```
+
+`address` is required here, a plain `http://` or `https://` address, and the
+core refuses an answer with more than 32 servers. When the importer's form has
+a field keyed `url`, the owner can pick a found server to fill it in. A server
+a sign-in later lists under the same `id` is marked as found on the network.
+An importer that cannot look answers `Err` with the reason, and the owner sees
+no server and types the address. Looking needs a `net.connect` entry with a
+`proto`, see [raw sockets](#raw-sockets):
+
+```jsonc
+{ "purpose": "discovery", "to": ["lan"], "ports": [7359], "proto": ["udp"] }
+```
+
+`modules/lib/lan-probe` sends one question to a broadcast address or a
+multicast group and collects the answers until the wait runs out. Take the
+answer's host from the address it came from rather than from what it says, so
+a device on the network cannot point the owner's password somewhere else.
 
 #### `connect`
 
