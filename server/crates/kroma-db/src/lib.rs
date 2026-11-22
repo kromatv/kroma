@@ -111,3 +111,9 @@ pub use schema::CORE_TABLE_VERSIONS;
 
 mod maturity;
 pub use maturity::*;
+
+mod title_rules;
+pub use title_rules::*;
+
+mod kids;
+pub use kids::*;

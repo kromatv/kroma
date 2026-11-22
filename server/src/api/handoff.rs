@@ -31,6 +31,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::api::accounts::mint_device_tokens;
 use crate::api::error::lerr;
+use crate::api::accounts::AuthMember;
 use crate::api::extract::AuthUser;
 use crate::api::origin::{require_beacon_origin, ConfirmRequired};
 use crate::api::util::{client_ip, drop_orphans};
@@ -278,7 +279,7 @@ pub async fn devices(
 pub async fn grant(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(body): Json<GrantBody>,

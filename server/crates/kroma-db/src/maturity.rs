@@ -18,10 +18,12 @@ pub struct ProfileMaturity {
     pub ratings_country: Option<String>,
 }
 
-/// What the gate weighs one title by. `certification` is the bare label a
-/// title enriched before every country was kept still carries.
+/// What the gate weighs one title by. `title` is the film or the show a rule
+/// names, an episode answering as its show; `certification` is the bare label
+/// a title enriched before every country was kept still carries.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct TitleAccess {
+    pub title: String,
     pub library: String,
     pub ratings: CountryRatings,
     pub certification: Option<String>,
@@ -63,7 +65,8 @@ pub fn set_ratings_country(pool: &Pool, user_id: &str, country: Option<&str>) ->
 pub fn items_access(pool: &Pool, ids: &[String]) -> Result<HashMap<String, TitleAccess>> {
     let sql = |ph: &str| {
         format!(
-            "SELECT i.id, i.library, CASE WHEN i.kind = 'episode' THEN s.metadata ELSE i.metadata END \
+            "SELECT i.id, CASE WHEN i.kind = 'episode' THEN i.show_id ELSE i.id END, i.library, \
+             CASE WHEN i.kind = 'episode' THEN s.metadata ELSE i.metadata END \
              FROM items i LEFT JOIN shows s ON s.id = i.show_id WHERE i.id IN ({ph})"
         )
     };
@@ -72,7 +75,7 @@ pub fn items_access(pool: &Pool, ids: &[String]) -> Result<HashMap<String, Title
 
 pub fn shows_access(pool: &Pool, ids: &[String]) -> Result<HashMap<String, TitleAccess>> {
     access_of(pool, ids, |ph| {
-        format!("SELECT id, library, metadata FROM shows WHERE id IN ({ph})")
+        format!("SELECT id, id, library, metadata FROM shows WHERE id IN ({ph})")
     })
 }
 
@@ -96,8 +99,8 @@ pub fn every_title_access(pool: &Pool) -> Result<HashMap<String, TitleAccess>> {
     let conn = pool.get()?;
     let mut out = HashMap::new();
     for sql in [
-        "SELECT id, library, metadata FROM items WHERE kind != 'episode'",
-        "SELECT id, library, metadata FROM shows",
+        "SELECT id, id, library, metadata FROM items WHERE kind != 'episode'",
+        "SELECT id, id, library, metadata FROM shows",
     ] {
         keep_first(&mut out, read_access(&conn, sql, [])?);
     }
@@ -129,8 +132,9 @@ fn read_access(
 ) -> Result<Vec<(String, TitleAccess)>> {
     let mut stmt = conn.prepare(sql)?;
     let rows = stmt.query_map(bound, |r| {
-        let blob = r.get::<_, Option<String>>(2)?;
-        Ok((r.get::<_, String>(0)?, access(r.get(1)?, blob.as_deref())))
+        let blob = r.get::<_, Option<String>>(3)?;
+        let shelf = (r.get(1)?, r.get(2)?);
+        Ok((r.get::<_, String>(0)?, access(shelf, blob.as_deref())))
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
@@ -149,11 +153,12 @@ struct StoredRating {
     certification: Option<String>,
 }
 
-fn access(library: String, blob: Option<&str>) -> TitleAccess {
+fn access((title, library): (Option<String>, String), blob: Option<&str>) -> TitleAccess {
     let stored: StoredRating = blob
         .and_then(|blob| serde_json::from_str(blob).ok())
         .unwrap_or_default();
     TitleAccess {
+        title: title.unwrap_or_default(),
         library,
         ratings: stored.ratings,
         certification: stored.certification,

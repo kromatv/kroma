@@ -6,7 +6,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::db::{self, TitleAccess};
 use crate::domain::{
-    Ceiling, CountryRatings, Kind, LibraryScope, MediaItem, Metadata, SectionItem, Show, User,
+    Ceiling, CountryRatings, Kind, LibraryScope, MediaItem, Metadata, SectionItem, Show, TitleRule,
+    User,
 };
 use crate::services::settings;
 use crate::state::SharedState;
@@ -16,6 +17,9 @@ use crate::state::SharedState;
 pub struct Viewer {
     pub user: User,
     pub ceiling: Ceiling,
+    /// The titles an admin blocked or allowed for this profile, by film or
+    /// show id.
+    pub rules: HashMap<String, TitleRule>,
 }
 
 /// The ratings of the shows behind a list's episodes, by show id: an episode
@@ -23,13 +27,14 @@ pub struct Viewer {
 pub type ShowRatings = HashMap<String, TitleAccess>;
 
 impl Viewer {
-    /// `user` with the ceiling and ratings country stored on its row, read
-    /// against the household's metadata country. Blocking: it reads the
+    /// `user` with the ceiling, ratings country and title rules stored for it,
+    /// read against the household's metadata country. Blocking: it reads the
     /// database.
     pub fn load(state: &SharedState, user: User) -> anyhow::Result<Viewer> {
         let server = settings::metadata_country(&state.settings, &state.config);
         let stored = db::profile_maturity(&state.db, &user.id)?;
         Ok(Viewer {
+            rules: db::title_rules(&state.db, &user.id)?,
             ceiling: Ceiling {
                 level: stored.level,
                 reader: stored.ratings_country.unwrap_or_else(|| server.clone()),
@@ -39,11 +44,12 @@ impl Viewer {
         })
     }
 
-    /// Whether a ceiling keeps anything from this account. An account with a
-    /// management right reaches every title through the console, so it is
-    /// never held to one (ACCT-150).
+    /// Whether a ceiling or a blocked title keeps anything from this account.
+    /// An account with a management right reaches every title through the
+    /// console, so it is never held to either (ACCT-151).
     pub fn is_held(&self) -> bool {
-        !self.ceiling.hides_nothing() && !self.user.is_any_admin()
+        let blocks = self.rules.values().any(|rule| *rule == TitleRule::Block);
+        !self.user.is_any_admin() && (blocks || !self.ceiling.hides_nothing())
     }
 
     /// Nothing is kept from this account, by grant or by ceiling.
@@ -63,12 +69,11 @@ impl Viewer {
     }
 
     pub fn sees(&self, title: &TitleAccess) -> bool {
-        self.sees_library(&title.library)
-            && self.admits(&title.ratings, title.certification.as_deref())
+        self.sees_library(&title.library) && self.admits_title(title)
     }
 
     pub fn sees_show(&self, show: &Show) -> bool {
-        self.sees_library(&show.library) && self.admits_metadata(show.metadata.as_ref())
+        self.sees_library(&show.library) && self.admits_metadata(&show.id, show.metadata.as_ref())
     }
 
     /// A film by its own metadata, an episode by its show's in `shows`. An
@@ -85,8 +90,8 @@ impl Viewer {
                 .show_id
                 .as_deref()
                 .and_then(|id| shows.get(id))
-                .is_some_and(|show| self.admits(&show.ratings, show.certification.as_deref())),
-            _ => self.admits_metadata(item.metadata.as_ref()),
+                .is_some_and(|show| self.admits_title(show)),
+            _ => self.admits_metadata(&item.id, item.metadata.as_ref()),
         }
     }
 
@@ -128,12 +133,28 @@ impl Viewer {
         }
     }
 
-    fn admits(&self, ratings: &CountryRatings, legacy: Option<&str>) -> bool {
-        !self.is_held() || self.ceiling.admits(ratings, legacy)
+    fn admits_title(&self, title: &TitleAccess) -> bool {
+        let rated = (&title.ratings, title.certification.as_deref());
+        self.admits(&title.title, rated)
     }
 
-    fn admits_metadata(&self, meta: Option<&Metadata>) -> bool {
-        !self.is_held() || self.ceiling.admits_metadata(meta)
+    fn admits_metadata(&self, title: &str, meta: Option<&Metadata>) -> bool {
+        let no_ratings = CountryRatings::new();
+        let rated = meta.map_or((&no_ratings, None), |m| {
+            (&m.ratings, m.certification.as_deref())
+        });
+        self.admits(title, rated)
+    }
+
+    fn admits(&self, title: &str, (ratings, legacy): (&CountryRatings, Option<&str>)) -> bool {
+        if !self.is_held() {
+            return true;
+        }
+        match self.rules.get(title) {
+            Some(TitleRule::Block) => false,
+            Some(TitleRule::Allow) => true,
+            None => self.ceiling.admits(ratings, legacy),
+        }
     }
 }
 

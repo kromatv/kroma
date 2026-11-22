@@ -79,10 +79,11 @@ own.
 Netflix asks for the account password. One confirmation covers the rest of that visit to
 the profile's restrictions.
 
-**ACCT-151** (SHIPPED) - A ceiling binds only a profile with no management right. A profile
-that can manage users, libraries, settings, requests or reports reaches every title through
-the console, so the server refuses to put one under a ceiling, and a stored ceiling stops
-binding while the profile holds such a right.
+**ACCT-151** (SHIPPED) - A ceiling, a block and an allow bind only a profile with no
+management right. A profile that can manage users, libraries, settings, requests or reports
+reaches every title through the console, so the server refuses to put one under a ceiling
+or block a title for it, and what is stored stops binding while the profile holds such a
+right.
 
 **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may
 not see.
@@ -95,72 +96,78 @@ id can fetch its cover. None of its bytes.
 
 ## Blocking and allowing a title
 
-Status: **AGREED**
+Status: **SHIPPED** on the server, and in the web and desktop apps, where an admin blocks
+and allows titles from a member's restrictions.
 
-**ACCT-117** (AGREED) - An admin can block a title for one profile. A blocked title is kept
+**ACCT-117** (SHIPPED) - An admin can block a title for one profile. A blocked title is kept
 from that profile as ACCT-112 and ACCT-113 say, whatever its rating and whether or not the
 profile is under a ceiling.
 
-**ACCT-118** (AGREED) - An admin can allow a title for one profile. An allowed title passes
+**ACCT-118** (SHIPPED) - An admin can allow a title for one profile. An allowed title passes
 that profile's ceiling, rated or not.
 
-**ACCT-119** (AGREED) - A title is blocked or allowed for a profile, never both. Setting one
+**ACCT-119** (SHIPPED) - A title is blocked or allowed for a profile, never both. Setting one
 clears the other.
 
-**ACCT-120** (AGREED) - A block or an allow on a show covers every episode of it.
+**ACCT-120** (SHIPPED) - A block or an allow on a show covers every episode of it.
 
-**ACCT-121** (AGREED) - Blocks and allows sit behind the same confirmation as the ceiling
+**ACCT-121** (SHIPPED) - Blocks and allows sit behind the same confirmation as the ceiling
 (ACCT-116).
 
 ## A Kids profile
 
-Status: **AGREED**
+Status: **SHIPPED** in part, on the server and in the web and desktop apps; each
+requirement carries its own. The television and phone pickers do not list Kids profiles
+yet, and the avatar is the drawn one: no picture is offered.
 
 **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an
 avatar. It has no email, no password, no passkey, no sign-in provider and no invitation.
 
-**ACCT-123** (AGREED) - Creating it picks its ceiling among the kids levels, with none
+**ACCT-123** (SHIPPED) - Creating it picks its ceiling among the kids levels, with none
 preselected. YouTube Kids' bands map onto them: 4 and under is All, 5 to 8 is 7+, 9 to 12
 is 10+.
 
-**ACCT-124** (AGREED) - Its library visibility is set like any account's (ACCT-20).
+**ACCT-124** (SHIPPED) - Its library visibility is set like any account's (ACCT-20).
 
-**ACCT-125** (AGREED) - Nobody can sign in to a Kids profile, by any means, as nobody can
+**ACCT-125** (SHIPPED) - Nobody can sign in to a Kids profile, by any means, as nobody can
 sign in to a waiting account (ACCT-95).
 
-**ACCT-126** (AGREED) - A device on which a member of this server is signed in lists the
+**ACCT-126** (SHIPPED) - A device on which a member of this server is signed in lists the
 server's Kids profiles on its picker. Opening one gives that device a session of the Kids
 profile (ACCT-6), which its device list shows like any other.
 
-**ACCT-127** (AGREED) - The owner's account can never be a Kids profile, and a Kids profile
-can never be made admin.
+**ACCT-127** (SHIPPED) - The owner's account can never be a Kids profile, and a Kids profile
+holds no right beyond watching: it can never be made admin, nor be let make requests.
 
-**ACCT-128** (AGREED) - An existing account cannot become a Kids profile. It has a
+**ACCT-128** (SHIPPED) - An existing account cannot become a Kids profile. It has a
 credential of its own, and a person would lose their sign-in.
 
 **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the
 picker and wherever its avatar is drawn.
 
-**ACCT-130** (AGREED) - A Kids profile whose ceiling an admin raises above 10+ loses the
+**ACCT-130** (SHIPPED) - A Kids profile whose ceiling an admin raises above 10+ loses the
 Kids experience. It still has no credential and still opens from the picker.
 
 ## Leaving a Kids profile
 
-Status: **AGREED**
+Status: **SHIPPED** on the server and in the web and desktop apps. The television and
+phone pickers already lock every PIN profile; they open no Kids profile yet (ACCT-126), so
+leaving one and adding one from their pickers come with that.
 
-**ACCT-131** (AGREED) - Leaving a Kids profile goes to the picker. There is no exit lock of
+**ACCT-131** (SHIPPED) - Leaving a Kids profile goes to the picker. There is no exit lock of
 its own: a profile with a PIN asks for it there, as it always does.
 
-**ACCT-132** (AGREED) - The picker draws a lock on every profile that asks for a PIN, on
+**ACCT-132** (SHIPPED) - The picker draws a lock on every profile that asks for a PIN, on
 every surface.
 
-**ACCT-133** (AGREED) - Creating a Kids profile offers the admin, in the same flow, to set a
+**ACCT-133** (SHIPPED) - Creating a Kids profile offers the admin, in the same flow, to set a
 profile PIN when theirs has none.
 
-**ACCT-134** (AGREED) - Every other adult on the server whose profile has no PIN is told in
-their inbox that a Kids profile now exists, with a way to set a PIN.
+**ACCT-134** (SHIPPED) - Every other adult on the server whose profile has no PIN is told in
+their inbox that a Kids profile now exists, with a way to set a PIN. Each is told once,
+however many Kids profiles follow.
 
-**ACCT-135** (AGREED) - A device's picker adds a Kids profile only while an admin is signed
+**ACCT-135** (SHIPPED) - A device's picker adds a Kids profile only while an admin is signed
 in on it, and asks that admin's profile PIN first when the admin has one.
 
 Without a PIN on the adult profiles of a device, the way out of Kids is one press deep.
@@ -169,21 +176,23 @@ rather than locking every profile on its behalf.
 
 ## The Kids experience
 
-Status: **AGREED**
+Status: **SHIPPED** on the server and in the web and desktop apps. The television and
+phone apps cannot open a Kids profile yet (ACCT-126), so no Kids session reaches them.
 
-**ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
+**ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
 place of KROMA's, and a simpler, friendlier theme, on every surface.
 
-**ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests and no account
-settings, and the server refuses those routes to its session.
+**ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account
+settings and no way to sign another device in, and the server refuses those routes to its
+session. Its player languages stay its own.
 
-**ACCT-138** (AGREED) - A Kids session never shows a title the server does not hold.
+**ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold.
 
-**ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module
+**ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module
 routes to its session. A module draws its own pages, and the core cannot filter what they
 show.
 
-**ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile
+**ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile
 may see (ACCT-112).
 
 ## Later

@@ -26,5 +26,5 @@ pub use crate::domain::reports::*;
 pub use crate::domain::requests::*;
 pub use crate::domain::section::*;
 pub use crate::domain::ratings::{
-    countries as ratings_countries, AgeRating, Ceiling, CountryRatings, MaturityLevel,
+    countries as ratings_countries, AgeRating, Ceiling, CountryRatings, MaturityLevel, TitleRule,
 };

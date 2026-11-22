@@ -104,6 +104,7 @@ fn a_film_is_held_to_its_own_ratings_and_an_episode_to_its_shows() {
         ratings(&[("FR", "12"), ("US", "PG-13")])
     );
     assert_eq!(found["e1"].library, "series");
+    assert_eq!(found["e1"].title, "s1");
     assert_eq!(found["e1"].ratings, ratings(&[("US", "TV-Y7")]));
 }
 
@@ -118,6 +119,7 @@ fn a_title_enriched_before_every_country_was_kept_brings_its_bare_label() {
     assert_eq!(
         found["m3"],
         TitleAccess {
+            title: "m3".into(),
             library: "films".into(),
             ..TitleAccess::default()
         }

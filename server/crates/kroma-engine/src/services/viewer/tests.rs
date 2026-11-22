@@ -1,5 +1,5 @@
 use super::*;
-use crate::domain::{LibraryScope, MaturityLevel, Permission};
+use crate::domain::{LibraryScope, MaturityLevel, Permission, TitleRule};
 use crate::services::demo::demo_data;
 use crate::test_support::test_user;
 
@@ -31,7 +31,13 @@ fn viewer(level: MaturityLevel, permissions: Vec<Permission>) -> Viewer {
             reader: "FR".into(),
             server: "FR".into(),
         },
+        rules: HashMap::new(),
     }
+}
+
+fn ruling(mut viewer: Viewer, title: &str, rule: TitleRule) -> Viewer {
+    viewer.rules.insert(title.to_string(), rule);
+    viewer
 }
 
 fn held(level: MaturityLevel) -> Viewer {
@@ -48,6 +54,13 @@ fn film(rated: &[(&str, &str)]) -> MediaItem {
     item
 }
 
+fn film_called(id: &str, rated: &[(&str, &str)]) -> MediaItem {
+    MediaItem {
+        id: id.into(),
+        ..film(rated)
+    }
+}
+
 fn episode() -> MediaItem {
     demo_data()
         .items
@@ -60,6 +73,7 @@ fn show_rated(show_id: &str, rated: &[(&str, &str)]) -> ShowRatings {
     ShowRatings::from([(
         show_id.to_string(),
         TitleAccess {
+            title: show_id.to_string(),
             library: String::new(),
             ratings: ratings(rated),
             certification: None,
@@ -140,6 +154,7 @@ fn the_ids_seen_are_the_titles_that_pass_both_rules() {
         (
             "young".to_string(),
             TitleAccess {
+                title: "young".into(),
                 library: "films".into(),
                 ratings: ratings(&[("FR", "TP")]),
                 certification: None,
@@ -148,6 +163,7 @@ fn the_ids_seen_are_the_titles_that_pass_both_rules() {
         (
             "old".to_string(),
             TitleAccess {
+                title: "old".into(),
                 library: "films".into(),
                 ratings: ratings(&[("FR", "16")]),
                 certification: None,
@@ -185,4 +201,57 @@ fn a_viewer_reads_its_row_against_the_households_metadata_country() {
 
     assert_eq!(viewer.ceiling.level, MaturityLevel::Adult);
     assert_eq!(viewer.ceiling.reader, viewer.ceiling.server);
+}
+
+#[test]
+fn a_blocked_title_is_kept_from_the_profile_even_at_eighteen() {
+    let rated_for_all = film(&[("FR", "TP")]);
+    let open = ruling(
+        held(MaturityLevel::Adult),
+        &rated_for_all.id,
+        TitleRule::Block,
+    );
+
+    assert!(open.is_held());
+    assert!(!open.sees_item(&rated_for_all, &ShowRatings::new()));
+}
+
+#[test]
+fn an_allowed_title_passes_the_ceiling_rated_or_not() {
+    let unrated = film_called("home-video", &[]);
+    let mature = film_called("mature", &[("FR", "18")]);
+    let kid = ruling(held(MaturityLevel::Seven), "home-video", TitleRule::Allow);
+    let kid = ruling(kid, "mature", TitleRule::Allow);
+
+    assert!(kid.sees_item(&unrated, &ShowRatings::new()));
+    assert!(kid.sees_item(&mature, &ShowRatings::new()));
+    assert!(!kid.sees_item(&film_called("other", &[]), &ShowRatings::new()));
+}
+
+#[test]
+fn a_rule_on_a_show_covers_every_episode_of_it() {
+    let ep = episode();
+    let show_id = ep.show_id.clone().unwrap();
+    let shows = show_rated(&show_id, &[("FR", "TP")]);
+    let blocked = ruling(held(MaturityLevel::Adult), &show_id, TitleRule::Block);
+    let allowed = ruling(held(MaturityLevel::All), &show_id, TitleRule::Allow);
+
+    assert!(!blocked.sees_item(&ep, &shows));
+    assert!(allowed.sees_item(&ep, &show_rated(&show_id, &[("FR", "16")])));
+}
+
+#[test]
+fn an_allow_alone_at_eighteen_keeps_nothing_from_the_profile() {
+    let open = ruling(held(MaturityLevel::Adult), "anything", TitleRule::Allow);
+
+    assert!(!open.is_held());
+}
+
+#[test]
+fn a_rule_on_an_account_that_runs_the_server_binds_nothing() {
+    let admin = viewer(MaturityLevel::Adult, vec![Permission::UsersManage]);
+    let movie = film(&[]);
+    let admin = ruling(admin, &movie.id, TitleRule::Block);
+
+    assert!(admin.sees_item(&movie, &ShowRatings::new()));
 }

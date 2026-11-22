@@ -23,7 +23,7 @@ import { createCallable } from 'react-call';
 import { LibraryVisibility } from '#web/features/admin/library-visibility.component';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
-import { MaturityRestriction } from '#web/features/admin/maturity-restriction.component';
+import { ProfileRestrictions } from '#web/features/admin/profile-restrictions.component';
 import { LinkResult } from '#web/features/admin/users-link-result.component';
 import { PermPicker, usePermissionSet } from '#web/features/admin/users-permissions';
 
@@ -148,7 +148,7 @@ export const EditUserModal = createCallable<{ user: AdminUser }, boolean>(({ cal
 
       <LibraryVisibility granted={granted} onChange={setGranted} />
 
-      <MaturityRestriction user={user} />
+      <ProfileRestrictions user={user} />
 
       <Box>
         <Text variant="overline" color="textDim" mb={8}>

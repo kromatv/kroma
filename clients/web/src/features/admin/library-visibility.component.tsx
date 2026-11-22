@@ -2,7 +2,7 @@ import type { LibraryId } from '@kromatv/client/media';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, ChoiceList, Row, Switch, Text } from '@kromatv/ui/kit';
-import { usePoll } from '#web/features/admin/shell';
+import { usePoll } from '#web/features/admin/hooks';
 import { useAuth } from '#web/shared/lib/auth';
 
 /** A member's library grant as a label. A named grant stays a count even when it

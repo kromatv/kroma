@@ -1,37 +1,60 @@
 import { apiErrorText } from '@kromatv/client';
 import { MATURITY_LEVELS, type MaturityLevel } from '@kromatv/client/accounts';
-import type { AdminUser } from '@kromatv/client/admin';
+import type { AdminUser, Restrictions, TitleRule } from '@kromatv/client/admin';
 import type { Translate } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Field, Row, Select, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
+import { TitleRules } from '#web/features/admin/title-rules.component';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** A profile's maturity level in the member editor. It reads at once and
- * changes only after the admin types their own password, which then covers
- * every change for as long as the editor stays open (ACCT-116). The server
- * checks the password on each change. */
-export function MaturityRestriction({ user }: Readonly<{ user: AdminUser }>) {
+/** A profile's restrictions in the member editor: its maturity level and the
+ * titles blocked or allowed for it. They read at once and change only after
+ * the admin types their own password, which then covers every change for as
+ * long as the editor stays open (ACCT-116, ACCT-121). The server checks the
+ * password on each change. */
+export function ProfileRestrictions({ user }: Readonly<{ user: AdminUser }>) {
   const t = useT();
   const { client, user: me } = useAuth();
   const restrictions = useQuery({
     queryKey: restrictionsKey(user),
     queryFn: () => client.admin.restrictions.get(user.id),
   });
-  const read = restrictions.data;
-  const self = me?.id === user.id;
+  const change = useRestrictionChange(user);
   return (
     <Box>
       <Text variant="overline" color="textDim" mb={8}>
         {t('admin.maturity')}
       </Text>
-      {read ? <LevelControl user={user} level={read.level} locked={!read.held || self} /> : null}
-      <Text variant="meta" color="textDim" mt={8}>
-        {hintFor(t, { held: read?.held ?? true, self })}
-      </Text>
+      {restrictions.data ? (
+        <RestrictionsBody read={restrictions.data} self={me?.id === user.id} change={change} />
+      ) : null}
     </Box>
+  );
+}
+
+function RestrictionsBody({
+  read,
+  self,
+  change,
+}: Readonly<{ read: Restrictions; self: boolean; change: RestrictionChange }>) {
+  const t = useT();
+  const locked = !read.held || self;
+  return (
+    <>
+      <LevelControl level={read.level} locked={locked} change={change} />
+      <Text variant="meta" color="textDim" mt={8}>
+        {hintFor(t, { held: read.held, self })}
+      </Text>
+      {locked ? null : (
+        <TitleRules
+          titles={read.titles}
+          onRule={change.password === null ? undefined : change.setRule}
+        />
+      )}
+    </>
   );
 }
 
@@ -46,44 +69,58 @@ function hintFor(t: Translate, { held, self }: { held: boolean; self: boolean })
   return held ? t('admin.maturityHint') : t('admin.maturityRunsServer');
 }
 
-function useLevelChange(user: AdminUser) {
+type RestrictionChange = ReturnType<typeof useRestrictionChange>;
+
+function useRestrictionChange(user: AdminUser) {
   const t = useT();
   const { client } = useAuth();
   const queryClient = useQueryClient();
   const [password, setPassword] = useState<string | null>(null);
   const { busy, error, run } = useAsyncAction();
-  const apply = (next: MaturityLevel, proof: string) =>
+  const proven = (proof: string, write: () => Promise<void>) =>
     run(
       async () => {
         try {
-          await client.admin.restrictions.setLevel(user.id, next, proof);
+          await write();
         } catch (refused) {
           setPassword(null);
           throw refused;
         }
         setPassword(proof);
-        queryClient.setQueryData(restrictionsKey(user), { level: next, held: true });
+        await queryClient.invalidateQueries({ queryKey: restrictionsKey(user) });
       },
       (refused) => apiErrorText(refused, t('admin.maturityFailed')),
     );
-  return { password, busy, error, apply };
+  const setLevel = (level: MaturityLevel, proof = password ?? '') =>
+    proven(proof, () => client.admin.restrictions.setLevel(user.id, level, proof));
+  const setRule = (title: string, rule: TitleRule | null) =>
+    void proven(password ?? '', () =>
+      client.admin.restrictions.setTitleRule(user.id, { title, rule }, password ?? ''),
+    );
+  return { password, busy, error, setLevel, setRule };
 }
 
 function LevelControl({
-  user,
   level,
   locked,
-}: Readonly<{ user: AdminUser; level: MaturityLevel; locked: boolean }>) {
-  const { password, busy, error, apply } = useLevelChange(user);
-  if (password === null && !locked) {
-    return <Unlock busy={busy} error={error} onConfirm={(proof) => void apply(level, proof)} />;
+  change,
+}: Readonly<{ level: MaturityLevel; locked: boolean; change: RestrictionChange }>) {
+  if (change.password === null && !locked) {
+    return (
+      <Unlock
+        busy={change.busy}
+        error={change.error}
+        onConfirm={(proof) => void change.setLevel(level, proof)}
+      />
+    );
   }
-  const pick = (next: MaturityLevel) => {
-    if (password !== null) {
-      void apply(next, password);
-    }
-  };
-  return <LevelSelect level={level} disabled={locked || busy} onPick={pick} />;
+  return (
+    <LevelSelect
+      level={level}
+      disabled={locked || change.busy}
+      onPick={(next) => void change.setLevel(next)}
+    />
+  );
 }
 
 function LevelSelect({

@@ -78,3 +78,6 @@ pub fn countries() -> Vec<&'static str> {
     out.dedup();
     out
 }
+
+mod rules;
+pub use rules::TitleRule;

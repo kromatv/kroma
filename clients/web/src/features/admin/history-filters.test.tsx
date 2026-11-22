@@ -27,6 +27,7 @@ const USERS: AdminUser[] = [
     emailVerified: false,
     hasPin: false,
     resetRequested: false,
+    kids: false,
   },
 ];
 

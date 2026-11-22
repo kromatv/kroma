@@ -1,4 +1,11 @@
-import { useId, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from 'react';
+import {
+  type RefObject,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from 'react';
 import { StyleSheet } from 'react-native';
 import { classes } from '#ui/lib/classed';
 import { stepsReached } from './breakpoint-cascade';
@@ -18,10 +25,39 @@ function stampGround(page: HTMLElement, ground: 'light' | 'dark' | undefined): v
   }
 }
 
+function stampScope(page: HTMLElement, scope: string): () => void {
+  page.dataset.kromaTheme = scope;
+  return () => {
+    if (page.dataset.kromaTheme === scope) {
+      delete page.dataset.kromaTheme;
+    }
+  };
+}
+
+interface DocumentMarks {
+  outermost: boolean;
+  ground: 'light' | 'dark' | undefined;
+  scope: string | null;
+}
+
+function useDocumentMarks(host: RefObject<HTMLDivElement | null>, marks: DocumentMarks): void {
+  const { outermost, ground, scope } = marks;
+  useLayoutEffect(() => {
+    const page = host.current?.ownerDocument.documentElement;
+    if (outermost && page) {
+      stampGround(page, ground);
+    }
+  }, [host, outermost, ground]);
+  useLayoutEffect(() => {
+    const page = host.current?.ownerDocument.documentElement;
+    return outermost && page && scope ? stampScope(page, scope) : undefined;
+  }, [host, outermost, scope]);
+}
+
 /** Stamps a styling root's theme, ground and breakpoint steps on an element of
  *  its own, and hands them to whatever renders outside it. The outermost root
- *  also keeps the document's ground in step: `<html>` paints the canvas
- *  behind a short page and sets the scrollbars' scheme. */
+ *  also keeps the document's ground and theme in step: `<html>` paints the
+ *  canvas behind a short page and sets the scrollbars' scheme. */
 export function ThemeHost({ runtime, themeScope = true, children }: Readonly<ThemeHostProps>) {
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const host = useRef<HTMLDivElement>(null);
@@ -47,14 +83,7 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
     }
     return undefined;
   }, [runtime, id, themeScope]);
-  const outermost = parent === null;
-  useLayoutEffect(() => {
-    const page = host.current?.ownerDocument.documentElement;
-    if (!outermost || !page) {
-      return;
-    }
-    stampGround(page, ground);
-  }, [outermost, ground]);
+  useDocumentMarks(host, { outermost: parent === null, ground, scope: themeScope ? id : null });
   return (
     <div
       ref={host}

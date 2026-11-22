@@ -20,6 +20,7 @@ afterEach(() => {
   root = null;
   document.body.innerHTML = '';
   document.documentElement.removeAttribute('data-theme');
+  document.documentElement.removeAttribute('data-kroma-theme');
   writeMode('system');
   vi.restoreAllMocks();
 });
@@ -121,5 +122,45 @@ describe("the document's ground", () => {
     act(() => held.runtime?.setMode('system'));
 
     expect(document.documentElement.hasAttribute('data-theme')).toBe(false);
+  });
+});
+
+describe("the document's theme", () => {
+  it('is the outermost root’s, so a theme it applies paints the canvas behind a short page', () => {
+    const { container } = render(
+      <KitProvider config={{}}>
+        <span>Bibliothèque</span>
+      </KitProvider>,
+    );
+
+    expect(document.documentElement.getAttribute('data-kroma-theme')).toBe(
+      host(container)?.getAttribute('data-kroma-theme'),
+    );
+  });
+
+  it('is left alone by a root nested inside another', () => {
+    const { container } = render(
+      <KitProvider config={{}}>
+        <KitProvider config={{ ground: 'light' }}>
+          <span>Aperçu</span>
+        </KitProvider>
+      </KitProvider>,
+    );
+
+    expect(document.documentElement.getAttribute('data-kroma-theme')).toBe(
+      host(container)?.getAttribute('data-kroma-theme'),
+    );
+  });
+
+  it('is let go when the root unmounts', () => {
+    const { unmount } = render(
+      <KitProvider config={{}}>
+        <span>Bibliothèque</span>
+      </KitProvider>,
+    );
+
+    unmount();
+
+    expect(document.documentElement.hasAttribute('data-kroma-theme')).toBe(false);
   });
 });

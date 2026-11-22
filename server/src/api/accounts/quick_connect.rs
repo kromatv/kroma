@@ -8,7 +8,7 @@ use axum::Json;
 use serde::Deserialize;
 
 use crate::api::error::lerr;
-use crate::api::extract::AuthUser;
+use crate::api::accounts::AuthMember;
 use crate::api::util::{drop_orphans, SecretQuery};
 use crate::db;
 use crate::i18n::ReqLocale;
@@ -68,7 +68,7 @@ pub struct QuickAuthorizeBody {
 pub async fn quick_authorize(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     Json(body): Json<QuickAuthorizeBody>,
 ) -> Response {
     let code = body.code.trim().to_string();

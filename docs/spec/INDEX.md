@@ -123,32 +123,32 @@
 - **ACCT-114** (SHIPPED) - A changed ceiling bites on the profile's next request, on every <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-115** (SHIPPED) - Only an admin sets a profile's ceiling. No profile can change its <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-116** (SHIPPED) - An admin confirms their own password before changing a ceiling, as <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-117** (AGREED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-118** (AGREED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-119** (AGREED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-120** (AGREED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-121** (AGREED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-117** (SHIPPED) - An admin can block a title for one profile. A blocked title is kept <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-118** (SHIPPED) - An admin can allow a title for one profile. An allowed title passes <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-119** (SHIPPED) - A title is blocked or allowed for a profile, never both. Setting one <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-120** (SHIPPED) - A block or an allow on a show covers every episode of it. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-121** (SHIPPED) - Blocks and allows sit behind the same confirmation as the ceiling <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-123** (AGREED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-124** (AGREED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-125** (AGREED) - Nobody can sign in to a Kids profile, by any means, as nobody can <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-126** (AGREED) - A device on which a member of this server is signed in lists the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-127** (AGREED) - The owner's account can never be a Kids profile, and a Kids profile <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-128** (AGREED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-123** (SHIPPED) - Creating it picks its ceiling among the kids levels, with none <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-124** (SHIPPED) - Its library visibility is set like any account's (ACCT-20). <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-125** (SHIPPED) - Nobody can sign in to a Kids profile, by any means, as nobody can <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-126** (SHIPPED) - A device on which a member of this server is signed in lists the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-127** (SHIPPED) - The owner's account can never be a Kids profile, and a Kids profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-128** (SHIPPED) - An existing account cannot become a Kids profile. It has a <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-129** (AGREED) - A Kids profile carries the KROMA Kids logo on its avatar, on the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-130** (AGREED) - A Kids profile whose ceiling an admin raises above 10+ loses the <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-131** (AGREED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-132** (AGREED) - The picker draws a lock on every profile that asks for a PIN, on <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-133** (AGREED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-134** (AGREED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-135** (AGREED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests and no account <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-138** (AGREED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-139** (AGREED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-140** (AGREED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-130** (SHIPPED) - A Kids profile whose ceiling an admin raises above 10+ loses the <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-131** (SHIPPED) - Leaving a Kids profile goes to the picker. There is no exit lock of <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-132** (SHIPPED) - The picker draws a lock on every profile that asks for a PIN, on <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-133** (SHIPPED) - Creating a Kids profile offers the admin, in the same flow, to set a <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-134** (SHIPPED) - Every other adult on the server whose profile has no PIN is told in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-135** (SHIPPED) - A device's picker adds a Kids profile only while an admin is signed <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-138** (SHIPPED) - A Kids session never shows a title the server does not hold. <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-139** (SHIPPED) - A Kids session shows no module page, and the server refuses module <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-140** (SHIPPED) - Search stays on in a Kids session and finds only what the profile <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs <sub>[kids.md](accounts/kids.md)</sub>
-- **ACCT-151** (SHIPPED) - A ceiling binds only a profile with no management right. A profile <sub>[kids.md](accounts/kids.md)</sub>
+- **ACCT-151** (SHIPPED) - A ceiling, a block and an allow bind only a profile with no <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-152** (SHIPPED) - An inbox leaves out the notifications about a title the profile may <sub>[kids.md](accounts/kids.md)</sub>
 - **ACCT-153** (AGREED) - A push notification about a title the profile may not see is not <sub>[kids.md](accounts/kids.md)</sub>
 
@@ -397,7 +397,7 @@
 - **BROWSE-59** (SHIPPED) - A synopsis shown on the home is cut by sentence, never by the box:
 - **BROWSE-60** (SHIPPED) - A rank is drawn as a shape in the display face, the same on a
 - **BROWSE-61** (SHIPPED) - While a scan runs, the home gains each title as the scan matches it,
-- **BROWSE-62** (AGREED) - The home, search and a person's page obey the viewer's maturity
+- **BROWSE-62** (SHIPPED) - The home, search and a person's page obey the viewer's maturity
 - **BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
 
 ## DISC - [discovery](discovery/)
