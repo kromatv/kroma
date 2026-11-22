@@ -10,6 +10,7 @@ mod recording;
 mod reporting;
 mod running_again;
 mod scanning;
+mod sharing;
 mod starting;
 mod this_machine;
 mod watching;

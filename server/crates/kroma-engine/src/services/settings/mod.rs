@@ -29,6 +29,7 @@ mod keys;
 mod library_list;
 mod llm;
 mod schema;
+mod shared_files;
 mod sign_in;
 mod store;
 mod tmdb_language;
@@ -46,6 +47,7 @@ pub use library_list::{
 };
 pub use llm::*;
 pub use schema::*;
+pub use shared_files::{holds, library_sharing_files};
 pub use sign_in::*;
 pub use store::*;
 pub use tmdb_language::*;

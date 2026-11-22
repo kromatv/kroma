@@ -5,6 +5,7 @@ import { Button, GuidedFlow, ListRow, Progress, Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import {
   atWork,
+  refusedLibraries,
   type TallyKind,
   type TallyRow,
   tallies,
@@ -89,6 +90,22 @@ function Tallies({ found }: Readonly<{ found: Import | undefined }>) {
   );
 }
 
+function RefusedLibraries({ found }: Readonly<{ found: Import | undefined }>) {
+  const t = useT();
+  return (
+    <>
+      {refusedLibraries(found).map((library) => (
+        <Text key={library.name} variant="meta" color="danger">
+          {t('setup.importLibraryRefused', {
+            name: library.name,
+            library: library.sharesFilesWith,
+          })}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 function CancelAction({ working }: Readonly<{ working: boolean }>) {
   const t = useT();
   const { client } = useWebRuntime();
@@ -122,6 +139,7 @@ export function ImportRun({ id, onContinue }: Readonly<RunProps>) {
       <GuidedFlow.Panel>
         {working ? <Progress value={0} waiting label={t(TITLE[status])} /> : null}
         <Tallies found={data} />
+        <RefusedLibraries found={data} />
       </GuidedFlow.Panel>
       <GuidedFlow.Footer>
         <GuidedFlow.Actions>

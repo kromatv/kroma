@@ -148,7 +148,7 @@ impl<'k, 'a> Answered<'k, 'a> {
                 }
                 Outcome::AlreadyHere => answered.settled.push((key, None)),
                 Outcome::Unmatched => answered.unmatched.push(key),
-                Outcome::Untouched => {}
+                Outcome::SharesFiles { .. } | Outcome::Untouched => {}
             }
         }
         answered

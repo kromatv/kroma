@@ -1,3 +1,4 @@
+import { apiErrorText } from '@kromatv/client';
 import type { AdminLibrary } from '@kromatv/client/library';
 import { useT } from '@kromatv/ui';
 import {
@@ -16,6 +17,17 @@ import { createCallable } from 'react-call';
 import { FolderField, FolderListEditor } from '#web/shared/ui/folder-field.component';
 import { useAsyncAction } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
+
+function SaveFailure({ error }: Readonly<{ error: string | null }>) {
+  if (!error) {
+    return null;
+  }
+  return (
+    <Text variant="meta" color="danger">
+      {error}
+    </Text>
+  );
+}
 
 /** Library kind as accepted by the create/update API: `""` = Auto. */
 export type LibKind = '' | 'movies' | 'shows' | 'mixed';
@@ -63,20 +75,23 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
   const [name, setName] = useState('');
   const [kind, setKind] = useState<LibKind>('');
   const [folder, setFolder] = useState('');
-  const { busy, run } = useAsyncAction();
+  const { busy, error, run } = useAsyncAction();
 
   const create = () => {
     if (!name.trim()) {
       return;
     }
-    void run(async () => {
-      await client.library.create({
-        name: name.trim(),
-        kind,
-        folders: folder.trim() ? [folder.trim()] : [],
-      });
-      call.end(true);
-    });
+    void run(
+      async () => {
+        await client.library.create({
+          name: name.trim(),
+          kind,
+          folders: folder.trim() ? [folder.trim()] : [],
+        });
+        call.end(true);
+      },
+      (cause) => apiErrorText(cause, t('admin.librarySaveFailed')),
+    );
   };
 
   return (
@@ -100,6 +115,7 @@ export const AddLibraryModal = createCallable<void, boolean>(({ call }) => {
           onClear={() => setFolder('')}
         />
       </Field.Root>
+      <SaveFailure error={error} />
       <Dialog.Footer>
         <Dialog.Actions
           onCancel={() => call.end(false)}
@@ -125,13 +141,16 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
     const [kind, setKind] = useState<LibKind>(() => normalizeLibKind(lib.kind));
     const [folders, setFolders] = useState(lib.folders);
     const [autoScan, setAutoScan] = useState(lib.autoScan);
-    const { busy, run } = useAsyncAction();
+    const { busy, error, run } = useAsyncAction();
 
     const save = () =>
-      run(async () => {
-        await client.library.update(lib.id, { name: name.trim(), kind, folders, autoScan });
-        call.end(true);
-      });
+      run(
+        async () => {
+          await client.library.update(lib.id, { name: name.trim(), kind, folders, autoScan });
+          call.end(true);
+        },
+        (cause) => apiErrorText(cause, t('admin.librarySaveFailed')),
+      );
     const remove = async () => {
       const ok = await confirm({
         title: t('common.delete'),
@@ -174,6 +193,7 @@ export const ManageLibraryModal = createCallable<{ lib: AdminLibrary }, boolean>
           </Box>
           <Switch checked={autoScan} onCheckedChange={setAutoScan} label={t('admin.autoScan')} />
         </Row>
+        <SaveFailure error={error} />
         <Dialog.Footer>
           <Dialog.Actions
             onCancel={() => call.end(false)}
