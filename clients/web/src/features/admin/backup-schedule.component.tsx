@@ -1,6 +1,6 @@
 import { apiErrorText } from '@kromatv/client';
 import type { BackupSchedule, BackupScheduleChange } from '@kromatv/client/admin';
-import { type JobRun, JobKey } from '@kromatv/client/jobs';
+import { JobKey } from '@kromatv/client/jobs';
 import { useFormat, useT } from '@kromatv/ui';
 import {
   Box,
@@ -15,6 +15,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { type LastBackup, lastBackup } from '#web/features/admin/last-backup';
 import { type Refusal, useBackupSchedule } from '#web/shared/lib/use-backup-schedule.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { FolderField } from '#web/shared/ui/folder-field.component';
@@ -74,36 +75,40 @@ function ScheduleRows({ schedule, onChange }: Readonly<RowsProps>) {
   );
 }
 
-function useLastRun(): JobRun | null {
+function useLastBackup(): LastBackup {
   const { client } = useWebRuntime();
   const { data } = useQuery({
     queryKey: ['admin', 'jobs', SAVE_JOB],
     queryFn: () => client.jobs.detail(SAVE_JOB),
   });
-  return data?.info.lastRun ?? null;
+  return lastBackup(data);
 }
 
-function LastBackup() {
+function FailedBackup({ at, error }: Readonly<{ at: number; error: string | null }>) {
   const t = useT();
   const fmt = useFormat();
-  const run = useLastRun();
-  if (run?.status === 'failed') {
-    return (
-      <Callout.Root tone="danger" icon="alert-triangle">
-        <Callout.Title>
-          {t('admin.backupScheduleLastFailed', { when: fmt.elapsed(run.startedAt) })}
-        </Callout.Title>
-        {run.error ? <Callout.Detail>{run.error}</Callout.Detail> : null}
-      </Callout.Root>
-    );
+  return (
+    <Callout.Root tone="danger" icon="alert-triangle">
+      <Callout.Title>
+        {t('admin.backupScheduleLastFailed', { when: fmt.elapsed(at) })}
+      </Callout.Title>
+      {error ? <Callout.Detail>{error}</Callout.Detail> : null}
+    </Callout.Root>
+  );
+}
+
+function LastBackupLine() {
+  const t = useT();
+  const fmt = useFormat();
+  const last = useLastBackup();
+  if (last.kind === 'failed') {
+    return <FailedBackup at={last.at} error={last.error} />;
   }
-  const line =
-    run?.status === 'success'
-      ? t('admin.backupScheduleLast', { when: fmt.elapsed(run.startedAt) })
-      : t('admin.backupScheduleNone');
   return (
     <Text variant="meta" color="textDim">
-      {line}
+      {last.kind === 'saved'
+        ? t('admin.backupScheduleLast', { when: fmt.elapsed(last.at) })
+        : t('admin.backupScheduleNone')}
     </Text>
   );
 }
@@ -155,7 +160,7 @@ export function BackupScheduleSection() {
           onClear={schedule.chosen ? () => save({ folder: '' }) : undefined}
         />
         <ScheduleRefusal refusal={refusal} />
-        <LastBackup />
+        <LastBackupLine />
       </Box>
     </Section.Root>
   );
