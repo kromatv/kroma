@@ -1,4 +1,4 @@
-use super::fetch::{make_executable, on_path, platform, sha256_of};
+use super::fetch::{on_path, platform, sha256_of};
 use kroma_module_manifest::HelperAsset;
 
 use super::*;
@@ -92,13 +92,12 @@ fn what_an_earlier_server_left_of_a_helper_is_stopped_and_what_this_one_runs_is_
     let dir = kroma_testing::temp_dir("programs-stale");
     let helpers_dir = dir.path().join("helpers");
     std::fs::create_dir_all(&helpers_dir).unwrap();
-    let script = helpers_dir.join("stand-in");
-    std::fs::copy(on_path("sleep").unwrap(), &script).unwrap();
-    make_executable(&script).unwrap();
-    let sha = sha256_of(&script).unwrap();
+    let link = helpers_dir.join("sleep");
+    std::os::unix::fs::symlink(on_path("sleep").unwrap(), &link).unwrap();
+    let sha = sha256_of(&link).unwrap();
     let mut helpers = BTreeMap::new();
     helpers.insert(
-        "stand-in".to_string(),
+        "sleep".to_string(),
         Helper {
             assets: BTreeMap::from([(
                 platform(),
@@ -115,24 +114,24 @@ fn what_an_earlier_server_left_of_a_helper_is_stopped_and_what_this_one_runs_is_
             "tv.example",
             dir.path().to_path_buf(),
             helpers_dir.clone(),
-            vec!["stand-in".to_string()],
+            vec!["sleep".to_string()],
             helpers,
             gateway(),
             true,
         )
     };
     let earlier = std::mem::ManuallyDrop::new(programs_for(helpers.clone()));
-    let left = earlier.spawn(asked("stand-in", &["30"])).unwrap();
+    let left = earlier.spawn(asked("sleep", &["30"])).unwrap();
     let later = programs_for(helpers);
-    let current = later.spawn(asked("stand-in", &["30"])).unwrap();
+    let current = later.spawn(asked("sleep", &["30"])).unwrap();
     let current_pid = later.children.lock().unwrap()[&current].pid;
 
     later.reap_all_stale();
 
-    let recorded = std::fs::read_to_string(later.pid_file("stand-in")).unwrap();
+    let recorded = std::fs::read_to_string(later.pid_file("sleep")).unwrap();
     assert_eq!(recorded.trim(), current_pid.to_string());
-    assert!(earlier.wait(left, Duration::from_secs(2)).unwrap().is_some());
-    assert_eq!(later.wait(current, Duration::ZERO).unwrap(), None);
+    assert_eq!(earlier.wait(left, Duration::from_secs(2)).unwrap(), Some(-1));
+    assert_eq!(later.wait(current, Duration::from_millis(100)).unwrap(), None);
 }
 
 #[test]
