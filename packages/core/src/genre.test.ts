@@ -39,6 +39,15 @@ describe('findGenre', () => {
     expect(findGenre('Science-Fiction & Fantastique')).toBe('sci-fi-fantasy');
   });
 
+  it('resolves the TV names TMDB still sends in English to a French reader', () => {
+    expect(findGenre('Action & Adventure')).toBe('action-adventure');
+    expect(findGenre('Kids')).toBe('kids');
+    expect(findGenre('News')).toBe('news');
+    expect(findGenre('Reality')).toBe('reality');
+    expect(findGenre('Soap')).toBe('soap');
+    expect(findGenre('Talk')).toBe('talk');
+  });
+
   it('resolves a slug as readily as a display name', () => {
     expect(findGenre('sci-fi-fantasy')).toBe('sci-fi-fantasy');
     expect(findGenre('tv-movie')).toBe('tv-movie');

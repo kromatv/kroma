@@ -1,20 +1,8 @@
 use super::super::stages::Core;
-use super::this_machine::{at, became, films_at, libraries, source_ids, this_machine};
+use super::this_machine::{a_source, at, became, films_at, libraries, source_ids, this_machine};
 use super::*;
 use crate::model::imports::RefusedLibrary;
-use crate::services::settings::{self, LibraryDef};
-
-fn a_source(state: &SharedState, name: &str, folder: &str) -> String {
-    let def = LibraryDef {
-        id: format!("source-{name}"),
-        name: name.into(),
-        kind: "movies".into(),
-        folders: vec![folder.into()],
-        auto_scan: true,
-    };
-    settings::set_library_defs(&state.settings, &state.db, std::slice::from_ref(&def));
-    def.id
-}
+use crate::services::settings;
 
 #[tokio::test]
 async fn a_library_over_a_folder_that_holds_a_source_is_not_made_and_the_report_says_why() {

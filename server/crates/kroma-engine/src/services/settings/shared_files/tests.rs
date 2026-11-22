@@ -5,13 +5,13 @@ fn library(id: &str, folders: &[&str]) -> LibraryDef {
         id: id.into(),
         name: id.into(),
         kind: "movies".into(),
-        folders: folders.iter().map(|folder| folder.to_string()).collect(),
+        folders: folders.iter().map(ToString::to_string).collect(),
         auto_scan: true,
     }
 }
 
 fn folders(list: &[&str]) -> Vec<String> {
-    list.iter().map(|folder| folder.to_string()).collect()
+    list.iter().map(ToString::to_string).collect()
 }
 
 #[test]

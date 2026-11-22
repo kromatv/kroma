@@ -1,9 +1,4 @@
-import type {
-  Import,
-  ImportRefusedLibrary,
-  ImportReport,
-  ImportStatus,
-} from '@kromatv/client/imports';
+import type { Import, ImportReport, ImportStatus } from '@kromatv/client/imports';
 
 /** The kinds an import counts, in the order the owner reads them. */
 export const TALLY_KINDS = [
@@ -28,7 +23,7 @@ export function tallies(found: Import | undefined) {
   );
 }
 
-/** The libraries the import did not make, none while it has not answered. */
-export function refusedLibraries(found: Import | undefined): ImportRefusedLibrary[] {
+/** The libraries an import did not make because another library holds their files. */
+export function refusedLibraries(found: Import | undefined) {
   return found?.report.refusedLibraries ?? [];
 }

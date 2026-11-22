@@ -41,18 +41,14 @@ it('lists only the kinds the import read something of, in reading order', () => 
   expect(tallies(undefined)).toEqual([]);
 });
 
-it('lists the libraries the import did not make, and none before it answers', () => {
-  const refused = { name: 'Films', sharesFilesWith: 'Films 4K' };
-  const report = {
-    libraries: none,
-    users: none,
-    titles: none,
-    states: none,
-    plays: none,
-    refusedLibraries: [refused],
-  };
+it('names each library an import did not make, and the library that holds its files', () => {
+  const refused = [{ name: 'Films', sharesFilesWith: 'Films 4K' }];
 
-  expect(refusedLibraries(found({ report }))).toEqual([refused]);
+  const report = { libraries: none, users: none, titles: none, states: none, plays: none };
+
+  expect(refusedLibraries(found({ report: { ...report, refusedLibraries: refused } }))).toEqual(
+    refused,
+  );
   expect(refusedLibraries(found({}))).toEqual([]);
   expect(refusedLibraries(undefined)).toEqual([]);
 });
