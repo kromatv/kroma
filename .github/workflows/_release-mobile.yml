@@ -2,9 +2,9 @@ name: Release mobile beta channels
 
 # The phone/tablet client: a signed bundle for Google Play (uploaded by
 # _release-play.yml) and an .ipa for TestFlight. A push to main uploads the .ipa
-# when the app changed since its last TestFlight build, and release.yml's
-# `testflight` job hands it to the Canary group; testflight-beta.yml gives the
-# public Beta group the newest build each night.
+# when the app changed since its last TestFlight build. testflight.yml hands it
+# to the Canary group once Apple has processed it, and gives the public Beta
+# group the newest build each night.
 #
 # Both legs stamp the release version and a monotonic build number INTO
 # app.json before `expo prebuild`, because that is the only moment the values
@@ -43,10 +43,6 @@ on:
         description: 'The monotonic build number every store-bound package in this run carries (minutes since 2020).'
         type: string
         required: true
-    outputs:
-      uploaded:
-        description: 'Whether this run sent a build to TestFlight.'
-        value: ${{ jobs.mobile-ios.outputs.uploaded }}
 
 jobs:
   mobile-android:
@@ -178,8 +174,6 @@ jobs:
     # tools 6.2 (expo-modules-jsi); the guard step below states that in one line
     # instead of a package-resolution error deep in an xcodebuild log.
     runs-on: xcode-27
-    outputs:
-      uploaded: ${{ steps.upload.outcome == 'success' }}
     permissions:
       contents: read # only reads the repo and uploads run artifacts
       actions: write # retires the previous DerivedData cache entry
@@ -492,7 +486,6 @@ jobs:
         run: bun run ci testflight changed --app mobile
 
       - name: Upload to TestFlight
-        id: upload
         # See the Apple TV job.
         # `targets` says what to BUILD; it must not also mean "ship it".
         # A dispatch with targets=mobile, run to time the archive, pushed a

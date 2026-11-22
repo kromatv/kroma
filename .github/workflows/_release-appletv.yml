@@ -50,10 +50,6 @@ on:
         description: 'The monotonic build number every store-bound package in this run carries (minutes since 2020).'
         type: string
         required: true
-    outputs:
-      uploaded:
-        description: 'Whether this run sent a build to TestFlight.'
-        value: ${{ jobs.appletv.outputs.uploaded }}
 
 jobs:
   appletv:
@@ -66,8 +62,6 @@ jobs:
     # covered tvOS too (tvOS 26 from April 2026), and the macos-26 image tops
     # out at Xcode 26.6.
     runs-on: xcode-27
-    outputs:
-      uploaded: ${{ steps.upload.outcome == 'success' }}
     permissions:
       contents: read # only reads the repo and uploads run artifacts
       actions: write # retires the previous DerivedData cache entry
@@ -378,10 +372,9 @@ jobs:
         run: bun run ci testflight changed --app appletv
 
       - name: Upload to TestFlight
-        id: upload
         # A CANDIDATE from a push to main goes to TestFlight when the app
-        # changed, then to the Canary group (release.yml's `testflight` job)
-        # and each night to the public Beta group (testflight-beta.yml).
+        # changed, then to the Canary group and each night to the public Beta
+        # group (testflight.yml).
         # `targets` says what to BUILD; it must not also mean "ship it".
         # A dispatch with targets=mobile, run to time the archive, pushed a
         # real build to TestFlight and burned a build number - distribution

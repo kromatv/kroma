@@ -112,33 +112,17 @@ export async function feed(
 }
 
 /**
- * Waits until App Store Connect has processed the build numbered `version`
- * for `platform`. Resolves false when `deadline` passes first; throws when
- * Apple refused the build.
+ * Waits until App Store Connect is processing no build of `app`. Resolves
+ * false when `deadline` passes first.
  */
-export async function processed(
-  asc: Asc,
-  target: { app: string; platform: Platform; version: string },
-  deadline: number,
-): Promise<boolean> {
-  const params = {
-    'filter[app]': target.app,
-    'filter[preReleaseVersion.platform]': target.platform,
-    'filter[version]': target.version,
-    limit: '1',
-  };
+export async function settled(asc: Asc, app: string, deadline: number): Promise<boolean> {
+  const params = { 'filter[app]': app, 'filter[processingState]': 'PROCESSING', limit: '1' };
   const poll = async (): Promise<boolean> => {
     if (Date.now() >= deadline) {
       return false;
     }
     const { data } = await asc.get(`builds?${query(params)}`, Builds);
-    const state = data[0]?.attributes.processingState;
-    if (state === 'FAILED' || state === 'INVALID') {
-      throw new Error(
-        `App Store Connect marked ${target.platform} build ${target.version} ${state}`,
-      );
-    }
-    if (state === 'VALID') {
+    if (data.length === 0) {
       return true;
     }
     await delay(POLL_MS);

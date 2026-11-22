@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 import { notice, setOutput, summary, warning } from './actions';
 import { changedFiles } from './changed-files';
 import { readRepo } from './event';
-import { type Asc, ascClient } from './testflight/asc-client';
+import { ascClient } from './testflight/asc-client';
 import { readAscKey } from './testflight/asc-token';
 import {
   APPS,
@@ -13,7 +13,7 @@ import {
   type TestFlightApp,
 } from './testflight/app-inputs';
 import { appId, type BetaGroup, type GroupWanted, resolveGroup } from './testflight/beta-groups';
-import { type Delivery, feed, processed } from './testflight/distribute';
+import { type Delivery, feed, settled } from './testflight/distribute';
 import { lastUpload } from './testflight/last-upload';
 
 const PLATFORMS: readonly Platform[] = ['IOS', 'TV_OS'];
@@ -22,13 +22,11 @@ const WAIT_MINUTES = 45;
 const USAGE = [
   'usage: bun run ci testflight changed --app mobile|appletv',
   '       bun run ci testflight feed (--group <name> [--create] | --link <public link id>)',
-  '                                  [--build <number> --wait IOS --wait TV_OS]',
+  '                                  [--settle]',
 ].join('\n');
 
 const isApp = (name: string | undefined): name is keyof typeof APPS =>
   name !== undefined && name in APPS;
-
-const isPlatform = (name: string): name is Platform => PLATFORMS.some((p) => p === name);
 
 async function filesSince(since: string | null): Promise<string[] | 'all'> {
   if (!since) {
@@ -87,27 +85,6 @@ function table(group: BetaGroup, deliveries: Delivery[]): string {
   return [...head, ...columns, ...deliveries.map(row), ''].join('\n');
 }
 
-async function waitForBuilds(
-  asc: Asc,
-  app: string,
-  wait: { build: string | undefined; platforms: string[] },
-): Promise<void> {
-  if (wait.platforms.length === 0) {
-    return;
-  }
-  if (!wait.build) {
-    throw new Error(USAGE);
-  }
-  const version = wait.build;
-  const deadline = Date.now() + WAIT_MINUTES * 60_000;
-  const waiting = wait.platforms.filter(isPlatform).map(async (platform) => {
-    if (!(await processed(asc, { app, platform, version }, deadline))) {
-      warning(`${platform} build ${version} was not processed in ${WAIT_MINUTES} minutes`);
-    }
-  });
-  await Promise.all(waiting);
-}
-
 async function feedGroup(argv: string[]): Promise<void> {
   const { values } = parseArgs({
     args: argv,
@@ -115,8 +92,7 @@ async function feedGroup(argv: string[]): Promise<void> {
       group: { type: 'string' },
       link: { type: 'string' },
       create: { type: 'boolean', default: false },
-      build: { type: 'string' },
-      wait: { type: 'string', multiple: true, default: [] },
+      settle: { type: 'boolean', default: false },
     },
   });
   const wanted = wantedGroup(values);
@@ -128,7 +104,11 @@ async function feedGroup(argv: string[]): Promise<void> {
   const asc = ascClient(key);
   const app = await appId(asc);
   const group = await resolveGroup(asc, app, { wanted, create: values.create });
-  await waitForBuilds(asc, app, { build: values.build, platforms: values.wait });
+  if (values.settle && !(await settled(asc, app, Date.now() + WAIT_MINUTES * 60_000))) {
+    warning(
+      `Apple was still processing a build after ${WAIT_MINUTES} minutes; the newest processed one goes out`,
+    );
+  }
   const deliveries = await Promise.all(
     PLATFORMS.map((platform) => feed(asc, { app, group }, platform)),
   );
