@@ -96,7 +96,7 @@ export function closure(start: string, workspaces: ReadonlyMap<string, Workspace
       queue.push(...workspace.deps);
     }
   }
-  return [...dirs.values()].sort();
+  return [...dirs.values()].sort((a, b) => a.localeCompare(b));
 }
 
 /** The path globs a change must touch to change what `app` ships. */

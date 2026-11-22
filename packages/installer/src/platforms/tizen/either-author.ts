@@ -24,15 +24,15 @@ export async function eitherAuthor(
   try {
     await install(chosen);
     return {};
-  } catch (refusal) {
-    const other = refusal instanceof OtherAuthor ? await otherSigner(tv.host, chosen) : null;
+  } catch (error_) {
+    const other = error_ instanceof OtherAuthor ? await otherSigner(tv.host, chosen) : null;
     if (!other) {
-      throw refusal;
+      throw error_;
     }
 
     log("another author signed the KROMA on this set, trying this computer's other certificate");
     await install(other.profile).catch(() => {
-      throw refusal;
+      throw error_;
     });
     return { profile: other.named };
   }
