@@ -1,5 +1,7 @@
 //! How the watch log may be ordered.
 
+use super::time_watched::TIME_WATCHED;
+
 /// A column the watch log may be ordered by. Nothing outside this enum reaches
 /// the `ORDER BY`, so an unknown column name is refused rather than bound.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -36,7 +38,7 @@ impl PlayColumn {
             PlayColumn::Player => &["h.player"],
             PlayColumn::Device => &["h.device"],
             PlayColumn::EndedAt => &["h.ended_at"],
-            PlayColumn::WatchedMs => &["h.watched_ms"],
+            PlayColumn::WatchedMs => &[TIME_WATCHED],
         }
     }
 }

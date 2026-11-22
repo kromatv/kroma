@@ -10,6 +10,8 @@ use crate::api::test_support::{
 use crate::db;
 use crate::model::Permission;
 
+mod plays;
+
 const IMPORTS: &str = "/api/admin/imports";
 const JOB: &str = "/api/admin/jobs/household.import";
 
