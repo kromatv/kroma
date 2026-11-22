@@ -1,0 +1,16 @@
+{
+  "admin.invitationExpired": "Invitation expirée",
+  "admin.invitationMint": "Créer un nouveau lien",
+  "admin.invitationMintFailed": "Impossible de créer le lien. Réessayez.",
+  "admin.invitationNone": "Sans invitation",
+  "admin.invitationPending": "Invitation en attente",
+  "admin.invitationReplace": "Remplacer",
+  "admin.invitationReplaceMessage": "Le lien que {name} a peut-être déjà reçu ne fonctionnera plus.",
+  "admin.invitationReplaceTitle": "Remplacer l'invitation ?",
+  "admin.invitationSection": "Invitation",
+  "admin.invitationUntil": "Il ne sert qu'une fois, jusqu'au {date}.",
+  "admin.invitationWaitsExpired": "Personne ne s'est encore connecté à ce compte, et son invitation a expiré. Créez un nouveau lien et envoyez-le.",
+  "admin.invitationWaitsNone": "Personne ne s'est encore connecté à ce compte. Créez un lien d'invitation et envoyez-le.",
+  "admin.invitationWaitsPending": "Personne ne s'est encore connecté à ce compte. Son invitation est toujours valable : un nouveau lien la remplace.",
+  "admin.waitingNoAddress": "Aucune adresse"
+}

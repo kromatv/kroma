@@ -60,7 +60,7 @@ fn read_member<T>(
     Err(format!("the archive holds no {member}"))
 }
 
-pub(super) fn make_executable(path: &Path) -> std::io::Result<()> {
+fn make_executable(path: &Path) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt;
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))
 }
