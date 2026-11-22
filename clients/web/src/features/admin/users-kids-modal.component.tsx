@@ -2,12 +2,14 @@ import { apiErrorText } from '@kromatv/client';
 import type { NewKidsProfile } from '@kromatv/client/admin';
 import type { LibraryId } from '@kromatv/client/media';
 import { kidsDraft } from '@kromatv/core';
+import { useKidsCountry } from '@kromatv/core/react';
 import { useT } from '@kromatv/ui';
 import { Dialog, Field, KidsLevelChoice, Text } from '@kromatv/ui/kit';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { createCallable } from 'react-call';
 import { useAsyncAction } from '#web/features/admin/hooks';
+import { KidsCountrySelect } from '#web/features/admin/kids-country-select.component';
 import { LibraryVisibility } from '#web/features/admin/library-visibility.component';
 import { KidsPinOffer } from '#web/features/admin/kids-pin-offer.component';
 import { useAuth } from '#web/shared/lib/auth';
@@ -50,11 +52,7 @@ function KidsDraft({
       <Text variant="meta" color="textDim">
         {t('admin.kidsIntro')}
       </Text>
-      <Field.Root label={t('admin.name')}>
-        <Field.Input icon="user" value={draft.name} onValueChange={draft.setName} />
-      </Field.Root>
-      <KidsLevelChoice size="md" value={draft.level} onValueChange={draft.setLevel} />
-      <LibraryVisibility granted={draft.granted} onChange={draft.setGranted} />
+      <KidsDraftFields draft={draft} />
       {draft.error ? (
         <Text variant="meta" color="danger">
           {draft.error}
@@ -70,10 +68,30 @@ function KidsDraft({
   );
 }
 
+function KidsDraftFields({ draft }: Readonly<{ draft: ReturnType<typeof useKidsDraft> }>) {
+  const t = useT();
+  return (
+    <>
+      <Field.Root label={t('admin.name')}>
+        <Field.Input icon="user" value={draft.name} onValueChange={draft.setName} />
+      </Field.Root>
+      <KidsLevelChoice size="md" value={draft.level} onValueChange={draft.setLevel} />
+      <KidsCountrySelect
+        countries={draft.countries}
+        value={draft.country}
+        onPick={draft.pickCountry}
+      />
+      <LibraryVisibility granted={draft.granted} onChange={draft.setGranted} />
+    </>
+  );
+}
+
 function useKidsDraft(onCreated: () => void) {
   const [name, setName] = useState('');
   const [level, setLevel] = useState<KidsLevel | null>(null);
   const [granted, setGranted] = useState<readonly LibraryId[] | null>(null);
+  const { client } = useAuth();
+  const { country, countries, pick } = useKidsCountry(() => client.accounts.ratings.get());
   const { busy, error, create } = useCreateKids(onCreated);
   return {
     name,
@@ -82,10 +100,13 @@ function useKidsDraft(onCreated: () => void) {
     setLevel,
     granted,
     setGranted,
+    country,
+    countries,
+    pickCountry: pick,
     busy,
     error,
     ready: kidsDraft({ name, level }) !== null,
-    submit: () => void create({ name, level, granted }),
+    submit: () => void create({ name, level, granted, country }),
   };
 }
 
@@ -119,14 +140,15 @@ interface Draft {
   name: string;
   level: KidsLevel | null;
   granted: readonly LibraryId[] | null;
+  country: string | null;
 }
 
 function useCreateKids(onCreated: () => void) {
   const t = useT();
   const { client } = useAuth();
   const { busy, error, run } = useAsyncAction();
-  const create = ({ name, level, granted }: Draft) => {
-    const draft = kidsDraft({ name, level });
+  const create = ({ name, level, granted, country }: Draft) => {
+    const draft = kidsDraft({ name, level, country });
     if (!draft) {
       return Promise.resolve();
     }

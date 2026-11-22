@@ -25,11 +25,20 @@ not a rating, such as "not rated" or "exempt", has no age.
 
 **ACCT-103** (SHIPPED) - A show's rating is the rating of every one of its episodes.
 
-**ACCT-104** (SHIPPED) - Every account has a ratings country. It starts as the server's
-metadata country, and a person changes their own in their settings.
+**ACCT-104** (SHIPPED) - Every account has a ratings country. It starts as the household's
+(ACCT-154), and a person changes their own in their settings.
 
-**ACCT-150** (AGREED) - An admin sets a Kids profile's ratings country, since nobody signs
-in to it to change its settings.
+**ACCT-154** (SHIPPED) - The household has a ratings country, an admin setting beside the
+metadata language. Until an admin picks one, it is the region of the owner's locale when
+that locale names one, so `fr-CH` gives Switzerland, and otherwise the country the metadata
+language names.
+
+**ACCT-150** (SHIPPED) - An admin sets a Kids profile's ratings country among its
+restrictions, behind the same confirmation as its ceiling (ACCT-116), since nobody signs in
+to it to change its settings.
+
+**ACCT-155** (SHIPPED) - A Kids profile an admin creates takes that admin's ratings country.
+The create form shows it, on every surface, and the admin may pick another there.
 
 **ACCT-105** (AGREED) - A title shows its rating as a badge holding the label of the
 reader's ratings country.
@@ -60,6 +69,15 @@ of the rating its badge shows to that profile is at or below the level. All is a
 
 **ACCT-111** (SHIPPED) - Under a ceiling, a title with no rating does not pass. A title the
 server does not hold counts as unrated.
+
+**ACCT-156** (SHIPPED) - A title enriched before every country's label was kept carries one
+bare label, picked for the country the metadata language names. A ceiling reads that label
+only for a profile whose ratings country is that country. For any other profile the title
+counts as unrated until it has every country's labels.
+
+**ACCT-157** (SHIPPED) - The server fetches every country's labels for those titles in the
+background, through the metadata job queue and its rate limits, and the job shows its
+progress as every other job does.
 
 **ACCT-112** (SHIPPED) - A title that does not pass is absent for that profile from browse,
 search, every home row, recommendations, a person's page and its watch state.

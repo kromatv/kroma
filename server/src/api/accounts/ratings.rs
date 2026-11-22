@@ -83,7 +83,7 @@ pub async fn set_ratings_country(
 fn answer(state: &SharedState, country: Option<String>) -> RatingsCountry {
     RatingsCountry {
         country,
-        household: settings::metadata_country(&state.settings, &state.config),
+        household: settings::household_country(&state.settings, &state.config, &state.db),
         countries: ratings_countries(),
     }
 }

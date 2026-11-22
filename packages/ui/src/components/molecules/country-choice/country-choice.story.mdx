@@ -1,0 +1,14 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Picking } from './country-choice.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: 480,
+  render: () => <Picking />,
+});
+
+A country picked from a list: one row each, named in the reader's language and sorted by name. It is a `ChoiceList`, so the whole row is the control and a remote reaches each row in one press. A Kids profile's ratings country is picked with it on the phone and the television, where a long list scrolls with focus.
+
+```tsx
+<CountryChoice label={t('admin.kidsCountry')} countries={countries} value={country} onValueChange={pick} />
+```

@@ -88,7 +88,16 @@ async fn the_ceiling_a_profile_carries_is_read_by_an_admin() {
     .await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(read, json!({ "level": 10, "held": true, "titles": [] }));
+    assert_eq!(
+        read,
+        json!({
+            "level": 10,
+            "ratingsCountry": null,
+            "household": "US",
+            "held": true,
+            "titles": [],
+        })
+    );
 }
 
 #[tokio::test]

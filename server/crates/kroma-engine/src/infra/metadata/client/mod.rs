@@ -6,9 +6,11 @@ mod certification;
 mod details;
 mod details_json;
 mod lookup;
+mod ratings;
 
 pub(crate) use certification::country_of;
 pub use lookup::{lookup, lookup_all, lookup_all_by_id};
+pub use ratings::ratings_by_id;
 pub(super) use kroma_requests::tmdb::{api, tmdb_json, IMG};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

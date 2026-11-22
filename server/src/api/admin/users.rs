@@ -44,6 +44,10 @@ pub fn routes() -> Router<SharedState> {
             axum::routing::put(restrictions::set_level),
         )
         .route(
+            "/users/{id}/restrictions/country",
+            axum::routing::put(restrictions::set_country),
+        )
+        .route(
             "/users/{id}/restrictions/titles/{title}",
             axum::routing::put(restrictions::set_title_rule),
         )

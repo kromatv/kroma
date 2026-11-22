@@ -18,9 +18,12 @@ export type RuledTitle = z.infer<typeof RuledTitle>;
 
 /** `GET /api/admin/users/:id/restrictions`. `held` is `false` for an account
  * with a management right, which neither a ceiling nor a block binds; `titles`
- * lists the ruled titles, newest first. */
+ * lists the ruled titles, newest first. `ratingsCountry` is `null` while the
+ * profile reads the `household` one. */
 export const Restrictions = z.object({
   level: MaturityLevel,
+  ratingsCountry: z.string().nonempty().nullable().default(null),
+  household: z.string().nonempty().nullish(),
   held: z.boolean(),
   titles: z.array(RuledTitle).default([]),
 });
@@ -36,6 +39,13 @@ export function restrictionsApi(ctx: RequestContext) {
       ctx.put('/admin/users/:id/restrictions/level', {
         params: { id },
         body: { level, password },
+      }),
+
+    /** `country: null` follows the household's ratings country again. */
+    setCountry: (id: UserId, country: string | null, password: string) =>
+      ctx.put('/admin/users/:id/restrictions/country', {
+        params: { id },
+        body: { country, password },
       }),
 
     /** `rule: null` lifts the title's rule. */

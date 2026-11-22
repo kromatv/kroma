@@ -20,7 +20,12 @@ describe('sending a Kids form', () => {
 
     await act(() => result.current.create({ name: ' Léo ', level: 7 }));
 
-    expect(createKids).toHaveBeenCalledWith({ username: 'Léo', level: 7, libraries: null });
+    expect(createKids).toHaveBeenCalledWith({
+      username: 'Léo',
+      level: 7,
+      libraries: null,
+      ratingsCountry: null,
+    });
     expect(lent.onCreated).toHaveBeenCalledOnce();
     expect(result.current.error).toBeNull();
   });

@@ -60,6 +60,8 @@
   "jobs.pipeline.markers.name": "Marker detection",
   "jobs.pipeline.metadata.desc": "Resolves posters, backdrops, overviews and cast from TMDB per movie and show. Incremental: skips resolved titles and records misses so they are not retried every run.",
   "jobs.pipeline.metadata.name": "TMDB metadata",
+  "jobs.pipeline.ratings.desc": "Fetches from TMDB every country's age rating for a film or a show enriched before they were kept, one request per title. A title nobody rated is not asked for again.",
+  "jobs.pipeline.ratings.name": "Age ratings by country",
   "jobs.pipeline.probe.desc": "Runs ffprobe on each file to read codecs, duration, tracks and embedded chapters. Incremental: only probes files that changed.",
   "jobs.pipeline.probe.name": "Media probing",
   "jobs.pipeline.storyboard.desc": "Pre-generates the scrub-bar hover-thumbnail sheets so the preview is instant. Incremental and resumable: only builds what is missing and pauses while anyone is watching.",

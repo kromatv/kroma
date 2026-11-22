@@ -46,6 +46,8 @@ export type { InputGroupAddonProps, InputGroupRootProps } from './input-group';
 export { InputGroup } from './input-group';
 export type { KeypadProps } from './keypad';
 export { Keypad } from './keypad';
+export type { CountryChoiceProps } from './country-choice';
+export { CountryChoice } from './country-choice';
 export type { KidsLevelChoiceProps } from './kids-level-choice';
 export { KidsLevelChoice } from './kids-level-choice';
 export type { LegendItemProps, LegendRootProps } from './legend';

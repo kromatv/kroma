@@ -37,6 +37,11 @@ pub const STAGE_KEYS: &[(&str, &str, &str)] = &[
         stages::metadata::STAGE.subject_kind,
     ),
     (
+        stages::ratings::STAGE.short,
+        stages::ratings::STAGE.key,
+        stages::ratings::STAGE.subject_kind,
+    ),
+    (
         stages::storyboard::STAGE.short,
         stages::storyboard::STAGE.key,
         stages::storyboard::STAGE.subject_kind,

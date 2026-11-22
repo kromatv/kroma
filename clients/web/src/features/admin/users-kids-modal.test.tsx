@@ -11,6 +11,7 @@ const auth = vi.hoisted(() => ({
   user: { id: 'admin', hasPin: false },
   createKids: vi.fn(),
   navigate: vi.fn(),
+  ratings: { country: 'CH', household: 'FR', countries: ['CH', 'DE', 'FR'] },
 }));
 
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => auth.navigate }));
@@ -18,7 +19,10 @@ vi.mock('@tanstack/react-router', () => ({ useNavigate: () => auth.navigate }));
 vi.mock('#web/shared/lib/auth', () => ({
   useAuth: () => ({
     user: auth.user,
-    client: { admin: { createKids: auth.createKids }, accounts: {} },
+    client: {
+      admin: { createKids: auth.createKids },
+      accounts: { ratings: { get: () => Promise.resolve(auth.ratings) } },
+    },
     updateUser: vi.fn(),
   }),
 }));
@@ -85,6 +89,28 @@ describe('creating a Kids profile', () => {
     press('Not now');
 
     await expect(answer).resolves.toBe(true);
+  });
+
+  it("makes the profile in the admin's own ratings country, which the form shows", async () => {
+    auth.user = { id: 'admin', hasPin: true };
+    render(<KidsModal />, { wrapper: Providers });
+    act(() => {
+      void KidsModal.call();
+    });
+
+    await waitFor(() => expect(screen.getAllByText('Switzerland').length).toBeGreaterThan(0));
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Léo' } });
+    clearPressGuard();
+    fireEvent.click(screen.getByRole('radio', { name: /10\+/ }));
+    press('Create the profile');
+
+    await waitFor(() => expect(auth.createKids).toHaveBeenCalled());
+    expect(auth.createKids).toHaveBeenCalledWith({
+      username: 'Léo',
+      level: 10,
+      libraries: null,
+      ratingsCountry: 'CH',
+    });
   });
 
   it('asks nothing more of an admin whose profile already has a PIN', async () => {

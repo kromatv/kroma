@@ -5,6 +5,7 @@ use crate::config::Config;
 use crate::i18n;
 
 use super::TMDB_LANGUAGE_AUTO;
+use super::schema::SettingRow;
 use super::store::Settings;
 
 /// The TMDB metadata language used when enriching the catalog (e.g. `fr-FR`)
@@ -75,6 +76,20 @@ fn language_of_reader(configured: &str, reads: &str) -> String {
         // Regioned, because a bare code leaves TMDB to pick release dates and
         // artwork for no region in particular.
         tmdb_region_of(&asked).to_owned()
+    }
+}
+
+/// The admin row that picks [`metadata_language`].
+pub(super) fn metadata_language_row(locale: &str, value: serde_json::Value) -> SettingRow {
+    SettingRow {
+        key: "tmdbLanguage".into(),
+        label: i18n::t(locale, "admin.tmdbLanguage", &[]),
+        desc: Some(i18n::t(locale, "admin.tmdbLanguageHint", &[])),
+        kind: "select",
+        options: tmdb_language_options(),
+        value,
+        applied: true,
+        configured: None,
     }
 }
 

@@ -27,17 +27,20 @@ pub struct Viewer {
 pub type ShowRatings = HashMap<String, TitleAccess>;
 
 impl Viewer {
-    /// `user` with the ceiling, ratings country and title rules stored for it,
-    /// read against the household's metadata country. Blocking: it reads the
-    /// database.
+    /// `user` with the ceiling, ratings country and title rules stored for it.
+    /// A profile with no ratings country of its own reads the household's
+    /// (ACCT-154). Blocking: it reads the database.
     pub fn load(state: &SharedState, user: User) -> anyhow::Result<Viewer> {
         let server = settings::metadata_country(&state.settings, &state.config);
         let stored = db::profile_maturity(&state.db, &user.id)?;
+        let reader = stored.ratings_country.unwrap_or_else(|| {
+            settings::household_country(&state.settings, &state.config, &state.db)
+        });
         Ok(Viewer {
             rules: db::title_rules(&state.db, &user.id)?,
             ceiling: Ceiling {
                 level: stored.level,
-                reader: stored.ratings_country.unwrap_or_else(|| server.clone()),
+                reader,
                 server,
             },
             user,

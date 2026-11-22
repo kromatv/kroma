@@ -1,21 +1,34 @@
-import { type KidsProfile, normalizeServerUrl } from '@kromatv/client/accounts';
+import {
+  type KidsProfile,
+  normalizeServerUrl,
+  type RatingsCountry,
+} from '@kromatv/client/accounts';
 import type { NewKidsProfile } from '@kromatv/client/admin';
 
 /** The levels a Kids profile is made at, youngest first (ACCT-123). */
 export const KIDS_LEVELS: readonly NewKidsProfile['level'][] = [0, 7, 10];
 
 /** What a Kids profile form holds: a level is picked by the admin, never in
- *  advance. */
+ *  advance; a country left `null` is the creating admin's own (ACCT-155). */
 export interface KidsForm {
   name: string;
   level: NewKidsProfile['level'] | null;
+  country?: string | null;
 }
 
 /** The profile a Kids form asks the server for, granted every library, or
  *  `null` while it has no name or no level. */
-export function kidsDraft({ name, level }: KidsForm): NewKidsProfile | null {
+export function kidsDraft({ name, level, country = null }: KidsForm): NewKidsProfile | null {
   const username = name.trim();
-  return username && level !== null ? { username, level, libraries: null } : null;
+  return username && level !== null
+    ? { username, level, libraries: null, ratingsCountry: country }
+    : null;
+}
+
+/** The ratings country a Kids form starts on: the creating admin's own, else
+ *  the household's (ACCT-155). */
+export function kidsCountry(ratings: RatingsCountry): string {
+  return ratings.country ?? ratings.household;
 }
 
 /** What the Kids rules read of an account remembered on a device. */

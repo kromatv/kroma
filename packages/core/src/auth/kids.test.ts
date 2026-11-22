@@ -1,6 +1,14 @@
 import { type KidsProfile, type StoredSession, UserId } from '@kromatv/client/accounts';
 import { describe, expect, it } from 'vitest';
-import { isKidsAccount, KIDS_LEVELS, kidsDoor, kidsDraft, kidsOnDevice, kidsToOffer } from './kids';
+import {
+  isKidsAccount,
+  KIDS_LEVELS,
+  kidsCountry,
+  kidsDoor,
+  kidsDraft,
+  kidsOnDevice,
+  kidsToOffer,
+} from './kids';
 
 const A = 'http://a.lan:4040';
 const B = 'https://b.example';
@@ -97,7 +105,20 @@ describe('a new Kids profile as a form asks for it', () => {
       username: 'Léo',
       level: 7,
       libraries: null,
+      ratingsCountry: null,
     });
+  });
+
+  it('carries the ratings country the form shows', () => {
+    expect(kidsDraft({ name: 'Léo', level: 10, country: 'CH' })?.ratingsCountry).toBe('CH');
+  });
+
+  it("starts on the admin's own ratings country, else the household's", () => {
+    const swiss = { country: 'CH', household: 'FR', countries: ['CH', 'FR'] };
+    const household = { country: null, household: 'FR', countries: ['CH', 'FR'] };
+
+    expect(kidsCountry(swiss)).toBe('CH');
+    expect(kidsCountry(household)).toBe('FR');
   });
 
   it('is not ready without a name or without a level', () => {

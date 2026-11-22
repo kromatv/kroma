@@ -28,6 +28,7 @@ mod kept_libraries;
 mod keys;
 mod library_list;
 mod llm;
+mod ratings_country;
 mod schema;
 mod shared_files;
 mod sign_in;
@@ -46,6 +47,7 @@ pub use library_list::{
     library_list, set_library_defs, stored_library_defs, UnreadableLibraryList,
 };
 pub use llm::*;
+pub use ratings_country::{household_country, known as known_ratings_country, RATINGS_COUNTRY_KEY};
 pub use schema::*;
 pub use shared_files::{holds, library_sharing_files};
 pub use sign_in::*;

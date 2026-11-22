@@ -8,6 +8,8 @@ export type { AskedTitle, TitleAsk } from './ask-for-title.hook';
 export { useAskForTitle } from './ask-for-title.hook';
 export type { CreateKidsHost } from './create-kids.hook';
 export { useCreateKids } from './create-kids.hook';
+export type { KidsCountry } from './kids-country.hook';
+export { useKidsCountry } from './kids-country.hook';
 export type { DeviceKids, DeviceKidsHost } from './device-kids.hook';
 export { useDeviceKids } from './device-kids.hook';
 export type {

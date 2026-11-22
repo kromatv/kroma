@@ -7,11 +7,12 @@ import { Box, Button, Field, Row, Select, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useAsyncAction } from '#web/features/admin/hooks';
+import { RestrictionsCountry } from '#web/features/admin/restrictions-country.component';
 import { TitleRules } from '#web/features/admin/title-rules.component';
 import { useAuth } from '#web/shared/lib/auth';
 
-/** A profile's restrictions in the member editor: its maturity level and the
- * titles blocked or allowed for it. They read at once and change only after
+/** A profile's restrictions in the member editor: its maturity level, its
+ * ratings country and the titles blocked or allowed for it. They read at once and change only after
  * the admin types their own password, which then covers every change for as
  * long as the editor stays open (ACCT-116, ACCT-121). The server checks the
  * password on each change. */
@@ -49,10 +50,17 @@ function RestrictionsBody({
         {hintFor(t, { held: read.held, self })}
       </Text>
       {locked ? null : (
-        <TitleRules
-          titles={read.titles}
-          onRule={change.password === null ? undefined : change.setRule}
-        />
+        <>
+          <RestrictionsCountry
+            read={read}
+            disabled={change.password === null || change.busy}
+            onPick={change.setCountry}
+          />
+          <TitleRules
+            titles={read.titles}
+            onRule={change.password === null ? undefined : change.setRule}
+          />
+        </>
       )}
     </>
   );
@@ -93,11 +101,13 @@ function useRestrictionChange(user: AdminUser) {
     );
   const setLevel = (level: MaturityLevel, proof = password ?? '') =>
     proven(proof, () => client.admin.restrictions.setLevel(user.id, level, proof));
+  const withProof = (write: (proof: string) => Promise<void>) =>
+    void proven(password ?? '', () => write(password ?? ''));
   const setRule = (title: string, rule: TitleRule | null) =>
-    void proven(password ?? '', () =>
-      client.admin.restrictions.setTitleRule(user.id, { title, rule }, password ?? ''),
-    );
-  return { password, busy, error, setLevel, setRule };
+    withProof((proof) => client.admin.restrictions.setTitleRule(user.id, { title, rule }, proof));
+  const setCountry = (country: string | null) =>
+    withProof((proof) => client.admin.restrictions.setCountry(user.id, country, proof));
+  return { password, busy, error, setLevel, setRule, setCountry };
 }
 
 function LevelControl({

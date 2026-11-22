@@ -76,6 +76,7 @@ fn declared() -> Declared {
     m.module_declared("uiLanguage", json!("Français"));
     // Empty → the env-configured `KROMA_TMDB_LANGUAGE` (default "en-US").
     m.module_declared("tmdbLanguage", json!(super::TMDB_LANGUAGE_AUTO));
+    m.core_only(super::RATINGS_COUNTRY_KEY, json!(super::TMDB_LANGUAGE_AUTO));
     m.module_declared("timezone", json!("Europe/Zurich (UTC+1)"));
     m.module_declared("autoUpdate", json!(true));
     m.module_declared("autoInstallUpdates", json!(null));

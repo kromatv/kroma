@@ -113,8 +113,16 @@ fn a_label_the_table_does_not_know_does_not_pass() {
 fn a_title_enriched_before_every_country_was_kept_is_read_under_the_servers_country() {
     let old = labelled("12");
 
-    assert!(ceiling(MaturityLevel::Thirteen, "US").admits_metadata(Some(&old)));
-    assert!(!ceiling(MaturityLevel::Ten, "US").admits_metadata(Some(&old)));
+    assert!(ceiling(MaturityLevel::Thirteen, "FR").admits_metadata(Some(&old)));
+    assert!(!ceiling(MaturityLevel::Ten, "FR").admits_metadata(Some(&old)));
+}
+
+#[test]
+fn a_bare_label_kept_for_the_servers_country_is_unrated_for_a_reader_of_another() {
+    let old = labelled("TP");
+
+    assert!(!ceiling(MaturityLevel::Ten, "CH").admits_metadata(Some(&old)));
+    assert!(!ceiling(MaturityLevel::Sixteen, "US").admits(&CountryRatings::new(), Some("TP")));
 }
 
 #[test]
