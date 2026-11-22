@@ -3,15 +3,31 @@ import { useSession } from '#mobile/lib/session';
 
 import type { KromaClient } from '@kromatv/client';
 import type { PublicUser } from '@kromatv/client/accounts';
-import { type DiscoveredServer, discoverServers } from '@kromatv/core';
+import type { SplashEntry } from '@kromatv/client/media';
+import type { Translate } from '@kromatv/i18n';
+import { type DiscoveredServer, discoverServers, sizedImageUrl } from '@kromatv/core';
+import { type DeviceKids, useDeviceKids as useKidsOn } from '@kromatv/core/react';
+import type { SplashCover } from '@kromatv/ui/kit';
 import { useEffect, useRef, useState } from 'react';
 import { makeClient } from '#mobile/lib/device';
+import { useT } from '#mobile/lib/i18n';
 import { getDeviceLocalIp } from '#mobile/lib/local-ip';
 import { isBiometricLockEnabled, type MobileAccount } from '#mobile/lib/storage';
 
 export const keyOf = (a: MobileAccount) => `${a.serverUrl}::${a.user.id}`;
 
 export const hostOf = (url: string) => url.replace(/^https?:\/\//, '');
+
+/** The Kids profiles this phone can open (ACCT-126): opening one adopts its
+ *  session on its own server. */
+export function useDeviceKids(accounts: readonly MobileAccount[]): DeviceKids {
+  const { adopt } = useSession();
+  const clientFor = useClientCache();
+  return useKidsOn(accounts, {
+    kidsOf: (url) => clientFor(url).accounts.kids,
+    onOpened: (opened, url) => adopt(url, opened),
+  });
+}
 
 export function useClientCache(): (url: string) => KromaClient {
   const { requestLocale } = useSession();
@@ -116,4 +132,42 @@ export function useServerRoster(serverUrl: string | null): PublicUser[] {
     };
   }, [serverUrl, requestLocale]);
   return loaded?.serverUrl === serverUrl ? loaded.users : EMPTY_ROSTER;
+}
+
+/** The gate's splash artwork: the current server's public `/api/splash`
+ *  sample, the same dressing the web and TV gates wear. No server picked yet
+ *  means no covers, and the screen keeps its plain wash. */
+export function useSplashCovers(
+  serverUrl: string | null,
+  clientFor: (url: string) => KromaClient,
+): SplashCover[] {
+  const t = useT();
+  const [covers, setCovers] = useState<SplashCover[]>([]);
+  useEffect(() => {
+    if (!serverUrl) {
+      return undefined;
+    }
+    let cancelled = false;
+    clientFor(serverUrl)
+      .media.splash()
+      .then((entries) => {
+        if (cancelled) {
+          return;
+        }
+        setCovers(entries.map((entry) => coverOf(entry, t)));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [serverUrl, clientFor, t]);
+  return covers;
+}
+
+function coverOf(entry: SplashEntry, t: Translate): SplashCover {
+  return {
+    url: sizedImageUrl(entry.backdropUrl, 640) ?? entry.backdropUrl,
+    caption: [entry.title, entry.year].filter(Boolean).join(' · '),
+    eyebrow: t(entry.kind === 'show' ? 'content.series' : 'content.film'),
+  };
 }

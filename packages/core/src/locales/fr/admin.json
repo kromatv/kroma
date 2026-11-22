@@ -456,5 +456,6 @@
   "admin.kidsPinOfferBody": "Pour quitter Kids, on passe par le choix du profil. Sans code PIN, votre profil s'y ouvre en un seul geste.",
   "admin.kidsPinOfferSet": "Définir un code PIN",
   "admin.kidsPinOfferSkip": "Plus tard",
+  "admin.kidsNameEmpty": "Pas encore de nom",
   "admin.kidsFailed": "Impossible de créer le profil Kids"
 }

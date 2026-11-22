@@ -3,13 +3,12 @@
 // components; this file owns state, effects and auth calls.
 
 import { apiErrorText, KromaApiError } from '@kromatv/client';
-import { sizedImageUrl } from '@kromatv/core';
-import type { SplashCover } from '@kromatv/ui/kit';
+import { askForKidsProfile, dropKidsProfileAsk, kidsDoor } from '@kromatv/core';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CredentialsPhase, PinPhase } from '#mobile/components/auth-phases.component';
 import { OnboardingScreen } from '#mobile/components/onboarding-screen.component';
-import { type GateTile, ProfileGate } from '#mobile/components/profile-gate.component';
+import { ProfileGate } from '#mobile/components/profile-gate.component';
 import { ServerPicker } from '#mobile/components/server-picker.component';
 import {
   type EnterSavedDeps,
@@ -17,6 +16,7 @@ import {
   type Phase,
 } from '#mobile/components/sign-in-flow';
 import { useProviderGate } from '#mobile/components/sign-in-providers.hook';
+import { useGateTiles } from '#mobile/components/use-gate-tiles.hook';
 import {
   hostOf,
   keyOf,
@@ -24,6 +24,7 @@ import {
   useClientCache,
   useDiscoveryLoop,
   useServerRoster,
+  useSplashCovers,
 } from '#mobile/components/sign-in-hooks';
 import { useT } from '#mobile/lib/i18n';
 import { useSession } from '#mobile/lib/session';
@@ -81,36 +82,10 @@ export default function SignIn() {
     (u) => !accounts.some((a) => a.serverUrl === serverUrl && a.user.id === u.id),
   );
 
-  // The gate's splash artwork: the current server's public `/api/splash`
-  // sample, the same dressing the web and TV gates wear. No server picked
-  // yet means no covers, and the screen keeps its plain wash.
-  const [covers, setCovers] = useState<SplashCover[]>([]);
-  useEffect(() => {
-    if (!serverUrl) {
-      return undefined;
-    }
-    let cancelled = false;
-    clientFor(serverUrl)
-      .media.splash()
-      .then((entries) => {
-        if (cancelled) {
-          return;
-        }
-        setCovers(
-          entries.map((e) => ({
-            url: sizedImageUrl(e.backdropUrl, 640) ?? e.backdropUrl,
-            caption: [e.title, e.year].filter(Boolean).join(' · '),
-            eyebrow: t(e.kind === 'show' ? 'content.series' : 'content.film'),
-          })),
-        );
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [serverUrl, clientFor, t]);
+  const covers = useSplashCovers(serverUrl, clientFor);
 
   const backToGate = () => {
+    dropKidsProfileAsk();
     setPhase({ kind: 'gate' });
     setPassword('');
     setPin('');
@@ -177,39 +152,26 @@ export default function SignIn() {
     }
   };
 
-  const gateTiles: GateTile[] = [
-    ...accounts.map((account) => {
-      const offline = probes[account.serverUrl]?.online === false;
-      let caption: string | null = null;
-      if (offline) {
-        caption = t('profiles.serverOffline');
-      } else if (multiServer) {
-        caption = serverLabel(account.serverUrl);
-      }
-      return {
-        key: keyOf(account),
-        name: account.user.username,
-        caption,
-        avatarUri: clientFor(account.serverUrl).media.artwork.resolve(account.user.avatarUrl),
-        busy: busy === keyOf(account),
-        offline,
-        locked: account.user.hasPin || bioLocked.has(keyOf(account)),
-        onPress: () => void enterSaved(account),
-      };
-    }),
-    ...rosterOnly.map((profile) => ({
-      key: `roster-${profile.id}`,
-      name: profile.username,
-      avatarUri: serverUrl ? clientFor(serverUrl).media.artwork.resolve(profile.avatarUrl) : null,
-      locked: profile.hasPin,
-      onPress: () =>
-        setPhase({
-          kind: 'password',
-          username: profile.username,
-          avatarUrl: profile.avatarUrl ?? null,
-        }),
-    })),
-  ];
+  const gateTiles = useGateTiles({
+    accounts,
+    roster: rosterOnly,
+    serverUrl,
+    online: (url) => probes[url]?.online,
+    label: (url) => (multiServer ? serverLabel(url) : null),
+    busy,
+    locked: (account) => account.user.hasPin || bioLocked.has(keyOf(account)),
+    clientFor,
+    onSaved: (account) => void enterSaved(account),
+    onRoster: (profile) =>
+      setPhase({
+        kind: 'password',
+        username: profile.username,
+        avatarUrl: profile.avatarUrl ?? null,
+      }),
+    onKidsOpened: () => enterDeps.enterApp(),
+    onKidsFailed: () => setError(t('auth.loginFailed')),
+  });
+  const door = kidsDoor(accounts);
 
   // The screen owns the way back, not each phase: the same control in the same
   // corner on every step, which is what the TV and web gates do. The gate is
@@ -237,6 +199,14 @@ export default function SignIn() {
           disabled={busy !== null}
           error={error}
           onAdd={() => setPhase({ kind: 'server' })}
+          onAddKids={
+            door
+              ? () => {
+                  askForKidsProfile(door.user.id);
+                  void enterSaved(door);
+                }
+              : undefined
+          }
         />
       )}
       {phase.kind === 'server' && (

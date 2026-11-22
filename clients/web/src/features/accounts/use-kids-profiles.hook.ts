@@ -1,4 +1,5 @@
 import type { KidsProfile, StoredSession } from '@kromatv/client/accounts';
+import { kidsOnDevice } from '@kromatv/core';
 import { useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -33,11 +34,6 @@ async function listedByAMember(
   accounts: readonly StoredSession[],
   list: (access: string) => Promise<KidsProfile[]>,
 ): Promise<MemberKids> {
-  const answers = await Promise.allSettled(accounts.map((a) => list(a.accessToken)));
-  const index = answers.findIndex((answer) => answer.status === 'fulfilled');
-  const answer = answers[index];
-  if (answer?.status !== 'fulfilled') {
-    return NONE;
-  }
-  return { access: accounts[index]?.accessToken ?? null, profiles: answer.value };
+  const [server] = await kidsOnDevice(accounts, (_, access) => list(access));
+  return server ? { access: server.access, profiles: server.profiles } : NONE;
 }

@@ -456,5 +456,6 @@
   "admin.kidsPinOfferBody": "Leaving Kids goes through the picker. Without a PIN, your profile opens there in one press.",
   "admin.kidsPinOfferSet": "Set a PIN",
   "admin.kidsPinOfferSkip": "Not now",
+  "admin.kidsNameEmpty": "No name yet",
   "admin.kidsFailed": "Couldn't create the Kids profile"
 }

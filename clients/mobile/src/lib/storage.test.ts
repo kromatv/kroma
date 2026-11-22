@@ -66,6 +66,7 @@ const account = (over: Partial<MobileAccount> = {}): MobileAccount => ({
     email: 'max@kroma.local',
     avatarUrl: null,
     hasPin: false,
+    permissions: ['playback'],
   },
   ...over,
 });
@@ -92,6 +93,23 @@ describe('accounts', () => {
     // A token in the keychain is one thing; the caller's full user object is another.
     expect(raw).not.toContain('do-not-persist');
     expect(raw).toContain('max');
+  });
+
+  it('keeps each profile’s rights, so the picker knows who may add a Kids profile', async () => {
+    const admin = account({ user: { ...account().user, permissions: ['users.manage'] } });
+
+    await saveAccounts([admin]);
+
+    await expect(loadAccounts()).resolves.toEqual([admin]);
+  });
+
+  it('reads an account stored before rights were kept as holding none', async () => {
+    const { permissions: _, ...older } = account().user;
+    store.set(ACCOUNTS_KEY, JSON.stringify([{ ...account(), user: older }]));
+
+    const [loaded] = await loadAccounts();
+
+    expect(loaded?.user.permissions).toEqual([]);
   });
 
   it('migrates a single legacy session into the accounts list', async () => {

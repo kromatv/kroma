@@ -116,9 +116,9 @@ clears the other.
 
 ## A Kids profile
 
-Status: **SHIPPED** in part, on the server and in the web and desktop apps; each
-requirement carries its own. The television and phone pickers do not list Kids profiles
-yet, and the avatar is the drawn one: no picture is offered.
+Status: **SHIPPED** in part, on the server and on every picker: web, desktop, television
+and phone. Each requirement carries its own. The avatar is the drawn one: no picture is
+offered.
 
 **ACCT-122** (AGREED) - An admin creates a Kids profile under Users, with a name and an
 avatar. It has no email, no password, no passkey, no sign-in provider and no invitation.
@@ -150,9 +150,9 @@ Kids experience. It still has no credential and still opens from the picker.
 
 ## Leaving a Kids profile
 
-Status: **SHIPPED** on the server and in the web and desktop apps. The television and
-phone pickers already lock every PIN profile; they open no Kids profile yet (ACCT-126), so
-leaving one and adding one from their pickers come with that.
+Status: **SHIPPED** on the server and on every picker. A television or a phone adds a Kids
+profile from its picker as the web does: the admin signed in there enters their profile,
+its PIN first, and a short form asks for a name and a level and grants every library.
 
 **ACCT-131** (SHIPPED) - Leaving a Kids profile goes to the picker. There is no exit lock of
 its own: a profile with a PIN asks for it there, as it always does.
@@ -176,13 +176,15 @@ rather than locking every profile on its behalf.
 
 ## The Kids experience
 
-Status: **SHIPPED** on the server and in the web and desktop apps. The television and
-phone apps cannot open a Kids profile yet (ACCT-126), so no Kids session reaches them.
+Status: **SHIPPED** in part. The server and the web and desktop apps do all of it. The
+television and phone apps open a Kids profile, and the server refuses its session what it
+loses there too, but they do not wear the Kids look yet and still draw the account
+settings the server refuses.
 
-**ACCT-136** (SHIPPED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
+**ACCT-136** (AGREED) - A Kids session wears the KROMA Kids look: the KROMA Kids logo in
 place of KROMA's, and a simpler, friendlier theme, on every surface.
 
-**ACCT-137** (SHIPPED) - A Kids session has no admin, no Store, no requests, no account
+**ACCT-137** (AGREED) - A Kids session has no admin, no Store, no requests, no account
 settings and no way to sign another device in, and the server refuses those routes to its
 session. Its player languages stay its own.
 
