@@ -13,7 +13,7 @@
   "person.diedAge": "{date} (à {age} ans)",
   "person.empty": "Aucun titre trouvé pour cette personne.",
   "person.filmography": "Filmographie",
-  "person.filmographyHint": "Titres TMDB pas encore dans votre bibliothèque.",
+  "person.filmographyHint": "Titres de TMDB qui ne sont pas encore dans votre bibliothèque.",
   "person.knownFor": "Connu pour",
   "person.readLess": "Réduire",
   "person.readMore": "Lire la suite",

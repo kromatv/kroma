@@ -1,0 +1,24 @@
+{
+  "Items": [
+    {
+      "Name": "Films",
+      "Locations": ["/media/films"],
+      "CollectionType": "movies",
+      "LibraryOptions": { "EnableRealtimeMonitor": true },
+      "ItemId": "b0000000000000000000000000000001",
+      "Id": "b0000000000000000000000000000001",
+      "Guid": "0c1d2e3f40514a5b8c6d7e8f9a0b1c2d",
+      "RefreshStatus": "Idle"
+    },
+    {
+      "Name": "Shows",
+      "Locations": ["/media/shows"],
+      "CollectionType": "tvshows",
+      "LibraryOptions": {},
+      "ItemId": "b0000000000000000000000000000002",
+      "Id": "b0000000000000000000000000000002",
+      "RefreshStatus": "Idle"
+    }
+  ],
+  "TotalRecordCount": 2
+}

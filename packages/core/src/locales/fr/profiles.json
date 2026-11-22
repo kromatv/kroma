@@ -1,7 +1,7 @@
 {
   "profiles.add": "Ajouter",
   "profiles.addProfile": "Ajouter un profil",
-  "profiles.deviceSettings": "Paramètres",
+  "profiles.deviceSettings": "Réglages",
   "profiles.serverOffline": "Hors ligne",
-  "profiles.subtitle": "Choisissez un profil, ou liez un appareil par connexion rapide."
+  "profiles.subtitle": "Choisissez un profil, ou associez un appareil avec la connexion rapide."
 }

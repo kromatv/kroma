@@ -222,3 +222,26 @@ fn a_server_takes_the_name_a_later_import_gives_and_keeps_it_when_none_is_given(
     assert_eq!(get(&p, "i3").unwrap().unwrap().server.name, "Den");
     assert_eq!(get(&p, "i1").unwrap().unwrap().server.name, "Den");
 }
+
+#[test]
+fn a_run_that_starts_while_another_write_is_in_progress_waits_for_it_and_claims_the_import() {
+    let p = pool();
+    queue_at(&p, "i1", 1);
+    let holder = p.get().unwrap();
+    holder.execute_batch("BEGIN IMMEDIATE").unwrap();
+    holder
+        .execute(
+            "INSERT INTO settings (key, value, updated_at) VALUES ('scan', '1', 't')",
+            [],
+        )
+        .unwrap();
+    let pool: Pool = (*p).clone();
+
+    let claiming = std::thread::spawn(move || claim(&pool, "run-1", 7));
+    std::thread::sleep(std::time::Duration::from_millis(300));
+    holder.execute_batch("COMMIT").unwrap();
+    let claimed = claiming.join().unwrap();
+
+    let status = claimed.map(|import| import.map(|import| import.status));
+    assert_eq!(status.map_err(|e| e.to_string()), Ok(Some(Status::Running)));
+}
