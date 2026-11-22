@@ -14,8 +14,9 @@ export type InvitationState = z.infer<typeof InvitationState>;
  * account may see, or `null` for every library.
  *
  * `invitation` is set for an account that waits on an invitation: nobody has
- * signed in to it yet, and nobody can until its invitation is redeemed. Only
- * such an account may have no `email`. */
+ * signed in to it yet, and nobody can until its invitation is redeemed. `kids`
+ * marks a Kids profile, which nobody signs in to at all. Only these two have
+ * no `email`. */
 export const AdminUser = User.pick({
   id: true,
   username: true,
@@ -32,8 +33,18 @@ export const AdminUser = User.pick({
   online: z.boolean(),
   emailVerified: z.boolean(),
   resetRequested: z.boolean(),
+  kids: z.boolean().default(false),
 });
 export type AdminUser = z.infer<typeof AdminUser>;
+
+/** `POST /api/admin/kids`: a Kids profile's name, one of the kids levels with
+ * none picked in advance, and its grant (`null` for every library). */
+export const NewKidsProfile = z.object({
+  username: z.string().trim().nonempty(),
+  level: z.union([z.literal(0), z.literal(7), z.literal(10)]),
+  libraries: z.array(LibraryId).nullable(),
+});
+export type NewKidsProfile = z.infer<typeof NewKidsProfile>;
 
 /** `GET /api/admin/users`. */
 export const AdminUsers = z.object({

@@ -8,10 +8,12 @@ import { PinDialog, type PinTask } from '#web/features/accounts/account/pin-dial
 import { SettingCard } from '#web/features/accounts/account/setting-card.component';
 import { useAuth } from '#web/shared/lib/auth';
 
-export function PinCard() {
+/** The profile lock. `asked` opens the new PIN dialog at once, as a link to
+ *  it does, unless the profile already has a PIN. */
+export function PinCard({ asked = false }: Readonly<{ asked?: boolean }>) {
   const t = useT();
   const { user } = useAuth();
-  const [task, setTask] = useState<PinTask | null>(null);
+  const [task, setTask] = useState(() => firstTask({ asked, locked: user?.hasPin === true }));
 
   if (!user) {
     return null;
@@ -45,4 +47,8 @@ export function PinCard() {
       {task ? <PinDialog task={task} onClose={() => setTask(null)} /> : null}
     </>
   );
+}
+
+function firstTask(page: Readonly<{ asked: boolean; locked: boolean }>): PinTask | null {
+  return page.asked && !page.locked ? 'set' : null;
 }

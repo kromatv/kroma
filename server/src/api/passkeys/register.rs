@@ -12,6 +12,7 @@ use super::ceremony::{
 };
 use crate::api::dto::PasskeyInfo;
 use crate::api::error::lerr;
+use crate::api::accounts::AuthMember;
 use crate::api::extract::AuthUser;
 use crate::api::util::query;
 use crate::db;
@@ -24,7 +25,7 @@ pub async fn register_start(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     headers: HeaderMap,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
 ) -> Response {
     if let Err(resp) = super::require_passkeys_on(&state, loc) {
         return resp;

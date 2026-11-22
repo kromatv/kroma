@@ -10,8 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::permission::require;
-use crate::api::util::query;
-use crate::db;
+use crate::api::visibility;
 use crate::i18n;
 use crate::model::{CastCommand, Permission, User};
 use crate::services::cast::valid_receiver_id;
@@ -94,11 +93,9 @@ pub(super) async fn known_title(
     let CastCommand::Play { item_id, .. } = command else {
         return Ok(());
     };
-    let wanted = item_id.clone();
-    let known = query(&state.db, move |pool| db::get_item(&pool, &wanted))
+    let viewer = visibility::viewer_of(state, user.clone()).await?;
+    let known = visibility::item_in_scope(state, &viewer, item_id.clone())
         .await
-        .unwrap_or_default()
-        .filter(|item| user.sees_library(&item.library))
         .is_some();
     if known {
         return Ok(());

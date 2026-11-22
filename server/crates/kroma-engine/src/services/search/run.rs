@@ -24,6 +24,7 @@ pub(super) struct Run<'a> {
     pub(super) active: Arc<Active>,
     pub(super) searcher: Searcher,
     pub(super) visible: Arc<HashSet<String>>,
+    pub(super) titles: Option<Arc<HashSet<String>>>,
     pub(super) favoured: Arc<HashMap<String, f32>>,
     pub(super) limit: usize,
 }
@@ -66,17 +67,17 @@ impl Run<'_> {
     }
 
     fn weighed(&self, query: &dyn Query, intent: &Arc<Intent>, limit: usize) -> Vec<usize> {
-        let (active, visible, favoured, intent) = (
+        let (active, shelf, favoured, intent) = (
             self.active.clone(),
-            self.visible.clone(),
+            Shelf::of(self),
             self.favoured.clone(),
             intent.clone(),
         );
         let by_weight = TopDocs::with_limit(limit).tweak_score(move |segment: &SegmentReader| {
             let ords = segment.fast_fields().u64(ORD).ok();
-            let (active, visible, favoured, intent) = (
+            let (active, shelf, favoured, intent) = (
                 active.clone(),
-                visible.clone(),
+                shelf.clone(),
                 favoured.clone(),
                 intent.clone(),
             );
@@ -87,7 +88,7 @@ impl Run<'_> {
                 let weighed = active
                     .entries
                     .get(ord)
-                    .filter(|entry| visible.contains(&entry.library))
+                    .filter(|entry| shelf.holds(entry))
                     .map_or(UNSEEN, |entry| {
                         score * intent.weigh(entry, favour(&favoured, entry))
                     });
@@ -101,6 +102,27 @@ impl Run<'_> {
             .filter(|((score, _), _)| *score > UNSEEN)
             .map(|((_, Reverse(ord)), _)| ord)
             .collect()
+    }
+}
+
+#[derive(Clone)]
+struct Shelf {
+    libraries: Arc<HashSet<String>>,
+    titles: Option<Arc<HashSet<String>>>,
+}
+
+impl Shelf {
+    fn of(run: &Run) -> Shelf {
+        Shelf {
+            libraries: run.visible.clone(),
+            titles: run.titles.clone(),
+        }
+    }
+
+    fn holds(&self, entry: &Entry) -> bool {
+        let title = entry.show_id.as_ref().unwrap_or(&entry.id);
+        self.libraries.contains(&entry.library)
+            && self.titles.as_ref().is_none_or(|ids| ids.contains(title))
     }
 }
 

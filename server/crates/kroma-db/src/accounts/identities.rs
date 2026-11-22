@@ -78,7 +78,7 @@ pub fn identity_user(pool: &Pool, issuer: &str, subject: &str) -> Result<Option<
             "SELECT u.id,u.email,u.username,u.avatar_url,u.created_at,u.permissions,u.language,\
              (u.pin_hash IS NOT NULL),u.audio_language,u.subtitle_language,u.libraries \
              FROM identities i JOIN users u ON u.id = i.user_id \
-             WHERE i.issuer = ?1 AND i.subject = ?2 AND u.waiting = 0",
+             WHERE i.issuer = ?1 AND i.subject = ?2 AND u.waiting = 0 AND u.kids = 0",
             params![issuer, subject],
             row_to_user,
         )

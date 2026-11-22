@@ -1,7 +1,21 @@
-use super::*;
-use crate::model::Permission;
+use std::sync::Arc;
 
-fn viewer(libraries: LibraryScope) -> User {
+use super::*;
+use crate::model::{Ceiling, LibraryScope, MaturityLevel, Permission, Section, SectionItem, Show};
+
+fn viewer(libraries: LibraryScope) -> Viewer {
+    Viewer {
+        user: account(libraries),
+        ceiling: Ceiling {
+            level: MaturityLevel::Adult,
+            reader: "US".into(),
+            server: "US".into(),
+        },
+        rules: Default::default(),
+    }
+}
+
+fn account(libraries: LibraryScope) -> User {
     User {
         id: "u1".into(),
         email: "a@b.c".into(),
@@ -41,17 +55,18 @@ fn series() -> Show {
         .expect("demo show")
 }
 
-fn only_films() -> User {
+fn only_films() -> Viewer {
     viewer(LibraryScope::Only(vec![movie().library]))
 }
 
-#[test]
-fn a_listing_keeps_only_what_the_grant_names() {
+#[tokio::test]
+async fn a_listing_keeps_only_what_the_grant_names() {
+    let app = crate::api::test_support::test_app();
     let alice = only_films();
     let mut items = vec![movie(), episode()];
     let mut shows = vec![series()];
 
-    keep_items(&alice, &mut items);
+    keep_items(&app.state, &alice, &mut items).await.unwrap();
     keep_shows(&alice, &mut shows);
 
     assert_eq!(items.len(), 1);
@@ -59,12 +74,13 @@ fn a_listing_keeps_only_what_the_grant_names() {
     assert!(shows.is_empty());
 }
 
-#[test]
-fn an_unrestricted_account_keeps_every_row_untouched() {
+#[tokio::test]
+async fn an_unrestricted_account_keeps_every_row_untouched() {
+    let app = crate::api::test_support::test_app();
     let owner = viewer(LibraryScope::All);
     let mut items = vec![movie(), episode()];
 
-    keep_items(&owner, &mut items);
+    keep_items(&app.state, &owner, &mut items).await.unwrap();
 
     assert_eq!(items.len(), 2);
 }

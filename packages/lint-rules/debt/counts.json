@@ -2000,11 +2000,9 @@
   "import/no-cycle": {
     "clients/web/src/features/admin/jobs-schedule.component.tsx": 1,
     "clients/web/src/features/admin/libraries-modals.tsx": 1,
-    "clients/web/src/features/admin/library-visibility.component.tsx": 1,
-    "clients/web/src/features/admin/modal-hosts.component.tsx": 5,
+    "clients/web/src/features/admin/modal-hosts.component.tsx": 4,
     "clients/web/src/features/admin/shell.tsx": 1,
-    "clients/web/src/features/admin/users-approve-modal.component.tsx": 2,
-    "clients/web/src/features/admin/users-edit-modal.component.tsx": 1,
+    "clients/web/src/features/admin/users-approve-modal.component.tsx": 1,
     "clients/web/src/features/admin/users-invite-modal.component.tsx": 1,
     "clients/web/src/shared/lib/api.ts": 1,
     "clients/web/src/shared/lib/queries.ts": 1,

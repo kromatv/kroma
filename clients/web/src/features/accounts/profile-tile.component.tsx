@@ -1,4 +1,4 @@
-import { Box, Focusable, Icon, type StyleDecl, svFor, Text } from '@kromatv/ui/kit';
+import { Box, Focusable, Icon, KidsMark, type StyleDecl, svFor, Text } from '@kromatv/ui/kit';
 import { avatarCorner, UserAvatar } from '#web/shared/ui/user-avatar.component';
 
 const AVATAR = 146;
@@ -25,6 +25,7 @@ export function ProfileTile({
   seed,
   locked,
   lockedLabel,
+  kids = false,
   onPress,
 }: Readonly<{
   username: string;
@@ -32,6 +33,7 @@ export function ProfileTile({
   seed: string;
   locked: boolean;
   lockedLabel: string;
+  kids?: boolean;
   onPress: () => void;
 }>) {
   return (
@@ -40,24 +42,12 @@ export function ProfileTile({
         <>
           <Box style={slots.well}>
             <UserAvatar name={username} avatarUrl={avatarUrl} seed={seed} size={AVATAR} />
-            {locked ? (
-              // Solid surface, never a translucent one: an alpha background
-              // lets the avatar gradient bleed through and muddies the icon.
-              <Box
-                absolute
-                right={8}
-                bottom={8}
-                center
-                w={30}
-                h={30}
-                radius="circle"
-                border="white/12"
-                bg="surface2"
-                accessibilityLabel={lockedLabel}
-              >
-                <Icon name="lock" size={15} thickness={2.2} color="accent" />
+            {kids ? (
+              <Box absolute left={8} bottom={8}>
+                <KidsMark />
               </Box>
             ) : null}
+            {locked ? <LockBadge label={lockedLabel} /> : null}
           </Box>
           <Text variant="body" style={slots.label}>
             {username}
@@ -65,5 +55,26 @@ export function ProfileTile({
         </>
       )}
     </Focusable>
+  );
+}
+
+// Solid surface, never a translucent one: an alpha background lets the avatar
+// gradient bleed through and muddies the icon.
+function LockBadge({ label }: Readonly<{ label: string }>) {
+  return (
+    <Box
+      absolute
+      right={8}
+      bottom={8}
+      center
+      w={30}
+      h={30}
+      radius="circle"
+      border="white/12"
+      bg="surface2"
+      accessibilityLabel={label}
+    >
+      <Icon name="lock" size={15} thickness={2.2} color="accent" />
+    </Box>
   );
 }

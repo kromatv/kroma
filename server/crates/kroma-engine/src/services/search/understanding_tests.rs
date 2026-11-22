@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use super::engine::{Asker, SearchEngine};
 use super::tests::{episode, ids, meta, movie, show};
@@ -205,6 +205,7 @@ fn a_title_the_asker_is_watching_comes_before_its_namesake() {
     let favoured = HashMap::from([("serie".to_string(), 1.6)]);
     let asker = Asker {
         visible: &|_| true,
+        titles: None,
         favoured: &favoured,
     };
 
@@ -220,6 +221,7 @@ fn a_title_in_a_library_the_asker_cannot_see_does_not_take_a_place() {
     let e = engine_of(&[hidden, movie("seen", "Fargo North", None)], &[], &[]);
     let asker = Asker {
         visible: &|library| library == "lib",
+        titles: None,
         favoured: &HashMap::new(),
     };
 
@@ -227,6 +229,30 @@ fn a_title_in_a_library_the_asker_cannot_see_does_not_take_a_place() {
 
     assert_eq!(answer.hits.len(), 1);
     assert_eq!(answer.hits[0].id, "seen");
+}
+
+#[test]
+fn a_title_kept_from_the_profile_does_not_take_a_place_and_its_episodes_answer_as_its_show() {
+    let e = engine_of(
+        &[movie("kept", "Fargo", None), movie("seen", "Fargo North", None)],
+        &[show("serie", "Nights", None), show("other", "Days", None)],
+        &[
+            episode("e1", "serie", "Nights", "Fargo"),
+            episode("e2", "other", "Days", "Fargo Again"),
+        ],
+    );
+    let titles = HashSet::from(["seen".to_string(), "other".to_string()]);
+    let asker = Asker {
+        visible: &|_| true,
+        titles: Some(&titles),
+        favoured: &HashMap::new(),
+    };
+
+    let answer = e.answer("fargo", 5, &asker);
+
+    let mut ids: Vec<&str> = answer.hits.iter().map(|h| h.id.as_str()).collect();
+    ids.sort_unstable();
+    assert_eq!(ids, ["e2", "seen"]);
 }
 
 #[test]
@@ -241,6 +267,7 @@ fn a_name_answers_with_the_person_as_well_as_their_titles() {
     );
     let asker = Asker {
         visible: &|_| true,
+        titles: None,
         favoured: &HashMap::new(),
     };
 

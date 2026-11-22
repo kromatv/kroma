@@ -5,9 +5,8 @@ use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use crate::api::extract::AuthUser;
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::state::SharedState;
@@ -18,15 +17,15 @@ const UP_NEXT_EPISODES: usize = 20;
 /// continue this show (resume in-progress, else next unwatched, else first).
 pub async fn up_next(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(show_id): Path<String>,
     ContentLocale(locale): ContentLocale,
 ) -> Response {
-    if let Err(resp) = visibility::gate_show(&state, &user, &show_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Show(&show_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        let mut found = db::up_next_episode(&pool, &user.id, &show_id)?;
+        let mut found = db::up_next_episode(&pool, &viewer.user.id, &show_id)?;
         db::localize::overlay_each(&pool, found.as_mut().map(|(i, _)| i), locale)?;
         Ok(found)
     })
@@ -42,11 +41,11 @@ pub async fn up_next(
 /// the show (sequence-based; drives player autoplay).
 pub async fn next_episode(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(item_id): Path<String>,
     ContentLocale(locale): ContentLocale,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {
@@ -66,11 +65,11 @@ pub async fn next_episode(
 /// player's "up next" episode rail. Empty for a movie / the last episode.
 pub async fn following_episodes(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(item_id): Path<String>,
     ContentLocale(locale): ContentLocale,
 ) -> Response {
-    if let Err(resp) = visibility::gate_item(&state, &user, &item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
     match query(&state.db, move |pool| {

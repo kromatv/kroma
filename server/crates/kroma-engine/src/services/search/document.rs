@@ -6,7 +6,7 @@ use tantivy::TantivyDocument;
 
 use super::entry::{joined, prior, tokens, Entry};
 use super::hit::HitKind;
-use super::people::{Person, Roster};
+use super::people::{Credit, Person, Roster};
 use super::schema::Fields;
 use crate::db::translations::TransData;
 use crate::model::{MediaItem, Metadata, Show};
@@ -57,7 +57,7 @@ impl<'a> Indexer<'a> {
         self.metadata(&mut draft, &item.title, item.metadata.as_ref());
         self.translations(&mut draft, &item.title, tr);
         if kind == HitKind::Movie {
-            self.credits(item.metadata.as_ref(), &item.library);
+            self.credits(item.metadata.as_ref(), &item.library, &item.id);
         }
         self.commit(
             draft,
@@ -83,7 +83,7 @@ impl<'a> Indexer<'a> {
         self.title(&mut draft, self.fields.title, &show.title);
         self.metadata(&mut draft, &show.title, show.metadata.as_ref());
         self.translations(&mut draft, &show.title, tr);
-        self.credits(show.metadata.as_ref(), &show.library);
+        self.credits(show.metadata.as_ref(), &show.library, &show.id);
         self.commit(
             draft,
             Entry {
@@ -172,15 +172,19 @@ impl<'a> Indexer<'a> {
         }
     }
 
-    fn credits(&mut self, meta: Option<&Metadata>, library: &str) {
+    fn credits(&mut self, meta: Option<&Metadata>, library: &str, title: &str) {
         let Some(meta) = meta else { return };
+        let on = Credit {
+            library: library.to_string(),
+            title: title.to_string(),
+        };
         for member in &meta.cast {
             self.roster.credit(
                 &mut self.analyzer,
                 &member.name,
                 member.tmdb_id,
                 member.profile_url.as_deref(),
-                library,
+                &on,
             );
         }
         for member in &meta.crew {
@@ -189,7 +193,7 @@ impl<'a> Indexer<'a> {
                 &member.name,
                 member.tmdb_id,
                 member.profile_url.as_deref(),
-                library,
+                &on,
             );
         }
     }

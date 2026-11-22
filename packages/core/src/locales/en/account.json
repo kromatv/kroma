@@ -111,5 +111,8 @@
   "account.uiLanguage": "Interface language",
   "account.uiLanguageDesc": "The language of menus and buttons.",
   "account.unknownDevice": "Unknown device",
-  "account.updatePassword": "Update password"
+  "account.updatePassword": "Update password",
+  "account.ratingsCountry": "Age ratings",
+  "account.ratingsCountryDesc": "The country whose age ratings titles show.",
+  "account.ratingsCountryHousehold": "Same as the server ({country})"
 }

@@ -7,11 +7,13 @@
 
 use axum::extract::{Path, State};
 use axum::http::{header, StatusCode};
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
 use serde::Serialize;
 
+use crate::api::accounts;
+use crate::api::extract::AuthUser;
 use crate::state::SharedState;
 
 /// Auth-gated: the module manifest list. Relative to `/api`.
@@ -42,18 +44,27 @@ struct ListedModule {
     frontend: Option<kroma_module_supervisor::Frontend>,
 }
 
-async fn list(State(state): State<SharedState>) -> impl IntoResponse {
-    let all = kroma_module_kernel::manifests(&state);
-    let enabled_of = |id: &str| kroma_engine::modules::module_enabled(&state.settings, id);
-    let answered = answered_by(&all, &state);
+async fn list(
+    State(state): State<SharedState>,
+    AuthUser(user): AuthUser,
+) -> Result<Json<Vec<ListedModule>>, Response> {
+    if accounts::wears_kids(&state, &user).await? {
+        return Ok(Json(Vec::new()));
+    }
+    Ok(Json(listed(&state)))
+}
 
-    let mods: Vec<ListedModule> = all
-        .iter()
+fn listed(state: &SharedState) -> Vec<ListedModule> {
+    let all = kroma_module_kernel::manifests(state);
+    let enabled_of = |id: &str| kroma_engine::modules::module_enabled(&state.settings, id);
+    let answered = answered_by(&all, state);
+
+    all.iter()
         .map(|m| {
             let frontend = m
                 .fe_remote
                 .as_ref()
-                .and_then(|_| kroma_module_kernel::frontend(&state, &m.id));
+                .and_then(|_| kroma_module_kernel::frontend(state, &m.id));
             let mut manifest = m.clone();
             if frontend.is_none() {
                 manifest.fe_remote = None;
@@ -65,8 +76,7 @@ async fn list(State(state): State<SharedState>) -> impl IntoResponse {
                 frontend,
             }
         })
-        .collect();
-    Json(mods)
+        .collect()
 }
 
 /// What the ENABLED modules between them answer, as `(point, instance)`, which is

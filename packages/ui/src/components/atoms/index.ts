@@ -45,6 +45,8 @@ export type { ImgProps } from './img';
 export { IMG_FADE_MS, Img } from './img';
 export type { KbdProps } from './kbd';
 export { Kbd } from './kbd';
+export type { KidsMarkProps } from './kids-mark';
+export { KidsMark } from './kids-mark';
 export type { LogoProps } from './logo';
 export { Logo } from './logo';
 export type { NumberFieldProps } from './number-field';
