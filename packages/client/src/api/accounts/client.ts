@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
 import { adoptMediaTicket } from '../../core/http';
 import type { InviteToken, SessionId } from './ids';
+import { kidsApi } from './kids';
+import { ratingsApi } from './maturity';
 import { passkeysApi } from './passkeys';
 import { quickConnectApi } from './quick-connect';
 import {
@@ -26,8 +28,10 @@ const AvatarUploaded = z.object({ avatarUrl: z.string() });
 /** Accounts, sessions, invitations and profile/PIN. */
 export default function accountsApi(ctx: RequestContext) {
   return {
+    kids: kidsApi(ctx),
     passkeys: passkeysApi(ctx),
     quickConnect: quickConnectApi(ctx),
+    ratings: ratingsApi(ctx),
 
     /** Create an account and open a session. After the first (owner) account,
      * `inviteToken` is required registration is invite-only. Does NOT set the

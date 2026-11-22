@@ -13,7 +13,7 @@ use kroma_media::Credential;
 
 use crate::api::error::json_error;
 use crate::api::media_ticket::MediaViewer;
-use crate::api::visibility;
+use crate::api::visibility::{self, Title};
 use crate::state::SharedState;
 
 use super::hls_query::HlsQuery;
@@ -120,7 +120,7 @@ pub async fn hls_file(
     let Some(mode) = StreamMode::parse(&mode) else {
         return json_error(StatusCode::BAD_REQUEST, "bad mode");
     };
-    if let Err(resp) = visibility::gate_item(&state, &viewer, &id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&id)).await {
         return resp;
     }
     let session = Session {

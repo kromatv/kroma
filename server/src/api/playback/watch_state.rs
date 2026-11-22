@@ -5,25 +5,23 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
-use crate::api::extract::AuthUser;
 use crate::api::util::query;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer, Viewer};
 use crate::db;
-use crate::model::User;
 use crate::state::SharedState;
 
 /// `PUT /api/watched/:id` (Bearer) → 204. Marks the item watched and clears its
 /// resume position (drops it from "Continue watching").
 pub async fn mark_watched(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &viewer, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::mark_watched(&pool, &user.id, &subject_id)
+        db::mark_watched(&pool, &viewer.user.id, &subject_id)
     })
     .await
     {
@@ -35,14 +33,14 @@ pub async fn mark_watched(
 /// `DELETE /api/watched/:id` (Bearer) → 204. Clears the watched flag.
 pub async fn unmark_watched(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &viewer, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::unmark_watched(&pool, &user.id, &subject_id)
+        db::unmark_watched(&pool, &viewer.user.id, &subject_id)
     })
     .await
     {
@@ -52,10 +50,13 @@ pub async fn unmark_watched(
 }
 
 /// `GET /api/watched` (Bearer) → `string[]` (item ids the user marked watched).
-pub async fn list_watched(State(state): State<SharedState>, AuthUser(user): AuthUser) -> Response {
-    let uid = user.id.clone();
+pub async fn list_watched(
+    State(state): State<SharedState>,
+    AuthViewer(viewer): AuthViewer,
+) -> Response {
+    let uid = viewer.user.id.clone();
     match query(&state.db, move |pool| db::list_watched(&pool, &uid)).await {
-        Ok(ids) => visible_ids(&state, &user, ids).await,
+        Ok(ids) => visible_ids(&state, &viewer, ids).await,
         Err(resp) => resp,
     }
 }
@@ -63,14 +64,14 @@ pub async fn list_watched(State(state): State<SharedState>, AuthUser(user): Auth
 /// `PUT /api/my-list/:id` (Bearer) → 204. Adds a title to the user's list.
 pub async fn add_to_list(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &viewer, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::add_to_list(&pool, &user.id, &subject_id)
+        db::add_to_list(&pool, &viewer.user.id, &subject_id)
     })
     .await
     {
@@ -82,14 +83,14 @@ pub async fn add_to_list(
 /// `DELETE /api/my-list/:id` (Bearer) → 204. Removes a title from the user's list.
 pub async fn remove_from_list(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Path(subject_id): Path<String>,
 ) -> Response {
-    if let Err(resp) = visibility::gate_saved(&state, &user, &subject_id).await {
+    if let Err(resp) = visibility::gate_saved(&state, &viewer, &subject_id).await {
         return resp;
     }
     match query(&state.db, move |pool| {
-        db::remove_from_list(&pool, &user.id, &subject_id)
+        db::remove_from_list(&pool, &viewer.user.id, &subject_id)
     })
     .await
     {
@@ -99,16 +100,19 @@ pub async fn remove_from_list(
 }
 
 /// `GET /api/my-list` (Bearer) → `string[]` (item ids in the user's list).
-pub async fn list_my_list(State(state): State<SharedState>, AuthUser(user): AuthUser) -> Response {
-    let uid = user.id.clone();
+pub async fn list_my_list(
+    State(state): State<SharedState>,
+    AuthViewer(viewer): AuthViewer,
+) -> Response {
+    let uid = viewer.user.id.clone();
     match query(&state.db, move |pool| db::list_my_list(&pool, &uid)).await {
-        Ok(ids) => visible_ids(&state, &user, ids).await,
+        Ok(ids) => visible_ids(&state, &viewer, ids).await,
         Err(resp) => resp,
     }
 }
 
-async fn visible_ids(state: &SharedState, user: &User, ids: Vec<String>) -> Response {
-    match visibility::visible_saved_ids(state, user, ids.clone()).await {
+async fn visible_ids(state: &SharedState, viewer: &Viewer, ids: Vec<String>) -> Response {
+    match visibility::visible_saved_ids(state, viewer, ids.clone()).await {
         Ok(visible) => {
             let kept: Vec<String> = ids.into_iter().filter(|id| visible.contains(id)).collect();
             Json(kept).into_response()

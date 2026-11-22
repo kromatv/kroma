@@ -3,6 +3,7 @@ import { resolveImageUrl } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Avatar, Box, type ColorValue, Text } from '@kromatv/ui/kit';
+import { MemberMarks } from '#web/features/admin/member-marks.component';
 import { Pill } from '#web/features/admin/pill.component';
 import { apiBase } from '#web/shared/lib/api';
 
@@ -40,11 +41,7 @@ export function MemberIdentity({ user }: Readonly<{ user: AdminUser }>) {
           <Text variant="label" lines={1}>
             {user.username}
           </Text>
-          {user.resetRequested ? (
-            <Pill ink="accentText" bg="accentWash/16">
-              {t('admin.resetRequested')}
-            </Pill>
-          ) : null}
+          <MemberMarks user={user} />
           {user.invitation ? <InvitationPill state={user.invitation} /> : null}
         </Box>
         <Text variant="meta" color="textDim" lines={1}>

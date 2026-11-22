@@ -64,7 +64,7 @@ pub fn passkey_user_ids(pool: &Pool) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(
         "SELECT DISTINCT p.user_id FROM passkeys p JOIN users u ON u.id = p.user_id \
-         WHERE u.waiting = 0",
+         WHERE u.waiting = 0 AND u.kids = 0",
     )?;
     let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)

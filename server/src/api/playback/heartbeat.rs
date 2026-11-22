@@ -10,7 +10,7 @@ use serde::Deserialize;
 
 use crate::api::extract::AuthUser;
 use crate::api::util::{client_ip, query};
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::infra::events::ServerEvent;
 use crate::services::playback::{self, Beat, Ping};
@@ -54,7 +54,7 @@ fn default_mode() -> String {
 /// `POST /api/playback/ping` (Bearer) → 204. Upserts the caller's live session.
 pub async fn ping(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
     Json(body): Json<PingBody>,
@@ -64,7 +64,7 @@ pub async fn ping(
     if state.playback.is_recently_terminated(&body.session_id) {
         return StatusCode::GONE.into_response();
     }
-    if let Err(resp) = visibility::gate_item(&state, &user, &body.item_id).await {
+    if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&body.item_id)).await {
         return resp;
     }
 
@@ -110,8 +110,8 @@ pub async fn ping(
     };
     let beat = state.playback.upsert(
         ping,
-        Some(user.id.clone()),
-        user.username.clone(),
+        Some(viewer.user.id.clone()),
+        viewer.user.username.clone(),
         ip,
         network,
         item.as_ref(),
@@ -122,7 +122,7 @@ pub async fn ping(
         return StatusCode::NO_CONTENT.into_response();
     }
 
-    let uid = user.id.clone();
+    let uid = viewer.user.id.clone();
     let _ = query(&state.db, move |pool| {
         let _ = db::touch_last_seen(&pool, &uid);
         Ok(())

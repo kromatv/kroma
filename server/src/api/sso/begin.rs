@@ -10,7 +10,7 @@ use serde_json::json;
 use super::{accepted_origin, now, request_origin, sign_in_config, CALLBACK_PATH};
 use crate::api::dto::FlowStarted;
 use crate::api::error::lerr;
-use crate::api::extract::AuthUser;
+use crate::api::accounts::AuthMember;
 use crate::api::util::{blocking, client_ip};
 use crate::i18n::{self, ReqLocale};
 use crate::services::sso::flows::{Intent, NewFlow, ReturnTo, FLOW_TTL_SECS};
@@ -76,7 +76,7 @@ pub async fn link(
     State(state): State<SharedState>,
     ReqLocale(loc): ReqLocale,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    AuthUser(user): AuthUser,
+    AuthMember(user): AuthMember,
     headers: HeaderMap,
     Json(body): Json<LinkBody>,
 ) -> Response {

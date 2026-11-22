@@ -1,18 +1,20 @@
 import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
-import { InviteCreated, ResetCreated, type UserId, VerificationCreated } from '../accounts';
+import { InviteCreated, ResetCreated, User, type UserId, VerificationCreated } from '../accounts';
 import { ServerInfo } from '../media';
 import type { PlaybackSessionId } from '../playback';
 import { backupApi } from './backup';
 import { LogsView } from './logs';
 import { type MetricRange, MetricsSnapshot, StorageInfo, Transcodes } from './metrics';
 import { adminNotificationsApi } from './notifications';
+import { restrictionsApi } from './restrictions';
 import { SettingsView } from './settings';
 import { Activity, HistoryStats, MostWatched, PlaybackSession, PlaysPage, TopUser } from './stats';
 import { UpdateStatus, type UpdateTarget } from './updates';
-import { AdminOverview, type AdminUserPatch, AdminUsers } from './users';
+import { AdminOverview, type AdminUserPatch, AdminUsers, type NewKidsProfile } from './users';
 
 const Sessions = z.object({ sessions: z.array(PlaybackSession) });
+const CreatedUser = z.object({ user: User });
 const Freed = z.object({ freedBytes: z.number() });
 const MetadataReset = z.object({ items: z.number(), shows: z.number() });
 const SettingsWritten = z.object({ updated: z.array(z.string()) });
@@ -33,6 +35,7 @@ export default function adminApi(ctx: RequestContext) {
   return {
     backup: backupApi(ctx),
     notifications: adminNotificationsApi(ctx),
+    restrictions: restrictionsApi(ctx),
 
     server: () => ctx.get('/admin/server', ServerInfo),
 
@@ -80,6 +83,10 @@ export default function adminApi(ctx: RequestContext) {
       ctx.patch('/admin/users/:id', { params: { id }, body: patch }),
 
     deleteUser: (id: UserId) => ctx.delete('/admin/users/:id', { params: { id } }),
+
+    /** Create a Kids profile (requires `users.manage`). */
+    createKids: (profile: NewKidsProfile) =>
+      ctx.post('/admin/kids', CreatedUser, { body: profile }),
 
     /** Mint a credential reset (requires `users.manage`). The returned `code` is
      * the one-time code the owner reads to the user; it is never stored in clear.

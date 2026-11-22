@@ -13,6 +13,7 @@ import { ReportDrawer } from '#web/features/admin/report-drawer.component';
 import { ApproveJoinModal } from '#web/features/admin/users-approve-modal.component';
 import { EditUserModal } from '#web/features/admin/users-edit-modal.component';
 import { InviteModal } from '#web/features/admin/users-invite-modal.component';
+import { KidsModal } from '#web/features/admin/users-kids-modal.component';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
 export function AdminModalHosts() {
@@ -22,6 +23,7 @@ export function AdminModalHosts() {
       <EditUserModal />
       <ApproveJoinModal />
       <InviteModal />
+      <KidsModal />
       <ExportModal />
       <ImportModal />
       <AddLibraryModal />

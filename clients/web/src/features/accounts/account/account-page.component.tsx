@@ -43,6 +43,7 @@ function isSection(value: string): value is AccountSection {
 interface AccountPageProps {
   section: AccountSection;
   onSection: (section: AccountSection) => void;
+  pinAsked?: boolean;
 }
 
 const STRIP: CSSProperties = { overflowX: 'auto', scrollbarWidth: 'none', maxWidth: '100%' };
@@ -80,7 +81,7 @@ function AccountTabs({ section, onSection }: Readonly<AccountPageProps>) {
   );
 }
 
-export function AccountPage({ section, onSection }: Readonly<AccountPageProps>) {
+export function AccountPage({ section, onSection, pinAsked }: Readonly<AccountPageProps>) {
   const t = useT();
   const { user } = useAuth();
 
@@ -109,7 +110,7 @@ export function AccountPage({ section, onSection }: Readonly<AccountPageProps>) 
               <SecurityCard />
               <PasskeysCard />
               <IdentitiesCard />
-              <PinCard />
+              <PinCard asked={pinAsked} />
             </>
           ) : null}
           {section === 'devices' ? <SessionsCard /> : null}

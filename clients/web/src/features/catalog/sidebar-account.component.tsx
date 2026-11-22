@@ -5,10 +5,13 @@ import { Box, Menu, type MenuTriggerBind, styles, Text, useStyles } from '@kroma
 import { useRouterState } from '@tanstack/react-router';
 import { type Ref, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
+import { useKidsSession } from '#web/shared/lib/use-kids-session.hook';
 
 import { useFocusRing } from '#web/shared/lib/use-focus-ring.hook';
 import { RouteLink } from '#web/shared/ui/route-link.component';
 import { UserAvatar } from '#web/shared/ui/user-avatar.component';
+
+type Translate = ReturnType<typeof useT>;
 
 // A `title` tooltip and the UA's own button skin are browser concerns the kit
 // has no name for, so the trigger stays an element around a kit row.
@@ -40,6 +43,7 @@ const sDefinition = styles({
 export function UserChip() {
   const t = useT();
   const { user, logout } = useAuth();
+  const kids = useKidsSession();
   // Return to the current page after switching profile.
   const href = useRouterState({ select: (s) => s.location.href });
   if (!user) {
@@ -48,24 +52,37 @@ export function UserChip() {
   return (
     <Menu.Root label={t('nav.account')} align="start">
       <Menu.Trigger render={userChipTrigger(user, t('nav.account'))} />
-      <Menu.Item icon="user-circle" label={t('nav.accountSettings')} asChild>
-        <RouteLink to="/account" />
-      </Menu.Item>
-      <Menu.Item icon="sparkles" label={t('releases.title')} asChild>
-        <RouteLink to="/whats-new" />
-      </Menu.Item>
+      {kids ? null : settingsEntries(t)}
       <Menu.Item icon="users" label={t('nav.changeProfile')} asChild>
         <RouteLink to="/login" search={{ redirect: href }} />
       </Menu.Item>
-      <Menu.Separator />
-      <Menu.Item
-        icon="logout"
-        label={t('auth.logout')}
-        tone="danger"
-        onSelect={() => void logout()}
-      />
+      {kids ? null : signOutEntries(t, logout)}
     </Menu.Root>
   );
+}
+
+function settingsEntries(t: Translate) {
+  return [
+    <Menu.Item key="account" icon="user-circle" label={t('nav.accountSettings')} asChild>
+      <RouteLink to="/account" />
+    </Menu.Item>,
+    <Menu.Item key="whats-new" icon="sparkles" label={t('releases.title')} asChild>
+      <RouteLink to="/whats-new" />
+    </Menu.Item>,
+  ];
+}
+
+function signOutEntries(t: Translate, logout: () => Promise<void>) {
+  return [
+    <Menu.Separator key="separator" />,
+    <Menu.Item
+      key="logout"
+      icon="logout"
+      label={t('auth.logout')}
+      tone="danger"
+      onSelect={() => void logout()}
+    />,
+  ];
 }
 
 // Built out here rather than inline in <UserChip>: a render prop is still a

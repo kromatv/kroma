@@ -10,7 +10,7 @@ use axum::{Json, Router};
 use crate::api::error::lerr;
 use crate::api::extract::AuthUser;
 use crate::api::permission::require;
-use crate::api::visibility;
+use crate::api::visibility::{self, AuthViewer, Title};
 use crate::api::util::query;
 use crate::db;
 use crate::i18n;
@@ -48,17 +48,17 @@ fn subject_label(item: &MediaItem) -> String {
 /// trusted from the client.
 pub async fn create(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     Json(body): Json<CreateReportBody>,
 ) -> Result<Response, Response> {
-    require(&user, Permission::Playback)?;
-    let loc = i18n::user_locale(&user);
+    require(&viewer.user, Permission::Playback)?;
+    let loc = i18n::user_locale(&viewer.user);
     let kind = body.subject_kind;
     let subject_id = body.subject_id.clone();
     match kind {
-        ReportSubjectKind::Show => visibility::gate_show(&state, &user, &subject_id).await?,
+        ReportSubjectKind::Show => visibility::gate(&state, &viewer, Title::Show(&subject_id)).await?,
         ReportSubjectKind::Movie | ReportSubjectKind::Episode => {
-            visibility::gate_item(&state, &user, &subject_id).await?
+            visibility::gate(&state, &viewer, Title::Item(&subject_id)).await?
         }
     }
     let category = body.category;
@@ -66,7 +66,7 @@ pub async fn create(
         .message
         .map(|m| m.trim().chars().take(MAX_MESSAGE).collect::<String>())
         .filter(|m| !m.is_empty());
-    let uid = user.id.clone();
+    let uid = viewer.user.id.clone();
 
     let created = query(&state.db, move |pool| {
         let title = match kind {
@@ -109,9 +109,9 @@ pub async fn create(
                 "notifications.report.submitted.body",
             )
             .param("title", report.subject_title.clone())
-            .param("user", user.username.clone())
+            .param("user", viewer.user.username.clone())
             .subject(NotificationSubject::report(&report.id))
-            .actor(&user.id)
+            .actor(&viewer.user.id)
             .data(&crate::model::ReportEventData {
                 report_id: report.id.clone(),
                 subject_kind: report.subject_kind,

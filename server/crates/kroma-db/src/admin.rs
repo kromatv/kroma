@@ -83,7 +83,7 @@ pub fn admin_users(pool: &Pool) -> Result<Vec<kroma_domain::AdminUser>> {
         .unwrap_or_default();
     let mut stmt = conn.prepare(
         "SELECT users.id,email,username,avatar_url,users.created_at,permissions,last_seen,(pin_hash IS NOT NULL),audio_language,subtitle_language,libraries,(email_verified_at IS NOT NULL),(rr.created_at IS NOT NULL),waiting,\
-         (SELECT expires_at FROM invites WHERE user_id = users.id AND used_at IS NULL) \
+         (SELECT expires_at FROM invites WHERE user_id = users.id AND used_at IS NULL),users.kids \
          FROM users LEFT JOIN reset_requests rr ON rr.user_id = users.id AND rr.created_at > ?1 \
          ORDER BY users.created_at",
     )?;
@@ -105,7 +105,7 @@ fn admin_user(
     Ok(kroma_domain::AdminUser {
         role: kroma_domain::role_label(&u.permissions).to_string(),
         id: u.id,
-        email: r.get(1)?,
+        email: if r.get(15)? { None } else { r.get(1)? },
         username: u.username,
         avatar_url: u.avatar_url,
         permissions: u.permissions,
@@ -117,6 +117,7 @@ fn admin_user(
         has_pin: u.has_pin,
         reset_requested: r.get(12)?,
         invitation,
+        kids: r.get(15)?,
     })
 }
 

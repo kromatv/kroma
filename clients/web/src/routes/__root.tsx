@@ -28,6 +28,7 @@ import { WatchedProvider } from '#web/shared/lib/watched';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { BOOT_SCREEN_CSS, BootScreen } from '#web/shared/ui/boot-screen.component';
 import { CompatGate } from '#web/shared/ui/compat-gate.component';
+import { KidsLook } from '#web/shared/ui/kids-look.component';
 import { CommandMenuButton } from '#web/shared/ui/command-menu-button.component';
 import { NavActionsProvider } from '#web/shared/ui/nav-actions';
 
@@ -118,6 +119,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
               <ConfirmHost>
                 <WebRuntimeProvider value={runtime}>
                   <AuthProvider>
+                    <KidsLook />
                     <DirectConnectionProvider>
                       <WatchedProvider>
                         <MyListProvider>

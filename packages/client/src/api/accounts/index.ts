@@ -1,5 +1,7 @@
 export * from './client';
 export * from './ids';
+export * from './kids';
+export * from './maturity';
 export type { WebAuthnCeremony, WebAuthnCredential, WebAuthnOptions } from './passkeys';
 export * from './remembered';
 export * from './rules';

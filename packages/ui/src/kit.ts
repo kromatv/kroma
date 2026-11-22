@@ -37,6 +37,8 @@ export {
   currentBreakpoint,
   groundShade,
   KROMA,
+  KROMA_KIDS,
+  KROMA_KIDS_LIGHT,
   KROMA_LIGHT,
   onPaper,
   readMode,

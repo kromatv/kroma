@@ -12,9 +12,9 @@ use serde::Deserialize;
 use crate::api::error::json_error;
 use crate::api::media_ticket::MediaViewer;
 use crate::api::util::client_ip;
-use crate::api::visibility;
+use crate::api::visibility::{self, Viewer};
 use crate::infra::subtitles;
-use crate::model::{MediaItem, User};
+use crate::model::MediaItem;
 use crate::services::playback;
 use crate::services::settings;
 use crate::state::SharedState;
@@ -108,8 +108,12 @@ fn pick_file_path(item: &MediaItem, file_id: Option<&str>) -> Option<String> {
     item.abs_path.clone()
 }
 
-pub(super) async fn load_item(state: &SharedState, viewer: &User, id: String) -> Option<MediaItem> {
-    visibility::item_in_scope(state, Some(viewer), id).await
+pub(super) async fn load_item(
+    state: &SharedState,
+    viewer: &Viewer,
+    id: String,
+) -> Option<MediaItem> {
+    visibility::item_in_scope(state, viewer, id).await
 }
 
 /// `GET /api/items/:id/storyboard` → the sprite-sheet manifest mapping a cursor

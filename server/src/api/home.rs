@@ -7,8 +7,8 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 use serde::Deserialize;
 
-use crate::api::extract::AuthUser;
 use crate::api::media::ListView;
+use crate::api::visibility::AuthViewer;
 use crate::api::util::query;
 use crate::api::{etag, visibility};
 use crate::i18n::ReqLocale;
@@ -43,19 +43,19 @@ pub struct HomeQuery {
 /// released before layouts existed keeps the page it knows how to draw.
 pub async fn home(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ReqLocale(locale): ReqLocale,
     Query(q): Query<HomeQuery>,
 ) -> Response {
     let gen_state = state.clone();
-    let user_id = user.id.clone();
+    let user_id = viewer.user.id.clone();
     match query(&state.db, move |pool| {
         Ok(sections::home(&gen_state, &pool, locale, &user_id))
     })
     .await
     {
         Ok(list) => {
-            let list = visibility::keep_sections(&user, list);
+            let list = visibility::keep_sections(&viewer, list);
             let list = sections::adapt(&list, sections::Accepts::parse(q.layouts.as_deref()));
             match q.view {
                 Some(ListView::Card) => Json(cards(&list)).into_response(),
@@ -75,17 +75,17 @@ fn cards(list: &[Section]) -> Vec<CardSection> {
 /// read failure, which is always logged server-side.
 pub async fn featured(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
+    AuthViewer(viewer): AuthViewer,
     ReqLocale(locale): ReqLocale,
 ) -> Response {
     let gen_state = state.clone();
-    let user_id = user.id.clone();
+    let user_id = viewer.user.id.clone();
     match query(&state.db, move |pool| {
         Ok(sections::hero(&gen_state, &pool, locale, &user_id))
     })
     .await
     {
-        Ok(hero) => Json(visibility::keep_section_item(&user, hero)).into_response(),
+        Ok(hero) => Json(visibility::keep_section_item(&viewer, hero)).into_response(),
         Err(resp) => resp,
     }
 }

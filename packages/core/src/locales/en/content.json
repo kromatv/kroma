@@ -114,5 +114,11 @@
   "content.watched": "Watched",
   "content.watchedEmpty": "You haven't marked anything watched yet.",
   "content.watchedEmptyHint": "Mark a title watched from its page or its poster and it shows up here.",
-  "content.withPerson": "With {name}"
+  "content.withPerson": "With {name}",
+  "content.maturity0": "All ages",
+  "content.maturity7": "7+",
+  "content.maturity10": "10+",
+  "content.maturity13": "13+",
+  "content.maturity16": "16+",
+  "content.maturity18": "18+"
 }

@@ -35,6 +35,8 @@ pub struct AdminUser {
     /// Set for an account that waits on an invitation (ACCT-94), and says
     /// where that invitation stands. `None` for an account its person holds.
     pub invitation: Option<InvitationState>,
+    /// A Kids profile (ACCT-122): no credential, opened from a picker.
+    pub kids: bool,
 }
 
 /// Where the invitation of a waiting account stands.
