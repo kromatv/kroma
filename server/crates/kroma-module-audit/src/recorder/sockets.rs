@@ -1,4 +1,4 @@
-use kroma_http::address::is_public;
+use kroma_egress::lan::{place_of, spreads, Place};
 use kroma_module_manifest::{host_matches, Connect};
 use kroma_module_supervisor::{SocketAsk, SocketRefused, SocketRules};
 
@@ -23,14 +23,16 @@ impl Recorder {
     }
 
     fn covering(&self, ask: &SocketAsk<'_>, hosts: &[String]) -> Option<&Connect> {
-        let public = is_public(ask.address.ip().to_canonical());
+        let ip = ask.address.ip();
+        let place = place_of(ip, &self.networks);
+        let public = place == Place::Public && !spreads(ip, &self.networks);
         let port = ask.address.port();
         self.permissions.as_ref()?.net.connect.iter().find(|entry| {
             entry.proto.contains(&ask.proto)
                 && (entry.ports.is_empty() || entry.ports.contains(&port))
                 && entry.to.iter().any(|to| match to.as_str() {
                     "public" => public,
-                    "lan" => !public,
+                    "lan" => place == Place::Lan,
                     _ => self.names(to, hosts),
                 })
         })
@@ -98,6 +100,13 @@ mod tests {
         }
     }
 
+    fn home() -> Vec<kroma_egress::lan::LocalNetwork> {
+        vec![kroma_egress::lan::LocalNetwork {
+            address: "192.168.1.10".parse().unwrap(),
+            prefix: 24,
+        }]
+    }
+
     fn declaring(connect: &str) -> Option<Permissions> {
         serde_json::from_str(&format!(r#"{{ "net": {{ "connect": {connect} }} }}"#)).unwrap()
     }
@@ -107,7 +116,8 @@ mod tests {
         let recorder = Recorder::new(
             declaring(r#"[{ "purpose": "discovery", "to": ["lan"], "ports": [7359], "proto": ["udp"] }]"#),
             BTreeMap::new(),
-        );
+        )
+        .on_networks(home());
 
         let declared = recorder.decide_socket("m", &udp_to("192.168.1.255:7359"));
         let undeclared = recorder.decide_socket("m", &udp_to("8.8.8.8:7359"));
@@ -168,5 +178,55 @@ mod tests {
         let _ = recorder.decide_lookup("m", "exfiltrate.example.net");
 
         assert!(!recorder.connections()[0].declared);
+    }
+
+    #[test]
+    fn lan_in_an_audit_is_this_machines_networks_as_the_server_has_it() {
+        let recorder = Recorder::new(
+            declaring(r#"[{ "purpose": "discovery", "to": ["lan"], "proto": ["udp"] }]"#),
+            BTreeMap::new(),
+        )
+        .on_networks(home());
+
+        let _ = recorder.decide_socket("m", &udp_to("10.0.0.5:7359"));
+        let _ = recorder.decide_socket("m", &udp_to("192.168.1.255:7359"));
+
+        let declared: Vec<(String, bool)> = recorder
+            .connections()
+            .into_iter()
+            .map(|connection| (connection.host, connection.declared))
+            .collect();
+        assert_eq!(
+            declared,
+            [("10.0.0.5".to_string(), false), ("192.168.1.255".to_string(), true)]
+        );
+    }
+
+    #[test]
+    fn a_host_pattern_declares_a_socket_to_an_address_its_name_resolved_to() {
+        let recorder = Recorder::new(
+            declaring(r#"[{ "purpose": "tracker", "to": ["*.example.org"], "proto": ["udp"] }]"#),
+            BTreeMap::new(),
+        )
+        .on_networks(home());
+        let names = ["t.example.org".to_string()];
+
+        let _ = recorder.decide_socket("m", &SocketAsk { names: &names, ..udp_to("1.1.1.1:6969") });
+
+        assert!(recorder.connections()[0].declared);
+    }
+
+    #[test]
+    fn public_declares_a_public_address_and_a_lookup_of_any_name() {
+        let recorder = Recorder::new(
+            declaring(r#"[{ "purpose": "peers", "to": ["public"], "proto": ["udp"] }]"#),
+            BTreeMap::new(),
+        )
+        .on_networks(home());
+
+        let _ = recorder.decide_socket("m", &udp_to("8.8.8.8:6881"));
+        let _ = recorder.decide_lookup("m", "peer.example.com");
+
+        assert!(recorder.connections().iter().all(|connection| connection.declared));
     }
 }

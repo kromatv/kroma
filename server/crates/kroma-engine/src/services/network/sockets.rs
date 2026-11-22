@@ -2,27 +2,20 @@
 //! and covers the address, then the guards and the operator's rules, which must
 //! let it go direct, since a raw socket goes through no network.
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::sync::Arc;
+use std::net::SocketAddr;
 
-use if_addrs::IfAddr;
-use kroma_http::address::{is_public, WebTarget};
+use kroma_egress::lan::{is_cloud_metadata, place_of, reaches_this_machine, spreads, Place};
+use kroma_http::address::WebTarget;
 use kroma_http::egress::Decision;
 use kroma_module_manifest::{host_matches, Connect, Permissions, Proto};
 
-use super::decide::prefix_matches;
+pub use kroma_egress::lan::{LocalNetwork, LocalNetworks};
+
 use super::permissions::hosts_named;
 use super::{Network, GUARD_LOOPBACK, PERMISSION_NET_CONNECT};
 
-/// One network an interface of this machine sits on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct LocalNetwork {
-    pub address: IpAddr,
-    pub prefix: u8,
-}
-
-/// The networks this machine's interfaces sit on, loopback left out.
-pub type LocalNetworks = Arc<dyn Fn() -> Vec<LocalNetwork> + Send + Sync>;
+/// The guard that refuses the cloud metadata addresses that are not link-local.
+pub const GUARD_METADATA: &str = "guard:metadata";
 
 /// One use of a raw socket a module's component makes: the transport, the
 /// remote address, and every name the module resolved to that address.
@@ -40,83 +33,6 @@ pub struct SocketRefusal {
     pub reason: String,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Place {
-    Public,
-    Lan,
-    Elsewhere,
-}
-
-pub(super) fn interface_networks() -> Vec<LocalNetwork> {
-    if_addrs::get_if_addrs()
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|interface| !interface.is_loopback())
-        .map(|interface| LocalNetwork {
-            address: interface.ip(),
-            prefix: match interface.addr {
-                IfAddr::V4(v4) => v4.prefixlen,
-                IfAddr::V6(v6) => v6.prefixlen,
-            },
-        })
-        .collect()
-}
-
-impl LocalNetwork {
-    fn contains(&self, ip: IpAddr) -> bool {
-        let bits = u32::from(self.prefix);
-        match (self.address, ip) {
-            (IpAddr::V4(network), IpAddr::V4(ip)) => {
-                bits <= 32 && prefix_matches(u32::from(ip).into(), u32::from(network).into(), 32, bits)
-            }
-            (IpAddr::V6(network), IpAddr::V6(ip)) => {
-                bits <= 128 && prefix_matches(ip.into(), network.into(), 128, bits)
-            }
-            _ => false,
-        }
-    }
-
-    fn broadcast(&self) -> Option<IpAddr> {
-        let IpAddr::V4(address) = self.address else {
-            return None;
-        };
-        let host_bits = u32::MAX.checked_shr(u32::from(self.prefix)).filter(|bits| *bits > 0)?;
-        Some(Ipv4Addr::from(u32::from(address) | host_bits).into())
-    }
-}
-
-fn spreads(ip: IpAddr, networks: &[LocalNetwork]) -> bool {
-    ip.is_multicast()
-        || ip == IpAddr::V4(Ipv4Addr::BROADCAST)
-        || networks.iter().any(|network| network.broadcast() == Some(ip))
-}
-
-fn stays_on_the_link(ip: IpAddr) -> bool {
-    match ip {
-        IpAddr::V4(v4) => {
-            let [a, b, c, _] = v4.octets();
-            v4 == Ipv4Addr::BROADCAST || (a == 224 && b == 0 && c == 0) || a == 239
-        }
-        IpAddr::V6(v6) => v6.segments()[0] == 0xff02,
-    }
-}
-
-fn place_of(ip: IpAddr, networks: &[LocalNetwork]) -> Place {
-    if is_public(ip) {
-        return Place::Public;
-    }
-    if stays_on_the_link(ip) || networks.iter().any(|network| network.contains(ip)) {
-        return Place::Lan;
-    }
-    Place::Elsewhere
-}
-
-fn hosts_of(socket: &RawSocket<'_>) -> Vec<String> {
-    let mut hosts = vec![socket.address.ip().to_canonical().to_string()];
-    hosts.extend(socket.names.iter().cloned());
-    hosts
-}
-
 fn refusal(rule: Option<&str>, reason: String) -> SocketRefusal {
     SocketRefusal {
         rule: rule.map(str::to_string),
@@ -127,33 +43,86 @@ fn refusal(rule: Option<&str>, reason: String) -> SocketRefusal {
 struct Seen<'a> {
     place: Place,
     spreads: bool,
-    hosts: Vec<String>,
+    loopback: bool,
+    literal: String,
+    names: Vec<&'a str>,
     named: &'a dyn Fn(&str) -> Vec<String>,
 }
 
-impl Seen<'_> {
+impl<'a> Seen<'a> {
+    fn of(socket: &RawSocket<'a>, networks: &[LocalNetwork], named: &'a dyn Fn(&str) -> Vec<String>) -> Self {
+        let ip = socket.address.ip().to_canonical();
+        let mut names: Vec<&str> = Vec::new();
+        for name in socket.names {
+            if !names.iter().any(|kept| kept.eq_ignore_ascii_case(name)) {
+                names.push(name);
+            }
+        }
+        Self {
+            place: place_of(ip, networks),
+            spreads: spreads(ip, networks),
+            loopback: ip.is_loopback(),
+            literal: ip.to_string(),
+            names,
+            named,
+        }
+    }
+
+    fn hosts(&self) -> impl Iterator<Item = &str> {
+        std::iter::once(self.literal.as_str()).chain(self.names.iter().copied())
+    }
+
     fn reaches(&self, to: &str) -> bool {
         match to {
-            "public" => self.place == Place::Public,
+            "public" => self.place == Place::Public && !self.spreads,
             "lan" => self.place == Place::Lan,
             _ if self.spreads => false,
             _ => match to.strip_prefix("setting:") {
-                Some(key) => (self.named)(key)
-                    .iter()
-                    .any(|named| self.hosts.iter().any(|host| host.eq_ignore_ascii_case(named))),
-                None => self.hosts.iter().any(|host| host_matches(to, host)),
+                Some(key) => self.setting_reaches(key),
+                None => self.pattern_reaches(to),
             },
         }
     }
+
+    fn pattern_reaches(&self, pattern: &str) -> bool {
+        if pattern.eq_ignore_ascii_case(&self.literal) {
+            return true;
+        }
+        let public = self.place == Place::Public;
+        !self.loopback
+            && self.names.iter().any(|name| {
+                host_matches(pattern, name) && (public || web_target(name, 0).is_local())
+            })
+    }
+
+    fn setting_reaches(&self, key: &str) -> bool {
+        (self.named)(key).iter().any(|host| {
+            let loopback_ok = !self.loopback || host.eq_ignore_ascii_case("localhost");
+            host.eq_ignore_ascii_case(&self.literal)
+                || (loopback_ok && self.names.iter().any(|name| name.eq_ignore_ascii_case(host)))
+        })
+    }
 }
 
-fn covering<'a>(declared: &'a Permissions, socket: &RawSocket<'_>, seen: &Seen<'_>) -> Option<&'a Connect> {
+fn covering<'e>(declared: &'e Permissions, socket: &RawSocket<'_>, seen: &Seen<'_>) -> Vec<&'e Connect> {
     let port = socket.address.port();
-    declared.net.connect.iter().find(|entry| {
+    let covers = |entry: &&Connect| {
         entry.proto.contains(&socket.proto)
             && (entry.ports.is_empty() || entry.ports.contains(&port))
             && entry.to.iter().any(|to| seen.reaches(to))
-    })
+    };
+    declared.net.connect.iter().filter(covers).collect()
+}
+
+fn not_declared(socket: &RawSocket<'_>) -> SocketRefusal {
+    refusal(
+        Some(PERMISSION_NET_CONNECT),
+        format!(
+            "net.connect: {} over {} is not declared",
+            socket.address,
+            format!("{:?}", socket.proto).to_ascii_lowercase()
+        ),
+    )
 }
 
 fn web_target(host: &str, port: u16) -> WebTarget {
@@ -204,28 +173,17 @@ impl Network {
         let declared = self.declared_for(caller)?;
         let networks = (self.local_networks)();
         let named = |key: &str| hosts_named(&self.settings.get(key));
-        let ip = socket.address.ip().to_canonical();
-        let seen = Seen {
-            place: place_of(ip, &networks),
-            spreads: spreads(ip, &networks),
-            hosts: hosts_of(socket),
-            named: &named,
-        };
-        let entry = covering(&declared, socket, &seen).ok_or_else(|| {
-            refusal(
-                Some(PERMISSION_NET_CONNECT),
-                format!(
-                    "net.connect: {} over {} is not declared",
-                    socket.address,
-                    format!("{:?}", socket.proto).to_ascii_lowercase()
-                ),
-            )
-        })?;
-        self.guard_own(socket, &networks)?;
-        for host in &seen.hosts {
-            self.direct(caller, &entry.purpose, &web_target(host, socket.address.port()))?;
+        let seen = Seen::of(socket, &networks, &named);
+        let entries = covering(&declared, socket, &seen);
+        let first = entries.first().ok_or_else(|| not_declared(socket))?;
+        self.guard(socket, &networks)?;
+        let port = socket.address.port();
+        for entry in &entries {
+            for host in seen.hosts() {
+                self.direct(caller, &entry.purpose, &web_target(host, port))?;
+            }
         }
-        Ok(entry.purpose.clone())
+        Ok(first.purpose.clone())
     }
 
     /// The purpose a lookup of `name` for a raw socket is ruled under, or why it
@@ -250,10 +208,15 @@ impl Network {
         Ok(entry.purpose.clone())
     }
 
-    fn guard_own(&self, socket: &RawSocket<'_>, networks: &[LocalNetwork]) -> Result<(), SocketRefusal> {
-        let ip = socket.address.ip().to_canonical();
-        let own = ip.is_loopback() || ip.is_unspecified() || networks.iter().any(|network| network.address == ip);
-        if own && self.own_ports().contains(&socket.address.port()) {
+    fn guard(&self, socket: &RawSocket<'_>, networks: &[LocalNetwork]) -> Result<(), SocketRefusal> {
+        let ip = socket.address.ip();
+        if is_cloud_metadata(ip) {
+            return Err(refusal(
+                Some(GUARD_METADATA),
+                "a cloud metadata service is never reachable".to_string(),
+            ));
+        }
+        if reaches_this_machine(ip, networks) && self.own_ports().contains(&socket.address.port()) {
             return Err(refusal(
                 Some(GUARD_LOOPBACK),
                 "a module may not reach this server's own listeners".to_string(),

@@ -30,3 +30,6 @@ impl SocketRules for NetworkSockets {
         self.0.rule_lookup(caller, name).map_err(refused)
     }
 }
+
+#[cfg(test)]
+mod tests;

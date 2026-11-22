@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+pub mod rules;
+
 use std::path::Path;
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;

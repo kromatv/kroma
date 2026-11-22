@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use std::net::{IpAddr, ToSocketAddrs};
+use std::net::IpAddr;
 
 use wasmtime::component::Resource;
 use wasmtime_wasi::p2::bindings::sockets::network::{ErrorCode, IpAddress, Network};
@@ -27,13 +27,6 @@ fn plain(name: &str) -> Option<String> {
     plain.then_some(name)
 }
 
-fn resolve(name: &str) -> SocketResult<Vec<IpAddr>> {
-    let addresses = (name, 0)
-        .to_socket_addrs()
-        .map_err(|_| ErrorCode::NameUnresolvable)?;
-    Ok(addresses.map(|address| address.ip().to_canonical()).collect())
-}
-
 impl Host for SocketsView<'_> {
     fn resolve_addresses(
         &mut self,
@@ -47,11 +40,7 @@ impl Host for SocketsView<'_> {
             return Ok(owned(&stream));
         }
         let name = plain(&name).ok_or(ErrorCode::InvalidArgument)?;
-        if !held.may_resolve(&name) {
-            return Err(ErrorCode::AccessDenied.into());
-        }
-        let addresses = resolve(&name)?;
-        held.remember(&name, &addresses);
+        let addresses = held.resolve(&name).ok_or(ErrorCode::AccessDenied)?;
         let stream = self.table.push(Resolved(addresses.into()))?;
         Ok(owned(&stream))
     }

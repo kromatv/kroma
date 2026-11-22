@@ -38,6 +38,7 @@ impl Datagrams {
             socket.set_broadcast(true)?;
         }
         socket.set_nonblocking(true)?;
+        held.opened_udp();
         Ok(Self {
             family,
             unbound: Some(socket),
@@ -110,6 +111,12 @@ impl Datagrams {
     }
 }
 
+impl Drop for Datagrams {
+    fn drop(&mut self) {
+        self.held.closed_udp();
+    }
+}
+
 #[wasmtime_wasi::async_trait]
 impl Pollable for Datagrams {
     async fn ready(&mut self) {}
@@ -127,6 +134,9 @@ impl udp_create_socket::Host for SocketsView<'_> {
             .held
             .filter(|held| held.udp())
             .ok_or(ErrorCode::AccessDenied)?;
+        if !held.has_room(self.table) {
+            return Err(ErrorCode::NewSocketLimit.into());
+        }
         let socket = Datagrams::new(family, Arc::clone(held))?;
         let socket = self.table.push(socket)?;
         Ok(owned(&socket))

@@ -1,29 +1,30 @@
 //! A module's raw sockets: granted for the transports its `net.connect` names in
 //! a `proto`, each use ruled by the core and filed in the journal under the
-//! purpose of the entry that covers it.
+//! purpose of the entry that covers it, with the bytes each datagram carried.
 
-use std::collections::HashMap;
-use std::net::SocketAddr;
+mod rulings;
+mod tally;
+
+use std::net::{IpAddr, SocketAddr, ToSocketAddrs};
 use std::sync::{Arc, Mutex, PoisonError};
-use std::time::{Duration, Instant};
 
 use kroma_module_host::{NetworkFlow, NetworkPolicy, NetworkRoute};
 use kroma_module_manifest::{ModuleManifest, Proto};
 use kroma_wasm_host::{SocketCall, SocketGrant, SocketProto, SocketUse, Sockets};
 
+use rulings::Rulings;
+use tally::{Carried, Tallies};
+
 use crate::{SocketAsk, SocketRefused, SocketRules};
 
-const RULED_FOR: Duration = Duration::from_secs(10);
-const RULINGS_KEPT: usize = 512;
 const LOOKUP_METHOD: &str = "LOOKUP";
-
-type Key = (SocketProto, SocketUse, SocketAddr, Vec<String>);
 
 pub(super) struct ModuleSockets {
     module: String,
     rules: Arc<dyn SocketRules>,
     journal: Arc<dyn NetworkPolicy>,
-    ruled: Mutex<HashMap<Key, (bool, Instant)>>,
+    ruled: Mutex<Rulings>,
+    tallies: Mutex<Tallies>,
 }
 
 pub(super) fn socket_grant(
@@ -41,7 +42,8 @@ pub(super) fn socket_grant(
         module: manifest.id.clone(),
         rules: rules?,
         journal,
-        ruled: Mutex::new(HashMap::new()),
+        ruled: Mutex::default(),
+        tallies: Mutex::default(),
     };
     Some(SocketGrant {
         tcp,
@@ -55,6 +57,21 @@ fn proto_of(proto: SocketProto) -> Proto {
         SocketProto::Tcp => Proto::Tcp,
         SocketProto::Udp => Proto::Udp,
     }
+}
+
+fn absolute(name: &str) -> String {
+    if name.ends_with('.') {
+        name.to_string()
+    } else {
+        format!("{name}.")
+    }
+}
+
+fn host_of(call: &SocketCall<'_>) -> String {
+    call.names
+        .last()
+        .cloned()
+        .unwrap_or_else(|| call.address.ip().to_canonical().to_string())
 }
 
 struct Filed<'a> {
@@ -90,23 +107,13 @@ fn flow(filed: &Filed<'_>, answer: &Result<String, SocketRefused>) -> NetworkFlo
 }
 
 impl ModuleSockets {
-    fn remembered(&self, key: &Key) -> Option<bool> {
-        let ruled = self.ruled.lock().unwrap_or_else(PoisonError::into_inner);
-        ruled
-            .get(key)
-            .filter(|(_, at)| at.elapsed() < RULED_FOR)
-            .map(|(allowed, _)| *allowed)
-    }
-
-    fn remember(&self, key: Key, allowed: bool) {
-        let mut ruled = self.ruled.lock().unwrap_or_else(PoisonError::into_inner);
-        if ruled.len() >= RULINGS_KEPT {
-            ruled.retain(|_, (_, at)| at.elapsed() < RULED_FOR);
+    fn file(&self, flows: Vec<NetworkFlow>) {
+        if !flows.is_empty() {
+            self.journal.record_flows(&self.module, flows);
         }
-        ruled.insert(key, (allowed, Instant::now()));
     }
 
-    fn rule(&self, call: &SocketCall<'_>) -> bool {
+    fn rule(&self, call: &SocketCall<'_>) -> Result<String, SocketRefused> {
         let answer = self.rules.decide_socket(
             &self.module,
             &SocketAsk {
@@ -115,45 +122,69 @@ impl ModuleSockets {
                 names: call.names,
             },
         );
-        if call.using != SocketUse::Receive {
-            let host = call
-                .names
-                .first()
-                .cloned()
-                .unwrap_or_else(|| call.address.ip().to_canonical().to_string());
+        let filed_now = answer.is_err() || call.using == SocketUse::Connect;
+        if filed_now && call.using != SocketUse::Receive {
             let filed = Filed {
                 method: format!("{:?}", call.proto).to_ascii_uppercase(),
-                host: &host,
+                host: &host_of(call),
                 port: call.address.port(),
             };
-            self.journal.record_flows(&self.module, vec![flow(&filed, &answer)]);
+            self.file(vec![flow(&filed, &answer)]);
         }
-        answer.is_ok()
+        answer
+    }
+
+    fn purpose_of(&self, call: &SocketCall<'_>) -> Option<String> {
+        let ruled = self.ruled.lock().unwrap_or_else(PoisonError::into_inner);
+        ruled.remembered(call).flatten()
     }
 }
 
 impl Sockets for ModuleSockets {
     fn allows(&self, call: &SocketCall<'_>) -> bool {
-        let key = (call.proto, call.using, call.address, call.names.to_vec());
-        if let Some(allowed) = self.remembered(&key) {
-            return allowed;
+        if let Some(purpose) = self.ruled.lock().unwrap_or_else(PoisonError::into_inner).remembered(call) {
+            return purpose.is_some();
         }
-        let allowed = self.rule(call);
-        self.remember(key, allowed);
+        let purpose = self.rule(call).ok();
+        let allowed = purpose.is_some();
+        self.ruled
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .remember(call, purpose);
         allowed
     }
 
-    fn may_resolve(&self, name: &str) -> bool {
+    fn resolve(&self, name: &str) -> Option<Vec<IpAddr>> {
         let answer = self.rules.decide_lookup(&self.module, name);
-        if answer.is_err() {
-            let filed = Filed {
-                method: LOOKUP_METHOD.to_string(),
-                host: name,
-                port: 0,
-            };
-            self.journal.record_flows(&self.module, vec![flow(&filed, &answer)]);
-        }
-        answer.is_ok()
+        let filed = Filed {
+            method: LOOKUP_METHOD.to_string(),
+            host: name,
+            port: 0,
+        };
+        self.file(vec![flow(&filed, &answer)]);
+        answer.ok()?;
+        let resolved = (absolute(name), 0).to_socket_addrs().ok();
+        Some(resolved.into_iter().flatten().map(|address| address.ip()).collect())
+    }
+
+    fn carried(&self, call: &SocketCall<'_>, bytes: u64) {
+        let purpose = self.purpose_of(call).unwrap_or_default();
+        let carried = Carried {
+            peer: SocketAddr::new(call.address.ip().to_canonical(), call.address.port()),
+            using: call.using,
+            bytes,
+            purpose: &purpose,
+            host: &host_of(call),
+        };
+        let flows = self.tallies.lock().unwrap_or_else(PoisonError::into_inner).count(&carried);
+        self.file(flows);
+    }
+}
+
+impl Drop for ModuleSockets {
+    fn drop(&mut self) {
+        let flows = self.tallies.lock().unwrap_or_else(PoisonError::into_inner).drain();
+        self.file(flows);
     }
 }
 

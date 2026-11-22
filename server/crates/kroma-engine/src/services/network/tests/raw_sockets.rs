@@ -4,7 +4,7 @@ use kroma_module_manifest::Proto;
 
 use super::*;
 
-const DISCOVERY: &str = "tv.kroma.import.jellyfin";
+pub(super) const DISCOVERY: &str = "tv.kroma.import.jellyfin";
 
 fn home() -> LocalNetworks {
     Arc::new(|| {
@@ -15,7 +15,7 @@ fn home() -> LocalNetworks {
     })
 }
 
-fn raw(tag: &str, connect: serde_json::Value) -> (Network, TempPool) {
+pub(super) fn raw(tag: &str, connect: serde_json::Value) -> (Network, TempPool) {
     let (network, pool) = network(tag, Point::absent(NETWORK_POINT));
     let permissions: kroma_module_manifest::Permissions =
         serde_json::from_value(json!({ "net": { "connect": connect } })).unwrap();
@@ -33,7 +33,7 @@ fn lan_udp(tag: &str) -> (Network, TempPool) {
     )
 }
 
-fn udp_to(address: &str) -> RawSocket<'static> {
+pub(super) fn udp_to(address: &str) -> RawSocket<'static> {
     RawSocket {
         proto: Proto::Udp,
         address: address.parse::<SocketAddr>().unwrap(),
@@ -41,14 +41,14 @@ fn udp_to(address: &str) -> RawSocket<'static> {
     }
 }
 
-fn tcp_to(address: &str) -> RawSocket<'static> {
+pub(super) fn tcp_to(address: &str) -> RawSocket<'static> {
     RawSocket {
         proto: Proto::Tcp,
         ..udp_to(address)
     }
 }
 
-fn rule(network: &Network, socket: &RawSocket<'_>) -> Result<String, Option<String>> {
+pub(super) fn rule(network: &Network, socket: &RawSocket<'_>) -> Result<String, Option<String>> {
     network
         .rule_socket(DISCOVERY, socket)
         .map_err(|refusal| refusal.rule)
@@ -160,10 +160,10 @@ fn a_host_entry_covers_an_address_only_through_the_name_resolved_to_it() {
     let names = ["tracker.example.org".to_string()];
     let resolved = RawSocket {
         names: &names,
-        ..tcp_to("203.0.113.9:443")
+        ..tcp_to("1.1.1.1:443")
     };
 
-    let unnamed = rule(&network, &tcp_to("203.0.113.9:443"));
+    let unnamed = rule(&network, &tcp_to("1.1.1.1:443"));
     let named = rule(&network, &resolved);
 
     assert_eq!(unnamed, Err(Some(PERMISSION_NET_CONNECT.to_string())));
@@ -288,11 +288,4 @@ fn a_host_entry_never_covers_a_broadcast_or_a_multicast_address() {
         .collect();
 
     assert!(refused.iter().all(Result::is_err), "{refused:?}");
-}
-
-#[test]
-fn this_machines_networks_leave_loopback_out() {
-    let networks = sockets::interface_networks();
-
-    assert!(networks.iter().all(|network| !network.address.is_loopback()), "{networks:?}");
 }

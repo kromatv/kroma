@@ -7,6 +7,8 @@ use kroma::module::{media, net, settings};
 
 wit_bindgen::generate!({ path: "../../../kroma-module-runtime/wit", world: "module" });
 
+mod wasi_udp;
+
 struct Probes;
 
 impl Guest for Probes {
@@ -28,7 +30,16 @@ impl Guest for Probes {
             "/udp/send" => answer(send_datagram(&argument)),
             "/udp/exchange" => answer(exchange(&argument)),
             "/udp/connected" => answer(connected(&argument)),
-            "/udp/options" => answer(udp_options()),
+            "/udp/options" => answer(wasi_udp::options()),
+            "/udp/misuse" => answer(wasi_udp::misuse(&argument)),
+            "/udp/stream-twice" => answer(wasi_udp::stream_twice()),
+            "/udp/wasi-flood" => answer(wasi_udp::flood(&argument)),
+            "/net/lookup-literal" => answer(wasi_udp::lookup_literal(&argument)),
+            "/udp/many" => answer(many_udp(&argument)),
+            "/udp/churn" => answer(churn_udp(&argument)),
+            "/udp/flood" => answer(flood(&argument)),
+            "/tcp/many" => answer(many_tcp(&argument)),
+            "/net/resolve-many" => answer(resolve_many(&argument)),
             "/env" => answer(std::env::var(&argument).map_err(|error| format!("{error:?}"))),
             "/memory" => answer(allocate(&argument)),
             "/spin" => spin(),
@@ -132,33 +143,57 @@ fn connected(address: &str) -> Result<String, String> {
     ))
 }
 
-fn udp_options() -> Result<String, String> {
-    use wasip2::sockets::instance_network::instance_network;
-    use wasip2::sockets::network::{IpAddressFamily, IpSocketAddress, Ipv4SocketAddress};
-    use wasip2::sockets::udp_create_socket::create_udp_socket;
+fn count(text: &str) -> Result<usize, String> {
+    text.parse().map_err(|_| format!("not a count: {text}"))
+}
 
-    let failed = |error: wasip2::sockets::network::ErrorCode| error.name().to_string();
-    let named = |error: Option<wasip2::sockets::network::ErrorCode>| error.map_or("none", |error| error.name());
-    let socket = create_udp_socket(IpAddressFamily::Ipv6).map_err(failed)?;
-    let v4 = IpSocketAddress::Ipv4(Ipv4SocketAddress { port: 0, address: (0, 0, 0, 0) });
-    let wrong_family = named(socket.start_bind(&instance_network(), v4).err());
-    let zero_buffer = named(socket.set_receive_buffer_size(0).err());
-    let zero_hops = named(socket.set_unicast_hop_limit(0).err());
-    socket.set_receive_buffer_size(65_536).map_err(failed)?;
-    socket.set_send_buffer_size(65_536).map_err(failed)?;
-    socket.set_unicast_hop_limit(8).map_err(failed)?;
-    let buffers = socket.receive_buffer_size().map_err(failed)? > 0 && socket.send_buffer_size().map_err(failed)? > 0;
-    let unbound = named(socket.local_address().err());
-    let streams = socket.stream(None).map_err(failed)?;
-    let bound = matches!(socket.local_address().map_err(failed)?, IpSocketAddress::Ipv6(_));
-    let unconnected = named(socket.remote_address().err());
-    drop(streams);
-    let finished = named(socket.finish_bind().err());
-    Ok(format!(
-        "{wrong_family} {zero_buffer} {zero_hops} hops {} buffers {buffers} {:?} {unbound} bound {bound} {unconnected} {finished}",
-        socket.unicast_hop_limit().map_err(failed)?,
-        socket.address_family(),
-    ))
+fn many_udp(limit: &str) -> Result<String, String> {
+    let mut held = Vec::new();
+    for _ in 0..count(limit)? {
+        match ephemeral() {
+            Ok(socket) => held.push(socket),
+            Err(error) => return Ok(format!("opened {} then {error}", held.len())),
+        }
+    }
+    Ok(format!("opened {}", held.len()))
+}
+
+fn churn_udp(limit: &str) -> Result<String, String> {
+    let wanted = count(limit)?;
+    for opened in 0..wanted {
+        if let Err(error) = ephemeral() {
+            return Ok(format!("opened {opened} then {error}"));
+        }
+    }
+    Ok(format!("opened {wanted}"))
+}
+
+fn flood(address: &str) -> Result<String, String> {
+    let socket = ephemeral()?;
+    socket.set_nonblocking(true).map_err(kind)?;
+    let sent = (0..3000)
+        .filter(|_| socket.send_to(&[0u8; 16], address).is_ok())
+        .count();
+    Ok(sent.to_string())
+}
+
+fn many_tcp(address: &str) -> Result<String, String> {
+    let mut held = Vec::new();
+    for _ in 0..100 {
+        match TcpStream::connect(address) {
+            Ok(stream) => held.push(stream),
+            Err(error) => return Ok(format!("opened {} then {:?}", held.len(), error.kind())),
+        }
+    }
+    Ok(format!("opened {}", held.len()))
+}
+
+fn resolve_many(argument: &str) -> Result<String, String> {
+    let (names, address) = argument.split_once(' ').ok_or("names and an address")?;
+    for n in 0..count(names)? {
+        (format!("n{n}.example.test"), 0).to_socket_addrs().map_err(kind)?;
+    }
+    send_datagram(address)
 }
 
 fn sleep(millis: &str) -> Result<String, String> {

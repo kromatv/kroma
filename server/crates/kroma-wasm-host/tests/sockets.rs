@@ -1,89 +1,8 @@
 mod support;
 
-use std::net::{SocketAddr, TcpListener, UdpSocket};
-use std::sync::{Arc, Mutex};
-
-use kroma_wasm_host::{ModuleInstance, SocketCall, SocketGrant, SocketUse, Sockets};
-use support::{probe, sandboxed, text, with_sockets};
-
-const BROADCAST: &str = "255.255.255.255:9";
-
-type Seen = (SocketUse, SocketAddr, Vec<String>);
-
-#[derive(Default)]
-struct Rules {
-    reachable: Vec<SocketAddr>,
-    heard: Vec<SocketAddr>,
-    names: Vec<String>,
-    seen: Mutex<Vec<Seen>>,
-}
-
-impl Rules {
-    fn reaching(addresses: &[SocketAddr]) -> Self {
-        Self {
-            reachable: addresses.to_vec(),
-            heard: addresses.to_vec(),
-            ..Self::default()
-        }
-    }
-}
-
-impl Sockets for Rules {
-    fn allows(&self, call: &SocketCall<'_>) -> bool {
-        self.seen
-            .lock()
-            .unwrap()
-            .push((call.using, call.address, call.names.to_vec()));
-        match call.using {
-            SocketUse::Receive => self.heard.contains(&call.address),
-            SocketUse::Connect | SocketUse::Send => self.reachable.contains(&call.address),
-        }
-    }
-
-    fn may_resolve(&self, name: &str) -> bool {
-        self.names.iter().any(|allowed| allowed == name)
-    }
-}
-
-fn granted(tcp: bool, udp: bool, rules: Rules) -> (ModuleInstance, Arc<Rules>) {
-    let rules = Arc::new(rules);
-    let instance = with_sockets(SocketGrant {
-        tcp,
-        udp,
-        rules: rules.clone(),
-    });
-    (instance, rules)
-}
-
-fn udp(rules: Rules) -> (ModuleInstance, Arc<Rules>) {
-    granted(false, true, rules)
-}
-
-fn tcp(rules: Rules) -> (ModuleInstance, Arc<Rules>) {
-    granted(true, false, rules)
-}
-
-#[expect(
-    clippy::disallowed_methods,
-    reason = "the test's own peer, answering the component on loopback"
-)]
-fn echo() -> SocketAddr {
-    let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
-    let address = socket.local_addr().unwrap();
-    std::thread::spawn(move || {
-        let mut datagram = [0u8; 64];
-        if let Ok((_, from)) = socket.recv_from(&mut datagram) {
-            let _ = socket.send_to(b"pong", from);
-        }
-    });
-    address
-}
-
-fn listening() -> (TcpListener, SocketAddr) {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let address = listener.local_addr().unwrap();
-    (listener, address)
-}
+use kroma_wasm_host::SocketUse;
+use support::rules::{echo, listening, tcp, udp, Rules, BROADCAST};
+use support::{probe, sandboxed, text};
 
 #[test]
 fn a_component_with_no_socket_grant_cannot_send_a_datagram() {
@@ -188,15 +107,29 @@ fn a_datagram_from_an_address_the_rules_refuse_never_reaches_the_component() {
 }
 
 #[test]
-fn a_broadcast_the_rules_allow_leaves_the_host() {
-    let (mut module, _) = udp(Rules::reaching(&[BROADCAST.parse().unwrap()]));
+fn a_broadcast_the_rules_allow_is_not_refused_by_the_host() {
+    let (mut module, rules) = udp(Rules::reaching(&[BROADCAST.parse().unwrap()]));
+
+    let response = probe(&mut module, "/udp/send", BROADCAST);
+
+    let answered = (response.status, text(&response));
+    let left_the_host = answered == (200, "sent 4 bytes".to_string())
+        || (answered.0 == 403 && answered.1 != "PermissionDenied");
+    assert!(left_the_host, "{answered:?}");
+    assert!(rules.saw(SocketUse::Send, BROADCAST));
+}
+
+#[test]
+fn a_broadcast_the_rules_refuse_is_denied() {
+    let (mut module, rules) = udp(Rules::default());
 
     let response = probe(&mut module, "/udp/send", BROADCAST);
 
     assert_eq!(
         (response.status, text(&response).as_str()),
-        (200, "sent 4 bytes")
+        (403, "PermissionDenied")
     );
+    assert!(rules.saw(SocketUse::Send, BROADCAST));
 }
 
 #[test]

@@ -2,79 +2,28 @@
 //! sockets under an address check, UDP and name lookup on the host's, so that
 //! every bind, connect, datagram and lookup is ruled before it happens.
 
+mod budget;
 mod datagrams;
+mod held;
 mod lookup;
+mod tcp;
 mod udp;
 
-use std::collections::HashMap;
 use std::future::Future;
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::Arc;
 
 use wasmtime::component::{HasData, Linker, Resource, ResourceTable};
 use wasmtime_wasi::p2::bindings::sockets::network::{self, ErrorCode};
 use wasmtime_wasi::p2::SocketError;
 use wasmtime_wasi::sockets::SocketAddrUse;
 
+pub(crate) use held::Held;
+pub(crate) use tcp::{OwnTcp, TcpView};
+
 use crate::state::State;
-use crate::{SocketCall, SocketGrant, SocketProto, SocketUse};
-
-const NAMES_KEPT: usize = 1024;
-
-pub(crate) struct Held {
-    grant: SocketGrant,
-    names: Mutex<HashMap<IpAddr, Vec<String>>>,
-}
-
-impl Held {
-    pub(crate) fn new(grant: SocketGrant) -> Arc<Self> {
-        Arc::new(Self {
-            grant,
-            names: Mutex::new(HashMap::new()),
-        })
-    }
-
-    pub(crate) fn tcp(&self) -> bool {
-        self.grant.tcp
-    }
-
-    fn udp(&self) -> bool {
-        self.grant.udp
-    }
-
-    fn allows(&self, proto: SocketProto, using: SocketUse, address: SocketAddr) -> bool {
-        let names = self.names_of(address.ip());
-        self.grant.rules.allows(&SocketCall {
-            proto,
-            using,
-            address,
-            names: &names,
-        })
-    }
-
-    fn names_of(&self, ip: IpAddr) -> Vec<String> {
-        let names = self.names.lock().unwrap_or_else(PoisonError::into_inner);
-        names.get(&ip.to_canonical()).cloned().unwrap_or_default()
-    }
-
-    fn may_resolve(&self, name: &str) -> bool {
-        self.grant.rules.may_resolve(name)
-    }
-
-    fn remember(&self, name: &str, addresses: &[IpAddr]) {
-        let mut names = self.names.lock().unwrap_or_else(PoisonError::into_inner);
-        if names.len() >= NAMES_KEPT {
-            names.clear();
-        }
-        for ip in addresses {
-            let known = names.entry(ip.to_canonical()).or_default();
-            if !known.iter().any(|kept| kept == name) {
-                known.push(name.to_string());
-            }
-        }
-    }
-}
+use crate::{SocketProto, SocketUse};
 
 type Check = Pin<Box<dyn Future<Output = bool> + Send + Sync>>;
 
@@ -98,8 +47,10 @@ fn is_ephemeral(address: SocketAddr) -> bool {
 }
 
 pub(crate) fn link(linker: &mut Linker<State>) -> wasmtime::Result<()> {
+    use wasmtime_wasi::p2::bindings::sockets::tcp_create_socket;
     use wasmtime_wasi::p2::bindings::sync::sockets::{ip_name_lookup, udp, udp_create_socket};
     linker.allow_shadowing(true);
+    tcp_create_socket::add_to_linker::<State, OwnTcp>(linker, State::tcp_view)?;
     udp::add_to_linker::<State, OwnSockets>(linker, State::sockets_view)?;
     udp_create_socket::add_to_linker::<State, OwnSockets>(linker, State::sockets_view)?;
     ip_name_lookup::add_to_linker::<State, OwnSockets>(linker, State::sockets_view)?;
@@ -148,3 +99,6 @@ fn as_ours<T: 'static, U: 'static>(handle: &Resource<T>) -> Resource<U> {
 fn owned<T: 'static, U: 'static>(handle: &Resource<T>) -> Resource<U> {
     Resource::new_own(handle.rep())
 }
+
+#[cfg(test)]
+mod tests;
