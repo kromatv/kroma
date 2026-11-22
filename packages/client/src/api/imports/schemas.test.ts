@@ -26,6 +26,20 @@ it('reads a kind the server did not count as zero', () => {
   expect(parsed.report.plays).toEqual({ read: 0, brought: 0, unmatched: 0 });
 });
 
+it('reads a report saved before libraries could be refused as refusing none', () => {
+  const parsed = Import.parse(wire);
+
+  expect(parsed.report.refusedLibraries).toEqual([]);
+});
+
+it('reads a refused library with the library of this server that holds its files', () => {
+  const refused = { name: 'Films', sharesFilesWith: 'Films 4K' };
+
+  const parsed = Import.parse({ ...wire, report: { ...wire.report, refusedLibraries: [refused] } });
+
+  expect(parsed.report.refusedLibraries).toEqual([refused]);
+});
+
 it('reads a failure for a reason it does not know as internal', () => {
   const parsed = Import.parse({ ...wire, status: 'failed', failure: { reason: 'somethingNew' } });
 

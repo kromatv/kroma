@@ -8,10 +8,10 @@ use anyhow::Result;
 use super::halt::Halt;
 use super::passage::Passage;
 use super::settle::{Key, Shelf};
-use super::stages::{LibraryRow, UserRow, UserRows};
+use super::stages::{LibraryRow, Outcome, UserRow, UserRows};
 use crate::db;
 use crate::model::import::{Library, LibraryKind, Survey, User};
-use crate::model::imports::{KeptLibrary, KeptUser, Kind, Selection};
+use crate::model::imports::{KeptLibrary, KeptUser, Kind, RefusedLibrary, Selection};
 
 pub(super) type Kept<'a, T, K> = Vec<(&'a T, &'a K)>;
 
@@ -43,6 +43,21 @@ pub(super) fn kept_users<'a>(
         .collect()
 }
 
+fn refused<'a>(
+    rows: &'a [LibraryRow<'_>],
+    outcomes: &'a [Outcome],
+) -> impl Iterator<Item = RefusedLibrary> + 'a {
+    rows.iter()
+        .zip(outcomes)
+        .filter_map(|(row, outcome)| match outcome {
+            Outcome::SharesFiles { with } => Some(RefusedLibrary {
+                name: row.library.name.clone(),
+                shares_files_with: with.clone(),
+            }),
+            _ => None,
+        })
+}
+
 impl Passage<'_> {
     fn targets(&self, kind: Kind) -> Result<HashMap<String, String>> {
         db::imports::targets(self.pool(), &self.server_id, kind)
@@ -67,6 +82,7 @@ impl Passage<'_> {
             .collect::<Result<Vec<_>>>()?;
         let outcomes = self.stages.libraries(&self.importing(), &rows)?;
         self.report.libraries.read += rows.len() as u64;
+        self.report.refused_libraries.extend(refused(&rows, &outcomes));
         self.conclude(Shelf::of(Kind::Library), &keys, &outcomes)?;
         Ok(self.targets(Kind::Library)?)
     }

@@ -4,6 +4,7 @@ use serde_json::Value;
 
 use crate::model::User;
 
+mod shared_folders;
 mod unreadable_list;
 
 pub(super) fn user_with(permissions: Vec<Permission>) -> User {

@@ -83,6 +83,11 @@ the same folders and the same kind.
 **ADMIN-141** (AGREED) - Where KROMA already has a source over the same folders, the import
 uses it and adds none. A second import therefore adds no second source.
 
+**ADMIN-182** (AGREED) - A kept library whose folder holds a folder of a KROMA source is not
+made, because its files would belong to two sources (LIB-79). The report at the end of the
+import names that library and the source that holds its files, and a later import offers the
+library again.
+
 **ADMIN-142** (AGREED) - A folder that does not exist on this machine under the name the
 other server gives it is asked for once on the review screen, with the folder picker. Every
 path below it is translated the same way.

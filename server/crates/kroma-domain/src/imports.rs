@@ -120,8 +120,9 @@ pub struct Tally {
 }
 
 /// What one import did, kind by kind. A row that is read and neither brought
-/// nor unmatched was here already.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+/// nor unmatched was here already. `refused_libraries` are the libraries the
+/// import did not make, because a library here already holds their files.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct Report {
     pub libraries: Tally,
@@ -129,6 +130,17 @@ pub struct Report {
     pub titles: Tally,
     pub states: Tally,
     pub plays: Tally,
+    pub refused_libraries: Vec<RefusedLibrary>,
+}
+
+/// A library of the other server, by its name there, that an import did not
+/// make: a folder of it holds, or sits below, a folder of `shares_files_with`,
+/// a library of this server.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RefusedLibrary {
+    pub name: String,
+    pub shares_files_with: String,
 }
 
 impl Report {
@@ -289,8 +301,17 @@ mod tests {
                 "titles": { "read": 0, "brought": 0, "unmatched": 0 },
                 "states": { "read": 0, "brought": 2, "unmatched": 0 },
                 "plays": { "read": 0, "brought": 0, "unmatched": 1 },
+                "refusedLibraries": [],
             })
         );
+    }
+
+    #[test]
+    fn a_report_saved_before_libraries_could_be_refused_reads_with_none() {
+        let report: Report = serde_json::from_value(json!({ "libraries": { "read": 1 } })).unwrap();
+
+        assert_eq!(report.libraries.read, 1);
+        assert!(report.refused_libraries.is_empty());
     }
 
     #[test]

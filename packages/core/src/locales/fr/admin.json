@@ -89,6 +89,7 @@
   "admin.expiresOn": "Expire le {date}",
   "admin.films": "Films",
   "admin.firstFolder": "Premier dossier",
+  "admin.librarySaveFailed": "Impossible d'enregistrer cette bibliothèque. Réessayez.",
   "admin.groupAcquisition": "Acquisition",
   "admin.groupMaintenance": "Maintenance",
   "admin.groupManagement": "Gestion",

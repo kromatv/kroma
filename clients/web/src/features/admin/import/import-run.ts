@@ -32,3 +32,8 @@ export function tallies(found: Import | undefined): TallyRow[] {
     (row) => row.tally.read > 0,
   );
 }
+
+/** The libraries an import did not make because another library holds their files. */
+export function refusedLibraries(found: Import | undefined) {
+  return found?.report.refusedLibraries ?? [];
+}

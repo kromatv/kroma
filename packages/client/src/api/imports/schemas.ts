@@ -15,14 +15,23 @@ export const ImportTally = z.object({
 });
 export type ImportTally = z.infer<typeof ImportTally>;
 
-/** What an import did so far, by kind. The server saves it after each read, so
- * a running import counts live. */
+/** A library of the other server, by its name there, that the import did not
+ * make because a library of this server already holds its files. */
+export const ImportRefusedLibrary = z.object({
+  name: z.string(),
+  sharesFilesWith: z.string(),
+});
+export type ImportRefusedLibrary = z.infer<typeof ImportRefusedLibrary>;
+
+/** What an import did so far, by kind, and the libraries it did not make. The
+ * server saves it after each read, so a running import counts live. */
 export const ImportReport = z.object({
   libraries: ImportTally,
   users: ImportTally,
   titles: ImportTally,
   states: ImportTally,
   plays: ImportTally,
+  refusedLibraries: z.array(ImportRefusedLibrary).default([]),
 });
 export type ImportReport = z.infer<typeof ImportReport>;
 
