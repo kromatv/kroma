@@ -13,8 +13,9 @@ interface LogoProps {
   /** Lockup height, which is also the wheel-O diameter. */
   size?: number;
   markOnly?: boolean;
-  /** Draws the KROMA Kids lockup: the word Kids on an accent tag after the
-   *  wordmark. Ignored with `markOnly`. */
+  /** Draws the KROMA Kids lockup: the word Kids on an accent tag under the end
+   *  of the wordmark, so it is no wider than KROMA alone. Ignored with
+   *  `markOnly`. */
   kids?: boolean;
   spin?: WheelSpin;
   color?: string;
@@ -25,17 +26,32 @@ function Logo({ size = 24, markOnly = false, kids = false, spin, color }: Readon
   if (markOnly) {
     return <Wheel size={size} spin={spin} />;
   }
+  const wordmark = <Wordmark size={size} spin={spin} fill={color ?? theme.colors.text} />;
+  if (kids) {
+    return (
+      <Box
+        w={wordmarkWidth(size)}
+        align="flex-end"
+        accessibilityRole="image"
+        accessibilityLabel="KROMA Kids"
+      >
+        <Box row align="center">
+          {wordmark}
+        </Box>
+        <KidsTag size={size} />
+      </Box>
+    );
+  }
   return (
-    <Box
-      row
-      align="center"
-      accessibilityRole="image"
-      accessibilityLabel={kids ? 'KROMA Kids' : 'KROMA'}
-    >
-      <Wordmark size={size} spin={spin} fill={color ?? theme.colors.text} />
-      {kids ? <KidsTag size={size} /> : null}
+    <Box row align="center" accessibilityRole="image" accessibilityLabel="KROMA">
+      {wordmark}
     </Box>
   );
+}
+
+function wordmarkWidth(size: number): number {
+  const { krWidth, gapLeft, height, gapRight, maWidth } = KROMA_LOCKUP;
+  return ((krWidth + gapLeft + height + gapRight + maWidth) * size) / height;
 }
 
 function Wordmark({
@@ -73,9 +89,9 @@ const sDefinition = styles({
 
 function KidsTag({ size }: Readonly<{ size: number }>) {
   const s = useStyles(sDefinition);
-  const scale = { fontSize: Math.round(size * 0.62), lineHeight: Math.round(size * 0.84) };
+  const scale = { fontSize: Math.round(size * 0.5), lineHeight: Math.round(size * 0.7) };
   return (
-    <Box ml={Math.round(size * 0.34)} px={Math.round(size * 0.3)} radius="pill" bg="accent">
+    <Box mt={Math.round(size * 0.16)} px={Math.round(size * 0.32)} radius="pill" bg="accent">
       <Text lines={1} style={[s.word, scale]}>
         Kids
       </Text>
