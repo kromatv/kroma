@@ -4,18 +4,22 @@ import { useT } from '@kromatv/ui';
 import { Box, Callout, GuidedFlow, Row, Skeleton, StatCard } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { foldersOf, placed, placesOf } from '#web/features/setup/import-folders';
+import { foldersOf, placed, placesOf } from '#web/features/admin/import/import-folders';
 import {
   type ImportTarget,
   importable,
   importRequest,
   keptLibraries,
-} from '#web/features/setup/import-review';
-import { useImportSession } from '#web/features/setup/import-session.component';
-import { ReviewFolders } from '#web/features/setup/import-review-folders.component';
-import { ReviewLibraries, ReviewUsers } from '#web/features/setup/import-review-lists.component';
-import { leftBehindLine } from '#web/features/setup/import-words';
-import { StepFailure } from '#web/features/setup/step-failure.component';
+} from '#web/features/admin/import/import-review';
+import { useImportSession } from '#web/features/admin/import/import-session.component';
+import { ReviewFolders } from '#web/features/admin/import/import-review-folders.component';
+import {
+  ReviewLibraries,
+  ReviewUsers,
+} from '#web/features/admin/import/import-review-lists.component';
+import { leftBehindLine } from '#web/features/admin/import/import-words';
+import { KeptSignIn } from '#web/features/admin/import/import-kept-sign-in.component';
+import { StepFailure } from '#web/shared/ui/step-failure.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 interface ReviewProps {
@@ -171,6 +175,7 @@ export function ImportReview({ target, onBack }: Readonly<ReviewProps>) {
         {!data && !error ? <Loading /> : null}
         <StepFailure error={error ? t('setup.importReviewFailed') : null} />
         <StepFailure error={failed ? t('setup.importStartFailed') : null} />
+        <KeptSignIn />
       </GuidedFlow.Panel>
       <GuidedFlow.Footer>
         <GuidedFlow.Previous onPress={onBack} />

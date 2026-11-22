@@ -1,26 +1,15 @@
 import type { Importer, ImporterList } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
-import { Box, Button, Callout, EmptyState, GuidedFlow, ListRow, Skeleton } from '@kromatv/ui/kit';
-import { useImportSession } from '#web/features/setup/import-session.component';
-import { ImporterIcon } from '#web/features/setup/importer-icon.component';
-import { StepFailure } from '#web/features/setup/step-failure.component';
-import { useImporters } from '#web/features/setup/use-importers.hook';
-
-const LOADING_ROWS = ['first', 'second'];
+import { Box, Button, Callout, EmptyState, GuidedFlow, ListRow } from '@kromatv/ui/kit';
+import { useImportSession } from '#web/features/admin/import/import-session.component';
+import { ImporterIcon } from '#web/features/admin/import/importer-icon.component';
+import { ListSkeleton } from '#web/shared/ui';
+import { StepFailure } from '#web/shared/ui/step-failure.component';
+import { useImporters } from '#web/features/admin/import/use-importers.hook';
 
 interface SourceProps {
-  onBack: () => void;
-  onSkip: () => void;
-}
-
-function Loading() {
-  return (
-    <Box gap={8}>
-      {LOADING_ROWS.map((row) => (
-        <Skeleton key={row} w="100%" h={84} radius="lg" />
-      ))}
-    </Box>
-  );
+  onBack?: () => void;
+  onSkip?: () => void;
 }
 
 function ImporterRow({ importer, onPick }: Readonly<{ importer: Importer; onPick: () => void }>) {
@@ -87,6 +76,23 @@ function Sources({ list }: Readonly<{ list: ImporterList }>) {
   );
 }
 
+function SourceActions({ onBack, onSkip }: Readonly<SourceProps>) {
+  const t = useT();
+  if (!onBack && !onSkip) {
+    return null;
+  }
+  return (
+    <GuidedFlow.Footer>
+      {onBack ? <GuidedFlow.Previous onPress={onBack} /> : null}
+      <GuidedFlow.Actions>
+        {onSkip ? (
+          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
+        ) : null}
+      </GuidedFlow.Actions>
+    </GuidedFlow.Footer>
+  );
+}
+
 /** Which server the owner comes from. The choice is the list of importers the
  * server can use, each in its own name. */
 export function ImportSource({ onBack, onSkip }: Readonly<SourceProps>) {
@@ -100,15 +106,10 @@ export function ImportSource({ onBack, onSkip }: Readonly<SourceProps>) {
       </GuidedFlow.Header>
       <GuidedFlow.Panel>
         {data ? <Sources list={data} /> : null}
-        {!data && !error ? <Loading /> : null}
+        {!data && !error ? <ListSkeleton count={2} height={84} /> : null}
         <StepFailure error={error ? t('setup.importListFailed') : null} />
       </GuidedFlow.Panel>
-      <GuidedFlow.Footer>
-        <GuidedFlow.Previous onPress={onBack} />
-        <GuidedFlow.Actions>
-          <Button variant="ghost" size="md" label={t('setup.skip')} onPress={onSkip} />
-        </GuidedFlow.Actions>
-      </GuidedFlow.Footer>
+      <SourceActions onBack={onBack} onSkip={onSkip} />
     </>
   );
 }

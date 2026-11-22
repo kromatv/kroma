@@ -57,9 +57,9 @@ export function ImportSession({ children }: Readonly<{ children: ReactNode }>) {
 
 /** The import the owner is preparing in this setup. */
 export function useImportSession(): Held {
-  const held = useContext(Context);
-  if (!held) {
-    throw new Error('useImportSession needs an <ImportSession> above it');
-  }
-  return held;
+  return useContext(Context) ?? noSession();
+}
+
+function noSession(): never {
+  throw new Error('useImportSession needs an <ImportSession> above it');
 }

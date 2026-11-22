@@ -2,7 +2,8 @@ import type { ImportServer } from '@kromatv/client/importers';
 import { useT } from '@kromatv/ui';
 import { ChoiceList, GuidedFlow } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { useImportSession } from '#web/features/setup/import-session.component';
+import { KeptSignIn } from '#web/features/admin/import/import-kept-sign-in.component';
+import { useImportSession } from '#web/features/admin/import/import-session.component';
 
 function ServerChoice({ server }: Readonly<{ server: ImportServer }>) {
   return (
@@ -49,6 +50,7 @@ export function ImportServers({ onBack }: Readonly<{ onBack: () => void }>) {
       </GuidedFlow.Header>
       <GuidedFlow.Panel>
         <ServerList servers={session.servers} picked={picked} onPick={setPicked} />
+        <KeptSignIn />
       </GuidedFlow.Panel>
       <GuidedFlow.Footer>
         <GuidedFlow.Previous onPress={onBack} />

@@ -7,12 +7,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { ScanFeed } from '#web/features/setup/scan-feed';
 import { ScanLive } from '#web/features/setup/scan-live.component';
-import { StepFailure } from '#web/features/setup/step-failure.component';
+import { StepFailure } from '#web/shared/ui/step-failure.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { FolderListEditor } from '#web/shared/ui/folder-field.component';
+import { shortPath } from '#web/shared/lib/short-path';
 
 const LIBRARIES = ['setup', 'libraries'] as const;
-const PATH_TAIL = 3;
 
 interface MediaStepProps {
   feed: ScanFeed;
@@ -24,13 +24,6 @@ interface MediaStepProps {
 export function folderName(path: string): string {
   const parts = path.split(/[\\/]/).filter((part) => part.length > 0);
   return parts.at(-1) ?? path;
-}
-
-/** A path short enough for one line: its last folders, after a mark that says
- * the start was cut. */
-export function shortPath(path: string): string {
-  const parts = path.split(/[\\/]/).filter((part) => part.length > 0);
-  return parts.length <= PATH_TAIL ? path : `…/${parts.slice(-PATH_TAIL).join('/')}`;
 }
 
 /** The libraries somebody added. The demo ones, which a server with no media

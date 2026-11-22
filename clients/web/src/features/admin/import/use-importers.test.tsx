@@ -36,6 +36,9 @@ function listOf(...held: { id: string; running: boolean }[]) {
 }
 
 const STARTING = listOf({ id: CHOSEN, running: false });
+const OFFERED = ImporterList.parse({
+  importers: [{ id: CHOSEN, name: CHOSEN, installed: false, running: false, fields: [] }],
+});
 const RUNNING = listOf({ id: CHOSEN, running: true });
 
 function wrapper() {
@@ -75,6 +78,10 @@ describe('whether the list is asked again', () => {
 
   it('is left alone before the owner chose an importer', () => {
     expect(stillStarting(STARTING, null)).toBe(false);
+  });
+
+  it('is left alone while the chosen importer waits on the owner to accept it', () => {
+    expect(stillStarting(OFFERED, CHOSEN)).toBe(false);
   });
 
   it('is left alone for an importer the list does not hold', () => {
