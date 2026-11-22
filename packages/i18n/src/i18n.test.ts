@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createI18n } from './i18n';
+import { type AnyI18n, createI18n } from './i18n';
 
 function build() {
   return createI18n({
@@ -205,15 +205,6 @@ describe('a catalog saved while the app runs', () => {
     expect([before('greeting'), after('greeting')]).toEqual(['Hello', 'Hello']);
   });
 
-  it('keeps the translator it handed out when a catalog only adds messages', () => {
-    const i18n = build();
-    const before = i18n.translator('en');
-
-    i18n.register('nav', { en: { 'nav.home': 'Home' } });
-
-    expect(i18n.translator('en')).toBe(before);
-  });
-
   it('picks up a plural form added to a message that had none', () => {
     const i18n = build();
     i18n.translate('fr', 'greeting', { count: 1 });
@@ -221,5 +212,44 @@ describe('a catalog saved while the app runs', () => {
     i18n.register('greeting', { fr: { greeting: 'Bonjours', greeting_one: 'Bonjour seul' } });
 
     expect(i18n.translate('fr', 'greeting', { count: 1 })).toBe('Bonjour seul');
+  });
+});
+
+describe('a translator handed out before a catalog landed', () => {
+  it('is replaced once the catalog of a key it answered with itself lands', () => {
+    const i18n: AnyI18n = build();
+    const before = i18n.translator('en');
+    before('nav.home');
+
+    i18n.register('nav', { en: { 'nav.home': 'Home' } });
+    const after = i18n.translator('en');
+
+    expect(after).not.toBe(before);
+    expect(after('nav.home')).toBe('Home');
+  });
+
+  it('is replaced once its own language lands over the fallback it answered with', () => {
+    const i18n: AnyI18n = build();
+    i18n.register('nav', { en: { 'nav.home': 'Home' } });
+    const before = i18n.translator('fr');
+    before('nav.home');
+
+    i18n.register('nav', { fr: { 'nav.home': 'Accueil' } });
+    const after = i18n.translator('fr');
+
+    expect(after).not.toBe(before);
+    expect(after('nav.home')).toBe('Accueil');
+  });
+
+  it('is replaced once its scope is added, and again once the scope is removed', () => {
+    const i18n = build();
+    const before = i18n.translator('en', 'mod');
+
+    const dispose = i18n.add('mod', { en: { own: 'Mine' } });
+    const added = i18n.translator('en', 'mod');
+    dispose();
+
+    expect(added).not.toBe(before);
+    expect(i18n.translator('en', 'mod')).not.toBe(added);
   });
 });
