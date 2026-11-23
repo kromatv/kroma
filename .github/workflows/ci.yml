@@ -290,6 +290,11 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 30
+    env:
+      CCACHE_MAXSIZE: 1G
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
@@ -300,6 +305,23 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      # The C++ under React Native, Reanimated and the Expo modules compiles
+      # once per ABI, and Gradle's build cache does not cover native tasks.
+      # ccache does, by content: the CMake launcher variables reach every
+      # library's build, and the app's own picks ccache up from PATH. Its
+      # sources all arrive through the install, so the entry is keyed on it
+      # and written from main.
+      - name: Install ccache
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends ccache
+      - name: Restore the compiler cache
+        id: ccache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ccache-androidtv-debug-v1-${{ hashFiles('bun.lock', 'patches/**') }}
+          restore-keys: ccache-androidtv-debug-v1-
       # Writes from main like every other cache here. Read-only, the job
       # restored a Gradle home with neither this app's dependencies nor its
       # task outputs and compiled everything (592 tasks, 74 from cache, 8.5
@@ -321,9 +343,18 @@ jobs:
       # --build-cache reuses task outputs keyed on their inputs, which the
       # dependency cache alone does not. The heap is raised because the
       # generated gradle.properties asks for 2 GB, a third of the runner.
-      - run: gradle -p clients/tv-native/android assembleDebug --build-cache
+      - run: |
+          ccache --zero-stats
+          gradle -p clients/tv-native/android assembleDebug --build-cache
+          ccache --show-stats
         env:
           GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g
+      - name: Save the compiler cache
+        if: github.ref == 'refs/heads/main' && steps.ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ccache-androidtv-debug-v1-${{ hashFiles('bun.lock', 'patches/**') }}
 
   # The Linux binary-engine path (mpv IPC) a macOS laptop cannot check.
   # --no-default-features leaves the in-process libmpv out: ubuntu-22.04's
