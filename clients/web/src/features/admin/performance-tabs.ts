@@ -4,7 +4,6 @@ import type {
   PerfSegmentRow,
   PerfWindow,
 } from '@kromatv/client/performance';
-import { scopeId } from '#web/features/admin/performance-format';
 
 export const PERF_TABS = ['requests', 'jobs', 'statements', 'functions', 'slow'] as const;
 
@@ -21,6 +20,11 @@ export function urlId(id: string): string {
 /** The id a URL value names, or `undefined` for none. */
 export function idFromUrl(value: string | undefined): string | undefined {
   return value?.startsWith('k') ? value.slice(1) : value;
+}
+
+/** How a route or job is named in the URL that opens its drawer. */
+export function scopeId(row: Pick<PerfScopeRow, 'kind' | 'name'>): string {
+  return `${row.kind}:${row.name}`;
 }
 
 /** What the Performance page shows, as its URL holds it: the tab, the period,

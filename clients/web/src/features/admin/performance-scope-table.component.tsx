@@ -7,7 +7,6 @@ import {
   figuresOf,
   SCOPE_FIGURES,
   SCOPE_SORT,
-  scopeId,
   sortRows,
 } from '#web/features/admin/performance-format';
 import {
@@ -17,6 +16,7 @@ import {
   PerfTable,
 } from '#web/features/admin/performance-table.component';
 import { PerfLink } from '#web/features/admin/performance-link.component';
+import { scopeId } from '#web/features/admin/performance-tabs';
 
 const COLUMNS: readonly PerfColumn[] = [
   { column: 'name', labelKey: 'perf.colName', flex: 2.4, min: 220 },

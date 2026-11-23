@@ -8,7 +8,6 @@ import {
   hasPlan,
   kindLabel,
   SCOPE_FIGURES,
-  scopeId,
   segmentsOf,
   shortLabel,
   SLOW_FIGURES,
@@ -120,14 +119,6 @@ describe('segmentsOf', () => {
 
     expect(segmentsOf(segments, 'statements').map((s) => s.kind)).toEqual(['sql']);
     expect(segmentsOf(segments, 'functions').map((s) => s.kind)).toEqual(['span', 'http']);
-  });
-});
-
-describe('scopeId', () => {
-  it('names a route by its kind and its template', () => {
-    expect(scopeId({ kind: 'request', name: 'GET /api/shows/{id}' })).toBe(
-      'request:GET /api/shows/{id}',
-    );
   });
 });
 

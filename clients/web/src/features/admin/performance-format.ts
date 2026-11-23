@@ -83,11 +83,6 @@ export function shortLabel(label: string): string {
   return label.length > LABEL_CHARS ? `${label.slice(0, LABEL_CHARS)}…` : label;
 }
 
-/** How a route or job is named in the URL that opens its drawer. */
-export function scopeId(row: Pick<PerfScopeRow, 'kind' | 'name'>): string {
-  return `${row.kind}:${row.name}`;
-}
-
 type Show<T> = (row: T) => string;
 
 /** A row's figures for its table, as `[column, text]` in the order `shown`

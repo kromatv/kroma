@@ -1,6 +1,6 @@
 import type { PerfOverview, PerfScopeRow, PerfSegmentRow } from '@kromatv/client/performance';
 import { describe, expect, it } from 'vitest';
-import { closed, idFromUrl, openDrawer, opening, urlId } from './performance-tabs';
+import { closed, idFromUrl, openDrawer, opening, scopeId, urlId } from './performance-tabs';
 
 const spread = { count: 1, totalMs: 1, meanMs: 1, p50Ms: 1, p95Ms: 1, p99Ms: 1, maxMs: 1 };
 
@@ -42,6 +42,14 @@ const overview: PerfOverview = {
   jobs: [],
   segments: [statement],
 };
+
+describe('scopeId', () => {
+  it('names a route by its kind and its template', () => {
+    expect(scopeId({ kind: 'request', name: 'GET /api/shows/{id}' })).toBe(
+      'request:GET /api/shows/{id}',
+    );
+  });
+});
 
 describe('urlId', () => {
   it('round-trips a key too long for a JavaScript number', () => {
