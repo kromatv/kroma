@@ -117,6 +117,7 @@ impl SearchEngine {
 
     /// Top-`limit` hits for `raw`, best first, for somebody who sees every
     /// library. Empty for a blank query.
+    #[tracing::instrument(level = "trace", skip_all, name = "SearchIndex::search")]
     pub fn search(&self, raw: &str, limit: usize) -> Vec<Hit> {
         let asker = Asker {
             visible: &|_| true,

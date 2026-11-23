@@ -9,6 +9,7 @@ pub mod folders;
 #[cfg(feature = "hotpatch")]
 pub mod hot;
 pub mod https;
+pub mod profiling;
 pub mod scan;
 pub mod seam;
 pub mod serve;

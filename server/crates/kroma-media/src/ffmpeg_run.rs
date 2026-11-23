@@ -20,6 +20,7 @@ pub type Cancel<'a> = &'a (dyn Fn() -> bool + Sync);
 /// so a failure can explain itself. `Ok(())` on a clean exit; `Err(reason)` on a
 /// spawn error (ffmpeg missing), a non-zero exit (with the stderr tail), or a
 /// timeout.
+#[tracing::instrument(level = "trace", skip_all, name = "ffmpeg::run")]
 pub fn run_capturing(cmd: Command, dur: Duration) -> Result<(), String> {
     run_capturing_cancellable(cmd, dur, Footprint::LIGHT, &|| false)
 }
@@ -29,6 +30,7 @@ pub fn run_capturing(cmd: Command, dur: Duration) -> Result<(), String> {
 /// flips so a cancelled job/stage stops the in-flight ffmpeg (a tile seek can
 /// otherwise hang up to its timeout) instead of waiting out `dur`. A pass still
 /// queued for the budget gives up the same way.
+#[tracing::instrument(level = "trace", skip_all, name = "ffmpeg::run")]
 pub fn run_capturing_cancellable(
     mut cmd: Command,
     dur: Duration,

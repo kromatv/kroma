@@ -21,7 +21,11 @@ pub fn router(
 ) -> Router {
     let api = host_routes(&state, &supervisor, &subscriptions)
         .route("/module/{id}/{*rest}", axum::routing::any(module_proxy))
-        .layer(Extension(supervisor));
+        .layer(Extension(supervisor.clone()))
+        .route_layer(axum::middleware::from_fn_with_state(
+            supervisor,
+            super::profiling::profile,
+        ));
     Router::new()
         .nest("/api", api)
         .layer(TraceLayer::new_for_http())

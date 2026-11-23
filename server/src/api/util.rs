@@ -1,5 +1,6 @@
 //! Shared HTTP-handler helpers. The `spawn_blocking` DB combinators live on the
-//! module host seam; re-exported here so existing call sites are unchanged.
+//! module host seam; the ones here carry the request's profiling scope to the
+//! thread the work runs on.
 
 use std::net::{IpAddr, SocketAddr};
 
@@ -12,7 +13,24 @@ use crate::db;
 use crate::services::pairing::Orphaned;
 use crate::state::SharedState;
 
-pub(crate) use kroma_module_host::{blocking, query};
+/// [`kroma_module_host::blocking`], with the work counted in this request.
+pub(crate) async fn blocking<T, F>(f: F) -> Result<T, Response>
+where
+    F: FnOnce() -> anyhow::Result<T> + Send + 'static,
+    T: Send + 'static,
+{
+    kroma_module_host::blocking(kroma_perf::carry(f)).await
+}
+
+/// [`kroma_module_host::query`], with the work counted in this request.
+pub(crate) async fn query<T, F>(pool: &db::Pool, f: F) -> Result<T, Response>
+where
+    F: FnOnce(db::Pool) -> anyhow::Result<T> + Send + 'static,
+    T: Send + 'static,
+{
+    let pool = pool.clone();
+    blocking(move || f(pool)).await
+}
 
 /// Runs a service call off the async runtime. Its failures are usually the
 /// caller's (an unknown TMDB id, a request that is gone), so an error answers
@@ -22,7 +40,7 @@ where
     F: FnOnce() -> anyhow::Result<T> + Send + 'static,
     T: Send + 'static,
 {
-    match tokio::task::spawn_blocking(f).await {
+    match tokio::task::spawn_blocking(kroma_perf::carry(f)).await {
         Ok(Ok(v)) => Ok(v),
         Ok(Err(e)) => {
             // The top-level message is the caller's to act on; the chain below

@@ -20,6 +20,7 @@ mod logs;
 mod modules;
 mod network;
 mod notifications;
+mod performance;
 mod pipeline;
 mod reports;
 mod settings;
@@ -105,6 +106,7 @@ fn noun_routes() -> Router<SharedState> {
         .merge(notifications::routes())
         .merge(store::routes())
         .merge(pipeline::routes())
+        .merge(performance::routes())
         .merge(backup::routes())
         .merge(updates::routes())
 }

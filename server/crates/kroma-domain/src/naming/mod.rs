@@ -19,7 +19,7 @@ mod title;
 use std::path::Path;
 
 pub use marker::is_season_folder;
-use marker::find_marker;
+use marker::{Marker, find_loose_marker, find_marker, folder_season};
 use title::clean_episode_title;
 pub use title::{clean_title, parse_year};
 
@@ -42,36 +42,59 @@ pub enum Parsed {
 
 /// Parse a media file located at `path`, relative to its library `root`.
 pub fn parse(root: &Path, path: &Path) -> Parsed {
-    let stem = path
-        .file_stem()
-        .and_then(std::ffi::OsStr::to_str)
-        .unwrap_or("Untitled");
+    let file = Located::new(root, path);
+    match find_marker(file.stem) {
+        Some(marker) => file.episode(root, &marker),
+        None => file.movie(),
+    }
+}
 
-    // Directory components between the library root and the file.
-    let dirs: Vec<String> = path
-        .parent()
-        .and_then(|p| p.strip_prefix(root).ok())
-        .map(|rel| {
-            rel.components()
-                .filter_map(|c| c.as_os_str().to_str())
-                .map(ToString::to_string)
-                .collect()
-        })
-        .unwrap_or_default();
+/// Parse a file of a library declared as shows, which holds no movie. Past the
+/// markers [`parse`] reads, `S211E06`, an absolute `Episode 259` or `Ep. 259`
+/// and a leading `215 - ` number name the episode, and a marker that names no
+/// season takes the nearest season folder's, else season 1. `None` when the
+/// name carries no episode number at all.
+pub fn parse_episode(root: &Path, path: &Path) -> Option<Parsed> {
+    let file = Located::new(root, path);
+    let season = file
+        .dirs
+        .iter()
+        .rev()
+        .map(String::as_str)
+        .find_map(folder_season)
+        .unwrap_or(1);
+    let marker = find_marker(file.stem).or_else(|| find_loose_marker(file.stem, season))?;
+    Some(file.episode(root, &marker))
+}
 
-    if let Some(m) = find_marker(stem) {
-        let show = show::identify(root, &dirs, &stem[..m.start], stem);
+struct Located<'a> {
+    stem: &'a str,
+    dirs: Vec<String>,
+}
 
-        let after = stem.get(m.end..).unwrap_or("");
-        let episode_title = {
-            let t = clean_episode_title(after);
-            if t.is_empty() {
-                None
-            } else {
-                Some(t)
-            }
-        };
+impl<'a> Located<'a> {
+    fn new(root: &Path, path: &'a Path) -> Self {
+        let stem = path
+            .file_stem()
+            .and_then(std::ffi::OsStr::to_str)
+            .unwrap_or("Untitled");
+        let dirs = path
+            .parent()
+            .and_then(|p| p.strip_prefix(root).ok())
+            .map(|rel| {
+                rel.components()
+                    .filter_map(|c| c.as_os_str().to_str())
+                    .map(ToString::to_string)
+                    .collect()
+            })
+            .unwrap_or_default();
+        Self { stem, dirs }
+    }
 
+    fn episode(&self, root: &Path, m: &Marker) -> Parsed {
+        let show = show::identify(root, &self.dirs, &self.stem[..m.start], self.stem);
+        let after = self.stem.get(m.end..).unwrap_or("");
+        let episode_title = Some(clean_episode_title(after)).filter(|t| !t.is_empty());
         Parsed::Episode {
             show_title: show.title,
             show_year: show.year,
@@ -80,16 +103,16 @@ pub fn parse(root: &Path, path: &Path) -> Parsed {
             episode_end: m.episode_end,
             episode_title,
         }
-    } else {
-        // Movie: prefer the filename when it carries a year, else fall back to a
-        // `Title (Year)` parent folder (the canonical Plex movie layout).
-        let parent = dirs.last().map(String::as_str);
-        let (title, year) = if let Some(y) = parse_year(stem) {
-            (clean_title(stem), Some(y))
+    }
+
+    fn movie(&self) -> Parsed {
+        let parent = self.dirs.last().map(String::as_str);
+        let (title, year) = if let Some(y) = parse_year(self.stem) {
+            (clean_title(self.stem), Some(y))
         } else if let Some((p, y)) = parent.and_then(|p| parse_year(p).map(|y| (p, y))) {
             (clean_title(p), Some(y))
         } else {
-            (clean_title(stem), None)
+            (clean_title(self.stem), None)
         };
         Parsed::Movie { title, year }
     }
@@ -247,6 +270,77 @@ mod tests {
             }
             other => panic!("expected episode, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn a_space_between_season_and_episode_reads_in_any_library() {
+        let parsed = p("/tv", "/tv/Show/S01 E05 - Episode Title.mkv");
+
+        assert!(matches!(
+            parsed,
+            Parsed::Episode { season: 1, episode: 5, ref episode_title, .. }
+                if episode_title.as_deref() == Some("Episode Title")
+        ));
+    }
+
+    #[test]
+    fn an_absolute_episode_in_a_series_library_joins_its_show_folder() {
+        let path = Path::new("/Shows/Example Series/Ep. 259.mp4");
+
+        let parsed = parse_episode(Path::new("/Shows"), path);
+
+        assert_eq!(
+            parsed,
+            Some(Parsed::Episode {
+                show_title: "Example Series".into(),
+                show_year: None,
+                season: 1,
+                episode: 259,
+                episode_end: None,
+                episode_title: None,
+            })
+        );
+    }
+
+    #[test]
+    fn a_leading_number_under_a_season_folder_takes_that_season() {
+        let path = Path::new("/Shows/Example Series/Season 2/215 - Episode Title.mp4");
+
+        let parsed = parse_episode(Path::new("/Shows"), path);
+
+        assert!(matches!(
+            parsed,
+            Some(Parsed::Episode { season: 2, episode: 215, ref show_title, ref episode_title, .. })
+                if show_title == "Example Series" && episode_title.as_deref() == Some("Episode Title")
+        ));
+    }
+
+    #[test]
+    fn a_long_running_season_reads_in_a_series_library() {
+        let path = Path::new("/Shows/Example Series/S211E06 - Episode Title.mkv");
+
+        let parsed = parse_episode(Path::new("/Shows"), path);
+
+        assert!(matches!(
+            parsed,
+            Some(Parsed::Episode {
+                season: 211,
+                episode: 6,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn a_series_library_leaves_out_a_name_with_no_episode_number() {
+        let path = Path::new("/Shows/Example Series/Season 2/Episode Title.mp4");
+
+        assert_eq!(parse_episode(Path::new("/Shows"), path), None);
+    }
+
+    #[test]
+    fn any_other_library_still_reads_an_unmarked_name_as_a_movie() {
+        assert!(matches!(p("/m", "/m/Ep. 259.mp4"), Parsed::Movie { .. }));
     }
 
     #[test]
