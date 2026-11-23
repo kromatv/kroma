@@ -34,12 +34,12 @@ jobs:
           node-version: '22'
       - run: bun install --frozen-lockfile
       - run: bun run quality:setup
-      # The two projects CI measures (packages/ci-tools/src/test.ts says why
+      # The projects CI measures (packages/ci-tools/src/test.ts says why
       # the audit project is left out). A failing test is the gate's to report,
       # not this job's: the lcov is written all the same and the report reads it.
       - name: TypeScript coverage
         continue-on-error: true
-        run: bun run test:coverage --project web --project native --coverage.reportOnFailure
+        run: bun run test:coverage --project 'web*' --project 'native*' --coverage.reportOnFailure
       - run: bun run quality:report
       - name: Summary on the run page
         if: ${{ !cancelled() }}

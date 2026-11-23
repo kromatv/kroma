@@ -52,7 +52,7 @@ These are the CI hard gates (`.github/workflows/ci.yml`, see
 
 ```bash
 bun run typecheck        # every TS workspace (= `bun run ci typecheck`, a bounded pool of `bun check`)
-bun run test             # vitest (two projects: web + native)
+bun run test             # vitest (web + native, each shared and isolated)
 bun run check            # oxlint with types + the Sonar mirror + the lint debt list + `bun fmt --check`  (check:fix to write)
 bun run ci rust clippy   # server workspace + every module workspace
 bun run ci rust test     # the same, under coverage (cargo llvm-cov)
@@ -114,17 +114,27 @@ Every root script is `<verb>:<target>` (`dev:` / `build:` / `deploy:` / `kit:`);
 
 ```bash
 bun run test packages/core/src/hevc.test.ts        # one file
-bun run test --project web -t 'rejects a range'    # one test name, one project
+bun run test --project 'web*' -t 'rejects a range' # one test name, one universe
 cd server && cargo test -p kroma-scene             # one Rust crate
 cd server && cargo test --workspace parse_episode  # one Rust test filter
 ```
 
-There are **two vitest projects** because the repo has two module-resolution
-universes: `web` (`.web.*` files win, mirrors the shells' Vite config) and `native`
+There are **two module-resolution universes**, so two kinds of vitest project:
+`web` (`.web.*` files win, mirrors the shells' Vite config) and `native`
 (Metro precedence, plain file wins). A test that must run under Metro resolution is
 named `*.native.test.ts`; the include globs are derived from the web list so the two
 cannot drift. Default environment is `node`; a test needing a DOM opts in with
 `// @vitest-environment jsdom`.
+
+Each universe is two projects. `web` and `native` share one module graph per
+worker (`isolate: false`), which is what makes the suite fast; a file that calls
+`vi.mock` or `vi.doMock` would leak its mock into the next file, so
+`vitest.config.ts` moves it to `web-isolated` or `native-isolated` on its own.
+`vitest.setup.ts` resets what a file can leave behind (timers, spies, stubbed
+globals and env, the DOM, web storage), so a test still cleans up after itself
+but a slip cannot fail a stranger. It cannot reset `document.head`, where
+react-native-web keeps its rules for the whole worker, so a test removes only
+the elements it added there. `--project 'web*'` selects both halves.
 
 ## Architecture
 

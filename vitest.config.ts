@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { gitHistory } from '@kromatv/bundler/git-history';
 import { kromaMdx } from '@kromatv/bundler/mdx';
@@ -99,63 +101,96 @@ const auditInclude = [
   'packages/*/src/**/*.compiled.test.{ts,tsx}',
 ];
 
+const MOCKS = /\bvi\.(?:do)?[mM]ock\(/;
+
+const run = (cmd: string, args: string[]) =>
+  execFileSync(cmd, args, { cwd: dir('.'), encoding: 'utf8' });
+
+const testFiles = run('git', [
+  'ls-files',
+  '--cached',
+  '--others',
+  '--exclude-standard',
+  '*.test.ts',
+  '*.test.tsx',
+])
+  .split('\n')
+  .filter((file) => file !== '' && existsSync(dir(`./${file}`)));
+
+const mocking = testFiles.filter((file) => MOCKS.test(readFileSync(dir(`./${file}`), 'utf8')));
+const sharing = testFiles.filter((file) => !mocking.includes(file));
+
+const webExclude = [...configDefaults.exclude, '**/*.native.test.*', ...auditInclude];
+
+type Files = { name: string; include: string[]; exclude: string[] };
+
+const shared = (files: Files) => ({ ...files, isolate: false });
+
+const isolated = (files: Files) => ({ ...files, sequence: { groupOrder: 1 } });
+
+const webProject = (files: ReturnType<typeof shared | typeof isolated>) => ({
+  plugins: plugins(),
+  // `.web.*` wins over the plain file, mirroring the shells' Vite config.
+  resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },
+  test: { pool, environment, environmentOptions, setupFiles, server, ...files },
+});
+
+// Metro's precedence: `.native.*` first, then the plain file; `.web.*` is never
+// consulted unless named outright. Derived from the web list so an extension
+// can't be added to one universe and forgotten in the other.
+const nativeProject = (files: ReturnType<typeof shared | typeof isolated>) => ({
+  plugins: plugins(),
+  resolve: {
+    alias: [
+      // @kromatv/client discovers its domains per bundler: `discover.web.ts`
+      // is Vite's glob, `discover.ts` is Metro's `require.context`, which
+      // the runner has not got. This project resolves the plain file, so
+      // point it at the Vite half rather than shim a bundler global.
+      {
+        find: /^\.\/api\/discover$/,
+        replacement: dir('./packages/client/src/api/discover.web.ts'),
+      },
+      ...alias,
+    ],
+    extensions: [
+      '.native.tsx',
+      '.native.ts',
+      ...WEB_EXTENSIONS.filter((e) => !e.startsWith('.web.')),
+    ],
+    dedupe,
+  },
+  test: { pool, environment, environmentOptions, setupFiles, server, ...files },
+});
+
 export default defineConfig({
   test: {
-    // Two projects: this repo has two resolution universes (web precedence vs.
-    // Metro precedence), and a `.web` twin is unreachable at any specifier from
-    // whichever project doesn't own its half.
+    // This repo has two resolution universes (web precedence vs. Metro
+    // precedence), and a `.web` twin is unreachable at any specifier from
+    // whichever universe doesn't own its half.
     projects: [
-      {
-        plugins: plugins(),
-        // `.web.*` wins over the plain file, mirroring the shells' Vite config.
-        resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },
-        test: {
+      webProject(
+        shared({
           name: 'web',
-          pool,
-          environment,
-          environmentOptions,
-          setupFiles,
           include,
           // Overriding `exclude` replaces the defaults (incl. node_modules).
-          exclude: [...configDefaults.exclude, '**/*.native.test.*', ...auditInclude],
-          server,
-        },
-      },
-      {
-        plugins: plugins(),
-        // Metro's precedence: `.native.*` first, then the plain file; `.web.*`
-        // is never consulted unless named outright. Derived from the web list
-        // so an extension can't be added to one universe and forgotten in the
-        // other.
-        resolve: {
-          alias: [
-            // @kromatv/client discovers its domains per bundler: `discover.web.ts`
-            // is Vite's glob, `discover.ts` is Metro's `require.context`, which
-            // the runner has not got. This project resolves the plain file, so
-            // point it at the Vite half rather than shim a bundler global.
-            {
-              find: /^\.\/api\/discover$/,
-              replacement: dir('./packages/client/src/api/discover.web.ts'),
-            },
-            ...alias,
-          ],
-          extensions: [
-            '.native.tsx',
-            '.native.ts',
-            ...WEB_EXTENSIONS.filter((e) => !e.startsWith('.web.')),
-          ],
-          dedupe,
-        },
-        test: {
+          exclude: [...webExclude, ...mocking],
+        }),
+      ),
+      webProject(isolated({ name: 'web-isolated', include, exclude: [...webExclude, ...sharing] })),
+      nativeProject(
+        shared({
           name: 'native',
-          pool,
-          environment,
-          environmentOptions,
-          setupFiles,
           include: nativeInclude,
-          server,
-        },
-      },
+          exclude: [...configDefaults.exclude, ...mocking],
+        }),
+      ),
+      nativeProject(
+        isolated({
+          name: 'native-isolated',
+          include: nativeInclude,
+          exclude: [...configDefaults.exclude, ...sharing],
+        }),
+      ),
       {
         plugins: [...plugins(), reactCompiler(), react()],
         resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },

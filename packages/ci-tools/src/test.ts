@@ -20,7 +20,7 @@ const SHARD_TIMEOUT = ['--testTimeout=15000'];
 // that hold no conditional, which caps every hooked kit file below what a test
 // of its source can reach. Coverage is measured over the two resolution
 // projects; the audit runs on its own.
-const MEASURED = ['--project', 'web', '--project', 'native'];
+const MEASURED = ['--project', 'web*', '--project', 'native*'];
 
 async function codegen(): Promise<void> {
   await $`bun run test:codegen`.cwd(root);

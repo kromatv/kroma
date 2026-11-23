@@ -28,12 +28,17 @@ const width = () =>
 const height = () =>
   Number.parseFloat(document.documentElement.style.getPropertyValue('--kroma-stage-height'));
 
-const css = () => document.head.querySelector('style')?.textContent ?? '';
+const css = () => [...document.head.querySelectorAll('style')].at(-1)?.textContent ?? '';
 
 beforeEach(() => {
-  document.head.innerHTML = '';
+  const before = new Set(document.head.children);
   document.documentElement.style.cssText = '';
   resizeTo(STAGE_W, STAGE_H);
+  return () => {
+    for (const added of [...document.head.children].filter((child) => !before.has(child))) {
+      added.remove();
+    }
+  };
 });
 
 describe('fitting the canvas', () => {
@@ -74,7 +79,6 @@ describe('fitting the canvas', () => {
       [3440, 1440],
       [600, 900],
     ] as Array<[number, number]>) {
-      document.head.innerHTML = '';
       resizeTo(w, h);
       installStage();
       // A rail's last poster clipped, the right gutter gone, the grid's last
