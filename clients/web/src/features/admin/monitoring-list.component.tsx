@@ -203,7 +203,7 @@ export function LibraryTitles({ view, onView }: Readonly<ViewProps>) {
 
       {loading || shown.length === 0 ? null : (
         <Box gap={16}>
-          <Surface radius="xl" pad="none" border="border" overflow="hidden">
+          <Surface members radius="xl" border="border">
             <LibraryHead
               filter={filter}
               columns={columns}

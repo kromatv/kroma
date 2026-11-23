@@ -121,7 +121,6 @@ function RowBody({
         disabled={row.tmdbId === null}
         label={row.title}
         onPress={() => onSelect(row)}
-        ring="focusInset"
         style={s.row}
       >
         <CheckboxFace checked={selected} />
@@ -137,7 +136,7 @@ function RowBody({
     );
   }
   return (
-    <Focusable asChild label={row.title} ring="focusInset" style={s.row}>
+    <Focusable asChild label={row.title} style={s.row}>
       <RouteLink
         to="/admin/monitoring/$kind/$tmdbId"
         params={{ kind: row.kind, tmdbId: String(row.tmdbId) }}

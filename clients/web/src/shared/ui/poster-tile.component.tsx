@@ -1,8 +1,8 @@
 import {
   Box,
-  color,
   delegateOf,
   Focusable,
+  FocusRing,
   motion,
   type StyleScope,
   sharedStyle,
@@ -30,7 +30,7 @@ const transition = (property: string) => ({
 const moveDefinition = styles({
   artFade: transition('opacity'),
   lift: transition('transform'),
-  art: transition('box-shadow, outline-color'),
+  art: transition('box-shadow'),
 });
 
 export const ART_FADE = moveDefinition.artFade;
@@ -41,15 +41,7 @@ const washOf = (image: string, scope: StyleScope) =>
 const sDefinition = styles({
   hit: { w: '100%', radius: 'xl' },
   lift: { transform: [{ translateY: motion.focusLift }] },
-  art: {
-    aspect: 2 / 3,
-    radius: 'xl',
-    overflow: 'hidden',
-    outlineStyle: 'solid',
-    outlineWidth: 3,
-    outlineColor: 'transparent',
-  },
-  artLit: { outlineColor: color('accent') },
+  art: { aspect: 2 / 3, radius: 'xl', overflow: 'hidden' },
 });
 
 export interface PosterTileProps {
@@ -113,14 +105,14 @@ export function PosterTile({
       <Box style={hovered ? [move.lift, s.lift] : move.lift}>
         <Focusable label={label} asChild={asChild} style={s.hit}>
           {delegate.wrap(
-            <Box style={[s.art, washOf(background, scope), move.art, hovered ? s.artLit : null]}>
+            <FocusRing lit={hovered} style={[s.art, washOf(background, scope), move.art]}>
               {art(engaged)}
               {watched ? (
                 <Box fill pointerEvents="none" opacity={fold ? 1 : 0}>
                   <WatchedBadge corner="top-right" />
                 </Box>
               ) : null}
-            </Box>,
+            </FocusRing>,
           )}
         </Focusable>
         <PosterActionBar actions={actions} shown={engaged} />

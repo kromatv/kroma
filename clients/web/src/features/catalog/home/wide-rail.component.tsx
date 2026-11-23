@@ -2,8 +2,8 @@ import { posterColors } from '@kromatv/core';
 import {
   ArtScrim,
   Box,
-  color,
   Focusable,
+  FocusRing,
   motion,
   Progress,
   styles,
@@ -37,17 +37,7 @@ const sDefinition = styles({
     transitionDuration: `${motion.duration.base}ms`,
   },
   lifted: { transform: [{ translateY: motion.focusLift }] },
-  art: {
-    aspect: 16 / 9,
-    radius: 'xl',
-    overflow: 'hidden',
-    outlineStyle: 'solid',
-    outlineWidth: 3,
-    outlineColor: 'transparent',
-    transitionProperty: 'outline-color',
-    transitionDuration: `${motion.duration.base}ms`,
-  },
-  artLit: { outlineColor: color('accent') },
+  art: { aspect: 16 / 9, radius: 'xl', overflow: 'hidden' },
   caption: { position: 'absolute', left: 14, right: 14, bottom: 14 },
   progress: { position: 'absolute', left: 0, right: 0, bottom: 0 },
 });
@@ -81,7 +71,7 @@ function WideFace({ entry, note, hovered }: Readonly<WideFaceProps>) {
   const progress = entry.type === 'show' ? (entry.show.progress ?? null) : null;
 
   return (
-    <Box style={[s.art, hovered ? s.artLit : null]}>
+    <FocusRing lit={hovered} style={s.art}>
       <Image
         src={entryBackdrop(client, entry, CARD_W * 2)}
         background={`linear-gradient(158deg, ${posterColors(entryId(entry)).join(', ')})`}
@@ -96,7 +86,7 @@ function WideFace({ entry, note, hovered }: Readonly<WideFaceProps>) {
           <Progress value={progress / 100} thickness={4} rounded={false} />
         </Box>
       )}
-    </Box>
+    </FocusRing>
   );
 }
 

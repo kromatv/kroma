@@ -102,10 +102,12 @@ export function createThemeRuntime(initial: Theme = KROMA) {
    * switch back to the cascade - which is what makes swapping ground under a
    * theme cost nothing at all.
    *
-   * The three blocks are the token sheet's own three, in its order and with its
-   * selectors (see vite/tokens.ts). Matching it is not tidiness: the unstamped
-   * document - `system`, the default - is painted by a rule carrying a `:not()`,
-   * and a plainer selector here would lose to it however late it arrives.
+   * The first three blocks are the token sheet's own three, in its order and
+   * with its selectors (see vite/tokens.ts). Matching it is not tidiness: the
+   * unstamped document - `system`, the default - is painted by a rule carrying
+   * a `:not()`, and a plainer selector here would lose to it however late it
+   * arrives. The last two follow a <Ground> of this root, which the token sheet
+   * repaints in the stock palette.
    */
   function publish(theme: Theme, light: Theme | undefined): void {
     const doc = scope?.ownerDocument;
@@ -115,10 +117,13 @@ export function createThemeRuntime(initial: Theme = KROMA) {
     // A theme given no light half paints the same values in every ground.
     const lightHalf = light ?? theme;
     const systemSelector = `[data-kroma-theme="${scopeId}"]:not([data-theme])`;
+    const ground = `[data-kroma-ground="${scopeId}"]`;
     const css = [
       block(`[data-kroma-theme="${scopeId}"]`, theme, doc),
       block(`[data-kroma-theme="${scopeId}"][data-theme="light"]`, lightHalf, doc),
       `@media(prefers-color-scheme:light){${block(systemSelector, lightHalf, doc)}}`,
+      block(`${ground}[data-theme="dark"]`, theme, doc),
+      block(`${ground}[data-theme="light"]`, lightHalf, doc),
     ]
       .filter((rule) => !rule.endsWith('{}'))
       .join('');

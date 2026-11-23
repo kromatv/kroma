@@ -40,14 +40,11 @@ const listRowVariants = svFor<{
     },
     /** Its own object, or one member of a <ListRow.Group>'s single card. A
      *  member draws no surface: the group carries the well, the blur, the
-     *  edge and the lift for the whole list. */
+     *  edge and the lift for the whole list, and hands the member its corner
+     *  and its ring. */
     standalone: {
       true: { root: { border: 'border' } },
-      // A member is flush with the card that clips it, so its ring is drawn
-      // INWARD - the same width, ink and gap, on the only side there is.
-      false: {
-        root: { radius: 0, bg: 'transparent', _focus: { bg: 'accentSoft', ring: 'focusInset' } },
-      },
+      false: { root: { bg: 'transparent', _focus: { bg: 'accentSoft' } } },
     },
     /** Whether the row leads anywhere. The step before the amber edge, and only
      *  a row that does something on press takes it: a settings list is full of

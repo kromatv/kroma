@@ -17,7 +17,7 @@ import { Box } from '#ui/components/atoms/box';
 import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope.component';
-import { RingScopeProvider } from '#ui/lib/ring-scope';
+import { RingScope } from '#ui/lib/ring-scope.component';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
 import {
   type Box2D,
@@ -172,15 +172,15 @@ function Root<T extends string>({
   );
   return (
     <Context.Provider value={ctx}>
-      {stretch ? (
-        <FocusRegion>{group}</FocusRegion>
-      ) : (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={SCROLLER}>
-          <FocusRegion>
-            <RingScopeProvider value="focusInset">{group}</RingScopeProvider>
-          </FocusRegion>
-        </ScrollView>
-      )}
+      <RingScope placement="inside">
+        {stretch ? (
+          <FocusRegion>{group}</FocusRegion>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={SCROLLER}>
+            <FocusRegion>{group}</FocusRegion>
+          </ScrollView>
+        )}
+      </RingScope>
     </Context.Provider>
   );
 }

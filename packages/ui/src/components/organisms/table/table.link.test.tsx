@@ -39,6 +39,11 @@ const rows = () => screen.getAllByRole('row');
 
 const row = (at: number) => rows()[at] as HTMLElement;
 
+const isRule = (node: Element) => {
+  const style = getComputedStyle(node);
+  return style.position === 'absolute' && style.height === '1px';
+};
+
 describe('a table row that goes somewhere', () => {
   it('renders the row itself as the anchor carrying the route', () => {
     render(<Log />);
@@ -58,11 +63,7 @@ describe('a table row that goes somewhere', () => {
   it('rules the seam above it as any other row does', () => {
     render(<Log />);
 
-    expect(rows().map((one) => getComputedStyle(one).borderTopWidth)).toEqual([
-      '0px',
-      '1px',
-      '1px',
-    ]);
+    expect(rows().map((one) => Array.from(one.children).some(isRule))).toEqual([false, true, true]);
   });
 
   it('washes on hover, as a row that goes somewhere should', () => {

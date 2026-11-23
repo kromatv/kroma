@@ -4,8 +4,6 @@
 // React Native 0.76+ implements boxShadow on both native platforms, and
 // react-native-web maps it straight to CSS. One value, three renderers.
 
-import { colors } from './colors.ts';
-import { radius } from './layout.ts';
 import type { TokenOf } from './registry';
 
 export const shadow = {
@@ -48,13 +46,11 @@ export const RING_WIDTH = 4;
  * radius, not 16). */
 export const RING_GAP = 6;
 
-const RING_INSET = RING_GAP + RING_WIDTH;
-
 /** How much room a focused control needs beside it, for anything that clips or
  * abuts it - a scroll view's edge, the capsule a nav item sits in: the ring and
  * its gap, and a hair more so the ring never lands on the very pixel that clips
  * it. */
-export const RING_ROOM = RING_INSET + 2;
+export const RING_ROOM = RING_GAP + RING_WIDTH + 2;
 
 /** A focus ring, as a style: an outline standing `RING_GAP` off the control,
  * optionally over a shadow. */
@@ -64,7 +60,6 @@ export interface RingStyle {
   outlineColor: string;
   outlineOffset: number;
   boxShadow?: string;
-  borderRadius?: number;
 }
 
 /** The 10-foot focus treatment: a CLEAN solid amber ring plus a dark drop
@@ -86,22 +81,12 @@ export function standoff(color: string, lift?: string): RingStyle {
   };
 }
 
-/** The same ring, drawn INSIDE the control: for a row that is flush with the
- * card clipping it (a <ListRow.Group> member), where there is no outside to
- * stand off into. Same width, same ink, the same gap - measured inward.
- *
- * A browser paints an outline's corner at the element's own radius moved by the
- * offset, and a row flush with a card has no radius of its own to move: without
- * this the ring is a square drawn inside a round card. */
+/** The same ring, drawn on the control's INNER edge: for a member of a
+ * container (a segment, a row of a group or a table, a menu option), which has
+ * neither room outside nor a reason to stand off its neighbours. Same width,
+ * same ink, no gap, and the control's own corner, so the ring and the focus
+ * fill under it are one shape rather than a ring floating inside a wash. */
 export function standoffInside(color: string): RingStyle {
-  return { ...standoff(color), outlineOffset: -RING_INSET, borderRadius: RING_INSET + radius.xs };
-}
-
-/** The same ring, drawn ON the control's edge: for a row that abuts its
- * neighbours (a dropdown option), where a gap in EITHER direction lands on
- * something - the row above outward, the row's own wash inward. Same width,
- * same ink, no gap, because there is nowhere to put one. */
-export function standoffEdge(color: string): RingStyle {
   return { ...standoff(color), outlineOffset: -RING_WIDTH };
 }
 
@@ -109,20 +94,6 @@ export function standoffEdge(color: string): RingStyle {
  *  colour is written with everywhere else. The build emits one property per
  *  step, so a new one has to be added to the derived list in `vite/tokens.ts`. */
 export const WASH_ALPHA = { glow: 40, play: 32, ring: 28 } as const;
-
-export const LIFT_SHADOW = '0 10px 28px rgba(0, 0, 0, 0.5)';
-
-export const ring = {
-  focus: standoff(colors.accent),
-  /** Kept as a name callers already use; the same width as the rest. */
-  focusSm: standoff(colors.accent),
-  /** Ring + lift, the combination every focusable actually renders. */
-  focusLift: standoff(colors.accent, LIFT_SHADOW),
-  /** For a control with no outside: see `standoffInside`. */
-  focusInset: standoffInside(colors.accent),
-  /** For a row with no room either way: see `standoffEdge`. */
-  focusEdge: standoffEdge(colors.accent),
-} as const;
 
 export const glow = {
   accent: '0 6px 22px rgba(242, 180, 66, 0.4)',

@@ -3,6 +3,8 @@ import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { ResizableStorage } from '#ui/components/organisms/resizable';
 import { useBreakpointStep, useStyleScope } from '#ui/core';
+import { MEMBER_INSET } from '#ui/lib/ring-scope';
+import { RingScope } from '#ui/lib/ring-scope.component';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
 import { Cell } from './table-cell.component';
 import {
@@ -14,7 +16,7 @@ import {
   type TableColumn,
 } from './table-columns';
 import { type TableSectionProps, type TableVariant, useTable } from './table-context';
-import { Frame } from './table-frame.component';
+import { FRAME_RADIUS, Frame } from './table-frame.component';
 import { ResizeContext, useColumnLayout } from './table-layout';
 import { Placed, parts } from './table-place';
 import { Row } from './table-row.component';
@@ -108,9 +110,11 @@ function Root({
         autoSaveId={autoSaveId}
         storage={storage}
       >
-        <Frame variant={variant} label={label}>
-          <Placed places={places} items={sections} />
-        </Frame>
+        <RingScope placement="inside" corner={FRAME_RADIUS}>
+          <Frame variant={variant} label={label}>
+            <Placed places={places} items={sections} />
+          </Frame>
+        </RingScope>
       </GridScope>
     </SortContext.Provider>
   );
@@ -157,7 +161,12 @@ function Section({ head, children }: Readonly<{ head: boolean } & TableSectionPr
     [variant, head, ruled, rows],
   );
   return (
-    <Box role="rowgroup" bg={head && variant === 'framed' ? 'surface2' : undefined}>
+    <Box
+      role="rowgroup"
+      bg={head && variant === 'framed' ? 'surface2' : undefined}
+      px={variant === 'framed' ? MEMBER_INSET : undefined}
+      pb={variant === 'framed' && !head ? MEMBER_INSET : undefined}
+    >
       <Placed places={places} items={rows} />
     </Box>
   );

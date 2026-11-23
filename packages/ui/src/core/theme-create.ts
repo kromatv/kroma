@@ -25,7 +25,6 @@ import {
   type ShadowToken,
   shadow,
   standoff,
-  standoffEdge,
   standoffInside,
   WASH_ALPHA,
 } from '#ui/core/tokens/effects';
@@ -87,21 +86,19 @@ const GROUPS: readonly (keyof ThemeTokens)[] = [
 export interface Theme extends ThemeTokens {
   /** Derived from `typeSpec` + `fonts`; never authored directly. */
   type: Record<TypeRole, RoleStyle>;
-  /** Derived from the accent; never authored directly. The glow pairs carry the
-   *  accent bloom the player's focus treatment adds to the plain ring. */
+  /** Derived from the accent; never authored directly. Every ring but
+   *  `focusInside` stands off the control; `focusGlow` carries the accent
+   *  bloom the player's focus treatment adds to the plain ring. */
   ring: {
     focus: RingStyle;
-    focusSm: RingStyle;
     focusLift: RingStyle;
     focusGlow: RingStyle;
-    focusGlowSm: RingStyle;
     /** The soft wide wash, for a control whose focus must read as a glow on a
      *  thin shape (the seek bar's track) rather than a crisp outline. */
     focusWash: RingStyle;
-    /** The ring, inward: for a control flush with whatever clips it. */
-    focusInset: RingStyle;
-    /** The ring, on the edge: for a row that abuts its neighbours. */
-    focusEdge: RingStyle;
+    /** The ring on the control's own inner edge, for a member of a container
+     *  (see `RingScope`). */
+    focusInside: RingStyle;
   };
   /** Derived from the accent wash; never authored directly. */
   glow: { accent: string; play: string };
@@ -201,13 +198,10 @@ function derive(base: ThemeTokens): Theme {
     // re-decide how thick focus is or how far off it sits.
     ring: {
       focus: standoff(accent),
-      focusSm: standoff(accent),
       focusLift: standoff(accent, tokens.shadow.pop),
       focusGlow: standoff(accent, glow.accent),
-      focusGlowSm: standoff(accent, glow.accent),
       focusWash: standoff(withAlpha(tokens.colors.accentWash, WASH_ALPHA.ring / 100)),
-      focusInset: standoffInside(accent),
-      focusEdge: standoffEdge(accent),
+      focusInside: standoffInside(accent),
     },
     glow,
   });

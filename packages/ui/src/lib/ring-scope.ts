@@ -1,26 +1,37 @@
-// Which ring a control inside a clipping surface draws.
-//
-// A focus ring stands OFF its control, so a surface that clips its contents cuts
-// the ring of anything flush with an edge down to a stripe. A row of a
-// <ListRow.Group> knows this about itself and says so in its own recipe, but the
-// controls a caller puts BESIDE that row - a read/unread toggle, a trash button -
-// cannot know what card they woke up in. This is how the surface tells them.
-//
-// Its own module, with no imports from the focus family, so the surface and the
-// control can both reach it without importing each other (as focus-presence.ts
-// does for the navigator).
-
 import { createContext, useContext } from 'react';
 import type { RingToken } from '#ui/core/theme';
+import type { Radius } from '#ui/core/tokens/layout';
 
-const RingScope = createContext<RingToken | undefined>(undefined);
+/** Where a focus ring is drawn. `outside` stands it off the control, for one on
+ *  its own; `inside` lays it on the control's own inner edge, for a member of a
+ *  container whose members abut or that clips them. */
+export type RingPlacement = 'outside' | 'inside';
 
-/** Provided by a surface that clips what it holds; never used directly. */
-const RingScopeProvider = RingScope.Provider;
-
-/** The ring every control in this subtree draws, unless it asks for another. */
-function useRingScope(): RingToken | undefined {
-  return useContext(RingScope);
+/** What a container says to the controls it holds: where their ring goes, and
+ *  the corner a member without one of its own takes, already nested. */
+export interface RingScopeValue {
+  placement: RingPlacement;
+  corner?: Radius;
 }
 
-export { RingScopeProvider, useRingScope };
+const RING_OF: Readonly<Record<RingPlacement, RingToken>> = {
+  outside: 'focusLift',
+  inside: 'focusInside',
+};
+
+export const RingScopeContext = createContext<RingScopeValue | undefined>(undefined);
+
+/** What the nearest `<RingScope>` says, if any. */
+export function useRingScope(): RingScopeValue | undefined {
+  return useContext(RingScopeContext);
+}
+
+/** The ring a placement draws. */
+export function ringOf(placement: RingPlacement): RingToken {
+  return RING_OF[placement];
+}
+
+/** How far a container keeps its members off its own edge, so a member's
+ *  inside ring, and the fill under it, sit concentric with the container's
+ *  corners instead of against its border. */
+export const MEMBER_INSET = 4;
