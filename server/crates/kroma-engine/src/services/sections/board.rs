@@ -100,6 +100,7 @@ const ACCLAIMED: f32 = 0.78;
 const TRENDING: f32 = 0.5;
 
 impl<'a> Board<'a> {
+    #[tracing::instrument(level = "trace", skip_all, name = "Board::new")]
     pub(super) fn new(
         state: &'a SharedState,
         pool: &'a Pool,

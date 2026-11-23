@@ -35,6 +35,7 @@ pub(super) const DURATION_ARGS: [&str; 6] = [
 /// Reads just the container's `format.duration`: a header read, no frame decode,
 /// so it is cheap enough to call on demand. `None` when ffprobe is missing or the
 /// file has no readable duration.
+#[tracing::instrument(level = "trace", skip_all, name = "ffprobe::duration")]
 pub fn probe_duration_ms(path: &Path) -> Option<u64> {
     let out = Command::new("ffprobe")
         .args(DURATION_ARGS)
@@ -55,6 +56,7 @@ pub fn probe_duration_ms(path: &Path) -> Option<u64> {
 /// `None` where ffprobe was killed before it answered: nothing was learned about
 /// the file, so the caller must leave it to a later pass rather than record a
 /// verdict that would stand for good.
+#[tracing::instrument(level = "trace", skip_all, name = "ffprobe::probe_file")]
 pub fn probe_file(path: &Path, ffprobe_present: bool) -> Option<ProbeResult> {
     if !ffprobe_present {
         return Some(fallback_from_extension(path));

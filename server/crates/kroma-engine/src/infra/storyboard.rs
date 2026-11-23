@@ -70,6 +70,7 @@ impl Storyboard {
 
     // Bumping the source remaps the key, so a replaced file regenerates
     // instead of serving a stale sheet.
+    #[tracing::instrument(level = "trace", skip_all, name = "Storyboard::key")]
     fn key(abs: &str, tiles: &str) -> String {
         let mtime = std::fs::metadata(abs)
             .ok()

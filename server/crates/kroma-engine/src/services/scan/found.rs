@@ -2,7 +2,9 @@
 //! tally while its folders are read.
 
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 
+use crate::domain::naming::{self, Parsed};
 use crate::model::{Library, LibraryKind, MediaItem, Show};
 use crate::services::settings::LibraryDef;
 
@@ -29,6 +31,13 @@ impl<'a> LibraryWalk<'a> {
             item_ids: HashSet::new(),
             movie_seen: false,
             episode_seen: false,
+        }
+    }
+
+    pub(super) fn parse(&self, root: &Path, path: &Path) -> Option<Parsed> {
+        match self.def.kind.as_str() {
+            "shows" => naming::parse_episode(root, path),
+            _ => Some(naming::parse(root, path)),
         }
     }
 

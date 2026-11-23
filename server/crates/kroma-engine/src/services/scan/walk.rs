@@ -3,13 +3,13 @@
 //! into the shared logical-item / show maps.
 
 use std::collections::HashSet;
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use jwalk::{Parallelism, WalkDirGeneric};
 use tracing::{debug, warn};
 
-use crate::domain::naming;
 use crate::model::MediaFile;
 
 use super::batches::Batches;
@@ -56,8 +56,8 @@ pub(super) fn scan_root<S>(
             prepare_children(&descended, children);
         });
 
-    let mut unreadable = 0usize;
-    let mut first_unreadable: Option<PathBuf> = None;
+    let mut unreadable = Skipped::default();
+    let mut unplaced = Skipped::default();
     for result in walk {
         if batches.due() {
             batches.close(&lib.library(), lib.found)?;
@@ -65,59 +65,21 @@ pub(super) fn scan_root<S>(
         let entry = match result {
             Ok(entry) => entry,
             Err(err) => {
-                unreadable += 1;
-                first_unreadable.get_or_insert_with(|| err.path().unwrap_or(root).to_path_buf());
+                unreadable.note(err.path().unwrap_or(root));
                 debug!("skipping an unreadable entry: {err}");
                 continue;
             }
         };
-        if !entry.file_type().is_file() {
+        let Some((file, mtime)) = video_file(root, &abs_root, &entry) else {
             continue;
-        }
-        let path = entry.path();
-        if !has_video_extension(&path) {
-            continue;
-        }
-        let rel = path.trim_prefix(root).to_string_lossy().replace('\\', "/");
-        // Build the absolute path by joining the resolved root with the relative
-        // path no extra stat / symlink resolution per file.
-        let abs = abs_root.join(&rel);
-
-        let (size, mtime) = match entry.client_state {
-            Some((s, m)) => (Some(s), Some(m)),
-            None => (None, None),
         };
-
-        let container = path
-            .extension()
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or("")
-            .to_ascii_lowercase();
-
-        let file_name = path
-            .file_name()
-            .and_then(std::ffi::OsStr::to_str)
-            .unwrap_or("");
-        let edition = detect_edition(file_name);
-
-        let file = MediaFile {
-            id: short_hash(&abs.to_string_lossy()),
-            rel_path: Some(rel),
-            container,
-            duration_ms: None,
-            video: None,
-            audio: None,
-            audio_tracks: Vec::new(),
-            subtitles: Vec::new(),
-            size,
-            edition,
-            probed: false,
-            unreadable: None,
-            edition_id: None,
-            abs_path: Some(abs.to_string_lossy().to_string()),
+        let path = entry.path();
+        let Some(parsed) = lib.parse(root, &path) else {
+            unplaced.note(&path);
+            continue;
         };
         batches.note(index_parsed(
-            naming::parse(root, &path),
+            parsed,
             &lib.def.id,
             &added_at,
             file,
@@ -133,15 +95,75 @@ pub(super) fn scan_root<S>(
         debug!("indexed file under {}", lib_name);
     }
 
-    if let Some(path) = first_unreadable {
-        warn!(
-            folder = %root.display(),
-            unreadable,
-            example = %path.display(),
-            "entries skipped: a symlink whose target is not mounted reads as missing"
-        );
+    unreadable.warn(
+        root,
+        "entries skipped: a symlink whose target is not mounted reads as missing",
+    );
+    unplaced.warn(
+        root,
+        "files left out: a Series library holds episodes, and these names carry no episode number",
+    );
+    Ok(unreadable.count)
+}
+
+#[derive(Default)]
+struct Skipped {
+    count: usize,
+    first: Option<PathBuf>,
+}
+
+impl Skipped {
+    fn note(&mut self, path: &Path) {
+        self.count += 1;
+        self.first.get_or_insert_with(|| path.to_path_buf());
     }
-    Ok(unreadable)
+
+    fn warn(&self, folder: &Path, what: &str) {
+        if let Some(example) = &self.first {
+            warn!(
+                folder = %folder.display(),
+                count = self.count,
+                example = %example.display(),
+                "{what}"
+            );
+        }
+    }
+}
+
+type WalkEntry = jwalk::DirEntry<((), FileMeta)>;
+
+fn video_file(root: &Path, abs_root: &Path, entry: &WalkEntry) -> Option<(MediaFile, Option<i64>)> {
+    let path = entry.path();
+    if !entry.file_type().is_file() || !has_video_extension(&path) {
+        return None;
+    }
+    let rel = path.trim_prefix(root).to_string_lossy().replace('\\', "/");
+    let abs = abs_root.join(&rel).to_string_lossy().to_string();
+    let (size, mtime) = entry.client_state.unzip();
+    let file = MediaFile {
+        id: short_hash(&abs),
+        rel_path: Some(rel),
+        container: container_of(&path),
+        duration_ms: None,
+        video: None,
+        audio: None,
+        audio_tracks: Vec::new(),
+        subtitles: Vec::new(),
+        size,
+        edition: detect_edition(path.file_name().and_then(OsStr::to_str).unwrap_or("")),
+        probed: false,
+        unreadable: None,
+        edition_id: None,
+        abs_path: Some(abs),
+    };
+    Some((file, mtime))
+}
+
+fn container_of(path: &Path) -> String {
+    path.extension()
+        .and_then(OsStr::to_str)
+        .unwrap_or("")
+        .to_ascii_lowercase()
 }
 
 // jwalk `process_read_dir` body: prune Synology/hidden dirs and already-visited

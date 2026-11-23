@@ -137,6 +137,7 @@ pub async fn reset_metadata(
     Ok(Json(json!({ "items": items, "shows": shows })).into_response())
 }
 
+#[tracing::instrument(level = "trace", skip_all)]
 fn dir_stats(path: &Path) -> (u64, u64) {
     walkdir::WalkDir::new(path)
         .into_iter()

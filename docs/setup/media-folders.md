@@ -45,15 +45,20 @@ Series/
       The Office - S00E01 - Christmas Special.mkv
 ```
 
-- The episode number is the part KROMA must find: `S01E02`, `s1e2`, `1x02`, or
-  `S01E02-E03` for a file that holds two episodes. The text after it becomes
-  the episode title.
+- The episode number is the part KROMA must find: `S01E02`, `S01 E02`, `s1e2`,
+  `1x02`, or `S01E02-E03` for a file that holds two episodes. The text after it
+  becomes the episode title.
 - A folder named `Season 01`, `Saison 1` or `Specials` tells KROMA that the
   folder above it is the series. KROMA then uses that folder's name for the
   series, whatever the files inside are called.
 - Without season folders, KROMA takes the series name from each file name, so
   `Breaking.Bad.S01E01.mkv` and `The.Office.S01E01.mkv` in the same folder are
   two series.
+- In a library added as **Series**, every file is an episode, never a film.
+  KROMA also reads `S211E06`, `Episode 259`, `Ep. 259` and a number at the
+  start of the name, as in `215 - Title.mkv`. When the name gives no season,
+  the episode takes the season folder's, or season 1. A file whose name holds
+  no episode number at all is left out, and the server log names the first one.
 
 ### Subtitles
 

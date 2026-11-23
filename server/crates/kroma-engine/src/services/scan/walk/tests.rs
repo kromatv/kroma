@@ -64,10 +64,14 @@ struct ScanOutcome {
 }
 
 fn scan_into(lib_id: &str, root: &Path) -> ScanOutcome {
+    scan_library(lib_id, "", root)
+}
+
+fn scan_library(lib_id: &str, kind: &str, root: &Path) -> ScanOutcome {
     let def = LibraryDef {
         id: lib_id.into(),
         name: "Library".into(),
-        kind: String::new(),
+        kind: kind.into(),
         folders: vec![root.to_string_lossy().into_owned()],
         auto_scan: true,
     };
@@ -136,6 +140,28 @@ fn scan_root_groups_movies_and_episodes_and_skips_noise() {
     assert!(episodes
         .iter()
         .all(|e| e.show_id.as_deref() == Some(show.id.as_str())));
+}
+
+#[test]
+fn a_series_library_files_every_video_as_an_episode_or_leaves_it_out() {
+    let root_dir = temp_scan_dir();
+    let show = root_dir.path().join("Example Series");
+    std::fs::create_dir_all(show.join("Season 2")).unwrap();
+    std::fs::write(show.join("Episode 259.mp4"), b"x").unwrap();
+    std::fs::write(show.join("Season 2").join("Episode Title.mp4"), b"x").unwrap();
+
+    let scan = scan_library("lib1", "shows", root_dir.path());
+
+    assert!(!scan.movie_seen);
+    assert_eq!(scan.items.len(), 1);
+    assert_eq!(
+        scan.mtimes.len(),
+        1,
+        "the file with no episode number was indexed"
+    );
+    let episode = scan.items.values().next().unwrap();
+    assert_eq!((episode.season, episode.episode), (Some(1), Some(259)));
+    assert_eq!(episode.show_title.as_deref(), Some("Example Series"));
 }
 
 #[test]

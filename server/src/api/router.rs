@@ -17,8 +17,8 @@ use super::spa::{accepts_html, spa_cache_headers};
 use super::{
     accounts, admin, cast, diagnostics, direct, discover, handoff, home, images, inbound, invites,
     mail, media, metadata, modules, monitoring, notifications, online_subs, origin, passkeys,
-    people, pin, playback, plugin, recommend, releases, rematch, remote_art, reports, requests,
-    search, server_status, sso, stream, suggest, themes, trailers, ws,
+    people, pin, playback, plugin, profiling, recommend, releases, rematch, remote_art, reports,
+    requests, search, server_status, sso, stream, suggest, themes, trailers, ws,
 };
 use crate::api::error::json_error;
 use crate::api::extract::bearer_from_headers;
@@ -31,7 +31,9 @@ async fn require_session(State(state): State<SharedState>, req: Request, next: N
         return json_error(StatusCode::UNAUTHORIZED, "authentication required");
     };
     let pool = state.db.clone();
-    let ok = tokio::task::spawn_blocking(move || crate::db::session_user(&pool, &token))
+    let ok = tokio::task::spawn_blocking(kroma_perf::carry(move || {
+        crate::db::session_user(&pool, &token)
+    }))
         .await
         .ok()
         .and_then(|r| r.ok())
@@ -80,7 +82,8 @@ pub fn router(state: SharedState, supervisor: Arc<Supervisor>) -> Router {
         .merge(accounts::kept_from_kids(&state, module_routes()))
         .nest("/admin", admin::routes(state.clone()))
         .layer(from_fn_with_state(state.clone(), remote_art::serve_art))
-        .layer(Extension(supervisor));
+        .layer(Extension(supervisor.clone()))
+        .route_layer(from_fn_with_state(supervisor, profiling::profile));
 
     // Installed modules' frontend (Module Federation) assets, served from
     // `<data>/modules/<id>/fe/` at `/modules/<id>/*`, same origin as the API and
