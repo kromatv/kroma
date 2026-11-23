@@ -90,16 +90,10 @@ export function ProviderCard({
   const name = p.label || t('admin.signInUntitled');
 
   return (
-    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
+    <Surface members elevated radius="xl" border="border">
       <Row gap={12} pr={20}>
         <Box flex minW={0}>
-          <Focusable
-            ring="focusInset"
-            style={s.header}
-            label={name}
-            expanded={expanded}
-            onPress={onToggle}
-          >
+          <Focusable style={s.header} label={name} expanded={expanded} onPress={onToggle}>
             <Box center w={38} h={38} shrink={0}>
               <ProviderMark icon={p.icon} image={markOf(catalog, p.preset)} size={30} />
             </Box>

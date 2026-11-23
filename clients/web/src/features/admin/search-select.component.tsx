@@ -43,7 +43,7 @@ import { SearchOption } from './search-select-option.component';
 // which React Native has, so the panel stays real CSS. Every value in it still
 // comes from a token.
 const sDefinition = styles({
-  ring: { ring: 'focusEdge' },
+  ring: { ring: 'focusInside' },
   backdrop: { ...PANEL_BACKDROP, m: 0, p: 0, borderWidth: 0, bg: 'transparent', cursor: 'default' },
   list: { maxHeight: 256, overflowY: 'auto', p: 6 },
   panel: {

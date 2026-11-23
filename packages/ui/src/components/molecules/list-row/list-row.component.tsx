@@ -1,4 +1,4 @@
-import { useStyleScope } from '#ui/core';
+import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // <ListRow>: one focusable row of a menu or a settings list.
 //
 // Yoga has no `order` and there is no `:has()` selector, so the Root sorts its
@@ -13,7 +13,9 @@ import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
 import { CONTROL, type ControlSize, controlRadius, useEntryDefaults } from '#ui/lib/field-shell';
+import type { Radius } from '#ui/core/tokens/layout';
 import { nameOf } from '#ui/lib/name-of';
+import { useRingScope } from '#ui/lib/ring-scope';
 import { ListGroup, useListGroup } from './list-group.component';
 import { ListRowContext } from './list-row-context';
 import { Hint, Label, Leading, Trailing } from './list-row-parts.component';
@@ -22,6 +24,9 @@ import { listRowVariants, type RowGround } from './list-row-variants';
 // The well has two steps to the shell's three, and a phone's row takes the
 // pointer-sized one.
 const WELL: Record<ControlSize, IconWellSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
+
+const memberShape = (radius: Radius, scope: StyleScope) =>
+  sharedStyle(`list-row:member:${radius}`, { radius }, scope);
 
 interface Sorted {
   leading: ReactNode[];
@@ -122,6 +127,8 @@ function Root({
   const delegate = delegateOf(asChild, children);
   const group = useListGroup();
   const standalone = group === null;
+  const ringScope = useRingScope();
+  const member = standalone ? undefined : ringScope?.corner;
   const ground = standalone ? asked : 'surface';
   const shell = size ?? group?.size ?? entryDefaults.size;
   const metrics = CONTROL[shell];
@@ -161,13 +168,9 @@ function Root({
         // it and its neighbour. The wash and the ring say the same thing without
         // moving anything.
         focusScale={standalone ? 1.02 : 1}
-        // A member is flush with the card that clips it, so it names the inward
-        // ring rather than declining one: `false` means "I paint no ring at all",
-        // which would leave a focused member with nothing.
-        ring={standalone ? true : 'focusInset'}
         sv={listRowVariants}
         vars={{ size: shell, pressable, standalone, ground, selected: lit }}
-        style={[frost.style, style]}
+        style={[frost.style, member ? memberShape(member, scope) : null, style]}
       >
         {(state) =>
           delegate.wrap(

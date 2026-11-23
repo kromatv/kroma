@@ -293,7 +293,7 @@ function RevealButton({
     <Box absolute style={[s.revealSlot, revealAt(right, scope)]}>
       <Focusable
         label={revealed ? 'Hide password' : 'Show password'}
-        ring="focusEdge"
+        ring="inside"
         onPress={onToggle}
         style={s.reveal}
         states={REVEAL_STATES}

@@ -110,7 +110,7 @@ function Trigger({ children, label }: Readonly<DisclosureTriggerProps>) {
         label={name}
         expanded={open}
         onPress={toggle}
-        ring="focusInset"
+        ring="inside"
         style={s.trigger}
         states={TRIGGER_STATES}
       >

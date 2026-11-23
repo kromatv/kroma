@@ -222,8 +222,7 @@ function Separator() {
 const sDefinition = styles({
   row: { radius: CONTROL.sm.radius },
   active: { bg: 'tint/7' },
-  // On the edge: the rows abut, so a gap either way lands on something.
-  keyed: { ring: 'focusEdge' },
+  keyed: { ring: 'focusInside' },
   activeDanger: { bg: 'danger/14' },
   disabled: { opacity: 0.4 },
   label: { fontSize: textRoles.meta.size, fontWeight: '600' },

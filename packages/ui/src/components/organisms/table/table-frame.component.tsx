@@ -37,11 +37,13 @@ function Frame({ variant, label, children }: Readonly<FrameProps>) {
   );
 }
 
+const FRAME_RADIUS = 'xl';
+
 const sDefinition = styles({
-  framed: { border: 'border', radius: 'xl', bg: 'surface1', overflow: 'hidden' },
+  framed: { border: 'border', radius: FRAME_RADIUS, bg: 'surface1', overflow: 'hidden' },
   scroller: { grow: 0, shrink: 1 },
   track: { grow: 1 },
   wide: { grow: 1 },
 });
 
-export { Frame };
+export { FRAME_RADIUS, Frame };

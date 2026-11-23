@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { activeTheme } from '#ui/core';
 
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
-import { RingScopeProvider } from '#ui/lib/ring-scope';
+import { RingScope } from '#ui/lib/ring-scope.component';
 import { declared } from '#ui/testing';
 import { Focusable } from './focusable.component';
 
@@ -44,40 +44,40 @@ describe('the ring a control draws', () => {
   it('draws the ring a control names rather than the one that lifts off the page', () => {
     screenWith(
       <FocusRegion>
-        <Focusable autoFocus label="Bord" ring="focusInset" />
+        <Focusable autoFocus label="Bord" ring="inside" />
       </FocusRegion>,
     );
 
     expect(declared(painted('Bord'), 'outlineOffset')).toBe(
-      `${activeTheme().ring.focusInset.outlineOffset}px`,
+      `${activeTheme().ring.focusInside.outlineOffset}px`,
     );
   });
 
   it('takes the ring of the surface that clips it when it names none itself', () => {
     screenWith(
-      <RingScopeProvider value="focusInset">
+      <RingScope placement="inside">
         <FocusRegion>
           <Focusable autoFocus label="Membre" />
         </FocusRegion>
-      </RingScopeProvider>,
+      </RingScope>,
     );
 
     expect(declared(painted('Membre'), 'outlineOffset')).toBe(
-      `${activeTheme().ring.focusInset.outlineOffset}px`,
+      `${activeTheme().ring.focusInside.outlineOffset}px`,
     );
   });
 
   it('lets a control name a ring its enclosing scope did not', () => {
     screenWith(
-      <RingScopeProvider value="focusInset">
+      <RingScope placement="inside">
         <FocusRegion>
-          <Focusable autoFocus label="Propre" ring="focusEdge" />
+          <Focusable autoFocus label="Propre" ring="outside" />
         </FocusRegion>
-      </RingScopeProvider>,
+      </RingScope>,
     );
 
     expect(declared(painted('Propre'), 'outlineOffset')).toBe(
-      `${activeTheme().ring.focusEdge.outlineOffset}px`,
+      `${activeTheme().ring.focusLift.outlineOffset}px`,
     );
   });
 });

@@ -25,7 +25,7 @@ import {
 } from '#web/features/admin/monitoring-title-row.component';
 
 const sDefinition = styles({
-  head: { row: true, align: 'center', gap: 8 },
+  head: { row: true, align: 'center', gap: 8, px: 10, py: 8, mx: -10, my: -8 },
 });
 
 export function LibraryFilters({
@@ -177,13 +177,7 @@ function SortName({
   const s = useStyles(sDefinition);
   const on = filter.sort === sort;
   return (
-    <Focusable
-      label={label}
-      onPress={() => onPress(sort)}
-      hitSlop={8}
-      ring="focusInset"
-      style={s.head}
-    >
+    <Focusable label={label} onPress={() => onPress(sort)} style={s.head}>
       <Text variant="overline" color={on ? 'accentText' : 'textMuted'} lines={1}>
         {label}
       </Text>

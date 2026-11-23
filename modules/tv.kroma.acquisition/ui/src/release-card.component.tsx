@@ -58,7 +58,7 @@ export function ReleaseCard({
           sv={hit}
           label={release.title}
           expanded={open}
-          ring="focusInset"
+          ring="inside"
           onPress={() => setOpen((was) => !was)}
         />
         {narrow ? (

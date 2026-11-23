@@ -1,12 +1,10 @@
 import { defineStory } from '@kromatv/workbench/story';
-import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Surface } from '#ui/components/atoms/surface';
 import { Text } from '#ui/components/atoms/text';
-import { styles } from '#ui/core';
-import { RingScopeProvider } from '#ui/lib/ring-scope';
+import { FocusRing } from './focus-ring.component';
 import { Focusable } from './focusable.component';
-import { s } from './focusable.fixtures';
+import { MEMBER_STATES, s } from './focusable.fixtures';
 
 export const story = defineStory({
   group: 'Actions',
@@ -27,25 +25,60 @@ export const story = defineStory({
   ),
 });
 
-The kit's only focusable primitive. Every control reachable with the remote is one, and it carries the 10-foot affordance: a solid amber ring plus a dark elevation, with an optional scale.
+The kit's only focusable primitive. Every control reachable with the remote is one, and it carries the 10-foot affordance: a solid ring in the theme's accent plus a dark elevation, with an optional scale.
 
-<Scene name="In a card that clips">
-  A row flush with a card that clips has no outside to stand a ring off, so the card says which ring its controls draw and they stop naming one. That ring goes inward and states its own corner: the row has none to lend it, and a square drawn inside a round card reads as a rectangle sliced off at both ends rather than as a ring around a row.
+## Where the ring goes
+
+One ring, everywhere: the theme's accent, four pixels wide. A control never picks where it is drawn. On its own it stands six pixels off the control and follows its corner; inside a container whose members abut or are clipped, the container says `inside` once and every control in it lays the same ring on its own inner edge, so the ring and the focus fill under it are one shape.
+
+<Scene name="On its own">
+  A control standing on the page: the ring stands off it, concentric with its corner.
+
+  <Box row gap={28} p={16}>
+    {['Lecture', 'Bande-annonce'].map((label, at) => (
+      <Focusable key={label} autoFocus={at === 0} label={label} style={s.demo} onPress={() => {}}>
+        <Text variant="label">{label}</Text>
+      </Focusable>
+    ))}
+  </Box>
+</Scene>
+
+<Scene name="Inside a container">
+  `<Surface members>` keeps its rows `MEMBER_INSET` off its edge and gives them its corner less that inset, so a focused row is a plate concentric with the card. Nothing in the card names a ring: the trash button beside a row takes the same one, on its own corner. `<RingScope placement="inside">` says the same for any other container.
 
   <Box w={520}>
-    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
-      <Box h={80} bg="surface2" />
-      <RingScopeProvider value="focusInset">
-        <ScrollView style={s.list}>
-          {['Alien', 'Blade Runner', 'Dune', 'Heat'].map((title) => (
-            <Focusable key={title} label={title} style={s.row} onPress={() => {}}>
-              <Box w={36} h={54} radius="sm" bg="surface3" />
-              <Text variant="label">{title}</Text>
-            </Focusable>
-          ))}
-        </ScrollView>
-      </RingScopeProvider>
+    <Surface members elevated>
+      {['Alien', 'Blade Runner', 'Dune'].map((title) => (
+        <Box key={title} row align="center">
+          <Focusable label={title} style={s.member} states={MEMBER_STATES} onPress={() => {}}>
+            <Box w={36} h={54} radius="sm" bg="surface3" />
+            <Text variant="label">{title}</Text>
+          </Focusable>
+          <Focusable label={`Remove ${title}`} style={s.trash} onPress={() => {}}>
+            <Text variant="meta">x</Text>
+          </Focusable>
+        </Box>
+      ))}
     </Surface>
+  </Box>
+</Scene>
+
+<Scene name="On a part">
+  `<FocusRing>` moves the ring onto one part of the control: the artwork of a tile, not the artwork and its caption. `lit` rings it under the pointer as well.
+
+  <Box row gap={28} p={16}>
+    {['Alien', 'Dune'].map((title) => (
+      <Focusable key={title} label={title} style={s.tile} onPress={() => {}}>
+        {({ hovered }) => (
+          <>
+            <FocusRing lit={hovered} style={s.art}>
+              <Box flex bg="surface3" />
+            </FocusRing>
+            <Text variant="label">{title}</Text>
+          </>
+        )}
+      </Focusable>
+    ))}
   </Box>
 </Scene>
 

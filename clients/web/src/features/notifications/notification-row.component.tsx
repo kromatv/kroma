@@ -144,10 +144,6 @@ function ReadToggle({
     <IconButton
       variant="ghost"
       diameter={34}
-      // The card it sits in draws its rings inward, which on a 34px disc lands
-      // the ring inside the glyph. This one has room at the card's edge, so it
-      // takes the ring on its own boundary instead.
-      ring="focusEdge"
       active={unread}
       label={`${t(unread ? 'notifications.markRead' : 'notifications.markUnread')} · ${title}`}
       onPress={() => (unread ? markRead(ids) : markUnread(ids))}
@@ -168,7 +164,6 @@ function RestoreButton({ title, id }: Readonly<{ title: string; id: Notification
     <IconButton
       variant="ghost"
       diameter={34}
-      ring="focusEdge"
       label={`${t('notifications.unarchive')} · ${title}`}
       onPress={() => void unarchive([id])}
     >

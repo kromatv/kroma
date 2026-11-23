@@ -33,7 +33,7 @@ import { useHoverPassthrough } from '#ui/lib/hover-passthrough.hook';
 import { useInputGate } from '#ui/lib/input-gate';
 import { useKeyPress } from '#ui/lib/key-press.hook';
 import { usePerfSampler } from '#ui/lib/perf-provider.component';
-import { useRingScope } from '#ui/lib/ring-scope';
+import { FocusRingPartProvider } from '#ui/lib/focus-ring-part';
 import { claimProps } from './focusable-a11y';
 import { contentFor } from './focusable-delegate';
 import { DisabledForm, NavigatorForm, TouchForm } from './focusable-forms.component';
@@ -41,6 +41,7 @@ import { LinkForm } from './focusable-link.component';
 import { useFocusablePaint } from './focusable-paint';
 import type { A11yState, FocusableProps, TouchAt } from './focusable-types';
 import { useEntryFocus } from './use-entry-focus.hook';
+import { useRingOwner } from './use-ring-owner.hook';
 
 function attach(box: RefObject<View | null>, outer: Ref<View> | undefined, view: View | null) {
   box.current = view;
@@ -103,12 +104,6 @@ function Focusable<R extends AnySv = AnySv>({
     [checked, selected, expanded, pressed, busy, value, current],
   );
 
-  // A surface that clips what it holds says which ring its controls draw; a
-  // control standing on its own keeps the one that lifts off the page.
-  const scopedRing = useRingScope();
-  const ringToken = typeof ring === 'string' ? ring : (scopedRing ?? 'focusLift');
-  const showRing = ring !== false;
-
   const webKeys = useKeyPress(
     !disabled && !inert && Boolean(onPress),
     role,
@@ -134,6 +129,7 @@ function Focusable<R extends AnySv = AnySv>({
   }, []);
   const keyedFocus = useFocusVisibleBy(focused, source.focusHidden);
   const focusVisible = keyedFocus && (hovered || !source.pointerDriving());
+  const { ringToken, showRing, part, corner } = useRingOwner({ ring, visible: focusVisible });
 
   const animated = useFocusScale(focused || hovered, focusScale);
 
@@ -203,6 +199,7 @@ function Focusable<R extends AnySv = AnySv>({
   const { dressed, focusedStyle, hoveredStyle, layers, paintedPressed, resolve, rest } =
     useFocusablePaint({
       recipe,
+      beneath: corner,
       vars,
       states,
       style,
@@ -315,14 +312,18 @@ function Focusable<R extends AnySv = AnySv>({
     />
   );
 
-  return controlForm({
-    controlled,
-    scoped,
-    asChild,
-    renderLink: () => <LinkForm child={children} at={at} />,
-    renderTouch: () => <TouchForm at={at} />,
-    renderNavigator: () => (isEntry ? <DefaultFocus>{node}</DefaultFocus> : node),
-  });
+  return (
+    <FocusRingPartProvider value={part}>
+      {controlForm({
+        controlled,
+        scoped,
+        asChild,
+        renderLink: () => <LinkForm child={children} at={at} />,
+        renderTouch: () => <TouchForm at={at} />,
+        renderNavigator: () => (isEntry ? <DefaultFocus>{node}</DefaultFocus> : node),
+      })}
+    </FocusRingPartProvider>
+  );
 }
 
 export type { Delegate } from './focusable-delegate';

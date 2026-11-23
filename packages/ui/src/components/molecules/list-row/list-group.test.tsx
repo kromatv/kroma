@@ -76,7 +76,7 @@ describe('ListRow.Group', () => {
       </FocusScope>,
     );
 
-    const inset = activeTheme().ring.focusInset;
+    const inset = activeTheme().ring.focusInside;
     expect(declared(painted('Bascule'), 'outlineOffset')).toBe(`${inset.outlineOffset}px`);
     expect(declared(painted('Bascule'), 'outlineWidth')).toBe(`${inset.outlineWidth}px`);
   });
@@ -94,7 +94,7 @@ describe('ListRow.Group', () => {
       </FocusScope>,
     );
 
-    const inset = activeTheme().ring.focusInset;
+    const inset = activeTheme().ring.focusInside;
     const row = painted('Membre');
     expect(declared(row, 'outlineWidth')).toBe(`${inset.outlineWidth}px`);
     expect(declared(row, 'outlineOffset')).toBe(`${inset.outlineOffset}px`);

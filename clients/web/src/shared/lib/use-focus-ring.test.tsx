@@ -10,7 +10,7 @@ afterEach(cleanup);
 
 const s = styles({ rest: { radius: 4, textDecorationLine: 'underline' } });
 
-function Link({ token }: Readonly<{ token?: 'focus' | 'focusInset' }>) {
+function Link({ token }: Readonly<{ token?: 'focus' | 'focusInside' }>) {
   const focus = useFocusRing(s.rest, token);
   return (
     <a href="/x" {...focus.bind} className={focus.className}>
@@ -46,13 +46,13 @@ describe('useFocusRing', () => {
   });
 
   it('paints the token it was named rather than the standoff default', () => {
-    render(<Link token="focusInset" />);
+    render(<Link token="focusInside" />);
     const link = screen.getByText('Lien');
 
     act(() => link.focus());
 
     expect(declared(link, 'outline-offset')).toBe(
-      `${activeTheme().ring.focusInset.outlineOffset}px`,
+      `${activeTheme().ring.focusInside.outlineOffset}px`,
     );
   });
 });

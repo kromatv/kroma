@@ -21,7 +21,7 @@ nothing usable.
 
 `Focusable` is the one to read first. Every remote-reachable control in the whole
 system is one, which is why a single component can be a mouse button in a browser
-and a D-pad target on a television, and why the amber ring looks identical
+and a D-pad target on a television, and why the focus ring looks identical
 everywhere.
 
 Variants are declared once per file with `sv` (see

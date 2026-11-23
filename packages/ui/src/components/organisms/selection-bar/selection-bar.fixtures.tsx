@@ -39,7 +39,7 @@ function TitleRows({
             checked={selected.has(title)}
             label={title}
             onPress={() => onToggle(title)}
-            ring="focusInset"
+            ring="inside"
             style={s.row}
           >
             <CheckboxFace checked={selected.has(title)} />

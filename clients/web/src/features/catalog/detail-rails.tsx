@@ -3,6 +3,7 @@ import {
   classes,
   color,
   Focusable,
+  FocusRing,
   type HostElement,
   styles,
   sv,
@@ -44,11 +45,7 @@ const sDefinition = styles({
     aspectRatio: 1,
     radius: 'circle',
     mb: 11,
-    transitionProperty: 'outline-color',
-    transitionDuration: '200ms',
-    outlineColor: 'transparent',
   },
-  avatarLit: { ring: 'focus' },
   sheen: {
     backgroundImage: `radial-gradient(70% 60% at 50% 22%, ${color('white/20')}, transparent 60%)`,
   },
@@ -106,19 +103,20 @@ function CastTile({ person }: Readonly<{ person: CastMember }>) {
     <Focusable
       sv={castTile}
       focusScale={1.06}
-      ring={false}
       label={t('person.viewWorks', { name: person.name })}
       asChild
     >
       {({ hovered, focused }) => (
         <RouteLink to="/people/$person" params={{ person: personSegment(person) }}>
-          <Image
-            style={[s.avatar, hovered || focused ? s.avatarLit : null]}
-            src={photo}
-            alt={person.name}
-            placeholder={face}
-            fallback={face}
-          />
+          <FocusRing lit={hovered} asChild>
+            <Image
+              style={s.avatar}
+              src={photo}
+              alt={person.name}
+              placeholder={face}
+              fallback={face}
+            />
+          </FocusRing>
           <Text
             variant="label"
             color={hovered || focused ? 'accent' : 'text'}
