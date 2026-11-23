@@ -72,6 +72,37 @@ function kindOf(scanner: ScanKind, text: string): TokenKind {
   return KEYWORDS.has(text) ? 'keyword' : 'plain';
 }
 
+interface Nesting {
+  depth: number;
+  tags: number[];
+}
+
+const TAG_END = /\/?>/y;
+
+const BRACE_STEP = new Map([
+  ['{', 1],
+  ['}', -1],
+]);
+
+function tagEndAt(code: string, from: number, nesting: Nesting): Token | null {
+  if (nesting.tags.at(-1) !== nesting.depth) {
+    return null;
+  }
+  TAG_END.lastIndex = from;
+  const hit = TAG_END.exec(code);
+  return hit ? { text: hit[0], kind: 'tag' } : null;
+}
+
+function follow(nesting: Nesting, token: Token): void {
+  if (token.kind === 'brace') {
+    nesting.depth += BRACE_STEP.get(token.text) ?? 0;
+  } else if (token.kind === 'tag' && token.text.endsWith('>')) {
+    nesting.tags.pop();
+  } else if (token.kind === 'tag') {
+    nesting.tags.push(nesting.depth);
+  }
+}
+
 function scanAt(code: string, from: number): Token | null {
   for (const [kind, pattern] of SCANNERS) {
     pattern.lastIndex = from;
@@ -88,6 +119,7 @@ function scanAt(code: string, from: number): Token | null {
  * concatenate back to the input. */
 function tokenize(code: string): Token[] {
   const out: Token[] = [];
+  const nesting: Nesting = { depth: 0, tags: [] };
   let plain = '';
   const flush = () => {
     if (plain) {
@@ -98,12 +130,13 @@ function tokenize(code: string): Token[] {
 
   let at = 0;
   while (at < code.length) {
-    const hit = scanAt(code, at);
+    const hit = tagEndAt(code, at, nesting) ?? scanAt(code, at);
     if (!hit) {
       plain += code[at];
       at += 1;
       continue;
     }
+    follow(nesting, hit);
     // A `word` that turned out to be plain merges with the run around it, so
     // the output has no gratuitous seams in it.
     if (hit.kind === 'plain') {
