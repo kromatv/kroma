@@ -55,6 +55,24 @@ describe('changedFiles', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
+  it('runs every lane when a push changes as many files as GitHub lists in a comparison', async () => {
+    const fetch = answers(compare(...Array.from({ length: 300 }, (_, i) => `docs/${i}.md`)));
+
+    const files = await changedFiles(push, repo, 'origin/main');
+
+    expect(files).toBe('all');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('lists a push of 299 files in full', async () => {
+    const names = Array.from({ length: 299 }, (_, i) => `docs/${i}.md`);
+    answers(compare(...names));
+
+    const files = await changedFiles(push, repo, 'origin/main');
+
+    expect(files).toEqual(names);
+  });
+
   it('asks again when GitHub answers 500, and lists what the next answer holds', async () => {
     const fetch = answers(new Response('', { status: 500 }), compare('docs/ci.md'));
 

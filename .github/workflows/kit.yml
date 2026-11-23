@@ -10,29 +10,17 @@ name: Kit site
 # WITHOUT it the deploy SKIPS with a notice instead of failing red - the site
 # can always be shipped by hand with `bun run deploy:kit`.
 #
-# A push whose tree over these paths is IDENTICAL to the last successful run's
-# (a re-run, a revert-of-a-revert, a merge that only touched other files after
-# the filter matched) skips the whole build+deploy: the live site already
-# serves those bytes. A manual dispatch always ships - it is the escape hatch
-# when the Worker itself needs re-pushing.
+# Every push to main starts the job, with no path filter: GitHub matches a
+# filter against the first 300 files of a push only, so a larger push whose
+# kit files sat past them never deployed. The job compares the kit's paths
+# against the last successful run instead, and a push whose tree over them is
+# IDENTICAL (most pushes, a re-run, a revert-of-a-revert) skips the whole
+# build+deploy: the live site already serves those bytes. A manual dispatch
+# always ships - it is the escape hatch when the Worker itself needs
+# re-pushing.
 on:
   push:
     branches: [main]
-    paths:
-      - 'apps/kit/**'
-      - 'clients/build-info/**'
-      - 'packages/bundler/**'
-      - 'packages/client/**'
-      - 'packages/core/**'
-      - 'packages/i18n/**'
-      - 'packages/i18n-devtools/**'
-      - 'packages/i18n-tools/**'
-      - 'packages/react-audit/**'
-      - 'packages/registry/**'
-      - 'packages/spatial-nav/**'
-      - 'packages/ui/**'
-      - 'packages/workbench/**'
-      - '.github/workflows/kit.yml'
   pull_request:
     paths:
       - 'apps/kit/**'
