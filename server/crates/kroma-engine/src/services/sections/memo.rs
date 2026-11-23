@@ -19,6 +19,10 @@ use crate::state::SharedState;
 use super::context::PartOfDay;
 use super::featured;
 
+mod phrases;
+
+use phrases::Phrases;
+
 const FRESH_FOR_MS: i64 = 10 * 60_000;
 // Every write that changes a candidate is announced on the bus; the hour only
 // bounds one that is not.
@@ -144,6 +148,7 @@ pub struct HomeMemo {
     candidates: Slot<Arc<Vec<HeroCandidate>>>,
     pub(super) catalog: crate::services::reco::CatalogMemo,
     pub(crate) world: super::world::WorldTrending,
+    pub(super) phrases: Phrases,
 }
 
 impl HomeMemo {

@@ -78,7 +78,7 @@ impl Board<'_> {
         let (Some(vibe), Some(_)) = (theme.vibe, floor) else {
             return HashMap::new();
         };
-        let query = embeddings::embed(&self.state.embedder, vibe);
+        let query = self.state.home.phrases.vector(&self.state.embedder, vibe);
         if query.is_empty() {
             return HashMap::new();
         }
@@ -99,7 +99,7 @@ impl Board<'_> {
             .into_iter()
             .filter(|row| !row.genres.is_empty())
             .map(|row| {
-                let query = embeddings::embed(&self.state.embedder, &row.query);
+                let query = self.state.home.phrases.vector(&self.state.embedder, &row.query);
                 let near = self.state.vectors.nearest(&query, FETCH * 2, &HashSet::new());
                 let ids: Vec<String> = db::keep_shelf(self.pool, near, &row.genres, row.form.kinds())
                     .into_iter()
