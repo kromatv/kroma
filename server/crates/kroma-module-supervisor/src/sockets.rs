@@ -32,10 +32,23 @@ pub trait SocketRules: Send + Sync {
     fn decide_lookup(&self, caller: &str, name: &str) -> Result<String, SocketRefused>;
 }
 
+/// This server's own ports, read at each connection a module's gateway dials.
+pub type OwnPorts = Arc<dyn Fn() -> Vec<u16> + Send + Sync>;
+
 impl Supervisor {
     /// Rule the raw sockets of every module started from here on with `rules`.
     /// Set once: a later call changes nothing.
     pub fn rule_sockets_with(&self, rules: Arc<dyn SocketRules>) {
         let _ = self.sockets.set(rules);
+    }
+
+    /// Keep the direct connections of every module started from here on off
+    /// this machine's `ports`, whatever name or address they dial. Set once.
+    pub fn guard_own_ports(&self, ports: OwnPorts) {
+        let _ = self.own_ports.set(ports);
+    }
+
+    pub(crate) fn own_ports(&self) -> Option<OwnPorts> {
+        self.own_ports.get().cloned()
     }
 }

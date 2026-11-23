@@ -217,3 +217,19 @@ fn the_core_still_reaches_a_port_a_module_listens_on() {
 
     assert_eq!(ruling.decision, Decision::Direct);
 }
+
+#[test]
+fn a_cloud_metadata_service_off_the_link_is_never_reachable_by_a_fetch() {
+    let (network, _pool) = network("network-metadata", Point::absent(NETWORK_POINT));
+
+    let refused: Vec<Ruling> = ["100.100.100.200", "fd00:ec2::254", "::ffff:100.100.100.200"]
+        .into_iter()
+        .map(|host| network.rule_on(CORE, "metadata", &target(host)))
+        .collect();
+
+    let metadata = Ruling {
+        decision: Decision::Block("a cloud metadata service is never reachable".to_string()),
+        rule: Some(GUARD_METADATA.to_string()),
+    };
+    assert_eq!(refused, [metadata.clone(), metadata.clone(), metadata]);
+}

@@ -25,3 +25,13 @@ async fn a_module_the_server_holds_no_declaration_for_is_refused_a_socket_and_a_
         ]
     );
 }
+
+#[tokio::test]
+async fn a_module_gateway_guards_the_ports_the_network_policy_names_as_this_servers_own() {
+    let t = test_app();
+
+    let ports = own_ports_of(t.state.network.clone())();
+
+    assert_eq!(ports, t.state.network.own_ports());
+    assert!(ports.contains(&4443), "{ports:?}");
+}

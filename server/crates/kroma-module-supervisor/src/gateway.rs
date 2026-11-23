@@ -3,17 +3,18 @@
 
 use std::sync::{Arc, OnceLock};
 
-use kroma_egress::{Flow, Policy, Request, Route, Ruling, Upstream, Verdict};
+use kroma_egress::{Flow, Policy, Reach, Request, Route, Ruling, Upstream, Verdict};
 use kroma_module_host::host_token::ct_eq;
 use kroma_module_host::{
     NetworkAction, NetworkAnswer, NetworkAsk, NetworkFlow, NetworkPolicy, NetworkPolicyOf,
     NetworkRoute,
 };
+use tokio::net::TcpListener;
 use tokio::runtime::Handle;
 use tokio::task::AbortHandle;
 
 use super::component::FolderRoots;
-use super::Supervisor;
+use super::{OwnPorts, Supervisor};
 
 const CARRIED_METHOD: &str = "CONNECT";
 const PERMISSION_NET_CONNECT: &str = "permission:net.connect";
@@ -69,6 +70,20 @@ pub(crate) struct ModulePolicy {
     pub(crate) token: String,
     pub(crate) network: Arc<dyn NetworkPolicy>,
     pub(crate) no_network: bool,
+    pub(crate) own_ports: Option<OwnPorts>,
+}
+
+/// Serve `policy`'s gateway on a loopback port of `runtime`, which the caller has
+/// entered, and say where.
+pub(crate) fn serve_gateway(
+    runtime: &Handle,
+    policy: Arc<ModulePolicy>,
+) -> anyhow::Result<(String, AbortHandle)> {
+    let tcp = std::net::TcpListener::bind(("127.0.0.1", 0))?;
+    tcp.set_nonblocking(true)?;
+    let address = tcp.local_addr()?.to_string();
+    let served = runtime.spawn(kroma_egress::serve_tcp(TcpListener::from_std(tcp)?, policy));
+    Ok((address, served.abort_handle()))
 }
 
 impl Policy for ModulePolicy {
@@ -95,7 +110,12 @@ impl Policy for ModulePolicy {
                 sealed: asked.sealed,
             },
         );
-        ruling_of(answer, asked.public_only)
+        let own_ports = self
+            .own_ports
+            .as_ref()
+            .map(|ports| ports())
+            .unwrap_or_default();
+        ruling_of(answer, asked.public_only, own_ports)
     }
 
     fn record(&self, flow: Flow) {
@@ -125,11 +145,12 @@ impl Policy for ModulePolicy {
     }
 }
 
-fn ruling_of(answer: NetworkAnswer, public_only: bool) -> Ruling {
+fn ruling_of(answer: NetworkAnswer, public_only: bool, own_ports: Vec<u16>) -> Ruling {
     let verdict = match answer.action {
-        NetworkAction::Direct => Verdict::Direct {
+        NetworkAction::Direct => Verdict::Direct(Reach {
             private_allowed: answer.private_allowed && !public_only,
-        },
+            own_ports,
+        }),
         NetworkAction::Vpn => answer.proxy.as_deref().and_then(upstream_of).map_or_else(
             || Verdict::Block("the core routed this call to a VPN it did not name".to_string()),
             Verdict::Upstream,

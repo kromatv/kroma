@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use kroma_engine::services::network::{Network, RawSocket, SocketRefusal};
-use kroma_module_supervisor::{SocketAsk, SocketRefused, SocketRules};
+use kroma_module_supervisor::{OwnPorts, SocketAsk, SocketRefused, SocketRules};
 
 /// Rules every raw socket a component opens with the engine's network policy.
 pub struct NetworkSockets(pub Arc<Network>);
@@ -29,6 +29,12 @@ impl SocketRules for NetworkSockets {
     fn decide_lookup(&self, caller: &str, name: &str) -> Result<String, SocketRefused> {
         self.0.rule_lookup(caller, name).map_err(refused)
     }
+}
+
+/// This server's own ports as the engine's network policy reads them, which every
+/// module's gateway keeps its direct connections off.
+pub fn own_ports_of(network: Arc<Network>) -> OwnPorts {
+    Arc::new(move || network.own_ports())
 }
 
 #[cfg(test)]

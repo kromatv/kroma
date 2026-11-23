@@ -14,6 +14,9 @@ pub const GUARD_LINK_LOCAL: &str = "guard:link-local";
 
 pub const GUARD_LOOPBACK: &str = "guard:loopback";
 
+/// The guard that refuses the cloud metadata addresses that are not link-local.
+pub const GUARD_METADATA: &str = "guard:metadata";
+
 /// The action for one call and the id of the rule or guard that chose it,
 /// `None` for the default. No rule overrides a guard, and a rule naming a network
 /// for a local host goes `direct` since a tunnel cannot reach it.
@@ -48,8 +51,14 @@ pub fn decide(
 // A download client on this machine is a legitimate destination; this server's
 // own ports are not, since a module reaches the core only through the host API.
 fn guard(caller: &str, target: &WebTarget, own_ports: &[u16]) -> Option<&'static str> {
-    if target.literal().map(unmapped).is_some_and(is_link_local) {
+    if target.literal().is_some_and(kroma_egress::lan::is_link_local) {
         return Some(GUARD_LINK_LOCAL);
+    }
+    if target
+        .literal()
+        .is_some_and(kroma_egress::lan::is_cloud_metadata)
+    {
+        return Some(GUARD_METADATA);
     }
     if caller != CORE && is_this_machine(target) && own_ports.contains(&target.port) {
         return Some(GUARD_LOOPBACK);
@@ -72,13 +81,6 @@ fn unmapped(ip: IpAddr) -> IpAddr {
     match ip {
         IpAddr::V6(v6) => v6.to_ipv4_mapped().map_or(ip, IpAddr::V4),
         IpAddr::V4(_) => ip,
-    }
-}
-
-fn is_link_local(ip: IpAddr) -> bool {
-    match ip {
-        IpAddr::V4(v4) => v4.is_link_local(),
-        IpAddr::V6(v6) => (v6.segments()[0] & 0xffc0) == 0xfe80,
     }
 }
 
