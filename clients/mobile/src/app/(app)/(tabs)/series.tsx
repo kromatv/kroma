@@ -6,7 +6,7 @@ import { useClient } from '#mobile/lib/session';
 export default function Series() {
   const t = useT();
   const client = useClient();
-  const query = useQuery(client.query.media.shows());
+  const query = useQuery(client.query.media.showCards());
   return (
     <CatalogueScreen
       title={t('nav.series')}

@@ -70,6 +70,22 @@ export function collectLanguages(
     .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
 }
 
+/** The languages of one stream, as {@link collectLanguages} counts them. */
+export interface StreamLanguages {
+  stream: LanguageStream;
+  languages: LanguageCount[];
+}
+
+const STREAMS: readonly LanguageStream[] = ['audio', 'subtitles'];
+
+/** Audio, then subtitles, each with the languages the titles carry on it. A
+ * stream no title names a language on is left out, so it gets no filter. */
+export function languagesByStream(items: readonly Spoken[]): StreamLanguages[] {
+  return STREAMS.map((stream) => ({ stream, languages: collectLanguages(items, stream) })).filter(
+    (row) => row.languages.length > 0,
+  );
+}
+
 /** Whether any file of the title has a `stream` track in `code`, in any
  * spelling of it. */
 export function hasLanguage(item: Spoken, stream: LanguageStream, code: string): boolean {

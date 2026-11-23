@@ -27,7 +27,7 @@ export default function MyList() {
 
   const ids = useQuery(client.query.playback.myList());
   const movies = useQuery(client.query.media.movieCards());
-  const shows = useQuery(client.query.media.shows());
+  const shows = useQuery(client.query.media.showCards());
 
   const cards: CardModel[] = useMemo(() => {
     const movieById = new Map<string, MediaCard>((movies.data ?? []).map((m) => [m.id, m]));
