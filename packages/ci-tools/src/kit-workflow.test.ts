@@ -21,10 +21,14 @@ function skipCheckPaths(text: string): string[] {
 }
 
 describe('kit.yml', () => {
-  it('runs on a push or a pull request that changes any workspace package the kit depends on', () => {
+  it('builds a pull request that changes any workspace package the kit depends on', () => {
     const globs = [...kit.map((dir) => `${dir}/**`), WORKFLOW];
 
-    expect(pathFilters(workflow)).toEqual([globs, globs]);
+    expect(pathFilters(workflow)).toEqual([globs]);
+  });
+
+  it('starts on every push to main, so a push of more than 300 files is never filtered out', () => {
+    expect(workflow).toMatch(/^ {2}push:\n {4}branches: \[main\]\n {2}pull_request:\n/m);
   });
 
   it('redeploys when any of those packages changed since the last deployed commit', () => {
