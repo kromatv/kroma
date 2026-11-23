@@ -44,6 +44,7 @@ async fn the_card_view_lists_every_show_without_its_credits() {
         assert!(card["seasonCount"].is_number(), "{card}");
         assert!(card["audioLanguages"].is_array(), "{card}");
         assert!(card["subtitleLanguages"].is_array(), "{card}");
+        assert!(card["episodeLanguages"].is_array(), "{card}");
         assert!(card["metadata"].get("cast").is_none(), "{card}");
         assert!(card["metadata"].get("crew").is_none(), "{card}");
     }

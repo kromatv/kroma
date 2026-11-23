@@ -126,8 +126,11 @@ export const Show = CatalogEntry.extend({
 export type Show = z.infer<typeof Show>;
 
 /** A show as the Series grid draws it (`GET /api/shows?view=card`): without cast
- * or crew, with the languages its episodes are heard and read in. */
-export const ShowCard = Show.extend(TrackLanguages.shape);
+ * or crew, with the languages its episodes are heard and read in, and in
+ * `episodeLanguages` each episode's own, listed once per set of languages. */
+export const ShowCard = Show.extend(TrackLanguages.shape).extend({
+  episodeLanguages: z.array(TrackLanguages).optional(),
+});
 export type ShowCard = z.infer<typeof ShowCard>;
 
 /** `GET /api/shows/:id`. */

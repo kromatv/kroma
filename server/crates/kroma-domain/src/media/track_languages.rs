@@ -38,6 +38,15 @@ impl TrackLanguages {
         insert(&mut self.subtitles, language);
     }
 
+    pub fn add_all(&mut self, other: &Self) {
+        other.audio.iter().for_each(|code| self.hear(Some(code)));
+        other.subtitles.iter().for_each(|code| self.read(Some(code)));
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.audio.is_empty() && self.subtitles.is_empty()
+    }
+
     fn hear_all<'a>(&mut self, tracks: impl Iterator<Item = &'a AudioStream>) {
         tracks.for_each(|track| self.hear(track.language.as_deref()));
     }

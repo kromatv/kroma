@@ -65,6 +65,22 @@ describe('matchesLanguages', () => {
     expect(matchesLanguages(item, { audio: 'ja', subtitles: 'de' })).toBe(false);
     expect(matchesLanguages(item, { audio: 'fr' })).toBe(false);
   });
+
+  it('keeps a series on both streams only when one of its episodes has both', () => {
+    const series = {
+      audioLanguages: ['eng', 'jpn'],
+      subtitleLanguages: ['fre'],
+      episodeLanguages: [
+        { audioLanguages: ['eng'], subtitleLanguages: [] },
+        { audioLanguages: ['jpn'], subtitleLanguages: ['fre'] },
+      ],
+    };
+
+    expect(matchesLanguages(series, { audio: 'ja', subtitles: 'fr' })).toBe(true);
+    expect(matchesLanguages(series, { audio: 'en', subtitles: 'fr' })).toBe(false);
+    expect(matchesLanguages(series, { audio: 'en' })).toBe(true);
+    expect(matchesLanguages(series, { subtitles: 'fr' })).toBe(true);
+  });
 });
 
 describe('languageChoices', () => {
