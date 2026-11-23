@@ -18,6 +18,7 @@ mod show_detail;
 mod show_languages;
 mod shows;
 mod splash;
+mod subtitle_files;
 
 #[cfg(test)]
 mod test_support;
@@ -28,6 +29,7 @@ pub use show_detail::*;
 pub use show_languages::*;
 pub use shows::*;
 pub use splash::*;
+pub use subtitle_files::*;
 
 /// (libraries, items, shows) counts for `/api/health`.
 pub fn counts(pool: &Pool) -> Result<(usize, usize, usize)> {

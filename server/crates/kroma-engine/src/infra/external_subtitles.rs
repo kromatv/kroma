@@ -129,7 +129,7 @@ fn read_folder(folder: &Path) -> (Vec<PathBuf>, Vec<PathBuf>) {
     (files, folders)
 }
 
-fn is_subtitle_folder(folder: &Path) -> bool {
+pub(crate) fn is_subtitle_folder(folder: &Path) -> bool {
     folder
         .file_name()
         .and_then(std::ffi::OsStr::to_str)

@@ -8,6 +8,7 @@ use crate::test_support::test_state;
 
 mod announcer;
 mod between_walks;
+mod subtitle_files;
 
 const ONE_FILE: BatchSize = BatchSize {
     files: 1,

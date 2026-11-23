@@ -44,7 +44,7 @@ impl WalkTurn {
 /// wrote stays and nothing was pruned. `dropped` counts the libraries that had
 /// left the configuration and went before the walk.
 pub enum Walked {
-    Synced(ScanData),
+    Synced(Box<ScanData>),
     Empty { unreadable: usize, dropped: usize },
     Stopped { dropped: usize },
 }
@@ -111,7 +111,7 @@ pub(super) fn sync_walk_in(
     }
     held.note_changed(&mut data);
     finish(db, &held, &data).map_err(|error| after_removing(dropped, error))?;
-    Ok(Walked::Synced(data))
+    Ok(Walked::Synced(Box::new(data)))
 }
 
 fn finish(db: &Pool, held: &HeldEpisodes, data: &ScanData) -> anyhow::Result<()> {
@@ -127,6 +127,7 @@ fn finish(db: &Pool, held: &HeldEpisodes, data: &ScanData) -> anyhow::Result<()>
         settled: &held.settled_by(data),
     };
     db::finish_sync(db, &walk)?;
+    db::set_external_subtitle_languages(db, &data.external_subtitle_languages)?;
     warn_kept(&data.unread_libraries);
     Ok(())
 }

@@ -113,32 +113,32 @@ pub async fn list_movies(
 ) -> Result<Response, Response> {
     let library = q.library;
     let cards = matches!(q.view, Some(ListView::Card));
-    let (mut items, downloaded) = query(&state.db, move |pool| {
+    let (mut items, subtitle_files) = query(&state.db, move |pool| {
         let mut items = db::list_movies(&pool, library.as_deref())?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
-        let downloaded = cards
-            .then(|| db::downloaded_sub_languages(&pool))
+        let subtitle_files = cards
+            .then(|| db::subtitle_file_languages(&pool))
             .transpose()?;
-        Ok((items, downloaded))
+        Ok((items, subtitle_files))
     })
     .await?;
     visibility::keep_items(&state, &viewer, &mut items).await?;
-    let Some(downloaded) = downloaded else {
+    let Some(subtitle_files) = subtitle_files else {
         return Ok(items_in_view(items, q.view));
     };
-    Ok(Json(movie_cards(items, downloaded)).into_response())
+    Ok(Json(movie_cards(items, subtitle_files)).into_response())
 }
 
 fn movie_cards(
     items: Vec<MediaItem>,
-    mut downloaded: HashMap<String, Vec<String>>,
+    mut subtitle_files: HashMap<String, Vec<String>>,
 ) -> Vec<MediaCard> {
     items
         .into_iter()
         .map(|item| {
-            let fetched = downloaded.remove(&item.id).unwrap_or_default();
+            let outside = subtitle_files.remove(&item.id).unwrap_or_default();
             let mut card = MediaCard::from(item);
-            fetched
+            outside
                 .iter()
                 .for_each(|code| card.languages.read(Some(code)));
             card

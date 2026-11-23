@@ -3,7 +3,7 @@ use super::super::found::Found;
 use super::*;
 use crate::model::{Kind, MediaItem, Show};
 use crate::services::settings::LibraryDef;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::convert::Infallible;
 use std::ffi::OsStr;
 

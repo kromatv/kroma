@@ -6,6 +6,7 @@
 //! library scan saw against what the database already holds.
 
 mod episode_guide;
+mod external_subtitles;
 mod metadata;
 mod probe;
 mod probe_result;
@@ -18,6 +19,7 @@ mod unsettled;
 mod test_support;
 
 pub use episode_guide::*;
+pub use external_subtitles::*;
 pub use metadata::*;
 pub use probe::*;
 pub use probe_result::*;

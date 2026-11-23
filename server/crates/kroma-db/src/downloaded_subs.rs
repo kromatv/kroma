@@ -2,8 +2,6 @@
 //! downloaded track; merged into the item's subtitle list so they show in the
 //! player next to embedded tracks.
 
-use std::collections::HashMap;
-
 use rusqlite::OptionalExtension;
 
 use super::{params, Connection, Pool, Result, Row};
@@ -54,20 +52,6 @@ pub fn downloaded_sub(
     ))?;
     let mut rows = stmt.query_map(params![id, item_id], from_row)?;
     rows.next().transpose()
-}
-
-/// The language of every downloaded subtitle, by the item it was fetched for.
-/// A subtitle that names no language is left out.
-pub fn downloaded_sub_languages(pool: &Pool) -> Result<HashMap<String, Vec<String>>> {
-    let conn = pool.get()?;
-    let mut stmt = conn
-        .prepare("SELECT item_id, language FROM downloaded_subtitles WHERE language IS NOT NULL")?;
-    let mut out: HashMap<String, Vec<String>> = HashMap::new();
-    for row in stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get(1)?)))? {
-        let (item, language) = row?;
-        out.entry(item).or_default().push(language);
-    }
-    Ok(out)
 }
 
 pub fn insert_downloaded_sub(pool: &Pool, sub: &DownloadedSub) -> Result<()> {
@@ -157,24 +141,5 @@ mod tests {
         assert!(delete_downloaded_sub(&p, "m1", "s1").unwrap().is_none());
         let conn = p.get().unwrap();
         assert_eq!(downloaded_subs_for_item(&conn, "m1").unwrap().len(), 1);
-    }
-
-    #[test]
-    fn the_languages_are_listed_by_item_and_a_subtitle_without_one_adds_nothing() {
-        let p = pool_with_item();
-        insert_downloaded_sub(&p, &sub("s1")).unwrap();
-        insert_downloaded_sub(
-            &p,
-            &DownloadedSub {
-                language: None,
-                ..sub("s2")
-            },
-        )
-        .unwrap();
-
-        let languages = downloaded_sub_languages(&p).unwrap();
-
-        assert_eq!(languages.len(), 1);
-        assert_eq!(languages["m1"], ["fr"]);
     }
 }

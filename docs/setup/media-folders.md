@@ -73,6 +73,8 @@ The Matrix (1999).fr.forced.srt
 KROMA reads `.srt`, `.ass`, `.ssa` and `.vtt` files. Add `.forced` for forced
 subtitles and `.sdh` for subtitles for the deaf and hard of hearing. A `Subs`
 folder beside the video works too. Subtitles inside the video file need nothing.
+The player finds a new subtitle file at once. The subtitle filter of the Films
+and Series pages counts it after the next library scan.
 
 ### File types
 

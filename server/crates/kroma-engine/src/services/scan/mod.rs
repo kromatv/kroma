@@ -17,6 +17,7 @@ mod found;
 mod ids;
 mod index;
 mod live;
+mod subtitles_beside;
 mod unread;
 pub mod walk;
 
@@ -32,6 +33,7 @@ use crate::services::settings::LibraryDef;
 use batches::{BatchSink, BatchSize, Batches};
 use found::{Found, LibraryWalk};
 use live::{seed_demo, sync_walk, Walked};
+use subtitles_beside::languages_beside;
 use unread::read_library;
 
 pub use ids::{movie_logical_id, short_hash};
@@ -53,6 +55,9 @@ pub struct ScanData {
     // overlapping scans (watcher rescan + `POST /api/scan`) can't steal each
     // other's entries.
     pub mtimes: HashMap<String, Option<i64>>,
+    /// `file_id -> languages` of the text subtitle files beside every scanned
+    /// file, empty where it has none.
+    pub external_subtitle_languages: HashMap<String, Vec<String>>,
     /// Shows whose episode set this scan moved, against what the database held
     /// before the scan wrote anything. Empty until a sync fills it, so a caller
     /// that never asks enriches no show on episodes alone.
@@ -91,6 +96,7 @@ fn scan_in_batches<S>(
         data.libraries.push(library);
     }
 
+    data.external_subtitle_languages = languages_beside(&found.items, found.subtitles.take());
     data.shows = found.shows.into_values().collect();
     data.items = found.items.into_values().collect();
     data.mtimes = found.mtimes;
@@ -104,7 +110,7 @@ pub use kroma_primitives::now_iso8601;
 /// prunes nothing.
 pub enum Scanned {
     /// The walk produced a catalog, and it was written.
-    Applied(ScanData),
+    Applied(Box<ScanData>),
     /// Configured libraries produced NO items: a mount outage, not a library
     /// someone emptied. A prune reads that as "every file vanished" and
     /// cascade-deletes the catalog along with its probed metadata, so no title
@@ -160,7 +166,7 @@ pub fn walk_libraries(
     let LibrariesToWalk { turn, db, defs } = walk;
     if defs.is_empty() {
         info!("no libraries configured; seeding demo content");
-        return seed_demo(turn, db).map(Scanned::Applied);
+        return seed_demo(turn, db).map(|data| Scanned::Applied(Box::new(data)));
     }
     match sync_walk(turn, db, defs, after_batch)? {
         Walked::Synced(data) => Ok(Scanned::Applied(data)),

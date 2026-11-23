@@ -89,7 +89,7 @@ fn a_scan_that_loses_an_episode_moves_its_show_too() {
 
 fn scanned(state: &SharedState) -> ScanData {
     match rescan_sync(&WalkTurn::wait(), state, &mut uninterrupted).unwrap() {
-        Scanned::Applied(data) => data,
+        Scanned::Applied(data) => *data,
         _ => panic!("the scan was not applied"),
     }
 }

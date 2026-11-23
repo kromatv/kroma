@@ -8,11 +8,14 @@ use crate::domain::naming::{self, Parsed};
 use crate::model::{Library, LibraryKind, MediaItem, Show};
 use crate::services::settings::LibraryDef;
 
+use super::subtitles_beside::SubtitleFiles;
+
 #[derive(Default)]
 pub(super) struct Found {
     pub items: HashMap<String, MediaItem>,
     pub shows: HashMap<String, Show>,
     pub mtimes: HashMap<String, Option<i64>>,
+    pub subtitles: SubtitleFiles,
 }
 
 pub(super) struct LibraryWalk<'a> {
