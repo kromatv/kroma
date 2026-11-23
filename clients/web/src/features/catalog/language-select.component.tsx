@@ -1,14 +1,14 @@
-import { type LanguageCount, type LanguageStream, langName } from '@kromatv/core';
-import type { MessageKey, Translate } from '@kromatv/i18n';
+import {
+  ANY_LANGUAGE,
+  LANGUAGE_FILTER_LABEL,
+  type LanguageCount,
+  type LanguageStream,
+  languageChoices,
+} from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { type IconName, Select, styles, useStyles } from '@kromatv/ui/kit';
 
-const ANY_LANGUAGE = '*';
-
-const STREAM: Record<LanguageStream, { label: MessageKey; icon: IconName }> = {
-  audio: { label: 'browse.audioLanguage', icon: 'volume' },
-  subtitles: { label: 'browse.subtitleLanguage', icon: 'badge-cc' },
-};
+const ICON: Record<LanguageStream, IconName> = { audio: 'volume', subtitles: 'badge-cc' };
 
 const sDefinition = styles({
   trigger: { shrink: 0, minW: 150 },
@@ -35,29 +35,19 @@ export function LanguageSelect({
   if (languages.length === 0) {
     return null;
   }
-  const { label, icon } = STREAM[stream];
+  const label = t(LANGUAGE_FILTER_LABEL[stream]);
   return (
     <Select.Root
-      label={t(label)}
-      placeholder={t(label)}
+      label={label}
+      placeholder={label}
       value={value ?? ''}
       onValueChange={(v) => onValueChange(v === ANY_LANGUAGE ? undefined : v)}
     >
       <Select.Trigger size="sm" style={s.trigger} />
       <Select.Item value={ANY_LANGUAGE} label={t('browse.anyLanguage')} />
-      {languageItems(t, languages, icon)}
+      {languageChoices(t, languages).map((choice) => (
+        <Select.Item key={choice.value} icon={ICON[stream]} {...choice} />
+      ))}
     </Select.Root>
   );
-}
-
-function languageItems(t: Translate, languages: LanguageCount[], icon: IconName) {
-  return languages.map((language) => (
-    <Select.Item
-      key={language.code}
-      value={language.code}
-      label={langName(t, language.code) ?? language.code}
-      icon={icon}
-      note={String(language.count)}
-    />
-  ));
 }

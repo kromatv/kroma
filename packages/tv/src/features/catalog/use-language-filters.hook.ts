@@ -1,0 +1,54 @@
+import {
+  collectLanguages,
+  type LanguageFilter,
+  type LanguageStream,
+  type Spoken,
+} from '@kromatv/core';
+import { useMemo, useState } from 'react';
+import type { LanguageChipProps } from '#tv/features/catalog/language-chip.component';
+
+const STREAMS: readonly LanguageStream[] = ['audio', 'subtitles'];
+
+export interface LanguageFilters {
+  filter: LanguageFilter;
+  chips: LanguageChipProps[];
+}
+
+interface Picked extends LanguageFilter {
+  section: string;
+}
+
+/** The language filters of one browse section: what is picked, and a chip for
+ * each stream that the section's titles name a language on. Changing `section`
+ * clears the picks. */
+export function useLanguageFilters(items: readonly Spoken[], section: string): LanguageFilters {
+  const [picked, setPicked] = useState<Picked>({ section });
+  const current = picked.section === section ? picked : null;
+  const audio = current?.audio;
+  const subtitles = current?.subtitles;
+  const counts = useMemo(() => languageCounts(items), [items]);
+
+  return useMemo(() => {
+    const filter: LanguageFilter = { audio, subtitles };
+    const pick = (stream: LanguageStream, code: string | undefined) => {
+      const next: Picked = { ...filter, section };
+      next[stream] = code;
+      setPicked(next);
+    };
+    return {
+      filter,
+      chips: counts.map(({ stream, languages }) => ({
+        stream,
+        languages,
+        value: filter[stream],
+        onValueChange: (code: string | undefined) => pick(stream, code),
+      })),
+    };
+  }, [audio, subtitles, counts, section]);
+}
+
+function languageCounts(items: readonly Spoken[]) {
+  return STREAMS.map((stream) => ({ stream, languages: collectLanguages(items, stream) })).filter(
+    (row) => row.languages.length > 0,
+  );
+}

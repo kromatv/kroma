@@ -4,6 +4,7 @@ import type { GenreCount } from '@kromatv/core';
 import { I18nProvider } from '@kromatv/ui';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { LanguageChipProps } from '#tv/features/catalog/language-chip.component';
 import { BrowseFilters } from '#tv/features/catalog/tv-browse-header.component';
 
 afterEach(cleanup);
@@ -13,7 +14,7 @@ const GENRES: GenreCount[] = [
   { slug: 'comedy', name: 'Comedy', count: 12 },
 ];
 
-function filters(genre: string | undefined) {
+function filters(genre: string | undefined, languages: readonly LanguageChipProps[] = []) {
   const onGenre = vi.fn();
   const view = render(
     <I18nProvider locale="en">
@@ -23,6 +24,7 @@ function filters(genre: string | undefined) {
         genres={GENRES}
         genre={genre}
         onGenre={onGenre}
+        languages={languages}
       />
     </I18nProvider>,
   );
@@ -46,5 +48,19 @@ describe('the browse filters', () => {
     const { onGenre } = filters('horror');
     fireEvent.click(screen.getByText('Horror'));
     expect(onGenre).toHaveBeenCalledWith(undefined);
+  });
+
+  it('puts a chip in the row for each stream the section names a language on', () => {
+    filters(undefined, [
+      {
+        stream: 'subtitles',
+        languages: [{ code: 'fr', count: 2 }],
+        value: 'fr',
+        onValueChange: vi.fn(),
+      },
+    ]);
+
+    expect(screen.getByText('French')).toBeTruthy();
+    expect(screen.queryByText('Audio language')).toBeNull();
   });
 });

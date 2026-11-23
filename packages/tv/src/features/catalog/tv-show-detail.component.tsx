@@ -48,7 +48,7 @@ export function TvShowDetail() {
 
   useFocusNav({ onBack: nav.back });
 
-  const meta = show.metadata;
+  const meta = detail?.show.metadata ?? show.metadata;
   const backdrop =
     client.media.artwork.backdropFor(show, STAGE_W) ??
     client.media.artwork.showPosterFor(show, STAGE_W);
