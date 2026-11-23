@@ -4687,7 +4687,7 @@
     "status": "AGREED",
     "text": "A show folder MAY carry a `(Year)` for disambiguation",
     "file": "docs/spec/library/README.md",
-    "line": 105
+    "line": 113
   },
   {
     "id": "LIB-20",
@@ -4697,7 +4697,7 @@
     "status": "SHIPPED",
     "text": "Case is ignored, and separators may be spaces, dots or underscores.",
     "file": "docs/spec/library/README.md",
-    "line": 108
+    "line": 116
   },
   {
     "id": "LIB-21",
@@ -4707,7 +4707,7 @@
     "status": "SHIPPED",
     "text": "Only recognised video containers are considered files to match.",
     "file": "docs/spec/library/README.md",
-    "line": 110
+    "line": 118
   },
   {
     "id": "LIB-22",
@@ -4717,7 +4717,7 @@
     "status": "AGREED",
     "text": "The scheme is a convention rather than configuration, so a library is",
     "file": "docs/spec/library/README.md",
-    "line": 114
+    "line": 122
   },
   {
     "id": "LIB-23",
@@ -4727,7 +4727,7 @@
     "status": "SHIPPED",
     "text": "An **initial scan** runs when a source is added: the whole tree is",
     "file": "docs/spec/library/README.md",
-    "line": 123
+    "line": 131
   },
   {
     "id": "LIB-24",
@@ -4737,7 +4737,7 @@
     "status": "AGREED",
     "text": "An **incremental rescan** keeps the catalogue true to disk afterwards.",
     "file": "docs/spec/library/README.md",
-    "line": 128
+    "line": 136
   },
   {
     "id": "LIB-25",
@@ -4747,7 +4747,7 @@
     "status": "AGREED",
     "text": "An incremental rescan only reconsiders what changed, meaning new paths,",
     "file": "docs/spec/library/README.md",
-    "line": 134
+    "line": 142
   },
   {
     "id": "LIB-26",
@@ -4757,7 +4757,7 @@
     "status": "AGREED",
     "text": "Scanning is safe to run at any time, including while files are being",
     "file": "docs/spec/library/README.md",
-    "line": 138
+    "line": 146
   },
   {
     "id": "LIB-27",
@@ -4767,7 +4767,7 @@
     "status": "AGREED",
     "text": "A file is matched only once it looks **settled**, its size and",
     "file": "docs/spec/library/README.md",
-    "line": 141
+    "line": 149
   },
   {
     "id": "LIB-28",
@@ -4777,7 +4777,7 @@
     "status": "SHIPPED",
     "text": "Scanning **reads only**. It never writes, moves, renames or deletes",
     "file": "docs/spec/library/README.md",
-    "line": 146
+    "line": 154
   },
   {
     "id": "LIB-29",
@@ -4787,7 +4787,7 @@
     "status": "AGREED",
     "text": "KROMA never demands exclusive access to a library and never blocks the",
     "file": "docs/spec/library/README.md",
-    "line": 149
+    "line": 157
   },
   {
     "id": "LIB-30",
@@ -4797,7 +4797,7 @@
     "status": "AGREED",
     "text": "Matching resolves a settled file to an identity: a convention parse",
     "file": "docs/spec/library/README.md",
-    "line": 164
+    "line": 172
   },
   {
     "id": "LIB-31",
@@ -4807,7 +4807,7 @@
     "status": "AGREED",
     "text": "A file that parses to no confident identity, whether from an",
     "file": "docs/spec/library/README.md",
-    "line": 170
+    "line": 178
   },
   {
     "id": "LIB-32",
@@ -4817,7 +4817,7 @@
     "status": "AGREED",
     "text": "Unmatched items appear in a browsable **Unmatched** view in the library",
     "file": "docs/spec/library/README.md",
-    "line": 175
+    "line": 183
   },
   {
     "id": "LIB-33",
@@ -4827,7 +4827,7 @@
     "status": "AGREED",
     "text": "**Manual match.** A person searches the provider, picks the correct",
     "file": "docs/spec/library/README.md",
-    "line": 179
+    "line": 187
   },
   {
     "id": "LIB-34",
@@ -4837,7 +4837,7 @@
     "status": "AGREED",
     "text": "**Rename on disk.** A name fixed to the convention above matches",
     "file": "docs/spec/library/README.md",
-    "line": 183
+    "line": 191
   },
   {
     "id": "LIB-35",
@@ -4847,7 +4847,7 @@
     "status": "AGREED",
     "text": "A file that could be more than one identity, a title shared by a remake",
     "file": "docs/spec/library/README.md",
-    "line": 197
+    "line": 205
   },
   {
     "id": "LIB-36",
@@ -4857,7 +4857,7 @@
     "status": "AGREED",
     "text": "One unplaceable file never stalls a source. The catalogue is always the",
     "file": "docs/spec/library/README.md",
-    "line": 203
+    "line": 211
   },
   {
     "id": "LIB-37",
@@ -4867,7 +4867,7 @@
     "status": "AGREED",
     "text": "Every field and image a provider returns is written to the server's own",
     "file": "docs/spec/library/README.md",
-    "line": 213
+    "line": 221
   },
   {
     "id": "LIB-38",
@@ -4877,7 +4877,7 @@
     "status": "AGREED",
     "text": "With no internet, everything already matched browses and plays exactly",
     "file": "docs/spec/library/README.md",
-    "line": 218
+    "line": 226
   },
   {
     "id": "LIB-39",
@@ -4887,7 +4887,7 @@
     "status": "AGREED",
     "text": "Offline, a brand-new file that needs a first provider lookup stays",
     "file": "docs/spec/library/README.md",
-    "line": 221
+    "line": 229
   },
   {
     "id": "LIB-40",
@@ -4897,7 +4897,7 @@
     "status": "AGREED",
     "text": "Offline, a forced refresh queues rather than fails.",
     "file": "docs/spec/library/README.md",
-    "line": 225
+    "line": 233
   },
   {
     "id": "LIB-41",
@@ -4907,7 +4907,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 234
+    "line": 242
   },
   {
     "id": "LIB-42",
@@ -4917,7 +4917,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 236
+    "line": 244
   },
   {
     "id": "LIB-43",
@@ -4927,7 +4927,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 240
+    "line": 248
   },
   {
     "id": "LIB-44",
@@ -4937,7 +4937,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 244
+    "line": 252
   },
   {
     "id": "LIB-45",
@@ -4947,7 +4947,7 @@
     "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 266
+    "line": 274
   },
   {
     "id": "LIB-46",
@@ -4957,7 +4957,7 @@
     "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 271
+    "line": 279
   },
   {
     "id": "LIB-47",
@@ -4967,7 +4967,7 @@
     "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 275
+    "line": 283
   },
   {
     "id": "LIB-48",
@@ -4977,7 +4977,7 @@
     "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 279
+    "line": 287
   },
   {
     "id": "LIB-49",
@@ -4987,7 +4987,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 285
+    "line": 293
   },
   {
     "id": "LIB-50",
@@ -4997,7 +4997,7 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 248
+    "line": 256
   },
   {
     "id": "LIB-51",
@@ -5277,7 +5277,7 @@
     "status": "AGREED",
     "text": "**A match that came from another server.** An import",
     "file": "docs/spec/library/README.md",
-    "line": 187
+    "line": 195
   },
   {
     "id": "LIB-79",
@@ -5288,6 +5288,26 @@
     "text": "A file belongs to one source. A source whose folder holds a folder of",
     "file": "docs/spec/library/README.md",
     "line": 27
+  },
+  {
+    "id": "LIB-80",
+    "domain": "LIB",
+    "space": "library",
+    "number": 80,
+    "status": "SHIPPED",
+    "text": "In a show source, a name the `SxxEyy` and `NxNN` forms miss still",
+    "file": "docs/spec/library/README.md",
+    "line": 105
+  },
+  {
+    "id": "LIB-81",
+    "domain": "LIB",
+    "space": "library",
+    "number": 81,
+    "status": "SHIPPED",
+    "text": "In a show source, a file whose name carries no episode number is left",
+    "file": "docs/spec/library/README.md",
+    "line": 110
   },
   {
     "id": "MEDIA-1",

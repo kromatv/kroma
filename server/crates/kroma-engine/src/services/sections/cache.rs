@@ -31,6 +31,7 @@ impl VectorCache {
 
     /// Reload the full snapshot from SQLite if the vectors changed since last load
     /// (or were never loaded). Cheap when unchanged: one indexed `MAX()` query.
+    #[tracing::instrument(level = "trace", skip_all, name = "VectorCache::refresh_if_stale")]
     pub fn refresh_if_stale(&self, pool: &Pool) -> Result<()> {
         let current = db::vectors_max_updated_at(pool)?;
         let stale = { *self.stamp.read().unwrap() != current };

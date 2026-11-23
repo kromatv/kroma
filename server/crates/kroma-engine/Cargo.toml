@@ -36,6 +36,8 @@ kroma-push = { workspace = true }
 kroma-requests = { workspace = true }
 # ffprobe, the ffmpeg budget and the HLS engine, re-exported under `infra::`.
 kroma-media = { workspace = true }
+# A job run is one profiling scope.
+kroma-perf = { workspace = true }
 # The heavy/optional adapters (embeddings, whisper transcription, mDNS) are no
 # longer named here: the engine consumes them through the port traits in
 # `crate::ports`, and the binary (composition root) wraps the concrete module

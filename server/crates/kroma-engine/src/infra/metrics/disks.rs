@@ -22,6 +22,7 @@ pub struct DiskInfo {
 /// + statfs'ing every mount is comparatively expensive on a NAS with many
 ///   volumes, and usage moves slowly, so results are cached for a short window
 ///   (the storage page and dashboard poll this endpoint repeatedly).
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn read_disks() -> Vec<DiskInfo> {
     type DiskCache = OnceLock<RwLock<Option<(Instant, Vec<DiskInfo>)>>>;
     static CACHE: DiskCache = OnceLock::new();

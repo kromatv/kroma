@@ -37,6 +37,7 @@ use context::Context;
 
 /// Build the ordered, de-duplicated home for one user. Infallible: any step that
 /// fails (or comes up thin) simply contributes no section.
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Vec<Section> {
     let _ = state.vectors.refresh_if_stale(pool);
     let ctx = Context::build(pool, user_id, settings::played_percent(&state.settings));

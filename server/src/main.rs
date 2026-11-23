@@ -61,6 +61,7 @@ async fn main() -> anyhow::Result<()> {
     let log_guard = boot::tracing::init_tracing(&config.logs_dir());
     let ffprobe_available = boot::startup::announce(&config);
 
+    boot::profiling::install();
     let db = boot::startup::open_db(&config)?;
     let settings = services::settings::Settings::load(&db);
 
@@ -71,6 +72,7 @@ async fn main() -> anyhow::Result<()> {
     let addr = config.socket_addr();
 
     let (state, supervisor) = boot::state::build(config, ffprobe_available, db, settings);
+    boot::profiling::start(&state);
     services::updates::recover(&state)?;
     plan.applied(&state);
 
