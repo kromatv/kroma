@@ -122,12 +122,7 @@ pub async fn ping(
         return StatusCode::NO_CONTENT.into_response();
     }
 
-    let uid = viewer.user.id.clone();
-    let _ = query(&state.db, move |pool| {
-        let _ = db::touch_last_seen(&pool, &uid);
-        Ok(())
-    })
-    .await;
+    mark_seen(&state, &viewer.user.id).await;
 
     let count = state.playback.list().len();
     state.events.publish(if beat == Beat::Opened {
@@ -136,6 +131,18 @@ pub async fn ping(
         ServerEvent::PlaybackUpdated { count }
     });
     StatusCode::NO_CONTENT.into_response()
+}
+
+async fn mark_seen(state: &SharedState, user_id: &str) {
+    if !state.last_seen.due(user_id) {
+        return;
+    }
+    let uid = user_id.to_string();
+    let _ = query(&state.db, move |pool| {
+        let _ = db::touch_last_seen(&pool, &uid);
+        Ok(())
+    })
+    .await;
 }
 
 #[derive(Debug, Deserialize)]
