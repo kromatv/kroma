@@ -1,6 +1,7 @@
 use axum::http::StatusCode;
 
-use crate::api::test_support::{get, test_app};
+use crate::api::test_support::{demo_item_id, get, test_app};
+use crate::db;
 
 #[tokio::test]
 async fn the_card_view_lists_every_movie_without_its_files_or_tracks() {
@@ -21,6 +22,40 @@ async fn the_card_view_lists_every_movie_without_its_files_or_tracks() {
             assert!(card.get(gone).is_none(), "{gone} in {card}");
         }
     }
+}
+
+#[tokio::test]
+async fn a_subtitle_downloaded_for_a_film_counts_on_its_card() {
+    let t = test_app();
+    let film = demo_item_id("The Matrix");
+    db::insert_downloaded_sub(
+        &t.state.db,
+        &db::DownloadedSub {
+            id: "dl-ko".into(),
+            item_id: film.clone(),
+            language: Some("kor".into()),
+            label: "Korean".into(),
+            provider: "opensubtitles".into(),
+            path: "/data/subs/dl-ko.vtt".into(),
+        },
+    )
+    .unwrap();
+
+    let (_, cards) = get(&t.app, "/api/movies?view=card", Some(&t.token)).await;
+
+    let card = cards
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|card| card["id"] == film.as_str())
+        .unwrap();
+    assert!(
+        card["subtitleLanguages"]
+            .as_array()
+            .unwrap()
+            .contains(&"kor".into()),
+        "{card}"
+    );
 }
 
 #[tokio::test]
