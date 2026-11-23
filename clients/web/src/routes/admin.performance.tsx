@@ -1,12 +1,11 @@
-import { PerfWindow } from '@kromatv/client/performance';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { PerformancePage } from '#web/features/admin/performance.component';
-import { PERF_TABS } from '#web/features/admin/performance-tabs';
+import { PERF_TABS, PERF_WINDOWS } from '#web/features/admin/performance-tabs';
 
 const Search = z.object({
   tab: z.enum(PERF_TABS).optional().catch(undefined),
-  window: PerfWindow.optional().catch(undefined),
+  window: z.enum(PERF_WINDOWS).optional().catch(undefined),
   scope: z.string().optional().catch(undefined),
   segment: z.string().optional().catch(undefined),
   slow: z.string().optional().catch(undefined),

@@ -1,6 +1,7 @@
 //! Profiling: the statement hook goes in before the first database opens, the
 //! history beside the database once the state exists.
 
+use std::ffi::OsStr;
 use std::path::Path;
 use std::time::Duration;
 
@@ -21,13 +22,13 @@ pub fn install() {
 }
 
 fn database_name(path: &Path) -> Option<String> {
-    let Some(file) = path.file_name().and_then(|f| f.to_str()) else {
+    let Some(file) = path.file_name().and_then(OsStr::to_str) else {
         return Some("memory".into());
     };
     let owner = path
         .parent()
         .and_then(Path::file_name)
-        .and_then(|d| d.to_str());
+        .and_then(OsStr::to_str);
     match (file, owner) {
         ("kroma.db", _) => Some("core".into()),
         ("module.sqlite", Some(id)) => Some(id.to_string()),

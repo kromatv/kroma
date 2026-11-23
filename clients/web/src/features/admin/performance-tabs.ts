@@ -9,7 +9,7 @@ export const PERF_TABS = ['requests', 'jobs', 'statements', 'functions', 'slow']
 
 export type PerfTab = (typeof PERF_TABS)[number];
 
-export const PERF_WINDOWS: readonly PerfWindow[] = ['1h', '24h', '7d', '30d'];
+export const PERF_WINDOWS = ['1h', '24h', '7d', '30d'] as const satisfies readonly PerfWindow[];
 
 /** An id as the URL holds it. The letter in front keeps the router from
  *  reading it as a number, which would lose the last digits of a segment key. */

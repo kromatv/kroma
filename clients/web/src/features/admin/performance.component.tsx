@@ -30,7 +30,8 @@ const TAB_LABEL: Readonly<Record<PerfTab, MessageKey>> = {
 };
 
 function isTab(value: string): value is PerfTab {
-  return PERF_TABS.some((one) => one === value);
+  const tabs: readonly string[] = PERF_TABS;
+  return tabs.includes(value);
 }
 
 interface PerformancePageProps {

@@ -16,7 +16,8 @@ const WINDOW_LABEL: Readonly<Record<PerfWindow, MessageKey>> = {
 };
 
 function isWindow(value: string): value is PerfWindow {
-  return PERF_WINDOWS.some((one) => one === value);
+  const windows: readonly string[] = PERF_WINDOWS;
+  return windows.includes(value);
 }
 
 function ExportButton({ window }: Readonly<{ window: PerfWindow }>) {
