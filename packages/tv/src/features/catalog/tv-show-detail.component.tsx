@@ -1,3 +1,4 @@
+import type { ShowDetail } from '@kromatv/client/media';
 import { ageRatingOf, episodeTag, qualityBadgeForVideo } from '@kromatv/core';
 import { useT, useThemeAudio } from '@kromatv/ui';
 import {
@@ -49,6 +50,7 @@ export function TvShowDetail() {
   useFocusNav({ onBack: nav.back });
 
   const meta = show.metadata;
+  const credits = fetchedMetadata(detail);
   const backdrop =
     client.media.artwork.backdropFor(show, STAGE_W) ??
     client.media.artwork.showPosterFor(show, STAGE_W);
@@ -172,8 +174,8 @@ export function TvShowDetail() {
           show's overall cast until the season is enriched. */}
       <FocusSlot>
         <CastRow
-          cast={activeSeason?.cast?.length ? activeSeason.cast : meta?.cast}
-          crew={meta?.crew}
+          cast={activeSeason?.cast?.length ? activeSeason.cast : credits?.cast}
+          crew={credits?.crew}
         />
       </FocusSlot>
 
@@ -213,6 +215,10 @@ export function TvShowDetail() {
       </FocusSlot>
     </TvDetailScaffold>
   );
+}
+
+function fetchedMetadata(detail: ShowDetail | null) {
+  return detail?.show.metadata;
 }
 
 const sDefinition = styles({

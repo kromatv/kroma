@@ -26,6 +26,7 @@ import {
 } from '@kromatv/ui/kit';
 import { memo } from 'react';
 import type { CatalogEntry } from '#tv/features/catalog/home/ambient-backdrop.component';
+import { LanguageChip, type LanguageChipProps } from '#tv/features/catalog/language-chip.component';
 
 const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
   added: 'browse.sort.added',
@@ -117,12 +118,14 @@ const BrowseFiltersImpl = function BrowseFilters({
   genres,
   genre,
   onGenre,
+  languages,
 }: Readonly<{
   sort: SortMode;
   onSort: (mode: SortMode) => void;
   genres: GenreCount[];
   genre: string | undefined;
   onGenre: (slug: string | undefined) => void;
+  languages: readonly LanguageChipProps[];
 }>) {
   const t = useT();
   // A <Rail.Root> rather than a ScrollView: it scrolls to FOLLOW focus. The children
@@ -143,6 +146,14 @@ const BrowseFiltersImpl = function BrowseFilters({
             label={t(SORT_LABEL_KEY[mode])}
             onPress={() => onSort(mode)}
           />
+        ))}
+        {languages.length > 0 ? (
+          <Box key="languages-divider" mx={4}>
+            <Divider vertical thickness={1} color="borderStrong" />
+          </Box>
+        ) : null}
+        {languages.map((chip) => (
+          <LanguageChip key={chip.stream} {...chip} />
         ))}
         {genres.length > 0 ? (
           <Box key="divider" mx={4}>

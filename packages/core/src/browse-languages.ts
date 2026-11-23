@@ -1,4 +1,6 @@
+import type { MessageKey, Translate } from '@kromatv/i18n';
 import { langBase } from './lang';
+import { langName } from './lang-labels';
 
 /** Which of a title's streams a language filter reads. */
 export type LanguageStream = 'audio' | 'subtitles';
@@ -12,6 +14,30 @@ export interface Spoken {
 export interface LanguageCount {
   code: string;
   count: number;
+}
+
+/** The choice that clears a language filter. */
+export const ANY_LANGUAGE = '*';
+
+/** What a language filter is called, on each stream. */
+export const LANGUAGE_FILTER_LABEL: Record<LanguageStream, MessageKey> = {
+  audio: 'browse.audioLanguage',
+  subtitles: 'browse.subtitleLanguage',
+};
+
+/** One language a filter offers, named in the reader's language, with how many
+ * titles have it as its note. */
+export interface LanguageChoice {
+  value: string;
+  label: string;
+  note: string;
+}
+
+/** The language a browse page is narrowed to on each stream, as a code in any
+ * spelling. A stream left unset keeps every title. */
+export interface LanguageFilter {
+  audio?: string;
+  subtitles?: string;
 }
 
 function languagesOf(item: Spoken, stream: LanguageStream): Set<string> {
@@ -49,4 +75,24 @@ export function collectLanguages(
 export function hasLanguage(item: Spoken, stream: LanguageStream, code: string): boolean {
   const want = langBase(code);
   return want !== null && languagesOf(item, stream).has(want);
+}
+
+/** Whether the title has every language `filter` asks for. */
+export function matchesLanguages(item: Spoken, filter: LanguageFilter): boolean {
+  return (
+    (!filter.audio || hasLanguage(item, 'audio', filter.audio)) &&
+    (!filter.subtitles || hasLanguage(item, 'subtitles', filter.subtitles))
+  );
+}
+
+/** The languages a filter offers, in the order `languages` lists them. */
+export function languageChoices(
+  t: Translate,
+  languages: readonly LanguageCount[],
+): LanguageChoice[] {
+  return languages.map(({ code, count }) => ({
+    value: code,
+    label: langName(t, code) ?? code,
+    note: String(count),
+  }));
 }

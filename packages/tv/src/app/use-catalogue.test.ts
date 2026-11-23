@@ -14,7 +14,7 @@ const H = vi.hoisted(() => {
   return {
     norm,
     movieCards: vi.fn(),
-    shows: vi.fn(),
+    showCards: vi.fn(),
     status: vi.fn(),
     health: vi.fn(),
     itemProgress: vi.fn(),
@@ -67,7 +67,7 @@ vi.mock('@kromatv/client', () => ({
       baseUrl: opts.baseUrl,
       hasAuth: false,
       admin: { status: H.status },
-      media: { movieCards: H.movieCards, shows: H.shows, health: H.health },
+      media: { movieCards: H.movieCards, showCards: H.showCards, health: H.health },
       playback: { itemProgress: H.itemProgress },
     };
     H.instances.push(client);
@@ -145,7 +145,7 @@ beforeEach(() => {
   H.loadSession.mockReturnValue(null);
   H.initialServers.mockReturnValue([]);
   H.movieCards.mockResolvedValue([]);
-  H.shows.mockResolvedValue([]);
+  H.showCards.mockResolvedValue([]);
   H.status.mockResolvedValue(null);
   H.health.mockResolvedValue(undefined);
   H.itemProgress.mockResolvedValue(null);
@@ -173,7 +173,7 @@ describe('useCatalogue boot session', () => {
 
   it('builds a client for the saved server and loads the catalogue when signed in', async () => {
     H.movieCards.mockResolvedValue([{ id: 'm1' }]);
-    H.shows.mockResolvedValue([{ id: 's1' }]);
+    H.showCards.mockResolvedValue([{ id: 's1' }]);
 
     const { result } = signedIn();
     expect(H.instances[0]?.baseUrl).toBe('http://tv.local');

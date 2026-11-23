@@ -1,4 +1,4 @@
-import type { MediaCard, Show, SubjectId } from '@kromatv/client/media';
+import type { MediaCard, ShowCard, SubjectId } from '@kromatv/client/media';
 import { collectGenres, hasGenre, type SortMode, sortTitles } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
@@ -18,6 +18,7 @@ import { type GridCard, PosterGrid } from '#tv/features/catalog/home/poster-grid
 import { EMPTY } from '#tv/features/catalog/screen-style';
 import { useTitleMenu } from '#tv/features/catalog/title-menu.hook';
 import { BrowseFilters, BrowseHeader } from '#tv/features/catalog/tv-browse-header.component';
+import { useLanguageFilters } from '#tv/features/catalog/use-language-filters.hook';
 
 const LABEL_KEY: Record<'films' | 'series' | 'mylist', MessageKey> = {
   films: 'nav.films',
@@ -25,7 +26,7 @@ const LABEL_KEY: Record<'films' | 'series' | 'mylist', MessageKey> = {
   mylist: 'nav.myList',
 };
 
-function sectionList<T extends MediaCard | Show>(
+function sectionList<T extends MediaCard | ShowCard>(
   items: T[],
   own: boolean,
   other: boolean,
@@ -74,18 +75,19 @@ export function TvGrid() {
     [isFilms, isSeries, shows, myList],
   );
 
-  const genres = useMemo(
-    () => collectGenres([...baseMovies, ...baseShows]),
-    [baseMovies, baseShows],
-  );
+  const section = useMemo(() => [...baseMovies, ...baseShows], [baseMovies, baseShows]);
+  const genres = useMemo(() => collectGenres(section), [section]);
+  const languages = useLanguageFilters(section, kind);
 
   const entries = useMemo<Entry[]>(() => {
-    const keep = (it: MediaCard | Show) => !genre || hasGenre(it, genre);
+    const keep = (it: MediaCard | ShowCard) => !genre || hasGenre(it, genre);
+    const films = languages.narrow(baseMovies.filter(keep));
+    const series = languages.narrow(baseShows.filter(keep));
     return [
-      ...sortTitles(baseMovies.filter(keep), sort).map((m): Entry => ({ kind: 'movie', item: m })),
-      ...sortTitles(baseShows.filter(keep), sort).map((s): Entry => ({ kind: 'show', item: s })),
+      ...sortTitles(films, sort).map((m): Entry => ({ kind: 'movie', item: m })),
+      ...sortTitles(series, sort).map((s): Entry => ({ kind: 'show', item: s })),
     ];
-  }, [baseMovies, baseShows, genre, sort]);
+  }, [baseMovies, baseShows, genre, languages, sort]);
 
   const cards = useMemo<GridCard[]>(
     () =>
@@ -122,6 +124,7 @@ export function TvGrid() {
           genres={genres}
           genre={genre}
           onGenre={setGenre}
+          languages={languages.chips}
         />
       ) : null}
 

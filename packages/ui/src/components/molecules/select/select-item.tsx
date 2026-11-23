@@ -172,6 +172,7 @@ function Item(props: Readonly<SelectItemProps>) {
       <Focusable
         role="option"
         selected={chosen}
+        autoFocus={row.autoFocus}
         label={option.label}
         disabled={disabled}
         onPress={() => pick(value)}

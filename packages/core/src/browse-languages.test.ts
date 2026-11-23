@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { collectLanguages, hasLanguage } from './browse-languages';
+import {
+  collectLanguages,
+  hasLanguage,
+  languageChoices,
+  matchesLanguages,
+} from './browse-languages';
+import { createTranslator } from './i18n';
 
 describe('collectLanguages', () => {
   it('counts each title once per language, whatever spelling its files used', () => {
@@ -30,5 +36,30 @@ describe('hasLanguage', () => {
     expect(hasLanguage(item, 'audio', 'fr')).toBe(false);
     expect(hasLanguage({}, 'subtitles', 'fr')).toBe(false);
     expect(hasLanguage(item, 'audio', '')).toBe(false);
+  });
+});
+
+describe('matchesLanguages', () => {
+  it('keeps a title only when it has the language on every stream that names one', () => {
+    const item = { audioLanguages: ['jpn'], subtitleLanguages: ['fre', 'eng'] };
+
+    expect(matchesLanguages(item, {})).toBe(true);
+    expect(matchesLanguages(item, { audio: 'ja', subtitles: 'en' })).toBe(true);
+    expect(matchesLanguages(item, { audio: 'ja', subtitles: 'de' })).toBe(false);
+    expect(matchesLanguages(item, { audio: 'fr' })).toBe(false);
+  });
+});
+
+describe('languageChoices', () => {
+  it('names each language for the reader, a code it has no name for in capitals, and notes its count', () => {
+    const choices = languageChoices(createTranslator('en'), [
+      { code: 'fr', count: 12 },
+      { code: 'xx', count: 1 },
+    ]);
+
+    expect(choices).toEqual([
+      { value: 'fr', label: 'French', note: '12' },
+      { value: 'xx', label: 'XX', note: '1' },
+    ]);
   });
 });
