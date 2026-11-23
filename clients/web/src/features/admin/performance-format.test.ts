@@ -7,10 +7,13 @@ import {
   formatMs,
   hasPlan,
   kindLabel,
+  offNotice,
   SCOPE_FIGURES,
+  segmentEyebrow,
   segmentsOf,
   shortLabel,
   SLOW_FIGURES,
+  slowName,
   sortRows,
 } from './performance-format';
 
@@ -182,5 +185,31 @@ describe('hasPlan', () => {
     expect(hasPlan({ kind: 'sql', origin: 'core' })).toBe(true);
     expect(hasPlan({ kind: 'sql', origin: 'tv.kroma.acquisition' })).toBe(false);
     expect(hasPlan({ kind: 'span', origin: 'core' })).toBe(false);
+  });
+});
+
+describe('offNotice', () => {
+  it('says nothing while measuring is on or the overview loads', () => {
+    expect(offNotice(null)).toBeNull();
+    expect(offNotice({ enabled: true, switchable: true })).toBeNull();
+  });
+
+  it('tells a switch the page can turn back on from one the environment holds', () => {
+    expect(offNotice({ enabled: false, switchable: true })).toBe('perf.off');
+    expect(offNotice({ enabled: false, switchable: false })).toBe('perf.offByEnv');
+  });
+});
+
+describe('segmentEyebrow', () => {
+  it('names the kind and where the segment ran, or a dash', () => {
+    expect(segmentEyebrow({ kind: 'sql', origin: 'core' })).toBe('sql · core');
+    expect(segmentEyebrow({ kind: 'span', origin: null })).toBe('span · -');
+  });
+});
+
+describe('slowName', () => {
+  it('names a loaded request and stays empty while it loads', () => {
+    expect(slowName(slow)).toBe('GET /api/home');
+    expect(slowName(null)).toBe('');
   });
 });

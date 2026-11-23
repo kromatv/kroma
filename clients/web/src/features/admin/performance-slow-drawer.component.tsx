@@ -10,7 +10,7 @@ import {
   type PerfStat,
   PerfStats,
 } from '#web/features/admin/performance-drawer-parts.component';
-import { formatMs, kindLabel, shortLabel } from '#web/features/admin/performance-format';
+import { formatMs, kindLabel, shortLabel, slowName } from '#web/features/admin/performance-format';
 import { PerfEmpty } from '#web/features/admin/performance-table.component';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
@@ -93,14 +93,15 @@ function SlowBody({ request }: Readonly<{ request: PerfSlowRequest }>) {
   );
 }
 
+function SlowGone({ failed }: Readonly<{ failed: boolean }>) {
+  return failed ? <PerfEmpty icon="stopwatch" labelKey="perf.slowGone" /> : null;
+}
+
 function SlowContent({
   request,
   failed,
 }: Readonly<{ request: PerfSlowRequest | null; failed: boolean }>) {
-  if (request) {
-    return <SlowBody request={request} />;
-  }
-  return failed ? <PerfEmpty icon="stopwatch" labelKey="perf.slowGone" /> : null;
+  return request ? <SlowBody request={request} /> : <SlowGone failed={failed} />;
 }
 
 /** One slow request: what it cost, what it repeated, and every segment on its
@@ -113,10 +114,11 @@ export function PerfSlowDrawer({ id, onClose }: Readonly<{ id: string; onClose: 
     () => client.performance.slowRequest(id),
     60000,
   );
+  const name = slowName(data);
   return (
-    <Drawer.Root open onClose={onClose} title={data?.name ?? t('perf.tabSlow')}>
+    <Drawer.Root open onClose={onClose} title={name || t('perf.tabSlow')}>
       <Drawer.Header>
-        <PerfDrawerHead eyebrow={t('perf.tabSlow')} title={data?.name ?? ''} />
+        <PerfDrawerHead eyebrow={t('perf.tabSlow')} title={name} />
       </Drawer.Header>
       <Drawer.Panel>
         <SlowContent request={data} failed={failed} />

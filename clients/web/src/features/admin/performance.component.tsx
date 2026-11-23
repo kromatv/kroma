@@ -8,17 +8,20 @@ import { PerfSegmentDrawer } from '#web/features/admin/performance-segment-drawe
 import { PerfSegmentTable } from '#web/features/admin/performance-segment-table.component';
 import { PerfSlowDrawer } from '#web/features/admin/performance-slow-drawer.component';
 import { PerfSlowList } from '#web/features/admin/performance-slow.component';
-import { segmentsOf } from '#web/features/admin/performance-format';
+import { offNotice, segmentsOf } from '#web/features/admin/performance-format';
 import {
   closed,
+  type OpenDrawer,
   openDrawer,
   PERF_TABS,
   type PerfSearch,
   type PerfTab,
+  shownIn,
 } from '#web/features/admin/performance-tabs';
 import { PerfToolbar } from '#web/features/admin/performance-toolbar.component';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
+import type { ReactNode } from 'react';
 import { TableSkeleton } from '#web/shared/ui';
 
 const TAB_LABEL: Readonly<Record<PerfTab, MessageKey>> = {
@@ -39,17 +42,39 @@ interface PerformancePageProps {
   onSearch: (next: PerfSearch) => void;
 }
 
-function Measured({ tab, overview }: Readonly<{ tab: PerfTab; overview: PerfOverview }>) {
-  if (tab === 'requests') {
-    return <PerfScopeTable rows={overview.requests} labelKey="perf.tabRequests" />;
+type MeasuredTab = Exclude<PerfTab, 'slow'>;
+
+const MEASURED: Readonly<Record<MeasuredTab, (overview: PerfOverview) => ReactNode>> = {
+  requests: (overview) => <PerfScopeTable rows={overview.requests} labelKey="perf.tabRequests" />,
+  jobs: (overview) => <PerfScopeTable rows={overview.jobs} labelKey="perf.tabJobs" />,
+  statements: (overview) => (
+    <PerfSegmentTable
+      rows={segmentsOf(overview.segments, 'statements')}
+      labelKey="perf.tabStatements"
+    />
+  ),
+  functions: (overview) => (
+    <PerfSegmentTable
+      rows={segmentsOf(overview.segments, 'functions')}
+      labelKey="perf.tabFunctions"
+    />
+  ),
+};
+
+interface DrawerProps {
+  open: OpenDrawer;
+  onClose: () => void;
+}
+
+function SlowDrawer({ open, onClose }: Readonly<DrawerProps>) {
+  return open.slow ? <PerfSlowDrawer id={open.slow} onClose={onClose} /> : null;
+}
+
+function ScopeDrawer({ open, onClose }: Readonly<DrawerProps>) {
+  if (open.scope) {
+    return <PerfScopeDrawer row={open.scope} onClose={onClose} />;
   }
-  if (tab === 'jobs') {
-    return <PerfScopeTable rows={overview.jobs} labelKey="perf.tabJobs" />;
-  }
-  if (tab === 'statements' || tab === 'functions') {
-    return <PerfSegmentTable rows={segmentsOf(overview.segments, tab)} labelKey={TAB_LABEL[tab]} />;
-  }
-  return null;
+  return <SlowDrawer open={open} onClose={onClose} />;
 }
 
 function Drawers({
@@ -62,10 +87,14 @@ function Drawers({
   if (open.segment) {
     return <PerfSegmentDrawer row={open.segment} onClose={close} />;
   }
-  if (open.scope) {
-    return <PerfScopeDrawer row={open.scope} onClose={close} />;
-  }
-  return open.slow ? <PerfSlowDrawer id={open.slow} onClose={close} /> : null;
+  return <ScopeDrawer open={open} onClose={close} />;
+}
+
+function Measured({
+  tab,
+  overview,
+}: Readonly<{ tab: MeasuredTab; overview: PerfOverview | null }>) {
+  return overview ? MEASURED[tab](overview) : <TableSkeleton rows={10} />;
 }
 
 function Body({
@@ -76,18 +105,19 @@ function Body({
   if (tab === 'slow') {
     return <PerfSlowList window={window} />;
   }
-  return overview ? <Measured tab={tab} overview={overview} /> : <TableSkeleton rows={10} />;
+  return <Measured tab={tab} overview={overview} />;
 }
 
 function OffNotice({ overview }: Readonly<{ overview: PerfOverview | null }>) {
   const t = useT();
-  if (!overview || overview.enabled) {
+  const notice = offNotice(overview);
+  if (!notice) {
     return null;
   }
   return (
     <Box mb={16}>
       <Callout.Root tone="accent">
-        <Callout.Title>{t(overview.switchable ? 'perf.off' : 'perf.offByEnv')}</Callout.Title>
+        <Callout.Title>{t(notice)}</Callout.Title>
       </Callout.Root>
     </Box>
   );
@@ -117,8 +147,7 @@ function Tabs({ tab, onTab }: Readonly<{ tab: PerfTab; onTab: (next: PerfTab) =>
 export function PerformancePage({ search, onSearch }: Readonly<PerformancePageProps>) {
   const t = useT();
   const { client } = useAuth();
-  const tab = search.tab ?? 'requests';
-  const window = search.window ?? '1h';
+  const { tab, window } = shownIn(search);
   const { data: overview, reload } = usePoll(
     ['admin', 'performance', window],
     () => client.performance.overview(window),

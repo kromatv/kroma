@@ -93,18 +93,8 @@ impl Store {
         }
         let mut connection = self.connection.lock().unwrap();
         let transaction = connection.transaction()?;
-        for hour in &unsaved.hours {
-            write_hour(&transaction, hour, &self.tag)?;
-        }
-        for request in &unsaved.slow {
-            write_slow(&transaction, request)?;
-        }
-        write_names(&transaction, &unsaved.names)?;
-        if !unsaved.hours.is_empty() {
-            tidy(&transaction, now_ms())?;
-        }
-        transaction.commit()?;
-        Ok(())
+        write_unsaved(&transaction, unsaved, &self.tag)?;
+        Ok(transaction.commit()?)
     }
 
     pub(crate) fn read_since(&self, since_ms: i64) -> anyhow::Result<Bucket> {
@@ -163,6 +153,20 @@ fn ensure_schema(connection: &Connection) -> anyhow::Result<()> {
     }
     connection.execute_batch(SCHEMA)?;
     connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
+    Ok(())
+}
+
+fn write_unsaved(connection: &Connection, unsaved: &Unsaved, tag: &Tag) -> anyhow::Result<()> {
+    for hour in &unsaved.hours {
+        write_hour(connection, hour, tag)?;
+    }
+    for request in &unsaved.slow {
+        write_slow(connection, request)?;
+    }
+    write_names(connection, &unsaved.names)?;
+    if !unsaved.hours.is_empty() {
+        tidy(connection, now_ms())?;
+    }
     Ok(())
 }
 

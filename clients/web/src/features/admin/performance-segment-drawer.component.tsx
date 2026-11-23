@@ -9,7 +9,7 @@ import {
   type PerfStat,
   PerfStats,
 } from '#web/features/admin/performance-drawer-parts.component';
-import { formatMs, hasPlan } from '#web/features/admin/performance-format';
+import { formatMs, hasPlan, segmentEyebrow } from '#web/features/admin/performance-format';
 import { useAuth } from '#web/shared/lib/auth';
 
 function figures(row: PerfSegmentRow): PerfStat[] {
@@ -102,7 +102,7 @@ export function PerfSegmentDrawer({
   return (
     <Drawer.Root open onClose={onClose} title={row.label}>
       <Drawer.Header>
-        <PerfDrawerHead eyebrow={`${row.kind} · ${row.origin ?? '-'}`} title={row.label} />
+        <PerfDrawerHead eyebrow={segmentEyebrow(row)} title={row.label} />
         <Row mt={10}>
           <CopyButton value={row.label} size="sm" variant="glass" label={t('perf.copy')} />
         </Row>

@@ -1,5 +1,6 @@
 import type {
   PerfFlag,
+  PerfOverview,
   PerfScopeRow,
   PerfSegmentRow,
   PerfSlowRequest,
@@ -167,6 +168,26 @@ const FLAGS: Readonly<Record<string, { labelKey: MessageKey; tone: Tone }>> = {
 export function flagLook(flag: PerfFlag, t: Translate): { label: string; tone: Tone } {
   const known = FLAGS[flag];
   return known ? { label: t(known.labelKey), tone: known.tone } : { label: flag, tone: 'neutral' };
+}
+
+/** What the page says when measuring is off, or `null` while it is on. */
+export function offNotice(
+  overview: Pick<PerfOverview, 'enabled' | 'switchable'> | null,
+): MessageKey | null {
+  if (!overview || overview.enabled) {
+    return null;
+  }
+  return overview.switchable ? 'perf.off' : 'perf.offByEnv';
+}
+
+/** What a segment's drawer names above its label: its kind and where it ran. */
+export function segmentEyebrow(row: Pick<PerfSegmentRow, 'kind' | 'origin'>): string {
+  return `${row.kind} · ${row.origin ?? '-'}`;
+}
+
+/** The name a slow request's drawer shows, empty while it loads. */
+export function slowName(request: Pick<PerfSlowRequest, 'name'> | null): string {
+  return request?.name ?? '';
 }
 
 /** Whether the server can show a segment's query plan: a statement of the core

@@ -54,3 +54,21 @@ fn a_request_looping_over_one_query_keeps_its_waterfall() {
     assert_eq!(kept.events.len(), crate::slow::REPEATS_FLAGGED as usize);
     assert_eq!(kept.repeats[0].count, crate::slow::REPEATS_FLAGGED);
 }
+
+#[test]
+fn a_store_attached_after_a_restart_knows_the_names_saved_before() {
+    let dir = kroma_testing::temp_dir("perf-attach");
+    let path = dir.path().join("perf.db");
+    let before = Profiler::new();
+    before.attach(Store::open(&path, "1").unwrap());
+    let key = before.catalog.key_for("sql", "SELECT 1", Some("core"));
+    before.tick();
+
+    let after = Profiler::new();
+    after.attach(Store::open(&path, "1").unwrap());
+
+    assert_eq!(
+        after.describe(key).map(|name| name.label),
+        Some("SELECT 1".into())
+    );
+}

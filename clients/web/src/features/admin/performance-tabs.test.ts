@@ -1,6 +1,14 @@
 import type { PerfOverview, PerfScopeRow, PerfSegmentRow } from '@kromatv/client/performance';
 import { describe, expect, it } from 'vitest';
-import { closed, idFromUrl, openDrawer, opening, scopeId, urlId } from './performance-tabs';
+import {
+  closed,
+  idFromUrl,
+  openDrawer,
+  opening,
+  scopeId,
+  shownIn,
+  urlId,
+} from './performance-tabs';
 
 const spread = { count: 1, totalMs: 1, meanMs: 1, p50Ms: 1, p95Ms: 1, p99Ms: 1, maxMs: 1 };
 
@@ -108,5 +116,12 @@ describe('openDrawer', () => {
 
   it('opens a slow request before the overview has loaded', () => {
     expect(openDrawer({ slow: urlId('7') }, null)).toEqual({ slow: '7' });
+  });
+});
+
+describe('shownIn', () => {
+  it('shows requests over the last hour until the URL says otherwise', () => {
+    expect(shownIn({})).toEqual({ tab: 'requests', window: '1h' });
+    expect(shownIn({ tab: 'slow', window: '7d' })).toEqual({ tab: 'slow', window: '7d' });
   });
 });

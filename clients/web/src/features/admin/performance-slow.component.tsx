@@ -53,27 +53,28 @@ function SlowRow({ row }: Readonly<{ row: PerfSlowRequest }>) {
   );
 }
 
+function SlowTable({ requests }: Readonly<{ requests: readonly PerfSlowRequest[] }>) {
+  const [sort, setSort] = useState<readonly SortColumn[]>([{ column: 'at', direction: 'desc' }]);
+  if (requests.length === 0) {
+    return <PerfEmpty icon="stopwatch" labelKey="perf.emptySlow" />;
+  }
+  return (
+    <PerfTable columns={COLUMNS} labelKey="perf.tabSlow" sort={sort} onSortChange={setSort}>
+      {sortRows(requests, sort, SLOW_SORT).map((row) => (
+        <SlowRow key={row.id} row={row} />
+      ))}
+    </PerfTable>
+  );
+}
+
 /** The requests of the period that were slow or ran one segment in a loop,
  *  newest first; a row opens its waterfall. */
 export function PerfSlowList({ window }: Readonly<{ window: PerfWindow }>) {
   const { client } = useAuth();
-  const [sort, setSort] = useState<readonly SortColumn[]>([{ column: 'at', direction: 'desc' }]);
   const { data } = usePoll(
     ['admin', 'performance', 'slow', window],
     () => client.performance.slow(window),
     10000,
   );
-  if (data === null) {
-    return <TableSkeleton rows={8} />;
-  }
-  if (data.requests.length === 0) {
-    return <PerfEmpty icon="stopwatch" labelKey="perf.emptySlow" />;
-  }
-  return (
-    <PerfTable columns={COLUMNS} labelKey="perf.tabSlow" sort={sort} onSortChange={setSort}>
-      {sortRows(data.requests, sort, SLOW_SORT).map((row) => (
-        <SlowRow key={row.id} row={row} />
-      ))}
-    </PerfTable>
-  );
+  return data ? <SlowTable requests={data.requests} /> : <TableSkeleton rows={8} />;
 }

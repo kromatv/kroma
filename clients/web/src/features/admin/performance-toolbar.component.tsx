@@ -76,22 +76,31 @@ interface ToolbarProps {
   onSwitched: () => void;
 }
 
-/** The period, the export, and the switch that turns measuring on or off. */
-export function PerfToolbar({ overview, window, onWindow, onSwitched }: Readonly<ToolbarProps>) {
+function WindowPicker({
+  window,
+  onWindow,
+}: Readonly<{ window: PerfWindow; onWindow: (next: PerfWindow) => void }>) {
   const t = useT();
   return (
+    <SegmentGroup.Root
+      label={t('perf.window')}
+      value={window}
+      onValueChange={(next) => isWindow(next) && onWindow(next)}
+    >
+      {PERF_WINDOWS.map((one) => (
+        <SegmentGroup.Item key={one} value={one}>
+          <SegmentGroup.Label>{t(WINDOW_LABEL[one])}</SegmentGroup.Label>
+        </SegmentGroup.Item>
+      ))}
+    </SegmentGroup.Root>
+  );
+}
+
+/** The period, the export, and the switch that turns measuring on or off. */
+export function PerfToolbar({ overview, window, onWindow, onSwitched }: Readonly<ToolbarProps>) {
+  return (
     <Row wrap gap={12} mt={8} mb={16}>
-      <SegmentGroup.Root
-        label={t('perf.window')}
-        value={window}
-        onValueChange={(next) => isWindow(next) && onWindow(next)}
-      >
-        {PERF_WINDOWS.map((one) => (
-          <SegmentGroup.Item key={one} value={one}>
-            <SegmentGroup.Label>{t(WINDOW_LABEL[one])}</SegmentGroup.Label>
-          </SegmentGroup.Item>
-        ))}
-      </SegmentGroup.Root>
+      <WindowPicker window={window} onWindow={onWindow} />
       <ExportButton window={window} />
       <Spacer />
       {overview ? <MeasuringSwitch overview={overview} onSwitched={onSwitched} /> : null}

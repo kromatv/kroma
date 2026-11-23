@@ -37,6 +37,12 @@ export interface PerfSearch {
   slow?: string;
 }
 
+/** The tab and the period the page shows: the URL's, or requests over the
+ *  last hour. */
+export function shownIn(search: PerfSearch): { tab: PerfTab; window: PerfWindow } {
+  return { tab: search.tab ?? 'requests', window: search.window ?? '1h' };
+}
+
 /** The search that opens `open`'s drawer over the one already open, which
  *  stays in the URL beneath it. */
 export function opening(prev: PerfSearch, open: PerfSearch): PerfSearch {
