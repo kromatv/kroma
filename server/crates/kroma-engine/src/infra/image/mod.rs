@@ -8,6 +8,7 @@ mod localize;
 mod rendition;
 mod scratch;
 mod upload;
+mod webp_header;
 
 pub use cache::{cache_remote, local_art_missing};
 pub(crate) use encode::encode_webp_quality;

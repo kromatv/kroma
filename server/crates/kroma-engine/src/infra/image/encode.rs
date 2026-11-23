@@ -35,6 +35,10 @@ pub(super) fn encode_webp_capped(src: &Path, out: &Path, max_width: u32) -> bool
 }
 
 pub(super) fn probe_width(src: &Path) -> Option<u32> {
+    super::webp_header::width_of(src).or_else(|| ffprobe_width(src))
+}
+
+fn ffprobe_width(src: &Path) -> Option<u32> {
     let out = Command::new("ffprobe")
         .args([
             "-v",
