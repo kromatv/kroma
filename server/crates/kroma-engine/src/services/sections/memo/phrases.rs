@@ -38,7 +38,12 @@ impl Phrases {
         }
         let vector: Arc<[f32]> = embeddings::embed(embedder, phrase).into();
         if !vector.is_empty() {
-            self.keep(phrase, module, now_ms, Arc::clone(&vector));
+            let entry = Held {
+                module,
+                built_at_ms: now_ms,
+                vector: Arc::clone(&vector),
+            };
+            self.keep(phrase, entry);
         }
         vector
     }
@@ -50,17 +55,12 @@ impl Phrases {
             .map(|h| Arc::clone(&h.vector))
     }
 
-    fn keep(&self, phrase: &str, module: String, now_ms: i64, vector: Arc<[f32]>) {
+    fn keep(&self, phrase: &str, entry: Held) {
         let mut held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
-        held.retain(|_, h| now_ms - h.built_at_ms < FRESH_FOR_MS);
+        held.retain(|_, h| entry.built_at_ms - h.built_at_ms < FRESH_FOR_MS);
         if held.len() >= MOST_HELD {
             held.clear();
         }
-        let entry = Held {
-            module,
-            built_at_ms: now_ms,
-            vector,
-        };
         held.insert(phrase.to_string(), entry);
     }
 }
