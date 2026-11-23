@@ -15,11 +15,7 @@
 //    as everything else, and so do the Expo pods
 //    (EXPO_USE_PRECOMPILED_MODULES off). The third-party C++ deps (folly,
 //    glog...) STAY prebuilt - they carry no REACT_NATIVE_DEBUG flavour and are
-//    most of a from-source build's cost. (The Podfile's own :ccache_enabled
-//    wiring is NOT used: it drives every user-project target through
-//    ccache-clang.sh at $(REACT_NATIVE_PATH), which the with-top-shelf
-//    extension target does not define, and its link dies on the unresolved
-//    path.)
+//    most of a from-source build's cost.
 //
 // 2. The pods' SwiftUI code makes swiftc emit an AUTOLINK entry for
 //    SwiftUICore (SwiftUI's split-out core), and ld obeys it when those static
