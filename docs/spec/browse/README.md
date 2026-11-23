@@ -225,7 +225,8 @@ clients do this. On television and on mobile each filter is a chip in the row of
 genres, and opens the list of languages.
 
 **BROWSE-65** (AGREED) - A subtitle file beside a video, and a subtitle downloaded for it,
-count for the subtitle filter. Today only the subtitles inside the file count.
+count for the subtitle filter. Today the subtitles inside the file and the downloaded ones
+count, and a file beside the video does not.
 
 **BROWSE-66** (SHIPPED) - With both filters set, a series passes only when one of its episodes
 has both, not when one episode has the audio and another the subtitles.

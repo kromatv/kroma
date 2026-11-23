@@ -4017,7 +4017,7 @@
     "status": "SHIPPED",
     "text": "A person's page lists the titles of the library that credit them,",
     "file": "docs/spec/browse/README.md",
-    "line": 258
+    "line": 259
   },
   {
     "id": "BROWSE-50",
@@ -4027,7 +4027,7 @@
     "status": "AGREED",
     "text": "Under them it lists the rest of the person's filmography, the titles",
     "file": "docs/spec/browse/README.md",
-    "line": 261
+    "line": 262
   },
   {
     "id": "BROWSE-51",
@@ -4037,7 +4037,7 @@
     "status": "SHIPPED",
     "text": "A guest spot as oneself on a talk show is not part of a filmography.",
     "file": "docs/spec/browse/README.md",
-    "line": 268
+    "line": 269
   },
   {
     "id": "BROWSE-52",
@@ -4047,7 +4047,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Explicit feedback: \"not for me\" on a title, or a",
     "file": "docs/spec/browse/README.md",
-    "line": 274
+    "line": 275
   },
   {
     "id": "BROWSE-53",
@@ -4057,7 +4057,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Counting what was shown and never chosen, to retire a",
     "file": "docs/spec/browse/README.md",
-    "line": 279
+    "line": 280
   },
   {
     "id": "BROWSE-54",
@@ -4067,7 +4067,7 @@
     "status": "DESIGN, NOT IMPLEMENTED",
     "text": "Themes read from the provider's keywords. The",
     "file": "docs/spec/browse/README.md",
-    "line": 283
+    "line": 284
   },
   {
     "id": "BROWSE-55",
@@ -4097,7 +4097,7 @@
     "status": "SHIPPED",
     "text": "Nothing the home or the search recognises in text depends on one",
     "file": "docs/spec/browse/README.md",
-    "line": 237
+    "line": 238
   },
   {
     "id": "BROWSE-58",
@@ -4107,7 +4107,7 @@
     "status": "SHIPPED",
     "text": "Adding a language is adding its copy. Its words join the vocabulary",
     "file": "docs/spec/browse/README.md",
-    "line": 243
+    "line": 244
   },
   {
     "id": "BROWSE-59",
@@ -4117,7 +4117,7 @@
     "status": "SHIPPED",
     "text": "A synopsis shown on the home is cut by sentence, never by the box:",
     "file": "docs/spec/browse/README.md",
-    "line": 246
+    "line": 247
   },
   {
     "id": "BROWSE-60",
@@ -4127,7 +4127,7 @@
     "status": "SHIPPED",
     "text": "A rank is drawn as a shape in the display face, the same on a",
     "file": "docs/spec/browse/README.md",
-    "line": 250
+    "line": 251
   },
   {
     "id": "BROWSE-61",
@@ -4157,7 +4157,7 @@
     "status": "SHIPPED",
     "text": "Under a maturity ceiling, a person's page lists only the titles the",
     "file": "docs/spec/browse/README.md",
-    "line": 265
+    "line": 266
   },
   {
     "id": "BROWSE-64",
@@ -4187,7 +4187,7 @@
     "status": "SHIPPED",
     "text": "With both filters set, a series passes only when one of its episodes",
     "file": "docs/spec/browse/README.md",
-    "line": 230
+    "line": 231
   },
   {
     "id": "DISC-1",

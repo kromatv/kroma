@@ -112,14 +112,38 @@ pub async fn list_movies(
     Query(q): Query<ListQuery>,
 ) -> Result<Response, Response> {
     let library = q.library;
-    let mut items = query(&state.db, move |pool| {
+    let cards = matches!(q.view, Some(ListView::Card));
+    let (mut items, downloaded) = query(&state.db, move |pool| {
         let mut items = db::list_movies(&pool, library.as_deref())?;
         db::localize::overlay_items(&pool, &mut items, locale)?;
-        Ok(items)
+        let downloaded = cards
+            .then(|| db::downloaded_sub_languages(&pool))
+            .transpose()?;
+        Ok((items, downloaded))
     })
     .await?;
     visibility::keep_items(&state, &viewer, &mut items).await?;
-    Ok(items_in_view(items, q.view))
+    let Some(downloaded) = downloaded else {
+        return Ok(items_in_view(items, q.view));
+    };
+    Ok(Json(movie_cards(items, downloaded)).into_response())
+}
+
+fn movie_cards(
+    items: Vec<MediaItem>,
+    mut downloaded: HashMap<String, Vec<String>>,
+) -> Vec<MediaCard> {
+    items
+        .into_iter()
+        .map(|item| {
+            let fetched = downloaded.remove(&item.id).unwrap_or_default();
+            let mut card = MediaCard::from(item);
+            fetched
+                .iter()
+                .for_each(|code| card.languages.read(Some(code)));
+            card
+        })
+        .collect()
 }
 
 /// `items` as JSON, each cut down to a [`MediaCard`] when the caller asked for
