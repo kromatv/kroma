@@ -28,6 +28,11 @@ const WELL: Record<ControlSize, IconWellSize> = { sm: 'sm', md: 'sm', tv: 'tv' }
 const memberShape = (radius: Radius, scope: StyleScope) =>
   sharedStyle(`list-row:member:${radius}`, { radius }, scope);
 
+function useMemberShape(group: ReturnType<typeof useListGroup>, scope: StyleScope) {
+  const corner = useRingScope()?.corner;
+  return group === null || corner === undefined ? null : memberShape(corner, scope);
+}
+
 interface Sorted {
   leading: ReactNode[];
   content: ReactNode[];
@@ -127,8 +132,7 @@ function Root({
   const delegate = delegateOf(asChild, children);
   const group = useListGroup();
   const standalone = group === null;
-  const ringScope = useRingScope();
-  const member = standalone ? undefined : ringScope?.corner;
+  const member = useMemberShape(group, scope);
   const ground = standalone ? asked : 'surface';
   const shell = size ?? group?.size ?? entryDefaults.size;
   const metrics = CONTROL[shell];
@@ -170,7 +174,7 @@ function Root({
         focusScale={standalone ? 1.02 : 1}
         sv={listRowVariants}
         vars={{ size: shell, pressable, standalone, ground, selected: lit }}
-        style={[frost.style, member ? memberShape(member, scope) : null, style]}
+        style={[frost.style, member, style]}
       >
         {(state) =>
           delegate.wrap(
