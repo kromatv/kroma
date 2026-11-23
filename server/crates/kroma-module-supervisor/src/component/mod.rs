@@ -27,12 +27,12 @@ use anyhow::Context;
 use kroma_http::egress::Gateway;
 use kroma_module_manifest::{ComponentNeeds, FsRoot, MediaTool, ModuleManifest};
 use kroma_wasm_host::{Limits, Readied, WasmHost};
-use tokio::net::{TcpListener, UnixListener};
+use tokio::net::UnixListener;
 use tokio::sync::Semaphore;
 
 use super::asked::Watch;
 use super::core_ceiling::within_third_party_ceiling;
-use super::gateway::{ModulePolicy, Running};
+use super::gateway::{serve_gateway, ModulePolicy, Running};
 use super::lifecycle::Proc;
 use super::private_folder::private_folder;
 use super::{Endpoint, Supervisor, HELPERS_DIR};
@@ -109,15 +109,11 @@ impl Supervisor {
             token: token.clone(),
             network: wiring.network.0.clone(),
             no_network,
+            own_ports: self.own_ports(),
         });
         let _entered = wiring.runtime.enter();
-        let tcp = std::net::TcpListener::bind(("127.0.0.1", 0))?;
-        tcp.set_nonblocking(true)?;
-        let address = tcp.local_addr()?.to_string();
-        let mut tasks = vec![wiring
-            .runtime
-            .spawn(kroma_egress::serve_tcp(TcpListener::from_std(tcp)?, policy))
-            .abort_handle()];
+        let (address, gateway_task) = serve_gateway(&wiring.runtime, policy)?;
+        let mut tasks = vec![gateway_task];
 
         let endpoint = self.assign_endpoint(id)?;
         let listener = UnixListener::from_std({

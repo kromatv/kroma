@@ -78,13 +78,18 @@ can allow it.
 
 1. **Guards.** Fixed. A rule cannot relax them.
    - A link-local address (`169.254.0.0/16`, `fe80::/10`, IPv4-mapped forms
-     included) is never reachable. Cloud metadata services answer there.
+     included) is never reachable. Cloud metadata services answer there, and
+     the two that do not, `100.100.100.200` and `fd00:ec2::254`, are never
+     reachable either.
    - A module never reaches this server's own listeners on this machine: its
      HTTP and HTTPS ports and every port an enabled module declares in
      `net.listen`, a `count` run included (the VPN's bridges among them),
-     whether written as an address or as `localhost`. It reaches the core and the other modules through the host
-     API, which checks who is asking. A download client or FlareSolverr on
-     another local port stays reachable.
+     whether written as an address, as `localhost`, or as a name that resolves
+     to loopback or to one of this machine's own addresses. It reaches the core
+     and the other modules through the host API, which checks who is asking. A
+     download client or FlareSolverr on another local port stays reachable.
+   - Only `localhost` reaches loopback by name. Any other name that resolves to
+     `127.0.0.0/8`, `::1` or an unspecified address is refused on every port.
    - A host on the local network (a private address, a single-label name,
      `.local`, `.lan`, `.home.arpa`, `.internal`, `localhost`) can only go
      direct, because a tunnel cannot reach it. A rule that sends one to a VPN
@@ -108,7 +113,9 @@ Then, depending on the decision:
 - **DNS follows the route.** A connection sent to a network passes the host name
   to that network, which resolves it on its own side. A direct connection is
   resolved by the gateway, and every address the name resolves to is checked
-  against the guards before one is dialled, so a name cannot rebind to the LAN.
+  against the guards before one is dialled. A name ruled public cannot rebind
+  to the LAN, and no name rebinds to loopback, to this server's own ports or to
+  a metadata service.
 - **A redirect is a new connection**, decided again.
 
 ### Example rules

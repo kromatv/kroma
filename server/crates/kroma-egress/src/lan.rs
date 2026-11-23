@@ -86,8 +86,10 @@ fn stays_on_the_link(ip: IpAddr) -> bool {
     }
 }
 
-fn is_this_host(ip: IpAddr) -> bool {
-    match ip {
+/// Whether `ip` is this machine whichever interface it names: loopback, an
+/// unspecified address or `0.0.0.0/8`.
+pub fn is_this_host(ip: IpAddr) -> bool {
+    match ip.to_canonical() {
         IpAddr::V4(v4) => v4.is_loopback() || v4.octets()[0] == 0,
         IpAddr::V6(v6) => v6.is_loopback() || v6.is_unspecified(),
     }
@@ -126,6 +128,15 @@ pub fn place_of(ip: IpAddr, networks: &[LocalNetwork]) -> Place {
 pub fn reaches_this_machine(ip: IpAddr, networks: &[LocalNetwork]) -> bool {
     let ip = ip.to_canonical();
     is_this_host(ip) || spreads(ip, networks) || networks.iter().any(|network| network.address == ip)
+}
+
+/// Whether `ip` is link-local, IPv4-mapped forms included: `169.254.0.0/16` or
+/// `fe80::/10`.
+pub fn is_link_local(ip: IpAddr) -> bool {
+    match ip.to_canonical() {
+        IpAddr::V4(v4) => v4.is_link_local(),
+        IpAddr::V6(v6) => (v6.segments()[0] & 0xffc0) == 0xfe80,
+    }
 }
 
 /// Whether `ip` is a cloud provider's metadata service that is not on a

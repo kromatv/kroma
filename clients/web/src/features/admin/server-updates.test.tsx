@@ -37,17 +37,31 @@ vi.mock('#web/features/admin/shell', async () => {
   };
 });
 vi.mock('#web/features/admin/server-restart-dialog.component', () => ({
-  ServerRestartDialog: ({ onClose }: { onClose: () => void }) => (
-    <button type="button" onClick={onClose}>
-      Restart dialog
-    </button>
+  ServerRestartDialog: ({
+    onClose,
+    onRestarted,
+  }: {
+    onClose: () => void;
+    onRestarted: () => void;
+  }) => (
+    <>
+      <button type="button" onClick={onClose}>
+        Restart dialog
+      </button>
+      <button type="button" onClick={onRestarted}>
+        Restarted
+      </button>
+    </>
   ),
 }));
 vi.mock('#web/shared/ui/route-link.component', () => ({
   RouteLink: () => <a href="/admin/backup">Backup</a>,
 }));
 const inputHost = createInputTestHost();
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 beforeEach(() => {
   vi.clearAllMocks();
   inputHost.clearPressGuard();
@@ -206,4 +220,19 @@ it('opens the restart the command menu asked for, and forgets the request once c
   expect(closed).not.toHaveBeenCalled();
   fireEvent.click(screen.getByText('Restart dialog'));
   expect(closed).toHaveBeenCalledTimes(1);
+});
+
+it('reloads this server once it restarted, even on a path that starts with two slashes', () => {
+  const assign = vi.fn();
+  vi.stubGlobal('location', {
+    origin: 'https://kroma.example',
+    pathname: '//elsewhere.example/admin/server',
+    assign,
+  });
+  patchData({ restartable: true });
+
+  show({ restartAsked: true });
+  fireEvent.click(screen.getByText('Restarted'));
+
+  expect(assign).toHaveBeenCalledWith('https://kroma.example//elsewhere.example/admin/server');
 });

@@ -11,8 +11,9 @@ use tokio::net::{TcpListener, TcpStream};
 
 use kroma_http::address::is_public;
 
+use crate::lan::{self, LocalNetwork};
 use crate::protocol::{accept_credentials, answer_credentials, read_connect, reply, Reply};
-use crate::{upstream, Flow, Host, Policy, Request, Route, Ruling, Verdict};
+use crate::{upstream, Flow, Host, Policy, Reach, Request, Route, Ruling, Verdict};
 
 const HANDSHAKE_BUDGET: Duration = Duration::from_secs(10);
 const CONNECT_BUDGET: Duration = Duration::from_secs(15);
@@ -60,9 +61,9 @@ where
     };
     let dialled = match verdict {
         Verdict::Block(reason) => Err((Reply::NotAllowed, reason)),
-        Verdict::Direct { private_allowed } => {
+        Verdict::Direct(reach) => {
             flow.route = Route::Direct;
-            dial_direct(&request.host, request.port, private_allowed).await
+            dial_direct(&request.host, request.port, &reach).await
         }
         Verdict::Upstream(proxy) => {
             flow.route = Route::Upstream;
@@ -142,7 +143,7 @@ where
 async fn dial_direct(
     host: &Host,
     port: u16,
-    private_allowed: bool,
+    reach: &Reach,
 ) -> std::result::Result<TcpStream, (Reply, String)> {
     let addrs: Vec<SocketAddr> = match host {
         Host::Ip(ip) => vec![SocketAddr::new(*ip, port)],
@@ -151,21 +152,13 @@ async fn dial_direct(
             .map_err(|e| (Reply::HostUnreachable, format!("resolve {name}: {e}")))?
             .collect(),
     };
-    if addrs.is_empty() {
-        return Err((
-            Reply::HostUnreachable,
-            format!("{host} resolved to no address"),
-        ));
+    Landing {
+        host,
+        port,
+        reach,
+        networks: lan::interface_networks(),
     }
-    if let Some(refused) = addrs.iter().find(|a| !reachable(a.ip(), private_allowed)) {
-        return Err((
-            Reply::NotAllowed,
-            format!(
-                "{host} resolves to {}, which this caller may not reach",
-                refused.ip()
-            ),
-        ));
-    }
+    .check(&addrs)?;
     let mut last = None;
     for addr in addrs {
         match tokio::time::timeout(CONNECT_BUDGET, TcpStream::connect(addr)).await {
@@ -183,13 +176,53 @@ async fn dial_direct(
     ))
 }
 
-// Link-local is never reachable: cloud metadata services answer there.
-fn reachable(ip: IpAddr, private_allowed: bool) -> bool {
-    let link_local = match ip.to_canonical() {
-        IpAddr::V4(v4) => v4.is_link_local(),
-        IpAddr::V6(v6) => (v6.segments()[0] & 0xffc0) == 0xfe80,
-    };
-    !link_local && (private_allowed || is_public(ip))
+struct Landing<'a> {
+    host: &'a Host,
+    port: u16,
+    reach: &'a Reach,
+    networks: Vec<LocalNetwork>,
+}
+
+impl Landing<'_> {
+    fn check(&self, addrs: &[SocketAddr]) -> std::result::Result<(), (Reply, String)> {
+        let host = self.host;
+        if addrs.is_empty() {
+            return Err((
+                Reply::HostUnreachable,
+                format!("{host} resolved to no address"),
+            ));
+        }
+        match addrs.iter().find(|a| !self.admits(a.ip())) {
+            Some(refused) => Err((
+                Reply::NotAllowed,
+                format!(
+                    "{host} resolves to {}, which this caller may not reach",
+                    refused.ip()
+                ),
+            )),
+            None => Ok(()),
+        }
+    }
+
+    fn admits(&self, ip: IpAddr) -> bool {
+        let ip = ip.to_canonical();
+        let own_listener = self.reach.own_ports.contains(&self.port)
+            && lan::reaches_this_machine(ip, &self.networks);
+        !lan::is_link_local(ip)
+            && !lan::is_cloud_metadata(ip)
+            && !own_listener
+            && !self.rebinds(ip)
+            && (self.reach.private_allowed || is_public(ip))
+    }
+
+    fn rebinds(&self, ip: IpAddr) -> bool {
+        matches!(self.host, Host::Name(name) if !is_localhost(name)) && lan::is_this_host(ip)
+    }
+}
+
+fn is_localhost(name: &str) -> bool {
+    let name = name.trim_end_matches('.').to_ascii_lowercase();
+    name == "localhost" || name.ends_with(".localhost")
 }
 
 #[cfg(test)]

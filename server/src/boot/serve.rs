@@ -21,6 +21,7 @@ fn rule_module_traffic(state: &state::SharedState, supervisor: &kroma_module_sup
     supervisor.rule_sockets_with(std::sync::Arc::new(crate::boot::sockets::NetworkSockets(
         state.network.clone(),
     )));
+    supervisor.guard_own_ports(crate::boot::sockets::own_ports_of(state.network.clone()));
 }
 
 /// Serve until a shutdown signal, then stop the jobs and every module.

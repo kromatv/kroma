@@ -195,7 +195,11 @@ function RestartAction({
             setPressed(false);
             onClosed?.();
           }}
-          onRestarted={() => globalThis.location.assign(globalThis.location.pathname)}
+          onRestarted={() =>
+            globalThis.location.assign(
+              `${globalThis.location.origin}${globalThis.location.pathname}`,
+            )
+          }
         />
       ) : null}
     </>

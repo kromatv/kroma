@@ -48,7 +48,7 @@ pub use frontend::Frontend;
 pub use host_api::host_router;
 pub use origin::{Accept, AsksForMore, BinStamp, Origin, Source};
 pub use proxy::proxy_to;
-pub use sockets::{SocketAsk, SocketRefused, SocketRules};
+pub use sockets::{OwnPorts, SocketAsk, SocketRefused, SocketRules};
 pub use registry::{sibling_url, verify_sha256, FetchProgress, DESCRIPTOR_PATH, MAX_BUNDLE_BYTES};
 
 use lifecycle::Proc;
@@ -105,6 +105,7 @@ pub struct Supervisor {
     worker_lifetime: RwLock<std::time::Duration>,
     watching: std::sync::OnceLock<AskedSink>,
     sockets: std::sync::OnceLock<Arc<dyn SocketRules>>,
+    own_ports: std::sync::OnceLock<OwnPorts>,
 }
 
 impl Supervisor {
@@ -130,6 +131,7 @@ impl Supervisor {
             worker_lifetime: RwLock::new(component::WORKER_LIFETIME),
             watching: std::sync::OnceLock::new(),
             sockets: std::sync::OnceLock::new(),
+            own_ports: std::sync::OnceLock::new(),
         });
         supervisor.keep_installs_apart();
         supervisor

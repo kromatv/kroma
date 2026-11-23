@@ -12,10 +12,7 @@ use kroma_module_manifest::{host_matches, Connect, Permissions, Proto};
 pub use kroma_egress::lan::{LocalNetwork, LocalNetworks};
 
 use super::permissions::hosts_named;
-use super::{Network, GUARD_LOOPBACK, PERMISSION_NET_CONNECT};
-
-/// The guard that refuses the cloud metadata addresses that are not link-local.
-pub const GUARD_METADATA: &str = "guard:metadata";
+use super::{Network, GUARD_LOOPBACK, GUARD_METADATA, PERMISSION_NET_CONNECT};
 
 /// One use of a raw socket a module's component makes: the transport, the
 /// remote address, and every name the module resolved to that address.

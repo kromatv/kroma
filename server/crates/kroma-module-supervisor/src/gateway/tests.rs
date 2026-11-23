@@ -61,26 +61,27 @@ fn a_vpn_url_with_no_credentials_becomes_a_plain_upstream() {
 
 #[test]
 fn a_vpn_answer_with_no_proxy_is_refused_rather_than_sent_direct() {
-    let ruling = ruling_of(answer(NetworkAction::Vpn), false);
+    let ruling = ruling_of(answer(NetworkAction::Vpn), false, Vec::new());
 
     assert!(matches!(ruling.verdict, Verdict::Block(_)));
 }
 
 #[test]
 fn a_caller_that_asks_for_public_addresses_only_gets_them() {
-    let ruling = ruling_of(answer(NetworkAction::Direct), true);
+    let ruling = ruling_of(answer(NetworkAction::Direct), true, Vec::new());
 
     assert_eq!(
         ruling.verdict,
-        Verdict::Direct {
-            private_allowed: false
-        }
+        Verdict::Direct(Reach {
+            private_allowed: false,
+            ..Reach::default()
+        })
     );
 }
 
 #[test]
 fn a_ruling_keeps_the_rule_that_chose_it() {
-    let ruling = ruling_of(answer(NetworkAction::Direct), false);
+    let ruling = ruling_of(answer(NetworkAction::Direct), false, Vec::new());
 
     assert_eq!(ruling.rule.as_deref(), Some("r"));
 }
@@ -102,6 +103,7 @@ fn a_contained_module_that_declares_nothing_has_no_network() {
         token: "token".into(),
         network: Arc::new(AllowsAll),
         no_network: true,
+        own_ports: None,
     };
 
     let ruling = policy.decide(&Request {
@@ -138,6 +140,7 @@ fn ruled_by(network: Arc<dyn NetworkPolicy>) -> ModulePolicy {
         token: "its-token".into(),
         network,
         no_network: false,
+        own_ports: None,
     }
 }
 
@@ -174,9 +177,10 @@ fn the_policy_is_asked_for_the_purpose_and_the_flags_the_username_carries() {
     assert!(ask.https);
     assert_eq!(
         ruling.verdict,
-        Verdict::Direct {
-            private_allowed: false
-        }
+        Verdict::Direct(Reach {
+            private_allowed: false,
+            ..Reach::default()
+        })
     );
 }
 
@@ -223,9 +227,64 @@ fn a_dotted_child_of_a_declared_purpose_passes_the_gateway_as_the_manifest_allow
 
     assert_eq!(
         child.verdict,
-        Verdict::Direct {
-            private_allowed: false
-        }
+        Verdict::Direct(Reach {
+            private_allowed: false,
+            ..Reach::default()
+        })
     );
     assert!(matches!(sibling.verdict, Verdict::Block(_)));
+}
+
+#[test]
+fn a_direct_ruling_carries_the_ports_this_server_guards_at_the_time_of_the_call() {
+    let guarded = Arc::new(std::sync::Mutex::new(vec![4040]));
+    let policy = ModulePolicy {
+        own_ports: Some({
+            let guarded = Arc::clone(&guarded);
+            Arc::new(move || guarded.lock().unwrap().clone())
+        }),
+        ..ruled_by(Arc::new(AllowsAll))
+    };
+    let dial = || {
+        policy.decide(&Request {
+            caller: "tv.example.peer".into(),
+            purpose: "peers".into(),
+            host: Host::Name("nas.local".into()),
+            port: 4040,
+        })
+    };
+
+    let before = dial();
+    guarded.lock().unwrap().push(4443);
+    let after = dial();
+
+    let ports = |ruling: Ruling| match ruling.verdict {
+        Verdict::Direct(reach) => reach.own_ports,
+        other => panic!("{other:?}"),
+    };
+    assert_eq!(
+        (ports(before), ports(after)),
+        (vec![4040], vec![4040, 4443])
+    );
+}
+
+#[expect(
+    clippy::disallowed_methods,
+    reason = "the test's own client of the gateway it serves on loopback"
+)]
+#[tokio::test]
+async fn a_served_gateway_listens_on_loopback_and_asks_for_the_module_s_token() {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    let policy = Arc::new(ruled_by(Arc::new(AllowsAll)));
+
+    let (address, served) = serve_gateway(&Handle::current(), policy).unwrap();
+    let address: std::net::SocketAddr = address.parse().unwrap();
+    let mut stream = tokio::net::TcpStream::connect(address).await.unwrap();
+    stream.write_all(&[0x05, 0x01, 0x02]).await.unwrap();
+    let mut chosen = [0u8; 2];
+    stream.read_exact(&mut chosen).await.unwrap();
+    served.abort();
+
+    assert!(address.ip().is_loopback());
+    assert_eq!(chosen, [0x05, 0x02]);
 }

@@ -10,7 +10,7 @@ use wasmtime_wasi::p2::bindings::sync::sockets::udp::{
 };
 use wasmtime_wasi::p2::bindings::sync::sockets::udp_create_socket;
 use wasmtime_wasi::p2::{subscribe, DynPollable, Pollable, SocketError, SocketResult};
-use wasmtime_wasi::runtime::with_ambient_tokio_runtime;
+use wasmtime_wasi::runtime::{in_tokio, with_ambient_tokio_runtime};
 
 use super::datagrams::{Incoming, Outgoing};
 use super::{as_ours, discard, is_ephemeral, owned, Held, SocketsView};
@@ -76,6 +76,7 @@ impl Datagrams {
         self.unbound.as_ref().ok_or(ErrorCode::InvalidState)?.bind(&local.into())?;
         let socket = self.unbound.take().ok_or(ErrorCode::InvalidState)?;
         let socket = with_ambient_tokio_runtime(|| tokio::net::UdpSocket::from_std(socket.into()))?;
+        in_tokio(socket.writable())?;
         self.bound = Some(Arc::new(socket));
         Ok(())
     }
