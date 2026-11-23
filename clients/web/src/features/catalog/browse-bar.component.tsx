@@ -13,6 +13,7 @@ import {
   Chip,
   classes,
   genreIcon,
+  If,
   Row,
   ringRoomBlock,
   ringRoomInline,
@@ -307,7 +308,7 @@ export function BrowseBar({
             ))}
           </Select.Root>
         ) : null}
-        {wide ? filters : null}
+        <If condition={wide}>{filters}</If>
         <Select.Root
           label={t('browse.sortBy')}
           value={sort}
@@ -324,11 +325,17 @@ export function BrowseBar({
           ))}
         </Select.Root>
       </Row>
-      {filters && !wide ? (
-        <Row gap={12} mt={10}>
-          {filters}
-        </Row>
-      ) : null}
+      <If condition={!wide}>
+        <FilterRow filters={filters} />
+      </If>
     </div>
   );
+}
+
+function FilterRow({ filters }: Readonly<{ filters: ReactNode }>) {
+  return filters ? (
+    <Row gap={12} mt={10}>
+      {filters}
+    </Row>
+  ) : null;
 }
