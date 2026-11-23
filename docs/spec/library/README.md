@@ -102,6 +102,14 @@ human episode title after the second ` - ` is optional and ignored for matching.
 **LIB-18** (SHIPPED) - A multi-episode file is named with a range (`S01E01-E02`) and matched
 to both episodes.
 
+**LIB-80** (SHIPPED) - In a show source, a name the `SxxEyy` and `NxNN` forms miss still
+names an episode when it carries a season past 100 (`S211E06`), an absolute `Episode 259` or
+`Ep. 259`, or a leading number (`215 - Title`). Without a season in the name, the episode takes
+its season folder's, else season 1.
+
+**LIB-81** (SHIPPED) - In a show source, a file whose name carries no episode number is left
+out of the catalogue and named in the server log, never filed as a film.
+
 **LIB-19** (AGREED) - A show folder MAY carry a `(Year)` for disambiguation
 (`Shows/Ironheart (2025)/…`) and SHOULD when two shows share a name.
 
