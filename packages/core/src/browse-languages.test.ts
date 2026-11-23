@@ -3,6 +3,7 @@ import {
   collectLanguages,
   hasLanguage,
   languageChoices,
+  languagesByStream,
   matchesLanguages,
 } from './browse-languages';
 import { createTranslator } from './i18n';
@@ -23,6 +24,22 @@ describe('collectLanguages', () => {
       { code: 'fr', count: 2 },
     ]);
     expect(collectLanguages(items, 'subtitles')).toEqual([{ code: 'de', count: 1 }]);
+  });
+});
+
+describe('languagesByStream', () => {
+  it('lists audio then subtitles, and leaves out a stream no title names a language on', () => {
+    const both = [{ audioLanguages: ['eng'], subtitleLanguages: ['fre'] }];
+    const heardOnly = [{ audioLanguages: ['eng'], subtitleLanguages: [] }];
+
+    const streams = languagesByStream(both);
+
+    expect(streams).toEqual([
+      { stream: 'audio', languages: [{ code: 'en', count: 1 }] },
+      { stream: 'subtitles', languages: [{ code: 'fr', count: 1 }] },
+    ]);
+    expect(languagesByStream(heardOnly).map((row) => row.stream)).toEqual(['audio']);
+    expect(languagesByStream([])).toEqual([]);
   });
 });
 

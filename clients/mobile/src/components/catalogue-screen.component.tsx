@@ -2,11 +2,12 @@
 // filter strip, an exact-fit poster grid, and the A-Z rail beside it.
 
 import type { KromaClient } from '@kromatv/client';
-import type { MediaCard, Show } from '@kromatv/client/media';
+import type { MediaCard, Show, ShowCard } from '@kromatv/client/media';
 import {
   collectGenres,
   genreLabel,
-  hasGenre,
+  type LanguageFilter,
+  languagesByStream,
   letterMarks,
   type SortMode,
   sizedImageUrl,
@@ -17,6 +18,7 @@ import { Box, Icon, styles, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
+import { narrowCatalogue } from '#mobile/lib/catalogue-filter';
 import { type ItemRange, lettersOnScreen } from '#mobile/lib/grid-scroll';
 import { useT } from '#mobile/lib/i18n';
 import { useGutters } from '#mobile/lib/layout';
@@ -24,16 +26,16 @@ import { useClient } from '#mobile/lib/session';
 import { AlphabetRail, RAIL_RESERVE } from './alphabet-rail.component';
 import { CatalogueHeader } from './catalogue-header.component';
 import { type CardModel, movieCard, showCard } from './cards';
+import { LanguageChip } from './language-chip.component';
 import { gridMetrics, PosterGrid, type PosterGridHandle } from './poster-grid.component';
 import { EmptyState, ErrorView, Loading } from './ui';
 
 // Under this the grid is a couple of flicks tall and the rail is noise.
 const RAIL_MIN_ITEMS = 24;
 
-function featuredBackdrop(
-  entries: readonly (MediaCard | Show)[],
-  client: KromaClient,
-): string | null {
+type Title = MediaCard | ShowCard;
+
+function featuredBackdrop(entries: readonly Title[], client: KromaClient): string | null {
   let best: { rating: number; url: string } | null = null;
   for (const entry of entries) {
     const url = client.media.artwork.backdropFor(entry);
@@ -48,7 +50,7 @@ function featuredBackdrop(
   return best === null ? null : sizedImageUrl(best.url, 1200);
 }
 
-export function CatalogueScreen<T extends MediaCard | Show>({
+export function CatalogueScreen<T extends Title>({
   title,
   entries,
   kind,
@@ -73,6 +75,7 @@ export function CatalogueScreen<T extends MediaCard | Show>({
   const gutters = useGutters();
   const [sort, setSort] = useState<SortMode>('added');
   const [genre, setGenre] = useState<string | null>(null);
+  const [languages, setLanguages] = useState<LanguageFilter>({});
   const [visible, setVisible] = useState<ItemRange | null>(null);
   const pendingJump = useRef<string | null>(null);
   const grid = useRef<PosterGridHandle>(null);
@@ -85,9 +88,10 @@ export function CatalogueScreen<T extends MediaCard | Show>({
     [entries],
   );
   const genres = useMemo(() => collectGenres(titled).slice(0, 14), [titled]);
+  const streams = useMemo(() => languagesByStream(titled), [titled]);
   const filtered = useMemo(
-    () => (genre ? titled.filter((e) => hasGenre(e, genre)) : titled),
-    [titled, genre],
+    () => narrowCatalogue(titled, genre, languages),
+    [titled, genre, languages],
   );
   const view = useMemo(() => sortTitles(filtered, sort), [filtered, sort]);
   const marks = useMemo(() => (sort === 'title' ? letterMarks(view) : []), [view, sort]);
@@ -156,6 +160,15 @@ export function CatalogueScreen<T extends MediaCard | Show>({
       backdrop={backdrop}
       sort={sort}
       onSort={setSort}
+      filters={streams.map(({ stream, languages: spoken }) => (
+        <LanguageChip
+          key={stream}
+          stream={stream}
+          languages={spoken}
+          value={languages[stream]}
+          onValueChange={(code) => setLanguages((was) => ({ ...was, [stream]: code }))}
+        />
+      ))}
       genres={genres}
       genre={genre}
       onGenre={setGenre}

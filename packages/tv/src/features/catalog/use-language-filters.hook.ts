@@ -1,14 +1,12 @@
 import {
-  collectLanguages,
   type LanguageFilter,
   type LanguageStream,
+  languagesByStream,
   matchesLanguages,
   type Spoken,
 } from '@kromatv/core';
 import { useMemo, useState } from 'react';
 import type { LanguageChipProps } from '#tv/features/catalog/language-chip.component';
-
-const STREAMS: readonly LanguageStream[] = ['audio', 'subtitles'];
 
 export interface LanguageFilters {
   filter: LanguageFilter;
@@ -28,7 +26,7 @@ export function useLanguageFilters(items: readonly Spoken[], section: string): L
   const current = picked.section === section ? picked : null;
   const audio = current?.audio;
   const subtitles = current?.subtitles;
-  const counts = useMemo(() => languageCounts(items), [items]);
+  const counts = useMemo(() => languagesByStream(items), [items]);
 
   return useMemo(() => {
     const filter: LanguageFilter = { audio, subtitles };
@@ -48,10 +46,4 @@ export function useLanguageFilters(items: readonly Spoken[], section: string): L
       })),
     };
   }, [audio, subtitles, counts, section]);
-}
-
-function languageCounts(items: readonly Spoken[]) {
-  return STREAMS.map((stream) => ({ stream, languages: collectLanguages(items, stream) })).filter(
-    (row) => row.languages.length > 0,
-  );
 }
