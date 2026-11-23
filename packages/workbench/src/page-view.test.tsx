@@ -29,7 +29,7 @@ describe('PageView', () => {
     ).toBeTruthy();
   });
 
-  it('renders the whole document, not a summary of it', () => {
+  it('renders the whole document, not a summary of it', async () => {
     show();
     // The body's own heading, a sentence of prose, a fenced sample and a table
     // cell: everything a guide is made of, through the kit's element map. The
@@ -37,7 +37,7 @@ describe('PageView', () => {
     // that way.
     expect(screen.getByText('Making a theme')).toBeTruthy();
     expect(screen.getByText(/A theme is a plain object of tokens/)).toBeTruthy();
-    expect(screen.getAllByText('setTheme').length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('setTheme')).length).toBeGreaterThan(0);
     expect(screen.getByText('the one thing to notice')).toBeTruthy();
   });
 
