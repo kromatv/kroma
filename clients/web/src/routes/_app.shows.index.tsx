@@ -39,7 +39,7 @@ function ShowsPage() {
   const webRuntime = useWebRuntime();
 
   const t = useT();
-  const { sort = 'added', genre } = Route.useSearch();
+  const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: shows } = useSuspenseQuery(webRuntime.queries.catalogQueries.showsView());
 
@@ -50,12 +50,10 @@ function ShowsPage() {
       countKey="browse.count.series"
       emptyIcon="device-tv"
       emptyTitle={t('content.seriesEmpty')}
-      sort={sort}
-      genre={genre}
-      onSort={(mode, opts) =>
-        navigate({ search: (p) => ({ ...p, sort: mode }), resetScroll: opts?.resetScroll })
+      search={search}
+      onSearch={(next, opts) =>
+        navigate({ search: (p) => ({ ...p, ...next }), resetScroll: opts?.resetScroll })
       }
-      onGenre={(g) => navigate({ search: (p) => ({ ...p, genre: g }) })}
       renderGrid={(view) => <ShowGrid shows={view} />}
     />
   );

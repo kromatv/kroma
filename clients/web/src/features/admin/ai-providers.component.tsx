@@ -55,13 +55,7 @@ function ProviderHeader({
   const t = useT();
   const name = p.name || t('admin.aiUntitledProvider');
   return (
-    <Focusable
-      ring="focusInset"
-      style={s.header}
-      label={name}
-      expanded={expanded}
-      onPress={onToggle}
-    >
+    <Focusable style={s.header} label={name} expanded={expanded} onPress={onToggle}>
       <Box w={10} h={10} shrink={0} radius="circle" bg={isDefault ? 'accent' : 'tint/18'} />
       <Box flex minW={0}>
         <Row gap={8}>
@@ -157,7 +151,7 @@ export function ProviderCard({
   const host = hostOf(p.baseUrl, isAnthropic);
 
   return (
-    <Surface elevated pad="none" radius="xl" border="border" overflow="hidden">
+    <Surface members elevated radius="xl" border="border">
       <ProviderHeader
         p={p}
         isDefault={isDefault}

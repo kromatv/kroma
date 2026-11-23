@@ -1,7 +1,16 @@
 import { createKromaClient } from '@kromatv/client';
+import { ShowCard } from '@kromatv/client/media';
 import { createQueryClient } from '@kromatv/client/query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { apiBase, createWebRuntime, imageUrl, isAuthed, toMovieView, toShowView } from './api';
+import {
+  apiBase,
+  createWebRuntime,
+  imageUrl,
+  isAuthed,
+  toMovieView,
+  toShowCardView,
+  toShowView,
+} from './api';
 
 const H = vi.hoisted(() => ({
   session: null as { accessToken: string } | null,
@@ -226,6 +235,38 @@ describe('toMovieView / toShowView', () => {
     const sv = toShowView(client, show);
     expect(sv.poster).toBe('http://kroma.test/api/sp.webp');
     expect(sv.backdrop).toBe('http://kroma.test/api/sb.webp');
+  });
+
+  it('toShowCardView resolves the same art and keeps the languages', () => {
+    const card = ShowCard.parse({
+      id: 's1',
+      title: 'Akira',
+      year: null,
+      library: 'lib',
+      video: null,
+      addedAt: 't',
+      metadata: {
+        provider: 'tmdb',
+        tmdbId: 149,
+        title: 'Akira',
+        overview: null,
+        genres: [],
+        tmdbUrl: 'https://www.themoviedb.org/tv/149',
+        posterUrl: '/api/sp.webp',
+        backdropUrl: null,
+      },
+      seasonCount: 1,
+      episodeCount: 1,
+      audioLanguages: ['jpn'],
+      subtitleLanguages: ['fre'],
+    });
+
+    const view = toShowCardView(client, card);
+
+    expect(view.poster).toBe('http://kroma.test/api/sp.webp');
+    expect(view.backdrop).toBeNull();
+    expect(view.audioLanguages).toEqual(['jpn']);
+    expect(view.subtitleLanguages).toEqual(['fre']);
   });
 });
 

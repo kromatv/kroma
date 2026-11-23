@@ -15,9 +15,11 @@ import { genreSlugs } from '@kromatv/core';
 import { queryOptions } from '@tanstack/react-query';
 import {
   type MovieCardView,
+  type ShowCardView,
   type ShowView,
   toMovieCardView,
   toMovieView,
+  toShowCardView,
   toShowView,
 } from '#web/shared/lib/api';
 
@@ -56,9 +58,9 @@ export function createQueries(client: QueryClient) {
     showsView: () =>
       queryOptions({
         queryKey: ['shows', 'view'] as const,
-        queryFn: async (): Promise<ShowView[]> => {
+        queryFn: async (): Promise<ShowCardView[]> => {
           const c = client;
-          return (await c.media.showCards()).map((s) => toShowView(c, s));
+          return (await c.media.showCards()).map((s) => toShowCardView(c, s));
         },
       }),
 

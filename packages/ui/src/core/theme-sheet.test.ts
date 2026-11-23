@@ -83,6 +83,19 @@ describe('publishing a theme', () => {
     );
   });
 
+  it('repaints a pinned ground of its own root in its colours, not the stock ones', () => {
+    const dark = createTheme({ colors: { accent: '#5CC8FF' } });
+    const light = createTheme({ colors: { accent: '#0B5E8C' } });
+    setTheme(dark, light);
+
+    expect(sheet()).toContain(
+      '[data-kroma-ground="test"][data-theme="dark"]{--kroma-accent:#5CC8FF}',
+    );
+    expect(sheet()).toContain(
+      '[data-kroma-ground="test"][data-theme="light"]{--kroma-accent:#0B5E8C}',
+    );
+  });
+
   it('hands a ground-aware theme back to the cascade, so a JS read follows too', () => {
     const dark = createTheme({ colors: { bg: '#050807' } });
     const light = createTheme({ colors: { bg: '#F2F5F3' } });

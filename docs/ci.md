@@ -122,7 +122,10 @@ the tests of the four crates that build and run WebAssembly components
 runner. Those were two thirds of the server's test time, one binary after
 another behind the rest. The two test jobs read the `rust-server` cache, and
 the core one writes it. `bun run ci rust test --only <id,id>` runs the same on a
-laptop, the whole server when no `--part` is given. `required` waits for
+laptop, the whole server when no `--part` is given. The clippy job keeps a
+`rust-server-clippy` entry of its own: clippy checks every dependency in a
+mode the test build does not share, and without one it checked all of them
+again on every run (five and a half minutes). `required` waits for
 every Rust job, and the scan merges their coverage into `server/lcov.info`
 (`bun run ci lcov merge`): both server jobs measure the crates they share, and
 a file two reports carry is counted once, with the hits of both.
@@ -148,7 +151,10 @@ ci rust audit --only <id,id>`. It builds each component, starts it alone behind
 a network that records every connection and lets none out, drives it, and fails
 when a module attempted a connection, a program or a file outside what its
 manifest declares. The log names the attempt. See "Auditing a module on its
-own" in [`module-security.md`](module-security.md).
+own" in [`module-security.md`](module-security.md). Its `rust-audit` entry
+keeps the audit host's dependencies in `server/target` and the modules'
+components in `target/kmod`: without it the host took four and a half minutes
+to build before the first module started.
 
 `Rust (modules as components)` runs the tests of every module a change can
 reach a second time, built for `wasm32-wasip2` with the features each bundle
@@ -161,8 +167,10 @@ the module's folder each at its own path, a real SQLite behind the `sql`
 import, every other import refused, one thread and no socket. A native build
 follows an absolute symlink and starts threads where a component cannot, and
 this job is where that difference fails a test. The runner builds once per
-run. The job keeps no cache, since the module shards' entries already hold the
-budget below, and takes its compiles from the sccache bucket when it is set.
+run, on the dependencies the job's `rust-components` entry keeps in
+`target/wasm-test-runner` (wasmtime and Cranelift, optimised: two and a half
+minutes cold), and the modules' test builds in `target/kmod` come from the
+same entry.
 On a warm laptop the whole run takes about two minutes. It is part of
 `required`.
 
@@ -466,6 +474,11 @@ on. Neither signs or publishes anything. A new secret goes in an environment
 
 ## Caches and the 10 GB budget
 
+The quota has since become 20 GB: the caches page read 19.57 GB of 20 GB in
+November 2026, of which a few GB were copies an older `Cargo.lock` or key
+left behind. GitHub evicts the least recently used entry first, so those
+copies go before anything a run still reads.
+
 | entry | size | written by |
 |---|---|---|
 | `rust` (server + modules, instrumented) | ~1.0 GB | ci.yml on main |
@@ -476,6 +489,7 @@ on. Neither signs or publishes anything. A new secret goes in an environment
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
 | `synology-v3`, `synology-arm64-v2` | ~0.8 GB | synology.yml |
 | `kmod` (wasm32-wasip2) | ~0.1 GB | modules.yml |
+| `rust-server-clippy`, `rust-components`, `rust-audit` | measured on their first save | ci.yml on main |
 
 About 9 GB with every entry warm, down from 11.9 GB, and the run that used
 to evict the Rust tree no longer does. Half of what is left is two pairs

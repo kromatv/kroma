@@ -57,12 +57,7 @@ function SortCell({
   return (
     <Box role="columnheader" style={[box, pad]} onLayout={onLayout} {...sortClaim(state)}>
       {press ? (
-        <Focusable
-          ring="focusEdge"
-          states={HEAD_STATES}
-          style={inside}
-          onPress={() => press(column)}
-        >
+        <Focusable states={HEAD_STATES} style={inside} onPress={() => press(column)}>
           {face}
         </Focusable>
       ) : (

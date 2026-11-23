@@ -239,8 +239,7 @@ function Indicator() {
 const sDefinition = styles({
   row: { radius: CONTROL.sm.radius },
   active: { bg: 'tint/8' },
-  // On the edge: the rows abut, so a gap either way lands on something.
-  keyed: { ring: 'focusEdge' },
+  keyed: { ring: 'focusInside' },
   disabled: { opacity: 0.4 },
 });
 

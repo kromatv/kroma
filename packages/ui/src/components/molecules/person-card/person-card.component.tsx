@@ -1,13 +1,8 @@
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 // The cast rail's tile, on both distances.
-//
-// The focus ring is drawn on the photo instead of around the tile, which is why
-// the card draws none of its own: a lit circle reads as a face being pointed at
-// rather than a form field.
 
 import { Avatar, type AvatarProps } from '#ui/components/atoms/avatar';
-import { Box } from '#ui/components/atoms/box';
-import { Focusable } from '#ui/components/atoms/focusable';
+import { Focusable, FocusRing } from '#ui/components/atoms/focusable';
 import { Text, type TextProps } from '#ui/components/atoms/text';
 import { type StyleDecl, svFor } from '#ui/core';
 
@@ -25,7 +20,7 @@ const personCardVariants = svFor<{
 }>()({
   slots: {
     root: { shrink: 0, _press: { opacity: 0.7 } },
-    face: { self: 'center', radius: 'circle', _focus: { ring: 'focusLift' } },
+    face: { self: 'center', radius: 'circle' },
     name: {
       fontWeight: '600',
       textAlign: 'center',
@@ -79,13 +74,12 @@ function PersonCard({
       onPress={onPress}
       label={label ?? name}
       focusScale={1.06}
-      ring={false}
       sv={personCardVariants}
       vars={{ size }}
     >
       {(state) => (
         <>
-          <Box collapsable={false} style={state.slots.face}>
+          <FocusRing style={state.slots.face}>
             <Avatar
               name={name}
               src={photo ?? null}
@@ -93,7 +87,7 @@ function PersonCard({
               circle
               {...state.slots.photo}
             />
-          </Box>
+          </FocusRing>
           <Text style={state.slots.name} {...state.slots.caption}>
             {name}
           </Text>

@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use super::{Kind, MediaItem, Show, VideoStream};
+use super::{Kind, MediaItem, Show, TrackLanguages, VideoStream};
 use crate::metadata::Metadata;
 
 /// A title as a list draws it: what a grid sorts, filters and paints, without
@@ -21,6 +21,27 @@ pub struct MediaCard {
     pub added_at: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub metadata: Option<Metadata>,
+    #[serde(flatten)]
+    pub languages: TrackLanguages,
+}
+
+/// A show as the Series grid draws it (`GET /api/shows?view=card`): its card,
+/// and the languages its episodes are heard and read in.
+#[derive(Debug, Clone, Serialize)]
+pub struct ShowCard {
+    #[serde(flatten)]
+    pub show: Show,
+    #[serde(flatten)]
+    pub languages: TrackLanguages,
+}
+
+impl ShowCard {
+    pub fn new(show: Show, languages: TrackLanguages) -> Self {
+        Self {
+            show: show_card(show),
+            languages,
+        }
+    }
 }
 
 fn without_credits(mut metadata: Metadata) -> Metadata {
@@ -38,6 +59,7 @@ pub fn show_card(mut show: Show) -> Show {
 
 impl From<MediaItem> for MediaCard {
     fn from(item: MediaItem) -> Self {
+        let languages = TrackLanguages::of_item(&item);
         let metadata = item.metadata.map(without_credits);
         Self {
             id: item.id,
@@ -50,6 +72,7 @@ impl From<MediaItem> for MediaCard {
             show_id: item.show_id,
             added_at: item.added_at,
             metadata,
+            languages,
         }
     }
 }
@@ -101,6 +124,35 @@ mod tests {
         assert_eq!(card["metadata"]["genres"], json!(["Crime"]));
         assert_eq!(card["metadata"].get("cast"), None);
         assert_eq!(card["metadata"].get("crew"), None);
+    }
+
+    #[test]
+    fn a_show_card_adds_the_languages_its_episodes_have() {
+        let show: Show = serde_json::from_value(json!({
+            "id": "s1", "title": "Wire", "library": "lib", "seasonCount": 5,
+            "episodeCount": 60, "addedAt": "t",
+            "metadata": enriched_movie().metadata
+        }))
+        .unwrap();
+        let languages = TrackLanguages {
+            audio: vec!["eng".into()],
+            subtitles: vec!["fre".into()],
+        };
+
+        let card = serde_json::to_value(ShowCard::new(show, languages)).unwrap();
+
+        assert_eq!(card["seasonCount"], json!(5));
+        assert_eq!(card["audioLanguages"], json!(["eng"]));
+        assert_eq!(card["subtitleLanguages"], json!(["fre"]));
+        assert_eq!(card["metadata"].get("cast"), None);
+    }
+
+    #[test]
+    fn a_movie_card_names_the_languages_its_files_are_heard_and_read_in() {
+        let card = serde_json::to_value(MediaCard::from(enriched_movie())).unwrap();
+
+        assert_eq!(card["audioLanguages"], json!([]));
+        assert_eq!(card["subtitleLanguages"], json!(["fre"]));
     }
 
     #[test]

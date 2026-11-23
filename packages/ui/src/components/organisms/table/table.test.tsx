@@ -43,7 +43,13 @@ function Grid({ variant }: Readonly<{ variant?: 'framed' | 'plain' }>) {
   );
 }
 
-const rules = () => screen.getAllByRole('row').map((row) => getComputedStyle(row).borderTopWidth);
+const isRule = (node: Element) => {
+  const style = getComputedStyle(node);
+  return style.position === 'absolute' && style.height === '1px';
+};
+
+const rules = () =>
+  screen.getAllByRole('row').map((row) => (Array.from(row.children).some(isRule) ? '1px' : '0px'));
 
 describe('<Table>', () => {
   it('names the grid and draws the roles a reader navigates it by', () => {

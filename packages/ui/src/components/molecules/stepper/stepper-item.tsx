@@ -155,7 +155,7 @@ function Item({ value, icon, label, disabled, children }: Readonly<StepperItemPr
             complete: step.complete,
           })}
           onPress={step.select}
-          ring="focusInset"
+          ring="inside"
           sv={stepperVariants}
           vars={{ size, state }}
           style={vertical ? STRETCH : undefined}

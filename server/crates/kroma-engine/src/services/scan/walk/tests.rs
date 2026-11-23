@@ -182,6 +182,26 @@ fn a_directory_symlinked_to_itself_is_walked_once() {
 }
 
 #[test]
+fn a_library_folder_that_is_a_link_reads_the_folder_it_points_at() {
+    let root_dir = temp_scan_dir();
+    let real = root_dir.path().join("Animation Collection");
+    std::fs::create_dir_all(real.join("Season 01")).unwrap();
+    std::fs::write(real.join("Season 01").join("S01E01.mkv"), b"x").unwrap();
+    std::fs::write(real.join("Season 01").join("S01E02.mkv"), b"x").unwrap();
+    let link = root_dir.path().join("Animated Series");
+    std::os::unix::fs::symlink("Animation Collection", &link).unwrap();
+    std::os::unix::fs::symlink(".", real.join("loop")).unwrap();
+
+    let scan = scan_into("lib1", &link);
+
+    assert_eq!(scan.unreadable, 0);
+    assert_eq!(scan.items.len(), 2);
+    assert!(scan.items.values().all(|item| item.files.len() == 1));
+    let show = scan.shows.values().next().unwrap();
+    assert_eq!(show.title, "Animated Series");
+}
+
+#[test]
 fn a_library_of_symlinks_indexes_what_they_point_at() {
     let root_dir = temp_scan_dir();
     let base = root_dir.path();

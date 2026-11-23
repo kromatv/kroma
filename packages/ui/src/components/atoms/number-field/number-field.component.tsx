@@ -168,7 +168,7 @@ function Step({
       label={label}
       disabled={disabled}
       onPress={onPress}
-      ring="focusEdge"
+      ring="inside"
       style={[s.step, s[size ?? entryDefaults.size]]}
       states={STEP_STATES}
     >

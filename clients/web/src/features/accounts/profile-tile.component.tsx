@@ -1,20 +1,22 @@
-import { Box, Focusable, Icon, KidsMark, type StyleDecl, svFor, Text } from '@kromatv/ui/kit';
+import {
+  Box,
+  Focusable,
+  FocusRing,
+  Icon,
+  KidsMark,
+  type StyleDecl,
+  svFor,
+  Text,
+} from '@kromatv/ui/kit';
 import { avatarCorner, UserAvatar } from '#web/shared/ui/user-avatar.component';
 
 const AVATAR = 146;
 const AVATAR_RADIUS = avatarCorner(AVATAR);
 
-// The amber edge the row's tiles take, drawn on the avatar rather than around
-// the whole column: the caption below is part of the control, not part of the
-// picture. Same shape <AddTile> beside them takes.
 const profileTile = svFor<{ root: StyleDecl; well: StyleDecl; label: StyleDecl }>()({
   slots: {
     root: { align: 'center', gap: 14 },
-    well: {
-      radius: AVATAR_RADIUS,
-      _hover: { ring: 'focus' },
-      _focus: { ring: 'focus' },
-    },
+    well: { radius: AVATAR_RADIUS },
     label: { color: 'text/82', fontWeight: '500' },
   },
 });
@@ -37,10 +39,10 @@ export function ProfileTile({
   onPress: () => void;
 }>) {
   return (
-    <Focusable sv={profileTile} ring={false} focusScale={1.06} label={username} onPress={onPress}>
-      {({ slots }) => (
+    <Focusable sv={profileTile} focusScale={1.06} label={username} onPress={onPress}>
+      {({ slots, hovered }) => (
         <>
-          <Box style={slots.well}>
+          <FocusRing lit={hovered} style={slots.well}>
             <UserAvatar name={username} avatarUrl={avatarUrl} seed={seed} size={AVATAR} />
             {kids ? (
               <Box absolute left={8} bottom={8}>
@@ -48,7 +50,7 @@ export function ProfileTile({
               </Box>
             ) : null}
             {locked ? <LockBadge label={lockedLabel} /> : null}
-          </Box>
+          </FocusRing>
           <Text variant="body" style={slots.label}>
             {username}
           </Text>

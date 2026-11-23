@@ -25,8 +25,8 @@ interface RingRoom {
  * the control the scroller brings into view, where the room has scrolled away.
  *
  * An element that IS a card around its rows - its own edge and fill, clipping
- * them - has no outside to reach into: its rows take the inset ring instead
- * (`ring: 'focusInset'`, as `<ListRow.Group>`'s members do).
+ * them - has no outside to reach into: it wraps its rows in
+ * `<RingScope placement="inside">` instead, as `<ListRow.Group>` does.
  */
 export function ringRoomBlock(inset = 0): RingRoom {
   return {

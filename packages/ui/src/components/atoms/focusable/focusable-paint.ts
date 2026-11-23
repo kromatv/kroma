@@ -83,6 +83,7 @@ function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<Vi
 
 interface PaintInput {
   recipe: AnySv | undefined;
+  beneath: StyleProp<ViewStyle>;
   vars: unknown;
   states: Partial<Record<SvStateName, StyleDecl>> | undefined;
   style: StyleProp<ViewStyle>;
@@ -98,6 +99,7 @@ interface PaintInput {
  *  paints with: `dressed` for the rest state, the rest per interaction. */
 function useFocusablePaint({
   recipe: definition,
+  beneath,
   vars,
   states,
   style,
@@ -137,7 +139,7 @@ function useFocusablePaint({
   // The recipe paints the control through its `root` slot, under the caller's
   // own `style` so a one-off override still wins.
   const root = recipe ? (rest.root as StyleProp<ViewStyle>) : undefined;
-  const painted = usePair(root, style);
+  const painted = usePair(usePair(beneath, root), style);
   // Only what the press ADDS, not the whole root: the press coat lands after the
   // caller's `style`, so re-applying the resolved root there would revert a
   // one-off override for as long as the finger is down.

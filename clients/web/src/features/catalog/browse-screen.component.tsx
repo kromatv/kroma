@@ -1,12 +1,12 @@
 import {
   collectGenres,
+  collectLanguages,
   genreLabel,
   genreOfSegment,
-  hasGenre,
   type LetterMark,
   letterMarks,
   type Sortable,
-  type SortMode,
+  type Spoken,
   sortTitles,
   titleLetter,
 } from '@kromatv/core';
@@ -25,7 +25,10 @@ import {
 } from 'react';
 import { AlphabetRail, type LetterRange } from '#web/features/catalog/alphabet-rail.component';
 import { BrowseBar } from '#web/features/catalog/browse-bar.component';
+import { filterTitles } from '#web/features/catalog/browse-filter';
 import { BrowseHero } from '#web/features/catalog/browse-hero.component';
+import { type BrowseSearch, browseSort } from '#web/features/catalog/browse-search';
+import { LanguageSelect } from '#web/features/catalog/language-select.component';
 import { gridGeometry } from '#web/features/catalog/virtual-tile-grid.component';
 import { rowBounds } from '#web/shared/lib/tile-layout';
 import { PageFrame } from '#web/shared/ui';
@@ -108,19 +111,20 @@ function useVisibleLetters(
   return enabled && marks.length > 0 ? range : undefined;
 }
 
-export interface BrowseScreenProps<T extends Sortable & { backdrop: string | null }> {
+type Browsable = Sortable & Spoken & { backdrop: string | null };
+
+export interface BrowseScreenProps<T extends Browsable> {
   heading: string;
   items: readonly T[];
   /** Plural count line under the heading ('browse.count.movies' or '.series'). */
   countKey: MessageKey;
   emptyIcon: IconName;
   emptyTitle: string;
-  sort: SortMode;
-  genre?: string;
-  /** `resetScroll: false` marks a rail jump: the screen lands on the letter
-   *  itself, so the router must not scroll back to the top. */
-  onSort: (mode: SortMode, opts?: { resetScroll?: boolean }) => void;
-  onGenre: (genre: string | undefined) => void;
+  search: BrowseSearch;
+  /** Moves the url's search to `next` over what it holds. `resetScroll: false`
+   *  marks a rail jump: the screen lands on the letter itself, so the router
+   *  must not scroll back to the top. */
+  onSearch: (next: BrowseSearch, opts?: { resetScroll?: boolean }) => void;
   renderGrid: (view: T[]) => ReactElement;
 }
 
@@ -128,27 +132,29 @@ export interface BrowseScreenProps<T extends Sortable & { backdrop: string | nul
  * the grid, and the A-Z fast-scroll rail. Films and Series render the same
  * screen over a different view model; sort/genre live in the caller's URL
  * search. */
-export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
+export function BrowseScreen<T extends Browsable>({
   heading,
   items,
   countKey,
   emptyIcon,
   emptyTitle,
-  sort,
-  genre,
-  onSort,
-  onGenre,
+  search,
+  onSearch,
   renderGrid,
 }: Readonly<BrowseScreenProps<T>>) {
   const t = useT();
+  const sort = browseSort(search);
+  const { genre, audio, subtitles } = search;
   const gridWrap = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
   const pending = useRef<string | null>(null);
 
   const genres = useMemo(() => collectGenres(items), [items]);
+  const heard = useMemo(() => collectLanguages(items, 'audio'), [items]);
+  const read = useMemo(() => collectLanguages(items, 'subtitles'), [items]);
   const filtered = useMemo(
-    () => (genre ? items.filter((item) => hasGenre(item, genreOfSegment(genre))) : [...items]),
-    [items, genre],
+    () => filterTitles(items, { genre, audio, subtitles }),
+    [items, genre, audio, subtitles],
   );
   const view = useMemo(() => sortTitles(filtered, sort), [filtered, sort]);
   const marks = useMemo(() => (sort === 'title' ? letterMarks(view) : []), [view, sort]);
@@ -200,10 +206,10 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
         scrollToLetter(letter);
       } else {
         pending.current = letter;
-        onSort('title', { resetScroll: false });
+        onSearch({ sort: 'title' }, { resetScroll: false });
       }
     },
-    [sort, scrollToLetter, onSort],
+    [sort, scrollToLetter, onSearch],
   );
 
   useLayoutEffect(() => {
@@ -235,10 +241,28 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
           <BrowseBar
             innerRef={bar}
             sort={sort}
-            onSort={onSort}
+            onSort={(mode) => onSearch({ sort: mode })}
             genres={genres}
             genre={genre}
-            onGenre={onGenre}
+            onGenre={(segment) => onSearch({ genre: segment })}
+            filters={
+              heard.length + read.length > 0 ? (
+                <>
+                  <LanguageSelect
+                    stream="audio"
+                    languages={heard}
+                    value={audio}
+                    onValueChange={(code) => onSearch({ audio: code })}
+                  />
+                  <LanguageSelect
+                    stream="subtitles"
+                    languages={read}
+                    value={subtitles}
+                    onValueChange={(code) => onSearch({ subtitles: code })}
+                  />
+                </>
+              ) : undefined
+            }
           />
           {view.length === 0 ? (
             <EmptyState.Root icon={emptyIcon}>

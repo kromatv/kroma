@@ -29,7 +29,7 @@ describe('TextField', () => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     });
 
-    const edge = activeTheme().ring.focusEdge;
+    const edge = activeTheme().ring.focusInside;
     const reveal = screen.getByLabelText('Show password');
     expect(declared(reveal, 'outlineOffset')).toBe(`${edge.outlineOffset}px`);
     expect(declared(reveal, 'outlineWidth')).toBe(`${edge.outlineWidth}px`);

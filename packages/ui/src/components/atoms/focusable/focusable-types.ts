@@ -13,6 +13,7 @@ import type { AnySv, StyleDecl, SvStateName } from '#ui/core';
 import type { RingToken } from '#ui/core/theme';
 import type { A11yProps } from '#ui/lib/a11y';
 import type { KeyProps } from '#ui/lib/key-press.hook';
+import type { RingPlacement } from '#ui/lib/ring-scope';
 
 // `option` is not in React Native's union: react-native-web passes it through
 // to the ARIA role a listbox row needs, but Android's accessibility delegate
@@ -102,11 +103,12 @@ interface FocusableProps<R extends AnySv = AnySv> {
    *  (a radio group). */
   tabbable?: boolean;
   focusScale?: number;
-  /** Which focus ring, or none. `true` and the default take the ring an
-   *  enclosing `RingScope` names, falling back to `focusLift`; a token names one
-   *  outright, which is how a control flush with what clips it asks for
-   *  `focusInset`. `false` paints no ring, and suppresses the browser's. */
-  ring?: boolean | RingToken;
+  /** Where the focus ring goes, or none. `true` and the default take the
+   *  placement an enclosing `RingScope` names, falling back to `outside`; a
+   *  placement names one outright, for a kit component placing its own parts.
+   *  `false` paints no ring, and suppresses the browser's. A `<FocusRing>`
+   *  inside moves the ring onto that part. */
+  ring?: boolean | RingPlacement;
   style?: StyleProp<ViewStyle>;
   /**
    * One-off state layers, in the recipe vocabulary, merged over whatever `sv`

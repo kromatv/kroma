@@ -2,8 +2,8 @@ import { posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import {
   Box,
-  color,
   Focusable,
+  FocusRing,
   motion,
   Numeral,
   numeralColumn,
@@ -47,13 +47,10 @@ const sDefinition = styles({
     aspect: 2 / 3,
     radius: 'xl',
     overflow: 'hidden',
-    outlineStyle: 'solid',
-    outlineWidth: 3,
-    outlineColor: 'transparent',
-    transitionProperty: 'outline-color, transform',
+    transitionProperty: 'transform',
     transitionDuration: `${motion.duration.base}ms`,
   },
-  posterLit: { outlineColor: color('accent'), transform: [{ translateY: motion.focusLift }] },
+  posterLit: { transform: [{ translateY: motion.focusLift }] },
 });
 
 interface RankedFaceProps {
@@ -76,7 +73,7 @@ function RankedFace({ entry, rank, hovered }: Readonly<RankedFaceProps>) {
           color={hovered ? 'accent' : 'textDim'}
         />
       </Box>
-      <Box style={[s.poster, hovered ? s.posterLit : null]}>
+      <FocusRing lit={hovered} style={[s.poster, hovered ? s.posterLit : null]}>
         <Image
           src={entryPoster(client, entry, POSTER_W * 2)}
           background={`linear-gradient(158deg, ${posterColors(entryId(entry)).join(', ')})`}
@@ -84,7 +81,7 @@ function RankedFace({ entry, rank, hovered }: Readonly<RankedFaceProps>) {
           fit="cover"
           fill
         />
-      </Box>
+      </FocusRing>
     </>
   );
 }

@@ -12,10 +12,11 @@ const filled = sv({
   },
 });
 
-function pressedOver(style: object | object[] | undefined) {
+function paint(style: object | object[] | undefined, beneath?: object) {
   const { result } = renderHook(() =>
     useFocusablePaint({
       recipe: filled,
+      beneath,
       vars: {},
       states: undefined,
       style,
@@ -27,7 +28,11 @@ function pressedOver(style: object | object[] | undefined) {
       actionable: true,
     }),
   );
-  return StyleSheet.flatten(result.current.paintedPressed) ?? {};
+  return result.current;
+}
+
+function pressedOver(style: object | object[] | undefined) {
+  return StyleSheet.flatten(paint(style).paintedPressed) ?? {};
 }
 
 describe('what a press paints over the style a caller gave', () => {
@@ -47,5 +52,19 @@ describe('what a press paints over the style a caller gave', () => {
     const pressed = pressedOver([{ borderWidth: 1 }, [{ backgroundColor: '#131314' }]]);
 
     expect(Object.keys(pressed)).toEqual([]);
+  });
+});
+
+describe('the corner a container hands its members', () => {
+  it('shapes a control that states no corner of its own', () => {
+    const { dressed } = paint(undefined, { borderRadius: 12 });
+
+    expect(StyleSheet.flatten(dressed)).toMatchObject({ borderRadius: 12 });
+  });
+
+  it('gives way to a corner the control states itself', () => {
+    const { dressed } = paint({ borderRadius: 17 }, { borderRadius: 12 });
+
+    expect(StyleSheet.flatten(dressed)).toMatchObject({ borderRadius: 17 });
   });
 });

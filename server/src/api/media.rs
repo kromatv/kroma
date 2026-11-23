@@ -1,6 +1,8 @@
 //! Catalogue browse + detail endpoints (libraries / items / movies / shows) and
 //! the sign-in screen's splash sample.
 
+use std::collections::HashMap;
+
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -13,7 +15,7 @@ use crate::api::visibility::{self, AuthViewer, Title};
 use crate::api::etag;
 use crate::db;
 use crate::i18n::ContentLocale;
-use crate::model::{show_card, MediaCard, MediaItem};
+use crate::model::{MediaCard, MediaItem, Show, ShowCard, TrackLanguages};
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
@@ -132,8 +134,9 @@ pub fn items_in_view(items: Vec<MediaItem>, view: Option<ListView>) -> Response 
     }
 }
 
-/// `GET /api/shows` (optional `?library=`) → `Show[]`, without cast or crew with
-/// `?view=card`. Personalises each show's `progress` (series completion) for the
+/// `GET /api/shows` (optional `?library=`) → `Show[]`, or with `?view=card` →
+/// `ShowCard[]`: without cast or crew, with the languages its episodes are heard
+/// and read in. Personalises each show's `progress` (series completion) for the
 /// calling account.
 pub async fn list_shows(
     State(state): State<SharedState>,
@@ -143,21 +146,34 @@ pub async fn list_shows(
 ) -> Result<Response, Response> {
     let uid = viewer.user.id.clone();
     let library = q.library;
-    let mut shows = query(&state.db, move |pool| {
+    let cards = matches!(q.view, Some(ListView::Card));
+    let (mut shows, languages) = query(&state.db, move |pool| {
         let mut shows = db::list_shows(&pool, library.as_deref())?;
         let prog = db::show_progress(&pool, &uid).unwrap_or_default();
         for s in &mut shows {
             s.progress = prog.get(&s.id).copied();
         }
         db::localize::overlay_shows(&pool, &mut shows, locale)?;
-        Ok(shows)
+        let languages = cards.then(|| db::show_languages(&pool)).transpose()?;
+        Ok((shows, languages))
     })
     .await?;
     visibility::keep_shows(&viewer, &mut shows);
-    if matches!(q.view, Some(ListView::Card)) {
-        shows = shows.into_iter().map(show_card).collect();
-    }
-    Ok(Json(shows).into_response())
+    Ok(shows_in_view(shows, languages))
+}
+
+fn shows_in_view(shows: Vec<Show>, languages: Option<HashMap<String, TrackLanguages>>) -> Response {
+    let Some(mut languages) = languages else {
+        return Json(shows).into_response();
+    };
+    let cards: Vec<ShowCard> = shows
+        .into_iter()
+        .map(|show| {
+            let spoken = languages.remove(&show.id).unwrap_or_default();
+            ShowCard::new(show, spoken)
+        })
+        .collect();
+    Json(cards).into_response()
 }
 
 /// `GET /api/shows/:id` → `{ show, seasons[] }`. Fills `show.progress` for the
