@@ -3,7 +3,7 @@
 
 # Requirement index
 
-809 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+810 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -548,6 +548,7 @@
 - **LIB-77** (AGREED) - Asking for a title's missing units to be searched now reaches whatever <sub>[monitoring.md](library/monitoring.md)</sub>
 - **LIB-78** (AGREED) - **A match that came from another server.** An import <sub>[README.md](library/README.md)</sub>
 - **LIB-79** (AGREED) - A file belongs to one source. A source whose folder holds a folder of <sub>[README.md](library/README.md)</sub>
+- **LIB-82** (SHIPPED) - A title's text is shown in the reader's language one field at a time. <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 

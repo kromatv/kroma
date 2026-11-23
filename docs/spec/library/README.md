@@ -205,7 +205,7 @@ set of files that *did* match plus a visible tally of those that did not.
 
 ## Metadata providers
 
-Status: **AGREED**
+Status: **SHIPPED** in part; each requirement carries its own.
 
 The matched identity is enriched from a metadata provider: titles, summaries, cast, episode
 data and artwork.
@@ -223,6 +223,11 @@ unmatched until connectivity returns. Its stem still parses by convention, so it
 and playable, just thin on metadata.
 
 **LIB-40** (AGREED) - Offline, a forced refresh queues rather than fails.
+
+**LIB-82** (SHIPPED) - A title's text is shown in the reader's language one field at a time.
+A title, tagline, summary, genre list or character name that language lacks is shown in
+English where English has it, so a film with a French title and no French summary shows the
+French title over the English summary. Artwork is never borrowed this way.
 
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
