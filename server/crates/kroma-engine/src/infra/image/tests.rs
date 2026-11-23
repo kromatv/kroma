@@ -146,6 +146,22 @@ fn a_sized_rendition_is_none_for_a_missing_or_narrower_master() {
 }
 
 #[test]
+fn a_sized_rendition_reads_a_webp_master_s_width_from_its_header() {
+    let dir = scoped_dir();
+    let master = put_image(dir.path(), "poster.webp", "");
+    let w500 = "52494646fa0200005745425056503820ee0200005054009d012af401ee02";
+    let header: Vec<u8> = (0..w500.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&w500[i..i + 2], 16).unwrap())
+        .collect();
+    std::fs::write(&master, header).unwrap();
+
+    let sized = sized_rendition(dir.path(), "poster.webp", 780);
+
+    assert!(sized.is_none());
+}
+
+#[test]
 fn a_sized_rendition_falls_back_to_jpeg_when_cwebp_fails() {
     let dir = scoped_dir();
     put_image(dir.path(), "cwebp-fails.webp", "900");
