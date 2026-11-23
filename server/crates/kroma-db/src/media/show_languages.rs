@@ -1,40 +1,58 @@
 //! The languages each show's episodes are heard and read in.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use anyhow::Result;
 use rusqlite::Row;
 
-use kroma_domain::TrackLanguages;
+use kroma_domain::{ShowLanguages, TrackLanguages};
 
 use crate::Pool;
 
 const LANGUAGES: &str = "\
-SELECT i.show_id, 'audio', json_extract(t.value, '$.language') \
+SELECT i.show_id, i.id, 'audio', json_extract(t.value, '$.language') \
   FROM items i JOIN files f ON f.item_id = i.id, json_each(f.audio_tracks) t \
  WHERE i.show_id IS NOT NULL AND i.absent_since IS NULL \
-UNION SELECT i.show_id, 'audio', f.a_language \
+UNION SELECT i.show_id, i.id, 'audio', f.a_language \
   FROM items i JOIN files f ON f.item_id = i.id \
  WHERE i.show_id IS NOT NULL AND i.absent_since IS NULL \
-UNION SELECT i.show_id, 'subtitles', json_extract(t.value, '$.language') \
+UNION SELECT i.show_id, i.id, 'subtitles', json_extract(t.value, '$.language') \
   FROM items i JOIN files f ON f.item_id = i.id, json_each(f.subtitles) t \
  WHERE i.show_id IS NOT NULL AND i.absent_since IS NULL";
 
-/// Each show's [`TrackLanguages`], over the files of the episodes it still
-/// has. A show with no file is absent.
-pub fn show_languages(pool: &Pool) -> Result<HashMap<String, TrackLanguages>> {
-    let conn = pool.get()?;
-    let mut stmt = conn.prepare(LANGUAGES)?;
-    let mut out: HashMap<String, TrackLanguages> = HashMap::new();
-    for row in stmt.query_map([], language_row)? {
-        let (show, stream, language) = row?;
-        add(out.entry(show).or_default(), &stream, language.as_deref());
-    }
-    Ok(out)
+type Episodes = BTreeMap<String, TrackLanguages>;
+
+struct LanguageRow {
+    show: String,
+    episode: String,
+    stream: String,
+    language: Option<String>,
 }
 
-fn language_row(r: &Row<'_>) -> rusqlite::Result<(String, String, Option<String>)> {
-    Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+/// Each show's [`ShowLanguages`], over the files of the episodes it still
+/// has. A show with no file is absent.
+pub fn show_languages(pool: &Pool) -> Result<HashMap<String, ShowLanguages>> {
+    let conn = pool.get()?;
+    let mut stmt = conn.prepare(LANGUAGES)?;
+    let mut shows: HashMap<String, Episodes> = HashMap::new();
+    for row in stmt.query_map([], language_row)? {
+        let row = row?;
+        let episode = shows.entry(row.show).or_default().entry(row.episode);
+        add(episode.or_default(), &row.stream, row.language.as_deref());
+    }
+    Ok(shows
+        .into_iter()
+        .map(|(show, episodes)| (show, ShowLanguages::of_episodes(episodes.into_values())))
+        .collect())
+}
+
+fn language_row(r: &Row<'_>) -> rusqlite::Result<LanguageRow> {
+    Ok(LanguageRow {
+        show: r.get(0)?,
+        episode: r.get(1)?,
+        stream: r.get(2)?,
+        language: r.get(3)?,
+    })
 }
 
 fn add(languages: &mut TrackLanguages, stream: &str, language: Option<&str>) {
@@ -101,8 +119,47 @@ mod tests {
         let languages = show_languages(&p).unwrap();
 
         assert_eq!(languages.len(), 1);
-        assert_eq!(languages["s1"].audio, ["eng", "jpn"]);
-        assert_eq!(languages["s1"].subtitles, ["eng", "fre"]);
+        assert_eq!(languages["s1"].all.audio, ["eng", "jpn"]);
+        assert_eq!(languages["s1"].all.subtitles, ["eng", "fre"]);
+    }
+
+    #[test]
+    fn each_episode_keeps_its_own_languages_beside_the_show_s() {
+        let p = pool();
+        let conn = p.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','shows','/x','t'); \
+             INSERT INTO shows (id,library,title,added_at) VALUES ('s1','lib','Show','t');",
+        )
+        .unwrap();
+        seed_episode(
+            &conn,
+            "e1",
+            r#"[{"codec":"aac","channels":2,"language":"eng"}]"#,
+            "[]",
+        );
+        seed_episode(
+            &conn,
+            "e2",
+            r#"[{"codec":"aac","channels":2,"language":"jpn"}]"#,
+            r#"[{"codec":"subrip","language":"fre"}]"#,
+        );
+        drop(conn);
+
+        let languages = show_languages(&p).unwrap();
+
+        let episodes: Vec<_> = languages["s1"]
+            .episodes
+            .iter()
+            .map(|e| (e.audio.clone(), e.subtitles.clone()))
+            .collect();
+        assert_eq!(
+            episodes,
+            [
+                (vec!["eng".to_string()], vec![]),
+                (vec!["jpn".to_string()], vec!["fre".to_string()]),
+            ]
+        );
     }
 
     #[test]

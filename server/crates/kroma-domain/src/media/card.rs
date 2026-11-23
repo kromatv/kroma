@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use super::{Kind, MediaItem, Show, TrackLanguages, VideoStream};
+use super::{Kind, MediaItem, Show, ShowLanguages, TrackLanguages, VideoStream};
 use crate::metadata::Metadata;
 
 /// A title as a list draws it: what a grid sorts, filters and paints, without
@@ -32,11 +32,11 @@ pub struct ShowCard {
     #[serde(flatten)]
     pub show: Show,
     #[serde(flatten)]
-    pub languages: TrackLanguages,
+    pub languages: ShowLanguages,
 }
 
 impl ShowCard {
-    pub fn new(show: Show, languages: TrackLanguages) -> Self {
+    pub fn new(show: Show, languages: ShowLanguages) -> Self {
         Self {
             show: show_card(show),
             languages,
@@ -134,16 +134,17 @@ mod tests {
             "metadata": enriched_movie().metadata
         }))
         .unwrap();
-        let languages = TrackLanguages {
+        let languages = ShowLanguages::of_episodes([TrackLanguages {
             audio: vec!["eng".into()],
             subtitles: vec!["fre".into()],
-        };
+        }]);
 
         let card = serde_json::to_value(ShowCard::new(show, languages)).unwrap();
 
         assert_eq!(card["seasonCount"], json!(5));
         assert_eq!(card["audioLanguages"], json!(["eng"]));
         assert_eq!(card["subtitleLanguages"], json!(["fre"]));
+        assert_eq!(card["episodeLanguages"][0]["audioLanguages"], json!(["eng"]));
         assert_eq!(card["metadata"].get("cast"), None);
     }
 

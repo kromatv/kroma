@@ -4184,7 +4184,7 @@
     "domain": "BROWSE",
     "space": "browse",
     "number": 66,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "With both filters set, a series passes only when one of its episodes",
     "file": "docs/spec/browse/README.md",
     "line": 230

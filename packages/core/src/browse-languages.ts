@@ -5,10 +5,12 @@ import { langName } from './lang-labels';
 /** Which of a title's streams a language filter reads. */
 export type LanguageStream = 'audio' | 'subtitles';
 
-/** What a card says a title can be heard and read in. */
+/** What a card says a title can be heard and read in. A series also lists
+ * what each of its episodes can, in `episodeLanguages`. */
 export interface Spoken {
   audioLanguages?: readonly string[];
   subtitleLanguages?: readonly string[];
+  episodeLanguages?: readonly Spoken[];
 }
 
 export interface LanguageCount {
@@ -77,12 +79,18 @@ export function hasLanguage(item: Spoken, stream: LanguageStream, code: string):
   return want !== null && languagesOf(item, stream).has(want);
 }
 
-/** Whether the title has every language `filter` asks for. */
-export function matchesLanguages(item: Spoken, filter: LanguageFilter): boolean {
+function hasEvery(item: Spoken, filter: LanguageFilter): boolean {
   return (
     (!filter.audio || hasLanguage(item, 'audio', filter.audio)) &&
     (!filter.subtitles || hasLanguage(item, 'subtitles', filter.subtitles))
   );
+}
+
+/** Whether the title has every language `filter` asks for. With both streams
+ * set, a series that lists its episodes needs one episode that has both. */
+export function matchesLanguages(item: Spoken, filter: LanguageFilter): boolean {
+  const episodes = filter.audio && filter.subtitles ? item.episodeLanguages : undefined;
+  return episodes ? episodes.some((episode) => hasEvery(episode, filter)) : hasEvery(item, filter);
 }
 
 /** The languages a filter offers, in the order `languages` lists them. */

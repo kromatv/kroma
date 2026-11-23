@@ -15,7 +15,7 @@ use crate::api::visibility::{self, AuthViewer, Title};
 use crate::api::etag;
 use crate::db;
 use crate::i18n::ContentLocale;
-use crate::model::{MediaCard, MediaItem, Show, ShowCard, TrackLanguages};
+use crate::model::{MediaCard, MediaItem, Show, ShowCard, ShowLanguages};
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
@@ -162,7 +162,7 @@ pub async fn list_shows(
     Ok(shows_in_view(shows, languages))
 }
 
-fn shows_in_view(shows: Vec<Show>, languages: Option<HashMap<String, TrackLanguages>>) -> Response {
+fn shows_in_view(shows: Vec<Show>, languages: Option<HashMap<String, ShowLanguages>>) -> Response {
     let Some(mut languages) = languages else {
         return Json(shows).into_response();
     };
