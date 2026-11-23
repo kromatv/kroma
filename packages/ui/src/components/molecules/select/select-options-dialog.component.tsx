@@ -5,7 +5,14 @@
 import { Dialog } from '#ui/components/organisms/dialog';
 import { FocusColumn } from '#ui/lib/focus-scope.component';
 import { usePointerDriving } from '#ui/lib/input-source';
-import { DIALOG_ROW, type SelectDismissReason, SelectRowContext } from './select-context';
+import {
+  DIALOG_ROW,
+  SelectContext,
+  type SelectDismissReason,
+  SelectRowContext,
+  type SelectRowState,
+  useSelect,
+} from './select-context';
 import type { SelectSurfaceProps } from './select-surface';
 
 // The dialog's two ways out, and it is handed neither: the backdrop belongs to
@@ -15,8 +22,16 @@ function dismissReason(pointerDriving: () => boolean): SelectDismissReason {
   return pointerDriving() ? 'outside' : 'back';
 }
 
-function SelectOptionsDialog({ open, onDismiss, label, items }: Readonly<SelectSurfaceProps>) {
+const ENTRY_ROW: SelectRowState = { ...DIALOG_ROW, autoFocus: true };
+
+function SelectOptionsDialog(props: Readonly<SelectSurfaceProps>) {
+  const { open, onDismiss, label, items, options, values } = props;
   const pointerDriving = usePointerDriving();
+  const select = useSelect('Root');
+  const entry = Math.max(
+    0,
+    options.findIndex((option) => values.includes(option.value)),
+  );
   return (
     <Dialog.Root
       open={open}
@@ -24,13 +39,18 @@ function SelectOptionsDialog({ open, onDismiss, label, items }: Readonly<SelectS
       title={label}
       width="md"
     >
-      <FocusColumn>
-        {items.map((item) => (
-          <SelectRowContext.Provider key={item.key} value={DIALOG_ROW}>
-            {item}
-          </SelectRowContext.Provider>
-        ))}
-      </FocusColumn>
+      <SelectContext.Provider value={select}>
+        <FocusColumn>
+          {items.map((item, index) => (
+            <SelectRowContext.Provider
+              key={item.key}
+              value={index === entry ? ENTRY_ROW : DIALOG_ROW}
+            >
+              {item}
+            </SelectRowContext.Provider>
+          ))}
+        </FocusColumn>
+      </SelectContext.Provider>
     </Dialog.Root>
   );
 }
