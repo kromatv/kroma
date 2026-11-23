@@ -44,25 +44,30 @@ describe('tokenize', () => {
     expect(of('const s = "he said \\"hi\\"";', 'string')).toEqual(['"he said \\"hi\\""']);
   });
 
-  it('paints a JSX tag but not a less-than', () => {
+  it('paints a JSX tag, its brackets included, but not a less-than', () => {
     expect(of('<Button />', 'tag')).toEqual(['<Button', '/>']);
-    expect(of('</Box>', 'tag')).toEqual(['</Box', '>']);
+    expect(of('<Box>x</Box>', 'tag')).toEqual(['<Box>', '</Box>']);
+    expect(of('<Table.Cell>x</Table.Cell>', 'tag')).toEqual(['<Table.Cell>', '</Table.Cell>']);
     expect(of('a < b', 'tag')).toEqual([]);
   });
 
   it('paints the end of a tag like its start, across lines too', () => {
-    expect(of('<Box>', 'tag')).toEqual(['<Box', '>']);
-    expect(of('<Box\n  gap={2}\n>', 'tag')).toEqual(['<Box', '>']);
+    expect(of('<Box\n  gap={2}\n/>', 'tag')).toEqual(['<Box', '/>']);
   });
 
   it('leaves a greater-than outside a tag, or inside one of its braces, unpainted', () => {
     expect(of('a > b', 'tag')).toEqual([]);
     expect(of('<Box onPress={() => go()} />', 'tag')).toEqual(['<Box', '/>']);
-    expect(of('<Box>{a > b}</Box>', 'tag')).toEqual(['<Box', '>', '</Box', '>']);
+    expect(of('<Box>{a > b}</Box>', 'tag')).toEqual(['<Box>', '</Box>']);
   });
 
   it('ends a tag after another one nested in its attribute', () => {
-    expect(of('<Box icon={<Icon />} gap={2}>', 'tag')).toEqual(['<Box', '<Icon', '/>', '>']);
+    expect(of('<Box icon={<Icon />} gap={2} />', 'tag')).toEqual(['<Box', '<Icon', '/>', '/>']);
+  });
+
+  it('tells a type argument from a tag', () => {
+    expect(of("const [v, set] = useState<string>('')", 'tag')).toEqual([]);
+    expect(of('const n: Array<number> = []', 'tag')).toEqual([]);
   });
 
   it('paints an attribute name, and does not mistake a comparison for one', () => {
@@ -72,17 +77,18 @@ describe('tokenize', () => {
 
   it('paints numbers and braces', () => {
     expect(of('const n = 1.5', 'number')).toEqual(['1.5']);
-    expect(of('f({ a: [1] })', 'brace')).toEqual(['(', '{', '[', ']', '}', ')']);
+    expect(of('f({ a: [1] })', 'brace')).toEqual(['({', '[', ']', '})']);
   });
 
-  it('leaves an unsupported construct uncoloured rather than mangled', () => {
-    const code = 'const re = /a{2,}/gu;';
+  it('paints a regular expression like a string', () => {
+    expect(of('const re = /a{2,}/gu;', 'string')).toEqual(['/a{2,}/gu']);
+  });
+
+  it('leaves code it cannot parse uncoloured rather than mangled', () => {
+    const code = '.card { color: red; }\n<Box gap=>';
     expect(roundTrips(code)).toBe(true);
   });
 
-  // A regex shaped `(?:[^"\\]|\\.)*` backtracks quadratically on an
-  // unterminated string, since its two branches can claim the same
-  // characters. The unrolled form here cannot, so this stays fast.
   it('does not hang on a long unterminated string', () => {
     const code = `const s = "${'a\\'.repeat(20_000)}`;
     const started = Date.now();

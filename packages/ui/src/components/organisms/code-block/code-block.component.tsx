@@ -2,13 +2,12 @@ import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
 // <CodeBlock>: a block of TSX, highlighted, numbered and copyable.
 //
-// It paints through <Text> and <Box> rather than through a highlighter, because
-// every highlighter worth having emits HTML and there is no HTML on a
+// It parses the code with Lezer and paints the result through <Text> and <Box>,
+// because every highlighter worth having emits HTML and there is no HTML on a
 // television. The palette is the design's own tokens, written as token NAMES
 // resolved at render: the workbench swaps themes at run time, and a colour read
 // once keeps the palette it was read under.
 
-import { useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -16,7 +15,7 @@ import { CopyButton } from '#ui/components/molecules/copy-button';
 import { styles } from '#ui/core';
 import { RingScope } from '#ui/lib/ring-scope.component';
 import { useCopy } from '#ui/lib/use-copy.hook';
-import { lines } from './code-tokens';
+import { useCodeLines } from './use-code-lines.hook';
 
 // `lineHeight` is shared with the gutter, and neither column adds row spacing of
 // its own, which is what keeps a number level with its line.
@@ -59,7 +58,7 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
   const s = useStyles(sDefinition);
 
   const trimmed = code.trim();
-  const rows = useMemo(() => lines(trimmed), [trimmed]);
+  const rows = useCodeLines(trimmed);
   const showNumbers = numbers ?? rows.length > 1;
   // No clipboard, no corner: a television has neither one nor anywhere to
   // paste, and the clearance goes with the button that needed it.

@@ -10,7 +10,7 @@ export const story = defineStory({
   controls: { maxHeight: { min: 80, max: 480, step: 20 } },
 });
 
-A block of TSX, highlighted, numbered and copyable. It paints through `<Text>` and `<Box>` rather than through a highlighter, because every highlighter worth having emits HTML and there is no HTML on a television. Code is never wrapped and never truncated, because a broken call site reads as a different call site, so a long line scrolls sideways under line numbers that stay put.
+A block of TSX, highlighted, numbered and copyable. It parses the code with Lezer, the parser behind CodeMirror, and paints the result through `<Text>` and `<Box>`, because every highlighter worth having emits HTML and there is no HTML on a television. Code is never wrapped and never truncated, because a broken call site reads as a different call site, so a long line scrolls sideways under line numbers that stay put.
 
 ```tsx
 <CodeBlock code={source} />
