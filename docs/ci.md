@@ -487,7 +487,7 @@ copies go before anything a run still reads.
 | `dd-tvnative-v1-*`, `dd-mobile-v1-*` | ~0.8 + 0.6 GB, one each | the Apple jobs, pruned to one |
 | `ios-tvnative-v3-*`, `ios-mobile-v3-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
-| `synology-v3`, `synology-arm64-v2` | ~0.8 GB | synology.yml |
+| `synology-v4`, `synology-arm64-v3` | measured on their first save | synology.yml |
 | `kmod` (wasm32-wasip2) | ~0.1 GB | modules.yml |
 | `rust-server-clippy`, `rust-components`, `rust-audit` | measured on their first save | ci.yml on main |
 
@@ -515,8 +515,6 @@ wrapper is the version its task outputs were built with.)
 - The Tizen Studio installer (259 MB): restored no faster than it downloads.
 - The bun binary (20 to 37 MB per platform and version, five copies): a
   GitHub release download of the same size.
-- `server/target/release` in the Synology entry: the .spk build only ever
-  writes the musl target dir.
 - Earlier: two DerivedData copies per Apple app and a separate instrumented
   Rust tree for Sonar (see above).
 

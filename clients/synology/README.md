@@ -114,9 +114,11 @@ multi-arch **Docker image** (amd64 reuses the `.spk` payload with no second
 compile, arm64 cross-compiles in its own job) and pushes it to ghcr. The dynamic
 worker source needs nothing: it reads the releases live.
 
-The musl target dir is cached between runs (`synology-v2-*` cache) and the
-cross image is digest-pinned, so a warm push build takes minutes, not a cold
-~15-minute compile. The full client fleet (desktop + TV) ships from
+The target dirs are cached between runs (`synology-v4-*` cache): the musl
+one, and `server/target/release`, where a `--target` build keeps its build
+scripts and proc macros. The cross image is digest-pinned, so a warm push
+build compiles only the server's own crates, then spends about seven minutes
+in the release profile's fat LTO. The full client fleet (desktop + TV) ships from
 `.github/workflows/release.yml` on every push to `main`, onto its own `canary`
 tag. Modules release separately, from `.github/workflows/modules.yml`.
 
