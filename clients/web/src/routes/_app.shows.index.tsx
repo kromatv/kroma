@@ -39,7 +39,7 @@ function ShowsPage() {
   const webRuntime = useWebRuntime();
 
   const t = useT();
-  const { sort = 'added', genre } = Route.useSearch();
+  const { sort = 'added', genre, audio, subtitles } = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: shows } = useSuspenseQuery(webRuntime.queries.catalogQueries.showsView());
 
@@ -52,10 +52,14 @@ function ShowsPage() {
       emptyTitle={t('content.seriesEmpty')}
       sort={sort}
       genre={genre}
+      audio={audio}
+      subtitles={subtitles}
       onSort={(mode, opts) =>
         navigate({ search: (p) => ({ ...p, sort: mode }), resetScroll: opts?.resetScroll })
       }
       onGenre={(g) => navigate({ search: (p) => ({ ...p, genre: g }) })}
+      onAudio={(code) => navigate({ search: (p) => ({ ...p, audio: code }) })}
+      onSubtitles={(code) => navigate({ search: (p) => ({ ...p, subtitles: code }) })}
       renderGrid={(view) => <ShowGrid shows={view} />}
     />
   );

@@ -15,6 +15,8 @@ async fn the_card_view_lists_every_movie_without_its_files_or_tracks() {
     for card in cards {
         assert!(card["id"].is_string() && card["title"].is_string(), "{card}");
         assert!(card["addedAt"].is_string(), "{card}");
+        assert!(card["audioLanguages"].is_array(), "{card}");
+        assert!(card["subtitleLanguages"].is_array(), "{card}");
         for gone in ["files", "subtitles", "audioTracks", "container"] {
             assert!(card.get(gone).is_none(), "{gone} in {card}");
         }
@@ -40,6 +42,8 @@ async fn the_card_view_lists_every_show_without_its_credits() {
     assert_eq!(ids(&cards), ids(&shows));
     for card in cards.as_array().unwrap() {
         assert!(card["seasonCount"].is_number(), "{card}");
+        assert!(card["audioLanguages"].is_array(), "{card}");
+        assert!(card["subtitleLanguages"].is_array(), "{card}");
         assert!(card["metadata"].get("cast").is_none(), "{card}");
         assert!(card["metadata"].get("crew").is_none(), "{card}");
     }

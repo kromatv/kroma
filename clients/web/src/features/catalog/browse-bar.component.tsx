@@ -26,7 +26,7 @@ import {
   useStyles,
   useThemeVersion,
 } from '@kromatv/ui/kit';
-import { type RefObject, useEffect, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react';
 
 import { PAGE_GUTTER } from '#web/shared/ui/page';
 
@@ -181,6 +181,9 @@ export interface BrowseBarProps {
   genres: GenreCount[];
   genre?: string;
   onGenre: (genre: string | undefined) => void;
+  /** More filter selects: beside the sort on a wide screen, on a line of their
+   *  own below it otherwise. */
+  filters?: ReactNode;
   /** The bar's root element, for callers that need its docked height (the
    *  letter-jump scroll offset). A wrapper div would break `position: sticky`. */
   innerRef?: RefObject<HTMLDivElement | null>;
@@ -200,6 +203,7 @@ export function BrowseBar({
   genres,
   genre,
   onGenre,
+  filters,
   innerRef,
 }: Readonly<BrowseBarProps>) {
   const scope = useStyleScope();
@@ -303,6 +307,7 @@ export function BrowseBar({
             ))}
           </Select.Root>
         ) : null}
+        {wide ? filters : null}
         <Select.Root
           label={t('browse.sortBy')}
           value={sort}
@@ -319,6 +324,11 @@ export function BrowseBar({
           ))}
         </Select.Root>
       </Row>
+      {filters && !wide ? (
+        <Row gap={12} mt={10}>
+          {filters}
+        </Row>
+      ) : null}
     </div>
   );
 }

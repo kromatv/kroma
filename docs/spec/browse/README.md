@@ -213,6 +213,22 @@ that did not match itself is represented by at most three of its episodes.
 **BROWSE-48** (SHIPPED) - A title the library holds under two entries is listed once, in
 search and on a person's page.
 
+## Filtering the Films and Series pages
+
+Status: **SHIPPED** on web, **AGREED** elsewhere
+
+**BROWSE-64** (SHIPPED) - The Films and Series pages filter by audio language and by subtitle
+language, beside the genre. Each lists only the languages the titles on the page carry, with
+how many titles carry each. A title passes when any track of any of its files is in that
+language, default or not, and with both set it must pass both. The web client does this; the
+television and mobile clients do not yet.
+
+**BROWSE-65** (AGREED) - A subtitle file beside a video, and a subtitle downloaded for it,
+count for the subtitle filter. Today only the subtitles inside the file count.
+
+**BROWSE-66** (AGREED) - With both filters set, a series passes only when one of its episodes
+has both. Today it passes when one episode has the audio and another the subtitles.
+
 ## Every language
 
 Status: **SHIPPED**

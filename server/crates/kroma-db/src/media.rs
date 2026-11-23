@@ -15,6 +15,7 @@ use kroma_domain::{Season, Show, ShowDetail, SplashEntry};
 mod art_owner;
 mod person;
 mod show_detail;
+mod show_languages;
 mod shows;
 mod splash;
 
@@ -24,6 +25,7 @@ mod test_support;
 pub use art_owner::*;
 pub use person::*;
 pub use show_detail::*;
+pub use show_languages::*;
 pub use shows::*;
 pub use splash::*;
 

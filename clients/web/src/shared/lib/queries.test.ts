@@ -7,6 +7,7 @@ vi.mock('#web/shared/lib/api', () => ({
   toMovieView: (_c: unknown, m: { id: string }) => ({ ...m, mapped: 'movie' }),
   toMovieCardView: (_c: unknown, m: { id: string }) => ({ ...m, mapped: 'card' }),
   toShowView: (_c: unknown, s: { id: string }) => ({ ...s, mapped: 'show' }),
+  toShowCardView: (_c: unknown, s: { id: string }) => ({ ...s, mapped: 'show card' }),
 }));
 
 const { createQueries } = await import('#web/shared/lib/queries');
@@ -66,7 +67,7 @@ describe('the catalogue views', () => {
     ]);
 
     c.media.showCards.mockResolvedValue([{ id: 's1' }]);
-    expect(await run(catalogQueries.showsView())).toEqual([{ id: 's1', mapped: 'show' }]);
+    expect(await run(catalogQueries.showsView())).toEqual([{ id: 's1', mapped: 'show card' }]);
   });
 
   it('hands the raw lists back unmapped where the ids are all that is needed', async () => {
