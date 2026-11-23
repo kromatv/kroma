@@ -6,7 +6,7 @@
 // inflating the call counts of later, unrelated tests in the same file.
 
 import { cleanup, configure } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterEach, vi } from 'vitest';
 
 // `waitFor` defaults to giving up after 1000ms, which is a wall-clock budget on
 // a machine whose speed the test cannot see. Under `test:coverage` the istanbul
@@ -82,3 +82,13 @@ for (const name of hasDom ? (['localStorage', 'sessionStorage'] as const) : []) 
 afterEach(() => {
   cleanup();
 });
+
+vi.useRealTimers();
+vi.restoreAllMocks();
+vi.unstubAllGlobals();
+vi.unstubAllEnvs();
+if (hasDom) {
+  document.body.replaceChildren();
+  localStorage.clear();
+  sessionStorage.clear();
+}

@@ -40,9 +40,16 @@ function locked(as: 'outdated' | 'unreviewed'): void {
   });
 }
 
+const drawingRules = () =>
+  [...document.head.querySelectorAll('style')].filter((style) =>
+    style.textContent.includes('::highlight(kroma-i18n-'),
+  );
+
 afterEach(() => {
   document.body.innerHTML = '';
-  document.head.innerHTML = '';
+  for (const style of drawingRules()) {
+    style.remove();
+  }
   wantStatus(null);
   forgetMarks();
   vi.unstubAllGlobals();
@@ -179,7 +186,7 @@ describe('putting the overlay up', () => {
 
     const stop = installHighlight('all');
 
-    expect(document.head.querySelector('style')?.textContent).toContain('::highlight(kroma-i18n-');
+    expect(drawingRules()).toHaveLength(1);
 
     stop();
 
@@ -193,7 +200,7 @@ describe('putting the overlay up', () => {
     installHighlight('all')();
     installHighlight('problems')();
 
-    expect(document.head.querySelectorAll('style')).toHaveLength(1);
+    expect(drawingRules()).toHaveLength(1);
   });
 
   it('paints again when the page draws something new', async () => {

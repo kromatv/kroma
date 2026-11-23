@@ -108,6 +108,19 @@ Each shard uploads its blob as `vitest-blob-<shard>-attempt-<n>`, and the
 merge keeps the newest attempt of each shard, so re-running the failed jobs
 merges the rerun's report rather than the one that failed.
 
+Each module-resolution universe is two vitest projects. `web` and `native`
+share one module graph per worker (`isolate: false`), so a worker imports
+React, react-native-web and the kit once instead of once per file. A file that
+calls `vi.mock` or `vi.doMock` would hand its mock to the files after it, so
+`vitest.config.ts` reads every test file and moves those to `web-isolated` and
+`native-isolated`, which keep the per-file isolation and run after the shared
+ones. `vitest.setup.ts` takes back what a file can leave behind: fake timers,
+spies, stubbed globals and env, the DOM body and web storage. It cannot take
+back `document.head`, where react-native-web writes its rules into one style
+element per worker, so a test removes only the elements it added there and
+never empties the head. On a four-core machine the whole suite with coverage
+went from 869 s to 701 s.
+
 Rust runs clippy and then every test under `cargo llvm-cov`, but only for the
 workspaces a change can reach. `lanes` reads the path dependencies between the
 server workspace and each module's from their `Cargo.toml` files: a module

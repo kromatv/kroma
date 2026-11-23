@@ -17,8 +17,10 @@ const sheet = () => document.getElementById('kroma-theme-test')?.textContent ?? 
 // where the derived properties (the alpha steps) are declared, and so what a
 // restatement reads to know which ones it has to carry.
 beforeAll(() => {
-  document.head.innerHTML =
-    '<style>:root{--kroma-text:#FFF;--kroma-text-75:rgba(255,255,255,0.75)}</style>';
+  const tokens = document.createElement('style');
+  tokens.textContent = ':root{--kroma-text:#FFF;--kroma-text-75:rgba(255,255,255,0.75)}';
+  document.head.append(tokens);
+  return () => tokens.remove();
 });
 
 beforeEach(() => {
