@@ -158,14 +158,20 @@ fn prepare_children(
     for e in children.iter_mut().flatten() {
         if e.file_type().is_file() {
             e.client_state = file_meta(&e.path());
-        } else if e.file_type().is_dir()
-            && e.depth > 0
-            && e.path_is_symlink()
-            && !first_descent(descended, &e.path())
-        {
+        } else if already_walked_link(descended, e) {
             e.read_children = None;
         }
     }
+}
+
+fn already_walked_link(
+    descended: &Mutex<HashSet<PathBuf>>,
+    e: &jwalk::DirEntry<((), FileMeta)>,
+) -> bool {
+    e.depth > 0
+        && e.file_type().is_dir()
+        && e.path_is_symlink()
+        && !first_descent(descended, &e.path())
 }
 
 // jwalk's own guard compares a symlink's raw target against the ancestor paths,
