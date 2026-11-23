@@ -226,6 +226,14 @@ Every way to an address the manifest does not name is closed:
   sockets at once, TCP and UDP together, and the next one is refused with
   `new-socket-limit`. It sends at most 1,000 datagrams and 1 MiB a second; past
   that a send waits.
+- **A misuse is told why.** A datagram the host will not send as asked (to the
+  other address family, to an unspecified address or port 0, larger than 65,535
+  bytes, or to a peer other than the one a socket is connected to) is refused
+  with the WASI error that says so, `invalid-argument` or `datagram-too-large`,
+  and nothing leaves. `check-send` grants 16 datagrams from the moment a stream
+  exists, and none while the budget is spent or the system cannot take more;
+  a `send` of more datagrams than it granted breaks the WASI contract and traps,
+  which costs the instance.
 - **Nothing is inherited.** Every socket is closed on exec, so a program a
   first-party module starts holds none of the component's.
 - **The audit sees them.** `kroma audit` writes down every socket and lookup a

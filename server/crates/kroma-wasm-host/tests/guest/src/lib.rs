@@ -34,6 +34,7 @@ impl Guest for Probes {
             "/udp/misuse" => answer(wasi_udp::misuse(&argument)),
             "/udp/stream-twice" => answer(wasi_udp::stream_twice()),
             "/udp/wasi-flood" => answer(wasi_udp::flood(&argument)),
+            "/udp/fresh-permits" => answer(wasi_udp::fresh_permits(&argument)),
             "/net/lookup-literal" => answer(wasi_udp::lookup_literal(&argument)),
             "/udp/many" => answer(many_udp(&argument)),
             "/udp/churn" => answer(churn_udp(&argument)),

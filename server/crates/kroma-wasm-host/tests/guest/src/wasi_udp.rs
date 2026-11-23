@@ -106,3 +106,16 @@ pub(crate) fn flood(peer: &str) -> Result<String, String> {
     }
     Ok(sent.to_string())
 }
+
+pub(crate) fn fresh_permits(streams: &str) -> Result<String, String> {
+    let streams: usize = streams.parse().map_err(|_| format!("not a count: {streams}"))?;
+    let mut refused = 0;
+    for _ in 0..streams {
+        let socket = create_udp_socket(IpAddressFamily::Ipv4).map_err(failed)?;
+        let (_incoming, outgoing) = socket.stream(None).map_err(failed)?;
+        if outgoing.check_send().map_err(failed)? == 0 {
+            refused += 1;
+        }
+    }
+    Ok(format!("{refused} of {streams} fresh streams granted nothing"))
+}
