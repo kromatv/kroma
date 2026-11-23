@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use serde::{Deserialize, Serialize};
 
 use crate::histogram::Histogram;
-use crate::segment::Counters;
+use crate::segment::{Counters, Segment};
 
 const CALLERS_KEPT: usize = 16;
 const PARTS_KEPT: usize = 32;
@@ -48,9 +48,9 @@ pub struct SegmentStats {
 }
 
 impl SegmentStats {
-    pub fn record(&mut self, nanos: u64, counters: &Counters, caller: &str) {
-        self.timing.record(nanos);
-        self.counters.add(counters);
+    pub fn record(&mut self, segment: &Segment, caller: &str) {
+        self.timing.record(segment.elapsed_ns);
+        self.counters.add(&segment.counters);
         count_caller(&mut self.callers, caller, 1);
     }
 
@@ -269,8 +269,15 @@ mod tests {
     fn callers_past_the_cap_fold_into_one_entry() {
         let mut stats = SegmentStats::default();
 
+        let segment = Segment {
+            kind: "sql",
+            key: 1,
+            elapsed_ns: 1_000,
+            counters: Counters::default(),
+            nested: false,
+        };
         for i in 0..40 {
-            stats.record(1_000, &Counters::default(), &format!("GET /api/r{i}"));
+            stats.record(&segment, &format!("GET /api/r{i}"));
         }
 
         assert_eq!(stats.callers.len(), CALLERS_KEPT + 1);

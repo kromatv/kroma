@@ -1,5 +1,19 @@
+import type { PerfScopeRow, PerfSlowRequest } from '@kromatv/client/performance';
+import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
-import { formatMs, scopeId, segmentsOf, shortLabel, sortRows } from './performance-format';
+import {
+  figuresOf,
+  flagLook,
+  formatMs,
+  hasPlan,
+  kindLabel,
+  SCOPE_FIGURES,
+  scopeId,
+  segmentsOf,
+  shortLabel,
+  SLOW_FIGURES,
+  sortRows,
+} from './performance-format';
 
 const rows = [
   { name: 'b', total: 5, calls: 1 },
@@ -28,13 +42,45 @@ function segment(kind: string) {
     maxMs: 0,
     rowsPerCall: 0,
     fullScanStepsPerCall: 0,
-    vmStepsPerCall: 0,
     sorts: 0,
     autoIndexes: 0,
     callers: [],
     flags: [],
   };
 }
+
+const spread = { count: 3, totalMs: 30, meanMs: 10, p50Ms: 9, p95Ms: 14, p99Ms: 15, maxMs: 16 };
+
+const scope: PerfScopeRow = {
+  kind: 'request',
+  name: 'GET /api/home',
+  ...spread,
+  serverErrors: 0,
+  clientErrors: 0,
+  segmentsPerCall: 4,
+  kinds: { sql: { perCall: 4, msPerCall: 2 } },
+  maxSegments: 4,
+  worstRepeat: null,
+  bytesPerCall: null,
+  parts: [],
+  flags: [],
+};
+
+const slow: PerfSlowRequest = {
+  id: '7',
+  atMs: 0,
+  name: 'GET /api/home',
+  status: null,
+  totalMs: 1240,
+  kinds: {},
+  segments: 0,
+  bytes: null,
+  repeats: [{ key: '1', kind: 'sql', label: 'SELECT 1', origin: 'core', count: 24 }],
+  droppedSteps: 0,
+  waterfall: [],
+};
+
+const t: Translate = (key: string, _vars?: unknown) => `[${key}]`;
 
 describe('formatMs', () => {
   it.each([
@@ -89,5 +135,61 @@ describe('shortLabel', () => {
   it('keeps a short label whole and cuts a long one with a marker', () => {
     expect(shortLabel('SELECT 1')).toBe('SELECT 1');
     expect(shortLabel('x'.repeat(400))).toBe(`${'x'.repeat(72)}…`);
+  });
+});
+
+describe('figuresOf', () => {
+  it('shows a route with no repeat as a dash', () => {
+    expect(figuresOf(scope, SCOPE_FIGURES)).toEqual([
+      ['count', '3'],
+      ['total', '30.0 ms'],
+      ['p50', '9.0 ms'],
+      ['p95', '14.0 ms'],
+      ['max', '16.0 ms'],
+      ['sql', '4.0'],
+      ['repeat', '-'],
+    ]);
+  });
+
+  it('shows a slow request with no status and no statement as dashes', () => {
+    expect(figuresOf(slow, SLOW_FIGURES)).toEqual([
+      ['status', '-'],
+      ['total', '1.24 s'],
+      ['sql', '-'],
+      ['repeat', '24×'],
+    ]);
+  });
+
+  it('shows what a slow request spent in SQL', () => {
+    const request = { ...slow, status: 200, kinds: { sql: { count: 20, ms: 41 } }, repeats: [] };
+
+    expect(figuresOf(request, SLOW_FIGURES)).toEqual([
+      ['status', '200'],
+      ['total', '1.24 s'],
+      ['sql', '20 · 41.0 ms'],
+      ['repeat', '-'],
+    ]);
+  });
+});
+
+describe('kindLabel', () => {
+  it('names a kind it knows and keeps the word of one it does not', () => {
+    expect(kindLabel('http', t)).toBe('[perf.kindHttp]');
+    expect(kindLabel('cache', t)).toBe('cache');
+  });
+});
+
+describe('flagLook', () => {
+  it('draws a known flag in its tone and a new one in a neutral tone', () => {
+    expect(flagLook('n_plus_one', t)).toEqual({ label: '[perf.flagNPlusOne]', tone: 'danger' });
+    expect(flagLook('lock_wait', t)).toEqual({ label: 'lock_wait', tone: 'neutral' });
+  });
+});
+
+describe('hasPlan', () => {
+  it('plans a statement of the core database only', () => {
+    expect(hasPlan({ kind: 'sql', origin: 'core' })).toBe(true);
+    expect(hasPlan({ kind: 'sql', origin: 'tv.kroma.acquisition' })).toBe(false);
+    expect(hasPlan({ kind: 'span', origin: 'core' })).toBe(false);
   });
 });

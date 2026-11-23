@@ -7,7 +7,6 @@ import { build } from './subcommands/build';
 import { check } from './subcommands/check';
 import { install } from './subcommands/install';
 import { login } from './subcommands/login';
-import { perf } from './subcommands/perf';
 import { cargo } from './subcommands/cargo';
 import { registry } from './subcommands/registry';
 import { serve } from './subcommands/serve';
@@ -25,7 +24,6 @@ const main = defineCommand({
     i18n,
     install,
     login,
-    perf,
     cargo,
     registry,
     serve,

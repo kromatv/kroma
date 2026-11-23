@@ -1,20 +1,12 @@
 import { z } from 'zod';
 import type { RequestContext } from '../../core/client';
-import {
-  type PerfExportFormat,
-  PerfLiveRow,
-  PerfOverview,
-  PerfPlan,
-  PerfSlowRequest,
-  type PerfWindow,
-} from './schemas';
+import { PerfOverview, PerfPlan, PerfSlowRequest, type PerfWindow } from './schemas';
 
 const SlowList = z.object({ requests: z.array(PerfSlowRequest) });
-const Running = z.object({ running: z.array(PerfLiveRow) });
 const Switched = z.object({ enabled: z.boolean() });
 
-/** What the server's profiler measured: routes, jobs, statements and spans, the
- * slow requests with their waterfalls, and what runs right now. */
+/** What the server's profiler measured: routes, jobs, statements and spans, and
+ * the slow requests with their waterfalls. */
 export default function performanceApi(ctx: RequestContext) {
   return {
     overview: (window: PerfWindow) =>
@@ -27,15 +19,12 @@ export default function performanceApi(ctx: RequestContext) {
     slowRequest: (id: string) =>
       ctx.get('/admin/performance/slow/:id', PerfSlowRequest, { params: { id } }),
 
-    live: () => ctx.get('/admin/performance/live', Running),
-
     /** Only a statement of the core database has one. */
     plan: (key: string) =>
       ctx.get('/admin/performance/segments/:key/plan', PerfPlan, { params: { key } }),
 
-    /** One record per line (`jsonl`), or a ranked summary (`md`). */
-    export: (window: PerfWindow, format: PerfExportFormat) =>
-      ctx.blob('/admin/performance/export', { query: { window, format } }),
+    /** One JSON record per line, opened by a `meta` record that explains them. */
+    export: (window: PerfWindow) => ctx.blob('/admin/performance/export', { query: { window } }),
 
     setEnabled: (enabled: boolean) =>
       ctx.put('/admin/performance/enabled', Switched, { body: { enabled } }),

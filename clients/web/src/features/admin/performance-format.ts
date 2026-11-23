@@ -1,4 +1,10 @@
-import type { PerfScopeRow, PerfSegmentRow } from '@kromatv/client/performance';
+import type {
+  PerfFlag,
+  PerfScopeRow,
+  PerfSegmentRow,
+  PerfSlowRequest,
+} from '@kromatv/client/performance';
+import type { MessageKey, Translate } from '@kromatv/i18n';
 import type { SortColumn } from '@kromatv/ui/kit';
 
 type Read<T> = (row: T) => number | string;
@@ -80,4 +86,96 @@ export function shortLabel(label: string): string {
 /** How a route or job is named in the URL that opens its drawer. */
 export function scopeId(row: Pick<PerfScopeRow, 'kind' | 'name'>): string {
   return `${row.kind}:${row.name}`;
+}
+
+type Show<T> = (row: T) => string;
+
+/** A row's figures for its table, as `[column, text]` in the order `shown`
+ *  lists them. */
+export function figuresOf<T>(row: T, shown: Readonly<Record<string, Show<T>>>): [string, string][] {
+  return Object.entries(shown).map(([column, show]) => [column, show(row)]);
+}
+
+function times(count: number | undefined): string {
+  return count === undefined ? '-' : `${count}×`;
+}
+
+/** The figures a route or job row shows after its name. */
+export const SCOPE_FIGURES: Readonly<Record<string, Show<PerfScopeRow>>> = {
+  count: (row) => String(row.count),
+  total: (row) => formatMs(row.totalMs),
+  p50: (row) => formatMs(row.p50Ms),
+  p95: (row) => formatMs(row.p95Ms),
+  max: (row) => formatMs(row.maxMs),
+  sql: (row) => (row.kinds.sql?.perCall ?? 0).toFixed(1),
+  repeat: (row) => times(row.worstRepeat?.count),
+};
+
+/** The figures a statement, span or call row shows after its label. */
+export const SEGMENT_FIGURES: Readonly<Record<string, Show<PerfSegmentRow>>> = {
+  count: (row) => String(row.count),
+  total: (row) => formatMs(row.totalMs),
+  p95: (row) => formatMs(row.p95Ms),
+  max: (row) => formatMs(row.maxMs),
+  rows: (row) => row.rowsPerCall.toFixed(1),
+};
+
+function sqlSpent(row: PerfSlowRequest): string {
+  const sql = row.kinds.sql;
+  return sql ? `${sql.count} · ${formatMs(sql.ms)}` : '-';
+}
+
+/** The figures a slow request row shows after its time and name. */
+export const SLOW_FIGURES: Readonly<Record<string, Show<PerfSlowRequest>>> = {
+  status: (row) => (row.status === null ? '-' : String(row.status)),
+  total: (row) => formatMs(row.totalMs),
+  sql: sqlSpent,
+  repeat: (row) => times(row.repeats[0]?.count),
+};
+
+/** The columns a slow request sorts by. */
+export const SLOW_SORT: Readonly<Record<string, Read<PerfSlowRequest>>> = {
+  at: (row) => row.atMs,
+  name: (row) => row.name,
+  total: (row) => row.totalMs,
+  sql: (row) => row.kinds.sql?.ms ?? 0,
+};
+
+const KIND_LABEL: Readonly<Record<string, MessageKey>> = {
+  sql: 'perf.kindSql',
+  span: 'perf.kindSpan',
+  http: 'perf.kindHttp',
+};
+
+/** How a kind of segment is named; one the page does not know reads as its own
+ *  word. */
+export function kindLabel(kind: string, t: Translate): string {
+  const key = KIND_LABEL[kind];
+  return key ? t(key) : kind;
+}
+
+type Tone = 'danger' | 'warning' | 'info' | 'neutral';
+
+const FLAGS: Readonly<Record<string, { labelKey: MessageKey; tone: Tone }>> = {
+  n_plus_one: { labelKey: 'perf.flagNPlusOne', tone: 'danger' },
+  server_errors: { labelKey: 'perf.flagServerErrors', tone: 'danger' },
+  full_scan: { labelKey: 'perf.flagFullScan', tone: 'danger' },
+  auto_index: { labelKey: 'perf.flagAutoIndex', tone: 'danger' },
+  slow_p95: { labelKey: 'perf.flagSlowP95', tone: 'warning' },
+  cold_outlier: { labelKey: 'perf.flagColdOutlier', tone: 'warning' },
+  temp_sort: { labelKey: 'perf.flagTempSort', tone: 'warning' },
+  large_response: { labelKey: 'perf.flagLargeResponse', tone: 'info' },
+};
+
+/** How a flag is drawn: its words and its tone. A flag a newer server adds
+ *  reads as its own name, in a neutral tone. */
+export function flagLook(flag: PerfFlag, t: Translate): { label: string; tone: Tone } {
+  const known = FLAGS[flag];
+  return known ? { label: t(known.labelKey), tone: known.tone } : { label: flag, tone: 'neutral' };
+}
+
+/** Whether the server can show a segment's query plan: a statement of the core
+ *  database. */
+export function hasPlan(row: Pick<PerfSegmentRow, 'kind' | 'origin'>): boolean {
+  return row.kind === 'sql' && row.origin === 'core';
 }

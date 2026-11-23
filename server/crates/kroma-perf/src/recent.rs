@@ -3,7 +3,7 @@ use std::collections::{HashMap, VecDeque};
 use serde::{Deserialize, Serialize};
 
 use crate::scope::ScopeKind;
-use crate::segment::Counters;
+use crate::segment::Segment;
 use crate::stats::{Run, ScopeStats, SegmentStats};
 
 pub(crate) const BUCKET_MS: i64 = 5 * 60 * 1_000;
@@ -64,12 +64,12 @@ impl Recent {
         }
     }
 
-    pub fn record_segment(&mut self, key: u64, nanos: u64, counters: &Counters, caller: &str) {
+    pub fn record_segment(&mut self, segment: &Segment, caller: &str) {
         self.open
             .segments
-            .entry(key)
+            .entry(segment.key)
             .or_default()
-            .record(nanos, counters, caller);
+            .record(segment, caller);
     }
 
     pub fn record_scope(&mut self, key: ScopeKey, run: &Run) {

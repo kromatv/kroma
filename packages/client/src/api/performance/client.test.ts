@@ -22,12 +22,6 @@ describe('the performance endpoints', () => {
       path: '/admin/performance/slow/1795400000000123',
     },
     {
-      name: 'live',
-      call: (c) => c.performance.live(),
-      method: 'GET',
-      path: '/admin/performance/live',
-    },
-    {
       name: 'plan',
       call: (c) => c.performance.plan('4611686018427387904'),
       method: 'GET',
@@ -35,9 +29,9 @@ describe('the performance endpoints', () => {
     },
     {
       name: 'export',
-      call: (c) => c.performance.export('7d', 'md'),
+      call: (c) => c.performance.export('7d'),
       method: 'GET',
-      path: '/admin/performance/export?window=7d&format=md',
+      path: '/admin/performance/export?window=7d',
     },
     {
       name: 'the switch',

@@ -1,7 +1,7 @@
 //! Performance admin API (`/api/admin/performance`): what the profiler
-//! measured, the slow requests and their waterfalls, what runs right now, the
-//! query plan of a core statement, the export, and the switch. Reading needs any
-//! admin capability; switching needs `settings.manage`.
+//! measured, the slow requests and their waterfalls, the query plan of a core
+//! statement, the export, and the switch. Reading needs any admin capability;
+//! switching needs `settings.manage`.
 
 use std::path::Path;
 
@@ -10,17 +10,16 @@ use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, put};
 use axum::{Json, Router};
-use kroma_perf::{Format, Overview, Window, profiler};
+use kroma_perf::{Descriptor, Overview, Window, profiler};
 use rusqlite::{Connection, OpenFlags};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{Value, json};
 
 use crate::api::error::json_error;
 use crate::api::extract::AuthUser;
 use crate::api::util::blocking;
-use crate::boot::profiling::allowed_by_env;
+use crate::boot::profiling::{PROFILING_KEY, allowed_by_env};
 use crate::model::Permission;
-use crate::services::settings::PROFILING_KEY;
 use crate::state::SharedState;
 
 pub fn routes() -> Router<SharedState> {
@@ -28,7 +27,6 @@ pub fn routes() -> Router<SharedState> {
         .route("/performance", get(overview))
         .route("/performance/slow", get(slow_list))
         .route("/performance/slow/{id}", get(slow_one))
-        .route("/performance/live", get(live))
         .route("/performance/segments/{key}/plan", get(plan))
         .route("/performance/export", get(export))
         .route("/performance/enabled", put(switch))
@@ -37,12 +35,6 @@ pub fn routes() -> Router<SharedState> {
 #[derive(Deserialize)]
 struct WindowQuery {
     window: Option<Window>,
-}
-
-#[derive(Deserialize)]
-struct ExportQuery {
-    window: Option<Window>,
-    format: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -94,18 +86,10 @@ async fn slow_one(
     AxPath(id): AxPath<String>,
 ) -> Result<Response, Response> {
     super::require_any_admin(&user)?;
-    let id: u64 = id
-        .parse()
-        .map_err(|_| json_error(StatusCode::BAD_REQUEST, "not a request id"))?;
-    match blocking(move || Ok(profiler().slow_report(id))).await? {
-        Some(report) => Ok(Json(report).into_response()),
-        None => Err(json_error(StatusCode::NOT_FOUND, "no such slow request")),
-    }
-}
-
-async fn live(AuthUser(user): AuthUser) -> Result<Response, Response> {
-    super::require_any_admin(&user)?;
-    Ok(Json(json!({ "running": profiler().live_rows() })).into_response())
+    let report = blocking(move || Ok(id.parse().ok().and_then(|id| profiler().slow_report(id))))
+        .await?
+        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "no such slow request"))?;
+    Ok(Json(report).into_response())
 }
 
 async fn plan(
@@ -114,23 +98,26 @@ async fn plan(
     AxPath(key): AxPath<String>,
 ) -> Result<Response, Response> {
     super::require_any_admin(&user)?;
-    let key: u64 = key
+    let segment = key
         .parse()
-        .map_err(|_| json_error(StatusCode::BAD_REQUEST, "not a segment key"))?;
-    let Some(segment) = profiler().describe(key) else {
-        return Err(json_error(StatusCode::NOT_FOUND, "no such segment"));
-    };
-    if segment.kind != "sql" || segment.origin.as_deref() != Some("core") {
-        return Ok(Json(json!({ "plan": null, "error": "only a statement of the core database has a plan here" })).into_response());
-    }
+        .ok()
+        .and_then(|key| profiler().describe(key))
+        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "no such segment"))?;
     let path = state.config.db_path();
-    let planned =
-        blocking(move || Ok(explain(&path, &segment.label).map_err(|e| format!("{e:#}")))).await?;
-    Ok(match planned {
-        Ok(steps) => Json(json!({ "plan": steps, "error": null })),
-        Err(error) => Json(json!({ "plan": null, "error": error })),
+    let answer = blocking(move || Ok(plan_of(&path, &segment))).await?;
+    Ok(Json(answer).into_response())
+}
+
+fn plan_of(db: &Path, segment: &Descriptor) -> Value {
+    let planned = if segment.kind == "sql" && segment.origin.as_deref() == Some("core") {
+        explain(db, &segment.label).map_err(|e| format!("{e:#}"))
+    } else {
+        Err("only a statement of the core database has a plan here".to_string())
+    };
+    match planned {
+        Ok(steps) => json!({ "plan": steps, "error": null }),
+        Err(error) => json!({ "plan": null, "error": error }),
     }
-    .into_response())
 }
 
 fn explain(db: &Path, label: &str) -> anyhow::Result<Vec<PlanStep>> {
@@ -158,33 +145,24 @@ fn explain(db: &Path, label: &str) -> anyhow::Result<Vec<PlanStep>> {
 async fn export(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,
-    Query(q): Query<ExportQuery>,
+    Query(q): Query<WindowQuery>,
 ) -> Result<Response, Response> {
     super::require_any_admin(&user)?;
     let window = q.window.unwrap_or(Window::Day);
-    let (format, mime, extension) = match q.format.as_deref() {
-        Some("md" | "markdown") => (Format::Markdown, "text/markdown; charset=utf-8", "md"),
-        _ => (
-            Format::JsonLines,
-            "application/x-ndjson; charset=utf-8",
-            "jsonl",
-        ),
-    };
     let source = json!({
         "product": "KROMA",
         "version": crate::VERSION,
         "build": crate::BUILD,
         "server": state.settings.get_str("serverName", "KROMA"),
     });
-    let body = blocking(move || Ok(profiler().export(window, format, source))).await?;
-    let disposition = format!(
-        "attachment; filename=\"kroma-performance-{}.{extension}\"",
-        window.as_str()
-    );
+    let body = blocking(move || Ok(profiler().export(window, source))).await?;
     Ok((
         [
-            (header::CONTENT_TYPE, mime.to_string()),
-            (header::CONTENT_DISPOSITION, disposition),
+            (header::CONTENT_TYPE, "application/x-ndjson; charset=utf-8"),
+            (
+                header::CONTENT_DISPOSITION,
+                "attachment; filename=\"kroma-performance.jsonl\"",
+            ),
         ],
         body,
     )
@@ -213,7 +191,7 @@ async fn switch(
 
 #[cfg(test)]
 mod tests {
-    use super::explain;
+    use super::{Descriptor, explain, plan_of};
 
     #[test]
     fn a_statement_with_a_collapsed_list_still_has_a_plan() {
@@ -231,6 +209,21 @@ mod tests {
             "{:?}",
             plan.iter().map(|s| &s.detail).collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn only_a_core_statement_is_planned() {
+        let dir = kroma_testing::temp_dir("perf-plan-module");
+        let segment = Descriptor {
+            kind: "sql".into(),
+            label: "SELECT 1".into(),
+            origin: Some("tv.kroma.acquisition".into()),
+        };
+
+        let answer = plan_of(&dir.path().join("kroma.db"), &segment);
+
+        assert!(answer["plan"].is_null());
+        assert!(answer["error"].is_string());
     }
 
     #[test]

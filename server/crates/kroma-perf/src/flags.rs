@@ -50,13 +50,10 @@ pub(crate) fn is_cold_outlier(spread: &Spread) -> bool {
     spread.max_ms >= 1_000.0 && spread.max_ms >= 10.0 * spread.p50_ms.max(1.0)
 }
 
-pub(crate) fn segment_flags(
-    kind: &str,
-    stats: &SegmentStats,
-    spread: &Spread,
-    full_scan_steps_per_call: f64,
-) -> Vec<Flag> {
+pub(crate) fn segment_flags(kind: &str, stats: &SegmentStats, spread: &Spread) -> Vec<Flag> {
     let slow_ms = if kind == "sql" { 100.0 } else { 250.0 };
+    let full_scan_steps_per_call =
+        stats.counters.full_scan_steps as f64 / stats.timing.count.max(1) as f64;
     let mut flags = Vec::new();
     if spread.p95_ms >= slow_ms {
         flags.push(Flag::SlowP95);

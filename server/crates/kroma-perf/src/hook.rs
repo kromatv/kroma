@@ -230,7 +230,6 @@ unsafe fn status_of(statement: *mut ffi::sqlite3_stmt) -> Counters {
         full_scan_steps: read(ffi::SQLITE_STMTSTATUS_FULLSCAN_STEP),
         sorts: read(ffi::SQLITE_STMTSTATUS_SORT),
         auto_indexes: read(ffi::SQLITE_STMTSTATUS_AUTOINDEX),
-        vm_steps: read(ffi::SQLITE_STMTSTATUS_VM_STEP),
     }
 }
 

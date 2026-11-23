@@ -7,7 +7,6 @@ import { create } from './create';
 import { dev } from './dev';
 import { install } from './install';
 import { login } from './login';
-import { perf } from './perf';
 import { registry } from './registry';
 import { release } from './release';
 import { serve } from './serve';
@@ -20,7 +19,6 @@ const handlers = vi.hoisted(() => ({
   audit: vi.fn(),
   install: vi.fn(),
   login: vi.fn(),
-  perf: vi.fn(),
   cargo: vi.fn(),
   registry: vi.fn(),
   serve: vi.fn(),
@@ -35,7 +33,6 @@ vi.mock('../commands/check', () => ({ checkCommand: handlers.check }));
 vi.mock('../commands/audit', () => ({ auditCommand: handlers.audit }));
 vi.mock('../commands/install', () => ({ installCommand: handlers.install }));
 vi.mock('../commands/login', () => ({ loginCommand: handlers.login }));
-vi.mock('../commands/perf', () => ({ perfCommand: handlers.perf }));
 vi.mock('../commands/cargo', () => ({ cargoCommand: handlers.cargo }));
 vi.mock('../commands/registry', () => ({ registryCommand: handlers.registry }));
 vi.mock('../commands/serve', () => ({ serveCommand: handlers.serve }));
@@ -142,20 +139,6 @@ describe('login', () => {
     await runOf(login)({ args: { server: 's', email: 'e', password: 'p' }, rawArgs: [] });
 
     expect(handlers.login).toHaveBeenCalledWith({ server: 's', email: 'e', password: 'p' });
-  });
-});
-
-describe('perf', () => {
-  it('hands the period, the format and where to write on', async () => {
-    await runOf(perf)({ args: { window: '7d', format: 'md', out: 'p.md' }, rawArgs: [] });
-
-    expect(handlers.perf).toHaveBeenCalledWith({
-      window: '7d',
-      format: 'md',
-      out: 'p.md',
-      server: undefined,
-      token: undefined,
-    });
   });
 });
 

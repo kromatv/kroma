@@ -55,7 +55,16 @@ fn a_full_scan_is_flagged_per_call_not_in_total() {
         full_scan_steps: 5_000,
         ..Default::default()
     };
-    stats.record(2_000_000, &scan, "GET /api/people");
+    stats.record(
+        &crate::segment::Segment {
+            kind: "sql",
+            key: 1,
+            elapsed_ns: 2_000_000,
+            counters: scan,
+            nested: false,
+        },
+        "GET /api/people",
+    );
 
     let row = segment_row(
         Named {

@@ -9,7 +9,7 @@ import {
   type PerfStat,
   PerfStats,
 } from '#web/features/admin/performance-drawer-parts.component';
-import { formatMs } from '#web/features/admin/performance-format';
+import { formatMs, hasPlan } from '#web/features/admin/performance-format';
 import { useAuth } from '#web/shared/lib/auth';
 
 function figures(row: PerfSegmentRow): PerfStat[] {
@@ -110,7 +110,7 @@ export function PerfSegmentDrawer({
       <Drawer.Panel>
         <PerfStats stats={figures(row)} />
         <PerfFlagSection flags={row.flags} />
-        {row.kind === 'sql' && row.origin === 'core' ? <QueryPlan segmentKey={row.key} /> : null}
+        {hasPlan(row) ? <QueryPlan segmentKey={row.key} /> : null}
         <Callers row={row} />
       </Drawer.Panel>
     </Drawer.Root>

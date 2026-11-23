@@ -64,24 +64,35 @@ impl SlowRequest {
     }
 }
 
-/// The most recent slow requests, newest last.
+/// The most recent slow requests, newest last, and how many of the newest a
+/// store has not taken yet.
 #[derive(Default)]
-pub(crate) struct SlowRing(VecDeque<SlowRequest>);
+pub(crate) struct SlowRing {
+    kept: VecDeque<SlowRequest>,
+    unsaved: usize,
+}
 
 impl SlowRing {
     pub fn push(&mut self, request: SlowRequest) {
-        if self.0.len() == KEPT {
-            self.0.pop_front();
+        if self.kept.len() == KEPT {
+            self.kept.pop_front();
         }
-        self.0.push_back(request);
+        self.kept.push_back(request);
+        self.unsaved = (self.unsaved + 1).min(KEPT);
     }
 
     pub fn list(&self) -> Vec<SlowRequest> {
-        self.0.iter().cloned().collect()
+        self.kept.iter().cloned().collect()
     }
 
     pub fn find(&self, id: u64) -> Option<SlowRequest> {
-        self.0.iter().find(|r| r.id == id).cloned()
+        self.kept.iter().find(|r| r.id == id).cloned()
+    }
+
+    pub fn take_unsaved(&mut self) -> Vec<SlowRequest> {
+        let unsaved = std::mem::take(&mut self.unsaved);
+        let from = self.kept.len() - unsaved;
+        self.kept.iter().skip(from).cloned().collect()
     }
 }
 
@@ -124,6 +135,19 @@ mod tests {
             SLOW_MS - 1,
             REPEATS_FLAGGED - 1
         )));
+    }
+
+    #[test]
+    fn a_store_takes_each_slow_request_once() {
+        let mut ring = SlowRing::default();
+        ring.push(request(1));
+        ring.take_unsaved();
+        ring.push(request(2));
+
+        let taken: Vec<u64> = ring.take_unsaved().iter().map(|r| r.id).collect();
+
+        assert_eq!(taken, vec![2]);
+        assert!(ring.take_unsaved().is_empty());
     }
 
     #[test]

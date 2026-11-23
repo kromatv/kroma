@@ -4,7 +4,8 @@ import { Box, type SortColumn, Table, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PerfFlags } from '#web/features/admin/performance-flags.component';
 import {
-  formatMs,
+  figuresOf,
+  SEGMENT_FIGURES,
   SEGMENT_SORT,
   shortLabel,
   sortRows,
@@ -27,16 +28,6 @@ const COLUMNS: readonly PerfColumn[] = [
   { labelKey: 'perf.colFlags', flex: 1.4, min: 160 },
 ];
 
-function figures(row: PerfSegmentRow): [string, string][] {
-  return [
-    ['count', String(row.count)],
-    ['total', formatMs(row.totalMs)],
-    ['p95', formatMs(row.p95Ms)],
-    ['max', formatMs(row.maxMs)],
-    ['rows', row.rowsPerCall.toFixed(1)],
-  ];
-}
-
 function SegmentRow({ row }: Readonly<{ row: PerfSegmentRow }>) {
   return (
     <Table.Row asChild>
@@ -51,7 +42,7 @@ function SegmentRow({ row }: Readonly<{ row: PerfSegmentRow }>) {
             </Text>
           </Box>
         </Table.Cell>
-        {figures(row).map(([column, value]) => (
+        {figuresOf(row, SEGMENT_FIGURES).map(([column, value]) => (
           <Table.Cell key={column}>
             <PerfNumber>{value}</PerfNumber>
           </Table.Cell>

@@ -7,7 +7,7 @@ use crate::profiler::{Profiler, Window};
 use crate::recent::{Bucket, ScopeKey};
 use crate::scope::{now_ms, ScopeKind};
 use crate::segment::Descriptor;
-use crate::stats::{ScopeStats, SegmentStats, Timing};
+use crate::stats::{Part, ScopeStats, SegmentStats, Timing};
 
 pub use crate::flags::Flag;
 
@@ -98,7 +98,6 @@ pub struct SegmentRow {
     pub spread: Spread,
     pub rows_per_call: f64,
     pub full_scan_steps_per_call: f64,
-    pub vm_steps_per_call: f64,
     pub sorts: u64,
     pub auto_indexes: u64,
     pub callers: Vec<CallerRow>,
@@ -171,11 +170,40 @@ fn scope_rows(bucket: &Bucket, kind: ScopeKind, name: &dyn Fn(u64) -> Named) -> 
 fn scope_row(key: &ScopeKey, stats: &ScopeStats, name: &dyn Fn(u64) -> Named) -> ScopeRow {
     let calls = stats.timing.count.max(1) as f64;
     let spread = spread_of(&stats.timing);
-    let worst_repeat = (stats.worst_repeat.count > 1).then(|| RepeatRow {
-        segment: name(stats.worst_repeat.key),
-        count: stats.worst_repeat.count,
-    });
     let bytes_per_call = (stats.sized > 0).then(|| stats.bytes as f64 / stats.sized as f64);
+    let flags = scope_flags(stats, &spread, bytes_per_call);
+    ScopeRow {
+        kind: key.kind,
+        name: key.name.clone(),
+        spread,
+        server_errors: stats.server_errors,
+        client_errors: stats.client_errors,
+        segments_per_call: stats.segments as f64 / calls,
+        kinds: kind_rows(stats, calls),
+        max_segments: stats.max_segments,
+        worst_repeat: (stats.worst_repeat.count > 1).then(|| RepeatRow {
+            segment: name(stats.worst_repeat.key),
+            count: stats.worst_repeat.count,
+        }),
+        bytes_per_call,
+        parts: part_rows(stats, calls, name),
+        flags,
+    }
+}
+
+fn kind_rows(stats: &ScopeStats, calls: f64) -> BTreeMap<String, KindRow> {
+    let row = |part: &Part| KindRow {
+        per_call: part.count as f64 / calls,
+        ms_per_call: round(part.total_ns as f64 / NS_PER_MS / calls),
+    };
+    stats
+        .kinds
+        .iter()
+        .map(|(kind, part)| (kind.clone(), row(part)))
+        .collect()
+}
+
+fn part_rows(stats: &ScopeStats, calls: f64, name: &dyn Fn(u64) -> Named) -> Vec<PartRow> {
     let mut parts: Vec<PartRow> = stats
         .parts
         .iter()
@@ -187,33 +215,7 @@ fn scope_row(key: &ScopeKey, stats: &ScopeStats, name: &dyn Fn(u64) -> Named) ->
         .collect();
     parts.sort_by(|a, b| b.ms_per_call.total_cmp(&a.ms_per_call));
     parts.truncate(PARTS_LISTED);
-    let flags = scope_flags(stats, &spread, bytes_per_call);
-    ScopeRow {
-        kind: key.kind,
-        name: key.name.clone(),
-        spread,
-        server_errors: stats.server_errors,
-        client_errors: stats.client_errors,
-        segments_per_call: stats.segments as f64 / calls,
-        kinds: stats
-            .kinds
-            .iter()
-            .map(|(kind, part)| {
-                (
-                    kind.clone(),
-                    KindRow {
-                        per_call: part.count as f64 / calls,
-                        ms_per_call: round(part.total_ns as f64 / NS_PER_MS / calls),
-                    },
-                )
-            })
-            .collect(),
-        max_segments: stats.max_segments,
-        worst_repeat,
-        bytes_per_call,
-        parts,
-        flags,
-    }
+    parts
 }
 
 fn segment_row(segment: Named, stats: &SegmentStats) -> SegmentRow {
@@ -228,14 +230,12 @@ fn segment_row(segment: Named, stats: &SegmentStats) -> SegmentRow {
         })
         .collect();
     callers.sort_by_key(|c| std::cmp::Reverse(c.count));
-    let full_scan_steps_per_call = stats.counters.full_scan_steps as f64 / calls;
-    let flags = segment_flags(&segment.kind, stats, &spread, full_scan_steps_per_call);
+    let flags = segment_flags(&segment.kind, stats, &spread);
     SegmentRow {
         segment,
         spread,
         rows_per_call: stats.counters.rows as f64 / calls,
-        full_scan_steps_per_call,
-        vm_steps_per_call: stats.counters.vm_steps as f64 / calls,
+        full_scan_steps_per_call: stats.counters.full_scan_steps as f64 / calls,
         sorts: stats.counters.sorts,
         auto_indexes: stats.counters.auto_indexes,
         callers,

@@ -1,5 +1,5 @@
 import type { PerfSlowRequest, PerfStep } from '@kromatv/client/performance';
-import type { MessageKey } from '@kromatv/i18n';
+import type { Translate } from '@kromatv/i18n';
 import { TABULAR } from '@kromatv/module-sdk';
 import { useT } from '@kromatv/ui';
 import { Box, Drawer, Row, Text } from '@kromatv/ui/kit';
@@ -10,20 +10,17 @@ import {
   type PerfStat,
   PerfStats,
 } from '#web/features/admin/performance-drawer-parts.component';
-import { formatMs, shortLabel } from '#web/features/admin/performance-format';
+import { formatMs, kindLabel, shortLabel } from '#web/features/admin/performance-format';
+import { PerfEmpty } from '#web/features/admin/performance-table.component';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 import { PerfLink } from '#web/features/admin/performance-link.component';
 
 const MIN_BAR = 0.004;
 
-function kindKey(kind: string): MessageKey {
-  return kind === 'sql' ? 'perf.kindSql' : 'perf.kindSpan';
-}
-
-function figures(request: PerfSlowRequest): PerfStat[] {
+function figures(request: PerfSlowRequest, t: Translate): PerfStat[] {
   const kinds = Object.entries(request.kinds).map(([kind, total]) => ({
-    labelKey: kindKey(kind),
+    label: kindLabel(kind, t),
     value: `${total.count} · ${formatMs(total.ms)}`,
   }));
   return [
@@ -82,9 +79,10 @@ function Waterfall({ request }: Readonly<{ request: PerfSlowRequest }>) {
 }
 
 function SlowBody({ request }: Readonly<{ request: PerfSlowRequest }>) {
+  const t = useT();
   return (
     <>
-      <PerfStats stats={figures(request)} />
+      <PerfStats stats={figures(request, t)} />
       <PerfSection titleKey="perf.colRepeat">
         {request.repeats.map((repeat) => (
           <PerfSegmentLine key={repeat.key} segment={repeat} figure={`${repeat.count}×`} />
@@ -95,12 +93,22 @@ function SlowBody({ request }: Readonly<{ request: PerfSlowRequest }>) {
   );
 }
 
+function SlowContent({
+  request,
+  failed,
+}: Readonly<{ request: PerfSlowRequest | null; failed: boolean }>) {
+  if (request) {
+    return <SlowBody request={request} />;
+  }
+  return failed ? <PerfEmpty icon="stopwatch" labelKey="perf.slowGone" /> : null;
+}
+
 /** One slow request: what it cost, what it repeated, and every segment on its
  *  timeline. */
 export function PerfSlowDrawer({ id, onClose }: Readonly<{ id: string; onClose: () => void }>) {
   const t = useT();
   const { client } = useAuth();
-  const { data } = usePoll(
+  const { data, failed } = usePoll(
     ['admin', 'performance', 'slow-request', id],
     () => client.performance.slowRequest(id),
     60000,
@@ -110,7 +118,9 @@ export function PerfSlowDrawer({ id, onClose }: Readonly<{ id: string; onClose: 
       <Drawer.Header>
         <PerfDrawerHead eyebrow={t('perf.tabSlow')} title={data?.name ?? ''} />
       </Drawer.Header>
-      <Drawer.Panel>{data ? <SlowBody request={data} /> : null}</Drawer.Panel>
+      <Drawer.Panel>
+        <SlowContent request={data} failed={failed} />
+      </Drawer.Panel>
     </Drawer.Root>
   );
 }

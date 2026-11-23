@@ -252,7 +252,6 @@ fn declared() -> Declared {
     m.module_declared("smtpUsername", json!(""));
     m.module_declared("smtpFrom", json!(""));
     m.core_only("smtpPassword", json!(""));
-    m.core_only(super::PROFILING_KEY, json!(true));
     m
 }
 

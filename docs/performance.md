@@ -1,8 +1,8 @@
 # Performance
 
 The server measures where its own time goes, all the time, and keeps what it
-measured. **Admin → Performance** shows it; `GET /api/admin/performance/export`
-and `kroma perf` hand it over as a file. The crate is
+measured. **Admin → Performance** shows it, and
+`GET /api/admin/performance/export` hands it over as a file. The crate is
 [`kroma-perf`](../server/crates/kroma-perf): it names nothing of KROMA, and no
 module links it.
 
@@ -17,9 +17,6 @@ ran, so a slow route says what it spent its time on.
 | `sql` | one SQLite statement, with its rows and SQLite's own count of full-scan steps, sorts and automatic indexes | the database: `core`, or the module that owns it | every connection the process opens, through an SQLite auto-extension installed at boot |
 | `span` | one call of a function marked `#[tracing::instrument]` in a `kroma*` crate | `file:line` | `kroma_perf::span_layer`, with a filter of its own: these spans reach no log |
 | `http` | one outbound call (TMDB, a registry, a relay) | the host | the egress sink every `kroma_http::Fetch` call already reports to |
-| `client` | an API call as the device waited for it | the shell (`web`, `tizen`, ...) | every client's transport, reported in batches to `POST /api/perf/client` |
-| `network` | the part of that wait spent outside the server | the shell | the client's wait minus the server's own total |
-| `screen` | a screen, from the navigation that asked for it to drawn | the shell | the web router and the TV navigator |
 
 A statement is named by the text it was prepared from, as one line, with every
 list of placeholders collapsed to `?…`. No parameter value is ever recorded. Its
@@ -29,7 +26,7 @@ out.
 The kinds overlap (a span holds the SQL it ran), so they are never summed. A
 request's `Server-Timing` header carries one entry per kind, the route it
 matched (`scope;desc=`), and its total, so the browser's network panel shows
-them and every client reads them.
+them.
 
 ## History
 
@@ -39,7 +36,6 @@ them and every client reads them.
   measurements only: a schema change empties it.
 - Every request slower than 250 ms, or running one segment 20 times or more,
   with its whole timeline (the first 400 segments), for a week.
-- What runs right now, with the segment it ran last.
 
 ## Signals
 
@@ -62,14 +58,13 @@ read-only connection.
 
 ## The export
 
-```bash
-kroma perf --window 24h --out perf.jsonl
-kroma perf --window 7d --format md
-```
+**Export for analysis** on the page downloads the period it shows. An admin
+token reaches the same file:
 
-`kroma perf` uses the server and token of `kroma login` (or `--server`,
-`KROMA_SERVER`, `--token`, `KROMA_TOKEN`) and needs an admin account. The page
-has the same two downloads.
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://kroma.example/api/admin/performance/export?window=24h" -o perf.jsonl
+```
 
 The JSON Lines file opens with a `meta` record that names its source, units,
 record types, flags and hints. Every other line is one self-contained record:
@@ -93,11 +88,19 @@ A function in a `kroma*` crate:
 fn build_board(...) { ... }
 ```
 
-A call that is not a function of its own:
+Work timed some other way, such as a call another crate reports when it ends:
 
 ```rust
-let entries = kroma_perf::measure("fs", "walk images", None, || walk(&dir));
+kroma_perf::record(kroma_perf::Measured {
+    kind: "fs",
+    label: "walk images",
+    origin: None,
+    elapsed: started.elapsed(),
+});
 ```
+
+A background job is its own scope when its body runs inside
+`kroma_perf::job(name, || ...)`, as every job of the engine's runner does.
 
 Work sent to another thread stays in its request when it is carried:
 `tokio::task::spawn_blocking(kroma_perf::carry(move || ...))`. The server's
@@ -120,8 +123,8 @@ the list.
 ## Switching it off
 
 **Admin → Performance → Measuring**, or `KROMA_PROFILING=off`, which the page
-cannot override. Off, no scope opens, a statement costs one atomic load, no
-`Server-Timing` is sent, and so no client reports either.
+cannot override. Off, no scope opens, a statement costs one atomic load, and
+no `Server-Timing` is sent.
 
 ## What it does not see yet
 

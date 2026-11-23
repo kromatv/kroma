@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::profiler::{Profiler, Window};
 use crate::report::{round, Named, RepeatRow};
-use crate::scope::{now_ms, ScopeKind};
+use crate::scope::{now_ms, Event};
 use crate::slow::SlowRequest;
 use crate::stats::Part;
 
@@ -43,19 +43,6 @@ pub struct SlowReport {
     pub waterfall: Vec<WaterfallStep>,
 }
 
-/// A request or job still running.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LiveRow {
-    pub id: String,
-    pub kind: ScopeKind,
-    pub name: String,
-    pub elapsed_ms: f64,
-    pub segments: u32,
-    pub kinds: BTreeMap<String, KindTotal>,
-    pub last: Option<Named>,
-}
-
 impl Profiler {
     /// The slow requests of `window`, newest first, without their waterfalls.
     pub fn slow_list(&self, window: Window) -> Vec<SlowReport> {
@@ -78,22 +65,6 @@ impl Profiler {
             .map(|request| self.slow_report_of(&request))
     }
 
-    /// What is running right now, longest first.
-    pub fn live_rows(&self) -> Vec<LiveRow> {
-        self.live()
-            .into_iter()
-            .map(|running| LiveRow {
-                id: running.id.to_string(),
-                kind: running.kind,
-                name: running.name,
-                elapsed_ms: round(running.elapsed_ms),
-                segments: running.segments,
-                kinds: totals(&running.kinds),
-                last: running.last_key.map(|key| self.named(key)),
-            })
-            .collect()
-    }
-
     pub(crate) fn slow_in(&self, window: Window) -> Vec<SlowRequest> {
         let since = now_ms() - window.millis();
         let mut seen = BTreeSet::new();
@@ -108,7 +79,6 @@ impl Profiler {
     }
 
     pub(crate) fn slow_report_of(&self, request: &SlowRequest) -> SlowReport {
-        let ms = |us: u64| round(us as f64 / 1_000.0);
         SlowReport {
             id: request.id.to_string(),
             at_ms: request.at_ms,
@@ -127,18 +97,22 @@ impl Profiler {
                 })
                 .collect(),
             dropped_steps: request.dropped_events,
-            waterfall: request
-                .events
-                .iter()
-                .map(|e| WaterfallStep {
-                    offset_ms: ms(e.offset_us),
-                    duration_ms: ms(e.duration_us),
-                    rows: e.rows,
-                    segment: self.named(e.key),
-                })
-                .collect(),
+            waterfall: request.events.iter().map(|e| self.step_of(e)).collect(),
         }
     }
+
+    fn step_of(&self, event: &Event) -> WaterfallStep {
+        WaterfallStep {
+            offset_ms: ms(event.offset_us),
+            duration_ms: ms(event.duration_us),
+            rows: event.rows,
+            segment: self.named(event.key),
+        }
+    }
+}
+
+fn ms(us: u64) -> f64 {
+    round(us as f64 / 1_000.0)
 }
 
 fn totals(kinds: &BTreeMap<String, Part>) -> BTreeMap<String, KindTotal> {

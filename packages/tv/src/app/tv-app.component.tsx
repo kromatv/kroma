@@ -162,7 +162,6 @@ export function TvApp({
                             screens={screens}
                             chrome={LAYERS}
                             onExit={canExitOnBack() ? exitOnBack : undefined}
-                            onScreen={(screen, ms) => client?.timings.screen(screen, ms)}
                           >
                             <ConnectionProvider value={connection}>
                               <TvClientProvider client={client}>

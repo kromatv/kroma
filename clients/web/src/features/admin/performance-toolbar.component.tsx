@@ -1,4 +1,4 @@
-import type { PerfExportFormat, PerfOverview, PerfWindow } from '@kromatv/client/performance';
+import type { PerfOverview, PerfWindow } from '@kromatv/client/performance';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Button, Row, SegmentGroup, Spacer, Switch, Text } from '@kromatv/ui/kit';
@@ -19,18 +19,15 @@ function isWindow(value: string): value is PerfWindow {
   return PERF_WINDOWS.some((one) => one === value);
 }
 
-function ExportButton({
-  window,
-  format,
-}: Readonly<{ window: PerfWindow; format: PerfExportFormat }>) {
+function ExportButton({ window }: Readonly<{ window: PerfWindow }>) {
   const t = useT();
   const { client } = useAuth();
   const [busy, setBusy] = useState(false);
   const save = () => {
     setBusy(true);
     void client.performance
-      .export(window, format)
-      .then((blob) => saveFile(blob, `kroma-performance-${window}.${format}`))
+      .export(window)
+      .then((blob) => saveFile(blob, `kroma-performance-${window}.jsonl`))
       .catch(() => {})
       .finally(() => setBusy(false));
   };
@@ -39,7 +36,7 @@ function ExportButton({
       variant="glass"
       size="sm"
       icon="download"
-      label={t(format === 'jsonl' ? 'perf.exportJsonl' : 'perf.exportMarkdown')}
+      label={t('perf.exportJsonl')}
       onPress={save}
       loading={busy}
     />
@@ -78,7 +75,7 @@ interface ToolbarProps {
   onSwitched: () => void;
 }
 
-/** The period, the exports, and the switch that turns measuring on or off. */
+/** The period, the export, and the switch that turns measuring on or off. */
 export function PerfToolbar({ overview, window, onWindow, onSwitched }: Readonly<ToolbarProps>) {
   const t = useT();
   return (
@@ -94,8 +91,7 @@ export function PerfToolbar({ overview, window, onWindow, onSwitched }: Readonly
           </SegmentGroup.Item>
         ))}
       </SegmentGroup.Root>
-      <ExportButton window={window} format="jsonl" />
-      <ExportButton window={window} format="md" />
+      <ExportButton window={window} />
       <Spacer />
       {overview ? <MeasuringSwitch overview={overview} onSwitched={onSwitched} /> : null}
     </Row>

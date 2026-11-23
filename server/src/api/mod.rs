@@ -12,7 +12,6 @@ pub mod ws;
 
 mod accounts;
 mod cast;
-mod client_timings;
 mod diagnostics;
 mod direct;
 mod discover;

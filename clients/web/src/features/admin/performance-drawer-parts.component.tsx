@@ -8,11 +8,9 @@ import { PerfFlags } from '#web/features/admin/performance-flags.component';
 import { shortLabel } from '#web/features/admin/performance-format';
 import { PerfLink } from '#web/features/admin/performance-link.component';
 
-/** One figure of a drawer's summary. */
-export interface PerfStat {
-  labelKey: MessageKey;
-  value: string;
-}
+/** One figure of a drawer's summary, named by a message or by words already
+ *  translated. */
+export type PerfStat = { value: string } & ({ labelKey: MessageKey } | { label: string });
 
 /** The top of every Performance drawer: what it is, then its name. */
 export function PerfDrawerHead({ eyebrow, title }: Readonly<{ eyebrow: string; title: string }>) {
@@ -37,16 +35,19 @@ export function PerfStats({ stats }: Readonly<{ stats: readonly PerfStat[] }>) {
   return (
     <Box mb={20}>
       <Grid columns={2} gap={10}>
-        {stats.map((stat) => (
-          <Box key={stat.labelKey} px={14} py={10} radius="lg" bg="surface1" border="tint/7">
-            <Text variant="meta" color="textDim">
-              {t(stat.labelKey)}
-            </Text>
-            <Text variant="label" style={TABULAR}>
-              {stat.value}
-            </Text>
-          </Box>
-        ))}
+        {stats.map((stat) => {
+          const label = 'labelKey' in stat ? t(stat.labelKey) : stat.label;
+          return (
+            <Box key={label} px={14} py={10} radius="lg" bg="surface1" border="tint/7">
+              <Text variant="meta" color="textDim">
+                {label}
+              </Text>
+              <Text variant="label" style={TABULAR}>
+                {stat.value}
+              </Text>
+            </Box>
+          );
+        })}
       </Grid>
     </Box>
   );

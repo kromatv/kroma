@@ -1,8 +1,12 @@
+use std::time::Duration;
+
 use axum::http::StatusCode;
+use kroma_perf::{Measured, profiler};
 use serde_json::{Value, json};
 use tokio::sync::Mutex;
 
 use crate::api::test_support::{get, raw, seed_session, send, test_app, text};
+use crate::boot::profiling::PROFILING_KEY;
 use crate::model::Permission;
 
 /// Held by every test that reads or flips the process-wide profiler.
@@ -109,7 +113,7 @@ async fn a_switched_off_server_sends_no_timing_and_remembers_the_choice() {
     let stored = t
         .state
         .settings
-        .get_bool(crate::services::settings::PROFILING_KEY, true);
+        .get_bool(PROFILING_KEY, true);
     send(
         &t.app,
         "PUT",
@@ -154,22 +158,70 @@ async fn the_export_is_one_json_record_per_line_opened_by_its_meta() {
 }
 
 #[tokio::test]
-async fn the_markdown_export_is_a_ranked_summary() {
+async fn a_made_up_module_id_is_named_by_the_route_template() {
     let _serial = SERIAL.lock().await;
     let t = test_app();
-    get(&t.app, "/api/libraries", Some(&t.token)).await;
+    get(&t.app, "/api/module/made.up.module/anything", Some(&t.token)).await;
 
-    let (status, body) = text(
+    let (_, overview) = get(&t.app, "/api/admin/performance?window=1h", Some(&t.token)).await;
+
+    let names = names(&overview);
+    assert!(
+        names.contains(&"GET /api/module/{id}/{*rest}".to_string()),
+        "{names:?}"
+    );
+    assert!(names.iter().all(|name| !name.contains("made.up.module")));
+}
+
+fn a_slow_request() -> String {
+    let scope = profiler().request("GET", "/test/slow-drawer").unwrap();
+    let entered = scope.enter();
+    for _ in 0..20 {
+        profiler().record(Measured {
+            kind: "sql",
+            label: "SELECT id FROM items WHERE id = ?1",
+            origin: Some("core"),
+            elapsed: Duration::from_micros(50),
+        });
+    }
+    drop(entered);
+    profiler().finish(&scope, Some(200), None);
+    scope.id().to_string()
+}
+
+#[tokio::test]
+async fn a_slow_request_is_listed_and_opens_with_its_waterfall() {
+    let _serial = SERIAL.lock().await;
+    let t = test_app();
+    let id = a_slow_request();
+
+    let (_, listed) = get(&t.app, "/api/admin/performance/slow?window=1h", Some(&t.token)).await;
+    let (status, one) = get(&t.app, &format!("/api/admin/performance/slow/{id}"), Some(&t.token)).await;
+    let (missing, _) = get(&t.app, "/api/admin/performance/slow/not-an-id", Some(&t.token)).await;
+
+    assert!(listed["requests"].as_array().unwrap().iter().any(|r| r["id"] == id));
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(one["waterfall"].as_array().unwrap().len(), 20);
+    assert_eq!(missing, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn a_core_statement_has_a_query_plan() {
+    let _serial = SERIAL.lock().await;
+    let t = test_app();
+    let id = a_slow_request();
+    let (_, one) = get(&t.app, &format!("/api/admin/performance/slow/{id}"), Some(&t.token)).await;
+    let key = one["waterfall"][0]["key"].as_str().unwrap().to_string();
+
+    let (status, plan) = get(
         &t.app,
-        "GET",
-        "/api/admin/performance/export?window=1h&format=md",
+        &format!("/api/admin/performance/segments/{key}/plan"),
         Some(&t.token),
-        None,
     )
     .await;
+    let (unknown, _) = get(&t.app, "/api/admin/performance/segments/1/plan", Some(&t.token)).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert!(body.starts_with("# Performance report"), "{body}");
-    assert!(body.contains("## Requests by total time"));
-    assert!(body.contains("| name | calls | p50 | p95 | max |"));
+    assert!(plan["plan"].as_array().is_some_and(|steps| !steps.is_empty()), "{plan}");
+    assert_eq!(unknown, StatusCode::NOT_FOUND);
 }

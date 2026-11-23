@@ -5,13 +5,12 @@ use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 
-use crate::live::{Live, Running};
 use crate::recent::{Bucket, Recent, ScopeKey, HOUR_MS};
 use crate::scope::{now_ms, Scope, ScopeKind};
-use crate::segment::{Catalog, Counters, Descriptor, Segment};
+use crate::segment::{Catalog, Counters, Descriptor, Measured, Segment};
 use crate::slow::{SlowRequest, SlowRing};
 use crate::stats::Part;
-use crate::store::Store;
+use crate::store::{Store, Unsaved};
 
 const UNATTRIBUTED: &str = "(unattributed)";
 
@@ -37,15 +36,6 @@ pub enum Window {
 }
 
 impl Window {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Window::Hour => "1h",
-            Window::Day => "24h",
-            Window::Week => "7d",
-            Window::Month => "30d",
-        }
-    }
-
     pub fn millis(self) -> i64 {
         match self {
             Window::Hour => HOUR_MS,
@@ -54,17 +44,6 @@ impl Window {
             Window::Month => 30 * 24 * HOUR_MS,
         }
     }
-}
-
-/// A timing measured outside this process, as [`Profiler::record_reported`]
-/// files it.
-#[derive(Clone, Copy, Debug)]
-pub struct Reported<'a> {
-    pub kind: &'static str,
-    pub label: &'a str,
-    pub origin: Option<&'a str>,
-    pub caller: &'a str,
-    pub elapsed: Duration,
 }
 
 /// What a finished scope cost, for a `Server-Timing` header.
@@ -98,7 +77,6 @@ pub struct Profiler {
     pub(crate) catalog: Catalog,
     recent: Mutex<Recent>,
     slow: Mutex<SlowRing>,
-    live: Live,
     store: OnceLock<Store>,
 }
 
@@ -114,7 +92,6 @@ impl Profiler {
             catalog: Catalog::default(),
             recent: Mutex::new(Recent::new(now_ms())),
             slow: Mutex::new(SlowRing::default()),
-            live: Live::default(),
             store: OnceLock::new(),
         }
     }
@@ -141,18 +118,12 @@ impl Profiler {
     }
 
     fn open(&self, kind: ScopeKind, name: String) -> Option<Scope> {
-        if !self.enabled() {
-            return None;
-        }
-        let scope = Scope::new(kind, name);
-        self.live.add(&scope);
-        Some(scope)
+        self.enabled().then(|| Scope::new(kind, name))
     }
 
     /// Closes `scope`: its run joins its route's or job's history, and a slow
     /// request keeps its waterfall.
     pub fn finish(&self, scope: &Scope, status: Option<u16>, bytes: Option<u64>) -> Finished {
-        self.live.remove(scope.id());
         let run = scope.run_record(status, bytes);
         let key = ScopeKey {
             kind: scope.0.kind,
@@ -160,7 +131,7 @@ impl Profiler {
         };
         self.recent.lock().unwrap().record_scope(key, &run);
         if scope.0.kind == ScopeKind::Request && SlowRequest::worth_keeping(&run) {
-            self.keep_slow(SlowRequest::of(scope, &run));
+            self.slow.lock().unwrap().push(SlowRequest::of(scope, &run));
         }
         Finished {
             name: scope.name().to_string(),
@@ -169,38 +140,24 @@ impl Profiler {
         }
     }
 
-    fn keep_slow(&self, request: SlowRequest) {
-        if let Some(store) = self.store.get() {
-            store.keep_slow(request.clone());
-        }
-        self.slow.lock().unwrap().push(request);
-    }
-
     /// Records one measured segment: in the scope current here, and in the
     /// history of its key.
-    pub fn record(&self, kind: &'static str, label: &str, origin: Option<&str>, elapsed: Duration) {
-        self.record_segment(kind, (label, origin), elapsed, false);
+    pub fn record(&self, measured: Measured<'_>) {
+        if self.enabled() {
+            self.add(self.segment_of(&measured));
+        }
     }
 
-    pub(crate) fn record_segment(
-        &self,
-        kind: &'static str,
-        (label, origin): (&str, Option<&str>),
-        elapsed: Duration,
-        nested: bool,
-    ) {
-        if !self.enabled() {
-            return;
-        }
-        let key = self.catalog.key_for(kind, label, origin);
-        let nanos = u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX);
-        self.add(Segment {
-            kind,
-            key,
-            elapsed_ns: nanos,
+    pub(crate) fn segment_of(&self, measured: &Measured<'_>) -> Segment {
+        Segment {
+            kind: measured.kind,
+            key: self
+                .catalog
+                .key_for(measured.kind, measured.label, measured.origin),
+            elapsed_ns: u64::try_from(measured.elapsed.as_nanos()).unwrap_or(u64::MAX),
             counters: Counters::default(),
-            nested,
-        });
+            nested: false,
+        }
     }
 
     pub(crate) fn add(&self, segment: Segment) {
@@ -209,54 +166,30 @@ impl Profiler {
             scope.add(&segment);
         }
         let caller = scope.as_ref().map_or(UNATTRIBUTED, Scope::name);
-        self.keep_segment(&segment, caller);
+        self.recent.lock().unwrap().record_segment(&segment, caller);
     }
 
-    /// Records a segment that belongs to no scope of this process: a timing a
-    /// client measured on its side and reported, filed under `caller`.
-    pub fn record_reported(&self, reported: Reported<'_>) {
-        if !self.enabled() {
-            return;
-        }
-        let key = self
-            .catalog
-            .key_for(reported.kind, reported.label, reported.origin);
-        let nanos = u64::try_from(reported.elapsed.as_nanos()).unwrap_or(u64::MAX);
-        let segment = Segment {
-            kind: reported.kind,
-            key,
-            elapsed_ns: nanos,
-            counters: Counters::default(),
-            nested: false,
-        };
-        self.keep_segment(&segment, reported.caller);
-    }
-
-    fn keep_segment(&self, segment: &Segment, caller: &str) {
-        let mut recent = self.recent.lock().unwrap();
-        recent.record_segment(segment.key, segment.elapsed_ns, &segment.counters, caller);
-    }
-
-    /// Closes the five-minute bucket once it is over and hands what changed to
-    /// the store. Called on a timer, so an idle server still rolls over.
+    /// Closes the five-minute bucket once it is over and saves what is not on
+    /// disk yet. Called on a timer, so an idle server still rolls over. It
+    /// writes to the store, so it belongs on a blocking thread.
     pub fn tick(&self) {
-        let changed = self.recent.lock().unwrap().rotate(now_ms());
-        let Some(store) = self.store.get() else {
-            return;
+        let unsaved = Unsaved {
+            hours: self.recent.lock().unwrap().rotate(now_ms()),
+            slow: self.slow.lock().unwrap().take_unsaved(),
+            names: self.catalog.take_unsaved(),
         };
-        if !changed.is_empty() {
-            store.keep_catalog(self.catalog.all());
-        }
-        for hour in changed {
-            store.keep_hour(hour);
+        let saved = self.store.get().map(|store| store.save(&unsaved));
+        if let Some(Err(error)) = saved {
+            tracing::warn!(%error, "performance history did not save");
         }
     }
 
     /// Keeps history in `store` from now on, and learns the names of the keys
     /// it already holds. A second call is ignored.
     pub fn attach(&self, store: Store) {
-        for (key, descriptor) in store.catalog() {
-            self.catalog.adopt(key, descriptor);
+        match store.names() {
+            Ok(names) => self.catalog.adopt(names),
+            Err(error) => tracing::warn!(%error, "performance history names did not read"),
         }
         let _ = self.store.set(store);
     }
@@ -300,10 +233,6 @@ impl Profiler {
             .get()
             .and_then(|store| store.slow_since(since_ms).ok())
             .unwrap_or_default()
-    }
-
-    pub(crate) fn live(&self) -> Vec<Running> {
-        self.live.list()
     }
 
     pub fn describe(&self, key: u64) -> Option<Descriptor> {

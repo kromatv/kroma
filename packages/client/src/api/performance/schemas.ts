@@ -66,7 +66,6 @@ export const PerfSegmentRow = z.object({
   ...spread,
   rowsPerCall: z.number(),
   fullScanStepsPerCall: z.number(),
-  vmStepsPerCall: z.number(),
   sorts: z.number(),
   autoIndexes: z.number(),
   callers: z.array(z.object({ name: z.string(), count: z.number() })),
@@ -114,24 +113,9 @@ export const PerfSlowRequest = z.object({
 });
 export type PerfSlowRequest = z.infer<typeof PerfSlowRequest>;
 
-/** A request or job still running. */
-export const PerfLiveRow = z.object({
-  id: z.string(),
-  kind: ScopeKind,
-  name: z.string(),
-  elapsedMs: z.number(),
-  segments: z.number(),
-  kinds: kindTotals,
-  last: PerfSegmentName.nullable(),
-});
-export type PerfLiveRow = z.infer<typeof PerfLiveRow>;
-
 /** `EXPLAIN QUERY PLAN` of a core statement, or why there is none. */
 export const PerfPlan = z.object({
   plan: z.array(z.object({ id: z.number(), parent: z.number(), detail: z.string() })).nullable(),
   error: z.string().nullable(),
 });
 export type PerfPlan = z.infer<typeof PerfPlan>;
-
-/** The shape of an export file. */
-export type PerfExportFormat = 'jsonl' | 'md';

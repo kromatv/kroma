@@ -1,17 +1,17 @@
-import type { PerfOverview, PerfScopeRow, PerfWindow } from '@kromatv/client/performance';
+import type { PerfOverview, PerfWindow } from '@kromatv/client/performance';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Callout, SegmentGroup } from '@kromatv/ui/kit';
-import { PerfLive } from '#web/features/admin/performance-live.component';
 import { PerfScopeDrawer } from '#web/features/admin/performance-scope-drawer.component';
 import { PerfScopeTable } from '#web/features/admin/performance-scope-table.component';
 import { PerfSegmentDrawer } from '#web/features/admin/performance-segment-drawer.component';
 import { PerfSegmentTable } from '#web/features/admin/performance-segment-table.component';
 import { PerfSlowDrawer } from '#web/features/admin/performance-slow-drawer.component';
 import { PerfSlowList } from '#web/features/admin/performance-slow.component';
-import { scopeId, segmentsOf } from '#web/features/admin/performance-format';
+import { segmentsOf } from '#web/features/admin/performance-format';
 import {
-  idFromUrl,
+  closed,
+  openDrawer,
   PERF_TABS,
   type PerfSearch,
   type PerfTab,
@@ -27,7 +27,6 @@ const TAB_LABEL: Readonly<Record<PerfTab, MessageKey>> = {
   statements: 'perf.tabStatements',
   functions: 'perf.tabFunctions',
   slow: 'perf.tabSlow',
-  live: 'perf.tabLive',
 };
 
 function isTab(value: string): value is PerfTab {
@@ -52,28 +51,20 @@ function Measured({ tab, overview }: Readonly<{ tab: PerfTab; overview: PerfOver
   return null;
 }
 
-function scopeOf(overview: PerfOverview | null, id: string | undefined): PerfScopeRow | undefined {
-  const rows = overview ? [...overview.requests, ...overview.jobs] : [];
-  return rows.find((row) => scopeId(row) === id);
-}
-
 function Drawers({
   search,
   overview,
   onSearch,
 }: Readonly<PerformancePageProps & { overview: PerfOverview | null }>) {
-  const close = () =>
-    onSearch({ ...search, scope: undefined, segment: undefined, slow: undefined });
-  const scope = scopeOf(overview, search.scope);
-  const segment = overview?.segments.find((row) => row.key === idFromUrl(search.segment));
-  if (scope) {
-    return <PerfScopeDrawer row={scope} onClose={close} />;
+  const close = () => onSearch(closed(search));
+  const open = openDrawer(search, overview);
+  if (open.segment) {
+    return <PerfSegmentDrawer row={open.segment} onClose={close} />;
   }
-  if (segment) {
-    return <PerfSegmentDrawer row={segment} onClose={close} />;
+  if (open.scope) {
+    return <PerfScopeDrawer row={open.scope} onClose={close} />;
   }
-  const slow = idFromUrl(search.slow);
-  return slow ? <PerfSlowDrawer id={slow} onClose={close} /> : null;
+  return open.slow ? <PerfSlowDrawer id={open.slow} onClose={close} /> : null;
 }
 
 function Body({
@@ -83,9 +74,6 @@ function Body({
 }: Readonly<{ tab: PerfTab; window: PerfWindow; overview: PerfOverview | null }>) {
   if (tab === 'slow') {
     return <PerfSlowList window={window} />;
-  }
-  if (tab === 'live') {
-    return <PerfLive />;
   }
   return overview ? <Measured tab={tab} overview={overview} /> : <TableSkeleton rows={10} />;
 }
@@ -124,7 +112,7 @@ function Tabs({ tab, onTab }: Readonly<{ tab: PerfTab; onTab: (next: PerfTab) =>
 }
 
 /** Admin → Performance: where the server spends its time, per route, job,
- *  statement and function, with the slow requests and what runs now. */
+ *  statement and function, with the slow requests. */
 export function PerformancePage({ search, onSearch }: Readonly<PerformancePageProps>) {
   const t = useT();
   const { client } = useAuth();

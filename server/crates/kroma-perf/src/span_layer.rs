@@ -7,6 +7,7 @@ use tracing_subscriber::layer::{Context, Layer};
 use tracing_subscriber::registry::LookupSpan;
 
 use crate::profiler::profiler;
+use crate::segment::Measured;
 
 struct Opened(Instant);
 
@@ -54,8 +55,14 @@ where
             .file()
             .zip(meta.line())
             .map(|(file, line)| format!("{file}:{line}"));
-        let nested = span.parent().is_some();
-        profiler().record_segment("span", (&label, origin.as_deref()), elapsed, nested);
+        let mut segment = profiler().segment_of(&Measured {
+            kind: "span",
+            label: &label,
+            origin: origin.as_deref(),
+            elapsed,
+        });
+        segment.nested = span.parent().is_some();
+        profiler().add(segment);
     }
 }
 

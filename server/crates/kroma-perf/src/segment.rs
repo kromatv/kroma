@@ -1,5 +1,7 @@
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use twox_hash::XxHash3_128;
@@ -12,17 +14,27 @@ pub struct Counters {
     pub full_scan_steps: u64,
     pub sorts: u64,
     pub auto_indexes: u64,
-    pub vm_steps: u64,
 }
 
 impl Counters {
     pub fn add(&mut self, other: &Counters) {
-        self.rows += other.rows;
-        self.full_scan_steps += other.full_scan_steps;
-        self.sorts += other.sorts;
-        self.auto_indexes += other.auto_indexes;
-        self.vm_steps += other.vm_steps;
+        *self = Counters {
+            rows: self.rows + other.rows,
+            full_scan_steps: self.full_scan_steps + other.full_scan_steps,
+            sorts: self.sorts + other.sorts,
+            auto_indexes: self.auto_indexes + other.auto_indexes,
+        };
     }
+}
+
+/// A piece of work its caller timed: what it was (`"http"`, `"fs"`, ...), its
+/// name, where it ran (a host, a path), and how long it took.
+#[derive(Clone, Copy, Debug)]
+pub struct Measured<'a> {
+    pub kind: &'static str,
+    pub label: &'a str,
+    pub origin: Option<&'a str>,
+    pub elapsed: Duration,
 }
 
 /// One timed piece of work: a statement, a span, or anything a caller measured
@@ -47,35 +59,57 @@ pub struct Descriptor {
     pub origin: Option<String>,
 }
 
+#[derive(Default)]
+struct Entries {
+    known: HashMap<u64, Descriptor>,
+    unsaved: Vec<u64>,
+}
+
 /// The process-wide dictionary from segment key to [`Descriptor`]. A key is a
 /// hash of kind, label and origin, so the same work gets the same key in every
 /// run and the stored history stays joinable.
 #[derive(Default)]
-pub struct Catalog(Mutex<HashMap<u64, Descriptor>>);
+pub struct Catalog(Mutex<Entries>);
 
 impl Catalog {
     pub fn key_for(&self, kind: &str, label: &str, origin: Option<&str>) -> u64 {
         let key = key_of(kind, label, origin);
-        let mut known = self.0.lock().unwrap();
-        known.entry(key).or_insert_with(|| Descriptor {
-            kind: kind.to_string(),
-            label: label.to_string(),
-            origin: origin.map(str::to_string),
-        });
+        let mut entries = self.0.lock().unwrap();
+        if let Entry::Vacant(slot) = entries.known.entry(key) {
+            slot.insert(Descriptor {
+                kind: kind.to_string(),
+                label: label.to_string(),
+                origin: origin.map(str::to_string),
+            });
+            entries.unsaved.push(key);
+        }
         key
     }
 
     pub fn describe(&self, key: u64) -> Option<Descriptor> {
-        self.0.lock().unwrap().get(&key).cloned()
+        self.0.lock().unwrap().known.get(&key).cloned()
     }
 
-    pub fn adopt(&self, key: u64, descriptor: Descriptor) {
-        self.0.lock().unwrap().entry(key).or_insert(descriptor);
+    pub fn adopt(&self, saved: Vec<(u64, Descriptor)>) {
+        let mut entries = self.0.lock().unwrap();
+        for (key, descriptor) in saved {
+            entries.known.entry(key).or_insert(descriptor);
+        }
     }
 
+    pub fn take_unsaved(&self) -> Vec<(u64, Descriptor)> {
+        let mut entries = self.0.lock().unwrap();
+        let unsaved = std::mem::take(&mut entries.unsaved);
+        unsaved
+            .into_iter()
+            .filter_map(|key| Some((key, entries.known.get(&key)?.clone())))
+            .collect()
+    }
+
+    #[cfg(test)]
     pub fn all(&self) -> Vec<(u64, Descriptor)> {
-        let known = self.0.lock().unwrap();
-        known.iter().map(|(k, d)| (*k, d.clone())).collect()
+        let entries = self.0.lock().unwrap();
+        entries.known.iter().map(|(k, d)| (*k, d.clone())).collect()
     }
 }
 
@@ -115,6 +149,23 @@ mod tests {
             catalog.describe(module).unwrap().origin.as_deref(),
             Some("tv.kroma.acquisition")
         );
+    }
+
+    #[test]
+    fn only_entries_added_since_the_last_save_are_handed_over() {
+        let catalog = Catalog::default();
+        catalog.adopt(vec![(7, Descriptor {
+            kind: "sql".into(),
+            label: "SELECT 7".into(),
+            origin: None,
+        })]);
+        let first = catalog.key_for("sql", "SELECT 1", Some("core"));
+
+        let saved = catalog.take_unsaved();
+        catalog.key_for("sql", "SELECT 1", Some("core"));
+
+        assert_eq!(saved.iter().map(|(k, _)| *k).collect::<Vec<_>>(), vec![first]);
+        assert!(catalog.take_unsaved().is_empty());
     }
 
     #[test]

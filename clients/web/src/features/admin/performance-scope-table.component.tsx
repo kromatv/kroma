@@ -3,7 +3,13 @@ import type { MessageKey } from '@kromatv/i18n';
 import { type SortColumn, Table, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PerfFlags } from '#web/features/admin/performance-flags.component';
-import { formatMs, SCOPE_SORT, scopeId, sortRows } from '#web/features/admin/performance-format';
+import {
+  figuresOf,
+  SCOPE_FIGURES,
+  SCOPE_SORT,
+  scopeId,
+  sortRows,
+} from '#web/features/admin/performance-format';
 import {
   type PerfColumn,
   PerfEmpty,
@@ -24,18 +30,6 @@ const COLUMNS: readonly PerfColumn[] = [
   { labelKey: 'perf.colFlags', flex: 1.6, min: 180 },
 ];
 
-function figures(row: PerfScopeRow): [string, string][] {
-  return [
-    ['count', String(row.count)],
-    ['total', formatMs(row.totalMs)],
-    ['p50', formatMs(row.p50Ms)],
-    ['p95', formatMs(row.p95Ms)],
-    ['max', formatMs(row.maxMs)],
-    ['sql', (row.kinds.sql?.perCall ?? 0).toFixed(1)],
-    ['repeat', row.worstRepeat ? `${row.worstRepeat.count}×` : '-'],
-  ];
-}
-
 function ScopeRow({ row }: Readonly<{ row: PerfScopeRow }>) {
   return (
     <Table.Row asChild>
@@ -45,7 +39,7 @@ function ScopeRow({ row }: Readonly<{ row: PerfScopeRow }>) {
             {row.name}
           </Text>
         </Table.Cell>
-        {figures(row).map(([column, value]) => (
+        {figuresOf(row, SCOPE_FIGURES).map(([column, value]) => (
           <Table.Cell key={column}>
             <PerfNumber>{value}</PerfNumber>
           </Table.Cell>

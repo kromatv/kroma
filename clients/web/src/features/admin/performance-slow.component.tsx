@@ -2,7 +2,12 @@ import type { PerfSlowRequest, PerfWindow } from '@kromatv/client/performance';
 import { useFormat } from '@kromatv/ui';
 import { type SortColumn, Table, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { formatMs, sortRows } from '#web/features/admin/performance-format';
+import {
+  figuresOf,
+  SLOW_FIGURES,
+  SLOW_SORT,
+  sortRows,
+} from '#web/features/admin/performance-format';
 import {
   type PerfColumn,
   PerfEmpty,
@@ -23,24 +28,6 @@ const COLUMNS: readonly PerfColumn[] = [
   { labelKey: 'perf.colRepeat', flex: 1, min: 120, align: 'end' },
 ];
 
-const READ = {
-  at: (row: PerfSlowRequest) => row.atMs,
-  name: (row: PerfSlowRequest) => row.name,
-  total: (row: PerfSlowRequest) => row.totalMs,
-  sql: (row: PerfSlowRequest) => row.kinds.sql?.ms ?? 0,
-};
-
-function figures(row: PerfSlowRequest): [string, string][] {
-  const sql = row.kinds.sql;
-  const top = row.repeats[0];
-  return [
-    ['status', row.status === null ? '-' : String(row.status)],
-    ['total', formatMs(row.totalMs)],
-    ['sql', sql ? `${sql.count} · ${formatMs(sql.ms)}` : '-'],
-    ['repeat', top ? `${top.count}×` : '-'],
-  ];
-}
-
 function SlowRow({ row }: Readonly<{ row: PerfSlowRequest }>) {
   const fmt = useFormat();
   return (
@@ -56,7 +43,7 @@ function SlowRow({ row }: Readonly<{ row: PerfSlowRequest }>) {
             {row.name}
           </Text>
         </Table.Cell>
-        {figures(row).map(([column, value]) => (
+        {figuresOf(row, SLOW_FIGURES).map(([column, value]) => (
           <Table.Cell key={column}>
             <PerfNumber>{value}</PerfNumber>
           </Table.Cell>
@@ -84,7 +71,7 @@ export function PerfSlowList({ window }: Readonly<{ window: PerfWindow }>) {
   }
   return (
     <PerfTable columns={COLUMNS} labelKey="perf.tabSlow" sort={sort} onSortChange={setSort}>
-      {sortRows(data.requests, sort, READ).map((row) => (
+      {sortRows(data.requests, sort, SLOW_SORT).map((row) => (
         <SlowRow key={row.id} row={row} />
       ))}
     </PerfTable>
