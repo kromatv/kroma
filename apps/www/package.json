@@ -38,7 +38,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.64.0",
+    "@cloudflare/vite-plugin": "^1.69.1",
     "@inlang/paraglide-js": "^2.29.1",
     "@mdx-js/rollup": "^3.1.1",
     "@tailwindcss/vite": "^4.3.3",
@@ -64,6 +64,6 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "world-atlas": "^2.0.2",
-    "wrangler": "^4.151.3"
+    "wrangler": "^4.160.0"
   }
 }
