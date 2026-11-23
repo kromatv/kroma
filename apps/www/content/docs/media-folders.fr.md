@@ -81,9 +81,11 @@ KROMA analyse les fichiers `.mkv`, `.mp4`, `.m4v`, `.mov`, `.webm`, `.avi` et
 ### Raccourcis et liens
 
 KROMA suit les liens symboliques. Une bibliothèque faite de liens qui pointent
-vers un autre dossier est analysée comme si les fichiers s'y trouvaient. Dans
-Docker, le dossier vers lequel pointent les liens doit aussi être monté dans le
-conteneur, sinon KROMA ne peut pas ouvrir les fichiers.
+vers un autre dossier est analysée comme si les fichiers s'y trouvaient, tout
+comme une bibliothèque dont le dossier est lui-même un lien. Les titres se
+lisent sur le nom du lien, pas sur celui du dossier visé. Dans Docker, le
+dossier vers lequel pointent les liens doit aussi être monté dans le conteneur,
+sinon KROMA ne peut pas ouvrir les fichiers.
 
 ## Choisir la lecture seule ou la lecture et l'écriture
 

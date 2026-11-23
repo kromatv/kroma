@@ -76,8 +76,10 @@ KROMA scans `.mkv`, `.mp4`, `.m4v`, `.mov`, `.webm`, `.avi` and `.ts` files.
 ### Shortcuts and links
 
 KROMA follows symbolic links. A library made of links that point into another
-folder scans as if the files were there. In Docker, the folder the links point
-to must be mounted in the container too, or KROMA cannot open the files.
+folder scans as if the files were there, and so does a library whose folder is
+itself a link. Titles are read from the link's name, not from the folder it
+points to. In Docker, the folder the links point to must be mounted in the
+container too, or KROMA cannot open the files.
 
 ## Choose read-only or read and write
 

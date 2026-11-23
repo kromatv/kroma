@@ -159,6 +159,7 @@ fn prepare_children(
         if e.file_type().is_file() {
             e.client_state = file_meta(&e.path());
         } else if e.file_type().is_dir()
+            && e.depth > 0
             && e.path_is_symlink()
             && !first_descent(descended, &e.path())
         {
