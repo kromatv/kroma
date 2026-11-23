@@ -69,6 +69,14 @@ export function segmentsOf(
   return rows.filter((row) => (row.kind === 'sql') === (tab === 'statements'));
 }
 
+const LABEL_CHARS = 72;
+
+/** The start of a long label, for a table cell: a statement can run to
+ *  thousands of characters on one line, and its drawer shows it whole. */
+export function shortLabel(label: string): string {
+  return label.length > LABEL_CHARS ? `${label.slice(0, LABEL_CHARS)}…` : label;
+}
+
 /** How a route or job is named in the URL that opens its drawer. */
 export function scopeId(row: Pick<PerfScopeRow, 'kind' | 'name'>): string {
   return `${row.kind}:${row.name}`;

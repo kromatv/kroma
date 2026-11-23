@@ -152,6 +152,7 @@ export function fakeClient(parts: PartialClient = {}): KromaClient {
     setAuthToken: () => undefined,
     setRefreshHandler: () => undefined,
     refreshSession: () => Promise.resolve(undefined),
+    timings: { screen: () => undefined },
     setLocale: () => undefined,
     hasAuth: false,
     sessionToken: undefined,

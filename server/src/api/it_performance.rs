@@ -5,7 +5,8 @@ use tokio::sync::Mutex;
 use crate::api::test_support::{get, raw, seed_session, send, test_app, text};
 use crate::model::Permission;
 
-static SERIAL: Mutex<()> = Mutex::const_new(());
+/// Held by every test that reads or flips the process-wide profiler.
+pub(crate) static SERIAL: Mutex<()> = Mutex::const_new(());
 
 fn names(overview: &Value) -> Vec<String> {
     overview["requests"]
@@ -169,5 +170,6 @@ async fn the_markdown_export_is_a_ranked_summary() {
 
     assert_eq!(status, StatusCode::OK);
     assert!(body.starts_with("# Performance report"), "{body}");
-    assert!(body.contains("`GET /api/libraries`"));
+    assert!(body.contains("## Requests by total time"));
+    assert!(body.contains("| name | calls | p50 | p95 | max |"));
 }

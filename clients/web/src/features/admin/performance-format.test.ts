@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMs, scopeId, segmentsOf, sortRows } from './performance-format';
+import { formatMs, scopeId, segmentsOf, shortLabel, sortRows } from './performance-format';
 
 const rows = [
   { name: 'b', total: 5, calls: 1 },
@@ -82,5 +82,12 @@ describe('scopeId', () => {
     expect(scopeId({ kind: 'request', name: 'GET /api/shows/{id}' })).toBe(
       'request:GET /api/shows/{id}',
     );
+  });
+});
+
+describe('shortLabel', () => {
+  it('keeps a short label whole and cuts a long one with a marker', () => {
+    expect(shortLabel('SELECT 1')).toBe('SELECT 1');
+    expect(shortLabel('x'.repeat(400))).toBe(`${'x'.repeat(72)}…`);
   });
 });

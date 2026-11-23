@@ -12,6 +12,7 @@ pub mod ws;
 
 mod accounts;
 mod cast;
+mod client_timings;
 mod diagnostics;
 mod direct;
 mod discover;
@@ -168,6 +169,8 @@ mod it_passkeys;
 mod it_people;
 #[cfg(test)]
 mod it_performance;
+#[cfg(test)]
+mod it_statement_budget;
 #[cfg(test)]
 mod it_pin;
 #[cfg(test)]

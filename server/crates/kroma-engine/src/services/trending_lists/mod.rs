@@ -40,6 +40,7 @@ impl TrendingLists {
     /// the first read of a list waits on the provider, and fails when the
     /// provider cannot give its first page. A list older than an hour is
     /// answered as it is and read again in the background.
+    #[tracing::instrument(level = "trace", skip_all, name = "TrendingLists::page")]
     pub fn page(&self, source: &Source, page: u32) -> anyhow::Result<DiscoverPage> {
         let hits = self.list(source).hits(source)?;
         Ok(slice(&hits, page))

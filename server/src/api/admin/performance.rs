@@ -144,7 +144,8 @@ fn explain(db: &Path, label: &str) -> anyhow::Result<Vec<PlanStep>> {
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )?;
     let mut statement = connection.prepare(&format!("EXPLAIN QUERY PLAN {sql}"))?;
-    let steps = statement.query_map([], |row| {
+    let unbound = std::iter::repeat_n(rusqlite::types::Null, statement.parameter_count());
+    let steps = statement.query_map(rusqlite::params_from_iter(unbound), |row| {
         Ok(PlanStep {
             id: row.get(0)?,
             parent: row.get(1)?,

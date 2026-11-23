@@ -56,9 +56,21 @@ impl Window {
     }
 }
 
+/// A timing measured outside this process, as [`Profiler::record_reported`]
+/// files it.
+#[derive(Clone, Copy, Debug)]
+pub struct Reported<'a> {
+    pub kind: &'static str,
+    pub label: &'a str,
+    pub origin: Option<&'a str>,
+    pub caller: &'a str,
+    pub elapsed: Duration,
+}
+
 /// What a finished scope cost, for a `Server-Timing` header.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Finished {
+    pub name: String,
     pub total: Duration,
     pub kinds: BTreeMap<&'static str, Part>,
 }
@@ -68,10 +80,11 @@ impl Finished {
     /// of each kind of segment in it. Kinds overlap (a span holds the SQL it
     /// ran), so they are never summed.
     pub fn server_timing(&self) -> String {
-        let mut entries = vec![format!(
-            "total;dur={:.1}",
-            self.total.as_secs_f64() * 1_000.0
-        )];
+        let name = self.name.replace(['"', '\\'], "");
+        let mut entries = vec![
+            format!("total;dur={:.1}", self.total.as_secs_f64() * 1_000.0),
+            format!("scope;desc=\"{name}\""),
+        ];
         for (kind, part) in &self.kinds {
             let ms = part.total_ns as f64 / 1_000_000.0;
             entries.push(format!("{kind};dur={ms:.1};desc=\"{} {kind}\"", part.count));
@@ -150,6 +163,7 @@ impl Profiler {
             self.keep_slow(SlowRequest::of(scope, &run));
         }
         Finished {
+            name: scope.name().to_string(),
             total: Duration::from_nanos(run.elapsed_ns),
             kinds: run.kinds,
         }
@@ -165,6 +179,16 @@ impl Profiler {
     /// Records one measured segment: in the scope current here, and in the
     /// history of its key.
     pub fn record(&self, kind: &'static str, label: &str, origin: Option<&str>, elapsed: Duration) {
+        self.record_segment(kind, (label, origin), elapsed, false);
+    }
+
+    pub(crate) fn record_segment(
+        &self,
+        kind: &'static str,
+        (label, origin): (&str, Option<&str>),
+        elapsed: Duration,
+        nested: bool,
+    ) {
         if !self.enabled() {
             return;
         }
@@ -175,6 +199,7 @@ impl Profiler {
             key,
             elapsed_ns: nanos,
             counters: Counters::default(),
+            nested,
         });
     }
 
@@ -184,6 +209,30 @@ impl Profiler {
             scope.add(&segment);
         }
         let caller = scope.as_ref().map_or(UNATTRIBUTED, Scope::name);
+        self.keep_segment(&segment, caller);
+    }
+
+    /// Records a segment that belongs to no scope of this process: a timing a
+    /// client measured on its side and reported, filed under `caller`.
+    pub fn record_reported(&self, reported: Reported<'_>) {
+        if !self.enabled() {
+            return;
+        }
+        let key = self
+            .catalog
+            .key_for(reported.kind, reported.label, reported.origin);
+        let nanos = u64::try_from(reported.elapsed.as_nanos()).unwrap_or(u64::MAX);
+        let segment = Segment {
+            kind: reported.kind,
+            key,
+            elapsed_ns: nanos,
+            counters: Counters::default(),
+            nested: false,
+        };
+        self.keep_segment(&segment, reported.caller);
+    }
+
+    fn keep_segment(&self, segment: &Segment, caller: &str) {
         let mut recent = self.recent.lock().unwrap();
         recent.record_segment(segment.key, segment.elapsed_ns, &segment.counters, caller);
     }
@@ -263,67 +312,4 @@ impl Profiler {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_switched_off_profiler_opens_no_scope() {
-        let profiler = Profiler::new();
-        profiler.set_enabled(false);
-
-        let scope = profiler.request("GET", "/api/home");
-
-        assert!(scope.is_none());
-    }
-
-    #[test]
-    fn a_segment_recorded_inside_a_request_counts_in_both() {
-        let profiler = Profiler::new();
-        let scope = profiler.request("GET", "/api/shows/{id}").unwrap();
-        let _entered = scope.enter();
-
-        profiler.record("fs", "stat", Some("/volume1"), Duration::from_millis(40));
-        let finished = profiler.finish(&scope, Some(200), Some(10));
-
-        assert_eq!(finished.kinds["fs"].count, 1);
-        assert_eq!(finished.kinds["fs"].total_ns, 40_000_000);
-        let hour = profiler.window(Window::Hour);
-        let key = profiler.catalog.key_for("fs", "stat", Some("/volume1"));
-        assert_eq!(hour.segments[&key].callers["GET /api/shows/{id}"], 1);
-    }
-
-    #[test]
-    fn a_request_looping_over_one_query_keeps_its_waterfall() {
-        let profiler = Profiler::new();
-        let scope = profiler
-            .request("GET", "/api/admin/pipeline/show/{id}")
-            .unwrap();
-        let _entered = scope.enter();
-        for _ in 0..crate::slow::REPEATS_FLAGGED {
-            profiler.record(
-                "sql",
-                "SELECT id FROM files WHERE item_id = ?1",
-                Some("core"),
-                Duration::from_micros(80),
-            );
-        }
-
-        profiler.finish(&scope, Some(200), None);
-
-        let kept = profiler.slow_request(scope.id()).unwrap();
-        assert_eq!(kept.name, "GET /api/admin/pipeline/show/{id}");
-        assert_eq!(kept.events.len(), crate::slow::REPEATS_FLAGGED as usize);
-        assert_eq!(kept.repeats[0].count, crate::slow::REPEATS_FLAGGED);
-    }
-
-    #[test]
-    fn a_finished_request_leaves_the_live_list() {
-        let profiler = Profiler::new();
-        let scope = profiler.request("GET", "/api/home").unwrap();
-        let running = profiler.live().len();
-
-        profiler.finish(&scope, Some(200), None);
-
-        assert_eq!((running, profiler.live().len()), (1, 0));
-    }
-}
+mod tests;

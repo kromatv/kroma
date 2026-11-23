@@ -14,6 +14,7 @@
 //! Nothing here names the application it measures.
 
 mod export;
+mod flags;
 mod histogram;
 mod hook;
 mod live;
@@ -34,7 +35,7 @@ use std::time::{Duration, Instant};
 
 pub use export::Format;
 pub use hook::{install, name_databases, DatabaseNamer};
-pub use profiler::{profiler, Finished, Profiler, Window};
+pub use profiler::{profiler, Finished, Profiler, Reported, Window};
 pub use report::{Flag, KindRow, Named, Overview, PartRow, RepeatRow, ScopeRow, SegmentRow};
 pub use scope::{carry, Entered, Event, Scope, ScopeKind};
 pub use segment::Descriptor;

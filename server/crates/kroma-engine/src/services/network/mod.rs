@@ -152,6 +152,12 @@ impl Network {
         }))?;
         let sink = Arc::clone(self);
         kroma_http::egress::set_sink(Arc::new(move |exchange, at| {
+            kroma_perf::record(
+                "http",
+                exchange.purpose,
+                Some(&exchange.host),
+                std::time::Duration::from_millis(exchange.duration_ms),
+            );
             sink.record_at(CORE, exchange.into(), kroma_primitives::epoch_ms(at));
         }))
     }

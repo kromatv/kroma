@@ -11,6 +11,7 @@ import {
   withUserAgent,
 } from './core/http';
 import { createSessionScope, type SessionScope } from './core/session';
+import { createTimingSink, sendTimings, withTimings } from './core/timings';
 
 /** What the client carries beyond its domains: the bearer, the locale, and the
  * few things a platform needs to reach the server without the transport. */
@@ -35,6 +36,10 @@ export interface ClientControls {
   /** Sent as `Accept-Language`; the server localises admin labels and error
    * messages to match. */
   setLocale(locale?: string): void;
+  /** Timings this device measured, sent to the server's performance reports in
+   * batches. API calls report themselves; a shell reports a screen's time from
+   * navigation to drawn. */
+  readonly timings: { screen(name: string, ms: number): void };
   /** Whether a bearer token is currently set (does not validate it). */
   readonly hasAuth: boolean;
   /** For the one caller that cannot send a header: the event socket, which
@@ -85,12 +90,16 @@ export function kromaClientParts(options: KromaClientOptions): {
   };
 
   const route = createRoute(baseUrl, { directMedia: options.directMedia });
+  const plain = options.userAgent ? withUserAgent(base, options.userAgent) : base;
+  const app = options.app ? appVersionHeader(options.app) : undefined;
+  const report = { fetchFn: plain, base: () => route.api(), token: session.sessionToken, app };
+  const timings = createTimingSink({ send: (samples) => sendTimings(report, samples) });
   const config: TransportConfig = {
     route,
-    fetchFn: options.userAgent ? withUserAgent(base, options.userAgent) : base,
+    fetchFn: withTimings(plain, timings),
     token: session.sessionToken,
     locale: () => locale,
-    app: options.app ? appVersionHeader(options.app) : undefined,
+    app,
     artworkScale: options.artworkScale,
     refresh: refreshSession,
     mediaTicket: sessionMediaTicket,
@@ -107,6 +116,7 @@ export function kromaClientParts(options: KromaClientOptions): {
     },
     setAuthToken,
     refreshSession,
+    timings: { screen: (name, ms) => timings.add({ kind: 'screen', name, ms }) },
     setRefreshHandler(fn) {
       refreshHandler = fn;
     },

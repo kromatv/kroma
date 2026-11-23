@@ -3,7 +3,12 @@ import type { MessageKey } from '@kromatv/i18n';
 import { Box, type SortColumn, Table, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PerfFlags } from '#web/features/admin/performance-flags.component';
-import { formatMs, SEGMENT_SORT, sortRows } from '#web/features/admin/performance-format';
+import {
+  formatMs,
+  SEGMENT_SORT,
+  shortLabel,
+  sortRows,
+} from '#web/features/admin/performance-format';
 import {
   type PerfColumn,
   PerfEmpty,
@@ -18,7 +23,7 @@ const COLUMNS: readonly PerfColumn[] = [
   { column: 'total', labelKey: 'perf.colTotal', width: 96, align: 'end' },
   { column: 'p95', labelKey: 'perf.colP95', width: 92, align: 'end' },
   { column: 'max', labelKey: 'perf.colMax', width: 92, align: 'end' },
-  { column: 'rows', labelKey: 'perf.colRowsPerCall', width: 104, align: 'end' },
+  { column: 'rows', labelKey: 'perf.colRowsPerCall', width: 120, align: 'end' },
   { labelKey: 'perf.colFlags', flex: 1.4, min: 160 },
 ];
 
@@ -38,8 +43,8 @@ function SegmentRow({ row }: Readonly<{ row: PerfSegmentRow }>) {
       <PerfLink open={{ segment: row.key }}>
         <Table.Cell>
           <Box minW={0}>
-            <Text variant="meta" font="mono" lines={2}>
-              {row.label}
+            <Text variant="meta" font="mono" lines={1}>
+              {shortLabel(row.label)}
             </Text>
             <Text variant="meta" color="textDim" lines={1}>
               {row.origin ?? row.kind}

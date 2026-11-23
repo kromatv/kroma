@@ -5,6 +5,7 @@ import { useT } from '@kromatv/ui';
 import { Box, Drawer, Grid, Row, Text } from '@kromatv/ui/kit';
 import type { ReactNode } from 'react';
 import { PerfFlags } from '#web/features/admin/performance-flags.component';
+import { shortLabel } from '#web/features/admin/performance-format';
 import { PerfLink } from '#web/features/admin/performance-link.component';
 
 /** One figure of a drawer's summary. */
@@ -90,7 +91,7 @@ export function PerfSegmentLine({
       <Row gap={12} py={8} border="tint/7" align="flex-start">
         <Box flex={1} minW={0}>
           <Text variant="meta" font="mono" lines={3}>
-            {segment.label}
+            {shortLabel(segment.label)}
           </Text>
           <Text variant="meta" color="textDim" lines={1}>
             {segment.origin ?? segment.kind}

@@ -107,10 +107,12 @@ impl Scope {
         let offset_us = (self.0.started.elapsed().as_micros() as u64).saturating_sub(elapsed_us);
         let mut trace = self.0.trace.lock().unwrap();
         trace.segments += 1;
-        count_into(
-            trace.kinds.entry(segment.kind).or_default(),
-            segment.elapsed_ns,
-        );
+        if !segment.nested {
+            count_into(
+                trace.kinds.entry(segment.kind).or_default(),
+                segment.elapsed_ns,
+            );
+        }
         trace.counters.add(&segment.counters);
         count_into(
             trace.parts.entry(segment.key).or_default(),
@@ -192,6 +194,7 @@ mod tests {
 
     fn segment(key: u64, ms: u64) -> Segment {
         Segment {
+            nested: false,
             kind: "sql",
             key,
             elapsed_ns: ms * 1_000_000,

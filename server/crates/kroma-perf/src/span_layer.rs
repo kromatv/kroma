@@ -54,7 +54,8 @@ where
             .file()
             .zip(meta.line())
             .map(|(file, line)| format!("{file}:{line}"));
-        profiler().record("span", &label, origin.as_deref(), elapsed);
+        let nested = span.parent().is_some();
+        profiler().record_segment("span", (&label, origin.as_deref()), elapsed, nested);
     }
 }
 
@@ -85,6 +86,40 @@ mod tests {
         assert!(descriptor.origin.unwrap().contains("span_layer.rs:"));
         assert_eq!(
             profiler().window(Window::Hour).segments[&key].timing.count,
+            1
+        );
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    fn outer_for_the_nesting_test() {
+        inner_for_the_nesting_test();
+    }
+
+    #[tracing::instrument(level = "trace", skip_all)]
+    fn inner_for_the_nesting_test() {}
+
+    #[test]
+    fn a_span_inside_a_span_keeps_its_figures_but_is_not_counted_twice() {
+        let subscriber = tracing_subscriber::registry().with(span_layer(&["kroma_perf"]));
+        let scope = profiler().request("GET", "/test/nested-spans").unwrap();
+
+        let entered = scope.enter();
+        tracing::subscriber::with_default(subscriber, outer_for_the_nesting_test);
+        drop(entered);
+        let finished = profiler().finish(&scope, Some(200), None);
+
+        assert_eq!(finished.kinds["span"].count, 1);
+        let inner = profiler()
+            .catalog
+            .all()
+            .into_iter()
+            .find(|(_, d)| d.label.ends_with("inner_for_the_nesting_test"))
+            .map(|(key, _)| key)
+            .unwrap();
+        assert_eq!(
+            profiler().window(Window::Hour).segments[&inner]
+                .timing
+                .count,
             1
         );
     }

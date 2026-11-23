@@ -19,6 +19,7 @@ import {
 import { ARTWORK_SCALE, useArtworkPref, useStoredPref } from '#tv/app/settings/store';
 import { loadDevStack, useDevStackMirror } from './dev-stack';
 import { useDevicePreferences } from './device-preferences';
+import { useScreenClock } from './screen-clock.hook';
 import { PlayerDockProvider, PlayerSlot } from './player-dock';
 
 // The screen registry of the in-memory router: a TV has no address bar, so
@@ -115,20 +116,34 @@ export function TvNavProvider({
   screens,
   chrome,
   onExit,
+  onScreen,
   children,
 }: Readonly<{
   screens: TvScreens;
   chrome?: readonly TvChrome[];
   onExit?: () => void;
+  /** Each screen's time from the navigation that asked for it to its commit. */
+  onScreen?: (name: string, ms: number) => void;
   children: ReactNode;
 }>) {
   const [stack, setStack] = useState<TvRoute[]>(() => loadDevStack(screens) ?? [PROFILES]);
+  const mark = useScreenClock(stack.at(-1) ?? HOME, onScreen);
+  const navigate = useCallback(
+    (next: TvRoute[] | ((s: TvRoute[]) => TvRoute[])) => {
+      mark();
+      setStack(next);
+    },
+    [mark],
+  );
 
   useDevStackMirror(stack);
 
-  const go = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    startTransition(() => setStack((s) => [...s, make(name, params)]));
-  }, []);
+  const go = useCallback(
+    <K extends RouteName>(...[name, params]: GoArgs<K>) => {
+      startTransition(() => navigate((s) => [...s, make(name, params)]));
+    },
+    [navigate],
+  );
   // The bottom of the stack is always a root (home / profiles), so there is
   // nowhere to go back to: Back there leaves the app where the shell can.
   const root = stack.length <= 1;
@@ -136,19 +151,28 @@ export function TvNavProvider({
     if (root) {
       onExit?.();
     } else {
-      startTransition(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)));
+      startTransition(() => navigate((s) => (s.length > 1 ? s.slice(0, -1) : s)));
     }
-  }, [root, onExit]);
-  const reset = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    startTransition(() => setStack(name === 'home' ? [HOME] : [HOME, make(name, params)]));
-  }, []);
-  const replace = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    startTransition(() => setStack([make(name, params)]));
-  }, []);
-  const swap = useCallback(<K extends RouteName>(...[name, params]: GoArgs<K>) => {
-    startTransition(() => setStack((s) => [...s.slice(0, -1), make(name, params)]));
-  }, []);
-  const home = useCallback(() => startTransition(() => setStack([HOME])), []);
+  }, [root, onExit, navigate]);
+  const reset = useCallback(
+    <K extends RouteName>(...[name, params]: GoArgs<K>) => {
+      startTransition(() => navigate(name === 'home' ? [HOME] : [HOME, make(name, params)]));
+    },
+    [navigate],
+  );
+  const replace = useCallback(
+    <K extends RouteName>(...[name, params]: GoArgs<K>) => {
+      startTransition(() => navigate([make(name, params)]));
+    },
+    [navigate],
+  );
+  const swap = useCallback(
+    <K extends RouteName>(...[name, params]: GoArgs<K>) => {
+      startTransition(() => navigate((s) => [...s.slice(0, -1), make(name, params)]));
+    },
+    [navigate],
+  );
+  const home = useCallback(() => startTransition(() => navigate([HOME])), [navigate]);
 
   const value = useMemo<TvNav>(
     () => ({

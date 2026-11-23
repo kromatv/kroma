@@ -2,7 +2,7 @@ import type { PerfLiveRow } from '@kromatv/client/performance';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Table, Text } from '@kromatv/ui/kit';
-import { formatMs } from '#web/features/admin/performance-format';
+import { formatMs, shortLabel } from '#web/features/admin/performance-format';
 import {
   type PerfColumn,
   PerfEmpty,
@@ -49,7 +49,7 @@ function LiveRow({ row }: Readonly<{ row: PerfLiveRow }>) {
       </Table.Cell>
       <Table.Cell>
         <Text variant="meta" font="mono" color="textDim" lines={1}>
-          {row.last?.label ?? '-'}
+          {row.last ? shortLabel(row.last.label) : '-'}
         </Text>
       </Table.Cell>
     </Table.Row>

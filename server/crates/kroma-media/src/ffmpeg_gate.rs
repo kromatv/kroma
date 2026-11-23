@@ -224,6 +224,7 @@ impl Drop for Permit {
 /// right before spawning ffmpeg and keep the returned permit alive (bind it, do
 /// not `let _ = `) until the process has exited.
 #[must_use]
+#[tracing::instrument(level = "trace", skip_all, name = "ffmpeg::wait_for_a_slot")]
 pub fn acquire(need: Footprint) -> Permit {
     let gate = gate();
     let mut inner = gate.inner.lock().unwrap();
@@ -236,6 +237,7 @@ pub fn acquire(need: Footprint) -> Permit {
 /// [`acquire`] that gives up, answering `None`, the moment `cancel` flips, so a
 /// cancelled job is not left queued behind a box short of memory.
 #[must_use]
+#[tracing::instrument(level = "trace", skip_all, name = "ffmpeg::wait_for_a_slot")]
 pub fn acquire_cancellable(need: Footprint, cancel: &dyn Fn() -> bool) -> Option<Permit> {
     let gate = gate();
     let mut inner = gate.inner.lock().unwrap();

@@ -10,7 +10,12 @@ import { PerfSegmentTable } from '#web/features/admin/performance-segment-table.
 import { PerfSlowDrawer } from '#web/features/admin/performance-slow-drawer.component';
 import { PerfSlowList } from '#web/features/admin/performance-slow.component';
 import { scopeId, segmentsOf } from '#web/features/admin/performance-format';
-import { PERF_TABS, type PerfSearch, type PerfTab } from '#web/features/admin/performance-tabs';
+import {
+  idFromUrl,
+  PERF_TABS,
+  type PerfSearch,
+  type PerfTab,
+} from '#web/features/admin/performance-tabs';
 import { PerfToolbar } from '#web/features/admin/performance-toolbar.component';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
@@ -60,14 +65,15 @@ function Drawers({
   const close = () =>
     onSearch({ ...search, scope: undefined, segment: undefined, slow: undefined });
   const scope = scopeOf(overview, search.scope);
-  const segment = overview?.segments.find((row) => row.key === search.segment);
+  const segment = overview?.segments.find((row) => row.key === idFromUrl(search.segment));
   if (scope) {
     return <PerfScopeDrawer row={scope} onClose={close} />;
   }
   if (segment) {
     return <PerfSegmentDrawer row={segment} onClose={close} />;
   }
-  return search.slow ? <PerfSlowDrawer id={search.slow} onClose={close} /> : null;
+  const slow = idFromUrl(search.slow);
+  return slow ? <PerfSlowDrawer id={slow} onClose={close} /> : null;
 }
 
 function Body({

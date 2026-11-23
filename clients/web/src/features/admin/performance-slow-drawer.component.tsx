@@ -10,7 +10,7 @@ import {
   type PerfStat,
   PerfStats,
 } from '#web/features/admin/performance-drawer-parts.component';
-import { formatMs } from '#web/features/admin/performance-format';
+import { formatMs, shortLabel } from '#web/features/admin/performance-format';
 import { usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 import { PerfLink } from '#web/features/admin/performance-link.component';
@@ -53,7 +53,7 @@ function Step({ step, totalMs }: Readonly<{ step: PerfStep; totalMs: number }>) 
       <Box py={6}>
         <Row between gap={12}>
           <Text variant="meta" font="mono" lines={1} flex={1} minW={0}>
-            {step.label}
+            {shortLabel(step.label)}
           </Text>
           <Text variant="meta" color="textMuted" style={TABULAR}>
             {formatMs(step.durationMs)}

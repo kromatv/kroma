@@ -87,6 +87,7 @@ in **Admin → Sign-in** need none of them.
 | --- | --- | --- |
 | `RUST_LOG` | `info` for KROMA's own parts, `warn` for the rest | How much the server logs, such as `debug`, or `kroma_server=debug` for the server only. Remove it to go back to the default. |
 | `KROMA_MODULE_LOG` | the value of `RUST_LOG` | How much the modules log. |
+| `KROMA_PROFILING` | on | `off` keeps the server from measuring where its time goes, whatever **Admin → Performance** says. |
 
 ## Modules
 

@@ -15,7 +15,7 @@ use tower_http::trace::TraceLayer;
 
 use super::spa::{accepts_html, spa_cache_headers};
 use super::{
-    accounts, admin, cast, diagnostics, direct, discover, handoff, home, images, inbound, invites,
+    accounts, admin, cast, client_timings, diagnostics, direct, discover, handoff, home, images, inbound, invites,
     mail, media, metadata, modules, monitoring, notifications, online_subs, origin, passkeys,
     people, pin, playback, plugin, profiling, recommend, releases, rematch, remote_art, reports,
     requests, search, server_status, sso, stream, suggest, themes, trailers, ws,
@@ -170,6 +170,7 @@ fn content_routes(state: &SharedState) -> Router<SharedState> {
         .merge(notifications::routes())
         .merge(releases::routes())
         .merge(modules::routes())
+        .merge(client_timings::routes())
         .route_layer(from_fn_with_state(state.clone(), require_session))
 }
 

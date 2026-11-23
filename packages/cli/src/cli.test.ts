@@ -23,6 +23,7 @@ describe('cli', () => {
       'i18n',
       'install',
       'login',
+      'perf',
       'cargo',
       'registry',
       'serve',
