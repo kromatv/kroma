@@ -287,6 +287,17 @@ The two `.ipa` bundles are not on the channel: TestFlight is the only way onto
 an Apple device. The channel is not a gate either: a failed upload does not
 make a candidate unpromotable.
 
+Both archives compile their pods' C, Objective-C and C++ through `ccache`:
+about 1,200 compile steps for Apple TV and 600 for the phone, and most of
+each archive. `bun install` writes every source with a fresh mtime, so Xcode
+recompiles them whatever DerivedData holds; ccache matches them by content.
+`USE_CCACHE=1` at `pod install` makes React Native point the projects' `CC`,
+`CXX`, `LD` and `LDPLUSPLUS` at its ccache wrappers, and Expo re-anchors the
+wrappers' path for targets CocoaPods does not integrate, the Top Shelf
+extension among them. Those settings live in the cached `ios/` project, so
+`brew install ccache` runs on every run. The ccache entry is keyed on the
+Xcode version and `bun.lock`, and written once per key.
+
 ### TestFlight: Canary on a push, Beta each night
 
 The two `.ipa` bundles go to TestFlight instead, through two external groups
@@ -485,7 +496,8 @@ copies go before anything a run still reads.
 | `desktop-check` | ~0.4 GB | ci.yml on main |
 | `desktop-release` x4 (both Macs, Windows, Linux) | ~1.6 GB | _release-desktop.yml, desktop-autoupdate.yml |
 | `dd-tvnative-v1-*`, `dd-mobile-v1-*` | ~0.8 + 0.6 GB, one each | the Apple jobs, pruned to one |
-| `ios-tvnative-v3-*`, `ios-mobile-v3-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
+| `ios-tvnative-v4-*`, `ios-mobile-v4-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
+| `ccache-tvnative-v1-*`, `ccache-mobile-ios-v1-*` | measured on their first save | the Apple jobs, keyed by Xcode and `bun.lock` |
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
 | `synology-v4`, `synology-arm64-v3` | measured on their first save | synology.yml |
 | `kmod` (wasm32-wasip2) | ~0.1 GB | modules.yml |

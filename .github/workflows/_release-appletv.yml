@@ -135,6 +135,21 @@ jobs:
         if: steps.signing.outputs.ready == 'true'
         run: bun install --frozen-lockfile
 
+      # ~1,200 of the archive's steps compile C, ObjC and C++ from the pods,
+      # and they took about ten of its fourteen minutes: `bun install` writes
+      # every source with a fresh mtime, so Xcode rebuilds them all whatever
+      # DerivedData held. ccache matches them by content instead. USE_CCACHE
+      # at pod install points the projects' CC, CXX, LD and LDPLUSPLUS at
+      # React Native's ccache wrappers (Expo anchors their path for the Top
+      # Shelf target too), and those settings live in the cached project, so
+      # ccache is installed on every run, hit or miss.
+      - name: Install ccache
+        if: steps.signing.outputs.ready == 'true'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+          HOMEBREW_NO_INSTALL_CLEANUP: '1'
+        run: brew install ccache
+
       # `ios/` is generated and gitignored, so the project is built from the Expo
       # config every time. EXPO_TV=1 (set by the package's own `prebuild` script)
       # is what makes it an APPLE TV target rather than a phone one - SDKROOT
@@ -172,7 +187,7 @@ jobs:
           # every manifest untouched. Without them in the key, a cache hit
           # skips prebuild and silently rebuilds the OLD project: the arm64
           # fix would have been cached straight over.
-          key: ios-tvnative-v3-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/tv-native/package.json', 'clients/tv-native/app.config.ts', 'clients/tv-native/plugins/**') }}
+          key: ios-tvnative-v4-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'clients/tv-native/package.json', 'clients/tv-native/app.config.ts', 'clients/tv-native/plugins/**') }}
 
       # The build number is minutes-since-2020, so a restored project carries
       # the one from the run that cached it and App Store Connect would refuse
@@ -196,6 +211,7 @@ jobs:
         if: steps.signing.outputs.ready == 'true' && steps.ios-cache.outputs.cache-hit != 'true'
         env:
           KROMA_VERSION: ${{ inputs.triplet }}
+          USE_CCACHE: '1'
         run: |
           set -euo pipefail
           export KROMA_VERSION_CODE=${{ inputs.build }}
@@ -269,6 +285,17 @@ jobs:
             dd-tvnative-v1-${{ env.XCODE_VERSION }}-
             dd-tvnative-v1-
 
+      # Every one of those sources comes from the install, so the entry is
+      # keyed on it and written once per key, like the Android ones.
+      - name: Restore the compiler cache
+        if: steps.signing.outputs.ready == 'true'
+        id: ccache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-tvnative-v1-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'patches/**') }}
+          restore-keys: ccache-tvnative-v1-${{ env.XCODE_VERSION }}-
+
       - name: Archive + export .ipa
         if: steps.signing.outputs.ready == 'true'
         working-directory: clients/tv-native/ios
@@ -291,8 +318,17 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         # Called by absolute path: this step runs from clients/tv-native/ios.
-        run: bash "$GITHUB_WORKSPACE/.github/scripts/ios-archive-export-ipa.sh"
+        run: |
+          ccache --zero-stats
+          bash "$GITHUB_WORKSPACE/.github/scripts/ios-archive-export-ipa.sh"
+          ccache --show-stats
 
+      - name: Save the compiler cache
+        if: steps.signing.outputs.ready == 'true' && steps.ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/Library/Caches/ccache
+          key: ccache-tvnative-v1-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'patches/**') }}
 
       # `-t tvos` is the whole difference from the phone upload: the platform is
       # what tells App Store Connect which half of the record this build belongs
