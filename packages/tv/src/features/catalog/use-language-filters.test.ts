@@ -38,6 +38,16 @@ describe('useLanguageFilters', () => {
     expect(result.current.chips[0]?.value).toBe('fr');
   });
 
+  it('keeps every title until a pick, then only the titles it matches', () => {
+    const { result } = filters();
+    const before = result.current.narrow(FILMS);
+
+    act(() => result.current.chips[0]?.onValueChange('en'));
+
+    expect(before).toEqual(FILMS);
+    expect(result.current.narrow(FILMS)).toEqual([FILMS[0]]);
+  });
+
   it('forgets the picks when the section changes', () => {
     const { result, rerender } = filters();
     act(() => result.current.chips[0]?.onValueChange('fr'));

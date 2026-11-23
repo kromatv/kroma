@@ -1,11 +1,5 @@
 import type { MediaCard, ShowCard, SubjectId } from '@kromatv/client/media';
-import {
-  collectGenres,
-  hasGenre,
-  matchesLanguages,
-  type SortMode,
-  sortTitles,
-} from '@kromatv/core';
+import { collectGenres, hasGenre, type SortMode, sortTitles } from '@kromatv/core';
 import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Text, TopFade, useFocusNav } from '@kromatv/ui/kit';
@@ -86,13 +80,14 @@ export function TvGrid() {
   const languages = useLanguageFilters(section, kind);
 
   const entries = useMemo<Entry[]>(() => {
-    const keep = (it: MediaCard | ShowCard) =>
-      (!genre || hasGenre(it, genre)) && matchesLanguages(it, languages.filter);
+    const keep = (it: MediaCard | ShowCard) => !genre || hasGenre(it, genre);
+    const films = languages.narrow(baseMovies.filter(keep));
+    const series = languages.narrow(baseShows.filter(keep));
     return [
-      ...sortTitles(baseMovies.filter(keep), sort).map((m): Entry => ({ kind: 'movie', item: m })),
-      ...sortTitles(baseShows.filter(keep), sort).map((s): Entry => ({ kind: 'show', item: s })),
+      ...sortTitles(films, sort).map((m): Entry => ({ kind: 'movie', item: m })),
+      ...sortTitles(series, sort).map((s): Entry => ({ kind: 'show', item: s })),
     ];
-  }, [baseMovies, baseShows, genre, languages.filter, sort]);
+  }, [baseMovies, baseShows, genre, languages, sort]);
 
   const cards = useMemo<GridCard[]>(
     () =>

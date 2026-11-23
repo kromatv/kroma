@@ -48,7 +48,8 @@ export function TvShowDetail() {
 
   useFocusNav({ onBack: nav.back });
 
-  const meta = detail?.show.metadata ?? show.metadata;
+  const meta = show.metadata;
+  const credits = detail?.show.metadata;
   const backdrop =
     client.media.artwork.backdropFor(show, STAGE_W) ??
     client.media.artwork.showPosterFor(show, STAGE_W);
@@ -172,8 +173,8 @@ export function TvShowDetail() {
           show's overall cast until the season is enriched. */}
       <FocusSlot>
         <CastRow
-          cast={activeSeason?.cast?.length ? activeSeason.cast : meta?.cast}
-          crew={meta?.crew}
+          cast={activeSeason?.cast?.length ? activeSeason.cast : credits?.cast}
+          crew={credits?.crew}
         />
       </FocusSlot>
 

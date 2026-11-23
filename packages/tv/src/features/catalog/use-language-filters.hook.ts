@@ -2,6 +2,7 @@ import {
   collectLanguages,
   type LanguageFilter,
   type LanguageStream,
+  matchesLanguages,
   type Spoken,
 } from '@kromatv/core';
 import { useMemo, useState } from 'react';
@@ -11,6 +12,7 @@ const STREAMS: readonly LanguageStream[] = ['audio', 'subtitles'];
 
 export interface LanguageFilters {
   filter: LanguageFilter;
+  narrow: <T extends Spoken>(titles: readonly T[]) => T[];
   chips: LanguageChipProps[];
 }
 
@@ -18,9 +20,9 @@ interface Picked extends LanguageFilter {
   section: string;
 }
 
-/** The language filters of one browse section: what is picked, and a chip for
- * each stream that the section's titles name a language on. Changing `section`
- * clears the picks. */
+/** The language filters of one browse section: what is picked, the titles the
+ * picks keep, and a chip for each stream that the section's titles name a
+ * language on. Changing `section` clears the picks. */
 export function useLanguageFilters(items: readonly Spoken[], section: string): LanguageFilters {
   const [picked, setPicked] = useState<Picked>({ section });
   const current = picked.section === section ? picked : null;
@@ -37,6 +39,7 @@ export function useLanguageFilters(items: readonly Spoken[], section: string): L
     };
     return {
       filter,
+      narrow: (titles) => titles.filter((title) => matchesLanguages(title, filter)),
       chips: counts.map(({ stream, languages }) => ({
         stream,
         languages,
