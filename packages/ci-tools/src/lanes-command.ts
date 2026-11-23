@@ -8,7 +8,9 @@ import { dependencyGraph } from './rust-graph';
 
 type Verdict = ReturnType<typeof matchLanes>;
 
-const isLane = (value: string): value is LaneName => LANE_NAMES.some((name) => name === value);
+const LANES: ReadonlySet<string> = new Set(LANE_NAMES);
+
+const isLane = (value: string): value is LaneName => LANES.has(value);
 
 export async function main(argv: string[]): Promise<void> {
   const { values } = parseArgs({
