@@ -107,21 +107,22 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # The ffmpeg archive + musl cargo registry + THE MUSL TARGET DIR. Without the
-      # target dir every push cold-compiled the whole workspace (candle,
-      # librqbit, ...) for ~10 min; warm, only changed crates rebuild. The
-      # version-bump commit changes Cargo.lock, so restore-keys fall back to
-      # the newest previous cache.
+      # The ffmpeg archive + musl cargo registry + THE TARGET DIRS. A --target
+      # build keeps the musl crates under the triple and its build scripts and
+      # proc macros under target/release; with only the first cached, every
+      # macro rebuilt and took all 308 crates with it. The version-bump commit
+      # changes Cargo.lock, so restore-keys fall back to the newest previous
+      # cache.
       - name: Cache build inputs + musl target
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             clients/synology/.cache
             server/target/x86_64-unknown-linux-musl
-          key: synology-v3-${{ hashFiles('server/Cargo.lock') }}
+            server/target/release
+          key: synology-v4-${{ hashFiles('server/Cargo.lock') }}
           restore-keys: |
-            synology-v3-
-            synology-v2-
+            synology-v4-
 
       # build.sh: web SPA -> static musl kroma-server -> pinned ffmpeg -> .spk.
       - name: Build .spk
@@ -188,19 +189,20 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Same warm-target rationale as the .spk cache above, per-arch key. The
-      # ffmpeg archive rides along; fetch-ffmpeg.sh checks it against ffmpeg.lock.
+      # Same warm-target rationale as the .spk cache above, per-arch key, and
+      # the same two target dirs. The ffmpeg archive rides along;
+      # fetch-ffmpeg.sh checks it against ffmpeg.lock.
       - name: Cache cargo registry + aarch64 target
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             .cargo-registry
             server/target/aarch64-unknown-linux-musl
+            server/target/release
             .ffmpeg-cache
-          key: synology-arm64-v2-${{ hashFiles('server/Cargo.lock') }}
+          key: synology-arm64-v3-${{ hashFiles('server/Cargo.lock') }}
           restore-keys: |
-            synology-arm64-v2-
-            synology-arm64-v1-
+            synology-arm64-v3-
 
       # Mirrors clients/synology/build.sh step 2: server/ -> /home/rust/src
       # (WORKDIR), packages/ -> /home/rust/packages (i18n.rs include_str!s the
