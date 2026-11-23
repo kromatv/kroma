@@ -4,7 +4,14 @@
 
 import { Box, Icon, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useEffect, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
+import {
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  useWindowDimensions,
+  type View,
+} from 'react-native';
 import { radius, spacing, type } from '#mobile/lib/theme';
 
 export interface PopoverAnchor {
@@ -23,6 +30,14 @@ export interface PopoverItem {
 }
 
 const MENU_WIDTH = 250;
+
+type Box = [x: number, y: number, width: number, height: number];
+
+/** Measures where `trigger` sits on screen and hands it to `onAnchor`, for the
+ * menu to open from. */
+export function measureAnchor(trigger: View | null, onAnchor: (anchor: PopoverAnchor) => void) {
+  trigger?.measureInWindow((...[x, y, width, height]: Box) => onAnchor({ x, y, width, height }));
+}
 
 export function PopoverMenu({
   visible,

@@ -19,7 +19,7 @@ import { type GenreCount, genreLabel, SORT_MODES, type SortMode } from '@kromatv
 import type { MessageKey } from '@kromatv/i18n';
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRef, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, type View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useT } from '#mobile/lib/i18n';
@@ -45,6 +45,7 @@ export function CatalogueHeader({
   backdrop,
   sort,
   onSort,
+  filters,
   genres,
   genre,
   onGenre,
@@ -56,6 +57,7 @@ export function CatalogueHeader({
   backdrop: string | null;
   sort: SortMode;
   onSort: (mode: SortMode) => void;
+  filters?: ReactNode;
   genres: GenreCount[];
   genre: string | null;
   onGenre: (slug: string | null) => void;
@@ -117,6 +119,7 @@ export function CatalogueHeader({
             <Icon name="chevron-down" size={14} thickness={2} color="textMuted" />
           </Chip>
         </Box>
+        {filters}
         {genres.length > 1 ? (
           <>
             <Box style={s.divider} />
