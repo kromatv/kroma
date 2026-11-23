@@ -35,6 +35,11 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 45
+    env:
+      CCACHE_MAXSIZE: 1G
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -61,6 +66,22 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      # The React Native, Reanimated and Expo C++ compiles once per ABI and
+      # Gradle's build cache does not cover native tasks; ccache does, by
+      # content. See ci.yml's Android TV compile, which keeps the debug one.
+      - name: Install ccache
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends ccache
+
+      - name: Restore the compiler cache
+        id: ccache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ccache-androidtv-release-v1-${{ hashFiles('bun.lock', 'patches/**') }}
+          restore-keys: ccache-androidtv-release-v1-
 
       # `android/` is generated and gitignored, so the project is built from the
       # Expo config every time. EXPO_TV=1 is what makes it a LEANBACK app (see
@@ -108,8 +129,10 @@ jobs:
         run: |
           tasks=(assembleRelease)
           if [[ "$SIGNING_READY" = true ]]; then tasks+=(bundleRelease); fi
+          ccache --zero-stats
           gradle -p clients/tv-native/android "${tasks[@]}" --build-cache \
             -PreactNativeArchitectures=armeabi-v7a,arm64-v8a,x86_64
+          ccache --show-stats
           mkdir -p out
           cp clients/tv-native/android/app/build/outputs/apk/release/app-release.apk \
             "out/KROMA-androidtv-${{ inputs.version }}.apk"
@@ -117,6 +140,13 @@ jobs:
             cp clients/tv-native/android/app/build/outputs/bundle/release/app-release.aab \
               "out/KROMA-androidtv-${{ inputs.version }}.aab"
           fi
+
+      - name: Save the compiler cache
+        if: steps.ccache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ccache
+          key: ccache-androidtv-release-v1-${{ hashFiles('bun.lock', 'patches/**') }}
 
       - name: Upload .apk artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
