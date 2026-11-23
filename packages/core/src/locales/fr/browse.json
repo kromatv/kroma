@@ -1,5 +1,7 @@
 {
   "browse.allGenres": "Tous",
+  "browse.anyLanguage": "Toutes les langues",
+  "browse.audioLanguage": "Langue audio",
   "browse.count.movies": "{count} films",
   "browse.count.movies_one": "{count} film",
   "browse.count.series": "{count} séries",
@@ -12,5 +14,6 @@
   "browse.sort.rating": "Note",
   "browse.sort.release": "Date de sortie",
   "browse.sort.title": "Titre, de A à Z",
-  "browse.sortBy": "Trier par"
+  "browse.sortBy": "Trier par",
+  "browse.subtitleLanguage": "Sous-titres"
 }

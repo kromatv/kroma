@@ -13,6 +13,7 @@ import {
   SectionItem,
   type SectionLayoutRequest,
   Show,
+  ShowCard,
   ShowDetail,
   SplashEntry,
 } from './schemas';
@@ -112,7 +113,7 @@ export default function mediaApi(ctx: RequestContext) {
     /** Every show as a list draws it: `shows()` without the cast and crew only a
      * show's own page lists. */
     showCards: (library?: LibraryId) =>
-      ctx.get('/shows', Show.array(), {
+      ctx.get('/shows', ShowCard.array(), {
         query: { library, view: 'card' },
         concurrency: 'share',
       }),

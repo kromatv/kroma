@@ -5,7 +5,7 @@ import { makeQueryClient } from './query';
 
 import type { AppIdentity, KromaClient } from '@kromatv/client';
 import { loadSession } from '@kromatv/client/accounts';
-import type { MediaCard, MediaItem, Show } from '@kromatv/client/media';
+import type { MediaCard, MediaItem, Show, ShowCard } from '@kromatv/client/media';
 import { createQueryClient, type QueryClient } from '@kromatv/client/query';
 import type { SubtitleId } from '@kromatv/client/subtitles';
 import { deviceLocale, isTextSubtitle, resolveImageUrl } from '@kromatv/core';
@@ -143,6 +143,9 @@ export interface ShowView extends Show {
   backdrop: string | null;
 }
 
+/** A show as the Series grid draws it, with art pre-resolved. */
+export type ShowCardView = ShowCard & Pick<ShowView, 'poster' | 'backdrop'>;
+
 export function toMovieCardView(c: KromaClient, card: MediaCard): MovieCardView {
   return {
     ...card,
@@ -169,10 +172,17 @@ export function toMovieView(c: KromaClient, item: MediaItem): MovieView {
   };
 }
 
-export function toShowView(c: KromaClient, show: Show): ShowView {
+function showArt(c: KromaClient, show: Show): Pick<ShowView, 'poster' | 'backdrop'> {
   return {
-    ...show,
     poster: c.media.artwork.showPosterFor(show),
     backdrop: c.media.artwork.backdropFor(show),
   };
+}
+
+export function toShowView(c: KromaClient, show: Show): ShowView {
+  return { ...show, ...showArt(c, show) };
+}
+
+export function toShowCardView(c: KromaClient, card: ShowCard): ShowCardView {
+  return { ...card, ...showArt(c, card) };
 }

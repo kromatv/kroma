@@ -1,12 +1,13 @@
 import {
   collectGenres,
+  collectLanguages,
   genreLabel,
   genreOfSegment,
-  hasGenre,
   type LetterMark,
   letterMarks,
   type Sortable,
   type SortMode,
+  type Spoken,
   sortTitles,
   titleLetter,
 } from '@kromatv/core';
@@ -25,7 +26,9 @@ import {
 } from 'react';
 import { AlphabetRail, type LetterRange } from '#web/features/catalog/alphabet-rail.component';
 import { BrowseBar } from '#web/features/catalog/browse-bar.component';
+import { filterTitles } from '#web/features/catalog/browse-filter';
 import { BrowseHero } from '#web/features/catalog/browse-hero.component';
+import { LanguageSelect } from '#web/features/catalog/language-select.component';
 import { gridGeometry } from '#web/features/catalog/virtual-tile-grid.component';
 import { rowBounds } from '#web/shared/lib/tile-layout';
 import { PageFrame } from '#web/shared/ui';
@@ -108,7 +111,9 @@ function useVisibleLetters(
   return enabled && marks.length > 0 ? range : undefined;
 }
 
-export interface BrowseScreenProps<T extends Sortable & { backdrop: string | null }> {
+type Browsable = Sortable & Spoken & { backdrop: string | null };
+
+export interface BrowseScreenProps<T extends Browsable> {
   heading: string;
   items: readonly T[];
   /** Plural count line under the heading ('browse.count.movies' or '.series'). */
@@ -117,10 +122,14 @@ export interface BrowseScreenProps<T extends Sortable & { backdrop: string | nul
   emptyTitle: string;
   sort: SortMode;
   genre?: string;
+  audio?: string;
+  subtitles?: string;
   /** `resetScroll: false` marks a rail jump: the screen lands on the letter
    *  itself, so the router must not scroll back to the top. */
   onSort: (mode: SortMode, opts?: { resetScroll?: boolean }) => void;
   onGenre: (genre: string | undefined) => void;
+  onAudio: (code: string | undefined) => void;
+  onSubtitles: (code: string | undefined) => void;
   renderGrid: (view: T[]) => ReactElement;
 }
 
@@ -128,7 +137,7 @@ export interface BrowseScreenProps<T extends Sortable & { backdrop: string | nul
  * the grid, and the A-Z fast-scroll rail. Films and Series render the same
  * screen over a different view model; sort/genre live in the caller's URL
  * search. */
-export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
+export function BrowseScreen<T extends Browsable>({
   heading,
   items,
   countKey,
@@ -136,8 +145,12 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   emptyTitle,
   sort,
   genre,
+  audio,
+  subtitles,
   onSort,
   onGenre,
+  onAudio,
+  onSubtitles,
   renderGrid,
 }: Readonly<BrowseScreenProps<T>>) {
   const t = useT();
@@ -146,9 +159,11 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
   const pending = useRef<string | null>(null);
 
   const genres = useMemo(() => collectGenres(items), [items]);
+  const heard = useMemo(() => collectLanguages(items, 'audio'), [items]);
+  const read = useMemo(() => collectLanguages(items, 'subtitles'), [items]);
   const filtered = useMemo(
-    () => (genre ? items.filter((item) => hasGenre(item, genreOfSegment(genre))) : [...items]),
-    [items, genre],
+    () => filterTitles(items, { genre, audio, subtitles }),
+    [items, genre, audio, subtitles],
   );
   const view = useMemo(() => sortTitles(filtered, sort), [filtered, sort]);
   const marks = useMemo(() => (sort === 'title' ? letterMarks(view) : []), [view, sort]);
@@ -239,6 +254,24 @@ export function BrowseScreen<T extends Sortable & { backdrop: string | null }>({
             genres={genres}
             genre={genre}
             onGenre={onGenre}
+            filters={
+              heard.length + read.length > 0 ? (
+                <>
+                  <LanguageSelect
+                    stream="audio"
+                    languages={heard}
+                    value={audio}
+                    onValueChange={onAudio}
+                  />
+                  <LanguageSelect
+                    stream="subtitles"
+                    languages={read}
+                    value={subtitles}
+                    onValueChange={onSubtitles}
+                  />
+                </>
+              ) : undefined
+            }
           />
           {view.length === 0 ? (
             <EmptyState.Root icon={emptyIcon}>

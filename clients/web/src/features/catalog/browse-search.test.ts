@@ -44,6 +44,19 @@ describe('validateBrowseSearch', () => {
     });
   });
 
+  it('keeps an audio and a subtitle language', () => {
+    expect(validateBrowseSearch({ audio: 'fr', subtitles: 'jpn' })).toEqual({
+      audio: 'fr',
+      subtitles: 'jpn',
+    });
+  });
+
+  it('drops a language that is not a lowercase language code', () => {
+    for (const audio of ['', 'FR', 'fr-CA', 'f', '<script>', 7, ['fr']]) {
+      expect(validateBrowseSearch({ audio, subtitles: audio })).toEqual({});
+    }
+  });
+
   it('keeps the good half of a half-valid url', () => {
     expect(validateBrowseSearch({ sort: 'nope', genre: 'Drama' })).toEqual({ genre: 'Drama' });
   });
