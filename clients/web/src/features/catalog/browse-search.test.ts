@@ -2,7 +2,7 @@
 // reads as an empty library, and a bookmark reopens it broken every time.
 
 import { describe, expect, it } from 'vitest';
-import { validateBrowseSearch } from './browse-search';
+import { browseSort, validateBrowseSearch } from './browse-search';
 
 describe('validateBrowseSearch', () => {
   it('keeps a sort mode the page understands', () => {
@@ -84,5 +84,12 @@ describe('validateBrowseSearch', () => {
     // `undefined` is a `?sort=` that comes straight back here next navigation.
     const out = validateBrowseSearch({ sort: 'nope' });
     expect(Object.hasOwn(out, 'sort')).toBe(false);
+  });
+});
+
+describe('browseSort', () => {
+  it('reads the order the url names, and most recently added when it names none', () => {
+    expect(browseSort({ sort: 'title' })).toBe('title');
+    expect(browseSort({})).toBe('added');
   });
 });

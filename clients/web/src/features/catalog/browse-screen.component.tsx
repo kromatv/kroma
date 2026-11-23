@@ -6,7 +6,6 @@ import {
   type LetterMark,
   letterMarks,
   type Sortable,
-  type SortMode,
   type Spoken,
   sortTitles,
   titleLetter,
@@ -28,6 +27,7 @@ import { AlphabetRail, type LetterRange } from '#web/features/catalog/alphabet-r
 import { BrowseBar } from '#web/features/catalog/browse-bar.component';
 import { filterTitles } from '#web/features/catalog/browse-filter';
 import { BrowseHero } from '#web/features/catalog/browse-hero.component';
+import { type BrowseSearch, browseSort } from '#web/features/catalog/browse-search';
 import { LanguageSelect } from '#web/features/catalog/language-select.component';
 import { gridGeometry } from '#web/features/catalog/virtual-tile-grid.component';
 import { rowBounds } from '#web/shared/lib/tile-layout';
@@ -120,16 +120,11 @@ export interface BrowseScreenProps<T extends Browsable> {
   countKey: MessageKey;
   emptyIcon: IconName;
   emptyTitle: string;
-  sort: SortMode;
-  genre?: string;
-  audio?: string;
-  subtitles?: string;
-  /** `resetScroll: false` marks a rail jump: the screen lands on the letter
-   *  itself, so the router must not scroll back to the top. */
-  onSort: (mode: SortMode, opts?: { resetScroll?: boolean }) => void;
-  onGenre: (genre: string | undefined) => void;
-  onAudio: (code: string | undefined) => void;
-  onSubtitles: (code: string | undefined) => void;
+  search: BrowseSearch;
+  /** Moves the url's search to `next` over what it holds. `resetScroll: false`
+   *  marks a rail jump: the screen lands on the letter itself, so the router
+   *  must not scroll back to the top. */
+  onSearch: (next: BrowseSearch, opts?: { resetScroll?: boolean }) => void;
   renderGrid: (view: T[]) => ReactElement;
 }
 
@@ -143,17 +138,13 @@ export function BrowseScreen<T extends Browsable>({
   countKey,
   emptyIcon,
   emptyTitle,
-  sort,
-  genre,
-  audio,
-  subtitles,
-  onSort,
-  onGenre,
-  onAudio,
-  onSubtitles,
+  search,
+  onSearch,
   renderGrid,
 }: Readonly<BrowseScreenProps<T>>) {
   const t = useT();
+  const sort = browseSort(search);
+  const { genre, audio, subtitles } = search;
   const gridWrap = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
   const pending = useRef<string | null>(null);
@@ -215,10 +206,10 @@ export function BrowseScreen<T extends Browsable>({
         scrollToLetter(letter);
       } else {
         pending.current = letter;
-        onSort('title', { resetScroll: false });
+        onSearch({ sort: 'title' }, { resetScroll: false });
       }
     },
-    [sort, scrollToLetter, onSort],
+    [sort, scrollToLetter, onSearch],
   );
 
   useLayoutEffect(() => {
@@ -250,10 +241,10 @@ export function BrowseScreen<T extends Browsable>({
           <BrowseBar
             innerRef={bar}
             sort={sort}
-            onSort={onSort}
+            onSort={(mode) => onSearch({ sort: mode })}
             genres={genres}
             genre={genre}
-            onGenre={onGenre}
+            onGenre={(segment) => onSearch({ genre: segment })}
             filters={
               heard.length + read.length > 0 ? (
                 <>
@@ -261,13 +252,13 @@ export function BrowseScreen<T extends Browsable>({
                     stream="audio"
                     languages={heard}
                     value={audio}
-                    onValueChange={onAudio}
+                    onValueChange={(code) => onSearch({ audio: code })}
                   />
                   <LanguageSelect
                     stream="subtitles"
                     languages={read}
                     value={subtitles}
-                    onValueChange={onSubtitles}
+                    onValueChange={(code) => onSearch({ subtitles: code })}
                   />
                 </>
               ) : undefined
