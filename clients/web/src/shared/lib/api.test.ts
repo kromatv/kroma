@@ -1,4 +1,5 @@
 import { createKromaClient } from '@kromatv/client';
+import { ShowCard } from '@kromatv/client/media';
 import { createQueryClient } from '@kromatv/client/query';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -237,12 +238,28 @@ describe('toMovieView / toShowView', () => {
   });
 
   it('toShowCardView resolves the same art and keeps the languages', () => {
-    const card = {
+    const card = ShowCard.parse({
       id: 's1',
-      metadata: { posterUrl: '/api/sp.webp', backdropUrl: null },
+      title: 'Akira',
+      year: null,
+      library: 'lib',
+      video: null,
+      addedAt: 't',
+      metadata: {
+        provider: 'tmdb',
+        tmdbId: 149,
+        title: 'Akira',
+        overview: null,
+        genres: [],
+        tmdbUrl: 'https://www.themoviedb.org/tv/149',
+        posterUrl: '/api/sp.webp',
+        backdropUrl: null,
+      },
+      seasonCount: 1,
+      episodeCount: 1,
       audioLanguages: ['jpn'],
       subtitleLanguages: ['fre'],
-    } as never;
+    });
 
     const view = toShowCardView(client, card);
 
