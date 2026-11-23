@@ -20,7 +20,10 @@ stage! {
     concurrency: 2,
     pause_for_playback: false,
     schedule: Some("45 4 * * *"),
-    triggers: &[Trigger::AfterJob(JobKey("pipeline.metadata"))],
+    triggers: &[
+        Trigger::AfterJob(JobKey("pipeline.metadata")),
+        Trigger::AfterJob(JobKey("metadata.enrich")),
+    ],
 }
 
 fn enumerate(state: &SharedState) -> Result<Vec<(String, String)>> {

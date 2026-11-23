@@ -2,6 +2,7 @@ use serde_json::{Value, json};
 
 use super::*;
 use crate::db;
+use crate::services::jobs::{JobManager, register_all};
 use crate::test_support::{FakeTmdb, seed_movie, seed_show_episode, test_state_with_tmdb};
 
 fn legacy(tmdb_id: u64, certification: &str) -> Metadata {
@@ -172,4 +173,14 @@ fn a_title_rated_before_its_genre_ids_were_kept_is_queued_and_gains_them() {
         vec!["Action".to_string(), "Horreur".to_string()]
     );
     assert_eq!(stored.ratings.len(), 1);
+}
+
+#[test]
+fn a_tmdb_enrichment_run_by_hand_is_followed_by_the_age_ratings() {
+    let mut jobs = JobManager::default();
+    register_all(&mut jobs);
+
+    let next = jobs.jobs_for_trigger(Trigger::AfterJob(JobKey("metadata.enrich")));
+
+    assert!(next.contains(&JobKey("pipeline.ratings")));
 }
