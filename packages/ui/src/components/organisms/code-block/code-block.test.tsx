@@ -16,10 +16,17 @@ afterEach(cleanup);
 const SNIPPET = '<Button label="Play" />\n\nconst play = () => undefined;';
 
 describe('<CodeBlock>', () => {
-  it('paints a token per run rather than one string, so a theme swap reaches it', () => {
+  it('paints a token per run rather than one string, so a theme swap reaches it', async () => {
     render(<CodeBlock code={'const a = 1;'} />);
-    expect(screen.getByText('const')).toBeTruthy();
+
+    expect(await screen.findByText('const')).toBeTruthy();
     expect(screen.getByText('1')).toBeTruthy();
+  });
+
+  it('shows the code as plain text until the parser has loaded', () => {
+    render(<CodeBlock code={'const a = 1;'} />);
+
+    expect(screen.getByText('const a = 1;')).toBeTruthy();
   });
 
   it('numbers anything longer than one line, and nothing shorter', () => {

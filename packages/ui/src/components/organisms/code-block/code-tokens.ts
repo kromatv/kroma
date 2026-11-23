@@ -1,153 +1,61 @@
-// The TSX lexer behind <CodeBlock>.
-//
-// It has no schema to validate against and no error state: whatever it fails to
-// recognise is painted as plain text, so a construct it does not know degrades
-// to uncoloured rather than mangled.
+import { parser } from '@lezer/javascript';
+import { highlightTree, styleTags, tagHighlighter, tags as t } from '@lezer/highlight';
+
+const KINDS = ['plain', 'tag', 'attr', 'string', 'keyword', 'number', 'brace', 'comment'] as const;
 
 /** What a run of code was recognised as, which is the only thing the painter
  * reads. */
-type TokenKind = 'plain' | 'tag' | 'attr' | 'string' | 'keyword' | 'number' | 'brace' | 'comment';
+type TokenKind = (typeof KINDS)[number];
 
 interface Token {
   text: string;
   kind: TokenKind;
 }
 
-const KEYWORDS = new Set([
-  'const',
-  'let',
-  'var',
-  'function',
-  'return',
-  'import',
-  'export',
-  'from',
-  'default',
-  'if',
-  'else',
-  'for',
-  'of',
-  'in',
-  'async',
-  'await',
-  'new',
-  'true',
-  'false',
-  'null',
-  'undefined',
-  'type',
-  'interface',
+const tsx = parser.configure({
+  dialect: 'jsx ts',
+  props: [styleTags({ 'JSXMemberExpression/"."': t.tagName })],
+});
+
+const highlighter = tagHighlighter([
+  { tag: [t.angleBracket, t.tagName], class: 'tag' },
+  { tag: t.attributeName, class: 'attr' },
+  { tag: [t.string, t.special(t.string), t.escape, t.regexp], class: 'string' },
+  { tag: [t.keyword, t.bool, t.null], class: 'keyword' },
+  { tag: t.number, class: 'number' },
+  { tag: [t.paren, t.brace, t.squareBracket], class: 'brace' },
+  { tag: [t.lineComment, t.blockComment], class: 'comment' },
 ]);
 
-// A scanner's name. `word` is not a token kind: it is the fallback identifier
-// scanner, whose match becomes `keyword` or `plain` depending on the word.
-type ScanKind = TokenKind | 'word';
-
-// One scanner per shape, tried in order at a fixed position (sticky `y`
-// regex): comments, strings, a JSX tag name, an attribute name, a number, a
-// brace, then any other identifier. Each string pattern is the unrolled form
-// (`"[^"\\]*(?:\\.[^"\\]*)*"`), which cannot backtrack quadratically on an
-// unterminated string the way `(?:[^"\\]|\\.)*` can. Anything no scanner
-// claims falls through as plain text.
-const SCANNERS: readonly (readonly [ScanKind, RegExp])[] = [
-  ['comment', /\/\/[^\n]*/y],
-  ['comment', /\/\*[\s\S]*?\*\//y],
-  ['string', /"[^"\\]*(?:\\.[^"\\]*)*"/y],
-  ['string', /'[^'\\]*(?:\\.[^'\\]*)*'/y],
-  ['string', /`[^`\\]*(?:\\.[^`\\]*)*`/y],
-  ['tag', /<\/?[A-Z][\w.]*/y],
-  ['tag', /<\/?[a-z][\w.]*(?=[\s/>])/y],
-  ['attr', /[A-Za-z_$][\w$]*(?=\s*=[^=])/y],
-  ['number', /\d+(?:\.\d+)?\b/y],
-  ['brace', /[{}[\]()]/y],
-  ['word', /[A-Za-z_$][\w$]*/y],
-];
-
-// `word` is the fallback identifier scanner: whether its match is a keyword is
-// the only thing the scanner list cannot say for itself.
-function kindOf(scanner: ScanKind, text: string): TokenKind {
-  if (scanner !== 'word') {
-    return scanner;
-  }
-  return KEYWORDS.has(text) ? 'keyword' : 'plain';
+function isKind(name: string): name is TokenKind {
+  return KINDS.some((kind) => kind === name);
 }
 
-interface Nesting {
-  depth: number;
-  tags: number[];
-}
-
-const TAG_END = /\/?>/y;
-
-const BRACE_STEP = new Map([
-  ['{', 1],
-  ['}', -1],
-]);
-
-function tagEndAt(code: string, from: number, nesting: Nesting): Token | null {
-  if (nesting.tags.at(-1) !== nesting.depth) {
-    return null;
-  }
-  TAG_END.lastIndex = from;
-  const hit = TAG_END.exec(code);
-  return hit ? { text: hit[0], kind: 'tag' } : null;
-}
-
-function follow(nesting: Nesting, token: Token): void {
-  if (token.kind === 'brace') {
-    nesting.depth += BRACE_STEP.get(token.text) ?? 0;
-  } else if (token.kind === 'tag' && token.text.endsWith('>')) {
-    nesting.tags.pop();
-  } else if (token.kind === 'tag') {
-    nesting.tags.push(nesting.depth);
-  }
-}
-
-function scanAt(code: string, from: number): Token | null {
-  for (const [kind, pattern] of SCANNERS) {
-    pattern.lastIndex = from;
-    const hit = pattern.exec(code);
-    if (!hit?.[0]) {
-      continue;
-    }
-    return { text: hit[0], kind: kindOf(kind, hit[0]) };
-  }
-  return null;
+function kindOf(classes: string): TokenKind {
+  return isKind(classes) ? classes : 'plain';
 }
 
 /** Every character of `code`, in order and with nothing lost: the tokens
  * concatenate back to the input. */
 function tokenize(code: string): Token[] {
   const out: Token[] = [];
-  const nesting: Nesting = { depth: 0, tags: [] };
-  let plain = '';
-  const flush = () => {
-    if (plain) {
-      out.push({ text: plain, kind: 'plain' });
+  let at = 0;
+  const push = (to: number, kind: TokenKind) => {
+    const text = code.slice(at, to);
+    const last = out.at(-1);
+    if (last?.kind === kind) {
+      last.text += text;
+    } else if (text) {
+      out.push({ text, kind });
     }
-    plain = '';
+    at = to;
   };
 
-  let at = 0;
-  while (at < code.length) {
-    const hit = tagEndAt(code, at, nesting) ?? scanAt(code, at);
-    if (!hit) {
-      plain += code[at];
-      at += 1;
-      continue;
-    }
-    follow(nesting, hit);
-    // A `word` that turned out to be plain merges with the run around it, so
-    // the output has no gratuitous seams in it.
-    if (hit.kind === 'plain') {
-      plain += hit.text;
-    } else {
-      flush();
-      out.push(hit);
-    }
-    at += hit.text.length;
-  }
-  flush();
+  highlightTree(tsx.parse(code), highlighter, (from, to, classes) => {
+    push(from, 'plain');
+    push(to, kindOf(classes));
+  });
+  push(code.length, 'plain');
   return out;
 }
 
