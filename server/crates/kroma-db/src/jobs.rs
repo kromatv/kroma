@@ -220,19 +220,37 @@ pub fn reconcile_running_runs(pool: &Pool) -> Result<usize> {
     Ok(n)
 }
 
-/// Drop all but the newest `keep` runs for a job, plus any now-orphaned logs.
+const OLDER_RUNS: &str = "SELECT id FROM job_runs WHERE job_key=?1 AND id NOT IN \
+     (SELECT id FROM job_runs WHERE job_key=?1 ORDER BY started_at DESC LIMIT ?2)";
+
+/// Drop all but the newest `keep` runs for a job, and the logs of the runs it
+/// drops, in one write.
 pub fn prune_job_runs(pool: &Pool, key: &str, keep: usize) -> Result<()> {
-    let conn = pool.get()?;
-    conn.execute(
-        "DELETE FROM job_runs WHERE job_key=?1 AND id NOT IN \
-         (SELECT id FROM job_runs WHERE job_key=?1 ORDER BY started_at DESC LIMIT ?2)",
-        params![key, keep as i64],
+    let mut conn = pool.get()?;
+    let tx = conn.transaction()?;
+    let args = params![key, keep as i64];
+    tx.execute(
+        &format!("DELETE FROM job_logs WHERE run_id IN ({OLDER_RUNS})"),
+        args,
     )?;
-    conn.execute(
+    tx.execute(
+        &format!("DELETE FROM job_runs WHERE id IN ({OLDER_RUNS})"),
+        args,
+    )?;
+    tx.commit()?;
+    Ok(())
+}
+
+/// Drop the logs of runs that have no row, which only a run whose start and
+/// finish both failed to land leaves behind. A whole-table pass: run it once,
+/// at startup.
+pub fn drop_orphan_job_logs(pool: &Pool) -> Result<usize> {
+    let conn = pool.get()?;
+    let n = conn.execute(
         "DELETE FROM job_logs WHERE run_id NOT IN (SELECT id FROM job_runs)",
         [],
     )?;
-    Ok(())
+    Ok(n)
 }
 
 pub fn insert_job_log(
