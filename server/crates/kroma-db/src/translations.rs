@@ -76,6 +76,18 @@ impl TransData {
             && self.poster_url.is_none()
             && self.logo_url.is_none())
     }
+
+    fn or_text_of(self, fallback: TransData) -> TransData {
+        TransData {
+            title: self.title.or(fallback.title),
+            tagline: self.tagline.or(fallback.tagline),
+            overview: self.overview.or(fallback.overview),
+            genres: non_empty_or(self.genres, fallback.genres),
+            characters: each_or(self.characters, fallback.characters),
+            reason: self.reason.or(fallback.reason),
+            ..self
+        }
+    }
 }
 
 /// Upsert one `(subject, lang)` translation.
@@ -225,15 +237,29 @@ pub fn delete_all(conn: &Connection, kind: &str, id: &str) -> Result<()> {
     Ok(())
 }
 
-/// Art is never merged across rows: an absent field means the core's art is the
-/// right one, so borrowing the fallback language's would hand a French reader an
-/// English poster on every title whose French art is the core's.
+/// Text is merged field by field, the requested language first. Art never is:
+/// an absent field means the core's art is the right one, so borrowing the
+/// fallback language's would hand a French reader an English poster on every
+/// title whose French art is the core's.
 fn pick(mut by_lang: HashMap<String, TransData>, lang: &str) -> Option<TransData> {
     let fallback = by_lang.remove(FALLBACK).filter(TransData::has_text);
-    by_lang
-        .remove(lang)
-        .filter(TransData::has_text)
-        .or(fallback)
+    match (by_lang.remove(lang).filter(TransData::has_text), fallback) {
+        (Some(asked), Some(fallback)) => Some(asked.or_text_of(fallback)),
+        (asked, fallback) => asked.or(fallback),
+    }
+}
+
+fn non_empty_or<T>(asked: Vec<T>, fallback: Vec<T>) -> Vec<T> {
+    if asked.is_empty() { fallback } else { asked }
+}
+
+fn each_or(asked: Vec<Option<String>>, fallback: Vec<Option<String>>) -> Vec<Option<String>> {
+    let len = asked.len().max(fallback.len());
+    let mut asked = asked.into_iter();
+    let mut fallback = fallback.into_iter();
+    (0..len)
+        .map(|_| asked.next().flatten().or(fallback.next().flatten()))
+        .collect()
 }
 
 fn load(
@@ -361,6 +387,51 @@ mod tests {
         assert!(resolve_one(&p, "show", "s2", "de").unwrap().is_none());
 
         assert!(resolve_one(&p, "show", "missing", "fr").unwrap().is_none());
+    }
+
+    #[test]
+    fn a_field_the_reader_language_lacks_is_read_in_english() {
+        let p = pool();
+        put(
+            &p,
+            "item",
+            "m1",
+            "en",
+            TMDB,
+            &TransData {
+                title: Some("Your Name.".into()),
+                tagline: Some("A miracle".into()),
+                overview: Some("Two strangers".into()),
+                genres: vec!["Animation".into()],
+                characters: vec![Some("Taki".into()), Some("Mitsuha".into())],
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        put(
+            &p,
+            "item",
+            "m1",
+            "fr",
+            TMDB,
+            &TransData {
+                title: Some("Your Name".into()),
+                characters: vec![None, Some("Mitsuha Miyamizu".into())],
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+        let fr = resolve_one(&p, "item", "m1", "fr").unwrap().unwrap();
+
+        assert_eq!(fr.title.as_deref(), Some("Your Name"));
+        assert_eq!(fr.tagline.as_deref(), Some("A miracle"));
+        assert_eq!(fr.overview.as_deref(), Some("Two strangers"));
+        assert_eq!(fr.genres, ["Animation"]);
+        assert_eq!(
+            fr.characters,
+            [Some("Taki".into()), Some("Mitsuha Miyamizu".into())]
+        );
     }
 
     #[test]

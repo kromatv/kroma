@@ -3,7 +3,7 @@
 
 # Requirement index
 
-814 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+815 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -553,6 +553,7 @@
 - **LIB-79** (AGREED) - A file belongs to one source. A source whose folder holds a folder of <sub>[README.md](library/README.md)</sub>
 - **LIB-80** (SHIPPED) - In a show source, a name the `SxxEyy` and `NxNN` forms miss still <sub>[README.md](library/README.md)</sub>
 - **LIB-81** (SHIPPED) - In a show source, a file whose name carries no episode number is left <sub>[README.md](library/README.md)</sub>
+- **LIB-82** (SHIPPED) - A title's text is shown in the reader's language one field at a time. <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 
