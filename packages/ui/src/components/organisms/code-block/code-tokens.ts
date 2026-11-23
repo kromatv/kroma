@@ -12,6 +12,8 @@ interface Token {
   kind: TokenKind;
 }
 
+const KIND_NAMES: readonly string[] = KINDS;
+
 const tsx = parser.configure({
   dialect: 'jsx ts',
   props: [styleTags({ 'JSXMemberExpression/"."': t.tagName })],
@@ -28,7 +30,7 @@ const highlighter = tagHighlighter([
 ]);
 
 function isKind(name: string): name is TokenKind {
-  return KINDS.some((kind) => kind === name);
+  return KIND_NAMES.includes(name);
 }
 
 function kindOf(classes: string): TokenKind {
