@@ -5,6 +5,7 @@ export * from './age-rating';
 export * from './airdate';
 export * from './auth';
 export * from './browse';
+export * from './browse-languages';
 export * from './cast';
 export * from './compat';
 export * from './country-name';

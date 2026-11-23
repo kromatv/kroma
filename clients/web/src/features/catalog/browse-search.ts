@@ -1,28 +1,39 @@
-// The `?sort=&genre=` query string shared by the Films and Series browse pages
-// (both render the same <BrowseBar> over a different catalogue view).
+// The `?sort=&genre=&audio=&subtitles=` query string shared by the Films and
+// Series browse pages (both render the same <BrowseBar> over a different
+// catalogue view).
 
 import { SORT_MODES, type SortMode } from '@kromatv/core';
 import { z } from 'zod';
 
 const MAX_GENRE_LENGTH = 64;
 
+const LanguageParam = z
+  .string()
+  .regex(/^[a-z]{2,8}$/)
+  .optional()
+  .catch(undefined);
+
 const BrowseSearchParams = z
   .object({
     sort: z.enum(SORT_MODES).optional().catch(undefined),
     genre: z.string().nonempty().max(MAX_GENRE_LENGTH).optional().catch(undefined),
+    audio: LanguageParam,
+    subtitles: LanguageParam,
   })
   .catch({});
 
 export interface BrowseSearch {
   sort?: SortMode;
   genre?: string;
+  audio?: string;
+  subtitles?: string;
 }
 
 /** Validate a browse route's search params, dropping anything unrecognized so a
  * hand-typed url can never put the page into an unknown state. A dropped key is
  * absent, not `undefined`, so it does not round-trip back into the url. */
 export function validateBrowseSearch(s: Record<string, unknown>): BrowseSearch {
-  const { sort, genre } = BrowseSearchParams.parse(s);
+  const { sort, genre, audio, subtitles } = BrowseSearchParams.parse(s);
   const out: BrowseSearch = {};
   if (sort) {
     out.sort = sort;
@@ -30,5 +41,16 @@ export function validateBrowseSearch(s: Record<string, unknown>): BrowseSearch {
   if (genre) {
     out.genre = genre;
   }
+  if (audio) {
+    out.audio = audio;
+  }
+  if (subtitles) {
+    out.subtitles = subtitles;
+  }
   return out;
+}
+
+/** The order the page is in: the url's, or most recently added first. */
+export function browseSort(search: BrowseSearch): SortMode {
+  return search.sort ?? 'added';
 }

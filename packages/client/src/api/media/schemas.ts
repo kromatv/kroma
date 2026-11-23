@@ -69,6 +69,14 @@ export const MediaItem = CatalogEntry.extend(Tracks.shape).extend({
 });
 export type MediaItem = z.infer<typeof MediaItem>;
 
+/** The languages a title can be heard and read in, across every file it has,
+ * each in the spelling a file wrote it (`fre`, `en`): fold them with `langBase`.
+ * Optional, so a full item is still a card. */
+const TrackLanguages = z.object({
+  audioLanguages: z.array(z.string()).optional(),
+  subtitleLanguages: z.array(z.string()).optional(),
+});
+
 /** A movie as a list draws it (`GET /api/movies?view=card`): what a grid sorts,
  * filters and paints, without the files, tracks, cast and crew only its own page
  * reads. Every `MediaItem` is one. `showId` is present only on an episode. */
@@ -82,7 +90,9 @@ export const MediaCard = MediaItem.pick({
   library: true,
   addedAt: true,
   metadata: true,
-}).extend({ showId: ShowId.nullish() });
+})
+  .extend({ showId: ShowId.nullish() })
+  .extend(TrackLanguages.shape);
 export type MediaCard = z.infer<typeof MediaCard>;
 
 /** An episode the provider lists that the library does not hold: enough to show
@@ -114,6 +124,11 @@ export const Show = CatalogEntry.extend({
   progress: z.number().nullish(),
 });
 export type Show = z.infer<typeof Show>;
+
+/** A show as the Series grid draws it (`GET /api/shows?view=card`): without cast
+ * or crew, with the languages its episodes are heard and read in. */
+export const ShowCard = Show.extend(TrackLanguages.shape);
+export type ShowCard = z.infer<typeof ShowCard>;
 
 /** `GET /api/shows/:id`. */
 export const ShowDetail = z.object({

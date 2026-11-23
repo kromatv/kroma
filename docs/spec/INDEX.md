@@ -3,7 +3,7 @@
 
 # Requirement index
 
-811 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+814 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -429,6 +429,9 @@
 - **BROWSE-61** (SHIPPED) - While a scan runs, the home gains each title as the scan matches it,
 - **BROWSE-62** (SHIPPED) - The home, search and a person's page obey the viewer's maturity
 - **BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
+- **BROWSE-64** (SHIPPED) - The Films and Series pages filter by audio language and by subtitle
+- **BROWSE-65** (AGREED) - A subtitle file beside a video, and a subtitle downloaded for it,
+- **BROWSE-66** (AGREED) - With both filters set, a series passes only when one of its episodes
 
 ## DISC - [discovery](discovery/)
 
