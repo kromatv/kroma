@@ -2,7 +2,7 @@
 //! console reads.
 
 use kroma_engine::infra;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 
 /// What a server with no `RUST_LOG` says about itself.
 ///
@@ -22,11 +22,17 @@ const DEFAULT_FILTER: &str = "warn,\
 /// own.
 const KEEP_DAYS: usize = 30;
 
+/// Whose spans the profiler times: `#[tracing::instrument]` on a function of
+/// these crates is enough for it to appear in the performance reports.
+const PROFILED_TARGETS: &[&str] = &["kroma"];
+
+fn log_filter() -> EnvFilter {
+    EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(DEFAULT_FILTER))
+}
+
 pub fn init_tracing(
     log_dir: &std::path::Path,
 ) -> Option<tracing_appender::non_blocking::WorkerGuard> {
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(DEFAULT_FILTER));
-
     let (file_layer, guard) = match std::fs::create_dir_all(log_dir) {
         Ok(()) => {
             let appender = tracing_appender::rolling::Builder::new()
@@ -52,10 +58,10 @@ pub fn init_tracing(
     };
 
     tracing_subscriber::registry()
-        .with(filter)
-        .with(tracing_subscriber::fmt::layer())
-        .with(file_layer)
-        .with(LogBufferLayer)
+        .with(tracing_subscriber::fmt::layer().with_filter(log_filter()))
+        .with(file_layer.with_filter(log_filter()))
+        .with(LogBufferLayer.with_filter(log_filter()))
+        .with(kroma_perf::span_layer(PROFILED_TARGETS))
         .init();
 
     guard

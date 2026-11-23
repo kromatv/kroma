@@ -36,10 +36,10 @@ pub(super) fn run_job(
     info!(job = key, run = %run_id, trigger, "job started");
 
     let ctx = JobContext::new(state.clone(), handle.clone());
-    let result = catch_unwind(AssertUnwindSafe(|| match &runner {
+    let result = kroma_perf::job(key, || catch_unwind(AssertUnwindSafe(|| match &runner {
         Runner::Local(f) => f(&ctx),
         Runner::Remote(f) => f(&ctx),
-    }));
+    })));
 
     let finished_ms = now_ms();
     let (status, error) = classify_result(result, &handle);

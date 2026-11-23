@@ -12,6 +12,7 @@ use crate::state::SharedState;
 
 /// "More like this" for `id`: its nearest neighbours, the genre guard, and the
 /// recently added titles that top the rail up.
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn similar(state: &SharedState, pool: &Pool, id: &str, n: usize) -> Result<Vec<MediaItem>> {
     state.vectors.refresh_if_stale(pool)?;
     let raw = state.vectors.similar(id, db::similar_depth(n));

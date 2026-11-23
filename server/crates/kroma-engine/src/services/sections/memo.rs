@@ -187,6 +187,7 @@ pub(super) fn hero_candidates(
 }
 
 /// [`super::build_home`] for `user_id`, reused while nothing it reads has moved.
+#[tracing::instrument(level = "trace", skip_all, name = "home_memo")]
 pub fn home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Arc<Vec<Section>> {
     remember(
         &state.home.sections,
@@ -200,6 +201,7 @@ pub fn home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Ar
 
 /// [`featured::pick`] for `user_id`, reused like [`home`]. An empty answer is
 /// never remembered, so a catalogue that comes up is seen at once.
+#[tracing::instrument(level = "trace", skip_all, name = "hero_memo")]
 pub fn hero(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Option<SectionItem> {
     remember(
         &state.home.hero,

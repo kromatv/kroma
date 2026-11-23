@@ -37,6 +37,10 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   [`docs/setup/`](docs/setup/README.md) are written, and how the website renders
   the same files at kroma.tv/docs. A change to a screen, a setting or a default
   they describe updates them in the same pull request.
+- [`docs/performance.md`](docs/performance.md) for what the server measures
+  about itself (every request, job, SQL statement and instrumented function),
+  how to put a function or a call in the reports, the export a model can read,
+  and the CI test that fails a route running one statement per title.
 - [`docs/direct-connection.md`](docs/direct-connection.md) for the route a
   signed-in client takes straight to its server on the same network, what
   proves it is the same server, and what each shell does with it.
