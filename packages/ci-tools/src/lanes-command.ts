@@ -3,10 +3,12 @@ import { setOutput, summary } from './actions';
 import { changedFiles } from './changed-files';
 import { readEvent, readRepo } from './event';
 import { forPush, LANE_NAMES, type LaneName, matchLanes } from './lanes';
-import { affected, shards } from './rust-affected';
-import { dependencyGraph } from './rust-workspaces';
+import { affected, type Reach, reach } from './rust-affected';
+import { dependencyGraph } from './rust-graph';
 
-const isLane = (value: string): value is LaneName => (LANE_NAMES as string[]).includes(value);
+type Verdict = ReturnType<typeof matchLanes>;
+
+const isLane = (value: string): value is LaneName => LANE_NAMES.some((name) => name === value);
 
 export async function main(argv: string[]): Promise<void> {
   const { values } = parseArgs({
@@ -24,34 +26,53 @@ export async function main(argv: string[]): Promise<void> {
   const verdict = event.kind === 'push' ? forPush(matched) : matched;
 
   if (values.lane !== undefined) {
-    if (!isLane(values.lane)) {
-      throw new Error(`unknown lane '${values.lane}'`);
-    }
-    console.log(String(verdict[values.lane]));
-    process.exitCode = verdict[values.lane] ? 0 : 1;
+    answerLane(verdict, values.lane);
     return;
   }
 
-  const reached = verdict.rust ? affected(files, dependencyGraph()) : [];
-  const rust = shards(reached);
-  const modules = reached.filter((id) => id !== 'server');
+  const graph = dependencyGraph();
+  const jobs = reach(verdict.rust ? affected(files, graph) : [], graph);
 
   if (values.json) {
-    console.log(JSON.stringify({ files, lanes: verdict, rust }, null, 2));
+    const { shards: rust, components, audit } = jobs;
+    console.log(JSON.stringify({ files, lanes: verdict, rust, components, audit }, null, 2));
     return;
   }
 
+  publishLanes(verdict, files);
+  publishRust(jobs);
+}
+
+function answerLane(verdict: Verdict, lane: string): void {
+  if (!isLane(lane)) {
+    throw new Error(`unknown lane '${lane}'`);
+  }
+  console.log(String(verdict[lane]));
+  process.exitCode = verdict[lane] ? 0 : 1;
+}
+
+function publishLanes(verdict: Verdict, files: readonly string[] | 'all'): void {
   for (const name of LANE_NAMES) {
     setOutput(name, verdict[name]);
   }
-  setOutput('rust_shards', JSON.stringify(rust));
-  setOutput('rust_modules', modules.join(','));
-
   const on = LANE_NAMES.filter((name) => verdict[name]);
   const count = files === 'all' ? 'every file' : `${files.length} file(s)`;
   summary(`**Lanes** (${count} changed): ${on.length > 0 ? on.join(', ') : 'none'}`);
-  if (rust.length > 0) {
-    const jobs = rust.map((shard) => `- ${shard.name}: ${shard.workspaces.join(', ')}`);
-    summary(`**Rust jobs**\n\n${jobs.join('\n')}`);
+}
+
+function publishRust({ shards, components, audit }: Reach): void {
+  setOutput('rust_shards', JSON.stringify(shards));
+  setOutput('components', components.length > 0);
+  setOutput('components_only', components.join(','));
+  setOutput('audit', audit.length > 0);
+  setOutput('audit_only', audit.join(','));
+  if (shards.length === 0 && audit.length === 0) {
+    return;
   }
+  const jobs = [
+    ...shards.map((shard) => `- ${shard.name}: ${shard.workspaces.join(', ')}`),
+    `- modules as components: ${components.join(', ') || 'none'}`,
+    `- module audit: ${audit.join(', ') || 'none'}`,
+  ];
+  summary(`**Rust jobs**\n\n${jobs.join('\n')}`);
 }

@@ -41,7 +41,10 @@ jobs:
       desktop: ${{ steps.lanes.outputs.desktop }}
       rust: ${{ steps.lanes.outputs.rust }}
       rust_shards: ${{ steps.lanes.outputs.rust_shards }}
-      rust_modules: ${{ steps.lanes.outputs.rust_modules }}
+      components: ${{ steps.lanes.outputs.components }}
+      components_only: ${{ steps.lanes.outputs.components_only }}
+      audit: ${{ steps.lanes.outputs.audit }}
+      audit_only: ${{ steps.lanes.outputs.audit_only }}
       sdk: ${{ steps.lanes.outputs.sdk }}
       spec: ${{ steps.lanes.outputs.spec }}
       wasmhost: ${{ steps.lanes.outputs.wasmhost }}
@@ -379,14 +382,14 @@ jobs:
         working-directory: clients/desktop/src-tauri
 
   # clippy, then every test under coverage, for the workspaces this change can
-  # reach (lanes works them out from the path dependencies between the server
-  # and each module's workspace), split into parallel jobs: the modules in
-  # groups, and the server in three, since it is the longest. Its clippy, its
-  # tests, and the tests of the crates that run WebAssembly components each
-  # run on their own runner, so none waits for another. The server's two test
-  # jobs read one cache, written by the core one; its clippy and each module
-  # group keep their own. Caches save from main only (a copy per pull request
-  # is what used to evict every Rust cache).
+  # reach (lanes works them out from the path dependencies between the
+  # server's crates and each module's workspace), split into parallel jobs:
+  # every module in one, and the server in three, since it is the longest. Its
+  # clippy, its tests, and the tests of the crates that run WebAssembly
+  # components each run on their own runner, so none waits for another. The
+  # server's two test jobs read one cache, written by the core one; its clippy
+  # and the modules keep their own. Caches save from main only (a copy per pull
+  # request is what used to evict every Rust cache).
   rust-shard:
     name: Rust (${{ matrix.shard.name }})
     needs: lanes
@@ -495,7 +498,7 @@ jobs:
   rust-components:
     name: Rust (modules as components)
     needs: lanes
-    if: needs.lanes.outputs.rust == 'true'
+    if: needs.lanes.outputs.components == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -517,7 +520,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - run: rustup target add wasm32-wasip2
-      - run: bun run ci rust wasm-test --only "${{ needs.lanes.outputs.rust_modules }}"
+      - run: bun run ci rust wasm-test --only "${{ needs.lanes.outputs.components_only }}"
         env:
           RUSTC_WRAPPER: ${{ needs.lanes.outputs.sccache == 'true' && 'sccache' || '' }}
           SCCACHE_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
@@ -536,7 +539,7 @@ jobs:
   module-audit:
     name: Module audit
     needs: lanes
-    if: needs.lanes.outputs.rust == 'true'
+    if: needs.lanes.outputs.audit == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -558,7 +561,7 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools' --filter '@kromatv/cli'
       - run: rustup target add wasm32-wasip2
-      - run: bun run ci rust audit --only "${{ needs.lanes.outputs.rust_modules }}"
+      - run: bun run ci rust audit --only "${{ needs.lanes.outputs.audit_only }}"
         env:
           RUSTC_WRAPPER: ${{ needs.lanes.outputs.sccache == 'true' && 'sccache' || '' }}
           SCCACHE_BUCKET: ${{ secrets.SCCACHE_R2_BUCKET }}
@@ -595,8 +598,8 @@ jobs:
           LANE_OF: >-
             {"checks": "code", "test-report": "code", "build": "fleet",
             "tv-native": "android", "sdk": "sdk", "desktop": "desktop",
-            "rust-shard": "rust", "rust-components": "rust",
-            "module-audit": "rust"}
+            "rust-shard": "rust", "rust-components": "components",
+            "module-audit": "audit"}
       - run: bun run spec:check
         if: ${{ !cancelled() && needs.lanes.outputs.spec == 'true' }}
 

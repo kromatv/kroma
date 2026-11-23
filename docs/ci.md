@@ -32,9 +32,9 @@ lanes ─┬─ checks (typecheck + lint + kit audit)         code
        ├─ desktop (cargo check, Linux mpv path)         desktop
        ├─ sdk (the npm package, staged and smoked)      sdk, off on a push to main
        ├─ rust (server, module host, server clippy)     rust
-       ├─ rust (modules n)                              rust
-       ├─ rust (modules as components)                  rust
-       ├─ module audit                                  rust
+       ├─ rust (modules)                                rust
+       ├─ rust (modules as components)                  components
+       ├─ module audit                                  audit
        ├─ wasm host {macos, windows}                    wasmhost
        ├─ sonar ◄── test-report + rust (one lcov)       SONAR_TOKEN present
        └─ required ◄── lanes + every job above but wasm host and sonar,
@@ -109,13 +109,23 @@ merge keeps the newest attempt of each shard, so re-running the failed jobs
 merges the rerun's report rather than the one that failed.
 
 Rust runs clippy and then every test under `cargo llvm-cov`, but only for the
-workspaces a change can reach. `lanes` reads the path dependencies between the
-server workspace and each module's from their `Cargo.toml` files: a module
-change runs that module and whatever links it, a server change runs every
-workspace, since every module links the server's crates. The workspaces then
-split into parallel `Rust (...)` jobs: the modules in groups of five, each with
-its own cache entry saved from `main` only (`CARGO_PROFILE_DEV_DEBUG=0` keeps
-each near 1.7 GB), and the server in three. `Rust (server clippy)` lints it,
+workspaces a change can reach. `lanes` reads the path dependencies of every
+crate from the `Cargo.toml` files, the server's one crate at a time, its
+`workspace = true` entries resolved through `server/Cargo.toml`: a module
+change runs that module and whatever links it, and a server change runs the
+server and every module that links a crate that changed, directly or through
+another crate. A module links the SDK and the crates under it, never the
+engine, so a change to `kroma-engine`, to the server's own package or to the
+core catalogs (the engine embeds them) runs no module. `server/Cargo.toml` is
+every crate's, since each inherits its dependencies from there, and
+`server/Cargo.lock` reaches only what the server workspace builds: the
+server, the test runner and the audit host. Each module locks its own. The
+workspaces then split into parallel `Rust (...)` jobs: every module in one,
+`Rust (modules)`, with one cache entry saved from `main` only
+(`CARGO_PROFILE_DEV_DEBUG=0` keeps debug info out of it), and the server in
+three. A module's own tests and clippy take 10 to 45 seconds and a runner's
+setup about two minutes, so the four groups of five this replaced spent three
+setups and three queue slots on every Rust run. `Rust (server clippy)` lints it,
 `Rust (server)` runs its tests (`--part core`), and `Rust (module host)` runs
 the tests of the four crates that build and run WebAssembly components
 (`--part host`): the supervisor, the wasm host, the audit host and the test
@@ -146,33 +156,35 @@ and the toolchain. It keeps no cache, since two more entries would push the
 Locally, run `rustup target add wasm32-wasip2` once before `cargo test
 --workspace` in `server/`.
 
-`Module audit` runs `kroma audit` on every module a change can reach: `bun run
-ci rust audit --only <id,id>`. It builds each component, starts it alone behind
-a network that records every connection and lets none out, drives it, and fails
-when a module attempted a connection, a program or a file outside what its
-manifest declares. The log names the attempt. See "Auditing a module on its
-own" in [`module-security.md`](module-security.md). Its `rust-audit` entry
-keeps the audit host's dependencies in `server/target` and the modules'
+`Module audit` runs `kroma audit` on every module a change can reach, and on
+every module when the audit host or a crate under it changed (the supervisor,
+the wasm host, the server's lockfile): `bun run ci rust audit --only <id,id>`.
+A change that reaches neither skips it. It builds each component, starts it
+alone behind a network that records every connection and lets none out, drives
+it, and fails when a module attempted a connection, a program or a file outside
+what its manifest declares. The log names the attempt. See "Auditing a module
+on its own" in [`module-security.md`](module-security.md). Its `rust-audit`
+entry keeps the audit host's dependencies in `server/target` and the modules'
 components in `target/kmod`: without it the host took four and a half minutes
 to build before the first module started.
 
 `Rust (modules as components)` runs the tests of every module a change can
-reach a second time, built for `wasm32-wasip2` with the features each bundle
-ships: `bun run ci rust wasm-test --only <id,id>`, or `bun run
-modules:test:wasm` for all of them. `.cargo/config.toml` names
-`kroma-wasm-test-runner` as that target's runner, so cargo hands it each test
-binary. It compiles the binary as a component on `kroma-wasm-host`'s linker
-and runs every test in an instance of its own, in parallel: a scratch dir and
-the module's folder each at its own path, a real SQLite behind the `sql`
-import, every other import refused, one thread and no socket. A native build
-follows an absolute symlink and starts threads where a component cannot, and
-this job is where that difference fails a test. The runner builds once per
+reach a second time, and of every module when the test runner or a crate under
+it changed (the wasm host, the server's lockfile), built for `wasm32-wasip2`
+with the features each bundle ships: `bun run ci rust wasm-test --only
+<id,id>`, or `bun run modules:test:wasm` for all of them. `.cargo/config.toml`
+names `kroma-wasm-test-runner` as that target's runner, so cargo hands it each
+test binary. It compiles the binary as a component on `kroma-wasm-host`'s
+linker and runs every test in an instance of its own, in parallel: a scratch
+dir and the module's folder each at its own path, a real SQLite behind the
+`sql` import, every other import refused, one thread and no socket. A native
+build follows an absolute symlink and starts threads where a component cannot,
+and this job is where that difference fails a test. The runner builds once per
 run, on the dependencies the job's `rust-components` entry keeps in
 `target/wasm-test-runner` (wasmtime and Cranelift, optimised: two and a half
 minutes cold), and the modules' test builds in `target/kmod` come from the
-same entry.
-On a warm laptop the whole run takes about two minutes. It is part of
-`required`.
+same entry. On a warm laptop the whole run takes about two minutes. It is part
+of `required`.
 
 Sonar reads the two lcov files the gates produced. Nothing runs twice. Rust
 coverage is absent on a change that touched no Rust, which is fine: the
@@ -489,7 +501,7 @@ copies go before anything a run still reads.
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
 | `synology-v3`, `synology-arm64-v2` | ~0.8 GB | synology.yml |
 | `kmod` (wasm32-wasip2) | ~0.1 GB | modules.yml |
-| `rust-server-clippy`, `rust-components`, `rust-audit` | measured on their first save | ci.yml on main |
+| `rust-server-clippy`, `rust-components`, `rust-audit`, `rust-modules` | measured on their first save | ci.yml on main |
 
 About 9 GB with every entry warm, down from 11.9 GB, and the run that used
 to evict the Rust tree no longer does. Half of what is left is two pairs
@@ -540,8 +552,8 @@ the way it does Sonar's). To turn it on:
 
 The credentials reach the test step alone, never `bun install`. clippy does
 not go through sccache; its deps are check builds the test step would not
-share anyway. Each shard prints `sccache --show-stats`, which is where a hit
-rate shows. Once it is warm, the per-shard Rust cache entries are the next
+share anyway. Each Rust job prints `sccache --show-stats`, which is where a
+hit rate shows. Once it is warm, the per-job Rust cache entries are the next
 thing to retire.
 
 ## Bun
