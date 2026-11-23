@@ -12,8 +12,7 @@ import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
 
 import type { StyleProp, ViewStyle } from 'react-native';
 import { AVATAR_ROUNDNESS } from '#ui/components/atoms/avatar';
-import { Box } from '#ui/components/atoms/box';
-import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
+import { Focusable, type FocusableProps, FocusRing } from '#ui/components/atoms/focusable';
 import { Frost } from '#ui/components/atoms/frost';
 import { Icon, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -52,8 +51,6 @@ const addTileVariants = svFor<{
       // borrowing the control fill is what keeps this tile in the same family
       // as the field and the keys rather than inventing a third surface.
       bg: CONTROL.md.bg,
-      _hover: { borderColor: 'accent' },
-      _focus: { borderColor: 'accent' },
     },
     // A SOLID ink, never an alpha: the plus is two crossing strokes, and a
     // translucent colour double-paints where they overlap into a brighter knot
@@ -106,21 +103,17 @@ function AddTile({ label, size = 'tv', icon = 'plus', style, ...focus }: Readonl
     <Focusable
       {...focus}
       label={label}
-      // The whole column is the control, so the ring would box the label too;
-      // the well takes an amber edge instead, which is also what the row's
-      // other tiles do.
-      ring={false}
       focusScale={size === 'tv' ? 1.07 : 1.04}
       sv={addTileVariants}
       vars={{ size }}
       style={style}
     >
-      {({ slots }) => (
+      {({ slots, hovered }) => (
         <>
           <Frost>
-            <Box style={slots.well}>
+            <FocusRing lit={hovered} style={slots.well}>
               <Icon name={icon} thickness={1.6} {...slots.glyph} />
-            </Box>
+            </FocusRing>
           </Frost>
           <Text style={slots.label}>{label}</Text>
         </>

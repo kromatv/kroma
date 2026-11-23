@@ -378,9 +378,17 @@ target.
 ## Focus
 
 `<Focusable>` is the one focusable primitive. Every remote-reachable control is one,
-and it carries the signature 10-foot affordance: a solid amber ring plus a dark
-lift, with an optional scale (1.06 for rail tiles, 1.05 for posters, 1.04 for the
-primary action).
+and it carries the signature 10-foot affordance: a solid ring in the theme's
+accent plus a dark lift, with an optional scale (1.06 for rail tiles, 1.05 for
+posters, 1.04 for the primary action).
+
+A control never chooses where its ring goes. On its own the ring stands six pixels
+off it and follows its corner. Inside a container whose members abut or are
+clipped (`<ListRow.Group>`, `<SegmentGroup>`, a framed `<Table>`, `<Surface members>`,
+or any `<RingScope placement="inside">`), it lies on the control's inner edge, and
+a member that states no corner takes the container's less `MEMBER_INSET`, so the
+ring, the focus fill and the card are concentric. `<FocusRing>` moves the ring
+onto one part of a control: the artwork of a tile, not its caption.
 
 The spatial navigator (`@kromatv/spatial-nav`) owns directional movement on
 every target, so a browser TV and an Apple TV move focus by the same rules rather

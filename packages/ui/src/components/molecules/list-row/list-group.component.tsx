@@ -21,7 +21,8 @@ import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
 import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
-import { RingScopeProvider } from '#ui/lib/ring-scope';
+import { MEMBER_INSET } from '#ui/lib/ring-scope';
+import { RingScope } from '#ui/lib/ring-scope.component';
 
 interface ListGroupSlot {
   size: ControlSize;
@@ -57,16 +58,14 @@ function ListGroup({ children, size, divider, style }: Readonly<ListGroupProps>)
     <Frost>
       <Box
         w="100%"
+        p={MEMBER_INSET}
         radius={metrics.radius}
         border="border"
         bg={metrics.bg}
         overflow="hidden"
         style={style}
       >
-        {/* The card clips, so everything in it draws its ring inward - the rows,
-            and equally the controls a caller puts beside a row, which have no
-            way of knowing what surface they are on. */}
-        <RingScopeProvider value="focusInset">
+        <RingScope placement="inside" corner={metrics.radius}>
           <InGroup.Provider value={slot}>
             {items.map((child, index) => (
               <Fragment key={memberKey(child, index)}>
@@ -75,7 +74,7 @@ function ListGroup({ children, size, divider, style }: Readonly<ListGroupProps>)
               </Fragment>
             ))}
           </InGroup.Provider>
-        </RingScopeProvider>
+        </RingScope>
       </Box>
     </Frost>
   );

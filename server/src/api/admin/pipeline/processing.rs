@@ -132,6 +132,7 @@ pub async fn item_processing(
 /// `GET /api/admin/pipeline/show/:id` → the treatments applied to a whole series,
 /// aggregated across its seasons/episodes (a stage is "done" only when every
 /// episode's is).
+#[tracing::instrument(level = "trace", skip_all)]
 pub async fn show_processing(
     State(state): State<SharedState>,
     AuthUser(user): AuthUser,

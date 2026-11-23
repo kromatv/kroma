@@ -64,10 +64,14 @@ struct ScanOutcome {
 }
 
 fn scan_into(lib_id: &str, root: &Path) -> ScanOutcome {
+    scan_library(lib_id, "", root)
+}
+
+fn scan_library(lib_id: &str, kind: &str, root: &Path) -> ScanOutcome {
     let def = LibraryDef {
         id: lib_id.into(),
         name: "Library".into(),
-        kind: String::new(),
+        kind: kind.into(),
         folders: vec![root.to_string_lossy().into_owned()],
         auto_scan: true,
     };
@@ -139,6 +143,28 @@ fn scan_root_groups_movies_and_episodes_and_skips_noise() {
 }
 
 #[test]
+fn a_series_library_files_every_video_as_an_episode_or_leaves_it_out() {
+    let root_dir = temp_scan_dir();
+    let show = root_dir.path().join("Example Series");
+    std::fs::create_dir_all(show.join("Season 2")).unwrap();
+    std::fs::write(show.join("Episode 259.mp4"), b"x").unwrap();
+    std::fs::write(show.join("Season 2").join("Episode Title.mp4"), b"x").unwrap();
+
+    let scan = scan_library("lib1", "shows", root_dir.path());
+
+    assert!(!scan.movie_seen);
+    assert_eq!(scan.items.len(), 1);
+    assert_eq!(
+        scan.mtimes.len(),
+        1,
+        "the file with no episode number was indexed"
+    );
+    let episode = scan.items.values().next().unwrap();
+    assert_eq!((episode.season, episode.episode), (Some(1), Some(259)));
+    assert_eq!(episode.show_title.as_deref(), Some("Example Series"));
+}
+
+#[test]
 fn a_directory_symlinked_to_itself_is_walked_once() {
     let root_dir = temp_scan_dir();
     let root = root_dir.path();
@@ -153,6 +179,26 @@ fn a_directory_symlinked_to_itself_is_walked_once() {
         1,
         "the loop yielded the file again"
     );
+}
+
+#[test]
+fn a_library_folder_that_is_a_link_reads_the_folder_it_points_at() {
+    let root_dir = temp_scan_dir();
+    let real = root_dir.path().join("Animation Collection");
+    std::fs::create_dir_all(real.join("Season 01")).unwrap();
+    std::fs::write(real.join("Season 01").join("S01E01.mkv"), b"x").unwrap();
+    std::fs::write(real.join("Season 01").join("S01E02.mkv"), b"x").unwrap();
+    let link = root_dir.path().join("Animated Series");
+    std::os::unix::fs::symlink("Animation Collection", &link).unwrap();
+    std::os::unix::fs::symlink(".", real.join("loop")).unwrap();
+
+    let scan = scan_into("lib1", &link);
+
+    assert_eq!(scan.unreadable, 0);
+    assert_eq!(scan.items.len(), 2);
+    assert!(scan.items.values().all(|item| item.files.len() == 1));
+    let show = scan.shows.values().next().unwrap();
+    assert_eq!(show.title, "Animated Series");
 }
 
 #[test]

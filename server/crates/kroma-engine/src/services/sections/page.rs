@@ -159,6 +159,7 @@ impl Page<'_, '_> {
 
 /// The ordered, de-duplicated page for one viewer. Infallible: a row that
 /// fails or comes up thin is simply not there.
+#[tracing::instrument(level = "trace", skip_all)]
 pub(super) fn compose(board: &Board, show_recent: bool) -> Vec<Section> {
     let drafts = plan(board, show_recent);
     let mut page = Page {

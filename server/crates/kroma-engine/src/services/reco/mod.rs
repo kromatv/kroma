@@ -28,6 +28,7 @@ pub struct CatalogMemo {
 type Stamp = (u64, (usize, usize, usize));
 
 impl CatalogMemo {
+    #[tracing::instrument(level = "trace", skip_all, name = "CatalogMemo::get")]
     pub fn get(&self, state: &SharedState, pool: &Pool) -> Arc<Catalog> {
         let version = (
             state.events.catalog_version(),
@@ -71,6 +72,7 @@ const WORLD_SHARE: f32 = 0.5;
 const DAY: i64 = 86_400;
 
 impl Viewer {
+    #[tracing::instrument(level = "trace", skip_all, name = "Viewer::read")]
     pub fn read(state: &SharedState, pool: &Pool, catalog: &Catalog, user_id: &str, now: i64) -> Self {
         let played = crate::services::settings::played_percent(&state.settings);
         let history = db::engagements(pool, user_id, played).unwrap_or_else(|e| {

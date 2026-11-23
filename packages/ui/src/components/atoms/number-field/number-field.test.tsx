@@ -29,7 +29,7 @@ describe('NumberField', () => {
 
     press('ArrowDown');
 
-    const edge = activeTheme().ring.focusEdge;
+    const edge = activeTheme().ring.focusInside;
     const step = screen.getByLabelText('Increase');
     expect(declared(step, 'outlineOffset')).toBe(`${edge.outlineOffset}px`);
     expect(declared(step, 'outlineWidth')).toBe(`${edge.outlineWidth}px`);

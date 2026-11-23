@@ -7,6 +7,7 @@ import type { Event, Repo } from './event';
 const NO_COMMIT = '0'.repeat(40);
 const PER_PAGE = 100;
 const MAX_PAGES = 30;
+const COMPARE_FILE_CAP = 300;
 const ATTEMPTS = 4;
 const BACKOFF_MS = 2000;
 
@@ -82,9 +83,11 @@ async function pushFiles(repo: Repo, before: string, after: string): Promise<Cha
   if (before === NO_COMMIT) {
     return 'all';
   }
-  return paged(repo, `/compare/${before}...${after}?`, (body) =>
-    Compare.parse(body).files.map((f) => f.filename),
-  );
+  const { files } = Compare.parse(await githubGet(repo, `/compare/${before}...${after}`));
+  if (files.length >= COMPARE_FILE_CAP) {
+    return 'all';
+  }
+  return files.map((f) => f.filename);
 }
 
 async function localFiles(base: string): Promise<string[]> {

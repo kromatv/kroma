@@ -148,7 +148,7 @@ function SeasonCard({
   };
 
   return (
-    <Surface pad="none" radius="xl" border="border" overflow="hidden">
+    <Surface members radius="xl" border="border">
       <Row minW={0} align="center" px={ROW_PX}>
         <Box w={FOLLOW_COLUMN} shrink={0}>
           <FollowToggle
@@ -164,7 +164,6 @@ function SeasonCard({
           expanded={open}
           onPress={() => setOpen((on) => !on)}
           label={name}
-          ring="focusInset"
           style={s.header}
         >
           {narrow ? null : (

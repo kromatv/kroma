@@ -8,7 +8,8 @@ import {
   Focusable,
   Grid,
   Img,
-  RingScopeProvider,
+  MEMBER_INSET,
+  RingScope,
   Section,
   Surface,
   styles,
@@ -108,13 +109,13 @@ function KindColumn({ column }: Readonly<{ column: MostWatchedColumn }>) {
           {t('admin.mostWatchedEmpty')}
         </Text>
       ) : (
-        <RingScopeProvider value="focusInset">
-          <ScrollView style={s.list}>
+        <RingScope placement="inside" corner="xl">
+          <ScrollView style={s.list} contentContainerStyle={s.listInset}>
             {column.entries.map((entry) => (
               <EntryRow key={entry.itemId} entry={entry} />
             ))}
           </ScrollView>
-        </RingScopeProvider>
+        </RingScope>
       )}
     </Surface>
   );
@@ -151,4 +152,5 @@ function EntryRow({ entry }: Readonly<{ entry: MostWatchedEntry }>) {
 const sDefinition = styles({
   entry: { row: true, align: 'center', gap: 12, px: 14, py: 10 },
   list: { maxH: LIST_HEIGHT },
+  listInset: { p: MEMBER_INSET },
 });

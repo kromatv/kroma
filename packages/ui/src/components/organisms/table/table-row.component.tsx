@@ -9,8 +9,10 @@ import {
 import type { Role } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { styles } from '#ui/core';
+import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
+import type { Radius } from '#ui/core/tokens/layout';
 import { useStyles } from '#ui/core/styles';
+import { useRingScope } from '#ui/lib/ring-scope';
 import { useTable } from './table-context';
 import { Placed, parts } from './table-place';
 
@@ -36,6 +38,8 @@ function hostOf(children: ReactNode): RowHost {
 function Row({ asChild = false, children }: Readonly<TableRowProps>) {
   const s = useStyles(sDefinition);
 
+  const scope = useStyleScope();
+  const corner = useRingScope()?.corner ?? 0;
   const { variant, head, ruled } = useTable('Row');
   const host = asChild ? hostOf(children) : null;
   const cells = useMemo(() => parts(host ? host.props.children : children), [host, children]);
@@ -43,17 +47,22 @@ function Row({ asChild = false, children }: Readonly<TableRowProps>) {
     () => cells.map((_, at) => ({ variant, head, ruled, at, of: cells.length })),
     [variant, head, ruled, cells],
   );
-  const placed = <Placed places={places} items={cells} />;
+  const face = (
+    <>
+      {ruled ? <Box pointerEvents="none" style={[s.rule, ruleReach(corner, scope)]} /> : null}
+      <Placed places={places} items={cells} />
+    </>
+  );
   if (!host) {
     return (
-      <Box row role="row" style={ruled ? s.rule : undefined}>
-        {placed}
+      <Box role="row" style={s.row}>
+        {face}
       </Box>
     );
   }
   return (
-    <Focusable asChild ring="focusEdge" states={ROW_STATES} style={[s.row, ruled ? s.rule : null]}>
-      {cloneElement(host, { role: 'row', children: placed })}
+    <Focusable asChild states={ROW_STATES} style={s.row}>
+      {cloneElement(host, { role: 'row', children: face })}
     </Focusable>
   );
 }
@@ -61,9 +70,12 @@ function Row({ asChild = false, children }: Readonly<TableRowProps>) {
 const ROW_STATES = { hover: { bg: 'tint/7' }, press: { bg: 'tint/12' } } as const;
 
 const sDefinition = styles({
-  row: { row: true },
-  rule: { borderTopWidth: 1, borderTopColor: 'border' },
+  row: { row: true, position: 'relative' },
+  rule: { position: 'absolute', top: 0, h: 1, bg: 'border' },
 });
+
+const ruleReach = (corner: Radius, scope: StyleScope) =>
+  sharedStyle(`table:rule:${corner}`, { left: corner, right: corner }, scope);
 
 export type { TableRowProps };
 export { Row };

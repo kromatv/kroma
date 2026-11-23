@@ -5,11 +5,10 @@ import type { View } from 'react-native';
 import { nestedRadius } from '#ui/core/tokens';
 import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, controlRadius } from '#ui/lib/field-shell';
+import { MEMBER_INSET } from '#ui/lib/ring-scope';
 import { partContext } from '#ui/lib/part-context';
 
-// The group's own padding, and therefore how much smaller a segment's corner
-// is than the group's: concentric corners, not two radii guessed apart.
-const GROUP_PAD = 4;
+const GROUP_PAD = MEMBER_INSET;
 
 interface Box2D {
   x: number;

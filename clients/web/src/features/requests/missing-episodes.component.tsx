@@ -10,7 +10,8 @@ import {
   Focusable,
   Icon,
   IconButton,
-  RingScopeProvider,
+  MEMBER_INSET,
+  RingScope,
   Row,
   Spinner,
   styles,
@@ -31,7 +32,7 @@ const ROW_ACTION = {
 } as const;
 
 const sDefinition = styles({
-  list: { m: 0, p: 0, listStyleType: 'none' },
+  list: { m: 0, p: MEMBER_INSET, listStyleType: 'none' },
   listItem: { display: 'block' },
   italic: { fontStyle: 'italic' },
   episode: { row: true, align: 'center', gap: 16, flex: true, minW: 0, py: 10, pl: 14 },
@@ -71,7 +72,7 @@ export function EpisodeList({
   const collapsed = !expanded && entries.length > COLLAPSE_OVER;
   const visible = collapsed ? entries.slice(0, COLLAPSED_ROWS) : entries;
   return (
-    <RingScopeProvider value="focusInset">
+    <RingScope placement="inside" corner="xl">
       <ul className={classes(s.list)}>
         {visible.map((e, index) => (
           <EpisodeRow
@@ -106,7 +107,7 @@ export function EpisodeList({
           </li>
         ) : null}
       </ul>
-    </RingScopeProvider>
+    </RingScope>
   );
 }
 
@@ -223,7 +224,6 @@ function RowAction({
     <IconButton
       variant="ghost"
       control="sm"
-      ring="focusEdge"
       icon={icon}
       label={t(key, { item: name })}
       onPress={onRun}

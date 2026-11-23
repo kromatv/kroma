@@ -16,66 +16,106 @@ pub(super) struct Marker {
 pub(super) fn find_marker(stem: &str) -> Option<Marker> {
     let lower = stem.to_ascii_lowercase();
     let b = lower.as_bytes();
-
-    // Form 1: SxxEyy [(-|E)zz]
-    for i in 0..b.len() {
-        if let Some(m) = match_sxxeyy(b, i) {
-            return Some(m);
-        }
-    }
-
-    // Form 2: NxNN (e.g. 1x02). Bounded season to avoid matching resolutions.
-    for i in 0..b.len() {
-        if let Some(m) = match_nxnn(b, i) {
-            return Some(m);
-        }
-    }
-
-    None
+    (0..b.len())
+        .find_map(|i| match_sxxeyy(b, i, SEASONS))
+        .or_else(|| (0..b.len()).find_map(|i| match_nxnn(b, i)))
 }
 
-// Try to match Form 1 (`SxxEyy` with an optional multi-episode tail) starting
-// at byte `i`. Returns the marker when the bytes at `i` form a valid one.
-fn match_sxxeyy(b: &[u8], i: usize) -> Option<Marker> {
+pub(super) fn find_loose_marker(stem: &str, season: u32) -> Option<Marker> {
+    let lower = stem.to_ascii_lowercase();
+    let b = lower.as_bytes();
+    (0..b.len())
+        .find_map(|i| match_sxxeyy(b, i, LONG_RUN_SEASONS))
+        .or_else(|| (0..b.len()).find_map(|i| match_absolute(b, i, season)))
+        .or_else(|| match_leading(b, season))
+}
+
+const SEASONS: u32 = 100;
+const LONG_RUN_SEASONS: u32 = 999;
+const EPISODES: u32 = 9999;
+
+fn match_sxxeyy(b: &[u8], i: usize, seasons: u32) -> Option<Marker> {
     if b[i] != b's' {
         return None;
     }
     let (sd, sn) = read_digits(b, i + 1);
-    if sd == 0 {
-        return None;
-    }
-    let j = i + 1 + sd;
-    if j >= b.len() || b[j] != b'e' {
+    let j = skip_separator(b, i + 1 + sd);
+    if sd == 0 || b.get(j) != Some(&b'e') {
         return None;
     }
     let (ed, en) = read_digits(b, j + 1);
-    if ed == 0 || !plausible(sn, en) {
+    if ed == 0 || !plausible(sn, en, seasons) {
         return None;
     }
-
-    let mut k = j + 1 + ed;
-    let mut episode_end = None;
-    // Optional multi-episode tail: "-E03", "-03", "E03".
-    let mut m = k;
-    if m < b.len() && b[m] == b'-' {
-        m += 1;
-    }
-    if m < b.len() && b[m] == b'e' {
-        m += 1;
-    }
-    if m > k {
-        let (ed2, en2) = read_digits(b, m);
-        if ed2 > 0 {
-            episode_end = Some(en2);
-            k = m + ed2;
-        }
-    }
+    let (episode_end, end) = episode_tail(b, j + 1 + ed);
     Some(Marker {
         season: sn,
         episode: en,
         episode_end,
         start: i,
-        end: k,
+        end,
+    })
+}
+
+fn skip_separator(b: &[u8], at: usize) -> usize {
+    match b.get(at) {
+        Some(b' ' | b'.' | b'_') => at + 1,
+        _ => at,
+    }
+}
+
+fn episode_tail(b: &[u8], at: usize) -> (Option<u32>, usize) {
+    let mut m = at;
+    if b.get(m) == Some(&b'-') {
+        m += 1;
+    }
+    if b.get(m) == Some(&b'e') {
+        m += 1;
+    }
+    match read_digits(b, m) {
+        (digits, last) if m > at && digits > 0 => (Some(last), m + digits),
+        _ => (None, at),
+    }
+}
+
+fn match_absolute(b: &[u8], i: usize, season: u32) -> Option<Marker> {
+    if i > 0 && b[i - 1].is_ascii_alphanumeric() {
+        return None;
+    }
+    let number = i + episode_word(&b[i..])?;
+    let (digits, episode) = read_digits(b, number);
+    (episode <= EPISODES).then_some(Marker {
+        season,
+        episode,
+        episode_end: None,
+        start: i,
+        end: number + digits,
+    })
+}
+
+fn episode_word(rest: &[u8]) -> Option<usize> {
+    ["episode", "ep", "e"].iter().find_map(|word| {
+        let after = rest.strip_prefix(word.as_bytes())?;
+        let gap = after
+            .iter()
+            .take_while(|c| matches!(c, b'.' | b' ' | b'_' | b'-'))
+            .count();
+        after
+            .get(gap)
+            .filter(|c| c.is_ascii_digit())
+            .map(|_| word.len() + gap)
+    })
+}
+
+fn match_leading(b: &[u8], season: u32) -> Option<Marker> {
+    let (digits, episode) = read_digits(b, 0);
+    let bounded = b.get(digits).is_none_or(|c| !c.is_ascii_alphanumeric());
+    (digits > 0 && digits <= 4 && bounded && episode <= EPISODES).then_some(Marker {
+        season,
+        episode,
+        episode_end: None,
+        start: 0,
+        end: digits,
     })
 }
 
@@ -95,7 +135,7 @@ fn match_nxnn(b: &[u8], i: usize) -> Option<Marker> {
         return None;
     }
     let (ed, en) = read_digits(b, xpos + 1);
-    if ed < 1 || !plausible(sn, en) {
+    if ed < 1 || !plausible(sn, en, SEASONS) {
         return None;
     }
     Some(Marker {
@@ -108,8 +148,8 @@ fn match_nxnn(b: &[u8], i: usize) -> Option<Marker> {
 }
 
 // Guard against resolutions / wild numbers being read as season/episode.
-fn plausible(season: u32, episode: u32) -> bool {
-    season <= 100 && episode <= 9999
+fn plausible(season: u32, episode: u32, seasons: u32) -> bool {
+    season <= seasons && episode <= EPISODES
 }
 
 // Read a run of ASCII digits from `start`; returns (count, parsed value).
@@ -135,6 +175,23 @@ pub fn is_season_folder(name: &str) -> bool {
         || l.starts_with("season")
         || l.starts_with("saison")
         || (l.starts_with('s') && l.len() <= 4 && l[1..].bytes().all(|c| c.is_ascii_digit()))
+}
+
+pub(super) fn folder_season(name: &str) -> Option<u32> {
+    let l = name.trim().to_ascii_lowercase();
+    if l == "specials" {
+        return Some(0);
+    }
+    let rest = ["season", "saison", "s"]
+        .iter()
+        .find_map(|prefix| l.strip_prefix(prefix))
+        .filter(|_| is_season_folder(name))?;
+    let digits: String = rest
+        .trim_start_matches([' ', '.', '_', '-'])
+        .chars()
+        .take_while(char::is_ascii_digit)
+        .collect();
+    digits.parse().ok()
 }
 
 #[cfg(test)]
@@ -198,6 +255,71 @@ mod tests {
     fn nxnn_rejected_after_alphanumeric() {
         // The digit run must sit at a boundary; "abc1x02" is part of a token.
         assert!(find_marker("abc1x02").is_none());
+    }
+
+    #[test]
+    fn a_separator_between_season_and_episode_still_reads_as_a_marker() {
+        for stem in ["Show S01 E05 - Title", "Show.S01.E05", "Show_S01_E05"] {
+            let m = find_marker(stem).unwrap();
+
+            assert_eq!((m.season, m.episode), (1, 5), "{stem}");
+        }
+    }
+
+    #[test]
+    fn a_season_past_one_hundred_reads_only_as_a_loose_marker() {
+        let strict = find_marker("S211E06 - Title");
+        let loose = find_loose_marker("S211E06 - Title", 1).unwrap();
+
+        assert!(strict.is_none());
+        assert_eq!((loose.season, loose.episode, loose.end), (211, 6, 7));
+    }
+
+    #[test]
+    fn an_absolute_episode_takes_the_season_it_is_given() {
+        for (stem, end) in [
+            ("Episode 259", 11),
+            ("Ep. 259", 7),
+            ("Ep259", 5),
+            ("Show E12", 8),
+        ] {
+            let m = find_loose_marker(stem, 3).unwrap();
+
+            assert_eq!((m.season, m.end), (3, end), "{stem}");
+        }
+        assert_eq!(find_loose_marker("Show E12", 3).unwrap().episode, 12);
+    }
+
+    #[test]
+    fn a_leading_number_is_the_episode() {
+        let titled = find_loose_marker("215 - Episode Title", 2).unwrap();
+        let bare = find_loose_marker("03", 1).unwrap();
+
+        assert_eq!((titled.season, titled.episode, titled.end), (2, 215, 3));
+        assert_eq!(bare.episode, 3);
+    }
+
+    #[test]
+    fn a_name_without_an_episode_number_has_no_loose_marker() {
+        for stem in [
+            "Episode Title",
+            "example.S03Es03",
+            "1080p Title",
+            "20240512 - News",
+        ] {
+            assert!(find_loose_marker(stem, 1).is_none(), "{stem}");
+        }
+    }
+
+    #[test]
+    fn a_season_folder_names_its_season() {
+        let names = ["Season 02", "Saison 1", "S3", "Specials", "Season 1 (2008)"];
+
+        let seasons: Vec<_> = names.into_iter().map(folder_season).collect();
+
+        assert_eq!(seasons, [Some(2), Some(1), Some(3), Some(0), Some(1)]);
+        assert_eq!(folder_season("Season"), None);
+        assert_eq!(folder_season("The Office"), None);
     }
 
     #[test]

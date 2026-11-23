@@ -128,7 +128,6 @@ function Category({
         {expands ? (
           <Focusable
             sv={cover}
-            ring="focusInset"
             label={t('notifications.kindsToggle', { category: name })}
             expanded={open}
             onPress={() => setOpen((was) => !was)}

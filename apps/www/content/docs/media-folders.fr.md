@@ -47,15 +47,21 @@ Series/
       The Office - S00E01 - Christmas Special.mkv
 ```
 
-- Le numéro d'épisode est la partie que KROMA doit trouver : `S01E02`, `s1e2`,
-  `1x02`, ou `S01E02-E03` pour un fichier qui contient deux épisodes. Le texte
-  qui le suit devient le titre de l'épisode.
+- Le numéro d'épisode est la partie que KROMA doit trouver : `S01E02`,
+  `S01 E02`, `s1e2`, `1x02`, ou `S01E02-E03` pour un fichier qui contient deux
+  épisodes. Le texte qui le suit devient le titre de l'épisode.
 - Un dossier nommé `Season 01`, `Saison 1` ou `Specials` indique à KROMA que le
   dossier qui le contient est la série. KROMA prend alors le nom de ce dossier
   pour la série, quel que soit le nom des fichiers qu'il contient.
 - Sans dossiers de saison, KROMA prend le nom de la série dans chaque nom de
   fichier. `Breaking.Bad.S01E01.mkv` et `The.Office.S01E01.mkv`, dans le même
   dossier, sont donc deux séries.
+- Dans une bibliothèque ajoutée comme **Séries**, chaque fichier est un
+  épisode, jamais un film. KROMA y lit aussi `S211E06`, `Episode 259`,
+  `Ep. 259` et un numéro en tête de nom, comme dans `215 - Titre.mkv`. Si le nom
+  ne donne pas de saison, l'épisode prend celle de son dossier de saison, sinon
+  la saison 1. Un fichier dont le nom ne porte aucun numéro d'épisode est
+  laissé de côté, et le journal du serveur nomme le premier.
 
 ### Sous-titres
 
@@ -81,9 +87,11 @@ KROMA analyse les fichiers `.mkv`, `.mp4`, `.m4v`, `.mov`, `.webm`, `.avi` et
 ### Raccourcis et liens
 
 KROMA suit les liens symboliques. Une bibliothèque faite de liens qui pointent
-vers un autre dossier est analysée comme si les fichiers s'y trouvaient. Dans
-Docker, le dossier vers lequel pointent les liens doit aussi être monté dans le
-conteneur, sinon KROMA ne peut pas ouvrir les fichiers.
+vers un autre dossier est analysée comme si les fichiers s'y trouvaient, tout
+comme une bibliothèque dont le dossier est lui-même un lien. Les titres se
+lisent sur le nom du lien, pas sur celui du dossier visé. Dans Docker, le
+dossier vers lequel pointent les liens doit aussi être monté dans le conteneur,
+sinon KROMA ne peut pas ouvrir les fichiers.
 
 ## Choisir la lecture seule ou la lecture et l'écriture
 

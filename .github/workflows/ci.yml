@@ -384,9 +384,9 @@ jobs:
   # groups, and the server in three, since it is the longest. Its clippy, its
   # tests, and the tests of the crates that run WebAssembly components each
   # run on their own runner, so none waits for another. The server's two test
-  # jobs read one cache, written by the core one; each module group keeps its
-  # own. Caches save from main only (a copy per pull request is what used to
-  # evict every Rust cache).
+  # jobs read one cache, written by the core one; its clippy and each module
+  # group keep their own. Caches save from main only (a copy per pull request
+  # is what used to evict every Rust cache).
   rust-shard:
     name: Rust (${{ matrix.shard.name }})
     needs: lanes
@@ -414,14 +414,13 @@ jobs:
           tool: cargo-llvm-cov
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         if: needs.lanes.outputs.sccache == 'true' && matrix.shard.part != 'clippy'
-      # The server's clippy builds nothing the test jobs' cache holds, so it
-      # restores none.
+      # Clippy's check builds are not the ones the test jobs keep, so the
+      # server's clippy has an entry of its own.
       - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2
-        if: matrix.shard.part != 'clippy'
         with:
           workspaces: server
-          cache-directories: ${{ github.workspace }}/target/kmod
-          shared-key: rust-${{ matrix.shard.part && 'server' || matrix.shard.name }}
+          cache-directories: ${{ matrix.shard.part != 'clippy' && format('{0}/target/kmod', github.workspace) || '' }}
+          shared-key: rust-${{ matrix.shard.part == 'clippy' && 'server-clippy' || matrix.shard.part && 'server' || matrix.shard.name }}
           save-if: ${{ github.ref == 'refs/heads/main' && matrix.shard.part != 'host' }}
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       # Non-blocking: the codebase uses a custom import grouping, not rustfmt's.
@@ -490,9 +489,9 @@ jobs:
 
   # The module tests a change can reach, run again as wasm32-wasip2: each test
   # binary is a component on the server's own host, with the folders, imports
-  # and single thread a running module gets. The runner builds once. No cache:
-  # the module shards' entries already hold that budget, and sccache keeps the
-  # compiles when its bucket is set.
+  # and single thread a running module gets. The runner builds once, on the
+  # dependencies this job's own cache entry keeps (wasmtime and Cranelift,
+  # optimised, were two and a half minutes of every run).
   rust-components:
     name: Rust (modules as components)
     needs: lanes
@@ -510,6 +509,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         if: needs.lanes.outputs.sccache == 'true'
+      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2
+        with:
+          workspaces: server -> ../target/wasm-test-runner
+          cache-directories: ${{ github.workspace }}/target/kmod
+          shared-key: rust-components
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - run: rustup target add wasm32-wasip2
       - run: bun run ci rust wasm-test --only "${{ needs.lanes.outputs.rust_modules }}"
@@ -526,6 +531,8 @@ jobs:
   # Every module a change can reach, started alone behind a network that
   # records each connection and lets none out. An attempt outside the
   # permissions its manifest declares fails the job, and the log names it.
+  # Its cache entry keeps the audit host's dependencies, which took four and a
+  # half minutes to build before the first module could start.
   module-audit:
     name: Module audit
     needs: lanes
@@ -543,6 +550,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30 # stable
       - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba # v0.0.11
         if: needs.lanes.outputs.sccache == 'true'
+      - uses: Swatinem/rust-cache@eedcf2fb1c22f010a0eb66b92f378c110977f266 # v2
+        with:
+          workspaces: server
+          cache-directories: ${{ github.workspace }}/target/kmod
+          shared-key: rust-audit
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools' --filter '@kromatv/cli'
       - run: rustup target add wasm32-wasip2
       - run: bun run ci rust audit --only "${{ needs.lanes.outputs.rust_modules }}"

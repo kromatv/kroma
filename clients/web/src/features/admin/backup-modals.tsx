@@ -21,6 +21,7 @@ import { createCallable } from 'react-call';
 import { confirmLabelKey, type RemovedLibraries } from '#web/features/admin/backup-restore';
 import { useBackupRestore } from '#web/features/admin/use-backup-restore.hook';
 import { useAuth } from '#web/shared/lib/auth';
+import { saveFile } from '#web/shared/lib/save-file';
 
 // "KROMABK1\n": the encrypted-backup envelope magic (see services/backup/crypto).
 const KROMA_MAGIC = [0x4b, 0x52, 0x4f, 0x4d, 0x41, 0x42, 0x4b, 0x31, 0x0a];
@@ -111,14 +112,7 @@ export const ExportModal = createCallable<void, boolean>(({ call }) => {
     try {
       const pw = encrypt ? password.trim() : undefined;
       const blob = await client.admin.backup.export(pw || undefined);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `kroma-backup-${new Date().toISOString().slice(0, 10)}.kroma`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      saveFile(blob, `kroma-backup-${new Date().toISOString().slice(0, 10)}.kroma`);
       call.end(true);
     } catch (e) {
       setError(errMessage(e, t('admin.backupExportFailed')));

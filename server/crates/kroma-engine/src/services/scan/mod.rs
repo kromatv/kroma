@@ -63,6 +63,7 @@ pub struct ScanData {
 /// Walk every configured library (each may span multiple folders) and build the
 /// full index (phase 1, fast: no ffprobe). Files are `stat`-ed and grouped into
 /// logical items. Items from every folder of a library share that library's id.
+#[tracing::instrument(level = "trace", skip_all)]
 pub fn scan_all(defs: &[LibraryDef]) -> ScanData {
     let mut unobserved = |_: &crate::db::ScanBatch<'_>| Ok::<(), Infallible>(());
     let Ok(data) = scan_in_batches(defs, BatchSize::LIVE, &mut unobserved);

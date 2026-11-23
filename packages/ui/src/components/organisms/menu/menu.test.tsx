@@ -22,7 +22,7 @@ afterEach(() => {
 // A row's ring is painted rather than focused, so it arrives as a class and is
 // only there to compute.
 function ringed(row: HTMLElement) {
-  return getComputedStyle(row).outlineWidth === `${activeTheme().ring.focusEdge.outlineWidth}px`;
+  return getComputedStyle(row).outlineWidth === `${activeTheme().ring.focusInside.outlineWidth}px`;
 }
 
 function Actions({

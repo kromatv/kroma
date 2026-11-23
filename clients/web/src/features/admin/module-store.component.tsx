@@ -114,7 +114,7 @@ function StoreCard({
   const offered = m.compatible && (!m.installedVersion || m.updateAvailable);
   const dimmed = !m.compatible && (!m.installedVersion || refusedAsInstalled(m));
   return (
-    <Focusable asChild ring="focusEdge" states={CARD_STATES} label={words.name}>
+    <Focusable asChild states={CARD_STATES} label={words.name}>
       <Surface
         asChild
         elevated
