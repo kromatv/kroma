@@ -49,3 +49,8 @@ export function validateBrowseSearch(s: Record<string, unknown>): BrowseSearch {
   }
   return out;
 }
+
+/** The order the page is in: the url's, or most recently added first. */
+export function browseSort(search: BrowseSearch): SortMode {
+  return search.sort ?? 'added';
+}

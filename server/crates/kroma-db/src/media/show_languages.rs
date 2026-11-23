@@ -3,6 +3,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use rusqlite::Row;
 
 use kroma_domain::TrackLanguages;
 
@@ -24,23 +25,23 @@ UNION SELECT i.show_id, 'subtitles', json_extract(t.value, '$.language') \
 pub fn show_languages(pool: &Pool) -> Result<HashMap<String, TrackLanguages>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(LANGUAGES)?;
-    let rows = stmt.query_map([], |r| {
-        Ok((
-            r.get::<_, String>(0)?,
-            r.get::<_, String>(1)?,
-            r.get::<_, Option<String>>(2)?,
-        ))
-    })?;
     let mut out: HashMap<String, TrackLanguages> = HashMap::new();
-    for row in rows {
+    for row in stmt.query_map([], language_row)? {
         let (show, stream, language) = row?;
-        let languages = out.entry(show).or_default();
-        match stream.as_str() {
-            "audio" => languages.hear(language.as_deref()),
-            _ => languages.read(language.as_deref()),
-        }
+        add(out.entry(show).or_default(), &stream, language.as_deref());
     }
     Ok(out)
+}
+
+fn language_row(r: &Row<'_>) -> rusqlite::Result<(String, String, Option<String>)> {
+    Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+}
+
+fn add(languages: &mut TrackLanguages, stream: &str, language: Option<&str>) {
+    match stream {
+        "audio" => languages.hear(language),
+        _ => languages.read(language),
+    }
 }
 
 #[cfg(test)]

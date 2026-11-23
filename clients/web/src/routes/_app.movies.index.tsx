@@ -39,7 +39,7 @@ function MoviesPage() {
   const webRuntime = useWebRuntime();
 
   const t = useT();
-  const { sort = 'added', genre, audio, subtitles } = Route.useSearch();
+  const search = Route.useSearch();
   const navigate = Route.useNavigate();
   const { data: movies } = useSuspenseQuery(webRuntime.queries.catalogQueries.moviesView());
 
@@ -50,16 +50,10 @@ function MoviesPage() {
       countKey="browse.count.movies"
       emptyIcon="movie"
       emptyTitle={t('content.filmsEmpty')}
-      sort={sort}
-      genre={genre}
-      audio={audio}
-      subtitles={subtitles}
-      onSort={(mode, opts) =>
-        navigate({ search: (p) => ({ ...p, sort: mode }), resetScroll: opts?.resetScroll })
+      search={search}
+      onSearch={(next, opts) =>
+        navigate({ search: (p) => ({ ...p, ...next }), resetScroll: opts?.resetScroll })
       }
-      onGenre={(g) => navigate({ search: (p) => ({ ...p, genre: g }) })}
-      onAudio={(code) => navigate({ search: (p) => ({ ...p, audio: code }) })}
-      onSubtitles={(code) => navigate({ search: (p) => ({ ...p, subtitles: code }) })}
       renderGrid={(view) => <MovieGrid movies={view} />}
     />
   );
