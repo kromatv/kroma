@@ -132,7 +132,9 @@ worker (`isolate: false`), which is what makes the suite fast; a file that calls
 `vitest.config.ts` moves it to `web-isolated` or `native-isolated` on its own.
 `vitest.setup.ts` resets what a file can leave behind (timers, spies, stubbed
 globals and env, the DOM, web storage), so a test still cleans up after itself
-but a slip cannot fail a stranger. `--project 'web*'` selects both halves.
+but a slip cannot fail a stranger. It cannot reset `document.head`, where
+react-native-web keeps its rules for the whole worker, so a test removes only
+the elements it added there. `--project 'web*'` selects both halves.
 
 ## Architecture
 
