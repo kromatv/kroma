@@ -1,7 +1,7 @@
 use kroma_domain::title_edit::TitleEdit;
 use kroma_domain::{Kind, SectionItem};
 
-use crate::art_beside::{BACKDROP, LOGO, POSTER};
+use crate::art_beside::{BACKDROP, LOGO, POSTER, STILL};
 use crate::art_chosen::{self, Slot};
 use crate::localize::test_support::*;
 use crate::localize::{
@@ -61,6 +61,33 @@ fn an_episode_wears_the_poster_beside_its_show_and_keeps_its_still() {
         Some("/api/images/beside-sh1-poster.webp")
     );
     assert_eq!(meta.backdrop_url.as_deref(), Some("/api/images/still.webp"));
+}
+
+#[test]
+fn an_episode_s_thumbnail_comes_before_its_fetched_still_or_stands_alone() {
+    let p = pool();
+    keep_beside(&p, &[(ITEM, "e1", STILL), (ITEM, "e2", STILL)]);
+    let mut fetched = item("e1", Kind::Episode);
+    fetched.metadata.as_mut().unwrap().backdrop_url = Some("/api/images/still.webp".into());
+    let mut never_matched = item("e2", Kind::Episode);
+    never_matched.metadata = None;
+
+    overlay_each(&p, [&mut fetched, &mut never_matched], "en").unwrap();
+
+    let still = |episode: &kroma_domain::MediaItem| {
+        episode
+            .metadata
+            .as_ref()
+            .and_then(|meta| meta.backdrop_url.clone())
+    };
+    assert_eq!(
+        still(&fetched).as_deref(),
+        Some("/api/images/beside-e1-still.webp")
+    );
+    assert_eq!(
+        still(&never_matched).as_deref(),
+        Some("/api/images/beside-e2-still.webp")
+    );
 }
 
 #[test]

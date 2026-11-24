@@ -1,7 +1,7 @@
 //! Overlaying a locale onto a show, its seasons and its episodes.
 
 use super::layer::Ask;
-use super::{apply, overlay_season_cast};
+use super::overlay_season_cast;
 use crate::{metadata_core, translations, Pool};
 use anyhow::Result;
 
@@ -30,27 +30,22 @@ pub fn overlay_shows(pool: &Pool, shows: &mut [Show], locale: &str) -> Result<()
 /// keyed `"{show_id}:{season}"`).
 pub fn overlay_show_detail(pool: &Pool, detail: &mut ShowDetail, locale: &str) -> Result<()> {
     let conn = pool.get()?;
-    Ask {
+    let ask = Ask {
         conn: &conn,
         locale,
-    }
-    .layer(metadata_core::SHOW, &[detail.show.id.as_str()])?
-    .on_show(&mut detail.show);
+    };
+    ask.layer(metadata_core::SHOW, &[detail.show.id.as_str()])?
+        .on_show(&mut detail.show);
     let ep_ids: Vec<&str> = detail
         .seasons
         .iter()
         .flat_map(|s| s.episodes.iter())
         .map(|e| e.id.as_str())
         .collect();
-    let ep_tr = translations::resolve_many(&conn, "episode", &ep_ids, locale)?;
+    let episodes = ask.episodes(&ep_ids)?;
     for season in &mut detail.seasons {
         for ep in &mut season.episodes {
-            if let Some(t) = ep_tr.get(&ep.id) {
-                apply(ep.metadata.as_mut(), t);
-                if let Some(title) = &t.title {
-                    ep.title = title.clone();
-                }
-            }
+            episodes.on_episode(ep);
         }
         overlay_season_cast(&conn, &detail.show.id, season, locale)?;
         overlay_listed(&conn, &detail.show.id, season, locale)?;
@@ -92,6 +87,7 @@ fn overlay_listed(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::art_beside::STILL;
     use crate::localize::overlay_section_items;
     use crate::localize::test_support::*;
     use crate::translations::TransData;
@@ -182,6 +178,7 @@ mod tests {
             &td("Ep FR", vec![]),
         )
         .unwrap();
+        keep_beside(&p, &[(metadata_core::ITEM, "e1", STILL)]);
         translations::put(
             &p,
             "season_cast",
@@ -229,6 +226,16 @@ mod tests {
                 .title
                 .as_deref(),
             Some("Ep FR")
+        );
+        assert_eq!(detail.seasons[0].episodes[0].title, "Ep FR");
+        assert_eq!(
+            detail.seasons[0].episodes[0]
+                .metadata
+                .as_ref()
+                .unwrap()
+                .backdrop_url
+                .as_deref(),
+            Some("/api/images/beside-e1-still.webp")
         );
         assert_eq!(
             detail.seasons[0].cast[0].character.as_deref(),

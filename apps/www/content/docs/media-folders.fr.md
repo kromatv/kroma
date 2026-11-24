@@ -79,7 +79,7 @@ des sous-titres forcés, et `.sdh` pour des sous-titres pour sourds et
 malentendants. Un dossier `Subs` à côté de la vidéo fonctionne aussi. Les
 sous-titres intégrés au fichier vidéo ne demandent rien.
 
-### Affiches, fonds et logos
+### Affiches, fonds, logos et vignettes
 
 KROMA trouve sur Internet une affiche, un fond et un logo pour chaque titre qu'il
 reconnaît. Une image placée dans le dossier du titre passe avant eux, et donne
@@ -98,6 +98,7 @@ Series/
     backdrop.jpg
     Season 01/
       School Plays - S01E01.mkv
+      School Plays - S01E01-thumb.jpg
 ```
 
 - Pour l'affiche d'un film, nommez l'image `poster`, `folder`, `cover`,
@@ -113,6 +114,9 @@ Series/
 - Pour une série, placez les images dans le dossier de la série, au-dessus des
   dossiers de saison, avec les mêmes noms, ou `show` pour l'affiche. Quand deux
   séries partagent un dossier, aucune ne prend les images qu'il contient.
+- Pour la vignette d'un épisode, donnez à l'image le nom de la vidéo de
+  l'épisode, suivi ou non de `-thumb` : `School Plays - S01E01-thumb.jpg`. Elle
+  s'affiche même sur un épisode que KROMA ne reconnaît pas.
 - KROMA lit les images `.jpg`, `.jpeg`, `.png` et `.webp`, et ignore celles qu'il
   ne peut pas ouvrir.
 - Un fond ou un logo ne s'affiche que sur un titre que KROMA reconnaît.
