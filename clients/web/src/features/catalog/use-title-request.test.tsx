@@ -17,10 +17,9 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function showView(episode: string): TitleView {
-  const film = build({ source: 'movie', item: mediaItem(), similar: [], discover: null });
-  const season: TitleSeason = {
-    number: 1,
+function season(number: number, episode = `e${number}`): TitleSeason {
+  return {
+    number,
     name: null,
     poster: null,
     episodeCount: 1,
@@ -32,7 +31,15 @@ function showView(episode: string): TitleView {
     missing: [],
     cast: [],
   };
-  return { ...film, kind: 'show', tmdbId: 9, seasons: [season] };
+}
+
+function owned(number: number): TitleSeason {
+  return { ...season(number), episodesAvailable: 1, available: true };
+}
+
+function showView(...seasons: TitleSeason[]): TitleView {
+  const film = build({ source: 'movie', item: mediaItem(), similar: [], discover: null });
+  return { ...film, kind: 'show', tmdbId: 9, seasons };
 }
 
 function render(initial: TitleView) {
@@ -45,8 +52,8 @@ function render(initial: TitleView) {
 }
 
 it('shows the view it was handed last, so a reloaded title reaches the page', () => {
-  const before = showView('e1');
-  const after = showView('e1-with-a-thumbnail');
+  const before = showView(season(1));
+  const after = showView(season(1, 'e1-with-a-thumbnail'));
   const { result, rerender } = render(before);
 
   rerender({ initial: after });
@@ -56,11 +63,11 @@ it('shows the view it was handed last, so a reloaded title reaches the page', ()
 
 it('keeps a season requested from the page over a reloaded view', async () => {
   requests.create.mockResolvedValue({ status: 'pending' });
-  const { result, rerender } = render(showView('e1'));
+  const { result, rerender } = render(showView(season(1)));
 
   act(() => result.current.requestSeason(1));
   await waitFor(() => expect(result.current.view.requestStatus).toBe('pending'));
-  rerender({ initial: showView('e1-reloaded') });
+  rerender({ initial: showView(season(1, 'e1-reloaded')) });
 
   expect(result.current.view.seasons[0]?.requested).toBe(true);
   expect(result.current.view.seasons[0]?.episodes[0]?.id).toBe('e1-reloaded');
@@ -69,5 +76,39 @@ it('keeps a season requested from the page over a reloaded view', async () => {
     tmdbId: 9,
     seasons: [1],
     episodes: undefined,
+  });
+});
+
+it('marks every season still missing when the whole show is asked for', async () => {
+  requests.create.mockResolvedValue({ status: 'pending' });
+  const { result } = render(showView(owned(1), season(2)));
+
+  act(() => result.current.requestAllSeasons());
+
+  await waitFor(() => expect(result.current.view.requestStatus).toBe('pending'));
+  expect(result.current.view.seasons.map((one) => one.requested)).toEqual([false, true]);
+  expect(requests.create).toHaveBeenCalledWith({
+    kind: 'show',
+    tmdbId: 9,
+    seasons: null,
+    episodes: undefined,
+  });
+});
+
+it('asks for the episodes picked and leaves their season as it was', async () => {
+  requests.create.mockResolvedValue({ status: 'pending' });
+  const { result } = render(showView(season(1)));
+
+  act(() => result.current.toggleEpisode(1, 2));
+  act(() => result.current.requestSelected());
+
+  await waitFor(() => expect(result.current.view.requestStatus).toBe('pending'));
+  expect(result.current.view.seasons[0]?.requested).toBe(false);
+  expect(result.current.pendingEps.size).toBe(1);
+  expect(requests.create).toHaveBeenCalledWith({
+    kind: 'show',
+    tmdbId: 9,
+    seasons: null,
+    episodes: [{ season: 1, episode: 2 }],
   });
 });
