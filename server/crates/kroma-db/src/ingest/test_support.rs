@@ -116,8 +116,7 @@ pub(super) fn meta(tmdb: u64, title: &str) -> Metadata {
         keywords: vec![],
         tvdb_id: None,
         tmdb_url: "https://tmdb/1".into(),
-        ratings: Default::default(),
-        age_rating: None,
+        ..Metadata::blank()
     }
 }
 

@@ -48,6 +48,7 @@ export type ArtShown = z.infer<typeof ArtShown>;
  * and a null one follows the provider. */
 export const TitleEdit = z.object({
   title: z.string().nullable(),
+  sortTitle: z.string().nullable().default(null),
   overview: z.string().nullable(),
   year: z.number().int().nullable(),
   released: z.string().nullable().default(null),

@@ -8,6 +8,8 @@
   "titleInfo.released": "Date de sortie",
   "titleInfo.releasedHint": "L'année seule, comme 1995, ou le jour, comme 1995-12-15.",
   "titleInfo.saveFailed": "Impossible d'enregistrer les informations.",
+  "titleInfo.sortTitle": "Titre de tri",
+  "titleInfo.sortTitleHint": "Le titre est classé sous ce nom, par exemple Seigneur des anneaux, Le. Le titre affiché ne change pas.",
   "titleInfo.summary": "Résumé",
   "titleInfo.title": "Informations"
 }

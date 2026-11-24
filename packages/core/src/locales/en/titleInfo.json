@@ -8,6 +8,8 @@
   "titleInfo.released": "Release date",
   "titleInfo.releasedHint": "Just the year, as 1995, or the day, as 1995-12-15.",
   "titleInfo.saveFailed": "Could not save the info.",
+  "titleInfo.sortTitle": "Sort title",
+  "titleInfo.sortTitleHint": "The title is sorted under this name, such as Lord of the Rings, The. The title shown stays the same.",
   "titleInfo.summary": "Summary",
   "titleInfo.title": "Info"
 }

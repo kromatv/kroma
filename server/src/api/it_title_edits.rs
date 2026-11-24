@@ -8,6 +8,7 @@ use crate::model::Permission;
 fn heat() -> Value {
     json!({
         "title": " Heat (director's cut) ",
+        "sortTitle": "Heat 2",
         "overview": "A thief and a detective.",
         "released": "1995-12-15",
         "genres": ["Crime", " "],
@@ -39,6 +40,7 @@ async fn what_an_admin_writes_about_a_film_is_what_its_page_shows_after_a_refres
     assert_eq!(shown["title"], json!("Heat (director's cut)"));
     assert_eq!(shown["year"], json!(1995));
     assert_eq!(shown["metadata"]["releaseDate"], json!("1995-12-15"));
+    assert_eq!(shown["metadata"]["sortTitle"], json!("Heat 2"));
     assert_eq!(
         shown["metadata"]["overview"],
         json!("A thief and a detective.")

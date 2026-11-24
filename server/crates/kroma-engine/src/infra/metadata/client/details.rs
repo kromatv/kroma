@@ -77,13 +77,11 @@ fn metadata_from(d: Details, target: Target, id: u64, lang2: &str, country: &str
             .map(|p| format!("{IMG}/w500{p}")),
         cast,
         crew,
-        // Resolved later (a disk download) by `infra::theme`; this lookup only
-        // carries the TVDB id it needs.
-        theme_url: None,
         tvdb_id,
         tmdb_url: format!("https://www.themoviedb.org/{}/{id}", target.web_kind()),
         ratings,
         age_rating,
+        ..Metadata::blank()
     }
 }
 

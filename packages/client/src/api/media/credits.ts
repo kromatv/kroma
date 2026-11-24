@@ -28,6 +28,7 @@ export const Metadata = z.object({
   tmdbId: z.number(),
   imdbId: z.string().nullish(),
   title: z.string().nullable(),
+  sortTitle: z.string().nullish(),
   tagline: z.string().nullish(),
   overview: z.string().nullable(),
   releaseDate: z.string().nullish(),

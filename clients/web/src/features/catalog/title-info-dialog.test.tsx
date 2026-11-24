@@ -15,7 +15,14 @@ vi.mock('#web/shared/lib/auth', () => ({
 }));
 
 const inputHost = createInputTestHost();
-const WRITTEN = { title: 'Heat', overview: null, year: 1995, released: null, genres: ['Crime'] };
+const WRITTEN = {
+  title: 'Heat',
+  sortTitle: null,
+  overview: null,
+  year: 1995,
+  released: null,
+  genres: ['Crime'],
+};
 
 afterEach(() => {
   cleanup();
@@ -58,12 +65,14 @@ it('shows what was written and saves what changed', async () => {
   type('Summary', ' A thief and a detective. ');
   type('Genres', 'Crime, Drama');
   type('Release date', '1987-0x3-01');
+  type('Sort title', ' Heat, the ');
   save();
 
   await closed;
   expect(edits.get).toHaveBeenCalledWith('item', 'm1');
   expect(edits.put).toHaveBeenCalledWith('item', 'm1', {
     title: 'Heat',
+    sortTitle: 'Heat, the',
     overview: 'A thief and a detective.',
     year: null,
     released: '1987-03-01',

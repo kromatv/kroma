@@ -267,6 +267,10 @@ year, so a title sorted by release lands where its year says.
 as Plex and Kodi take a film's year from its release date, and the date replaces the
 provider's. A year written alone stays possible for a title whose day nobody knows.
 
+**LIB-88** (SHIPPED) - A person can write a sort title for a title (LIB-83), and a `.nfo`
+file's `<sorttitle>` gives one too (LIB-84). The catalogue sorts the title, and files it under
+a letter, by that name, while the name shown stays the same, as in Plex, Jellyfin and Kodi.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

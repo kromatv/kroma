@@ -35,8 +35,7 @@ pub(crate) fn meta(title: &str, overview: &str, genres: &[&str], cast: &[&str]) 
         keywords: Vec::new(),
         tvdb_id: None,
         tmdb_url: String::new(),
-        ratings: Default::default(),
-        age_rating: None,
+        ..Metadata::blank()
     }
 }
 

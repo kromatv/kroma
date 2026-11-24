@@ -40,7 +40,8 @@ An XML document saved as UTF-8 (K, P). Its root is `<movie>` for a film and
 | `<premiered>` | The release date, `yyyy-mm-dd` | K, J, P | read as the release date, which gives the year; one that is no day gives its year alone |
 | `<year>` | The year. K deprecated it in v17 and reads `<premiered>` alone from v20 | K, J | read when there is no `<premiered>` |
 | `<genre>` | One genre a tag, repeated for each | K, J, P | read |
-| `<originaltitle>`, `<sorttitle>`, `<tagline>` | Other names, and the tagline | K, J, P | not read |
+| `<sorttitle>` | The name the title sorts under; the name shown stays `<title>` | K, J, P | read |
+| `<originaltitle>`, `<tagline>` | The title in its own language, and the tagline | K, J, P | not read |
 | `<uniqueid type="tmdb">` | The title's TMDB id. A file may hold one `<uniqueid>` for each provider, `type` naming it | K, J, P | read, whatever the case of `type`; the title is matched to that id |
 | `<tmdbid>` | The title's TMDB id, on a tag of its own | J | read when there is no `<uniqueid type="tmdb">` |
 | `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>`, `<tvdbid>` | The title's id on IMDb or TheTVDB | K, J, P | not read |

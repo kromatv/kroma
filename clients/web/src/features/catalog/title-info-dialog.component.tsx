@@ -24,6 +24,7 @@ const upTo = (max: number) => (text: string) => text.slice(0, max);
 
 const FIT: Readonly<Record<keyof TitleDraft, (text: string) => string>> = {
   title: upTo(TITLE_EDIT_LIMITS.title),
+  sortTitle: upTo(TITLE_EDIT_LIMITS.title),
   overview: upTo(TITLE_EDIT_LIMITS.overview),
   released: (text) => text.replace(/[^\d-]/g, '').slice(0, 10),
   genres: upTo(TITLE_EDIT_LIMITS.genres * (TITLE_EDIT_LIMITS.genre + 2)),
@@ -61,18 +62,28 @@ function useDraft(initial: TitleDraft) {
   return { draft, change };
 }
 
+type Hinted = 'sortTitle' | 'released' | 'genres';
+
+function HintedField({
+  field,
+  draft,
+  change,
+}: Readonly<{ field: Hinted; draft: TitleDraft; change: Change }>) {
+  const t = useT();
+  return (
+    <Field.Root label={t(`titleInfo.${field}`)} value={draft[field]} onValueChange={change(field)}>
+      <Field.Hint>{t(`titleInfo.${field}Hint`)}</Field.Hint>
+    </Field.Root>
+  );
+}
+
 function InfoFields({ draft, change }: Readonly<{ draft: TitleDraft; change: Change }>) {
   const t = useT();
   return (
     <>
       <Field.Root label={t('titleInfo.name')} value={draft.title} onValueChange={change('title')} />
-      <Field.Root
-        label={t('titleInfo.released')}
-        value={draft.released}
-        onValueChange={change('released')}
-      >
-        <Field.Hint>{t('titleInfo.releasedHint')}</Field.Hint>
-      </Field.Root>
+      <HintedField field="sortTitle" draft={draft} change={change} />
+      <HintedField field="released" draft={draft} change={change} />
       <Field.Root label={t('titleInfo.summary')}>
         <Field.Textarea
           rows={4}
@@ -81,13 +92,7 @@ function InfoFields({ draft, change }: Readonly<{ draft: TitleDraft; change: Cha
           onValueChange={change('overview')}
         />
       </Field.Root>
-      <Field.Root
-        label={t('titleInfo.genres')}
-        value={draft.genres}
-        onValueChange={change('genres')}
-      >
-        <Field.Hint>{t('titleInfo.genresHint')}</Field.Hint>
-      </Field.Root>
+      <HintedField field="genres" draft={draft} change={change} />
     </>
   );
 }
@@ -148,9 +153,10 @@ function useTitleEdit({ kind, id }: Props) {
   return { ...query, save };
 }
 
-/** The name, release date, summary and genres a person who manages the library writes
- * by hand for a film or a show. Open with `await TitleInfoDialog.call({ kind,
- * id, title })`; it resolves on dismiss and once the edit is saved. */
+/** The name, sort title, release date, summary and genres a person who
+ * manages the library writes by hand for a film or a show. Open with `await
+ * TitleInfoDialog.call({ kind, id, title })`; it resolves on dismiss and once
+ * the edit is saved. */
 export const TitleInfoDialog = createCallable<Props>((props) => {
   const t = useT();
   const { data, error, save } = useTitleEdit(props);
