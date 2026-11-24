@@ -2,7 +2,8 @@
 
 The picture names other media servers read from a media folder, which KROMA
 follows so a library moved from one of them keeps its posters
-([`docs/spec/media/README.md`](../spec/media/README.md), MEDIA-33 and MEDIA-48).
+([`docs/spec/media/README.md`](../spec/media/README.md), MEDIA-33, MEDIA-48 and
+MEDIA-49).
 Read 2026-11-24.
 
 ## Sources
@@ -30,14 +31,22 @@ KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp`, and compares names without
 regard to case. A folder name is a season folder by the scan's own rule:
 `Season 01`, `Saison 1`, `Specials`, `S01`.
 
-## Backdrops and logos
+## Backdrops
+
+| Where | Names | Source | KROMA |
+| --- | --- | --- | --- |
+| A film's own folder | `backdrop`, `fanart`, `background`, `art` | J, P | read |
+| Beside a film's video, in any folder | `<video name>-backdrop`, `-fanart`, `-background`, `-art` | J, P | read |
+| A show's folder | `backdrop`, `fanart`, `background`, `art` | J, P | read |
+| A season folder | `backdrop`, `fanart`, `background`, `art` | J | not yet |
+
+## Logos
 
 Not read yet. The names, for when they are:
 
 | What | Names | Source |
 | --- | --- | --- |
-| Backdrop | `backdrop`, `fanart`, `background`, `art` | J, P |
 | Logo | `logo`, `clearlogo` | J, P |
 
-Both apply in a film's or a show's folder, and after the video's name beside a
-film in a shared folder (`Avatar (2009)-fanart.jpg`, P).
+They apply in a film's or a show's folder, and after the video's name beside a
+film in a shared folder (`Avatar (2009)-logo.png`, J).

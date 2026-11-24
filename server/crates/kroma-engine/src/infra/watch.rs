@@ -2,7 +2,6 @@
 //! (SMB/NFS deliver no change events for edits made on the NAS itself), plus a
 //! best-effort `notify` watcher, both feeding one debounced worker thread.
 
-use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
@@ -11,9 +10,8 @@ use notify::{RecursiveMode, Watcher};
 use tokio::runtime::Handle;
 use tracing::{info, warn};
 
-use crate::model::MediaItem;
 use crate::services::jobs::{Trigger, TriggerError};
-use crate::services::scan;
+use crate::services::scan::{self, ScanData};
 use crate::state::SharedState;
 
 const DEFAULT_INTERVAL_SECS: u64 = 300;
@@ -96,7 +94,7 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
         return;
     };
     let data = scan::scan_all(&defs);
-    let sig = signature(&data.items, &data.mtimes);
+    let sig = signature(&data);
     if sig == *last {
         return; // nothing changed
     }
@@ -123,17 +121,21 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
     }
 }
 
-/// A digest of every file's path, size and mtime, in no particular order: a
-/// file added, removed, moved, renamed, resized or touched changes it.
-pub fn signature(items: &[MediaItem], mtimes: &HashMap<String, Option<i64>>) -> u64 {
-    items
-        .iter()
-        .flat_map(|item| &item.files)
-        .fold(0u64, |acc, f| {
-            let mut h = DefaultHasher::new();
-            (&f.id, f.size, mtimes.get(&f.id).copied().flatten()).hash(&mut h);
-            acc.wrapping_add(h.finish())
-        })
+/// A digest of every file's path, size and mtime, and of every picture kept
+/// beside a title, in no particular order: a file added, removed, moved,
+/// renamed, resized or touched changes it, and so does a poster or a backdrop
+/// put beside a title or taken away.
+pub fn signature(data: &ScanData) -> u64 {
+    let files = data.items.iter().flat_map(|item| &item.files);
+    let files = files.map(|f| hashed(&(&f.id, f.size, data.mtimes.get(&f.id).copied().flatten())));
+    let pictures = data.art_beside.iter().map(|p| hashed(&(&p.subject_id, p.role, &p.url)));
+    files.chain(pictures).fold(0u64, u64::wrapping_add)
+}
+
+fn hashed(value: &impl Hash) -> u64 {
+    let mut h = DefaultHasher::new();
+    value.hash(&mut h);
+    h.finish()
 }
 
 #[cfg(test)]

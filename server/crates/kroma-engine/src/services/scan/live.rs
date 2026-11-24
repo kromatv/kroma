@@ -128,6 +128,7 @@ fn finish(db: &Pool, held: &HeldEpisodes, data: &ScanData) -> anyhow::Result<()>
     };
     db::finish_sync(db, &walk)?;
     db::set_external_subtitle_languages(db, &data.external_subtitle_languages)?;
+    db::art_beside::replace(db, &data.art_beside, &unread)?;
     warn_kept(&data.unread_libraries);
     Ok(())
 }

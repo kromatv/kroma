@@ -1,19 +1,6 @@
-use std::path::Path;
-
 use super::super::*;
-use super::library;
-use crate::state::SharedState;
+use super::walk;
 use crate::test_support::test_state;
-
-fn walk(state: &SharedState, root: &Path) {
-    sync_walk(
-        &WalkTurn::wait(),
-        &state.db,
-        &library(root),
-        &mut uninterrupted,
-    )
-    .unwrap();
-}
 
 #[test]
 fn a_walk_records_the_subtitle_file_beside_a_film_and_forgets_it_once_removed() {

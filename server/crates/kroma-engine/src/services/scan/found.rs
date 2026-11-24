@@ -2,20 +2,43 @@
 //! tally while its folders are read.
 
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::domain::naming::{self, Parsed};
 use crate::model::{Library, LibraryKind, MediaItem, Show};
 use crate::services::settings::LibraryDef;
-
-use super::subtitles_beside::SubtitleFiles;
 
 #[derive(Default)]
 pub(super) struct Found {
     pub items: HashMap<String, MediaItem>,
     pub shows: HashMap<String, Show>,
     pub mtimes: HashMap<String, Option<i64>>,
-    pub subtitles: SubtitleFiles,
+    pub beside: Beside,
+}
+
+#[derive(Clone, Default)]
+pub(super) struct Beside {
+    pub subtitles: Noted,
+    pub pictures: Noted,
+}
+
+#[derive(Clone, Default)]
+pub(super) struct Noted(Arc<Mutex<Vec<PathBuf>>>);
+
+impl Noted {
+    pub(super) fn add(&self, files: Vec<PathBuf>) {
+        if !files.is_empty() {
+            self.0
+                .lock()
+                .unwrap_or_else(PoisonError::into_inner)
+                .extend(files);
+        }
+    }
+
+    pub(super) fn take(&self) -> Vec<PathBuf> {
+        std::mem::take(&mut self.0.lock().unwrap_or_else(PoisonError::into_inner))
+    }
 }
 
 pub(super) struct LibraryWalk<'a> {

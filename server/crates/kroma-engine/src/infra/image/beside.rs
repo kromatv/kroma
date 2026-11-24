@@ -1,18 +1,20 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::time::UNIX_EPOCH;
 
 use kroma_media::tmp_file::unique_tmp;
 use kroma_primitives::short_hash;
 
 use super::encode::encode_webp_capped;
-use super::images_dir;
 use super::scratch::finalize;
 
-/// Caches a picture kept in a media folder as a WebP no wider than `max_width`
-/// and returns the cached file. The name follows the picture's path, size and
-/// time of change, so an edited picture is read again and an unchanged one is
-/// never encoded twice. `None` when the picture cannot be read or encoded.
-pub fn cache_picture_beside(data_dir: &Path, picture: &Path, max_width: u32) -> Option<PathBuf> {
+/// What the name of every cached picture kept in a media folder starts with.
+pub const BESIDE_PREFIX: &str = "beside-";
+
+/// The name a picture kept in a media folder is cached under. It follows the
+/// picture's path, size and time of change, so an edited picture gets a new
+/// name and an unchanged one keeps its own. `None` when the picture cannot be
+/// read.
+pub fn beside_name(picture: &Path) -> Option<String> {
     let meta = std::fs::metadata(picture).ok()?;
     let changed = meta.modified().ok()?.duration_since(UNIX_EPOCH).ok()?;
     let key = format!(
@@ -21,18 +23,27 @@ pub fn cache_picture_beside(data_dir: &Path, picture: &Path, max_width: u32) -> 
         meta.len(),
         changed.as_nanos()
     );
-    let dir = images_dir(data_dir);
-    std::fs::create_dir_all(&dir).ok()?;
-    let out = dir.join(format!("beside-{}.webp", short_hash(&key)));
+    Some(format!("{BESIDE_PREFIX}{}.webp", short_hash(&key)))
+}
+
+/// Caches `picture` at `out` as a WebP no wider than `max_width`. Whether
+/// `out` holds it now: false when the picture cannot be read or encoded.
+pub fn cache_picture_beside(picture: &Path, out: &Path, max_width: u32) -> bool {
     if out.exists() {
-        return Some(out);
+        return true;
     }
-    let tmp = unique_tmp(&out);
+    if !picture.is_file() {
+        return false;
+    }
+    if let Some(dir) = out.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let tmp = unique_tmp(out);
     if !encode_webp_capped(picture, &tmp, max_width) {
         let _ = std::fs::remove_file(&tmp);
-        return None;
+        return false;
     }
-    finalize(&tmp, &out)
+    finalize(&tmp, out).is_some()
 }
 
 #[cfg(test)]

@@ -7,6 +7,7 @@ use crate::state::SharedState;
 use crate::test_support::test_state;
 
 mod announcer;
+mod art_beside;
 mod between_walks;
 mod subtitle_files;
 
@@ -23,6 +24,16 @@ fn library(root: &Path) -> Vec<LibraryDef> {
         folders: vec![root.to_string_lossy().into_owned()],
         auto_scan: true,
     }]
+}
+
+fn walk(state: &SharedState, root: &Path) {
+    sync_walk(
+        &WalkTurn::wait(),
+        &state.db,
+        &library(root),
+        &mut uninterrupted,
+    )
+    .unwrap();
 }
 
 fn three_films(tag: &str) -> kroma_testing::TempDir {

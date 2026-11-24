@@ -1,6 +1,7 @@
 //! Overlaying a locale onto a show, its seasons and its episodes.
 
-use super::{apply, apply_show, overlay_season_cast};
+use super::layer::Ask;
+use super::{apply, overlay_season_cast};
 use crate::{metadata_core, translations, Pool};
 use anyhow::Result;
 
@@ -13,11 +14,13 @@ pub fn overlay_shows(pool: &Pool, shows: &mut [Show], locale: &str) -> Result<()
     }
     let conn = pool.get()?;
     let ids: Vec<&str> = shows.iter().map(|s| s.id.as_str()).collect();
-    let tr = translations::resolve_many(&conn, metadata_core::SHOW, &ids, locale)?;
+    let layer = Ask {
+        conn: &conn,
+        locale,
+    }
+    .layer(metadata_core::SHOW, &ids)?;
     for show in shows.iter_mut() {
-        if let Some(t) = tr.get(&show.id) {
-            apply_show(show, t);
-        }
+        layer.on_show(show);
     }
     Ok(())
 }
@@ -27,17 +30,12 @@ pub fn overlay_shows(pool: &Pool, shows: &mut [Show], locale: &str) -> Result<()
 /// keyed `"{show_id}:{season}"`).
 pub fn overlay_show_detail(pool: &Pool, detail: &mut ShowDetail, locale: &str) -> Result<()> {
     let conn = pool.get()?;
-    // Show + episodes reuse the batch helpers over this one detail.
-    if let Some(t) = translations::resolve_many(
-        &conn,
-        metadata_core::SHOW,
-        &[detail.show.id.as_str()],
+    Ask {
+        conn: &conn,
         locale,
-    )?
-    .get(&detail.show.id)
-    {
-        apply_show(&mut detail.show, t);
     }
+    .layer(metadata_core::SHOW, &[detail.show.id.as_str()])?
+    .on_show(&mut detail.show);
     let ep_ids: Vec<&str> = detail
         .seasons
         .iter()

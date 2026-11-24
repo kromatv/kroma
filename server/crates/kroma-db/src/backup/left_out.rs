@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use super::test_support::{fresh_pool, schema_tables};
 use super::TABLES;
 
-const REBUILT_BY_A_SCAN: &[&str] = &["files", "items", "libraries", "shows"];
+const REBUILT_BY_A_SCAN: &[&str] = &["art_beside", "files", "items", "libraries", "shows"];
 
 const REBUILT_FROM_THE_MEDIA_AND_ITS_PROVIDERS: &[&str] = &[
     "audio_analysis",

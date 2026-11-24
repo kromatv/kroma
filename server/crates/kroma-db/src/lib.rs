@@ -60,6 +60,7 @@ mod core_tables;
 mod grant;
 mod home;
 pub mod imports;
+pub mod art_beside;
 pub mod localize;
 pub mod metadata_core;
 mod schema;

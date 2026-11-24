@@ -10,13 +10,19 @@
 //! Resolution falls back requested lang -> `en` -> any (see
 //! [`super::translations::resolve_many`]); an entity with no stored translation
 //! keeps its blob text, so this is always safe to call.
+//!
+//! A poster or a backdrop a scan found beside a title's files is put in front
+//! of the fetched one last, whatever the language (see [`super::art_beside`]).
 
 use super::translations::{self, TransData};
 use super::{metadata_core, Connection, Pool, Result};
 
 use kroma_domain::{CastMember, Metadata, Season, Show};
 
+use layer::Ask;
+
 mod items;
+mod layer;
 mod shows;
 
 #[cfg(test)]
@@ -26,7 +32,8 @@ pub use items::*;
 pub use shows::*;
 
 /// Overlay `locale` onto one show's metadata blob, which is where the generated
-/// poster and card routes read a show's art from.
+/// poster and card routes read a show's art from, with the pictures kept beside
+/// the show's files in front of the fetched ones.
 pub fn overlay_show_metadata(
     pool: &Pool,
     show_id: &str,
@@ -34,11 +41,12 @@ pub fn overlay_show_metadata(
     locale: &str,
 ) -> Result<()> {
     let conn = pool.get()?;
-    if let Some(tr) =
-        translations::resolve_many(&conn, metadata_core::SHOW, &[show_id], locale)?.get(show_id)
-    {
-        apply(Some(meta), tr);
+    Ask {
+        conn: &conn,
+        locale,
     }
+    .layer(metadata_core::SHOW, &[show_id])?
+    .on_metadata(show_id, meta);
     Ok(())
 }
 

@@ -1,24 +1,10 @@
 //! Overlaying a locale onto items and home-section rows.
 
-use super::{apply, apply_show};
-use crate::translations::TransData;
+use super::layer::{apply_item, Ask, Layer};
 use crate::{metadata_core, translations, Pool};
 use anyhow::Result;
 
 use kroma_domain::{Kind, MediaItem, SectionItem};
-
-fn apply_item(item: &mut MediaItem, tr: &TransData) {
-    apply(item.metadata.as_mut(), tr);
-    if let Some(t) = &tr.title {
-        item.title = t.clone();
-        // An episode row prints `episodeTitle ?? title`, so leaving the scan's
-        // name here keeps the filename's language on a card whose title has
-        // just been translated.
-        if item.episode_title.is_some() {
-            item.episode_title = Some(t.clone());
-        }
-    }
-}
 
 /// Overlay `locale` onto a batch of items (movies/videos + episodes). Episodes
 /// resolve under the `'episode'` subject kind, everything else under `'item'`.
@@ -38,42 +24,48 @@ pub fn overlay_each<'a>(
         return Ok(());
     }
     let conn = pool.get()?;
-    let movie_ids: Vec<&str> = items
-        .iter()
-        .filter(|i| i.kind != Kind::Episode)
-        .map(|i| i.id.as_str())
-        .collect();
-    let ep_ids: Vec<&str> = items
-        .iter()
-        .filter(|i| i.kind == Kind::Episode)
-        .map(|i| i.id.as_str())
-        .collect();
+    let ask = Ask {
+        conn: &conn,
+        locale,
+    };
+    let movie_ids = ids_where(&items, |i| i.kind != Kind::Episode);
+    let movies = ask.layer(metadata_core::ITEM, &movie_ids)?;
+    let episode_ids = ids_where(&items, |i| i.kind == Kind::Episode);
+    let episodes = translations::resolve_many(&conn, "episode", &episode_ids, locale)?;
     // The show's name is printed beside the episode's on every continue row and
     // every up-next rail, so translating one without the other puts two
     // languages on one card.
     let show_ids: Vec<&str> = items.iter().filter_map(|i| i.show_id.as_deref()).collect();
-    let movie_tr = translations::resolve_many(&conn, metadata_core::ITEM, &movie_ids, locale)?;
-    let ep_tr = translations::resolve_many(&conn, "episode", &ep_ids, locale)?;
-    let show_tr = translations::resolve_many(&conn, metadata_core::SHOW, &show_ids, locale)?;
+    let shows = ask.layer(metadata_core::SHOW, &show_ids)?;
     for item in items.iter_mut() {
-        let table = if item.kind == Kind::Episode {
-            &ep_tr
-        } else {
-            &movie_tr
-        };
-        if let Some(tr) = table.get(&item.id) {
+        if item.kind != Kind::Episode {
+            movies.on_item(item);
+        } else if let Some(tr) = episodes.get(&item.id) {
             apply_item(item, tr);
         }
-        if let Some(name) = item
-            .show_id
-            .as_deref()
-            .and_then(|id| show_tr.get(id))
-            .and_then(|tr| tr.title.as_deref())
-        {
-            item.show_title = Some(name.to_string());
-        }
+        show_onto(item, &shows);
     }
     Ok(())
+}
+
+fn ids_where<'a>(items: &'a [&mut MediaItem], keep: impl Fn(&MediaItem) -> bool) -> Vec<&'a str> {
+    items
+        .iter()
+        .filter(|i| keep(i))
+        .map(|i| i.id.as_str())
+        .collect()
+}
+
+fn show_onto(item: &mut MediaItem, shows: &Layer) {
+    let Some(show) = item.show_id.as_deref() else {
+        return;
+    };
+    if let Some(name) = shows.title(show) {
+        item.show_title = Some(name.to_string());
+    }
+    if item.kind == Kind::Episode {
+        shows.poster_onto(show, item.metadata.as_mut());
+    }
 }
 
 /// Overlay `locale` onto home-section items (a mix of movies and shows).
@@ -96,20 +88,16 @@ pub fn overlay_section_items(pool: &Pool, items: &mut [SectionItem], locale: &st
             SectionItem::Movie { .. } => None,
         })
         .collect();
-    let m_tr = translations::resolve_many(&conn, metadata_core::ITEM, &movie_ids, locale)?;
-    let s_tr = translations::resolve_many(&conn, metadata_core::SHOW, &show_ids, locale)?;
+    let ask = Ask {
+        conn: &conn,
+        locale,
+    };
+    let movies = ask.layer(metadata_core::ITEM, &movie_ids)?;
+    let shows = ask.layer(metadata_core::SHOW, &show_ids)?;
     for it in items.iter_mut() {
         match it {
-            SectionItem::Movie { item } => {
-                if let Some(t) = m_tr.get(&item.id) {
-                    apply_item(item, t);
-                }
-            }
-            SectionItem::Show { show } => {
-                if let Some(t) = s_tr.get(&show.id) {
-                    apply_show(show, t);
-                }
-            }
+            SectionItem::Movie { item } => movies.on_item(item),
+            SectionItem::Show { show } => shows.on_show(show),
         }
     }
     Ok(())

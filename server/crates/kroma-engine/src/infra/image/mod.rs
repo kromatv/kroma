@@ -11,7 +11,7 @@ mod scratch;
 mod upload;
 mod webp_header;
 
-pub use beside::cache_picture_beside;
+pub use beside::{beside_name, cache_picture_beside, BESIDE_PREFIX};
 pub use cache::{cache_remote, local_art_missing};
 pub(crate) use encode::encode_webp_quality;
 pub use localize::{localize, localize_title_art};
