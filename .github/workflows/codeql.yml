@@ -45,12 +45,12 @@ jobs:
       # No overlay database: the action otherwise keeps a ~190 MB base
       # database per push to main in the repository's Actions cache, which
       # buys seconds on a three-minute scan.
-      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+      - uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           languages: javascript-typescript, actions
         env:
           CODEQL_OVERLAY_DATABASE_MODE: none
-      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
 
   # Every package in bun.lock against GitHub's advisory database. Unlike
   # cargo audit it fails on no advisory: the SARIF goes to code scanning,
@@ -70,7 +70,7 @@ jobs:
           no-cache: true
       - run: bun install --frozen-lockfile --filter '@kromatv/ci-tools'
       - run: bun run ci advisories
-      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+      - uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
         with:
           sarif_file: .sarif/bun-audit.sarif
           category: bun-audit
@@ -86,7 +86,7 @@ jobs:
       # compiled the tool from source) - and NO rust-cache: the audit only reads
       # Cargo.lock, so the 142 MB target-dir cache it kept per key was pure
       # pressure on the repo's 10 GB cache quota.
-      - uses: taiki-e/install-action@4a76afe23f9e08d2d9550fb56e556444e8611d21 # v2
+      - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2
         with:
           tool: cargo-audit
       # Every lockfile that ships: the server, each module (its own workspace,
