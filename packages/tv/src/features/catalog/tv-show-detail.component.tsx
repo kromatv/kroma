@@ -1,5 +1,5 @@
 import type { ShowDetail } from '@kromatv/client/media';
-import { ageRatingOf, episodeTag, qualityBadgeForVideo } from '@kromatv/core';
+import { ageRatingOf, episodeTag, qualityBadgeForVideo, tmdbIdOf } from '@kromatv/core';
 import { useT, useThemeAudio } from '@kromatv/ui';
 import {
   Box,
@@ -84,7 +84,7 @@ export function TvShowDetail() {
       // takes it as a prop (see TvDetailScaffold).
       actions={
         <FocusRegion style={s.actionRow}>
-          <LeadActions trailer={{ kind: 'tv', tmdbId: meta?.tmdbId, title: show.title }}>
+          <LeadActions trailer={{ kind: 'tv', tmdbId: tmdbIdOf(meta?.tmdbId), title: show.title }}>
             <Button
               size="lg"
               autoFocus

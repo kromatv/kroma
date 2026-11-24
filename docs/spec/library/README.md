@@ -237,6 +237,12 @@ A title, tagline, summary, genre list or character name that language lacks is s
 English where English has it, so a film with a French title and no French summary shows the
 French title over the English summary. Artwork is never borrowed this way.
 
+**LIB-83** (SHIPPED) - A person who manages the library can write a film's or a show's name,
+summary, year and genres by hand, whether the provider matched it or not. Each field they
+write is shown in place of the provider's, in every language, until they clear it. A field
+they leave empty keeps following the provider. A rescan, a refresh or a re-match keeps what
+they wrote (LIB-44), search finds the name they wrote, and a backup carries it.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

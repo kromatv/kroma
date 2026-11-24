@@ -61,6 +61,7 @@ const TABLES: &[&str] = &[
     "reports",
     "tmdb_pin",
     "art_chosen",
+    "title_edits",
     "acq_file_tmdb",
     "downloaded_subtitles",
     "import_servers",

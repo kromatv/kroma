@@ -101,6 +101,11 @@ the film, choose **Fix the match**, search for the right title, then select
 To avoid it, name the folder with the title and the year:
 `Blade Runner 2049 (2017)`.
 
+A home video or a film TMDB does not know has no match to fix. Open it, choose
+**Edit info**, and write its title, year, summary and genres. What you write
+there shows in every language and stays through a rescan. Clear a field to go
+back to TMDB's text.
+
 ## A TV or app does not find the server
 
 The apps search your home network for a server on port `4040`. The search

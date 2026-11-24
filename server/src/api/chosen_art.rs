@@ -10,7 +10,7 @@
 //!   picture beside its files again, or its fetched one.
 
 use axum::body::Bytes;
-use axum::extract::{DefaultBodyLimit, FromRequestParts, Path, State};
+use axum::extract::{DefaultBodyLimit, FromRequestParts, State};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
@@ -19,15 +19,13 @@ use axum::{Json, Router};
 use serde_json::json;
 
 use crate::api::error::lerr;
-use crate::api::extract::AuthUser;
-use crate::api::permission::require;
+use crate::api::managed_title::{not_found, Managed};
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::db::art_beside::{BACKDROP, POSTER};
 use crate::db::art_chosen::Slot;
-use crate::db::metadata_core::{ITEM, SHOW};
 use crate::i18n;
-use crate::model::{Permission, User};
+use crate::model::User;
 use crate::services::art_chosen::{self, Choice};
 use crate::state::SharedState;
 
@@ -58,37 +56,10 @@ impl Target {
     }
 }
 
-fn not_found(user: &User) -> Response {
-    lerr(
-        i18n::user_locale(user),
-        StatusCode::NOT_FOUND,
-        "error.itemNotFound",
-    )
-}
-
-fn kind_of(user: &User, kind: &str) -> Result<&'static str, Response> {
-    [ITEM, SHOW]
-        .into_iter()
-        .find(|k| *k == kind)
-        .ok_or_else(|| not_found(user))
-}
-
-fn target_of(user: &User, (kind, id, role): (String, String, String)) -> Result<Target, Response> {
-    let kind = kind_of(user, &kind)?;
-    let role = [POSTER, BACKDROP]
-        .into_iter()
-        .find(|r| *r == role)
-        .ok_or_else(|| not_found(user))?;
-    Ok(Target { kind, id, role })
-}
-
 async fn chosen(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Path((kind, id)): Path<(String, String)>,
+    Managed { kind, id, .. }: Managed,
 ) -> Result<Response, Response> {
-    require(&user, Permission::LibraryManage)?;
-    let kind = kind_of(&user, &kind)?;
     let urls = query(&state.db, move |pool| {
         db::art_chosen::chosen(&pool, kind, &id)
     })
@@ -105,13 +76,22 @@ impl FromRequestParts<SharedState> for Asked {
     type Rejection = Response;
 
     async fn from_request_parts(parts: &mut Parts, state: &SharedState) -> Result<Self, Response> {
-        let AuthUser(user) = AuthUser::from_request_parts(parts, state).await?;
-        require(&user, Permission::LibraryManage)?;
-        let Path(path) = Path::<(String, String, String)>::from_request_parts(parts, state)
-            .await
-            .map_err(IntoResponse::into_response)?;
-        let target = target_of(&user, path)?;
-        Ok(Self { user, target })
+        let Managed {
+            user,
+            kind,
+            id,
+            path,
+        } = Managed::from_request_parts(parts, state).await?;
+        let role = [POSTER, BACKDROP]
+            .into_iter()
+            .find(|role| path.get("role").is_some_and(|asked| asked == role));
+        let Some(role) = role else {
+            return Err(not_found(&user));
+        };
+        Ok(Self {
+            user,
+            target: Target { kind, id, role },
+        })
     }
 }
 

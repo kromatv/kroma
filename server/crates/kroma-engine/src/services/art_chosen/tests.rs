@@ -1,6 +1,6 @@
 use super::*;
 use crate::db::art_beside::{BACKDROP, POSTER};
-use crate::db::metadata_core::ITEM;
+use crate::db::metadata_core::{ITEM, SHOW};
 use crate::test_support::{seed_movie, seed_show_episode, test_state};
 
 fn slot<'a>(kind: &'a str, id: &'a str, role: &'a str) -> Slot<'a> {

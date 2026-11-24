@@ -114,6 +114,12 @@ cherchez le bon titre, puis sélectionnez **Utiliser ce titre**.
 Pour l'éviter, nommez le dossier avec le titre et l'année :
 `Blade Runner 2049 (2017)`.
 
+Une vidéo de famille ou un film que TMDB ne connaît pas n'a pas de fiche à
+corriger. Ouvrez-le, choisissez **Modifier les informations**, puis écrivez son
+titre, son année, son résumé et ses genres. Ce que vous écrivez s'affiche dans
+toutes les langues et reste après une nouvelle analyse. Videz un champ pour
+reprendre le texte de TMDB.
+
 ## Un téléviseur ou une application ne trouve pas le serveur
 
 Les applications cherchent un serveur sur le port `4040` dans votre réseau

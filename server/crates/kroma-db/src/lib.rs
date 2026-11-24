@@ -68,6 +68,7 @@ mod schema;
 mod visibility;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
+pub mod title_edits;
 pub mod tmdb_pin;
 pub mod housekeeping;
 pub mod translations;

@@ -42,6 +42,8 @@ pub mod setup;
 pub mod sso;
 pub mod stats;
 pub mod subtitles;
+pub mod title_edits;
+pub mod titles;
 pub mod trailers;
 pub mod trending_lists;
 pub mod updates;

@@ -18,7 +18,7 @@ import type {
   VideoTrack,
 } from '@kromatv/client/media';
 import type { RequestStatus } from '@kromatv/client/requests';
-import { ageRatingOf, directorsOf, formatRuntime, genreLabels } from '@kromatv/core';
+import { ageRatingOf, directorsOf, formatRuntime, genreLabels, tmdbIdOf } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { imageUrl } from '#web/shared/lib/api';
 
@@ -121,7 +121,7 @@ export function buildTitleView(
     const meta = item.metadata ?? null;
     return {
       kind: 'movie',
-      tmdbId: meta?.tmdbId ?? null,
+      tmdbId: tmdbIdOf(meta?.tmdbId),
       localId: item.id,
       inLibrary: true,
       title: item.title,
@@ -164,7 +164,7 @@ export function buildTitleView(
         : null;
     return {
       kind: 'show',
-      tmdbId: meta?.tmdbId ?? null,
+      tmdbId: tmdbIdOf(meta?.tmdbId),
       localId: show.id,
       inLibrary: true,
       title: show.title,
@@ -186,7 +186,7 @@ export function buildTitleView(
       seasons: mergeSeasons(detail.seasons, discover),
       requestStatus: discover?.requestStatus ?? null,
       requestProgress: discover?.requestProgress ?? null,
-      canRequest: canReq(meta?.tmdbId ?? null, discover != null),
+      canRequest: canReq(tmdbIdOf(meta?.tmdbId), discover != null),
       similar: similarShows.map((s) => ({
         key: s.id,
         title: s.title,
