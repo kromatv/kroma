@@ -32,6 +32,7 @@ import {
   useEntryDefaults,
   useEntryFontSize,
 } from '#ui/lib/field-shell';
+import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import { useGroupMember } from '#ui/lib/group-shape';
 import { useControllable } from '#ui/lib/use-controllable.hook';
 
@@ -136,18 +137,18 @@ function TextField({
   // group's size, flattens the corners it shares and lifts itself while it
   // wears the ring, so an entry welds to the control beside it.
   const group = useGroupMember(onFocus, onBlur);
+  const within = useFocusWithin(group.onFocus, group.onBlur);
   const metrics = useControlMetrics(size ?? group.size ?? undefined);
   const CONTENT = metrics.line;
   const fontSize = useEntryFontSize(metrics.fontSize);
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
-  const [focused, setFocused] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const own = useRef<TextInput>(null);
   const input = entryRef ?? own;
   const keyboardProps = keyboardType ? { keyboardType } : null;
   const autoCompleteProps = autoComplete ? { autoComplete } : null;
   const masked = type === 'password' && !revealed;
-  const shell = fieldShell(metrics, { flat, focused, invalid }, scope);
+  const shell = fieldShell(metrics, { flat, focused: within.focused, invalid }, scope);
   const frost = useFrostCoat({ borderRadius: controlRadius(metrics, scope) }, { on: !flat });
   return (
     <Box
@@ -187,14 +188,8 @@ function TextField({
           value={value}
           onChangeText={setValue}
           onSubmitEditing={onSubmit}
-          onFocus={() => {
-            setFocused(true);
-            group.onFocus();
-          }}
-          onBlur={() => {
-            setFocused(false);
-            group.onBlur();
-          }}
+          onFocus={within.onFocus}
+          onBlur={within.onBlur}
           readOnly={readOnly}
           selectTextOnFocus={selectOnFocus}
           placeholder={placeholder}
