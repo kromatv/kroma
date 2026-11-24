@@ -40,13 +40,16 @@ function useReprocess({ kind, id, onChanged }: Props) {
 }
 
 async function rematch({ kind, id, title, onChanged }: Props) {
-  const applied = await RematchDialog.call({
+  const outcome = await RematchDialog.call({
     kind: kind === 'show' ? 'show' : 'movie',
     id,
     title,
   });
-  if (applied) {
+  if (outcome === 'applied') {
     onChanged();
+  }
+  if (outcome === 'edit') {
+    await TitleInfoDialog.call({ kind, id, title });
   }
 }
 

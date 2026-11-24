@@ -19,8 +19,12 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 </movie>"#;
 
 #[test]
-fn a_film_s_file_gives_its_names_summary_release_date_genres_and_tmdb_id() {
-    let Contents { edit, tmdb } = parsed(HEAT, MOVIE);
+fn a_film_s_file_gives_its_names_summary_release_date_genres_and_ids() {
+    let Contents {
+        edit,
+        tmdb,
+        elsewhere,
+    } = parsed(HEAT, MOVIE);
 
     assert_eq!(edit.title.as_deref(), Some("Heat"));
     assert_eq!(edit.sort_title.as_deref(), Some("Heat (1995)"));
@@ -32,6 +36,8 @@ fn a_film_s_file_gives_its_names_summary_release_date_genres_and_tmdb_id() {
     assert_eq!(edit.released.as_deref(), Some("1995-12-15"));
     assert_eq!(edit.genres, Some(vec!["Crime".into(), "Drama".into()]));
     assert_eq!(tmdb, Some(949));
+    assert_eq!(elsewhere.imdb.as_deref(), Some("tt0113277"));
+    assert_eq!(elsewhere.tvdb, None);
 }
 
 #[test]
@@ -76,8 +82,24 @@ fn a_link_alone_names_the_tmdb_id_of_its_kind_of_title() {
     assert_eq!(parsed(film, MOVIE).tmdb, Some(949));
     assert_eq!(parsed(show, TVSHOW).tmdb, Some(1438));
     assert_eq!(parsed(film, TVSHOW).tmdb, None);
+}
+
+#[test]
+fn a_link_to_imdb_names_the_imdb_id_of_a_film_or_a_show() {
+    let film = "https://www.imdb.com/title/tt0113277/";
+    let show = "<tvshow><title>The Wire</title></tvshow>\nhttps://imdb.com/title/tt0306414";
+
     assert_eq!(
-        parsed("https://www.imdb.com/title/tt0113277/", MOVIE),
+        parsed(film, MOVIE).elsewhere.imdb.as_deref(),
+        Some("tt0113277")
+    );
+    assert_eq!(
+        parsed(show, TVSHOW).elsewhere.imdb.as_deref(),
+        Some("tt0306414")
+    );
+    assert_eq!(parsed(film, MOVIE).tmdb, None);
+    assert_eq!(
+        parsed("https://www.imdb.com/name/nm0000199/", MOVIE),
         Contents::default()
     );
 }
@@ -88,7 +110,21 @@ fn the_tmdb_id_jellyfin_writes_on_its_own_tag_is_read() {
     let unnamed = r#"<movie><uniqueid type="tmdb">0</uniqueid><tmdbid>x</tmdbid></movie>"#;
 
     assert_eq!(parsed(text, TVSHOW).tmdb, Some(1438));
+    assert_eq!(parsed(text, TVSHOW).elsewhere.tvdb, Some(79126));
     assert_eq!(parsed(unnamed, MOVIE).tmdb, None);
+}
+
+#[test]
+fn the_imdb_and_tvdb_ids_jellyfin_writes_on_their_own_tags_are_read() {
+    let text = "<tvshow><imdbid>tt0306414</imdbid><tvdbid>79126</tvdbid></tvshow>";
+    let unnamed = r#"<movie><uniqueid type="imdb">0113277</uniqueid><imdbid>tt12</imdbid>
+                     <tvdbid>-4</tvdbid></movie>"#;
+
+    let named = parsed(text, TVSHOW).elsewhere;
+
+    assert_eq!(named.imdb.as_deref(), Some("tt0306414"));
+    assert_eq!(named.tvdb, Some(79126));
+    assert_eq!(parsed(unnamed, MOVIE).elsewhere, Elsewhere::default());
 }
 
 #[test]
@@ -144,7 +180,11 @@ https://www.themoviedb.org/movie/949"#;
 
 #[test]
 fn an_episode_s_file_gives_its_first_episode_s_name_summary_and_air_date() {
-    let Contents { edit, tmdb } = parsed(PILOT, EPISODE);
+    let Contents {
+        edit,
+        tmdb,
+        elsewhere,
+    } = parsed(PILOT, EPISODE);
 
     assert_eq!(edit.title.as_deref(), Some("Pilot"));
     assert_eq!(
@@ -155,6 +195,7 @@ fn an_episode_s_file_gives_its_first_episode_s_name_summary_and_air_date() {
     assert_eq!(edit.year, Some(2008));
     assert_eq!(edit.genres, None);
     assert_eq!(tmdb, None);
+    assert_eq!(elsewhere, Elsewhere::default());
 }
 
 #[test]

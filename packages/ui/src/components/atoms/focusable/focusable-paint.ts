@@ -24,6 +24,7 @@ function coat(decl: StyleDecl | undefined, index: number, theme: Theme): ViewSty
 }
 
 const NO_SLOTS = Object.freeze({ root: undefined }) as unknown as ReturnType<AnySv>;
+const NO_STATES: Partial<Record<SvStateName, StyleDecl>> = Object.freeze({});
 
 /** What `next` changes about `base`, so a state coat can be layered over a
  *  caller's own style without reasserting everything underneath it. */
@@ -71,7 +72,7 @@ function under(delta: ViewStyle | null, style: StyleProp<ViewStyle>): ViewStyle 
 }
 
 // `[a, b]` that keeps its identity while `a` and `b` keep theirs, so the
-// native `splitBoxLayers` memo below is not re-run on every render.
+// native `splitBoxLayers` pass below is not re-run on every render.
 function usePair(a: StyleProp<ViewStyle>, b: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
   return useMemo(() => {
     if (a == null) {
@@ -115,17 +116,10 @@ function useFocusablePaint({
   const theme = useTheme();
   const index = useBreakpointIndex();
   const recipe = useSv(definition);
-  const coats = useMemo(
-    () => ({
-      focus: coat(states?.focus, index, theme),
-      hover: coat(states?.hover, index, theme),
-      press: coat(states?.press, index, theme),
-    }),
-    [states, theme, index],
-  );
-  const focusedStyle = coats.focus;
-  const hoveredStyle = coats.hover;
-  const pressedStyle = coats.press;
+  const { focus, hover, press } = states ?? NO_STATES;
+  const focusedStyle = coat(focus, index, theme);
+  const hoveredStyle = coat(hover, index, theme);
+  const pressedStyle = coat(press, index, theme);
 
   const lit = !inert;
   const rest: ReturnType<AnySv> = recipe
@@ -150,14 +144,11 @@ function useFocusablePaint({
   // Native renders the control as two views, so the half of the style that says
   // how the parent places this control has to ride on the outer one; the web
   // targets have a single view and keep the style whole.
-  const layers = useMemo(() => controlLayers(painted, scope), [painted, scope]);
+  const layers = controlLayers(painted, scope);
 
   // Under `painted`, never over it: a control that states its own cursor - a
   // resize seam asking for `col-resize` - has to keep it.
-  const dressed = useMemo(
-    () => dressControl(painted, disabled, actionable),
-    [painted, disabled, actionable],
-  );
+  const dressed = dressControl(painted, disabled, actionable);
 
   return { dressed, focusedStyle, hoveredStyle, layers, paintedPressed, resolve, rest };
 }

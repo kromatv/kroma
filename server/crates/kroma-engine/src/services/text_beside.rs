@@ -1,6 +1,6 @@
 //! The text of the `.nfo` files a scan found beside each title's files
-//! (LIB-84), and the TMDB id each names (LIB-85), read again only once a file
-//! changes.
+//! (LIB-84), the TMDB id each names (LIB-85) and its IMDb and TheTVDB ids
+//! (LIB-92), read again only once a file changes.
 
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
@@ -19,11 +19,16 @@ pub fn keep(pool: &Pool, found: &[Nfo], kept: &HashSet<String>) -> anyhow::Resul
     let texts: Vec<Text> = found
         .iter()
         .map(|nfo| {
-            let Contents { edit, tmdb } = contents_of(nfo, &before);
+            let Contents {
+                edit,
+                tmdb,
+                elsewhere,
+            } = contents_of(nfo, &before);
             Text {
                 nfo: nfo.clone(),
                 edit,
                 tmdb,
+                elsewhere,
             }
         })
         .collect();
@@ -35,6 +40,7 @@ fn contents_of(found: &Nfo, before: &HashMap<String, Read>) -> Contents {
         Some(read) if found.modified.is_some() && read.modified == found.modified => Contents {
             edit: read.edit.clone(),
             tmdb: read.tmdb,
+            elsewhere: read.elsewhere.clone(),
         },
         _ => nfo::read(Path::new(&found.path), root_of(found.subject_kind)),
     }

@@ -18,9 +18,9 @@ import { type ChangeEvent, useRef } from 'react';
 import { createCallable } from 'react-call';
 
 import {
-  ART_ASPECT,
   ArtworkFramingPanel,
   artworkFramingBand,
+  frameShapeOf,
 } from '#web/features/catalog/artwork-framing-panel.component';
 import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import type { TitleShown } from '#web/features/catalog/title-shown';
@@ -30,12 +30,13 @@ import { useAuth } from '#web/shared/lib/auth';
 
 const sDefinition = styles({
   hidden: { display: 'none' },
-  slot: { maxWidth: '100%' },
-  poster: { width: 140, aspectRatio: 2 / 3 },
-  backdrop: { width: 372, maxWidth: '100%', aspectRatio: 16 / 9 },
+  slot: { flexGrow: 1, flexBasis: 0, minWidth: 180 },
+  poster: { width: '100%', maxWidth: 180, aspectRatio: 2 / 3 },
+  backdrop: { width: '100%', aspectRatio: 16 / 9 },
+  logo: { width: '100%', aspectRatio: 16 / 9 },
 });
 
-const ROLES = ['poster', 'backdrop'] as const satisfies readonly ArtRole[];
+const ROLES = ['poster', 'backdrop', 'logo'] as const satisfies readonly ArtRole[];
 
 const WASH = color('tint/4');
 
@@ -56,7 +57,8 @@ function ArtPreview({
       alt=""
       radius="md"
       background={WASH}
-      style={role === 'poster' ? s.poster : s.backdrop}
+      fit={role === 'logo' ? 'contain' : 'cover'}
+      style={s[role]}
     />
   );
 }
@@ -100,6 +102,16 @@ function PickButton({
 }
 
 type Pick = (role: ArtRole, file: File) => void;
+
+const pickFor =
+  (slots: Slots, frame: Pick): Pick =>
+  (role, file) => {
+    if (frameShapeOf(role)) {
+      frame(role, file);
+    } else {
+      slots.upload(role, file);
+    }
+  };
 
 function SlotActions({
   role,
@@ -203,7 +215,7 @@ function ArtworkSteps({ step, onClose, ...props }: Steps) {
         {framing ? (
           <ArtworkFramingPanel role={framing.role} />
         ) : (
-          <ArtPanel slots={slots} shown={shown} onPick={begin} />
+          <ArtPanel slots={slots} shown={shown} onPick={pickFor(slots, begin)} />
         )}
       </Dialog.Panel>
       {framing
@@ -213,16 +225,16 @@ function ArtworkSteps({ step, onClose, ...props }: Steps) {
   );
 }
 
-/** The poster and the backdrop an admin uploads for a film or a show, each
- * beside the picture shown while none is uploaded (`shown`). A picked picture
- * is framed to its slot's shape before it is sent. Open with `await
+/** The poster, the backdrop and the logo an admin uploads for a film or a show,
+ * each beside the picture shown while none is uploaded (`shown`). A picked
+ * poster or backdrop is framed to its slot's shape before it is sent. Open with `await
  * ArtworkDialog.call({ kind, id, title, shown })`; it resolves on dismiss. */
 export const ArtworkDialog = createCallable<Props>(({ call, ...props }) => {
   const step = useArtworkFraming();
   return (
     <Cropper.Root
       src={step.framing?.src ?? null}
-      aspect={ART_ASPECT[step.framing?.role ?? 'poster']}
+      aspect={step.framing ? frameShapeOf(step.framing.role)?.aspect : undefined}
       value={step.transform}
       onValueChange={step.setTransform}
     >

@@ -98,7 +98,7 @@ function Root({
   const input = useRef<TextInput>(null);
   const [focused, setFocused] = useState(false);
 
-  const allowed = useMemo(() => new RegExp(pattern), [pattern]);
+  const allowed = new RegExp(pattern);
 
   // Fire exactly once per fill - the shared rule, because a keypad-fed field
   // reaches a full code without the entry below ever seeing a keystroke, and a

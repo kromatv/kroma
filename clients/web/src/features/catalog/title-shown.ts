@@ -8,4 +8,5 @@ export interface TitleShown {
   genres: readonly string[];
   poster: string | null;
   backdrop: string | null;
+  logo?: string | null;
 }

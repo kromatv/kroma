@@ -126,12 +126,12 @@ Series/
   already opened.
 
 To change one title's picture without touching its folder, open the title and
-choose **Edit artwork**. A poster or a backdrop you upload there comes before
-the picture in the folder and the one from the internet, and **Restore the
-automatic picture** brings them back. Before it is sent, the picture opens in a
-frame of the slot's shape, 2:3 for a poster and 16:9 for a backdrop: drag it,
-zoom or turn it, then choose **Use this picture**. It takes the right to manage
-the library.
+choose **Edit artwork**. A poster, a backdrop or a logo you upload there comes
+before the picture in the folder and the one from the internet, and **Restore the
+automatic picture** brings them back. A poster or a backdrop opens first in a
+frame of its shape, 2:3 or 16:9: drag it, zoom or turn it, then choose **Use
+this picture**. A logo is sent as it is, so its transparency stays. It takes
+the right to manage the library.
 
 ### Titles and summaries from .nfo files
 
@@ -164,6 +164,10 @@ Series/
   `<tmdbid>`, or that ends with a link to its themoviedb.org page, makes KROMA
   recognize the title by that number instead of by its name. A match you fix
   with **Fix the match** comes before the file.
+- A file that gives only the title's IMDb or TheTVDB number, in
+  `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>` or `<tvdbid>`,
+  or that ends with a link to its imdb.com page, makes KROMA ask TMDB once which
+  title the number belongs to, then recognize the title by the answer.
 - The file's text shows instead of the text from the internet, even once KROMA
   recognizes the title. What you write with **Edit info** comes before the file.
 - KROMA reads a file you add or change at the next library scan.

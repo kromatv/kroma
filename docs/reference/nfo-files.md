@@ -3,7 +3,7 @@
 The file names and the tags other media servers read from an `.nfo` file, which
 KROMA follows so a library moved from one of them keeps its text and its
 matches ([`docs/spec/library/README.md`](../spec/library/README.md), LIB-84,
-LIB-85 and LIB-89).
+LIB-85, LIB-89 and LIB-92).
 Read 2026-11-24.
 
 ## Sources
@@ -45,18 +45,27 @@ An XML document saved as UTF-8 (K, P). Its root is `<movie>` for a film and
 | `<originaltitle>`, `<tagline>` | The title in its own language, and the tagline | K, J, P | not read |
 | `<uniqueid type="tmdb">` | The title's TMDB id. A file may hold one `<uniqueid>` for each provider, `type` naming it | K, J, P | read, whatever the case of `type`; the title is matched to that id |
 | `<tmdbid>` | The title's TMDB id, on a tag of its own | J | read when there is no `<uniqueid type="tmdb">` |
-| `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>`, `<tvdbid>` | The title's id on IMDb or TheTVDB | K, J, P | not read |
+| `<uniqueid type="imdb">`, `<uniqueid type="tvdb">` | The title's id on IMDb, as `tt` and at least seven digits, or on TheTVDB | K, J, P | read, whatever the case of `type`; used when the file names no TMDB id |
+| `<imdbid>`, `<tvdbid>` | The same ids, on tags of their own | J | read when there is no `<uniqueid>` of that type |
 | `<id>` | K: "Do not use", a tag Kodi generates. P: the provider id when there is no `<uniqueid>` | K, P | not read |
 
 A combination file holds the XML document followed by a link to a provider's
 page (K). KROMA reads the document, and takes the TMDB id from the link when
 the document names none: `themoviedb.org/movie/<id>` for a film,
-`themoviedb.org/tv/<id>` for a show. A file that holds such a link alone gives
-the id and no text. A link to another provider, or a root of another kind,
-gives nothing.
+`themoviedb.org/tv/<id>` for a show. It takes the IMDb id from
+`imdb.com/title/<id>`, for a film or a show, the same way. A file that holds
+such a link alone gives the id and no text. A link to another provider, or a
+root of another kind, gives nothing.
 
 A TMDB id in the file comes behind a match fixed by hand, an acquisition's id
 and an import's identity, and before matching by the name.
+
+A file that names no TMDB id but an IMDb or a TheTVDB one makes KROMA ask
+TMDB which title that id is, the IMDb id first, as for an import's identity
+that names no TMDB id. The answer is kept until the file changes. It comes
+behind a TMDB id an import names and behind an import's own IMDb or TheTVDB
+id, and a file TMDB knows nothing about leaves the title to be matched by its
+name.
 
 The text the file holds comes before the provider's, in every language, whether
 or not the title was matched, as local metadata does in Jellyfin (J). What a

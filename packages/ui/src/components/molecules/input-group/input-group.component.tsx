@@ -85,7 +85,7 @@ function Root({ label, size, invalid = false, style, children }: Readonly<InputG
   const [focused, setFocused] = useState(false);
   const control = useRef<() => void>(() => {});
 
-  const at = useMemo(() => sort(children), [children]);
+  const at = sort(children);
   const stacked = at.blockStart.length > 0 || at.blockEnd.length > 0;
 
   const registerFocus = useCallback((focus: () => void) => {

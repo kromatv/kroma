@@ -102,7 +102,8 @@ To avoid it, name the folder with the title and the year:
 `Blade Runner 2049 (2017)`.
 
 A home video or a film TMDB does not know has no match to fix. Open it, choose
-**Edit info**, and write its title, release date, summary and genres. For the
+**Edit info**, and write its title, release date, summary and genres. When
+**Fix the match** finds nothing, its **Edit info** button opens the same form. For the
 release date, write the year alone, as `1995`, or the day, as `1995-12-15`. A
 sort title files the title under another name, such as
 `Lord of the Rings, The`, and leaves the title shown as it is. What you write

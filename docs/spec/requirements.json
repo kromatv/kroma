@@ -4867,7 +4867,7 @@
     "status": "AGREED",
     "text": "**Rename on disk.** A name fixed to the convention above matches",
     "file": "docs/spec/library/README.md",
-    "line": 191
+    "line": 195
   },
   {
     "id": "LIB-35",
@@ -4877,7 +4877,7 @@
     "status": "AGREED",
     "text": "A file that could be more than one identity, a title shared by a remake",
     "file": "docs/spec/library/README.md",
-    "line": 211
+    "line": 222
   },
   {
     "id": "LIB-36",
@@ -4887,7 +4887,7 @@
     "status": "AGREED",
     "text": "One unplaceable file never stalls a source. The catalogue is always the",
     "file": "docs/spec/library/README.md",
-    "line": 217
+    "line": 228
   },
   {
     "id": "LIB-37",
@@ -4897,7 +4897,7 @@
     "status": "AGREED",
     "text": "Every field and image a provider returns is written to the server's own",
     "file": "docs/spec/library/README.md",
-    "line": 227
+    "line": 238
   },
   {
     "id": "LIB-38",
@@ -4907,7 +4907,7 @@
     "status": "AGREED",
     "text": "With no internet, everything already matched browses and plays exactly",
     "file": "docs/spec/library/README.md",
-    "line": 232
+    "line": 243
   },
   {
     "id": "LIB-39",
@@ -4917,7 +4917,7 @@
     "status": "AGREED",
     "text": "Offline, a brand-new file that needs a first provider lookup stays",
     "file": "docs/spec/library/README.md",
-    "line": 235
+    "line": 246
   },
   {
     "id": "LIB-40",
@@ -4927,7 +4927,7 @@
     "status": "AGREED",
     "text": "Offline, a forced refresh queues rather than fails.",
     "file": "docs/spec/library/README.md",
-    "line": 239
+    "line": 250
   },
   {
     "id": "LIB-41",
@@ -4937,7 +4937,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 291
+    "line": 307
   },
   {
     "id": "LIB-42",
@@ -4947,7 +4947,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 293
+    "line": 309
   },
   {
     "id": "LIB-43",
@@ -4957,7 +4957,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 297
+    "line": 313
   },
   {
     "id": "LIB-44",
@@ -4967,7 +4967,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 301
+    "line": 317
   },
   {
     "id": "LIB-45",
@@ -4977,7 +4977,7 @@
     "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 323
+    "line": 339
   },
   {
     "id": "LIB-46",
@@ -4987,7 +4987,7 @@
     "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 328
+    "line": 344
   },
   {
     "id": "LIB-47",
@@ -4997,7 +4997,7 @@
     "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 332
+    "line": 348
   },
   {
     "id": "LIB-48",
@@ -5007,7 +5007,7 @@
     "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 336
+    "line": 352
   },
   {
     "id": "LIB-49",
@@ -5017,7 +5017,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 342
+    "line": 358
   },
   {
     "id": "LIB-50",
@@ -5027,7 +5027,7 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 305
+    "line": 321
   },
   {
     "id": "LIB-51",
@@ -5307,7 +5307,7 @@
     "status": "AGREED",
     "text": "**A match that came from another server.** An import",
     "file": "docs/spec/library/README.md",
-    "line": 195
+    "line": 199
   },
   {
     "id": "LIB-79",
@@ -5347,7 +5347,7 @@
     "status": "SHIPPED",
     "text": "A title's text is shown in the reader's language one field at a time.",
     "file": "docs/spec/library/README.md",
-    "line": 241
+    "line": 252
   },
   {
     "id": "LIB-83",
@@ -5357,7 +5357,7 @@
     "status": "SHIPPED",
     "text": "A person who manages the library can write a film's or a show's name,",
     "file": "docs/spec/library/README.md",
-    "line": 246
+    "line": 257
   },
   {
     "id": "LIB-84",
@@ -5367,7 +5367,7 @@
     "status": "SHIPPED",
     "text": "A film or a show takes its name, summary, year and genres from the",
     "file": "docs/spec/library/README.md",
-    "line": 252
+    "line": 263
   },
   {
     "id": "LIB-85",
@@ -5377,7 +5377,7 @@
     "status": "SHIPPED",
     "text": "**A match named in the `.nfo` file.** A film's or a show's `.nfo` file",
     "file": "docs/spec/library/README.md",
-    "line": 203
+    "line": 207
   },
   {
     "id": "LIB-86",
@@ -5387,7 +5387,7 @@
     "status": "SHIPPED",
     "text": "The catalogue sorts and filters a title by the name, year and genres it",
     "file": "docs/spec/library/README.md",
-    "line": 260
+    "line": 271
   },
   {
     "id": "LIB-87",
@@ -5397,7 +5397,7 @@
     "status": "SHIPPED",
     "text": "A person can write the day a title came out in place of its year",
     "file": "docs/spec/library/README.md",
-    "line": 265
+    "line": 276
   },
   {
     "id": "LIB-88",
@@ -5407,7 +5407,7 @@
     "status": "SHIPPED",
     "text": "A person can write a sort title for a title (LIB-83), and a `.nfo`",
     "file": "docs/spec/library/README.md",
-    "line": 270
+    "line": 281
   },
   {
     "id": "LIB-89",
@@ -5417,7 +5417,7 @@
     "status": "SHIPPED",
     "text": "An episode takes its name, summary and air date from the `.nfo` file",
     "file": "docs/spec/library/README.md",
-    "line": 274
+    "line": 285
   },
   {
     "id": "LIB-90",
@@ -5427,7 +5427,37 @@
     "status": "SHIPPED",
     "text": "A person who manages the library can write an episode's name, air date",
     "file": "docs/spec/library/README.md",
-    "line": 279
+    "line": 290
+  },
+  {
+    "id": "LIB-91",
+    "domain": "LIB",
+    "space": "library",
+    "number": 91,
+    "status": "SHIPPED",
+    "text": "The backdrops behind the sign-in screen, the notification that new",
+    "file": "docs/spec/library/README.md",
+    "line": 295
+  },
+  {
+    "id": "LIB-92",
+    "domain": "LIB",
+    "space": "library",
+    "number": 92,
+    "status": "SHIPPED",
+    "text": "A film's or a show's `.nfo` file (LIB-84) that names no provider id,",
+    "file": "docs/spec/library/README.md",
+    "line": 213
+  },
+  {
+    "id": "LIB-93",
+    "domain": "LIB",
+    "space": "library",
+    "number": 93,
+    "status": "SHIPPED",
+    "text": "When a person's search for a film's or a show's match finds nothing at",
+    "file": "docs/spec/library/README.md",
+    "line": 191
   },
   {
     "id": "MEDIA-1",
@@ -5767,7 +5797,7 @@
     "status": "AGREED",
     "text": "KROMA derives a fixed set of sizes per image, a small grid",
     "file": "docs/spec/media/README.md",
-    "line": 218
+    "line": 222
   },
   {
     "id": "MEDIA-35",
@@ -5777,7 +5807,7 @@
     "status": "AGREED",
     "text": "Derived sizes are cached and served without re-deriving, and a",
     "file": "docs/spec/media/README.md",
-    "line": 221
+    "line": 225
   },
   {
     "id": "MEDIA-36",
@@ -5787,7 +5817,7 @@
     "status": "AGREED",
     "text": "Artwork is never a reason a title fails to appear. A title with no",
     "file": "docs/spec/media/README.md",
-    "line": 223
+    "line": 227
   },
   {
     "id": "MEDIA-37",
@@ -5797,7 +5827,7 @@
     "status": "SHIPPED",
     "text": "KROMA learns a file's streams by **probing** it once, when the",
     "file": "docs/spec/media/README.md",
-    "line": 230
+    "line": 234
   },
   {
     "id": "MEDIA-38",
@@ -5807,7 +5837,7 @@
     "status": "AGREED",
     "text": "A probe is the authoritative stream truth until the file's bytes",
     "file": "docs/spec/media/README.md",
-    "line": 240
+    "line": 244
   },
   {
     "id": "MEDIA-39",
@@ -5817,7 +5847,7 @@
     "status": "AGREED",
     "text": "When a direct play fails in a way that implicates the stream",
     "file": "docs/spec/media/README.md",
-    "line": 243
+    "line": 247
   },
   {
     "id": "MEDIA-40",
@@ -5827,7 +5857,7 @@
     "status": "AGREED",
     "text": "Trust is per-file and durable: a corrected probe is written back,",
     "file": "docs/spec/media/README.md",
-    "line": 248
+    "line": 252
   },
   {
     "id": "MEDIA-41",
@@ -5837,7 +5867,7 @@
     "status": "AGREED",
     "text": "A file whose container opens and whose streams enumerate, but which",
     "file": "docs/spec/media/README.md",
-    "line": 262
+    "line": 266
   },
   {
     "id": "MEDIA-42",
@@ -5847,7 +5877,7 @@
     "status": "AGREED",
     "text": "The title **appears** in the library with whatever *is* known. A",
     "file": "docs/spec/media/README.md",
-    "line": 266
+    "line": 270
   },
   {
     "id": "MEDIA-43",
@@ -5857,7 +5887,7 @@
     "status": "AGREED",
     "text": "The unknown stream is marked **undescribed** and carries its raw",
     "file": "docs/spec/media/README.md",
-    "line": 269
+    "line": 273
   },
   {
     "id": "MEDIA-44",
@@ -5867,7 +5897,7 @@
     "status": "SHIPPED",
     "text": "An undescribed stream is *not direct-playable*, because KROMA will",
     "file": "docs/spec/media/README.md",
-    "line": 271
+    "line": 275
   },
   {
     "id": "MEDIA-45",
@@ -5877,7 +5907,7 @@
     "status": "SHIPPED",
     "text": "A file that will not open at all, a truncated or corrupt container,",
     "file": "docs/spec/media/README.md",
-    "line": 274
+    "line": 278
   },
   {
     "id": "MEDIA-46",
@@ -5887,7 +5917,7 @@
     "status": "AGREED",
     "text": "Undescribed and unreadable are distinct states. The first is \"we",
     "file": "docs/spec/media/README.md",
-    "line": 277
+    "line": 281
   },
   {
     "id": "MEDIA-47",
@@ -5958,6 +5988,16 @@
     "text": "A show's page draws its seasons as a row of posters, the one on",
     "file": "docs/spec/media/README.md",
     "line": 211
+  },
+  {
+    "id": "MEDIA-54",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 54,
+    "status": "SHIPPED",
+    "text": "A person who manages the library can upload a logo for a matched",
+    "file": "docs/spec/media/README.md",
+    "line": 218
   },
   {
     "id": "MOD-1",

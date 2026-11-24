@@ -20,9 +20,6 @@ const DEBOUNCE: Duration = Duration::from_secs(2);
 /// `baseline` is the startup scan's signature: nothing is re-emitted until the
 /// file set changes.
 pub fn spawn(state: SharedState, baseline: u64) {
-    if state.config.media_dirs.is_empty() {
-        return; // demo mode nothing on disk to watch
-    }
     // Captured on the tokio thread: the watcher's std::thread has no runtime.
     let handle = Handle::current();
 

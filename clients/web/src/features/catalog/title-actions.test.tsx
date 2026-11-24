@@ -11,6 +11,7 @@ const seen = vi.hoisted(() => ({
   reprocess: vi.fn(),
   rematch: vi.fn(),
   artwork: vi.fn(),
+  info: vi.fn(),
 }));
 
 vi.mock('#web/shared/lib/auth', () => ({
@@ -24,6 +25,9 @@ vi.mock('#web/features/catalog/rematch-dialog.component', () => ({
 }));
 vi.mock('#web/features/catalog/artwork-dialog.component', () => ({
   ArtworkDialog: { call: seen.artwork },
+}));
+vi.mock('#web/features/catalog/title-info-dialog.component', () => ({
+  TitleInfoDialog: { call: seen.info },
 }));
 vi.mock('#web/shared/ui/media-info-modal.component', () => ({
   MediaInfoModal: { call: vi.fn() },
@@ -87,7 +91,7 @@ it('reprocesses the title and says it changed', async () => {
 });
 
 it('says the title changed only once a new match was applied', async () => {
-  seen.rematch.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+  seen.rematch.mockResolvedValueOnce('dismissed').mockResolvedValueOnce('applied');
   const onChanged = show('show', ['library.manage']);
 
   press('Fix the match');
@@ -97,6 +101,18 @@ it('says the title changed only once a new match was applied', async () => {
 
   await waitFor(() => expect(onChanged).toHaveBeenCalled());
   expect(seen.rematch).toHaveBeenCalledWith({ kind: 'show', id: 'm1', title: 'Heat' });
+});
+
+it('opens the title to writing by hand when the person asks from the match', async () => {
+  seen.rematch.mockResolvedValue('edit');
+  const onChanged = show('item', ['library.manage']);
+
+  press('Fix the match');
+
+  await waitFor(() =>
+    expect(seen.info).toHaveBeenCalledWith({ kind: 'item', id: 'm1', title: 'Heat' }),
+  );
+  expect(onChanged).not.toHaveBeenCalled();
 });
 
 it('opens the artwork of the title', () => {

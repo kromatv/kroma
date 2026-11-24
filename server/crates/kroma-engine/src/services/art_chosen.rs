@@ -1,6 +1,7 @@
-//! The poster and the backdrop an admin chooses for a title (MEDIA-50). They
-//! come before the pictures kept beside its files and before fetched art, and
-//! a refresh of its metadata leaves them where they are (LIB-44).
+//! The poster, the backdrop and the logo an admin chooses for a title
+//! (MEDIA-50, MEDIA-54). They come before the pictures kept beside its files
+//! and before fetched art, and a refresh of its metadata leaves them where they
+//! are (LIB-44).
 
 use anyhow::Result;
 

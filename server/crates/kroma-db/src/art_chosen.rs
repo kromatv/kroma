@@ -1,5 +1,5 @@
-//! The poster and the backdrop an admin chose for a title. They come before the
-//! pictures kept beside its files, which come before fetched art.
+//! The poster, the backdrop and the logo an admin chose for a title. They come
+//! before the pictures kept beside its files, which come before fetched art.
 
 use crate::art_beside::Urls;
 use crate::{params, Connection, Pool, Result};

@@ -3,7 +3,7 @@
 
 # Requirement index
 
-829 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+833 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -562,6 +562,9 @@
 - **LIB-88** (SHIPPED) - A person can write a sort title for a title (LIB-83), and a `.nfo` <sub>[README.md](library/README.md)</sub>
 - **LIB-89** (SHIPPED) - An episode takes its name, summary and air date from the `.nfo` file <sub>[README.md](library/README.md)</sub>
 - **LIB-90** (SHIPPED) - A person who manages the library can write an episode's name, air date <sub>[README.md](library/README.md)</sub>
+- **LIB-91** (SHIPPED) - The backdrops behind the sign-in screen, the notification that new <sub>[README.md](library/README.md)</sub>
+- **LIB-92** (SHIPPED) - A film's or a show's `.nfo` file (LIB-84) that names no provider id, <sub>[README.md](library/README.md)</sub>
+- **LIB-93** (SHIPPED) - When a person's search for a film's or a show's match finds nothing at <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 
@@ -618,6 +621,7 @@
 - **MEDIA-51** (SHIPPED) - The logo kept beside a matched title's files, the title's name
 - **MEDIA-52** (SHIPPED) - The thumbnail kept beside an episode's file comes before the
 - **MEDIA-53** (SHIPPED) - A show's page draws its seasons as a row of posters, the one on
+- **MEDIA-54** (SHIPPED) - A person who manages the library can upload a logo for a matched
 
 ## MOD - [modules](modules/)
 

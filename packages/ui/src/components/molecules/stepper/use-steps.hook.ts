@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
 import { useControllable } from '#ui/lib/use-controllable.hook';
 
@@ -59,9 +59,9 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
     setVisited(index);
   }
 
-  const off = useMemo(() => new Set(disabled), [disabled]);
-  const done = useMemo(() => (complete ? new Set(complete) : null), [complete]);
-  const ajar = useMemo(() => new Set(open), [open]);
+  const off = new Set(disabled);
+  const done = complete ? new Set(complete) : null;
+  const ajar = new Set(open);
 
   const seek = (from: number, delta: 1 | -1) => {
     for (let at = from + delta; at >= 0 && at < steps.length; at += delta) {
@@ -99,30 +99,24 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
 
   // Plain callbacks, not stable ones: both are read while a part renders, and a
   // frozen closure would answer from the render before the flow moved.
-  const isComplete = useCallback(
-    (step: string) => {
-      if (done) {
-        return done.has(step);
-      }
-      const at = steps.indexOf(step);
-      return at !== -1 && at < reached;
-    },
-    [done, steps, reached],
-  );
+  const isComplete = (step: string) => {
+    if (done) {
+      return done.has(step);
+    }
+    const at = steps.indexOf(step);
+    return at !== -1 && at < reached;
+  };
 
-  const isReachable = useCallback(
-    (step: string) => {
-      const at = steps.indexOf(step);
-      if (at === -1 || off.has(step)) {
-        return false;
-      }
-      if (done) {
-        return step === current || done.has(step) || ajar.has(step);
-      }
-      return at <= reached;
-    },
-    [done, ajar, off, steps, reached, current],
-  );
+  const isReachable = (step: string) => {
+    const at = steps.indexOf(step);
+    if (at === -1 || off.has(step)) {
+      return false;
+    }
+    if (done) {
+      return step === current || done.has(step) || ajar.has(step);
+    }
+    return at <= reached;
+  };
 
   return {
     steps,

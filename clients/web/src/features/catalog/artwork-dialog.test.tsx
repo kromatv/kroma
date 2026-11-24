@@ -106,7 +106,7 @@ it('goes back to the slots and lets go of the picture when the framing is cancel
   press('Cancel');
 
   expect(screen.queryByRole('button', { name: 'Move the picture' })).toBeNull();
-  expect(screen.getAllByRole('button', { name: 'Upload a picture' })).toHaveLength(2);
+  expect(screen.getAllByRole('button', { name: 'Upload a picture' })).toHaveLength(3);
   expect(revokeObjectURL).toHaveBeenCalledWith(PICKED_URL);
   expect(art.choose).not.toHaveBeenCalled();
 });
@@ -125,6 +125,22 @@ it('sends the picture as picked for the poster when the browser cannot draw the 
     expect(art.choose).toHaveBeenCalledWith({ kind: 'item', id: 'm1', role: 'poster' }, PICKED),
   );
   expect(screen.queryByRole('button', { name: 'Restore the automatic picture' })).toBeNull();
+});
+
+it('sends a picked logo as it is, without a frame', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  art.choose.mockResolvedValue({ url: '/api/images/chosen-c.webp' });
+  open('show', 's1');
+
+  await waitFor(() => expect(art.get).toHaveBeenCalledWith('show', 's1'));
+  pick(2, PICKED);
+
+  await waitFor(() =>
+    expect(art.choose).toHaveBeenCalledWith({ kind: 'show', id: 's1', role: 'logo' }, PICKED),
+  );
+  expect(screen.getByText('Logo')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Move the picture' })).toBeNull();
+  expect(createObjectURL).not.toHaveBeenCalled();
 });
 
 it('restores the automatic picture only where one was chosen', async () => {
@@ -161,7 +177,7 @@ it('shows the picture the page shows where none was uploaded, and says which is 
 
   expect(await screen.findByText('Uploaded')).toBeTruthy();
 
-  expect(screen.getAllByText('Automatic')).toHaveLength(1);
+  expect(screen.getAllByText('Automatic')).toHaveLength(2);
   expect(document.querySelector('img[src="/api/images/chosen-a.webp"]')).not.toBeNull();
   expect(document.querySelector('img[src="/api/images/beside-backdrop.webp"]')).not.toBeNull();
   expect(document.querySelector('img[src="/api/images/beside-poster.webp"]')).toBeNull();

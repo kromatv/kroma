@@ -19,13 +19,22 @@ const sDefinition = styles({
   backdrop: { width: '100%' },
 });
 
-/** Each slot's width over its height, the shape its frame takes. */
-export const ART_ASPECT: Readonly<Record<ArtRole, number>> = { poster: 2 / 3, backdrop: 16 / 9 };
+interface FrameShape {
+  aspect: number;
+  output: CropOutput;
+}
 
-const OUTPUT: Readonly<Record<ArtRole, CropOutput>> = {
-  poster: { width: 780, type: 'image/jpeg', quality: 0.95 },
-  backdrop: { width: 1920, type: 'image/jpeg', quality: 0.95 },
+const SHAPES: Readonly<Partial<Record<ArtRole, FrameShape>>> = {
+  poster: { aspect: 2 / 3, output: { width: 780, type: 'image/jpeg', quality: 0.95 } },
+  backdrop: { aspect: 16 / 9, output: { width: 1920, type: 'image/jpeg', quality: 0.95 } },
 };
+
+/** The frame a slot's picture is cropped to before it is sent: its width over
+ * its height and the file written. Null for a slot sent as picked, the logo,
+ * which keeps its own shape and its transparency. */
+export function frameShapeOf(role: ArtRole): FrameShape | null {
+  return SHAPES[role] ?? null;
+}
 
 interface Band {
   framing: ArtworkFraming;
@@ -66,7 +75,7 @@ function FramingActions({ framing, onCancel, onFramed }: Readonly<Band>) {
       return;
     }
     setBusy(true);
-    void crop(OUTPUT[framing.role])
+    void crop(frameShapeOf(framing.role)?.output)
       .catch(() => null)
       .then((framed) => onFramed(framed ?? framing.file));
   };

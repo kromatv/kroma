@@ -1,10 +1,10 @@
 //! The backdrop sample behind the anonymous sign-in screen.
 
 use anyhow::Result;
-use rusqlite::{Connection, Row};
+use rusqlite::Row;
 
 use super::{present_show, SplashEntry};
-use crate::{metadata_core, translations, Pool};
+use crate::{localize, Pool};
 
 // The scan only knows a year when the file name carried one (shows rarely do);
 // the enriched release date fills the gap.
@@ -37,7 +37,7 @@ pub fn splash_entries(pool: &Pool, limit: u32, locale: &str) -> Result<Vec<Splas
         .prepare(SPLASH_SQL)?
         .query_map([limit], splash_row)?
         .collect::<rusqlite::Result<_>>()?;
-    captioned(&conn, &mut entries, locale)?;
+    localize::overlay_splash(&conn, &mut entries, locale)?;
     Ok(entries.into_iter().map(|(_, e)| e).collect())
 }
 
@@ -56,32 +56,18 @@ fn splash_row(r: &Row) -> rusqlite::Result<(String, SplashEntry)> {
     ))
 }
 
-fn captioned(conn: &Connection, entries: &mut [(String, SplashEntry)], locale: &str) -> Result<()> {
-    for (subject, kind) in [
-        (metadata_core::ITEM, "movie"),
-        (metadata_core::SHOW, "show"),
-    ] {
-        let ids: Vec<&str> = entries
-            .iter()
-            .filter(|(_, e)| e.kind == kind)
-            .map(|(id, _)| id.as_str())
-            .collect();
-        let tr = translations::resolve_many(conn, subject, &ids, locale)?;
-        for (id, entry) in entries.iter_mut().filter(|(_, e)| e.kind == kind) {
-            if let Some(title) = tr.get(id).and_then(|d| d.title.clone()) {
-                entry.title = title;
-            }
-        }
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use rusqlite::{params, Connection};
 
+    use kroma_domain::title_edit::TitleEdit;
+
     use super::*;
+    use crate::art_beside::{BACKDROP, POSTER};
     use crate::media::test_support::*;
+    use crate::metadata_core;
+    use crate::testing::keep_beside;
+    use crate::title_edits::{self, Title};
 
     fn seed_backdrop(conn: &Connection, kind: &str, id: &str, backdrop: &str) {
         conn.execute(
@@ -206,5 +192,62 @@ mod tests {
         }
         assert_eq!(splash_entries(&p, 2, "fr").unwrap().len(), 2);
         assert!(splash_entries(&p, 0, "fr").unwrap().is_empty());
+    }
+
+    #[test]
+    fn splash_shows_the_name_and_year_written_for_a_title_and_the_backdrop_kept_for_it() {
+        let p = pool();
+        {
+            let conn = p.get().unwrap();
+            conn.execute(
+                "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','movies','/x','t')",
+                [],
+            )
+            .unwrap();
+            seed_movie(&conn, "m1", "dune.part.one", "lib");
+            seed_backdrop(&conn, metadata_core::ITEM, "m1", "/b/m1.jpg");
+        }
+        crate::translations::put(
+            &p,
+            metadata_core::ITEM,
+            "m1",
+            "fr",
+            "tmdb",
+            &crate::translations::TransData {
+                title: Some("Dune, première partie".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let written = TitleEdit {
+            title: Some("Dune, version longue".into()),
+            year: Some(2022),
+            ..Default::default()
+        };
+        let film = Title {
+            kind: metadata_core::ITEM,
+            id: "m1",
+        };
+        title_edits::write(&p, film, &written).unwrap();
+        keep_beside(
+            &p,
+            &[
+                (metadata_core::ITEM, "m1", BACKDROP),
+                (metadata_core::ITEM, "m1", POSTER),
+            ],
+        );
+
+        let entries = splash_entries(&p, 10, "fr").unwrap();
+
+        assert_eq!(entries[0].title, "Dune, version longue");
+        assert_eq!(entries[0].year, Some(2022));
+        assert_eq!(
+            entries[0].backdrop_url,
+            "/api/images/beside-m1-backdrop.webp"
+        );
+        assert_eq!(
+            entries[0].poster_url.as_deref(),
+            Some("/api/images/beside-m1-poster.webp")
+        );
     }
 }

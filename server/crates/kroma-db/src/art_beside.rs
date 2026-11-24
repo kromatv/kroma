@@ -24,6 +24,24 @@ pub const STILL: &str = "still";
 /// The subject kind of a picture kept as a season's, under [`season_id`].
 pub const SEASON: &str = "season";
 
+/// The SQL that reads the URL kept for one picture of a title, the one an
+/// admin chose before the one beside its files, or NULL:
+/// `kept_url!("show", "i.show_id", "poster")`.
+macro_rules! kept_url {
+    ($kind:literal, $id:literal, $role:literal) => {
+        concat!(
+            "(SELECT k.url FROM art_kept k WHERE k.subject_kind = '",
+            $kind,
+            "' AND k.subject_id = ",
+            $id,
+            " AND k.role = '",
+            $role,
+            "' ORDER BY k.precedence DESC LIMIT 1)"
+        )
+    };
+}
+pub(crate) use kept_url;
+
 const INSERT: &str = "INSERT OR REPLACE INTO art_beside \
                       (subject_kind, subject_id, role, library, picture, url) \
                       VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
@@ -179,6 +197,10 @@ impl Art {
         if let Some(still) = still {
             meta.get_or_insert_with(Metadata::blank).backdrop_url = Some(still.clone());
         }
+    }
+
+    pub(crate) fn urls(&self, id: &str) -> Option<&Urls> {
+        self.0.get(id)
     }
 
     pub(crate) fn poster(&self, id: &str) -> Option<String> {

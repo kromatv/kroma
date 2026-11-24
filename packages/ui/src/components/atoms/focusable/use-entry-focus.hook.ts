@@ -1,5 +1,5 @@
 import type { NodeHandle } from '@kromatv/spatial-nav/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFocusEntry } from '#ui/lib/focus-entry';
 
 /** The screen-entry half of a focusable: whether this control is the one the
@@ -25,10 +25,10 @@ function useEntryFocus(autoFocus: boolean | undefined, press: () => void) {
   // Moves the ring before it acts: a click reaches a control the navigator does
   // not think is focused, and acting without moving focus leaves the next arrow
   // press carrying on from wherever the remote left the highlight.
-  const pointerPress = useCallback(() => {
+  const pointerPress = () => {
     entry.current?.focus();
     press();
-  }, [press]);
+  };
 
   return { entry, isEntry, pointerPress };
 }

@@ -188,6 +188,10 @@ holding but cannot place.
 title or episode, and binds the file to it. The binding is remembered against the file, so a
 later rescan does not undo it.
 
+**LIB-93** (SHIPPED) - When a person's search for a film's or a show's match finds nothing at
+the provider, the screen offers to write the title's info by hand (LIB-83) instead, so a
+title the provider does not know is never left without a way forward.
+
 **LIB-34** (AGREED) - **Rename on disk.** A name fixed to the convention above matches
 automatically on the next rescan and leaves the Unmatched view. Neither repair is privileged
 over the other.
@@ -205,6 +209,13 @@ bring. Every identity comes over, and the ones somebody fixed come with them.
 title to that id ahead of KROMA's own reading of the name, behind a match made by hand (LIB-33)
 and one an import brought (LIB-78). A title already matched to another id by its name is
 matched again to the file's at the next scan.
+
+**LIB-92** (SHIPPED) - A film's or a show's `.nfo` file (LIB-84) that names no provider id,
+only the title's IMDb or TheTVDB id as Kodi, Jellyfin and Plex write them, matches the title
+to the record the provider gives for that id. The provider is asked once, and its answer holds
+until the file changes. Such a file comes behind a provider id that the file or an import
+names (LIB-85, LIB-78), and one the provider knows nothing about leaves the title to be
+matched by its name.
 
 **Matches two things.**
 
@@ -280,6 +291,11 @@ does (LIB-84). A file that describes several episodes gives the first.
 and summary by hand, from the episode's row on its show's page. What they write comes before the
 episode's `.nfo` file (LIB-89) and the provider's text, field by field and in every language, and
 a rescan or a refresh keeps it, as for a film (LIB-83).
+
+**LIB-91** (SHIPPED) - The backdrops behind the sign-in screen, the notification that new
+titles arrived and the most-watched panel of the dashboard name a title by what a person wrote
+or its `.nfo` file says (LIB-83, LIB-84), before the scanned or fetched name. They show the
+poster or the backdrop kept for it (MEDIA-48 to MEDIA-50) before the fetched one.
 
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.

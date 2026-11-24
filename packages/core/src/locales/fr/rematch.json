@@ -8,6 +8,7 @@
   "rematch.groupOther": "Autres résultats",
   "rematch.loadFailed": "Impossible de charger les propositions TMDB.",
   "rematch.noResults": "Aucun résultat sur TMDB pour cette recherche.",
+  "rematch.noResultsHint": "Vous pouvez écrire vous-même son nom, son année et son résumé.",
   "rematch.parsedAs": "Détecté comme {title}",
   "rematch.reset": "Rétablir l'identification automatique",
   "rematch.search": "Rechercher",

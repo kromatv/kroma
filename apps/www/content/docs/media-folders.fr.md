@@ -131,9 +131,12 @@ Series/
   changement sur un écran déjà ouvert.
 
 Pour changer l'image d'un titre sans toucher à son dossier, ouvrez le titre et
-choisissez **Modifier les visuels**. Une affiche ou un fond envoyé à cet endroit
-passe avant l'image du dossier et celle d'Internet, et **Rétablir l'image
-automatique** les fait revenir. Il faut le droit de gérer la bibliothèque.
+choisissez **Modifier les visuels**. Une affiche, un fond ou un logo envoyé à cet
+endroit passe avant l'image du dossier et celle d'Internet, et **Rétablir l'image
+automatique** les fait revenir. Une affiche ou un fond s'ouvre d'abord dans un
+cadre à sa forme, 2:3 ou 16:9 : déplacez l'image, zoomez ou tournez-la, puis
+choisissez **Utiliser cette image**. Un logo part tel quel et garde sa
+transparence. Il faut le droit de gérer la bibliothèque.
 
 ### Titres et résumés des fichiers .nfo
 
@@ -167,6 +170,11 @@ Series/
   `<tmdbid>`, ou s'il se termine par le lien de sa page sur themoviedb.org,
   KROMA reconnaît le titre à ce numéro plutôt qu'à son nom. Une fiche corrigée
   avec **Corriger la fiche** passe avant le fichier.
+- Si le fichier ne donne que le numéro IMDb ou TheTVDB du titre, dans
+  `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>` ou
+  `<tvdbid>`, ou s'il se termine par le lien de sa page sur imdb.com, KROMA
+  demande une fois à TMDB à quel titre correspond ce numéro, puis s'en sert
+  pour reconnaître le titre.
 - Le texte du fichier s'affiche à la place de celui trouvé sur Internet, même
   quand KROMA reconnaît le titre. Ce que vous écrivez avec **Modifier les
   informations** passe avant le fichier.
