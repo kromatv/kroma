@@ -1,8 +1,9 @@
 //! Which TMDB id a title is held to ahead of its name, and who says so: a
 //! match made by hand, then an acquisition, then the identity an import kept,
-//! then the `.nfo` file beside the title. An identity that names no TMDB id is
-//! asked of TMDB once, and the answer is kept; it waits behind a file that
-//! names one.
+//! then the `.nfo` file beside the title. An identity or a file that names no
+//! TMDB id, only an IMDb or a TheTVDB one, is asked of TMDB once, and the
+//! answer is kept. Such an identity waits behind a file that names a TMDB id,
+//! and such a file behind the identity.
 
 use std::collections::HashMap;
 
@@ -40,24 +41,23 @@ pub(super) fn lead_for(state: &SharedState, kind: &str, id: &str) -> Option<Lead
     let identity = db::imports::identity_lead(&conn, subject, id)
         .ok()
         .flatten();
-    match identity {
-        Some(Lead::Tmdb(_)) => identity,
-        _ => db::text_beside::lead(&conn, kind, id)
-            .ok()
-            .flatten()
-            .map(Lead::Tmdb)
-            .or(identity),
+    let beside = db::text_beside::lead(&conn, kind, id).ok().flatten();
+    first_lead(identity, beside)
+}
+
+fn first_lead(identity: Option<Lead>, beside: Option<Lead>) -> Option<Lead> {
+    match (identity, beside) {
+        (Some(Lead::Tmdb(tmdb)), _) | (_, Some(Lead::Tmdb(tmdb))) => Some(Lead::Tmdb(tmdb)),
+        (identity, beside) => identity.or(beside),
     }
 }
 
-fn held(pool: &Pool, subject: Subject) -> (HashMap<String, u64>, HashMap<String, Elsewhere>) {
-    let kind = match subject {
-        Subject::Movie => db::metadata_core::ITEM,
-        Subject::Show => db::metadata_core::SHOW,
-    };
-    let mut named = db::text_beside::leads(pool, kind).unwrap_or_default();
+type Held = (HashMap<String, u64>, HashMap<String, Elsewhere>);
+
+fn split(leads: HashMap<String, Lead>) -> Held {
+    let mut named = HashMap::new();
     let mut unasked = HashMap::new();
-    for (id, lead) in db::imports::identity_leads(pool, subject).unwrap_or_default() {
+    for (id, lead) in leads {
         match lead {
             Lead::Tmdb(tmdb) => {
                 named.insert(id, tmdb);
@@ -68,6 +68,26 @@ fn held(pool: &Pool, subject: Subject) -> (HashMap<String, u64>, HashMap<String,
         }
     }
     (named, unasked)
+}
+
+fn held(pool: &Pool, subject: Subject) -> Held {
+    let kind = kind_of(subject);
+    let beside = db::text_beside::leads(pool, kind).unwrap_or_default();
+    let identities = db::imports::identity_leads(pool, subject).unwrap_or_default();
+    let (mut named, beside_unasked) = split(beside);
+    let (imported, mut unasked) = split(identities);
+    named.extend(imported);
+    for (id, elsewhere) in beside_unasked {
+        unasked.entry(id).or_insert(elsewhere);
+    }
+    (named, unasked)
+}
+
+fn kind_of(subject: Subject) -> &'static str {
+    match subject {
+        Subject::Movie => db::metadata_core::ITEM,
+        Subject::Show => db::metadata_core::SHOW,
+    }
 }
 
 pub(super) fn load_pins(pool: &Pool) -> Pins {
@@ -117,6 +137,9 @@ pub(super) fn identified(eng: &Engine, mut job: Job) -> Job {
     };
     if let Err(e) = db::imports::answer_identities(&eng.pool, subject, &unasked, found) {
         warn!(id = %job.id, error = %e, "failed to keep what TMDB answered for an imported identity");
+    }
+    if let Err(e) = db::text_beside::answer(&eng.pool, kind_of(subject), &unasked, found) {
+        warn!(id = %job.id, error = %e, "failed to keep what TMDB answered for the ids a .nfo names");
     }
     job.pin = job.pin.or(found);
     job

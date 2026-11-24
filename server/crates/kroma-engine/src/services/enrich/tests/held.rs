@@ -105,6 +105,26 @@ pub(super) fn files_beside_name(state: &SharedState, files: &[(&'static str, &st
             },
             edit: Default::default(),
             tmdb: Some(tmdb),
+            elsewhere: Elsewhere::default(),
+        })
+        .collect();
+    db::text_beside::replace(&state.db, &texts, &HashSet::new()).unwrap();
+}
+
+pub(super) fn files_beside_on(state: &SharedState, files: &[(&'static str, &str, HeldIds)]) {
+    let texts: Vec<Text> = files
+        .iter()
+        .map(|(kind, id, ids)| Text {
+            nfo: Nfo {
+                subject_kind: kind,
+                subject_id: (*id).into(),
+                library: "lib".into(),
+                path: format!("/media/{kind}/{id}.nfo"),
+                modified: None,
+            },
+            edit: Default::default(),
+            tmdb: ids.tmdb,
+            elsewhere: ids.elsewhere.clone(),
         })
         .collect();
     db::text_beside::replace(&state.db, &texts, &HashSet::new()).unwrap();

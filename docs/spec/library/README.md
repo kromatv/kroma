@@ -206,6 +206,13 @@ title to that id ahead of KROMA's own reading of the name, behind a match made b
 and one an import brought (LIB-78). A title already matched to another id by its name is
 matched again to the file's at the next scan.
 
+**LIB-92** (SHIPPED) - A film's or a show's `.nfo` file (LIB-84) that names no provider id,
+only the title's IMDb or TheTVDB id as Kodi, Jellyfin and Plex write them, matches the title
+to the record the provider gives for that id. The provider is asked once, and its answer holds
+until the file changes. Such a file comes behind a provider id that the file or an import
+names (LIB-85, LIB-78), and one the provider knows nothing about leaves the title to be
+matched by its name.
+
 **Matches two things.**
 
 **LIB-35** (AGREED) - A file that could be more than one identity, a title shared by a remake

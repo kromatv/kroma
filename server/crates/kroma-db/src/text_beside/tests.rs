@@ -1,4 +1,5 @@
 use super::*;
+use crate::imports::{Elsewhere, Lead};
 use crate::metadata_core::{ITEM, SHOW};
 use crate::testing::temp_pool;
 
@@ -16,7 +17,14 @@ fn text(id: &str, library: &str, title: &str) -> Text {
             ..Default::default()
         },
         tmdb: None,
+        elsewhere: Elsewhere::default(),
     }
+}
+
+fn on_imdb(id: &str, imdb: &str) -> Text {
+    let mut text = text(id, "lib", "Heat");
+    text.elsewhere.imdb = Some(imdb.into());
+    text
 }
 
 fn kept(libraries: &[&str]) -> HashSet<String> {
@@ -44,6 +52,7 @@ fn a_scan_replaces_what_an_earlier_one_read() {
             modified: Some(1_700_000_000_000),
             edit: text("m1", "lib", "Tape three").edit,
             tmdb: None,
+            elsewhere: Elsewhere::default(),
         })
     );
 }
@@ -91,8 +100,58 @@ fn the_tmdb_id_a_file_names_leads_its_own_title() {
     let leads = leads(&pool, ITEM).unwrap();
 
     let conn = pool.get().unwrap();
-    assert_eq!(leads, HashMap::from([("m1".to_string(), 949)]));
-    assert_eq!(lead(&conn, SHOW, "m1").unwrap(), Some(1438));
+    assert_eq!(leads, HashMap::from([("m1".to_string(), Lead::Tmdb(949))]));
+    assert_eq!(lead(&conn, SHOW, "m1").unwrap(), Some(Lead::Tmdb(1438)));
     assert_eq!(lead(&conn, ITEM, "m2").unwrap(), None);
     assert_eq!(read_before(&pool).unwrap()["/media/m1.nfo"].tmdb, Some(949));
+}
+
+#[test]
+fn a_file_that_names_only_an_imdb_or_a_tvdb_id_leads_to_asking_tmdb() {
+    let pool = temp_pool("text-beside");
+    let mut wire = text("x1", "lib", "The Wire");
+    wire.nfo.subject_kind = SHOW;
+    wire.elsewhere.tvdb = Some(79126);
+    replace(&pool, &[on_imdb("m1", "tt0113277"), wire], &kept(&[])).unwrap();
+
+    let leads = leads(&pool, ITEM).unwrap();
+
+    let conn = pool.get().unwrap();
+    let heat = Elsewhere {
+        imdb: Some("tt0113277".into()),
+        tvdb: None,
+    };
+    let the_wire = Elsewhere {
+        imdb: None,
+        tvdb: Some(79126),
+    };
+    assert_eq!(leads, HashMap::from([("m1".to_string(), Lead::Ask(heat))]));
+    assert_eq!(lead(&conn, SHOW, "x1").unwrap(), Some(Lead::Ask(the_wire)));
+}
+
+#[test]
+fn what_tmdb_answered_for_a_file_leads_its_title_and_is_read_back_with_the_file() {
+    let pool = temp_pool("text-beside");
+    replace(&pool, &[on_imdb("m1", "tt0113277")], &kept(&[])).unwrap();
+    let asked = on_imdb("m1", "tt0113277").elsewhere;
+
+    answer(&pool, ITEM, &asked, Some(949)).unwrap();
+
+    let conn = pool.get().unwrap();
+    let read = read_before(&pool).unwrap();
+    assert_eq!(lead(&conn, ITEM, "m1").unwrap(), Some(Lead::Tmdb(949)));
+    assert_eq!(read["/media/m1.nfo"].tmdb, Some(949));
+    assert_eq!(read["/media/m1.nfo"].elsewhere, asked);
+}
+
+#[test]
+fn a_file_tmdb_knows_nothing_about_leads_nowhere() {
+    let pool = temp_pool("text-beside");
+    replace(&pool, &[on_imdb("m1", "tt0000002")], &kept(&[])).unwrap();
+
+    answer(&pool, ITEM, &on_imdb("m1", "tt0000002").elsewhere, None).unwrap();
+
+    let conn = pool.get().unwrap();
+    assert_eq!(lead(&conn, ITEM, "m1").unwrap(), None);
+    assert!(leads(&pool, ITEM).unwrap().is_empty());
 }

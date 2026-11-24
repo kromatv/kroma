@@ -167,6 +167,11 @@ Series/
   `<tmdbid>`, ou s'il se termine par le lien de sa page sur themoviedb.org,
   KROMA reconnaît le titre à ce numéro plutôt qu'à son nom. Une fiche corrigée
   avec **Corriger la fiche** passe avant le fichier.
+- Si le fichier ne donne que le numéro IMDb ou TheTVDB du titre, dans
+  `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>` ou
+  `<tvdbid>`, ou s'il se termine par le lien de sa page sur imdb.com, KROMA
+  demande une fois à TMDB à quel titre correspond ce numéro, puis s'en sert
+  pour reconnaître le titre.
 - Le texte du fichier s'affiche à la place de celui trouvé sur Internet, même
   quand KROMA reconnaît le titre. Ce que vous écrivez avec **Modifier les
   informations** passe avant le fichier.
