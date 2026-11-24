@@ -281,6 +281,11 @@ and summary by hand, from the episode's row on its show's page. What they write 
 episode's `.nfo` file (LIB-89) and the provider's text, field by field and in every language, and
 a rescan or a refresh keeps it, as for a film (LIB-83).
 
+**LIB-91** (SHIPPED) - The backdrops behind the sign-in screen, the notification that new
+titles arrived and the most-watched panel of the dashboard name a title by what a person wrote
+or its `.nfo` file says (LIB-83, LIB-84), before the scanned or fetched name. They show the
+poster or the backdrop kept for it (MEDIA-48 to MEDIA-50) before the fetched one.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

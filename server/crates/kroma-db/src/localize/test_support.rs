@@ -1,5 +1,5 @@
+pub(super) use crate::testing::keep_beside;
 use crate::testing::TempPool;
-use crate::art_beside::Picture;
 use crate::translations::TransData;
 
 use kroma_domain::{CastMember, Kind, MediaItem, Metadata, Show};
@@ -91,19 +91,4 @@ pub(super) fn td(title: &str, characters: Vec<Option<String>>) -> TransData {
         characters,
         ..Default::default()
     }
-}
-
-pub(super) fn keep_beside(pool: &TempPool, pictures: &[(&'static str, &str, &'static str)]) {
-    let pictures: Vec<Picture> = pictures
-        .iter()
-        .map(|(kind, id, role)| Picture {
-            subject_kind: kind,
-            subject_id: (*id).into(),
-            library: "lib".into(),
-            role,
-            path: format!("/media/{id}/{role}.jpg"),
-            url: format!("/api/images/beside-{id}-{role}.webp"),
-        })
-        .collect();
-    crate::art_beside::replace(pool, &pictures, &Default::default()).unwrap();
 }
