@@ -206,6 +206,32 @@ fn a_name_written_by_hand_comes_before_the_provider_one_in_every_language() {
 }
 
 #[test]
+fn an_episode_named_by_its_file_wears_the_name_written_for_it() {
+    let p = pool();
+    translations::put(
+        &p,
+        "episode",
+        "e1",
+        "en",
+        translations::TMDB,
+        &td("Pilot", vec![]),
+    )
+    .unwrap();
+    let written = Title {
+        kind: ITEM,
+        id: "e1",
+    };
+    title_edits::write(&p, written, &edit("Kassa")).unwrap();
+    let mut episode = item("e1", Kind::Episode);
+    episode.episode_title = Some("From the file".into());
+
+    overlay_each(&p, [&mut episode], "en").unwrap();
+
+    assert_eq!(episode.title, "Kassa");
+    assert_eq!(episode.episode_title.as_deref(), Some("Kassa"));
+}
+
+#[test]
 fn a_summary_written_for_a_film_never_matched_shows_the_poster_beside_it() {
     let p = pool();
     keep_beside(&p, &[(ITEM, "m1", POSTER)]);

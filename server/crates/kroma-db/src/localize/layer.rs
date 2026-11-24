@@ -55,6 +55,7 @@ impl Layer {
         }
         if let Some(edit) = self.edits.get(&item.id) {
             edit.onto(item);
+            rename(item, edit.title.as_deref());
         }
     }
 
@@ -90,14 +91,19 @@ impl Layer {
 
 pub(super) fn apply_item(item: &mut MediaItem, tr: &TransData) {
     apply(item.metadata.as_mut(), tr);
-    if let Some(t) = &tr.title {
-        item.title = t.clone();
-        // An episode row prints `episodeTitle ?? title`, so leaving the scan's
-        // name here keeps the filename's language on a card whose title has
-        // just been translated.
-        if item.episode_title.is_some() {
-            item.episode_title = Some(t.clone());
-        }
+    rename(item, tr.title.as_deref());
+}
+
+fn rename(item: &mut MediaItem, title: Option<&str>) {
+    let Some(title) = title else {
+        return;
+    };
+    title.clone_into(&mut item.title);
+    // An episode row prints `episodeTitle ?? title`, so leaving the scan's
+    // name here keeps the filename's language on a card whose title has
+    // just been translated or written.
+    if item.episode_title.is_some() {
+        item.episode_title = Some(title.to_string());
     }
 }
 

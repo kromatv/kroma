@@ -29,7 +29,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function open(kind: 'item' | 'show', id: string) {
+function open(kind: 'item' | 'show' | 'episode', id: string) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   inputHost.render(
     <QueryClientProvider client={queries}>
@@ -77,6 +77,30 @@ it('shows what was written and saves what changed', async () => {
     year: null,
     released: '1987-03-01',
     genres: ['Crime', 'Drama'],
+  });
+});
+
+it('asks an episode for its name, air date and summary, and saves them on the item', async () => {
+  edits.get.mockResolvedValue({ ...WRITTEN, title: 'Pilot', year: null, genres: [] });
+  edits.put.mockImplementation((_kind, _id, edit) => Promise.resolve(edit));
+  const closed = open('episode', 'e1');
+
+  expect(await screen.findByDisplayValue('Pilot')).toBeTruthy();
+  expect(screen.queryByLabelText('Sort title')).toBeNull();
+  expect(screen.queryByLabelText('Genres')).toBeNull();
+  type('Air date', '2008-01-20');
+  type('Summary', 'A teacher turns to crime.');
+  save();
+
+  await closed;
+  expect(edits.get).toHaveBeenCalledWith('item', 'e1');
+  expect(edits.put).toHaveBeenCalledWith('item', 'e1', {
+    title: 'Pilot',
+    sortTitle: null,
+    overview: 'A teacher turns to crime.',
+    year: null,
+    released: '2008-01-20',
+    genres: null,
   });
 });
 

@@ -124,6 +124,8 @@ et reste après une nouvelle analyse. Videz un champ pour reprendre le texte de
 TMDB. **Films** et **Séries** trient et filtrent d'après
 ce que vous écrivez, et l'année que vous indiquez remplace la date de sortie de
 TMDB quand elles ne concordent pas.
+Pour écrire le nom, la date de diffusion ou le résumé d'un épisode, ouvrez sa
+série et choisissez **Modifier les informations** sur la ligne de l'épisode.
 
 ## Un téléviseur ou une application ne trouve pas le serveur
 

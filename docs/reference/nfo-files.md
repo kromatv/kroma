@@ -72,4 +72,5 @@ over: the episode is recognized through its show. Kodi up to v21 wrote a file
 for several episodes as one `<episodedetails>` after another, and v22 no longer
 reads one (K); KROMA reads the first.
 
-The text comes before the provider's in every language, as a film's does.
+The text comes before the provider's in every language, as a film's does. What
+a person writes with **Edit info** on the episode's row comes before the file.

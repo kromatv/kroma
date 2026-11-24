@@ -1,5 +1,7 @@
 {
   "titleInfo.action": "Modifier les informations",
+  "titleInfo.aired": "Date de diffusion",
+  "titleInfo.airedHint": "Le jour de sa première diffusion, comme 2008-01-20.",
   "titleInfo.genres": "Genres",
   "titleInfo.genresHint": "Séparez les genres par des virgules.",
   "titleInfo.hint": "Ce que vous écrivez ici remplace le texte de TMDB, dans toutes les langues. Laissez un champ vide pour reprendre celui de TMDB.",

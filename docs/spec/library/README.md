@@ -276,6 +276,11 @@ named after its video, as Kodi, Jellyfin and Plex read it. The file comes before
 text, in every language and whether or not the provider recognized the episode, as a film's
 does (LIB-84). A file that describes several episodes gives the first.
 
+**LIB-90** (SHIPPED) - A person who manages the library can write an episode's name, air date
+and summary by hand, from the episode's row on its show's page. What they write comes before the
+episode's `.nfo` file (LIB-89) and the provider's text, field by field and in every language, and
+a rescan or a refresh keeps it, as for a film (LIB-83).
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 
