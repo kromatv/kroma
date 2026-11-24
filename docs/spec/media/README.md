@@ -181,6 +181,13 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
 - **MEDIA-33** (AGREED) - Image sources rank by trust: embedded in the media file, then a
   sidecar file next to it, then fetched by the [`library/`](../library/) metadata refresh. A
   local image outranks a fetched one, and a person's explicit choice outranks both.
+- **MEDIA-48** (SHIPPED) - A title with no fetched poster shows the poster kept beside its
+  files. For a film, that is a picture named after one of its video files, alone or followed
+  by `-poster`, or one named `poster`, `folder`, `cover`, `default` or `movie` in a folder
+  that holds no other title's video. For a show, it is one named `poster`, `folder`,
+  `cover`, `default` or `show` in the show's folder, the one above its season folders, when
+  that folder holds no other show's episode. The picture is JPEG, PNG or WebP, and its name
+  is read without regard to case. A fetched poster still comes first until MEDIA-33 ships.
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.

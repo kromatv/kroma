@@ -2,6 +2,7 @@
 //! via `ffmpeg` into `<data>/images/`. Falls back to the original remote URL
 //! if caching fails.
 
+mod beside;
 mod cache;
 mod encode;
 mod localize;
@@ -10,6 +11,7 @@ mod scratch;
 mod upload;
 mod webp_header;
 
+pub use beside::cache_picture_beside;
 pub use cache::{cache_remote, local_art_missing};
 pub(crate) use encode::encode_webp_quality;
 pub use localize::{localize, localize_title_art};
@@ -19,7 +21,7 @@ pub use upload::store_upload;
 use std::path::{Path, PathBuf};
 
 #[cfg(test)]
-mod test_support;
+pub(crate) mod test_support;
 #[cfg(test)]
 mod tests;
 

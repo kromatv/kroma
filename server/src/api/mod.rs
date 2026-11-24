@@ -125,6 +125,8 @@ mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;
 #[cfg(test)]
+mod it_posters_beside;
+#[cfg(test)]
 mod it_settings_libraries;
 #[cfg(test)]
 mod it_mail_relay;

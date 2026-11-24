@@ -8,7 +8,6 @@ use axum::response::Response;
 use serde::Deserialize;
 
 use crate::api::error::json_error;
-use crate::api::poster::render_poster;
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::i18n::ContentLocale;
@@ -17,71 +16,14 @@ use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
 
+mod posters;
+
 pub fn routes() -> Router<SharedState> {
     Router::new()
-        .route("/shows/{id}/poster", get(show_poster))
-        .route("/items/{id}/poster", get(item_poster))
+        .route("/shows/{id}/poster", get(posters::show_poster))
+        .route("/items/{id}/poster", get(posters::item_poster))
         .route("/items/{id}/card", get(item_card))
         .route("/images/{name}", get(image))
-}
-
-/// `GET /api/shows/:id/poster` → inline SVG placeholder.
-pub async fn show_poster(
-    State(state): State<SharedState>,
-    Path(id): Path<String>,
-) -> Result<Response, Response> {
-    let id2 = id.clone();
-    let title = query(&state.db, move |pool| db::show_title(&pool, &id2))
-        .await?
-        .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "show not found"))?;
-    Ok(render_poster(&id, &title))
-}
-
-/// `GET /api/items/:id/poster` → the show's real poster for an episode, else the
-/// inline SVG placeholder. Episodes have no poster of their own (enrichment only
-/// gives a still), so any poster rail (My List, search) shows the show's art.
-pub async fn item_poster(
-    State(state): State<SharedState>,
-    Path(id): Path<String>,
-    ContentLocale(locale): ContentLocale,
-) -> Result<Response, Response> {
-    let id2 = id.clone();
-    let item = query(&state.db, move |pool| {
-        let Some(mut item) = db::get_item(&pool, &id2)? else {
-            return Ok(None);
-        };
-        db::localize::overlay_each(&pool, std::iter::once(&mut item), locale)?;
-        Ok(Some(item))
-    })
-    .await?
-    .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
-    if item.kind == Kind::Episode {
-        if let Some(show_id) = item.show_id.clone() {
-            let art = query(&state.db, move |pool| {
-                let Some(mut meta) = db::show_metadata(&pool, &show_id)? else {
-                    return Ok(None);
-                };
-                db::localize::overlay_show_metadata(&pool, &show_id, &mut meta, locale)?;
-                Ok(meta.poster_url)
-            })
-            .await?;
-            if let Some(url) = art {
-                return Ok(redirect_to_art(&url));
-            }
-        }
-    }
-    Ok(render_poster(&id, &item.title))
-}
-
-// Cached for a day like the placeholder — the target is content-addressed, so a
-// stale redirect still resolves.
-fn redirect_to_art(url: &str) -> Response {
-    Response::builder()
-        .status(StatusCode::FOUND)
-        .header(header::LOCATION, url)
-        .header(header::CACHE_CONTROL, "public, max-age=86400")
-        .body(Body::empty())
-        .unwrap()
 }
 
 // A fixed bucket set keeps the on-disk cache bounded and lets clients asking
@@ -234,15 +176,7 @@ pub async fn item_card(
     Query(q): Query<CardQuery>,
     ContentLocale(locale): ContentLocale,
 ) -> Result<Response, Response> {
-    let item = query(&state.db, move |pool| {
-        let Some(mut item) = db::get_item(&pool, &id)? else {
-            return Ok(None);
-        };
-        db::localize::overlay_each(&pool, std::iter::once(&mut item), locale)?;
-        Ok(Some(item))
-    })
-    .await?
-    .ok_or_else(|| json_error(StatusCode::NOT_FOUND, "item not found"))?;
+    let item = posters::localized_item(&state, id, locale).await?;
 
     // An episode's own metadata holds only its w300 still (in `backdropUrl`),
     // which upscales badly and has no title logo: art and logo come from the
