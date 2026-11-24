@@ -20,6 +20,7 @@ import type { LayoutChangeEvent, PointerEvent } from 'react-native';
 import { Box, Row } from '#ui/components/atoms/box';
 import type { ColorValue } from '#ui/core';
 import { SERIES_COLORS } from '#ui/core/tokens';
+import { partsOf } from '#ui/lib/parts';
 import { Svg } from '#ui/lib/svg.component';
 import { useControllable } from '#ui/lib/use-controllable.hook';
 import { ChartContext, type ChartMark, type ChartSeries, type ChartState } from './chart-context';
@@ -27,7 +28,6 @@ import { Area, Bar, type ChartBarProps, type ChartTraceProps, Line } from './cha
 import {
   AXIS_ROOM,
   ChartAxis,
-  type ChartAxisProps,
   ChartFooter,
   ChartGrid,
   ChartLegend,
@@ -46,10 +46,6 @@ const MARKS: ReadonlySet<unknown> = new Set([Line, Area, Bar]);
 
 function isMark(node: ReactNode): node is MarkElement {
   return isValidElement(node) && MARKS.has(node.type);
-}
-
-function isAxis(node: ReactNode): node is ReactElement<ChartAxisProps> {
-  return isValidElement(node) && node.type === ChartAxis;
 }
 
 function isPart(node: ReactNode, part: unknown): boolean {
@@ -169,7 +165,7 @@ function Root({
 
   const kids = Children.toArray(children);
   const marks = kids.filter(isMark);
-  const axes = kids.filter(isAxis);
+  const axes = partsOf(kids, ChartAxis);
   const left = axes.find((axis) => axis.props.edge === 'left');
   const bottom = axes.find((axis) => axis.props.edge === 'bottom');
 

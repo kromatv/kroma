@@ -1,10 +1,11 @@
 import { createElement, type ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
-import { sortParts } from './parts';
+import { partsOf, sortParts } from './parts';
 
 const Title = ({ children }: Readonly<{ children?: ReactNode }>) => children;
 const Actions = ({ children }: Readonly<{ children?: ReactNode }>) => children;
 const Other = ({ children }: Readonly<{ children?: ReactNode }>) => children;
+const Choice = ({ value }: Readonly<{ value: string }>) => value;
 
 const part = (of: typeof Title, children?: ReactNode) => createElement(of, null, children);
 
@@ -58,5 +59,26 @@ describe('sortParts', () => {
 
   it('hands back empty arrays when there is no child', () => {
     expect(sortParts(undefined, Title, Actions)).toEqual([[], [], []]);
+  });
+});
+
+describe('partsOf', () => {
+  it('hands back the direct children of one part, in the order they were written, with their props', () => {
+    const children = [
+      createElement(Choice, { value: 'b' }),
+      'Texte',
+      part(Title, 'Film'),
+      createElement(Choice, { value: 'a' }),
+    ];
+
+    const choices = partsOf(children, Choice);
+
+    expect(choices.map((choice) => choice.props.value)).toEqual(['b', 'a']);
+  });
+
+  it('does not look inside a child for a part', () => {
+    const wrapped = part(Other, createElement(Choice, { value: 'a' }));
+
+    expect(partsOf(wrapped, Choice)).toEqual([]);
   });
 });

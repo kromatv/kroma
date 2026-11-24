@@ -9,9 +9,10 @@ import { fontSizes as textSizes } from '#ui/core/tokens';
 // <ListRow> takes - because a scrub is a hit test over POSITIONS, and a letter
 // cannot know where it sits in a rail it cannot see.
 
-import { Children, isValidElement, type ReactNode, useRef } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { type StyleProp, useWindowDimensions, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { partsOf } from '#ui/lib/parts';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
 import {
   AlphabetRailContext,
@@ -19,7 +20,7 @@ import {
   type LetterRange,
   PAD,
 } from './alphabet-rail-context';
-import { type AlphabetItemProps, Item } from './alphabet-rail-item.component';
+import { Item } from './alphabet-rail-item.component';
 import { Bubble, Lens, lensFor } from './alphabet-rail-lens';
 import { clampNum, type Slot, useLetterScrub } from './use-letter-scrub.hook';
 
@@ -30,15 +31,10 @@ type AlphabetRailSize = 'sm' | 'md';
 const HAND = { rowH: 21, fontSize: textSizes.caption } as const;
 
 function slotsOf(children: ReactNode): Slot[] {
-  const out: Slot[] = [];
-  for (const child of Children.toArray(children)) {
-    if (!isValidElement(child) || child.type !== Item) {
-      continue;
-    }
-    const props = child.props as AlphabetItemProps;
-    out.push({ value: props.value, present: props.disabled !== true });
-  }
-  return out;
+  return partsOf(children, Item).map(({ props }) => ({
+    value: props.value,
+    present: props.disabled !== true,
+  }));
 }
 
 function rangeIndices(slots: readonly Slot[], range: LetterRange | undefined) {
@@ -145,5 +141,6 @@ function Root({
  */
 const AlphabetRail = { Root, Item };
 
-export type { AlphabetItemProps, AlphabetRailRootProps, AlphabetRailSize, LetterRange };
+export type { AlphabetItemProps } from './alphabet-rail-item.component';
+export type { AlphabetRailRootProps, AlphabetRailSize, LetterRange };
 export { AlphabetRail };

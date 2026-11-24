@@ -1,4 +1,10 @@
-import { Children, isValidElement, type ReactNode } from 'react';
+import {
+  Children,
+  isValidElement,
+  type JSXElementConstructor,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
 
 type Sorted = ReactNode[];
 
@@ -19,4 +25,18 @@ function sortParts(children: ReactNode, ...parts: unknown[]): Sorted[] {
   return sorted;
 }
 
-export { sortParts };
+/**
+ * A Root's DIRECT children that are one part, in the order they were written,
+ * typed with that part's props so the Root can read what each declares.
+ */
+function partsOf<P>(children: ReactNode, part: JSXElementConstructor<P>): ReactElement<P>[] {
+  const found: ReactElement<P>[] = [];
+  for (const child of Children.toArray(children)) {
+    if (isValidElement<P>(child) && child.type === part) {
+      found.push(child);
+    }
+  }
+  return found;
+}
+
+export { partsOf, sortParts };
