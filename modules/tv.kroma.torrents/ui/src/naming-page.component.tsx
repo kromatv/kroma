@@ -88,6 +88,20 @@ const sDefinition = styles({
   moveRule: { borderBottomWidth: 1, borderBottomColor: 'tint/4' },
 });
 
+const SAVED_MS = 2500;
+
+function useSavedFlag(): [boolean, (saved: boolean) => void] {
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!saved) {
+      return undefined;
+    }
+    const timer = setTimeout(() => setSaved(false), SAVED_MS);
+    return () => clearTimeout(timer);
+  }, [saved]);
+  return [saved, setSaved];
+}
+
 export default function NamingPage() {
   const t = useT();
   const torrents = useTorrentsApi();
@@ -97,7 +111,7 @@ export default function NamingPage() {
   const [failed, setFailed] = useState(false);
   const [sample, setSample] = useState<{ movie: string; episode: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useSavedFlag();
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,14 +123,6 @@ export default function NamingPage() {
       })
       .catch(() => setFailed(true));
   }, [torrents]);
-
-  useEffect(() => {
-    if (!saved) {
-      return undefined;
-    }
-    const timer = setTimeout(() => setSaved(false), 2500);
-    return () => clearTimeout(timer);
-  }, [saved]);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(debounce.current), []);
