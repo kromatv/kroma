@@ -7,7 +7,7 @@
 import type { SettingGroup } from '@kromatv/client/admin';
 import { I18nProvider } from '@kromatv/ui';
 import { KitProvider } from '@kromatv/ui/kit';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AdminHostProvider } from './context';
@@ -70,6 +70,7 @@ function press(el: HTMLElement) {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -278,6 +279,37 @@ describe('text rows', () => {
 
     fireEvent.blur(textField(container));
     expect(admin.updateSettings).not.toHaveBeenCalled();
+  });
+});
+
+const scan = group([{ kind: 'toggle', value: false, label: 'Scan' }]);
+
+async function save(container: HTMLElement) {
+  await waitFor(() => expect(container.textContent).toContain('Scan'));
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+  fireEvent.click(screen.getByRole('switch', { name: 'Scan' }));
+  await vi.waitFor(() => expect(container.textContent).toContain('Saved'));
+}
+
+describe('saved notice', () => {
+  it('goes away on its own once a save lands', async () => {
+    const { container } = mount([scan]);
+    await save(container);
+
+    act(() => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    expect(container.textContent).not.toContain('Saved');
+  });
+
+  it('leaves no timer behind when the page closes before it goes', async () => {
+    const { container, unmount } = mount([scan]);
+    await save(container);
+
+    unmount();
+
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 
