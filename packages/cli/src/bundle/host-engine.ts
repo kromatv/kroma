@@ -24,6 +24,6 @@ export function interfaceOf(wasm: Uint8Array): string | null {
 }
 
 function versionNamedAt(names: string, at: number): string | null {
-  const length = names.charCodeAt(at - 1);
+  const length = names.codePointAt(at - 1) ?? 0;
   return NAME.exec(names.slice(at, at + length))?.[1] ?? null;
 }
