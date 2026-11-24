@@ -133,19 +133,22 @@ fn the_catalog_search_reads_wears_what_was_written_by_hand() {
     assert_eq!(shows[0].title, "Our show");
 }
 
-fn read_beside(pool: &TempPool, kind: &'static str, id: &str, edit: TitleEdit) {
-    let text = Text {
-        nfo: Nfo {
-            subject_kind: kind,
-            subject_id: id.into(),
-            library: "lib".into(),
-            path: format!("/media/{id}.nfo"),
-            modified: None,
-        },
-        edit,
-        tmdb: None,
-    };
-    text_beside::replace(pool, &[text], &HashSet::new()).unwrap();
+fn read_beside(pool: &TempPool, files: Vec<(&'static str, &str, TitleEdit)>) {
+    let texts: Vec<Text> = files
+        .into_iter()
+        .map(|(kind, id, edit)| Text {
+            nfo: Nfo {
+                subject_kind: kind,
+                subject_id: id.into(),
+                library: "lib".into(),
+                path: format!("/media/{id}.nfo"),
+                modified: None,
+            },
+            edit,
+            tmdb: None,
+        })
+        .collect();
+    text_beside::replace(pool, &texts, &HashSet::new()).unwrap();
 }
 
 fn in_file() -> TitleEdit {
@@ -160,7 +163,7 @@ fn in_file() -> TitleEdit {
 #[test]
 fn what_was_written_by_hand_comes_before_the_file_beside_an_unmatched_title() {
     let pool = catalog();
-    read_beside(&pool, ITEM, "m1", in_file());
+    read_beside(&pool, vec![(ITEM, "m1", in_file())]);
     let title = Title {
         kind: ITEM,
         id: "m1",
@@ -189,10 +192,12 @@ fn what_was_written_by_hand_comes_before_the_file_beside_an_unmatched_title() {
 }
 
 #[test]
-fn the_file_beside_a_title_the_provider_matched_is_not_shown() {
+fn the_file_beside_a_title_the_provider_matched_comes_before_the_provider() {
     let pool = catalog();
-    read_beside(&pool, ITEM, "m1", in_file());
-    read_beside(&pool, SHOW, "s1", renamed("Our show"));
+    read_beside(
+        &pool,
+        vec![(ITEM, "m1", in_file()), (SHOW, "s1", renamed("Our show"))],
+    );
     let conn = pool.get().unwrap();
     conn.execute(
         "INSERT INTO metadata_core (subject_kind, subject_id, tmdb_id, updated_at) \
@@ -203,7 +208,7 @@ fn the_file_beside_a_title_the_provider_matched_is_not_shown() {
 
     let (items, shows) = crate::index_snapshot(&pool).unwrap();
 
-    assert_eq!(items[0].title, "tape.03");
+    assert_eq!(items[0].title, "Tape three");
     assert_eq!(shows[0].title, "Our show");
 }
 

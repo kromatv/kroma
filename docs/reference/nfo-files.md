@@ -55,3 +55,7 @@ gives nothing.
 
 A TMDB id in the file comes behind a match fixed by hand, an acquisition's id
 and an import's identity, and before matching by the name.
+
+The text the file holds comes before the provider's, in every language, whether
+or not the title was matched, as local metadata does in Jellyfin (J). What a
+person writes with **Edit info** comes before the file.

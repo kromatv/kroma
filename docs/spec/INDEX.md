@@ -555,7 +555,7 @@
 - **LIB-81** (SHIPPED) - In a show source, a file whose name carries no episode number is left <sub>[README.md](library/README.md)</sub>
 - **LIB-82** (SHIPPED) - A title's text is shown in the reader's language one field at a time. <sub>[README.md](library/README.md)</sub>
 - **LIB-83** (SHIPPED) - A person who manages the library can write a film's or a show's name, <sub>[README.md](library/README.md)</sub>
-- **LIB-84** (SHIPPED) - A film or a show the provider did not match takes its name, summary, <sub>[README.md](library/README.md)</sub>
+- **LIB-84** (SHIPPED) - A film or a show takes its name, summary, year and genres from the <sub>[README.md](library/README.md)</sub>
 - **LIB-85** (SHIPPED) - **A match named in the `.nfo` file.** A film's or a show's `.nfo` file <sub>[README.md](library/README.md)</sub>
 - **LIB-86** (SHIPPED) - The catalogue sorts and filters a title by the name, year and genres it <sub>[README.md](library/README.md)</sub>
 

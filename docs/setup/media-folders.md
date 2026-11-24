@@ -119,8 +119,8 @@ automatic picture** brings them back. It takes the right to manage the library.
 
 ### Titles and summaries from .nfo files
 
-A title KROMA does not recognize can take its name, year, summary and genres
-from an `.nfo` file, the one Kodi, Jellyfin and Plex read:
+A title can take its name, year, summary and genres from an `.nfo` file, the
+one Kodi, Jellyfin and Plex read:
 
 ```
 Films/
@@ -144,8 +144,8 @@ Series/
   `<tmdbid>`, or that ends with a link to its themoviedb.org page, makes KROMA
   recognize the title by that number instead of by its name. A match you fix
   with **Fix the match** comes before the file.
-- Once KROMA recognizes the title, its text from the internet shows instead.
-  What you write with **Edit info** comes before the file.
+- The file's text shows instead of the text from the internet, even once KROMA
+  recognizes the title. What you write with **Edit info** comes before the file.
 - KROMA reads a file you add or change at the next library scan.
 
 ### File types
