@@ -135,7 +135,9 @@ screen reader or steals a D-pad stop.
 
 The corollary is real API, and it must be documented on the component. A part must
 be a direct child to be sorted, and only a part that reads the context takes part
-in the shape.
+in the shape. A fragment is no wrapper: the walk opens it (`directChildren`), so
+a part written inside one is still direct. A part returned by a component of the
+caller's own is not, because the Root cannot see what that component will draw.
 
 ---
 
