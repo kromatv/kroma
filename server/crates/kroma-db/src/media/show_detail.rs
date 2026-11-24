@@ -69,8 +69,7 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
             None => seasons.push(Season {
                 number: n,
                 episodes: vec![ep],
-                cast: Vec::new(),
-                missing: Vec::new(),
+                ..Season::default()
             }),
         }
     }

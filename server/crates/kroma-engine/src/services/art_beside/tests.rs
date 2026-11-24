@@ -172,6 +172,57 @@ fn an_episode_s_thumbnail_is_named_after_its_video() {
 }
 
 #[test]
+fn a_season_s_poster_is_in_its_folder_or_named_after_it_in_the_show_s() {
+    let (folders, videos) = scanned(&[
+        "Andor/Season 01/Andor S01E01.mkv",
+        "Andor/Season 02/Andor S02E01.mkv",
+        "Andor/Season 03/Andor S03E01.mkv",
+        "Andor/Specials/Andor S00E01.mkv",
+        "Andor/Season 01/folder.jpg",
+        "Andor/Season 01/Season01.jpg",
+        "Andor/Season 02/Season02.png",
+        "Andor/season03-poster.jpg",
+        "Andor/season-specials-poster.jpg",
+    ]);
+    let poster = |number: u32, season: &[PathBuf]| {
+        let season = SeasonVideos {
+            number,
+            videos: season,
+        };
+        season_poster(&folders, &videos, &season)
+    };
+
+    assert_eq!(poster(1, &videos[..1]), at("Andor/Season 01/folder.jpg"));
+    assert_eq!(poster(2, &videos[1..2]), at("Andor/Season 02/Season02.png"));
+    assert_eq!(poster(3, &videos[2..3]), at("Andor/season03-poster.jpg"));
+    assert_eq!(
+        poster(0, &videos[3..]),
+        at("Andor/season-specials-poster.jpg")
+    );
+}
+
+#[test]
+fn a_folder_holding_two_seasons_gives_its_poster_to_the_show_alone() {
+    let (folders, videos) = scanned(&[
+        "Andor/Andor S01E01.mkv",
+        "Andor/Andor S02E01.mkv",
+        "Andor/poster.jpg",
+        "Andor/Season02.jpg",
+    ]);
+    let season = |number: u32, season: &[PathBuf]| {
+        let season = SeasonVideos {
+            number,
+            videos: season,
+        };
+        season_poster(&folders, &videos, &season)
+    };
+
+    assert_eq!(season(1, &videos[..1]), None);
+    assert_eq!(season(2, &videos[1..]), at("Andor/Season02.jpg"));
+    assert_eq!(show_art(&folders, &videos).poster, at("Andor/poster.jpg"));
+}
+
+#[test]
 fn a_film_s_nfo_is_named_after_its_video_or_is_its_own_folder_s() {
     let (shared, videos) = scanned(&[
         "Films/Heat.mkv",

@@ -153,6 +153,7 @@ export type ListedEpisode = z.infer<typeof ListedEpisode>;
 export const Season = z.object({
   number: z.number(),
   episodes: z.array(MediaItem),
+  posterUrl: z.string().nullish(),
   cast: z.array(CastMember).nullish(),
   missing: z.array(ListedEpisode).nullish(),
 });

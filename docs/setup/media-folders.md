@@ -93,6 +93,7 @@ Series/
     poster.jpg
     backdrop.jpg
     Season 01/
+      poster.jpg
       School Plays - S01E01.mkv
       School Plays - S01E01-thumb.jpg
 ```
@@ -109,6 +110,10 @@ Series/
 - For a series, put the pictures in the series folder, the one above the season
   folders, with the same names, or `show` for the poster. When two series share
   one folder, neither takes the pictures in it.
+- For a season's poster, name the picture `poster`, `folder`, `cover` or
+  `default` in the season folder, or after the season in the series folder:
+  `season01-poster.jpg`, and `season-specials-poster.jpg` for the specials. A
+  season with no poster shows the series poster.
 - For an episode's thumbnail, name the picture after the episode's video file,
   followed by `-thumb` or alone: `School Plays - S01E01-thumb.jpg`. It shows
   even on an episode KROMA does not recognize.

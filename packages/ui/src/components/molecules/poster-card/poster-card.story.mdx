@@ -11,7 +11,15 @@ export const story = defineStory({
   // 100%), and the workbench stage is sized by its content, so with no width to
   // fill the tile collapses to nothing. A grid gives it the cell; here the
   // control does, the way <MediaCard> is shown.
-  args: { title: 'Dune', overline: 'Film', progress: 0, watched: false, width: 170, artwork: true },
+  args: {
+    title: 'Dune',
+    overline: 'Film',
+    progress: 0,
+    watched: false,
+    selected: false,
+    width: 170,
+    artwork: true,
+  },
   controls: {
     progress: { min: 0, max: 1, step: 0.05 },
     width: { min: 110, max: 320, step: 10 },
@@ -46,6 +54,26 @@ The portrait poster of the library grids. Same focus model as the landscape thum
           tint={TINT}
           progress={at === 1 ? 0.4 : null}
           watched={at === 3}
+        />
+      ))}
+    </Box>
+  ))}
+</Scene>
+
+<Scene name="A season row">
+  A show's seasons, one tile each, with the season on screen picked. The ring marks it, and it is announced as selected.
+
+  {story.take(({ progress, artwork, ...props }) => (
+    <Box row gap={20}>
+      {[1, 2, 3].map((number) => (
+        <PosterCard
+          key={number}
+          {...props}
+          overline={undefined}
+          title={`Season ${number}`}
+          art={artwork ? posterArt(number) : null}
+          tint={TINT}
+          selected={number === 2}
         />
       ))}
     </Box>

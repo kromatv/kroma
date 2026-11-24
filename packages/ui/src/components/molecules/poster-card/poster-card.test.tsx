@@ -29,4 +29,12 @@ describe('PosterCard', () => {
     expect(screen.getByText('Obsession')).toBeDefined();
     expect(screen.queryByText('Film')).toBeNull();
   });
+
+  it('announces the tile picked among its row', () => {
+    render(<PosterCard title="Season 2" art={null} tint={TINT} selected onPress={() => {}} />);
+
+    expect(screen.getByRole('button', { name: 'Season 2' }).getAttribute('aria-selected')).toBe(
+      'true',
+    );
+  });
 });
