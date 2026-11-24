@@ -208,6 +208,12 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
   fetched still, and stands in for it when there is none, even on an episode KROMA did not
   recognize. It is a picture named after the episode's video file followed by `-thumb`, or
   named after it alone, with the poster's formats and case rule (MEDIA-48).
+- **MEDIA-53** (SHIPPED) - A show's page draws its seasons as a row of posters, the one on
+  screen picked. A season's poster is the one kept beside its files, else the show's. That
+  is a picture named `poster`, `folder`, `cover`, `default` or after the season, `Season01`,
+  in the season's folder when it holds no other season's episode, else one named
+  `season01-poster` in the show's folder (MEDIA-48), with `season-specials-poster` for the
+  specials.
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.

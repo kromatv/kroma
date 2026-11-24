@@ -18,6 +18,7 @@ const client = fakeClient({
       posterFor: (m) => `poster:${m.id}`,
       backdropFor: (m) => (idOf(m) === 'nobd' ? null : `bd:${idOf(m)}`),
       showPosterFor: (s) => `spos:${s.id}`,
+      resolve: (url) => (url ? `art:${url}` : null),
       themeFor: (s) => `theme:${idOf(s)}`,
     },
   },

@@ -1,6 +1,6 @@
 //! What a person keeps beside a title's files: its poster, its backdrop and
-//! its logo, an episode's thumbnail, and the `.nfo` file that gives a title its
-//! text.
+//! its logo, a season's poster, an episode's thumbnail, and the `.nfo` file
+//! that gives a title its text.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -14,6 +14,7 @@ use crate::db::art_beside::{BACKDROP, LOGO};
 pub const PICTURES: [&str; 4] = ["jpg", "jpeg", "png", "webp"];
 const FILM_POSTERS: [&str; 5] = ["poster", "folder", "cover", "default", "movie"];
 const SHOW_POSTERS: [&str; 5] = ["poster", "folder", "cover", "default", "show"];
+const SEASON_POSTERS: [&str; 4] = ["poster", "folder", "cover", "default"];
 const BACKDROPS: [&str; 4] = ["backdrop", "fanart", "background", "art"];
 const LOGOS: [&str; 2] = ["logo", "clearlogo"];
 const POSTER_WIDTH: u32 = 780;
@@ -103,6 +104,18 @@ impl Folders {
         show_folders(episodes)
             .filter_map(|dir| self.0.get(&dir))
             .filter(|folder| folder.holds_only(episodes))
+            .collect()
+    }
+
+    fn of_season(&self, videos: &[PathBuf]) -> Vec<&Folder> {
+        let mut seen = HashSet::new();
+        videos
+            .iter()
+            .filter_map(|video| video.parent())
+            .filter(|dir| dir.file_name().is_some_and(names_a_season))
+            .filter(|dir| seen.insert(*dir))
+            .filter_map(|dir| self.0.get(dir))
+            .filter(|folder| folder.holds_only(videos))
             .collect()
     }
 
@@ -196,6 +209,48 @@ pub fn show_art(folders: &Folders, episodes: &[PathBuf]) -> Art {
     }
 }
 
+/// One season of a show: its number and the videos of its episodes.
+pub struct SeasonVideos<'a> {
+    pub number: u32,
+    pub videos: &'a [PathBuf],
+}
+
+/// The poster kept for one `season` of a show whose `episodes` are given. In
+/// the season's own folder, a folder named as a season that holds no other
+/// episode: `poster`, `folder`, `cover` or `default`, as Jellyfin reads them,
+/// or the season's number, `Season01`, as Plex does. Else, in the show's
+/// folder, `season01-poster`, as Kodi does. Season 0 also takes
+/// `season-specials-poster`.
+pub fn season_poster(
+    folders: &Folders,
+    episodes: &[PathBuf],
+    season: &SeasonVideos<'_>,
+) -> Option<PathBuf> {
+    let numbered = numbered(season.number);
+    let numbered: Vec<&str> = numbered.iter().map(String::as_str).collect();
+    let own = folders.of_season(season.videos);
+    own.iter()
+        .find_map(|folder| folder.first_of(&SEASON_POSTERS))
+        .or_else(|| own.iter().find_map(|folder| folder.first_of(&numbered)))
+        .or_else(|| {
+            let show = folders.of_show(episodes);
+            show.iter().find_map(|folder| folder.first_of(&numbered))
+        })
+}
+
+fn numbered(number: u32) -> Vec<String> {
+    let mut names = vec![
+        format!("season{number:02}-poster"),
+        format!("season{number:02}"),
+        format!("season{number}-poster"),
+        format!("season{number}"),
+    ];
+    if number == 0 {
+        names.push("season-specials-poster".into());
+    }
+    names
+}
+
 /// `tvshow.nfo` in a show's folder, the one above its season folders, when it
 /// holds no other show's episode.
 pub fn show_nfo(folders: &Folders, episodes: &[PathBuf]) -> Option<PathBuf> {
@@ -220,10 +275,13 @@ fn show_folders(episodes: &[PathBuf]) -> impl Iterator<Item = PathBuf> + '_ {
         .filter(move |folder| seen.insert(folder.clone()))
 }
 
+fn names_a_season(name: &std::ffi::OsStr) -> bool {
+    is_season_folder(&name.to_string_lossy())
+}
+
 fn show_folder(episode: &Path) -> Option<PathBuf> {
     let parent = episode.parent()?;
-    let named = |name: &std::ffi::OsStr| is_season_folder(&name.to_string_lossy());
-    let folder = if parent.file_name().is_some_and(named) {
+    let folder = if parent.file_name().is_some_and(names_a_season) {
         parent.parent()?
     } else {
         parent

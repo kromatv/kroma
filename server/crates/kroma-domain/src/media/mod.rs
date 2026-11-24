@@ -198,10 +198,12 @@ pub struct ListedEpisode {
 }
 
 /// Sorted by episode number.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Season {
     pub number: u32,
     pub episodes: Vec<MediaItem>,
+    #[serde(rename = "posterUrl", default, skip_serializing_if = "Option::is_none")]
+    pub poster_url: Option<String>,
     // Empty until enriched, or when the provider returned none.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub cast: Vec<CastMember>,

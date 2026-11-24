@@ -67,6 +67,7 @@ describe('buildTitleView: discover source (not owned)', () => {
       {
         number: 1,
         name: 'S1',
+        poster: 'http://localhost:4040/api/p.jpg',
         episodeCount: 6,
         episodesAvailable: 0,
         available: false,

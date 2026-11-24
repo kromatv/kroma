@@ -3,7 +3,12 @@
 
 import type { KromaClient } from '@kromatv/client';
 import { hasPermission, type User } from '@kromatv/client/accounts';
-import type { DiscoverDetail, DiscoverEntry, DiscoverEpisode } from '@kromatv/client/discovery';
+import type {
+  DiscoverDetail,
+  DiscoverEntry,
+  DiscoverEpisode,
+  DiscoverSeason,
+} from '@kromatv/client/discovery';
 import type {
   AgeRating,
   CastMember,
@@ -29,6 +34,7 @@ export type SeasonGap = ListedEpisode | DiscoverEpisode;
 export interface TitleSeason {
   number: number;
   name: string | null;
+  poster: string | null;
   episodeCount: number;
   episodesAvailable: number;
   available: boolean;
@@ -183,7 +189,7 @@ export function buildTitleView(
       video: show.video,
       playable: playTarget,
       playLabel,
-      seasons: mergeSeasons(detail.seasons, discover),
+      seasons: mergeSeasons(c, detail, discover),
       requestStatus: discover?.requestStatus ?? null,
       requestProgress: discover?.requestProgress ?? null,
       canRequest: canReq(tmdbIdOf(meta?.tmdbId), discover != null),
@@ -221,18 +227,9 @@ export function buildTitleView(
     video: null,
     playable: null,
     playLabel: null,
-    seasons: d.seasons.map((s) => ({
-      number: s.season,
-      name: s.name,
-      episodeCount: s.episodeCount,
-      episodesAvailable: s.episodesAvailable,
-      available: s.available,
-      requested: s.requested,
-      airDate: s.airDate,
-      episodes: [],
-      missing: [],
-      cast: [],
-    })),
+    seasons: d.seasons.map((s) =>
+      seasonOf({ number: s.season, listed: s, poster: imageUrl(d.posterUrl) }),
+    ),
     requestStatus: d.requestStatus,
     requestProgress: d.requestProgress,
     canRequest: canReq(d.tmdbId, true),
@@ -248,41 +245,64 @@ export function buildTitleView(
   };
 }
 
-function mergeSeasons(owned: Season[], discover: DiscoverDetail | null): TitleSeason[] {
-  const ownedBy = new Map(owned.map((s) => [s.number, s]));
-  if (!discover) {
-    return owned.map((s) => ({
-      number: s.number,
+function mergeSeasons(
+  c: KromaClient,
+  detail: ShowDetail,
+  discover: DiscoverDetail | null,
+): TitleSeason[] {
+  const ownedBy = new Map(detail.seasons.map((s) => [s.number, s]));
+  const listed = discover?.seasons ?? [];
+  const showPoster = c.media.artwork.showPosterFor(detail.show);
+  const numbers = new Set<number>([...ownedBy.keys(), ...listed.map((s) => s.season)]);
+  return [...numbers]
+    .sort((a, b) => a - b)
+    .map((number) => {
+      const own = ownedBy.get(number);
+      const poster = c.media.artwork.resolve(own?.posterUrl) ?? showPoster;
+      return seasonOf({ number, own, listed: listed.find((s) => s.season === number), poster });
+    });
+}
+
+type SeasonParts = Readonly<{
+  number: number;
+  own?: Season;
+  listed?: DiscoverSeason;
+  poster: string | null;
+}>;
+
+function seasonOf({ number, own, listed, poster }: SeasonParts): TitleSeason {
+  return { number, poster, ...listedFacts(listed, own?.episodes.length ?? 0), ...ownedParts(own) };
+}
+
+function listedFacts(listed: DiscoverSeason | undefined, onDisk: number) {
+  if (!listed) {
+    return {
       name: null,
-      episodeCount: s.episodes.length,
-      episodesAvailable: s.episodes.length,
+      episodeCount: onDisk,
+      episodesAvailable: onDisk,
       available: true,
       requested: false,
       airDate: null,
-      episodes: s.episodes,
-      missing: s.missing ?? [],
-      cast: s.cast ?? [],
-    }));
+    };
   }
-  const numbers = new Set<number>([...ownedBy.keys(), ...discover.seasons.map((s) => s.season)]);
-  return [...numbers]
-    .sort((a, b) => a - b)
-    .map((n) => {
-      const own = ownedBy.get(n);
-      const ds = discover.seasons.find((s) => s.season === n);
-      return {
-        number: n,
-        name: ds?.name ?? null,
-        episodeCount: ds?.episodeCount ?? own?.episodes.length ?? 0,
-        episodesAvailable: ds?.episodesAvailable ?? own?.episodes.length ?? 0,
-        available: ds ? ds.available : true,
-        requested: ds?.requested ?? false,
-        airDate: ds?.airDate ?? null,
-        episodes: own?.episodes ?? [],
-        missing: own?.missing ?? [],
-        cast: own?.cast ?? [],
-      };
-    });
+  const { name, available, requested, airDate } = listed;
+  const episodeCount: number | undefined = listed.episodeCount;
+  const episodesAvailable: number | undefined = listed.episodesAvailable;
+  return {
+    name,
+    episodeCount: episodeCount ?? onDisk,
+    episodesAvailable: episodesAvailable ?? onDisk,
+    available,
+    requested,
+    airDate,
+  };
+}
+
+function ownedParts(own: Season | undefined) {
+  if (!own) {
+    return { episodes: [], missing: [], cast: [] };
+  }
+  return { episodes: own.episodes, missing: own.missing ?? [], cast: own.cast ?? [] };
 }
 
 /** "2024 · 2h08" from a not-owned title's year + TMDB runtime (movies only). */

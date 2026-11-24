@@ -30,7 +30,14 @@ describe('buildTitleView: show source', () => {
 
   const detail = {
     show: showObj,
-    seasons: [{ number: 1, episodes: [ep(1, 1)], cast: [{ name: 'S1Actor' }] }],
+    seasons: [
+      {
+        number: 1,
+        episodes: [ep(1, 1)],
+        cast: [{ name: 'S1Actor' }],
+        posterUrl: '/api/images/beside-s1.webp',
+      },
+    ],
   };
 
   const listed = { episode: 2, title: 'Two', airDate: '2030-01-01' };
@@ -56,6 +63,7 @@ describe('buildTitleView: show source', () => {
       {
         number: 1,
         name: null,
+        poster: 'art:/api/images/beside-s1.webp',
         episodeCount: 1,
         episodesAvailable: 1,
         available: true,
@@ -156,6 +164,7 @@ describe('buildTitleView: show source', () => {
     expect(v.seasons[1]).toMatchObject({
       number: 2,
       name: 'Season Two',
+      poster: 'spos:sh1',
       available: false,
       requested: true,
       episodes: [],

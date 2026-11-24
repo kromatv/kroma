@@ -21,6 +21,8 @@ pub const LOGO: &str = "logo";
 /// The role of a picture kept as an episode's still, which travels as its
 /// backdrop.
 pub const STILL: &str = "still";
+/// The subject kind of a picture kept as a season's, under [`season_id`].
+pub const SEASON: &str = "season";
 
 const INSERT: &str = "INSERT OR REPLACE INTO art_beside \
                       (subject_kind, subject_id, role, library, picture, url) \
@@ -36,6 +38,11 @@ pub struct Picture {
     pub role: &'static str,
     pub path: String,
     pub url: String,
+}
+
+/// The id a season's picture is kept under: its show's id and its number.
+pub fn season_id(show: &str, number: u32) -> String {
+    format!("{show}:{number}")
 }
 
 /// Where on disk the picture served under a URL is, and its role.
@@ -172,6 +179,10 @@ impl Art {
         if let Some(still) = still {
             meta.get_or_insert_with(Metadata::blank).backdrop_url = Some(still.clone());
         }
+    }
+
+    pub(crate) fn poster(&self, id: &str) -> Option<String> {
+        self.0.get(id).and_then(|urls| urls.poster.clone())
     }
 
     pub(crate) fn paint_poster(&self, id: &str, meta: Option<&mut Metadata>) {
