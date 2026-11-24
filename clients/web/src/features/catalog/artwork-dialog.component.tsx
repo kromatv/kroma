@@ -47,6 +47,7 @@ function ArtPreview({
   chosen,
   shown,
 }: Readonly<{ role: ArtRole; chosen: string | null; shown: string | null }>) {
+  const t = useT();
   const s = useStyles(sDefinition);
   const { client } = useAuth();
   const width = role === 'poster' ? 360 : 640;
@@ -59,6 +60,13 @@ function ArtPreview({
       background={WASH}
       fit={role === 'logo' ? 'contain' : 'cover'}
       style={s[role]}
+      fallback={
+        <Box fill center>
+          <Text variant="meta" color="white/45">
+            {t('artwork.none')}
+          </Text>
+        </Box>
+      }
     />
   );
 }

@@ -8,6 +8,7 @@
   "artwork.hint": "L'image que vous importez s'affiche à la place de celle trouvée à côté des fichiers ou sur TMDB.",
   "artwork.loadFailed": "Impossible de charger les visuels choisis.",
   "artwork.logo": "Logo",
+  "artwork.none": "Aucune image",
   "artwork.poster": "Affiche",
   "artwork.reset": "Rétablir l'image automatique",
   "artwork.resetFrame": "Réinitialiser le cadrage",
