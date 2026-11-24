@@ -241,16 +241,13 @@ pub fn prune_job_runs(pool: &Pool, key: &str, keep: usize) -> Result<()> {
     Ok(())
 }
 
+const ORPHAN_LOGS: &str = "DELETE FROM job_logs WHERE run_id NOT IN (SELECT id FROM job_runs)";
+
 /// Drop the logs of runs that have no row, which only a run whose start and
 /// finish both failed to land leaves behind. A whole-table pass: run it once,
 /// at startup.
 pub fn drop_orphan_job_logs(pool: &Pool) -> Result<usize> {
-    let conn = pool.get()?;
-    let n = conn.execute(
-        "DELETE FROM job_logs WHERE run_id NOT IN (SELECT id FROM job_runs)",
-        [],
-    )?;
-    Ok(n)
+    Ok(pool.get()?.execute(ORPHAN_LOGS, [])?)
 }
 
 pub fn insert_job_log(
