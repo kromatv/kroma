@@ -173,7 +173,7 @@
     "clients/web/src/shared/lib/push.test.ts": 1,
     "clients/web/src/shared/lib/push.ts": 1,
     "clients/web/src/shared/lib/recent-commands.ts": 1,
-    "clients/web/src/shared/lib/title-view.ts": 2,
+    "clients/web/src/shared/lib/title-view.ts": 1,
     "clients/web/src/shared/ui/poster-tile.component.tsx": 1,
     "clients/web/src/shared/ui/poster.component.tsx": 1,
     "clients/web/src/shared/ui/request-status-chip.component.tsx": 1,
