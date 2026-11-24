@@ -6,7 +6,9 @@
 mod bounded;
 
 use std::sync::Arc;
+use std::time::Instant;
 
+use kroma_module_host::Contribution;
 use serde_json::Value;
 
 use crate::state::Contributions;
@@ -92,12 +94,7 @@ impl Point {
         match &self.answer {
             Answer::Live(resolve) => {
                 let found = resolve(self.name).into_iter().next()?;
-                kroma_module_host::call_raw(
-                    &found.resolver(),
-                    &format!("{}/{method}", self.name),
-                    body,
-                )
-                .ok()
+                self.ask(&found, method, body)
             }
             Answer::Stub(answering) => {
                 let (_, f) = answering.first()?;
@@ -132,12 +129,7 @@ impl Point {
                 let found = resolve(self.name)
                     .into_iter()
                     .find(|found| found.module_id == module)?;
-                kroma_module_host::call_raw(
-                    &found.resolver(),
-                    &format!("{}/{method}", self.name),
-                    body,
-                )
-                .ok()
+                self.ask(&found, method, body)
             }
             Answer::Stub(answering) => {
                 let (_, f) = answering.iter().find(|(id, _)| id == module)?;
@@ -161,12 +153,7 @@ impl Point {
             Answer::Live(resolve) => resolve(self.name)
                 .into_iter()
                 .map(|found| {
-                    let answer = kroma_module_host::call_raw(
-                        &found.resolver(),
-                        &format!("{}/{method}", self.name),
-                        body,
-                    )
-                    .ok();
+                    let answer = self.ask(&found, method, body);
                     (found.module_id, answer)
                 })
                 .collect(),
@@ -188,11 +175,60 @@ impl Point {
     }
 }
 
+impl Point {
+    fn ask<B: serde::Serialize, T: serde::de::DeserializeOwned>(
+        &self,
+        found: &Contribution,
+        method: &str,
+        body: &B,
+    ) -> Option<T> {
+        let route = format!("{}/{method}", self.name);
+        timed(&route, &found.module_id, || {
+            kroma_module_host::call_raw(&found.resolver(), &route, body).ok()
+        })
+    }
+}
+
+fn timed<R>(route: &str, module: &str, call: impl FnOnce() -> R) -> R {
+    let started = Instant::now();
+    let answer = call();
+    kroma_perf::record(kroma_perf::Measured {
+        kind: "point",
+        label: route,
+        origin: Some(module),
+        elapsed: started.elapsed(),
+    });
+    answer
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     use serde_json::json;
+
+    fn unreachable(modules: &[&str]) -> Point {
+        let found: Vec<Contribution> = modules
+            .iter()
+            .map(|module| Contribution {
+                module_id: (*module).into(),
+                instance: None,
+                base_url: "http://127.0.0.1:1".into(),
+                token: "t".into(),
+            })
+            .collect();
+        Point::new("embedder", Arc::new(move |_| found.clone()))
+    }
+
+    fn measured(work: impl FnOnce()) -> kroma_perf::Finished {
+        let scope = kroma_perf::profiler()
+            .job("point-test")
+            .expect("profiling is on");
+        let entered = scope.enter();
+        work();
+        drop(entered);
+        kroma_perf::profiler().finish(&scope, None, None)
+    }
 
     #[test]
     fn a_point_nothing_answers_is_none_rather_than_a_failure() {
@@ -253,5 +289,49 @@ mod tests {
         let p = Point::stub("embedder", |_, _| Some(json!({ "unexpected": true })));
 
         assert_eq!(p.call::<_, Vec<f32>>("embed", &json!({})), None);
+    }
+
+    #[test]
+    fn a_call_to_a_module_counts_in_the_run_that_made_it() {
+        let p = unreachable(&["tv.x.vector"]);
+
+        let finished = measured(|| {
+            let _ = p.call::<_, Vec<f32>>("embed", &json!({}));
+        });
+
+        assert_eq!(finished.kinds["point"].count, 1);
+    }
+
+    #[test]
+    fn asking_every_module_counts_one_call_for_each() {
+        let p = unreachable(&["tv.x.vector", "org.example.vectors"]);
+
+        let finished = measured(|| {
+            let _ = p.answers::<_, Vec<f32>>("embed", &json!({}));
+        });
+
+        assert_eq!(finished.kinds["point"].count, 2);
+    }
+
+    #[test]
+    fn a_call_to_one_named_module_counts_too() {
+        let p = unreachable(&["tv.x.vector", "org.example.vectors"]);
+
+        let finished = measured(|| {
+            let _ = p.call_module::<_, Vec<f32>>("org.example.vectors", "embed", &json!({}));
+        });
+
+        assert_eq!(finished.kinds["point"].count, 1);
+    }
+
+    #[test]
+    fn a_stub_is_not_counted_as_a_module_call() {
+        let p = Point::stub("embedder", |_, _| Some(json!([1.0])));
+
+        let finished = measured(|| {
+            let _ = p.call::<_, Vec<f32>>("embed", &json!({}));
+        });
+
+        assert!(!finished.kinds.contains_key("point"));
     }
 }

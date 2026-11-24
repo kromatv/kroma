@@ -169,6 +169,7 @@ describe('figuresOf', () => {
 describe('kindLabel', () => {
   it('names a kind it knows and keeps the word of one it does not', () => {
     expect(kindLabel('http', t)).toBe('[perf.kindHttp]');
+    expect(kindLabel('point', t)).toBe('[perf.kindPoint]');
     expect(kindLabel('cache', t)).toBe('cache');
   });
 });

@@ -17,6 +17,7 @@ ran, so a slow route says what it spent its time on.
 | `sql` | one SQLite statement, with its rows and SQLite's own count of full-scan steps, sorts and automatic indexes | the database: `core`, or the module that owns it | every connection the process opens, through an SQLite auto-extension installed at boot |
 | `span` | one call of a function marked `#[tracing::instrument]` in a `kroma*` crate | `file:line` | `kroma_perf::span_layer`, with a filter of its own: these spans reach no log |
 | `http` | one outbound call (TMDB, a registry, a relay) | the host | the egress sink every `kroma_http::Fetch` call already reports to |
+| `point` | one call the core makes to a module through a point, named `<point>/<method>` (`embedder/embed`) | the module answering | `Point`, around each call it sends over the wire |
 
 A statement is named by the text it was prepared from, as one line, with every
 list of placeholders collapsed to `?…`. No parameter value is ever recorded. Its
