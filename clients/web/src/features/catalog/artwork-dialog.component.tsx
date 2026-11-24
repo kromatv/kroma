@@ -33,9 +33,10 @@ const sDefinition = styles({
   slot: { flexGrow: 1, flexBasis: 0, minWidth: 180 },
   poster: { width: '100%', maxWidth: 180, aspectRatio: 2 / 3 },
   backdrop: { width: '100%', aspectRatio: 16 / 9 },
+  logo: { width: '100%', aspectRatio: 16 / 9 },
 });
 
-const ROLES = ['poster', 'backdrop'] as const satisfies readonly ArtRole[];
+const ROLES = ['poster', 'backdrop', 'logo'] as const satisfies readonly ArtRole[];
 
 const WASH = color('tint/4');
 
@@ -88,7 +89,8 @@ function ArtPreview({ role, url }: Readonly<{ role: ArtRole; url: string | null 
       alt=""
       radius="md"
       background={WASH}
-      style={role === 'poster' ? s.poster : s.backdrop}
+      fit={role === 'logo' ? 'contain' : 'cover'}
+      style={s[role]}
       fallback={
         <Box fill center>
           <Text variant="meta" color="white/45">
@@ -167,7 +169,7 @@ function ArtSlot({ role, slots }: Readonly<{ role: ArtRole; slots: Slots }>) {
   );
 }
 
-/** The poster and the backdrop an admin uploads for a film or a show. Open
+/** The poster, the backdrop and the logo an admin uploads for a film or a show. Open
  * with `await ArtworkDialog.call({ kind, id, title })`; it resolves on dismiss. */
 export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title }) => {
   const t = useT();

@@ -29,13 +29,14 @@ export const ArtKind = z.enum(['item', 'show']);
 export type ArtKind = z.infer<typeof ArtKind>;
 
 /** Which of a title's pictures an admin chooses. */
-export const ArtRole = z.enum(['poster', 'backdrop']);
+export const ArtRole = z.enum(['poster', 'backdrop', 'logo']);
 export type ArtRole = z.infer<typeof ArtRole>;
 
 /** `GET /api/art/{kind}/{id}`: the URL of each picture an admin chose. */
 export const ChosenArt = z.object({
   poster: z.string().nullable(),
   backdrop: z.string().nullable(),
+  logo: z.string().nullish(),
 });
 export type ChosenArt = z.infer<typeof ChosenArt>;
 

@@ -131,8 +131,8 @@ Series/
   changement sur un écran déjà ouvert.
 
 Pour changer l'image d'un titre sans toucher à son dossier, ouvrez le titre et
-choisissez **Modifier les visuels**. Une affiche ou un fond envoyé à cet endroit
-passe avant l'image du dossier et celle d'Internet, et **Rétablir l'image
+choisissez **Modifier les visuels**. Une affiche, un fond ou un logo envoyé à cet
+endroit passe avant l'image du dossier et celle d'Internet, et **Rétablir l'image
 automatique** les fait revenir. Il faut le droit de gérer la bibliothèque.
 
 ### Titres et résumés des fichiers .nfo

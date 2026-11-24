@@ -72,6 +72,36 @@ async fn a_backdrop_an_admin_uploads_replaces_the_fetched_one_and_can_be_reset()
 }
 
 #[tokio::test]
+async fn a_logo_an_admin_uploads_replaces_the_fetched_one() {
+    let t = test_app();
+    let film = demo_item_id("Blade Runner 2049");
+    let fetched_art = json!({
+        "tmdbId": 1, "genres": [], "tmdbUrl": "",
+        "logoUrl": "/api/images/feedfeedfeedfeed.webp",
+    });
+    let meta = serde_json::from_value(fetched_art).expect("metadata literal");
+    db::set_item_metadata(&t.state.db, &film, &meta).expect("set item metadata");
+
+    let status = upload(
+        &t.app,
+        &format!("/api/art/item/{film}/logo"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+
+    let (_, chosen) = get(&t.app, &format!("/api/art/item/{film}"), Some(&t.token)).await;
+    let (_, shown) = get(&t.app, &format!("/api/items/{film}"), Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        chosen["logo"]
+            .as_str()
+            .is_some_and(|url| url.starts_with("/api/images/chosen-"))
+    );
+    assert_eq!(shown["metadata"]["logoUrl"], chosen["logo"]);
+}
+
+#[tokio::test]
 async fn a_member_who_cannot_manage_the_library_cannot_choose_art() {
     let t = test_app();
     let film = seed_playable_item(&t.state, "Heat", b"film");
@@ -97,9 +127,9 @@ async fn a_picture_for_no_known_title_or_role_is_not_found() {
     let t = test_app();
     let film = seed_playable_item(&t.state, "Heat", b"film");
 
-    let logo = upload(
+    let banner = upload(
         &t.app,
-        &format!("/api/art/item/{film}/logo"),
+        &format!("/api/art/item/{film}/banner"),
         &t.token,
         PNG.to_vec(),
     )
@@ -113,7 +143,7 @@ async fn a_picture_for_no_known_title_or_role_is_not_found() {
     )
     .await;
 
-    assert_eq!(logo, StatusCode::NOT_FOUND);
+    assert_eq!(banner, StatusCode::NOT_FOUND);
     assert_eq!(ghost, StatusCode::NOT_FOUND);
     assert_eq!(person, StatusCode::NOT_FOUND);
 }
