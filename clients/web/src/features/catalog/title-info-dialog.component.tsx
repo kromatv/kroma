@@ -12,7 +12,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { createCallable } from 'react-call';
 
-import { TitleDialogHeader } from '#web/features/catalog/title-dialog-header.component';
+import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import { draftOf, editOf, type TitleDraft } from '#web/features/catalog/title-info-draft';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -55,11 +55,14 @@ function useSave(save: Save, onDone: () => void) {
 
 type Change = (field: keyof TitleDraft) => (text: string) => void;
 
-function useDraft(initial: TitleDraft) {
-  const [draft, setDraft] = useState(initial);
+function useDraft(loaded: TitleDraft | undefined) {
+  const [edited, setEdited] = useState<TitleDraft | null>(null);
   const change: Change = (field) => (text) =>
-    setDraft((now) => ({ ...now, [field]: FIT[field](text) }));
-  return { draft, change };
+    setEdited((now) => {
+      const base = now ?? loaded;
+      return base ? { ...base, [field]: FIT[field](text) } : now;
+    });
+  return { draft: edited ?? loaded, change };
 }
 
 type Hinted = 'sortTitle' | 'released' | 'genres';
@@ -129,53 +132,44 @@ function EpisodeFields({ draft, change }: Fields) {
   );
 }
 
-function SaveFooter({
+function SaveActions({
   busy,
   onCancel,
   onSave,
 }: Readonly<{ busy: boolean; onCancel: () => void; onSave: () => void }>) {
   const t = useT();
   return (
-    <Dialog.Footer>
-      <Dialog.Actions
-        onCancel={onCancel}
-        cancelLabel={t('common.cancel')}
-        onConfirm={onSave}
-        confirmLabel={t('common.save')}
-        busy={busy}
-      />
-    </Dialog.Footer>
+    <Dialog.Actions
+      onCancel={onCancel}
+      cancelLabel={t('common.cancel')}
+      onConfirm={onSave}
+      confirmLabel={t('common.save')}
+      busy={busy}
+    />
   );
 }
 
-function InfoForm({
+function InfoBody({
   fields: InfoFields,
-  initial,
-  save,
-  onDone,
-}: Readonly<{
-  fields: (props: Fields) => ReactNode;
-  initial: TitleDraft;
-  save: Save;
-  onDone: () => void;
-}>) {
+  draft,
+  change,
+  failure,
+}: Readonly<Fields & { fields: (props: Fields) => ReactNode; failure: string | null }>) {
   const t = useT();
-  const { draft, change } = useDraft(initial);
-  const { busy, failure, submit } = useSave(save, onDone);
   return (
-    <>
-      <Dialog.Panel>
-        <Box gap={16}>
-          <Text variant="meta" color="white/55">
-            {t('titleInfo.hint')}
-          </Text>
-          <InfoFields draft={draft} change={change} />
-          <Failure text={failure} />
-        </Box>
-      </Dialog.Panel>
-      <SaveFooter busy={busy} onCancel={onDone} onSave={() => submit(draft)} />
-    </>
+    <Box gap={16}>
+      <Text variant="meta" color="white/55">
+        {t('titleInfo.hint')}
+      </Text>
+      <InfoFields draft={draft} change={change} />
+      <Failure text={failure} />
+    </Box>
   );
+}
+
+function Loading({ error }: Readonly<{ error: unknown }>) {
+  const t = useT();
+  return error ? <Failure text={apiErrorText(error, t('titleInfo.loadFailed'))} /> : <Spinner />;
 }
 
 function useTitleEdit({ kind: asked, id }: Props) {
@@ -192,6 +186,13 @@ function useTitleEdit({ kind: asked, id }: Props) {
   return { ...query, save };
 }
 
+function useInfoForm(props: Props, onDone: () => void) {
+  const { data, error, save } = useTitleEdit(props);
+  const { draft, change } = useDraft(data ? draftOf(data) : undefined);
+  const { busy, failure, submit } = useSave(save, onDone);
+  return { draft, change, busy, failure, submit, error };
+}
+
 /** The name, sort title, release date, summary and genres a person who
  * manages the library writes by hand for a film or a show, and the name, air
  * date and summary for an episode (`kind: 'episode'`). Open with `await
@@ -199,23 +200,26 @@ function useTitleEdit({ kind: asked, id }: Props) {
  * the edit is saved. */
 export const TitleInfoDialog = createCallable<Props>((props) => {
   const t = useT();
-  const { data, error, save } = useTitleEdit(props);
   const close = () => props.call.end();
+  const { draft, change, busy, failure, submit, error } = useInfoForm(props, close);
+  const fields = props.kind === 'episode' ? EpisodeFields : TitleFields;
   return (
     <Dialog.Root open title={props.title} width="lg" onClose={close}>
-      <TitleDialogHeader overline={t('titleInfo.title')} title={props.title} onClose={close} />
-      {data ? (
-        <InfoForm
-          fields={props.kind === 'episode' ? EpisodeFields : TitleFields}
-          initial={draftOf(data)}
-          save={save}
-          onDone={close}
-        />
-      ) : (
-        <Dialog.Panel>
-          {error ? <Failure text={apiErrorText(error, t('titleInfo.loadFailed'))} /> : <Spinner />}
-        </Dialog.Panel>
-      )}
+      <Dialog.Header>
+        <TitleDialogHeading overline={t('titleInfo.title')} title={props.title} onClose={close} />
+      </Dialog.Header>
+      <Dialog.Panel>
+        {draft ? (
+          <InfoBody fields={fields} draft={draft} change={change} failure={failure} />
+        ) : (
+          <Loading error={error} />
+        )}
+      </Dialog.Panel>
+      {draft ? (
+        <Dialog.Footer>
+          <SaveActions busy={busy} onCancel={close} onSave={() => submit(draft)} />
+        </Dialog.Footer>
+      ) : null}
     </Dialog.Root>
   );
 });

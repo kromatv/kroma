@@ -8,10 +8,11 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { mediaItem } from '#web/shared/lib/cast.fixture';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
-import { EpisodeEditButton } from './episode-edit-button.component';
+import { EpisodeEditButtons } from './episode-edit-buttons.component';
 
 const mocks = vi.hoisted(() => ({
   call: vi.fn(),
+  artwork: vi.fn(),
   user: { id: 'u1', permissions: ['library.manage'] },
 }));
 
@@ -19,6 +20,10 @@ vi.mock('#web/shared/lib/auth', () => ({ useAuth: () => ({ user: mocks.user }) }
 
 vi.mock('#web/features/catalog/title-info-dialog.component', () => ({
   TitleInfoDialog: { call: mocks.call },
+}));
+
+vi.mock('#web/features/catalog/artwork-dialog.component', () => ({
+  ArtworkDialog: { call: mocks.artwork },
 }));
 
 afterEach(() => {
@@ -35,7 +40,7 @@ function button(showId: string | null) {
     <QueryClientProvider client={queries}>
       <WebRuntimeProvider value={runtime}>
         <I18nProvider locale="en">
-          <EpisodeEditButton
+          <EpisodeEditButtons
             episode={mediaItem({ id: 'e1', kind: 'episode', showId })}
             title="1. Pilot"
           />
@@ -57,6 +62,22 @@ it('opens the episode to editing and reloads its show once closed', async () => 
   await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: show.queryKey }));
 });
 
+it('opens the thumbnail of the episode and reloads its show once closed', async () => {
+  mocks.artwork.mockResolvedValue(undefined);
+  const { runtime, invalidate } = button('s1');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Edit thumbnail' }));
+
+  expect(mocks.artwork).toHaveBeenCalledWith({
+    kind: 'item',
+    id: 'e1',
+    title: '1. Pilot',
+    roles: ['still'],
+  });
+  const show = runtime.queries.catalogQueries.show(ShowId.parse('s1'));
+  await waitFor(() => expect(invalidate).toHaveBeenCalledWith({ queryKey: show.queryKey }));
+});
+
 it('reloads nothing for an episode that belongs to no show', async () => {
   mocks.call.mockResolvedValue(undefined);
   const { invalidate } = button(null);
@@ -73,4 +94,5 @@ it('shows nothing to a person who cannot manage the library', () => {
   button('s1');
 
   expect(screen.queryByRole('button', { name: 'Edit info' })).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Edit thumbnail' })).toBeNull();
 });

@@ -2,9 +2,11 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{
-    demo_item_id, get, raw, seed_playable_item, seed_session, test_app, upload, TestApp,
+    demo_item_id, demo_show_id, get, raw, seed_playable_item, seed_session, test_app, upload,
+    TestApp,
 };
 use crate::db;
+use crate::db::art_beside::POSTER;
 use crate::db::metadata_core::ITEM;
 use crate::model::Permission;
 
@@ -18,8 +20,8 @@ async fn fetched(t: &TestApp, uri: &str) -> (StatusCode, String) {
 }
 
 fn chosen_poster(t: &TestApp, film: &str) -> String {
-    let urls = db::art_chosen::chosen(&t.state.db, ITEM, film).expect("read the chosen art");
-    urls.poster.expect("a chosen poster")
+    let mut urls = db::art_chosen::chosen(&t.state.db, ITEM, film).expect("read the chosen art");
+    urls.remove(POSTER).expect("a chosen poster")
 }
 
 #[tokio::test]
@@ -99,6 +101,39 @@ async fn a_logo_an_admin_uploads_replaces_the_fetched_one() {
             .is_some_and(|url| url.starts_with("/api/images/chosen-"))
     );
     assert_eq!(shown["metadata"]["logoUrl"], chosen["logo"]);
+}
+
+#[tokio::test]
+async fn a_thumbnail_an_admin_uploads_shows_on_the_episode() {
+    let t = test_app();
+    let show = format!("/api/shows/{}", demo_show_id("The Office"));
+    let (_, before) = get(&t.app, &show, Some(&t.token)).await;
+    let episode = before["seasons"][0]["episodes"][0]["id"]
+        .as_str()
+        .expect("an episode")
+        .to_string();
+
+    let status = upload(
+        &t.app,
+        &format!("/api/art/item/{episode}/still"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+
+    let (_, chosen) = get(&t.app, &format!("/api/art/item/{episode}"), Some(&t.token)).await;
+    let (_, after) = get(&t.app, &show, Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(chosen["backdrop"], json!(null));
+    assert!(
+        chosen["still"]
+            .as_str()
+            .is_some_and(|url| url.starts_with("/api/images/chosen-"))
+    );
+    assert_eq!(
+        after["seasons"][0]["episodes"][0]["metadata"]["backdropUrl"],
+        chosen["still"]
+    );
 }
 
 #[tokio::test]

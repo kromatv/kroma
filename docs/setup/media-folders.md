@@ -128,7 +128,9 @@ Series/
 To change one title's picture without touching its folder, open the title and
 choose **Edit artwork**. A poster, a backdrop or a logo you upload there comes
 before the picture in the folder and the one from the internet, and **Restore the
-automatic picture** brings them back. It takes the right to manage the library.
+automatic picture** brings them back. On a series page, the **Edit thumbnail**
+button of an episode does the same for that episode's thumbnail. It takes the
+right to manage the library.
 
 ### Titles and summaries from .nfo files
 

@@ -25,7 +25,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 
-import { TitleDialogHeader } from '#web/features/catalog/title-dialog-header.component';
+import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 const sDefinition = styles({
@@ -34,13 +34,19 @@ const sDefinition = styles({
   poster: { width: '100%', maxWidth: 180, aspectRatio: 2 / 3 },
   backdrop: { width: '100%', aspectRatio: 16 / 9 },
   logo: { width: '100%', aspectRatio: 16 / 9 },
+  still: { width: '100%', aspectRatio: 16 / 9 },
 });
 
-const ROLES = ['poster', 'backdrop', 'logo'] as const satisfies readonly ArtRole[];
+const TITLE_ROLES = ['poster', 'backdrop', 'logo'] as const satisfies readonly ArtRole[];
 
 const WASH = color('tint/4');
 
-type Props = Readonly<{ kind: ArtKind; id: string; title: string }>;
+type Props = Readonly<{
+  kind: ArtKind;
+  id: string;
+  title: string;
+  roles?: readonly ArtRole[];
+}>;
 
 interface Slots {
   chosen: ChosenArt | undefined;
@@ -169,30 +175,54 @@ function ArtSlot({ role, slots }: Readonly<{ role: ArtRole; slots: Slots }>) {
   );
 }
 
-/** The poster, the backdrop and the logo an admin uploads for a film or a show. Open
- * with `await ArtworkDialog.call({ kind, id, title })`; it resolves on dismiss. */
-export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title }) => {
+function ArtSlots({
+  kind,
+  id,
+  roles,
+}: Readonly<{ kind: ArtKind; id: string; roles: readonly ArtRole[] }>) {
   const t = useT();
   const slots = useChosenArt(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id));
   return (
-    <Dialog.Root open title={title} width="lg" onClose={() => call.end()}>
-      <TitleDialogHeader overline={t('artwork.title')} title={title} onClose={() => call.end()} />
+    <Box gap={20}>
+      <Text variant="meta" color="white/55">
+        {t('artwork.hint')}
+      </Text>
+      {slots.error ? (
+        <Callout.Root tone="danger">
+          <Callout.Title>{slots.error}</Callout.Title>
+        </Callout.Root>
+      ) : null}
+      <Row gap={24} wrap align="flex-start">
+        {roles.map((role) => (
+          <ArtSlot key={role} role={role} slots={slots} />
+        ))}
+      </Row>
+    </Box>
+  );
+}
+
+/** The pictures an admin uploads for a title: the poster, the backdrop and the logo of
+ * a film or a show unless `roles` names others, such as an episode's `still`. Open with
+ * `await ArtworkDialog.call({ kind, id, title, roles })`; it resolves on dismiss. */
+export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title, roles }) => {
+  const t = useT();
+  const shown = roles ?? TITLE_ROLES;
+  return (
+    <Dialog.Root
+      open
+      title={title}
+      width={shown.length > 1 ? 'lg' : 'md'}
+      onClose={() => call.end()}
+    >
+      <Dialog.Header>
+        <TitleDialogHeading
+          overline={t('artwork.title')}
+          title={title}
+          onClose={() => call.end()}
+        />
+      </Dialog.Header>
       <Dialog.Panel>
-        <Box gap={20}>
-          <Text variant="meta" color="white/55">
-            {t('artwork.hint')}
-          </Text>
-          {slots.error ? (
-            <Callout.Root tone="danger">
-              <Callout.Title>{slots.error}</Callout.Title>
-            </Callout.Root>
-          ) : null}
-          <Row gap={24} wrap align="flex-start">
-            {ROLES.map((role) => (
-              <ArtSlot key={role} role={role} slots={slots} />
-            ))}
-          </Row>
-        </Box>
+        <ArtSlots kind={kind} id={id} roles={shown} />
       </Dialog.Panel>
     </Dialog.Root>
   );

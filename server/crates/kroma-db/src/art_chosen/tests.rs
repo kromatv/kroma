@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use super::*;
 use crate::art_beside::{self, Picture, BACKDROP, POSTER};
@@ -43,7 +43,10 @@ fn choosing_again_replaces_the_earlier_choice() {
     choose(&pool, slot(ITEM, "m1", POSTER), "/api/images/chosen-b.webp").unwrap();
 
     assert_eq!(
-        chosen(&pool, ITEM, "m1").unwrap().poster.as_deref(),
+        chosen(&pool, ITEM, "m1")
+            .unwrap()
+            .get(POSTER)
+            .map(String::as_str),
         Some("/api/images/chosen-b.webp")
     );
 }
@@ -75,10 +78,7 @@ fn what_was_chosen_leaves_out_the_pictures_beside_the_files() {
 
     assert_eq!(
         urls,
-        Urls {
-            backdrop: Some("/api/images/chosen-b.webp".into()),
-            ..Urls::default()
-        }
+        HashMap::from([(BACKDROP.into(), "/api/images/chosen-b.webp".into())])
     );
 }
 
@@ -88,8 +88,8 @@ fn a_choice_belongs_to_one_kind_of_title() {
 
     choose(&pool, slot(SHOW, "x1", POSTER), "/api/images/chosen-a.webp").unwrap();
 
-    assert_eq!(chosen(&pool, ITEM, "x1").unwrap(), Urls::default());
-    assert!(chosen(&pool, SHOW, "x1").unwrap().poster.is_some());
+    assert!(chosen(&pool, ITEM, "x1").unwrap().is_empty());
+    assert!(chosen(&pool, SHOW, "x1").unwrap().contains_key(POSTER));
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn a_scan_leaves_what_an_admin_chose() {
 
     art_beside::replace(&pool, &[], &HashSet::new()).unwrap();
 
-    assert!(chosen(&pool, ITEM, "m1").unwrap().poster.is_some());
+    assert!(chosen(&pool, ITEM, "m1").unwrap().contains_key(POSTER));
 }
 
 #[test]
