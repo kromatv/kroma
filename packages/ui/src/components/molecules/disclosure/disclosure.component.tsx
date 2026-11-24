@@ -1,11 +1,3 @@
-// <Disclosure>: a collapsible section with a divider header ("Advanced"). The
-// trigger is a button announcing `expanded`, so assistive tech hears the state
-// the chevron shows.
-//
-// Yoga has no `order`, so the Root sorts its direct children once - the same
-// shape <Rail> and <Callout> take - and publishes the open state through
-// context, which is what lets the panel be written anywhere inside the root.
-
 import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -39,7 +31,6 @@ interface DisclosureRootProps {
   children?: ReactNode;
 }
 
-// A written part always wins the slot; the sugar only fills one nobody claimed.
 function slot(written: readonly ReactNode[], sugar: ReactNode): ReactNode {
   return written.length > 0 ? written : sugar;
 }
@@ -56,6 +47,8 @@ function Root({
     () => ({ open, toggle: () => setOpen(!open) }),
     [open, setOpen],
   );
+  // Yoga has no `order`, so the Root sorts its direct children once and publishes
+  // the open state through context, which lets the panel be written anywhere.
   const [trigger, panel, loose] = useMemo(() => sortParts(children, Trigger, Panel), [children]);
   return (
     <DisclosureContext.Provider value={state}>

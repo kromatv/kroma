@@ -1,11 +1,4 @@
 import { sv, useSv } from '#ui/core';
-// <Radio>: the one-of-N control. Unlike a checkbox it cannot be un-picked by
-// pressing it again - the only way out of a choice is another choice - so a
-// press always reports `true` and the group owns which one is on.
-//
-// A radio never travels alone: use <ChoiceList mode="single">, or put these
-// inside a container that is a `radiogroup` to assistive tech.
-
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 
@@ -56,6 +49,9 @@ interface RadioProps extends Omit<
   size?: RadioSize;
 }
 
+/** The one-of-N control. A press always reports `true` and the group owns which
+ *  one is on: the only way out of a choice is another choice. A radio never travels
+ *  alone: use <ChoiceList mode="single">, or a container that is a `radiogroup`. */
 function Radio({
   checked,
   onValueChange,

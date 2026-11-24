@@ -1,10 +1,3 @@
-// <Wheel>: the KROMA chromatic wheel, on every target.
-//
-// The optional rotation goes through `useLoop`: a native-driven transform on a
-// television, a CSS keyframe in a browser. Neither needs an injected stylesheet,
-// and neither uses `fill: both`, which is what used to leave the wheel stranded
-// mid-turn in an occluded window.
-
 import { Animated } from 'react-native';
 import { useLoop } from '#ui/lib/loop.hook';
 import { Path, Svg } from '#ui/lib/svg.component';
@@ -22,7 +15,11 @@ interface WheelProps {
   spin?: WheelSpin;
 }
 
+/** The KROMA chromatic wheel, on every target. */
 function Wheel({ size = 24, spin }: Readonly<WheelProps>) {
+  // A native-driven transform on a television, a CSS keyframe in a browser, and
+  // never `fill: both`, which leaves the wheel stranded mid-turn in an occluded
+  // window.
   // `idle` is the resting speed, so an unspun wheel still has to name a duration
   // for the hook; `active` is what actually decides whether anything turns.
   const rotation = useLoop('spin', WHEEL_SPIN_MS[spin ?? 'idle'], Boolean(spin));

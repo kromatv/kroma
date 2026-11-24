@@ -1,14 +1,13 @@
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
-// The whole button design, declared once: fills, paddings and label metrics as
-// `sv` slots rather than conditionals and parallel lookup maps at the call site.
-
 import type { IconProps } from '#ui/components/atoms/icon';
 import { type StyleDecl, svFor, type Variant } from '#ui/core';
 import { CONTROL } from '#ui/lib/field-shell';
 
-// The row's rhythm, shared by the root and the dimmable content wrapper.
+/** The row's rhythm, shared by the root and the dimmable content wrapper. */
 const CONTENT_GAP = 9;
 
+/** The whole button design, declared once: fills, paddings and label metrics as
+ *  `sv` slots rather than conditionals and parallel lookup maps at the call site. */
 const buttonVariants = svFor<{
   root: StyleDecl;
   label: StyleDecl;

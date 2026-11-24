@@ -1,11 +1,3 @@
-// <Callout>: the toned block a screen drops in beside its content to say one
-// thing - a failure, a warning, a result worth pointing at.
-//
-// It is NOT a toast: a toast arrives and leaves, a callout is part of the page
-// and stays as long as what it reports is true. It is not an <EmptyState>
-// either: that stands in for content that is missing, this sits next to content
-// that is there.
-
 import { type ReactNode, useMemo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
@@ -68,7 +60,6 @@ interface Context {
 
 const [CalloutContext, useCallout] = partContext<Context>('Callout.Root');
 
-// A written part always wins the slot; the sugar only fills one nobody claimed.
 function slot(written: readonly ReactNode[], sugar: ReactNode): ReactNode {
   return written.length > 0 ? written : sugar;
 }
@@ -176,6 +167,8 @@ const sDefinition = styles({ title: { fontWeight: '600' } });
 
 /**
  * A toned block carrying one message, and sometimes the action that answers it.
+ * It is not a toast: it is part of the page and stays as long as what it reports
+ * is true. Nor an <EmptyState>: it sits next to content that is there.
  *
  * ```tsx
  * <Callout.Root tone="danger">

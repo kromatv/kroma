@@ -1,11 +1,6 @@
 import type { StyleProp, TextStyle } from 'react-native';
 import { type ColorToken, type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 
-// <Hint>: the row that tells you what the remote does. Translations carry only
-// the words and a `{left}`-style token where a key belongs; the tokens become
-// kit icons, because tvOS renders the geometric arrow code points with emoji
-// presentation when they are written as literal text.
-
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -55,6 +50,9 @@ function partsOf(text: string): string[] {
   return parts;
 }
 
+/** The row that tells you what the remote does. A translation carries `{left}`-style
+ *  tokens where keys belong, and they become kit icons, because tvOS renders the
+ *  arrow code points with emoji presentation when written as literal text. */
 function Hint({ text, size = 15, color = 'textDim', textStyle, ...box }: Readonly<HintProps>) {
   const scope = useStyleScope();
 

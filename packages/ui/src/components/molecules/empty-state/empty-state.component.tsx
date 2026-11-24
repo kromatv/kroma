@@ -135,7 +135,6 @@ const sDefinition = styles({
   hintTv: { maxW: 720 },
 });
 
-// A section's worth, a screen's worth, and a screen's worth at ten feet.
 const SHAPE = {
   sm: {
     gap: 8,

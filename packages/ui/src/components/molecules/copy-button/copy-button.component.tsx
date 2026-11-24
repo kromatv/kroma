@@ -21,8 +21,7 @@ export interface CopyButtonProps {
 const GLYPH_FACE = 30;
 const GLYPH = 16;
 
-// Indexed rather than nested ternaries: three states, one lookup, and the
-// failure is SAID rather than left looking like the press did nothing.
+// The failure is SAID rather than left looking like the press did nothing.
 const GLYPH_OF: Record<CopyState, IconName> = {
   idle: 'copy',
   copied: 'check',

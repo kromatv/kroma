@@ -1,11 +1,4 @@
 import { sv, useSv } from '#ui/core';
-// <Checkbox>: the many-of-N control. A <Switch> says "this is on"; a checkbox
-// says "this one is included", which is why a list of them is a selection and
-// a list of switches is a settings page.
-//
-// Same construction as <Switch>: a Focusable that toggles on Select, painting
-// its state as a FILL rather than a mark alone, so it reads from three metres.
-
 import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
@@ -60,6 +53,9 @@ interface CheckboxProps extends Omit<
   size?: CheckboxSize;
 }
 
+/** The many-of-N control: a <Switch> says "this is on", a checkbox says "this one
+ *  is included". It toggles on Select and paints its state as a FILL rather than
+ *  a mark alone, so it reads from three metres. */
 function Checkbox({
   checked: checkedProp,
   defaultChecked = false,

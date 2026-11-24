@@ -1,11 +1,3 @@
-// The floating section switcher: a capsule of icon + label items whose amber
-// lens travels to the current section. Shared by the TV top nav and the phone
-// tab bar; on glass it is also a slider that previews under the finger.
-//
-// Yoga has no `order` and the capsule's fill depends on whether it is wearing a
-// backdrop, so the Root sorts its direct children once and publishes the size
-// and the label policy the items honour through context.
-
 import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { PanResponder, type StyleProp, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -86,6 +78,9 @@ function Root({
   style,
 }: Readonly<NavPillRootProps>) {
   const labelPolicy = labels ?? (size === 'tv' ? 'all' : 'active');
+  // Yoga has no `order` and the capsule's fill depends on whether it wears a
+  // backdrop, so the Root sorts its direct children once and publishes the size
+  // and the label policy the items honour through context.
   const [backdrop, items] = sortParts(children, Backdrop);
   const [lens, setLens] = useState<{ id: string; rect: LensRect } | null>(null);
   const claim = (id: string, rect: LensRect) => {
@@ -242,7 +237,9 @@ function Root({
 }
 
 /**
- * The floating section switcher.
+ * The floating section switcher: a capsule of icon and label items whose amber lens
+ * travels to the current section. Shared by the TV top nav and the phone tab bar; on
+ * glass it is also a slider that previews under the finger.
  *
  * ```tsx
  * <NavPill.Root size="tv">

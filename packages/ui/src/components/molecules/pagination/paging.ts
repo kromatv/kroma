@@ -1,5 +1,3 @@
-// The arithmetic under the row: which pages it shows, and which items a page holds.
-
 /** A place in the row: a page to go to, or the run of pages the window hides. */
 type PageSlot = number | 'gap';
 

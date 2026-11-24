@@ -1,11 +1,5 @@
 import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
-// <Kbd>: one keycap.
-//
-// The mark a shortcut is written with, in prose ("press Esc"), in a menu row,
-// or under a search field. It is a face and never a control: pressing a picture
-// of a key does nothing, and on a television it must not be a D-pad stop.
-
 import type { ReactNode } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -28,7 +22,8 @@ interface KbdProps {
 
 /**
  * A keycap, as tall as every other and square when it holds one symbol, so a run of
- * them lines up.
+ * them lines up. It is a face and never a control: pressing a picture of a key
+ * does nothing, and on a television it must not be a D-pad stop.
  *
  * ```tsx
  * <Kbd icon="corner-down-left" />

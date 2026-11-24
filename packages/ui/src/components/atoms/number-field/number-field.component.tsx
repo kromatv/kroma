@@ -1,11 +1,3 @@
-// <NumberField>: the numeric entry, wearing exactly the well and rhythm a
-// <Field> entry wears, plus a stacked stepper pair - the affordance that says
-// "number", the pointer's way to nudge, and on a television the only way to
-// change the value at all. The buffer is text (so a cleared field can be
-// retyped), what is committed is always what is on screen, and blur
-// normalizes: clamps to the bounds and rewrites the text to the number
-// actually stored, so the field can never show 15 while holding 64.
-
 import { useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -45,6 +37,9 @@ function snapTo(n: number, step: number): number {
   return Number(n.toFixed(decimals));
 }
 
+/** The numeric entry, in a <Field> entry's well, with a stacked stepper pair: on a
+ *  television the only way to change the value. Blur clamps to the bounds and
+ *  rewrites the text to the number stored, so it never shows 15 while holding 64. */
 function NumberField({
   value,
   onValueChange,

@@ -1,11 +1,6 @@
 import { type StyleScope, color, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
-// <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
-//
-// The same anatomy as <MediaCard> at a different aspect and type scale. It fills
-// its grid cell rather than declaring a width, so the grid owns the column maths.
-
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
@@ -41,6 +36,8 @@ interface PosterCardProps {
 
 const frameOf = (width: number | string, scope: StyleScope) =>
   sharedStyle(`poster-card:${width}`, { width, radius: 'xl' }, scope);
+/** The 2:3 portrait tile of the browse grids (Films, Series). It fills its grid cell
+ *  rather than declaring a width, so the grid owns the column maths. */
 function PosterCard({
   title,
   overline,

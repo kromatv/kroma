@@ -4,13 +4,6 @@ import type { ReactElement } from 'react';
 import { contentRoot, onScreen } from '#ui/testing';
 import { createInputTestHost } from '#ui/testing-input';
 
-//
-// Renders the universal primitives through react-native-web and asserts the DOM
-// they produce. The same components compile to native views on Apple TV and
-// Android TV, so this is the browser half of the "one component, four targets"
-// claim; the native half is covered by the pure logic tests (focal, sv, boxStyle)
-// plus the platform files' shared contracts.
-
 import { act, cleanup, fireEvent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Field } from '#ui/components/molecules/field';
@@ -380,9 +373,8 @@ describe('Avatar', () => {
   });
 
   it('keeps the padlock inside the corner it is drawn against', () => {
-    // The badge used to sit 8px in whatever the shape was, so a round avatar's
-    // own corner cropped it. The inset now follows the corner: barely anything
-    // on a square, ~15% of the size on a circle.
+    // The inset follows the corner: barely anything on a square, ~15% of the
+    // size on a circle.
     const square = render(<Avatar name="Marie Curie" size={96} roundness={0} locked />);
     expect(css(padlock(square.container)).right).toBe('8px');
     cleanup();

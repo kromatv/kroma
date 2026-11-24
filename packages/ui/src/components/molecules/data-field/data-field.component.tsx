@@ -1,10 +1,3 @@
-// <DataField>: one fact, read - an overline naming it and the value under it.
-//
-// Not a <Field>: nothing here is editable and there is no control to label, so
-// there is no shell, no focus ring and no error state. A title screen's
-// "Duree / 2 h 04", a library card's "Taille / 1,4 To" and a person's
-// "Naissance / 1974" are all this.
-
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -18,9 +11,8 @@ interface Shape {
   gap: number;
 }
 
-// A console readout, a page readout, and a page readout at ten feet. The label
-// is always an overline: it is the one role the ramp authors for exactly this
-// job, and hand-shrinking it per screen is how six copies drifted to six sizes.
+// The label is always an overline: it is the one role the ramp authors for
+// exactly this job, and hand-shrinking it per screen is how six copies drifted to six sizes.
 const SHAPE: Record<ControlSize, Shape> = {
   sm: { label: 'overline', value: 'meta', gap: 2 },
   md: { label: 'overline', value: 'label', gap: 4 },
@@ -79,7 +71,8 @@ function Value({ lines, children }: Readonly<DataFieldValueProps>) {
 }
 
 /**
- * A label-above-value readout.
+ * A label-above-value readout. Not a <Field>: nothing here is editable, so there
+ * is no shell, no focus ring and no error state.
  *
  * ```tsx
  * <DataField.Root>

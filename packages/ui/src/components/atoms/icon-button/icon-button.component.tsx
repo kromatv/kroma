@@ -8,8 +8,6 @@ import {
   useTheme,
   type Variant,
 } from '#ui/core';
-// <IconButton>: a round, icon-only control (the theme-song mute, a close button,
-// a player transport key). Same focus behaviour as <Button>, no label.
 
 import { type ReactNode, useMemo } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
@@ -30,8 +28,7 @@ export type IconButtonVariant = Variant<typeof iconButtonVariants, 'variant'>;
  * The hover fill is one step short of the press fill throughout, so hover ->
  * press reads as a single escalation; on a page with no focus scope, hover is
  * the only feedback a cursor gets. Because both live in the option they belong
- * to, a variant cannot be given a rest fill and forgotten in the state tables -
- * which is exactly what used to happen.
+ * to, a variant cannot be given a rest fill and forgotten in the state tables.
  */
 const iconButtonVariants = svFor<{ root: StyleDecl; icon: Pick<IconProps, 'color'> }>()({
   slots: {
@@ -150,6 +147,8 @@ interface IconButtonProps extends Omit<FocusableProps, 'children' | 'focusScale'
   children?: ReactNode;
 }
 
+/** A round, icon-only control: the theme-song mute, a close button, a player
+ *  transport key. The same focus behaviour as <Button>, with no label. */
 function IconButton({
   icon,
   diameter,
