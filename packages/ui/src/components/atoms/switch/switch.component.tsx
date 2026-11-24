@@ -1,16 +1,5 @@
 import { sharedStyle, styles, sv, useStyleScope, useSv } from '#ui/core';
 
-// <Switch>: the on/off primitive. A television has no gestures, so this is
-// not a draggable thumb: it is a Focusable that toggles on Select, and the
-// track fills amber (rather than relying on thumb position alone) so the
-// state reads from three metres.
-//
-// The flip animates on the kit's usual split (see <VirtualRail>): a CSS
-// transition on the browser targets, `Animated` with the real native driver
-// elsewhere. Only compositor-friendly properties move: the thumb is a
-// `translateX` and the amber is a fill layer crossfading over the off-track,
-// since neither driver can animate a background colour natively.
-
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 
@@ -82,6 +71,9 @@ interface SwitchProps extends Omit<
   style?: StyleProp<ViewStyle>;
 }
 
+/** The on/off primitive. A television has no gestures, so it is a Focusable that
+ *  toggles on Select rather than a draggable thumb, and the track fills amber so
+ *  the state reads from three metres. */
 function Switch({
   checked: checkedProp,
   defaultChecked = false,
@@ -131,6 +123,10 @@ function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) 
   );
 }
 
+// The flip animates on the kit's usual split (see <VirtualRail>): a CSS
+// transition on the browser targets, `Animated` with the native driver
+// elsewhere. Only the thumb's `translateX` and a fill layer crossfading over the
+// off-track move, since neither driver can animate a background colour natively.
 // The thumb keeps one face, light in both states: the track is the state
 // signal, and a thumb that changed colour mid-slide read as two things
 // happening. One value drives both the fill and the slide, so neither can

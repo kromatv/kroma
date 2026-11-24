@@ -1,7 +1,3 @@
-// <CardSkeleton>: the settings/form placeholder - a titled panel with a few
-// label + field pairs. A fixed-length placeholder that never reorders, so an
-// index key is correct.
-
 import { Box } from '#ui/components/atoms/box';
 import { Skeleton } from './skeleton.component';
 
@@ -9,6 +5,8 @@ interface CardSkeletonProps {
   fields?: number;
 }
 
+/** The settings or form placeholder: a titled panel with a few label and field
+ *  pairs. */
 function CardSkeleton({ fields = 4 }: Readonly<CardSkeletonProps>) {
   return (
     <Box gap={16} p={24} radius="xl" border="borderStrong" bg="surface1" aria-hidden>

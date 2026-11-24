@@ -1,9 +1,4 @@
 import { type ColorValue, type StyleScope, sharedStyle, style, useStyleScope } from '#ui/core';
-// <Progress>: the determinate bar (resume position on a tile, download, import).
-// The fill eases to a new value; `indeterminate` sweeps a segment across the
-// track instead and ignores `value`.
-// <ProgressRing>: its circular counterpart, used where a bar would not fit.
-
 import { Animated } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 
@@ -51,6 +46,9 @@ function clamp01(n: number): number {
   return Math.min(Math.max(n, 0), 1);
 }
 
+/** The determinate bar: a resume position on a tile, a download, an import. The
+ *  fill eases to a new value; `indeterminate` sweeps a segment across the track
+ *  instead and ignores `value`. */
 function Progress({
   value = 0,
   buffered,

@@ -1,6 +1,4 @@
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
-// The cast rail's tile, on both distances.
-
 import { Avatar, type AvatarProps } from '#ui/components/atoms/avatar';
 import { Focusable, FocusRing } from '#ui/components/atoms/focusable';
 import { Text, type TextProps } from '#ui/components/atoms/text';
@@ -60,6 +58,7 @@ interface PersonCardProps {
   onPress?: () => void;
 }
 
+/** The cast rail's tile, on both distances. */
 function PersonCard({
   name,
   role,

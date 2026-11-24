@@ -1,18 +1,3 @@
-// <ChoiceList>: a list whose rows ARE the control. Pick one (radio) or pick
-// several (checkbox), each row optionally carrying its own actions.
-//
-// Composed, in Radix's shape: a Root that owns the value and the semantics,
-// Items that read it through context, and named parts for the pieces a row is
-// made of. The reason is the same reason Radix gives - a row is not a fixed
-// arrangement of label + hint, and a props-only API answers every new demand
-// with another prop until the component is a switchboard. Here the caller
-// writes the row.
-//
-// `ChoiceList.Item` composes <ListRow>, so the WHOLE row is the target: one
-// D-pad stop per row rather than two, and a pointer hit area the size of the
-// thing a reader is aiming at. The indicator is drawn as a face and the ROW
-// carries `radio`/`checkbox` with its state to assistive tech.
-
 import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -213,6 +198,9 @@ const sDefinition = styles({
   chosen: { bg: 'accentSoft', border: 'accent' },
 });
 
+/** A list whose rows ARE the control: pick one (radio) or several (checkbox). Each
+ *  Item composes <ListRow>, so the whole row is one D-pad stop, and the ROW carries
+ *  `radio`/`checkbox` with its state to assistive tech. */
 const ChoiceList = { Root, Item, Media, Indicator, Label, Hint };
 
 export type {

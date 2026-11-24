@@ -1,9 +1,5 @@
 import { activeTheme, radiusValue, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
-// <Img>: the artwork surface, with a built-in fade-in and cross-fade on `src`
-// change; `background` shows instantly as the fallback so the surface is never
-// blank.
-
 import { type ReactNode, useState } from 'react';
 import { type StyleProp, View, type ViewStyle } from 'react-native';
 
@@ -64,6 +60,8 @@ export const IMG_FADE_MS = 400;
 
 const sDefinition = styles({ clip: { overflow: 'hidden' }, fill: { fill: true } });
 
+/** The artwork surface, with a built-in fade-in and a cross-fade on `src` change.
+ *  `background` shows instantly as the fallback, so the surface is never blank. */
 function Img({
   src: requested,
   alt = '',

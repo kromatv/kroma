@@ -1,8 +1,3 @@
-// <ArtScrim>: the gradient laid over artwork so what sits on it stays legible.
-//
-// Named for how far the dark reaches rather than for the tile that wanted it,
-// because the ramps are the design's and the tiles only pick one.
-
 import { Box } from '#ui/components/atoms/box';
 import { type CornerValue, color, styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
@@ -38,6 +33,9 @@ interface ArtScrimProps {
   radius?: CornerValue;
 }
 
+/** The gradient laid over artwork so what sits on it stays legible. Its ramps are
+ *  named for how far the dark reaches rather than for the tile that wanted one,
+ *  because the ramps are the design's and the tiles only pick one. */
 function ArtScrim({ variant = 'soft', radius = 0 }: Readonly<ArtScrimProps>) {
   const ramp = useStyles(rampDefinition);
   const s = useStyles(sDefinition);

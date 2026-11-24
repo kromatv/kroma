@@ -1,7 +1,3 @@
-// What <NavPill>'s parts share: the size and the label policy the Root settled
-// on, and the two registers an item joins - the lens's (who owns it) and the
-// slide's (what a finger can land on).
-
 import { partContext } from '#ui/lib/part-context';
 
 type NavPillSize = 'sm' | 'tv';
@@ -37,6 +33,9 @@ interface NavPillState {
   hover: string | null;
 }
 
+/** What <NavPill>'s parts share: the size and label policy the Root settled on, and
+ *  the two registers an item joins, the lens's (who owns it) and the slide's (what a
+ *  finger can land on). */
 const [NavPillContext, useNavPill] = partContext<NavPillState>('NavPill.Root');
 
 export type { LensRect, NavPillLabels, NavPillSize, NavPillState, NavPillTone, SlideTarget };

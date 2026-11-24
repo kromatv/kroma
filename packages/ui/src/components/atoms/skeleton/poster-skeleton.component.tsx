@@ -1,7 +1,3 @@
-// <PosterSkeleton>: the loading twin of <PosterCard> - the 2:3 art, then the
-// title and meta lines a browse tile carries under it. Fills its cell like the
-// card does, so a grid or a rail keeps its columns while the data is out.
-
 import { Box } from '#ui/components/atoms/box';
 import { Skeleton } from './skeleton.component';
 
@@ -10,6 +6,9 @@ interface PosterSkeletonProps {
   width?: number;
 }
 
+/** The loading twin of <PosterCard>: the 2:3 art, then the title and meta lines.
+ *  It fills its cell like the card does, so a grid or a rail keeps its columns
+ *  while the data is out. */
 function PosterSkeleton({ width }: Readonly<PosterSkeletonProps>) {
   return (
     <Box w={width ?? '100%'} aria-hidden>

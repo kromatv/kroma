@@ -1,8 +1,4 @@
 import { type CornerValue, type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
-// <Avatar>: the profile / cast disc. A photo when there is one, otherwise a
-// deterministic gradient with the person's initials, so a profile is never a
-// blank circle and always keeps the same colour everywhere it appears.
-
 import { hashString } from '@kromatv/core';
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
@@ -19,9 +15,6 @@ const AVATAR_GRADIENTS = [
 
 const AVATAR_GRADIENT = AVATAR_GRADIENTS[0];
 
-/** Stable gradient for a seed (a user id, a person's name), so a profile keeps
- * its colour on every screen and on every device. */
-
 const initialsType = (size: number, scope: StyleScope) =>
   sharedStyle(
     `avatar:initials:${size}`,
@@ -34,6 +27,9 @@ const initialsType = (size: number, scope: StyleScope) =>
     },
     scope,
   );
+
+/** Stable gradient for a seed (a user id, a person's name), so a profile keeps
+ * its colour on every screen and on every device. */
 function gradientFor(seed: string): string {
   return AVATAR_GRADIENTS[hashString(seed) % AVATAR_GRADIENTS.length] as string;
 }
@@ -106,6 +102,9 @@ function badgeInset(size: number, corner: number): number {
   return Math.round(Math.max(size * 0.08, corner * 0.2929));
 }
 
+/** The profile or cast disc: the photo when there is one, otherwise a gradient
+ *  seeded from the person with their initials, so a profile is never a blank
+ *  circle and keeps the same colour everywhere it appears. */
 function Avatar({
   name = '',
   src = null,

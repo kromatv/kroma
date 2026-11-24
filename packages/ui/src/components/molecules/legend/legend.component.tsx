@@ -1,11 +1,3 @@
-// <Legend>: what the colours in a chart or a status board mean. A dot in the
-// series' own paint, the name beside it, and a row that wraps.
-//
-// The paint is a raw colour rather than a tone, deliberately: a legend keys a
-// chart drawn on a canvas, where a series' hue is assigned by POSITION and never
-// cycled, so it is a value the caller already holds and not one of the palette's
-// semantic steps.
-
 import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -52,7 +44,9 @@ function Item({ color, children }: Readonly<LegendItemProps>) {
 }
 
 /**
- * The key to a chart's colours.
+ * The key to a chart's colours: a dot in each series' own paint, the name beside
+ * it, in a row that wraps. The paint is a raw colour rather than a tone: a chart
+ * assigns a series' hue by POSITION, so it is a value the caller already holds.
  *
  * ```tsx
  * <Legend.Root>

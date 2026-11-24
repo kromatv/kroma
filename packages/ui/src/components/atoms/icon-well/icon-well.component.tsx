@@ -1,7 +1,4 @@
 import { sv, useSv, type Variant } from '#ui/core';
-// <IconWell>: a glyph sunk into a rounded, tinted square, or art filling that same
-// square. The leading mark of a settings row, a server in a list, a menu entry.
-
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Img } from '#ui/components/atoms/img';
@@ -41,6 +38,8 @@ interface IconWellProps {
   src?: string | null;
 }
 
+/** A glyph sunk into a rounded, tinted square, or art filling that same square:
+ *  the leading mark of a settings row, a server in a list, a menu entry. */
 function IconWell({ name, size = 'tv', tone = 'neutral', src }: Readonly<IconWellProps>) {
   const iconWellVariantsScoped = useSv(iconWellVariants);
 

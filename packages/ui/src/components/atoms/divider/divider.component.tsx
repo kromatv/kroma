@@ -1,6 +1,3 @@
-// <Divider>: a hairline rule. One physical pixel would vanish on a 4K panel
-// viewed from three metres, so the 10-foot variant is deliberately heavier.
-
 import { Box } from '#ui/components/atoms/box';
 import type { ColorValue } from '#ui/core';
 
@@ -14,6 +11,8 @@ interface DividerProps {
   color?: ColorValue;
 }
 
+/** A hairline rule. One physical pixel would vanish on a 4K panel viewed from
+ *  three metres, so the 10-foot variant is deliberately heavier. */
 function Divider({
   vertical = false,
   thickness = 1,

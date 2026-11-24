@@ -1,15 +1,4 @@
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
-// <AddTile>: the "one more" slot at the end of a row of tiles: add a profile,
-// add a server. A dashed square with a plus, and a LABEL under it, because the
-// two together are one control: one focus stop, one hit area, one thing a
-// screen reader announces.
-//
-// It is a real glass tile rather than a ghost outline. These rows sit over the
-// sign-in artwork, and a bare dashed border disappears against a bright frame,
-// so the well carries the same translucent fill and blur every other control
-// wears (see lib/field-shell, <Frost>), and the dashes read against it instead
-// of against whatever the splash happens to be showing.
-
 import type { StyleProp, ViewStyle } from 'react-native';
 import { AVATAR_ROUNDNESS } from '#ui/components/atoms/avatar';
 import { Focusable, type FocusableProps, FocusRing } from '#ui/components/atoms/focusable';
@@ -92,7 +81,8 @@ interface AddTileProps extends Omit<FocusableProps, 'children' | 'style'> {
 }
 
 /**
- * The trailing "add" tile of a profile or server row.
+ * The trailing "add" tile of a profile or server row: a dashed square with a plus
+ * and a label under it, one control with one focus stop and one hit area.
  *
  * ```tsx
  * <AddTile label={t('profiles.addProfile')} onPress={() => nav.go('addProfile')} />
