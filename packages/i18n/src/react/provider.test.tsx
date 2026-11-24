@@ -3,7 +3,7 @@
 import { act, render } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { installKeyInspector, installLocaleOverride } from '../dev-overrides';
+import { activeAppLocales, installKeyInspector, installLocaleOverride } from '../dev-overrides';
 import { createI18n } from '../i18n';
 import { useLocale, useT } from './context';
 import { I18nProvider } from './provider.component';
@@ -111,5 +111,16 @@ describe('a dev switch over a rendered screen', () => {
     act(() => installKeyInspector(asKey));
 
     expect(texts(container).at(-1)).toBe('mount 1');
+  });
+});
+
+describe('what the tools are told the app renders in', () => {
+  it('is said while a provider is mounted and forgotten once it unmounts', () => {
+    const { unmount } = screen();
+    const mounted = activeAppLocales();
+
+    unmount();
+
+    expect([mounted, activeAppLocales()]).toEqual([{ codes: ['en', 'fr'], resolved: 'en' }, null]);
   });
 });
