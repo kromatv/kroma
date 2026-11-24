@@ -3506,7 +3506,7 @@
   },
   "typescript/no-misused-promises": {
     "clients/web/src/features/admin/pipeline.component.tsx": 1,
-    "clients/web/src/features/catalog/treatments-panel.component.tsx": 2
+    "clients/web/src/features/catalog/treatments-panel.component.tsx": 1
   },
   "typescript/no-misused-spread": {
     "clients/web/src/features/admin/module-api.ts": 1,
