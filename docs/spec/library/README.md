@@ -200,6 +200,12 @@ match a person made by hand in KROMA (LIB-33).
 Neither Plex nor Jellyfin records which matches a person fixed, so there is no fixed set to
 bring. Every identity comes over, and the ones somebody fixed come with them.
 
+**LIB-85** (SHIPPED) - **A match named in the `.nfo` file.** A film's or a show's `.nfo` file
+(LIB-84) that names the title's provider id, as Kodi, Jellyfin and Plex write it, matches the
+title to that id ahead of KROMA's own reading of the name, behind a match made by hand (LIB-33)
+and one an import brought (LIB-78). A title already matched to another id by its name is
+matched again to the file's at the next scan.
+
 **Matches two things.**
 
 **LIB-35** (AGREED) - A file that could be more than one identity, a title shared by a remake

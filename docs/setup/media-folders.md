@@ -140,6 +140,10 @@ Series/
   folders.
 - KROMA reads `<title>`, `<plot>`, `<premiered>` or `<year>`, and each
   `<genre>`. The file must be UTF-8, as these programs write it.
+- A file that gives the title's TMDB number, in `<uniqueid type="tmdb">` or
+  `<tmdbid>`, or that ends with a link to its themoviedb.org page, makes KROMA
+  recognize the title by that number instead of by its name. A match you fix
+  with **Fix the match** comes before the file.
 - Once KROMA recognizes the title, its text from the internet shows instead.
   What you write with **Edit info** comes before the file.
 - KROMA reads a file you add or change at the next library scan.

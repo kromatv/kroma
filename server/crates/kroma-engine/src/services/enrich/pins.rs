@@ -1,7 +1,8 @@
 //! Which TMDB id a title is held to ahead of its name, and who says so: a
-//! match made by hand, then an acquisition, then the identity an import kept.
-//! An identity that names no TMDB id is asked of TMDB once, and the answer is
-//! kept.
+//! match made by hand, then an acquisition, then the identity an import kept,
+//! then the `.nfo` file beside the title. An identity that names no TMDB id is
+//! asked of TMDB once, and the answer is kept; it waits behind a file that
+//! names one.
 
 use std::collections::HashMap;
 
@@ -33,16 +34,28 @@ pub(super) fn lead_for(state: &SharedState, kind: &str, id: &str) -> Option<Lead
     } else {
         (db::acq_tmdb_for_item(&conn, id), Subject::Movie)
     };
-    match acquired.ok().flatten() {
-        Some(tmdb) => Some(Lead::Tmdb(tmdb)),
-        None => db::imports::identity_lead(&conn, subject, id)
+    if let Some(tmdb) = acquired.ok().flatten() {
+        return Some(Lead::Tmdb(tmdb));
+    }
+    let identity = db::imports::identity_lead(&conn, subject, id)
+        .ok()
+        .flatten();
+    match identity {
+        Some(Lead::Tmdb(_)) => identity,
+        _ => db::text_beside::lead(&conn, kind, id)
             .ok()
-            .flatten(),
+            .flatten()
+            .map(Lead::Tmdb)
+            .or(identity),
     }
 }
 
-fn imported(pool: &Pool, subject: Subject) -> (HashMap<String, u64>, HashMap<String, Elsewhere>) {
-    let mut named = HashMap::new();
+fn held(pool: &Pool, subject: Subject) -> (HashMap<String, u64>, HashMap<String, Elsewhere>) {
+    let kind = match subject {
+        Subject::Movie => db::metadata_core::ITEM,
+        Subject::Show => db::metadata_core::SHOW,
+    };
+    let mut named = db::text_beside::leads(pool, kind).unwrap_or_default();
     let mut unasked = HashMap::new();
     for (id, lead) in db::imports::identity_leads(pool, subject).unwrap_or_default() {
         match lead {
@@ -58,8 +71,8 @@ fn imported(pool: &Pool, subject: Subject) -> (HashMap<String, u64>, HashMap<Str
 }
 
 pub(super) fn load_pins(pool: &Pool) -> Pins {
-    let (mut items, mut unasked_items) = imported(pool, Subject::Movie);
-    let (mut shows, mut unasked_shows) = imported(pool, Subject::Show);
+    let (mut items, mut unasked_items) = held(pool, Subject::Movie);
+    let (mut shows, mut unasked_shows) = held(pool, Subject::Show);
     items.extend(db::acq_tmdb_by_item(pool).unwrap_or_default());
     shows.extend(db::acq_tmdb_by_show(pool).unwrap_or_default());
     items.extend(db::tmdb_pin::all_for_kind(pool, db::metadata_core::ITEM).unwrap_or_default());

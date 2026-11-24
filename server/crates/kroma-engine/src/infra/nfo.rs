@@ -1,5 +1,6 @@
 //! The `.nfo` file Kodi, Jellyfin and Plex keep beside a title's files, read
-//! for its name, summary, year and genres (`docs/reference/nfo-files.md`).
+//! for its name, summary, year and genres, and the TMDB id it names
+//! (`docs/reference/nfo-files.md`).
 
 use std::fs::File;
 use std::io::Read;
@@ -17,13 +18,21 @@ pub const MOVIE: &str = "movie";
 /// The root element of a show's `.nfo`.
 pub const TVSHOW: &str = "tvshow";
 
-/// The text the `.nfo` at `path` gives a title, when its root element is
-/// `root`, cut to what a title holds. A file that cannot be read, is not
-/// UTF-8, is larger than [`MAX_BYTES`] or is not such a document gives
-/// nothing.
-pub fn read(path: &Path, root: &str) -> TitleEdit {
-    contents(path)
-        .and_then(|text| parsed(&text, root))
+/// What a `.nfo` file gives its title: its text, cut to what a title holds,
+/// and the TMDB id it names.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Contents {
+    pub edit: TitleEdit,
+    pub tmdb: Option<u64>,
+}
+
+/// What the `.nfo` at `path` gives a title, when its root element is `root`.
+/// A file that cannot be read, is not UTF-8 or is larger than [`MAX_BYTES`]
+/// gives nothing, and so does one that is neither such a document nor a link
+/// to the title's TMDB page.
+pub fn read(path: &Path, root: &str) -> Contents {
+    text_in(path)
+        .map(|text| parsed(&text, root))
         .unwrap_or_default()
 }
 
@@ -34,7 +43,7 @@ pub fn modified(path: &Path) -> Option<i64> {
     i64::try_from(since.as_millis()).ok()
 }
 
-fn contents(path: &Path) -> Option<String> {
+fn text_in(path: &Path) -> Option<String> {
     let mut bytes = Vec::new();
     let file = File::open(path).ok()?;
     file.take(MAX_BYTES + 1).read_to_end(&mut bytes).ok()?;
@@ -42,10 +51,17 @@ fn contents(path: &Path) -> Option<String> {
     fits.then(|| String::from_utf8(bytes).ok()).flatten()
 }
 
-fn parsed(text: &str, root: &str) -> Option<TitleEdit> {
+fn parsed(text: &str, root: &str) -> Contents {
     let close = format!("</{root}>");
-    let end = text.rfind(&close)? + close.len();
-    let doc = Document::parse(text[..end].trim_start_matches('\u{feff}')).ok()?;
+    let end = text.rfind(&close).map_or(0, |at| at + close.len());
+    let (document, link) = text.split_at(end);
+    let mut contents = described(document, root).unwrap_or_default();
+    contents.tmdb = contents.tmdb.or_else(|| linked(link, root));
+    contents
+}
+
+fn described(document: &str, root: &str) -> Option<Contents> {
+    let doc = Document::parse(document.trim_start_matches('\u{feff}')).ok()?;
     let el = doc.root_element();
     if !el.has_tag_name(root) {
         return None;
@@ -56,7 +72,38 @@ fn parsed(text: &str, root: &str) -> Option<TitleEdit> {
         year: year_of(el),
         genres: Some(texts(el, "genre").collect()),
     };
-    Some(edit.clipped())
+    Some(Contents {
+        edit: edit.clipped(),
+        tmdb: tmdb_of(el),
+    })
+}
+
+fn tmdb_of(el: Node<'_, '_>) -> Option<u64> {
+    let unique = el
+        .children()
+        .filter(|child| child.has_tag_name("uniqueid"))
+        .filter(|child| {
+            child
+                .attribute("type")
+                .is_some_and(|t| t.eq_ignore_ascii_case("tmdb"))
+        })
+        .find_map(|child| child.text().and_then(id_in));
+    unique.or_else(|| texts(el, "tmdbid").find_map(|id| id_in(&id)))
+}
+
+fn linked(link: &str, root: &str) -> Option<u64> {
+    let page = if root == TVSHOW {
+        "themoviedb.org/tv/"
+    } else {
+        "themoviedb.org/movie/"
+    };
+    let (_, after) = link.split_once(page)?;
+    let digits = after.split(|c: char| !c.is_ascii_digit()).next()?;
+    id_in(digits)
+}
+
+fn id_in(text: &str) -> Option<u64> {
+    text.trim().parse().ok().filter(|&id| id > 0)
 }
 
 fn year_of(el: Node<'_, '_>) -> Option<u32> {
