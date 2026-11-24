@@ -41,6 +41,20 @@ fn a_film_s_file_gives_its_names_summary_release_date_genres_and_ids() {
 }
 
 #[test]
+fn a_file_gives_the_title_in_the_language_it_was_made_in() {
+    let text = "<movie><title>Spirited Away</title>\
+        <originaltitle> Sen to Chihiro no kamikakushi </originaltitle></movie>";
+
+    let Contents { edit, .. } = parsed(text, MOVIE);
+
+    assert_eq!(edit.title.as_deref(), Some("Spirited Away"));
+    assert_eq!(
+        edit.original_title.as_deref(),
+        Some("Sen to Chihiro no kamikakushi")
+    );
+}
+
+#[test]
 fn the_year_alone_is_read_when_the_file_has_no_premiere() {
     let text = "<tvshow><title> Our show </title><year>2004</year><genre> </genre></tvshow>";
 

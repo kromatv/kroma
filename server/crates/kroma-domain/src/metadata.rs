@@ -18,6 +18,13 @@ pub struct Metadata {
     #[serde(rename = "imdbId", skip_serializing_if = "Option::is_none")]
     pub imdb_id: Option<String>,
     pub title: Option<String>,
+    /// The title in the language it was made in, the same in every language.
+    #[serde(
+        rename = "originalTitle",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub original_title: Option<String>,
     /// The name the title sorts under, when it is not the one shown. Only a
     /// person or a `.nfo` file gives one.
     #[serde(rename = "sortTitle", default, skip_serializing_if = "Option::is_none")]
@@ -165,6 +172,7 @@ impl Metadata {
             tmdb_id: 0,
             imdb_id: None,
             title: None,
+            original_title: None,
             sort_title: None,
             tagline: None,
             overview: None,
@@ -291,6 +299,7 @@ mod tests {
             tmdb_id: 603,
             imdb_id: None,
             title: Some("The Matrix".into()),
+            original_title: None,
             sort_title: None,
             tagline: None,
             overview: None,

@@ -19,6 +19,7 @@ describe('buildTitleView: show source', () => {
     seasonCount: 3,
     metadata: {
       tmdbId: 999,
+      originalTitle: 'Serie',
       rating: 7,
       overview: 'o',
       tagline: 'tg',
@@ -52,6 +53,7 @@ describe('buildTitleView: show source', () => {
     });
     expect(v.kind).toBe('show');
     expect(v.tmdbId).toBe(999);
+    expect(v.originalTitle).toBe('Serie');
     expect(v.poster).toBe('spos:sh1');
     expect(v.backdrop).toBe('bd:sh1');
     expect(v.themeUrl).toBe('theme:sh1');

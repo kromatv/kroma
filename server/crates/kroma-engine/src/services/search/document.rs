@@ -153,7 +153,7 @@ impl<'a> Indexer<'a> {
     fn metadata(&mut self, draft: &mut Draft, file_title: &str, meta: Option<&Metadata>) {
         let Some(meta) = meta else { return };
         let f = self.fields;
-        if let Some(title) = &meta.title {
+        for title in [&meta.title, &meta.original_title].into_iter().flatten() {
             if !title.eq_ignore_ascii_case(file_title) {
                 self.title(draft, f.alt_title, title);
             }

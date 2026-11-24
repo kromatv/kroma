@@ -5,7 +5,7 @@ import { IconButton } from '@kromatv/ui/kit';
 import { ArtworkDialog } from '#web/features/catalog/artwork-dialog.component';
 import { useReloadShow } from '#web/features/catalog/use-reload-show.hook';
 import { useAuth } from '#web/shared/lib/auth';
-import type { TitleSeason } from '#web/shared/lib/title-view';
+import type { TitleSeason } from '#web/shared/lib/title-seasons';
 
 const POSTER = ['poster'] as const;
 

@@ -72,6 +72,7 @@ export function TitleHero({
       }}
       overline={overline}
       title={view.title}
+      originalTitle={view.originalTitle}
       rating={view.rating}
       ageRating={view.ageRating}
       meta={metaLine(t, view)}

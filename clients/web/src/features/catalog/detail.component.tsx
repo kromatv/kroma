@@ -23,6 +23,7 @@ import { type ReactNode, useSyncExternalStore } from 'react';
 import {
   DirectorsLine,
   HeroFields,
+  HeroTitle,
   ListButton,
   ReportButton,
   WatchedButton,
@@ -59,13 +60,6 @@ const sDefinition = styles({
     maxWidth: 680,
     textShadow: `0 1px 3px ${color('black/50')}, 0 2px 16px ${color('black/55')}`,
   },
-  title: {
-    textShadow: [
-      `0 0 2px ${color('black/55')}`,
-      `0 2px 8px ${color('black/55')}`,
-      `0 8px 30px ${color('black/60')}`,
-    ].join(', '),
-  },
   noCaps: { textTransform: 'none' },
   italic: { fontStyle: 'italic' },
 });
@@ -82,6 +76,7 @@ export interface DetailHeroProps {
   art: { id: string; backdrop: string | null; poster: string };
   overline: string;
   title: string;
+  originalTitle?: string | null;
   rating?: number | null;
   ageRating?: AgeRatingValue | null;
   meta: string;
@@ -114,6 +109,7 @@ export function DetailHero({
   art,
   overline,
   title,
+  originalTitle,
   rating,
   ageRating,
   meta,
@@ -197,11 +193,7 @@ export function DetailHero({
             <Text variant="overline" color="accent" mb={12} style={s.noCaps}>
               {overline}
             </Text>
-            <h1 className={classes(s.title)}>
-              <Text variant="h1" mb={16}>
-                {title}
-              </Text>
-            </h1>
+            <HeroTitle title={title} originalTitle={originalTitle} />
 
             <Box row wrap align="center" gap={10} mb={18}>
               {rating ? (

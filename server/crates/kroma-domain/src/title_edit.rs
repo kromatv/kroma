@@ -2,7 +2,8 @@
 //! (LIB-83), and what the `.nfo` file beside it says (LIB-84). Each field comes
 //! before the provider's, in every language, and a field left `None` keeps
 //! following the provider. A release date written gives the year (LIB-87),
-//! and a sort title files the title under another name (LIB-88).
+//! a sort title files the title under another name (LIB-88), and an original
+//! title names it in the language it was made in (LIB-94).
 
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +25,9 @@ pub const YEARS: std::ops::RangeInclusive<u32> = 1800..=2200;
 pub struct TitleEdit {
     #[serde(default)]
     pub title: Option<String>,
+    /// The title in the language it was made in.
+    #[serde(default, rename = "originalTitle")]
+    pub original_title: Option<String>,
     /// The name the title sorts under, leaving the one shown as it is.
     #[serde(default, rename = "sortTitle")]
     pub sort_title: Option<String>,
@@ -132,6 +136,7 @@ impl TitleEdit {
         let released = kept(self.released);
         Self {
             title: kept(self.title),
+            original_title: kept(self.original_title),
             sort_title: kept(self.sort_title),
             overview: kept(self.overview),
             year: released.as_deref().and_then(year_of_day).or(self.year),
@@ -151,6 +156,7 @@ impl TitleEdit {
         };
         Self {
             title: self.title.or(below.title),
+            original_title: self.original_title.or(below.original_title),
             sort_title: self.sort_title.or(below.sort_title),
             overview: self.overview.or(below.overview),
             year,
@@ -171,6 +177,7 @@ impl TitleEdit {
         });
         Self {
             title: tidied.title.map(|title| cut(title, TITLE_MAX)),
+            original_title: tidied.original_title.map(|title| cut(title, TITLE_MAX)),
             sort_title: tidied.sort_title.map(|title| cut(title, TITLE_MAX)),
             overview: tidied.overview.map(|text| cut(text, OVERVIEW_MAX)),
             year: tidied.year.filter(|year| YEARS.contains(year)),
@@ -191,6 +198,7 @@ impl TitleEdit {
             text.as_deref().is_none_or(|t| t.chars().count() <= max)
         };
         short(&self.title, TITLE_MAX)
+            && short(&self.original_title, TITLE_MAX)
             && short(&self.sort_title, TITLE_MAX)
             && short(&self.overview, OVERVIEW_MAX)
             && self.year.is_none_or(|y| YEARS.contains(&y))
@@ -203,8 +211,9 @@ impl TitleEdit {
     }
 
     /// Put each field that was written in place of the provider's. A summary,
-    /// genres, a release date or a sort title written for a title the provider
-    /// never described give it a [`Metadata::blank`] record to carry them.
+    /// genres, a release date, a sort title or an original title written for
+    /// a title the provider never described give it a [`Metadata::blank`]
+    /// record to carry them.
     pub fn onto(&self, title: &mut impl Editable) {
         let to = title.written();
         if let Some(title) = &self.title {
@@ -229,6 +238,9 @@ impl TitleEdit {
         if self.title.is_some() {
             meta.title.clone_from(&self.title);
         }
+        if self.original_title.is_some() {
+            meta.original_title.clone_from(&self.original_title);
+        }
         if self.sort_title.is_some() {
             meta.sort_title.clone_from(&self.sort_title);
         }
@@ -247,6 +259,7 @@ impl TitleEdit {
             || self.genres.is_some()
             || self.released.is_some()
             || self.sort_title.is_some()
+            || self.original_title.is_some()
     }
 
     fn date_onto(&self, meta: &mut Metadata) {
