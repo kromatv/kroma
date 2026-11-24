@@ -1,0 +1,12 @@
+{
+  "artwork.action": "Edit artwork",
+  "artwork.applyFailed": "Could not update the artwork.",
+  "artwork.automatic": "Automatic",
+  "artwork.backdrop": "Backdrop",
+  "artwork.hint": "A picture you upload shows instead of the one found beside the files or on TMDB.",
+  "artwork.loadFailed": "Could not load the chosen artwork.",
+  "artwork.poster": "Poster",
+  "artwork.reset": "Restore the automatic picture",
+  "artwork.title": "Artwork",
+  "artwork.upload": "Upload a picture"
+}

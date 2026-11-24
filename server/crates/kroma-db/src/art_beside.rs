@@ -1,5 +1,5 @@
 //! The pictures a scan found beside each title's files, and the poster and the
-//! backdrop they put in front of fetched art.
+//! backdrop they put in front of fetched art, behind the ones an admin chose.
 
 use std::collections::{HashMap, HashSet};
 
@@ -90,13 +90,15 @@ pub fn forget(pool: &Pool, url: &str) -> Result<usize> {
     Ok(conn.execute("DELETE FROM art_beside WHERE url = ?1", [url])?)
 }
 
-/// The URL of the poster kept beside the files of the `kind` title `id`.
+/// The URL of the poster kept for the `kind` title `id`: the one an admin
+/// chose, else the one beside its files.
 pub fn poster_of(pool: &Pool, kind: &str, id: &str) -> Result<Option<String>> {
     let conn = pool.get()?;
     let url = conn
         .query_row(
-            "SELECT url FROM art_beside \
-             WHERE subject_kind = ?1 AND subject_id = ?2 AND role = ?3",
+            "SELECT url FROM art_kept \
+             WHERE subject_kind = ?1 AND subject_id = ?2 AND role = ?3 \
+             ORDER BY precedence DESC LIMIT 1",
             params![kind, id, POSTER],
             |r| r.get(0),
         )
@@ -104,10 +106,21 @@ pub fn poster_of(pool: &Pool, kind: &str, id: &str) -> Result<Option<String>> {
     Ok(url)
 }
 
-#[derive(Default)]
-struct Urls {
-    poster: Option<String>,
-    backdrop: Option<String>,
+/// The poster and the backdrop of one title.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Urls {
+    pub poster: Option<String>,
+    pub backdrop: Option<String>,
+}
+
+impl Urls {
+    pub(crate) fn set(&mut self, role: &str, url: String) {
+        match role {
+            POSTER => self.poster = Some(url),
+            BACKDROP => self.backdrop = Some(url),
+            _ => {}
+        }
+    }
 }
 
 #[derive(Default)]
@@ -122,20 +135,15 @@ impl Art {
             &[],
             |ph| {
                 format!(
-                    "SELECT subject_id, role, url FROM art_beside \
-                     WHERE subject_kind = ? AND subject_id IN ({ph})"
+                    "SELECT subject_id, role, url FROM art_kept \
+                     WHERE subject_kind = ? AND subject_id IN ({ph}) ORDER BY precedence"
                 )
             },
             |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get(2)?)),
         )?;
         let mut art = Self::default();
         for (id, role, url) in rows {
-            let urls = art.0.entry(id).or_default();
-            match role.as_str() {
-                POSTER => urls.poster = Some(url),
-                BACKDROP => urls.backdrop = Some(url),
-                _ => {}
-            }
+            art.0.entry(id).or_default().set(&role, url);
         }
         Ok(art)
     }

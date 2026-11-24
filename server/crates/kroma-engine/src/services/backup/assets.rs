@@ -1,7 +1,8 @@
-//! The files a backup packs beside its rows: the avatars users uploaded, and the
-//! subtitles this server generated or downloaded.
+//! The files a backup packs beside its rows: the avatars users uploaded, the
+//! posters and backdrops admins chose, and the subtitles this server generated
+//! or downloaded.
 
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
 
 use serde_json::{Map, Value};
@@ -13,11 +14,12 @@ use crate::services::subtitles::downloaded_dir;
 use super::archive::{Asset, Assets, Folder};
 
 const SUBTITLES: &str = "downloaded_subtitles";
+const IMAGES: [(&str, &str); 2] = [("users", "avatar_url"), ("art_chosen", "url")];
 
 /// Every file the rows of `doc` point at. A subtitle row whose file is gone is
 /// removed from `doc`.
 pub fn gather(doc: &mut BackupDoc, data_dir: &Path) -> Assets {
-    let mut files = avatars(doc, data_dir);
+    let mut files = images(doc, data_dir);
     files.extend(subtitles(doc, data_dir));
     files
 }
@@ -51,29 +53,26 @@ pub fn rebase_subtitles(doc: &mut BackupDoc, data_dir: &Path) {
     });
 }
 
-fn avatars(doc: &BackupDoc, data_dir: &Path) -> Assets {
+fn images(doc: &BackupDoc, data_dir: &Path) -> Assets {
     let dir = images_dir(data_dir);
-    let mut out = Assets::new();
-    let mut seen = HashSet::new();
-    for user in doc.tables.get("users").into_iter().flatten() {
-        let Some(name) = user
-            .get("avatar_url")
-            .and_then(Value::as_str)
-            .and_then(local_image_name)
-        else {
-            continue;
-        };
-        if seen.insert(name.to_string()) {
-            if let Ok(bytes) = std::fs::read(dir.join(name)) {
-                out.push(Asset {
-                    folder: Folder::Images,
-                    name: name.to_string(),
-                    bytes,
-                });
-            }
-        }
-    }
-    out
+    let names: BTreeSet<&str> = IMAGES
+        .iter()
+        .flat_map(|(table, column)| {
+            let rows = doc.tables.get(*table).into_iter().flatten();
+            rows.filter_map(|row| row.get(*column)?.as_str())
+        })
+        .filter_map(local_image_name)
+        .collect();
+    names
+        .into_iter()
+        .filter_map(|name| {
+            Some(Asset {
+                folder: Folder::Images,
+                name: name.to_string(),
+                bytes: std::fs::read(dir.join(name)).ok()?,
+            })
+        })
+        .collect()
 }
 
 fn subtitles(doc: &mut BackupDoc, data_dir: &Path) -> Assets {
@@ -228,6 +227,26 @@ mod tests {
             .unwrap()
             .join("escape.webp")
             .exists());
+    }
+
+    #[test]
+    fn a_picture_chosen_for_two_titles_is_packed_once() {
+        let (pool, dir) = fresh("chosen");
+        std::fs::write(images_dir(dir.path()).join("chosen-a.webp"), b"POSTER").unwrap();
+        let url = "/api/images/chosen-a.webp";
+        for (kind, id) in [("item", "m1"), ("show", "s1")] {
+            let slot = crate::db::art_chosen::Slot {
+                kind,
+                id,
+                role: "poster",
+            };
+            crate::db::art_chosen::choose(&pool, slot, url).unwrap();
+        }
+        let mut doc = crate::db::export_portable(&pool, dir.path()).unwrap();
+
+        let files = gather(&mut doc, dir.path());
+
+        assert_eq!(files, vec![image("chosen-a.webp", b"POSTER")]);
     }
 
     #[test]

@@ -60,6 +60,7 @@ const TABLES: &[&str] = &[
     "notification_type_prefs",
     "reports",
     "tmdb_pin",
+    "art_chosen",
     "acq_file_tmdb",
     "downloaded_subtitles",
     "import_servers",

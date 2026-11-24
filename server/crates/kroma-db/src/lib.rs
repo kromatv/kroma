@@ -61,6 +61,7 @@ mod grant;
 mod home;
 pub mod imports;
 pub mod art_beside;
+pub mod art_chosen;
 pub mod localize;
 pub mod metadata_core;
 mod schema;

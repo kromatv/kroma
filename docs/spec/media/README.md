@@ -195,6 +195,10 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
   `background` or `art` in a folder that holds no other title's video. For a show, it is
   one of those four names in the show's folder, under the same rule as its poster
   (MEDIA-48).
+- **MEDIA-50** (SHIPPED) - A person who manages the library can upload a poster for a film
+  or a show, and a backdrop for a matched one. Each comes before the picture kept beside the
+  title's files and the fetched one, until the person removes it. A metadata refresh keeps it
+  (LIB-44), and a backup carries it.
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.

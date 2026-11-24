@@ -33,6 +33,7 @@ import {
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { ArtworkDialog } from '#web/features/catalog/artwork-dialog.component';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog.component';
 
 import { useAuth } from '#web/shared/lib/auth';
@@ -168,6 +169,15 @@ export function TreatmentsPanel({
               icon="file-info"
               label={t('mediaInfo.action')}
               onPress={() => void MediaInfoModal.call({ id, title })}
+            />
+          ) : null}
+          {canManageLibrary ? (
+            <Button
+              variant="glass"
+              size="sm"
+              icon="photo"
+              label={t('artwork.action')}
+              onPress={() => void ArtworkDialog.call({ kind, id, title })}
             />
           ) : null}
           {canManageLibrary ? (

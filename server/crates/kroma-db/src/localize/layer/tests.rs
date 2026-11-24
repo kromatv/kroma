@@ -1,6 +1,7 @@
 use kroma_domain::{Kind, SectionItem};
 
 use crate::art_beside::{BACKDROP, POSTER};
+use crate::art_chosen::{self, Slot};
 use crate::localize::test_support::*;
 use crate::localize::{
     overlay_each, overlay_items, overlay_section_items, overlay_show_metadata, overlay_shows,
@@ -85,4 +86,29 @@ fn a_show_wears_the_pictures_beside_its_files_wherever_it_is_listed() {
     );
     assert_eq!(row.metadata.as_ref().unwrap().poster_url.as_deref(), beside);
     assert_eq!(blob.poster_url.as_deref(), beside);
+}
+
+#[test]
+fn a_backdrop_an_admin_chose_comes_before_the_one_beside_the_files() {
+    let p = pool();
+    keep_beside(&p, &[(ITEM, "m1", POSTER), (ITEM, "m1", BACKDROP)]);
+    let backdrop = Slot {
+        kind: ITEM,
+        id: "m1",
+        role: BACKDROP,
+    };
+    art_chosen::choose(&p, backdrop, "/api/images/chosen-m1.webp").unwrap();
+    let mut items = vec![item("m1", Kind::Movie)];
+
+    overlay_items(&p, &mut items, "en").unwrap();
+
+    let meta = items[0].metadata.as_ref().unwrap();
+    assert_eq!(
+        meta.poster_url.as_deref(),
+        Some("/api/images/beside-m1-poster.webp")
+    );
+    assert_eq!(
+        meta.backdrop_url.as_deref(),
+        Some("/api/images/chosen-m1.webp")
+    );
 }

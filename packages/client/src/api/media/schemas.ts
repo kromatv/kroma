@@ -24,6 +24,25 @@ export const MatchCandidate = z.object({
 });
 export type MatchCandidate = z.infer<typeof MatchCandidate>;
 
+/** Whose chosen art: a film (`item`) or a show. */
+export const ArtKind = z.enum(['item', 'show']);
+export type ArtKind = z.infer<typeof ArtKind>;
+
+/** Which of a title's pictures an admin chooses. */
+export const ArtRole = z.enum(['poster', 'backdrop']);
+export type ArtRole = z.infer<typeof ArtRole>;
+
+/** `GET /api/art/{kind}/{id}`: the URL of each picture an admin chose. */
+export const ChosenArt = z.object({
+  poster: z.string().nullable(),
+  backdrop: z.string().nullable(),
+});
+export type ChosenArt = z.infer<typeof ChosenArt>;
+
+/** `POST /api/art/{kind}/{id}/{role}`: where the chosen picture is served. */
+export const ArtShown = z.object({ url: z.string() });
+export type ArtShown = z.infer<typeof ArtShown>;
+
 /** Route vocabulary for a rematch: the catalog's split, not TMDB's `tv`. */
 export const RematchKind = z.enum(['movie', 'show']);
 export type RematchKind = z.infer<typeof RematchKind>;

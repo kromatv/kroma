@@ -12,6 +12,10 @@
       "broke": 34,
       "changed": 34
     },
+    "art_chosen": {
+      "broke": 35,
+      "changed": 35
+    },
     "audio_analysis": {
       "broke": 1,
       "changed": 1
@@ -277,5 +281,5 @@
       "changed": 1
     }
   },
-  "version": 34
+  "version": 35
 }

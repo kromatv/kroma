@@ -1,4 +1,5 @@
 export * from './artwork-scale';
+export type { ArtSlot } from './chosen-art';
 export type { HlsMasterDeclaration } from './client';
 export * from './credits';
 export * from './ids';
