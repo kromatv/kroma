@@ -47,6 +47,7 @@ struct Inner {
     capacity: usize,
     in_use: usize,
     reserved: usize,
+    leased_until: Option<Instant>,
     committed: u64,
     swap: SwapWatch,
     warned: Option<Instant>,
@@ -72,14 +73,16 @@ impl Inner {
             capacity,
             in_use: 0,
             reserved: 0,
+            leased_until: None,
             committed: 0,
             swap: SwapWatch::default(),
             warned: None,
         }
     }
 
-    fn effective(&self) -> usize {
-        if self.reserved > 0 {
+    fn effective(&self, now: Instant) -> usize {
+        let leased = self.leased_until.is_some_and(|until| now < until);
+        if self.reserved > 0 || leased {
             RESERVED_FLOOR.min(self.capacity)
         } else {
             self.capacity
@@ -110,7 +113,7 @@ impl Inner {
     }
 
     fn try_admit(&mut self, need: Footprint, now: Instant) -> bool {
-        let verdict = match self.in_use < self.effective() {
+        let verdict = match self.in_use < self.effective(now) {
             false => Err(Hold::Busy),
             true => {
                 let reading = host::read(&mut self.swap, now);
@@ -128,6 +131,10 @@ impl Inner {
                 false
             }
         }
+    }
+
+    fn lease_until(&mut self, until: Instant) {
+        self.leased_until = self.leased_until.max(Some(until));
     }
 
     fn report(&mut self, hold: Hold, now: Instant) {
@@ -276,6 +283,14 @@ pub fn reserve() -> Reservation {
     let mut inner = gate().inner.lock().unwrap();
     inner.reserved += 1;
     Reservation
+}
+
+/// [`reserve`] for a viewer with no end to hold a [`Reservation`] across, such
+/// as a player that beats every few seconds: the background budget drops to one
+/// pass for `span` from now. A shorter lease never cuts a longer one short.
+pub fn lease(span: Duration) {
+    let until = Instant::now() + span;
+    gate().inner.lock().unwrap().lease_until(until);
 }
 
 #[cfg(test)]
