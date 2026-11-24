@@ -102,6 +102,10 @@ Series/
   dossiers de saison.
 - KROMA lit `<title>`, `<plot>`, `<premiered>` ou `<year>`, et chaque
   `<genre>`. Le fichier doit être en UTF-8, comme ces logiciels l'écrivent.
+- Si le fichier donne le numéro TMDB du titre, dans `<uniqueid type="tmdb">` ou
+  `<tmdbid>`, ou s'il se termine par le lien de sa page sur themoviedb.org,
+  KROMA reconnaît le titre à ce numéro plutôt qu'à son nom. Une fiche corrigée
+  avec **Corriger la fiche** passe avant le fichier.
 - Dès que KROMA reconnaît le titre, c'est le texte trouvé sur Internet qui
   s'affiche. Ce que vous écrivez avec **Modifier les informations** passe avant
   le fichier.
