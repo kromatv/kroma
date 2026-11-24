@@ -2,6 +2,7 @@ use super::super::engine::engine_for;
 use super::super::episodes::{enrich_episodes, still_gone};
 use super::support::*;
 use crate::db;
+use crate::db::art_beside::SEASON;
 
 #[test]
 fn enrich_episodes_stores_text_in_every_language_and_the_guide() {
@@ -25,6 +26,7 @@ fn enrich_episodes_stores_text_in_every_language_and_the_guide() {
     assert!(!stale);
     assert!(!db::episode_guide_stale(&state.db, SHOW_ID, 1).unwrap());
     assert_eq!(db::season_casts(&state.db, SHOW_ID).unwrap()[&1].len(), 1);
+    assert!(!db::translations::any_stale(&state.db, SEASON, &["s1:1"], &langs).unwrap());
 }
 
 #[test]

@@ -164,11 +164,8 @@ fn overlay_show_detail_covers_show_episodes_and_season_cast() {
     );
 }
 
-#[test]
-fn a_season_wears_the_poster_kept_beside_its_folder() {
-    let p = pool();
-    keep_beside(&p, &[(SEASON, "s1:2", POSTER)]);
-    let mut detail = ShowDetail {
+fn two_seasons() -> ShowDetail {
+    ShowDetail {
         show: show("s1"),
         seasons: vec![
             Season {
@@ -180,11 +177,43 @@ fn a_season_wears_the_poster_kept_beside_its_folder() {
                 ..Season::default()
             },
         ],
-    };
+    }
+}
+
+#[test]
+fn a_season_wears_the_poster_kept_beside_its_folder() {
+    let p = pool();
+    keep_beside(&p, &[(SEASON, "s1:2", POSTER)]);
+    let mut detail = two_seasons();
 
     overlay_show_detail(&p, &mut detail, "en").unwrap();
 
     assert_eq!(detail.seasons[0].poster_url, None);
+    assert_eq!(
+        detail.seasons[1].poster_url.as_deref(),
+        Some("/api/images/beside-s1:2-poster.webp")
+    );
+}
+
+#[test]
+fn a_season_wears_the_fetched_poster_unless_one_is_kept_beside_its_folder() {
+    let p = pool();
+    for id in ["s1:1", "s1:2"] {
+        let fetched = TransData {
+            poster_url: Some(format!("/api/images/fetched-{id}.webp")),
+            ..Default::default()
+        };
+        translations::put(&p, SEASON, id, "en", translations::TMDB, &fetched).unwrap();
+    }
+    keep_beside(&p, &[(SEASON, "s1:2", POSTER)]);
+    let mut detail = two_seasons();
+
+    overlay_show_detail(&p, &mut detail, "fr").unwrap();
+
+    assert_eq!(
+        detail.seasons[0].poster_url.as_deref(),
+        Some("/api/images/fetched-s1:1.webp")
+    );
     assert_eq!(
         detail.seasons[1].poster_url.as_deref(),
         Some("/api/images/beside-s1:2-poster.webp")

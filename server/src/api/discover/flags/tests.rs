@@ -120,7 +120,7 @@ fn season(number: u32, episode_count: u32) -> discover::RawSeason {
         name: Some(format!("Saison {number}")),
         episode_count,
         air_date: Some("2005-09-20".into()),
-        poster_url: None,
+        poster_url: Some(format!("https://img.example/s{number}.jpg")),
     }
 }
 
@@ -245,6 +245,10 @@ fn a_show_nobody_holds_reads_every_season_as_absent() {
     assert_eq!(fiche.local_id, None);
     assert_eq!(fiche.seasons[0].episodes_available, 0);
     assert!(!fiche.seasons[0].requested);
+    assert_eq!(
+        fiche.seasons[0].poster_url.as_deref(),
+        Some("https://img.example/s1.jpg")
+    );
 }
 
 #[test]

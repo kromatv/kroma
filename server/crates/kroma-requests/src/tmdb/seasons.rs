@@ -36,6 +36,7 @@ impl From<EpisodeArt> for DiscoverEpisode {
 pub struct SeasonData {
     pub episodes: Vec<EpisodeArt>,
     pub cast: Vec<CastMember>,
+    pub poster_url: Option<String>,
 }
 
 /// Fetches one season's episodes and cast in a single TMDB call. Returns empty
@@ -55,10 +56,21 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
         Ok(r) => r,
         Err(()) => return SeasonData::default(),
     };
-    let episodes = resp
-        .episodes
-        .into_iter()
-        .map(|e| EpisodeArt {
+    let cast = build_cast(
+        resp.credits.map(|c| c.cast).unwrap_or_default(),
+        MAX_CAST,
+        false,
+    );
+    SeasonData {
+        episodes: resp.episodes.into_iter().map(EpisodeArt::from).collect(),
+        cast,
+        poster_url: resp.poster_path.map(|p| format!("{IMG}/w500{p}")),
+    }
+}
+
+impl From<RawEpisode> for EpisodeArt {
+    fn from(e: RawEpisode) -> Self {
+        Self {
             episode: e.episode_number,
             still_url: e.still_path.map(|p| format!("{IMG}/w300{p}")),
             name: e.name.filter(|s| !s.is_empty()),
@@ -66,14 +78,8 @@ pub fn season_episodes(api_key: &str, language: &str, tv_id: u64, season: u32) -
             air_date: e.air_date.filter(|s| !s.is_empty()),
             rating: e.vote_average.filter(|v| *v > 0.0),
             runtime_min: e.runtime.filter(|m| *m > 0),
-        })
-        .collect();
-    let cast = build_cast(
-        resp.credits.map(|c| c.cast).unwrap_or_default(),
-        MAX_CAST,
-        false,
-    );
-    SeasonData { episodes, cast }
+        }
+    }
 }
 
 /// Fetches one season in several languages, keyed by language code. Languages
@@ -97,6 +103,8 @@ pub fn season_episodes_multi(
 struct SeasonResp {
     #[serde(default)]
     episodes: Vec<RawEpisode>,
+    #[serde(default)]
+    poster_path: Option<String>,
     #[serde(default)]
     credits: Option<RawCredits>,
 }
@@ -151,6 +159,18 @@ mod tests {
         );
         assert!(tmdb.requests()[0].starts_with("/tv/1399/season/1?"));
         assert!(tmdb.requests()[0].contains("language=fr-FR"));
+    }
+
+    #[test]
+    fn a_season_keeps_the_poster_tmdb_gives_it() {
+        let _tmdb = FakeTmdb::start(|_| (200, json!({ "episodes": [], "poster_path": "/p.jpg" })));
+
+        let season = season_episodes("key", "fr-FR", 1399, 1);
+
+        assert_eq!(
+            season.poster_url.as_deref(),
+            Some("https://image.tmdb.org/t/p/w500/p.jpg")
+        );
     }
 
     #[test]

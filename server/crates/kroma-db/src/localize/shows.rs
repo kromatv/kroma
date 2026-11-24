@@ -51,21 +51,21 @@ pub fn overlay_show_detail(pool: &Pool, detail: &mut ShowDetail, locale: &str) -
         overlay_season_cast(&conn, &detail.show.id, season, locale)?;
         overlay_listed(&conn, &detail.show.id, season, locale)?;
     }
-    season_posters(&conn, detail)
+    season_posters(&ask, detail)
 }
 
-fn season_posters(conn: &rusqlite::Connection, detail: &mut ShowDetail) -> Result<()> {
+fn season_posters(ask: &Ask, detail: &mut ShowDetail) -> Result<()> {
     let ids: Vec<String> = detail
         .seasons
         .iter()
         .map(|season| season_id(&detail.show.id, season.number))
         .collect();
     let keys: Vec<&str> = ids.iter().map(String::as_str).collect();
-    let art = Art::load(conn, SEASON, &keys)?;
+    let art = Art::load(ask.conn, SEASON, &keys)?;
+    let fetched = translations::resolve_many(ask.conn, SEASON, &keys, ask.locale)?;
     for (season, id) in detail.seasons.iter_mut().zip(&ids) {
-        if let Some(poster) = art.poster(id) {
-            season.poster_url = Some(poster);
-        }
+        let fetched = fetched.get(id).and_then(|t| t.poster_url.clone());
+        season.poster_url = art.poster(id).or(fetched);
     }
     Ok(())
 }

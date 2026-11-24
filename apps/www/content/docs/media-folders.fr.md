@@ -118,7 +118,8 @@ Series/
 - Pour l'affiche d'une saison, nommez l'image `poster`, `folder`, `cover` ou
   `default` dans le dossier de la saison, ou du nom de la saison dans le dossier
   de la série : `season01-poster.jpg`, et `season-specials-poster.jpg` pour les
-  épisodes spéciaux. Une saison sans affiche montre celle de la série.
+  épisodes spéciaux. Sans image dans les dossiers, une saison prend l'affiche
+  trouvée sur Internet, sinon celle de la série.
 - Pour la vignette d'un épisode, donnez à l'image le nom de la vidéo de
   l'épisode, suivi ou non de `-thumb` : `School Plays - S01E01-thumb.jpg`. Elle
   s'affiche même sur un épisode que KROMA ne reconnaît pas.
