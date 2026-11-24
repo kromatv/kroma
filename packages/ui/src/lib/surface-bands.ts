@@ -1,4 +1,5 @@
-import { Children, isValidElement, type ReactNode } from 'react';
+import { isValidElement, type ReactNode } from 'react';
+import { directChildren } from './parts';
 
 interface SurfaceParts {
   header: unknown;
@@ -25,7 +26,7 @@ interface SurfaceBands {
  * around a condition draws no shelf on the pass where the condition is false.
  */
 function surfaceBands(children: ReactNode, parts: Readonly<SurfaceParts>): SurfaceBands {
-  const kids = Children.toArray(children).filter((node) => !isEmptyBand(node, parts));
+  const kids = directChildren(children).filter((node) => !isEmptyBand(node, parts));
   const find = (which: unknown) => kids.find((node) => isValidElement(node) && node.type === which);
   const header = find(parts.header);
   const panel = find(parts.panel);
@@ -48,7 +49,7 @@ function isEmptyBand(node: ReactNode, parts: Readonly<SurfaceParts>): boolean {
     return false;
   }
   const { children } = node.props as { children?: ReactNode };
-  return Children.toArray(children).length === 0;
+  return directChildren(children).length === 0;
 }
 
 export type { SurfaceBands };
