@@ -1609,7 +1609,6 @@
     "clients/web/src/features/admin/network-rules.ts": 1,
     "clients/web/src/features/catalog/browse-screen.component.tsx": 1,
     "clients/web/src/features/catalog/use-saved-titles.hook.ts": 2,
-    "clients/web/src/features/catalog/use-title-request.hook.ts": 1,
     "clients/web/src/features/notifications/notification-row.component.tsx": 1,
     "clients/web/src/features/playback/media-events.ts": 1,
     "clients/web/src/features/playback/video-engine.test.ts": 1,
