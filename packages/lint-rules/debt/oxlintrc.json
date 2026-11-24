@@ -1415,7 +1415,6 @@
         "packages/ui/src/components/organisms/menu/menu.fixtures.tsx",
         "packages/ui/src/components/organisms/nearby-tv-list/nearby-tv-list.component.tsx",
         "packages/ui/src/components/organisms/perf-hud/perf-hud.component.tsx",
-        "packages/ui/src/components/organisms/player/hooks/use-drag-track.hook.ts",
         "packages/ui/src/components/organisms/player/hooks/use-player-credits.hook.ts",
         "packages/ui/src/components/organisms/player/hooks/use-player-ending.hook.ts",
         "packages/ui/src/components/organisms/player/hooks/use-player-nav.hook.ts",
