@@ -12,20 +12,13 @@
 // Sibling: <PinField> is the masked-dots spelling of the same job, for a
 // 10-foot secret PIN, and it is built out of these parts.
 
-import {
-  Children,
-  isValidElement,
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { Children, isValidElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { Pressable, TextInput } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { NO_ZOOM_FONT_SIZE } from '#ui/lib/field-shell';
+import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import { useCompleteOnce } from '#ui/lib/use-complete-once.hook';
 import { useControllable } from '#ui/lib/use-controllable.hook';
 import { OtpFieldContext, type OtpFieldState, OtpGroupStartContext } from './otp-field-context';
@@ -96,7 +89,7 @@ function Root({
 
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const input = useRef<TextInput>(null);
-  const [focused, setFocused] = useState(false);
+  const within = useFocusWithin();
 
   const allowed = new RegExp(pattern);
 
@@ -136,7 +129,7 @@ function Root({
   // is nowhere left to type. It also tracks focus rather than mere presence: a
   // screen can stack several codes (current PIN, new PIN, confirm), and a caret
   // blinking in a field that would not receive the keystroke is a lie.
-  const caretAt = physicalKeyboard && focused && !disabled ? value.length : -1;
+  const caretAt = physicalKeyboard && within.focused && !disabled ? value.length : -1;
 
   const ctx = useMemo<OtpFieldState>(
     () => ({
@@ -174,8 +167,8 @@ function Root({
               ref={input}
               value={value}
               onChangeText={commit}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
+              onFocus={within.onFocus}
+              onBlur={within.onBlur}
               maxLength={maxLength}
               autoFocus={autoFocus}
               editable={!disabled}
