@@ -29,7 +29,25 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function open(kind: 'item' | 'show' | 'episode', id: string) {
+const NOTHING_WRITTEN = {
+  title: null,
+  sortTitle: null,
+  overview: null,
+  year: null,
+  released: null,
+  genres: null,
+};
+
+const SHOWN = {
+  title: 'Sehnsucht Nach Youkali',
+  year: 2020,
+  overview: 'A return to nature in songs and dance.',
+  genres: ['Drama', 'Music'],
+  poster: null,
+  backdrop: null,
+};
+
+function open(kind: 'item' | 'show' | 'episode', id: string, shown?: typeof SHOWN) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   inputHost.render(
     <QueryClientProvider client={queries}>
@@ -42,7 +60,7 @@ function open(kind: 'item' | 'show' | 'episode', id: string) {
   );
   let closed: Promise<void> = Promise.resolve();
   act(() => {
-    closed = TitleInfoDialog.call({ kind, id, title: 'heat.1995' });
+    closed = TitleInfoDialog.call({ kind, id, title: 'heat.1995', shown });
   });
   return closed;
 }
@@ -135,4 +153,28 @@ it('says when what was written cannot be read', async () => {
   void open('show', 's1');
 
   expect(await screen.findByText('Could not load the info.')).toBeTruthy();
+});
+
+it('shows in grey what the page shows where nothing was written', async () => {
+  edits.get.mockResolvedValue(NOTHING_WRITTEN);
+  void open('item', 'm1', SHOWN);
+
+  expect(await screen.findByPlaceholderText('Sehnsucht Nach Youkali')).toBeTruthy();
+
+  expect(screen.getByPlaceholderText('2020')).toBeTruthy();
+  expect(screen.getByPlaceholderText('A return to nature in songs and dance.')).toBeTruthy();
+  expect(screen.getByPlaceholderText('Drama, Music')).toBeTruthy();
+});
+
+it('names the title once and closes from its own header', async () => {
+  edits.get.mockResolvedValue(WRITTEN);
+  const closed = open('show', 's1');
+
+  await screen.findByDisplayValue('Heat');
+  expect(screen.getAllByText('heat.1995')).toHaveLength(1);
+  inputHost.clearPressGuard();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+  await closed;
+  expect(edits.put).not.toHaveBeenCalled();
 });

@@ -14,9 +14,15 @@ import { createCallable } from 'react-call';
 
 import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import { draftOf, editOf, type TitleDraft } from '#web/features/catalog/title-info-draft';
+import type { TitleShown } from '#web/features/catalog/title-shown';
 import { useAuth } from '#web/shared/lib/auth';
 
-type Props = Readonly<{ kind: TitleKind | 'episode'; id: string; title: string }>;
+type Props = Readonly<{
+  kind: TitleKind | 'episode';
+  id: string;
+  title: string;
+  shown?: TitleShown;
+}>;
 
 type Save = (edit: TitleEdit) => Promise<unknown>;
 
@@ -65,31 +71,48 @@ function useDraft(loaded: TitleDraft | undefined) {
   return { draft: edited ?? loaded, change };
 }
 
+type Placeholders = Readonly<Partial<Record<keyof TitleDraft, string>>>;
+
+function placeholdersOf(shown: TitleShown | undefined): Placeholders {
+  if (!shown) {
+    return {};
+  }
+  return {
+    title: shown.title,
+    overview: shown.overview ?? undefined,
+    released: shown.year === null ? undefined : String(shown.year),
+    genres: shown.genres.join(', ') || undefined,
+  };
+}
+
 type Hinted = 'sortTitle' | 'released' | 'genres';
 
-function HintedField({
-  field,
-  draft,
-  change,
-}: Readonly<{ field: Hinted; draft: TitleDraft; change: Change }>) {
+type Fields = Readonly<{ draft: TitleDraft; change: Change; placeholders: Placeholders }>;
+
+function HintedField({ field, ...fields }: Fields & Readonly<{ field: Hinted }>) {
   const t = useT();
   return (
-    <Field.Root label={t(`titleInfo.${field}`)} value={draft[field]} onValueChange={change(field)}>
+    <Field.Root
+      label={t(`titleInfo.${field}`)}
+      value={fields.draft[field]}
+      onValueChange={fields.change(field)}
+    >
+      <Field.Input placeholder={fields.placeholders[field]} />
       <Field.Hint>{t(`titleInfo.${field}Hint`)}</Field.Hint>
     </Field.Root>
   );
 }
 
-type Fields = Readonly<{ draft: TitleDraft; change: Change }>;
-
-function NameField({ draft, change }: Fields) {
+function NameField({ draft, change, placeholders }: Fields) {
   const t = useT();
   return (
-    <Field.Root label={t('titleInfo.name')} value={draft.title} onValueChange={change('title')} />
+    <Field.Root label={t('titleInfo.name')} value={draft.title} onValueChange={change('title')}>
+      <Field.Input placeholder={placeholders.title} />
+    </Field.Root>
   );
 }
 
-function SummaryField({ draft, change }: Fields) {
+function SummaryField({ draft, change, placeholders }: Fields) {
   const t = useT();
   return (
     <Field.Root label={t('titleInfo.summary')}>
@@ -98,36 +121,37 @@ function SummaryField({ draft, change }: Fields) {
         maxRows={10}
         value={draft.overview}
         onValueChange={change('overview')}
+        placeholder={placeholders.overview}
       />
     </Field.Root>
   );
 }
 
-function TitleFields({ draft, change }: Fields) {
+function TitleFields(fields: Fields) {
   return (
     <>
-      <NameField draft={draft} change={change} />
-      <HintedField field="sortTitle" draft={draft} change={change} />
-      <HintedField field="released" draft={draft} change={change} />
-      <SummaryField draft={draft} change={change} />
-      <HintedField field="genres" draft={draft} change={change} />
+      <NameField {...fields} />
+      <HintedField field="sortTitle" {...fields} />
+      <HintedField field="released" {...fields} />
+      <SummaryField {...fields} />
+      <HintedField field="genres" {...fields} />
     </>
   );
 }
 
-function EpisodeFields({ draft, change }: Fields) {
+function EpisodeFields(fields: Fields) {
   const t = useT();
   return (
     <>
-      <NameField draft={draft} change={change} />
+      <NameField {...fields} />
       <Field.Root
         label={t('titleInfo.aired')}
-        value={draft.released}
-        onValueChange={change('released')}
+        value={fields.draft.released}
+        onValueChange={fields.change('released')}
       >
         <Field.Hint>{t('titleInfo.airedHint')}</Field.Hint>
       </Field.Root>
-      <SummaryField draft={draft} change={change} />
+      <SummaryField {...fields} />
     </>
   );
 }
@@ -153,6 +177,7 @@ function InfoBody({
   fields: InfoFields,
   draft,
   change,
+  placeholders,
   failure,
 }: Readonly<Fields & { fields: (props: Fields) => ReactNode; failure: string | null }>) {
   const t = useT();
@@ -161,7 +186,7 @@ function InfoBody({
       <Text variant="meta" color="white/55">
         {t('titleInfo.hint')}
       </Text>
-      <InfoFields draft={draft} change={change} />
+      <InfoFields draft={draft} change={change} placeholders={placeholders} />
       <Failure text={failure} />
     </Box>
   );
@@ -190,30 +215,28 @@ function useInfoForm(props: Props, onDone: () => void) {
   const { data, error, save } = useTitleEdit(props);
   const { draft, change } = useDraft(data ? draftOf(data) : undefined);
   const { busy, failure, submit } = useSave(save, onDone);
-  return { draft, change, busy, failure, submit, error };
+  const fields = props.kind === 'episode' ? EpisodeFields : TitleFields;
+  const body = { fields, change, failure, placeholders: placeholdersOf(props.shown) };
+  return { draft, busy, submit, error, body };
 }
 
 /** The name, sort title, release date, summary and genres a person who
  * manages the library writes by hand for a film or a show, and the name, air
- * date and summary for an episode (`kind: 'episode'`). Open with `await
- * TitleInfoDialog.call({ kind, id, title })`; it resolves on dismiss and once
- * the edit is saved. */
+ * date and summary for an episode (`kind: 'episode'`). Each empty field shows
+ * in grey what the page shows instead (`shown`). Open with `await
+ * TitleInfoDialog.call({ kind, id, title, shown })`; it resolves on dismiss and
+ * once the edit is saved. */
 export const TitleInfoDialog = createCallable<Props>((props) => {
   const t = useT();
   const close = () => props.call.end();
-  const { draft, change, busy, failure, submit, error } = useInfoForm(props, close);
-  const fields = props.kind === 'episode' ? EpisodeFields : TitleFields;
+  const { draft, busy, submit, error, body } = useInfoForm(props, close);
   return (
     <Dialog.Root open title={props.title} width="lg" onClose={close}>
       <Dialog.Header>
         <TitleDialogHeading overline={t('titleInfo.title')} title={props.title} onClose={close} />
       </Dialog.Header>
       <Dialog.Panel>
-        {draft ? (
-          <InfoBody fields={fields} draft={draft} change={change} failure={failure} />
-        ) : (
-          <Loading error={error} />
-        )}
+        {draft ? <InfoBody draft={draft} {...body} /> : <Loading error={error} />}
       </Dialog.Panel>
       {draft ? (
         <Dialog.Footer>
