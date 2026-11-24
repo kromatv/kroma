@@ -1,4 +1,4 @@
-import { Children, isValidElement, type ReactNode, useMemo, useState } from 'react';
+import { isValidElement, type ReactNode, useMemo, useState } from 'react';
 import { type LayoutChangeEvent, ScrollView, type StyleProp, type ViewStyle } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Surface } from '#ui/components/atoms/surface';
@@ -6,6 +6,7 @@ import { styles, useBreakpoint } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusColumn, FocusRegion } from '#ui/lib/focus-scope.component';
+import { sortParts } from '#ui/lib/parts';
 import { Aside, Footer, Header, Hint, Panel, Status } from './guided-flow-bands.component';
 import { GuidedFlowContext, PAD } from './guided-flow-context';
 import { Actions, Next, Previous, Subtitle, Title } from './guided-flow-parts.component';
@@ -42,10 +43,9 @@ function isPart(child: ReactNode, part: unknown): boolean {
 }
 
 function shownParts({ children, roomy }: Readonly<{ children: ReactNode; roomy: boolean }>) {
-  const all = Children.toArray(children);
-  const aside = roomy ? all.filter((child) => isPart(child, Aside)) : [];
-  const drawn = aside.length > 0;
-  const main = all.filter((child) => !isPart(child, Aside) && !(drawn && isPart(child, Status)));
+  const [asides, rest] = sortParts(children, Aside);
+  const aside = roomy ? asides : [];
+  const main = aside.length > 0 ? rest.filter((child) => !isPart(child, Status)) : rest;
   return { aside, main };
 }
 
