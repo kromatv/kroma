@@ -24,8 +24,14 @@ export const MatchCandidate = z.object({
 });
 export type MatchCandidate = z.infer<typeof MatchCandidate>;
 
-/** Whose chosen art: a film or an episode (`item`), or a show. */
-export const ArtKind = z.enum(['item', 'show']);
+/** What a person who manages the library writes by hand about: a film or an
+ * episode (`item`), or a show. */
+export const TitleKind = z.enum(['item', 'show']);
+export type TitleKind = z.infer<typeof TitleKind>;
+
+/** Whose chosen art: a film or an episode (`item`), a show, or a show's season,
+ * which takes only a poster. */
+export const ArtKind = z.enum(['item', 'show', 'season']);
 export type ArtKind = z.infer<typeof ArtKind>;
 
 /** Which of a title's pictures an admin chooses: `still` is an episode's thumbnail. */

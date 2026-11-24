@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import type { ArtRole } from '@kromatv/client/media';
+import type { ArtKind, ArtRole } from '@kromatv/client/media';
 import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -33,7 +33,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function open(kind: 'item' | 'show', id: string, roles?: readonly ArtRole[]) {
+function open(kind: ArtKind, id: string, roles?: readonly ArtRole[]) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   inputHost.render(
     <QueryClientProvider client={queries}>
@@ -67,6 +67,20 @@ it('sends the picked picture as the poster of the title', async () => {
     expect(art.choose).toHaveBeenCalledWith({ kind: 'item', id: 'm1', role: 'poster' }, PICKED),
   );
   expect(screen.queryByRole('button', { name: 'Restore the automatic picture' })).toBeNull();
+});
+
+it('sends the picked picture as the poster of a season', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  art.choose.mockResolvedValue({ url: '/api/images/chosen-s.webp' });
+  open('season', 's1:2', ['poster']);
+
+  await waitFor(() => expect(art.get).toHaveBeenCalledWith('season', 's1:2'));
+  pick(0, PICKED);
+
+  await waitFor(() =>
+    expect(art.choose).toHaveBeenCalledWith({ kind: 'season', id: 's1:2', role: 'poster' }, PICKED),
+  );
+  expect(screen.getAllByRole('button', { name: 'Upload a picture' })).toHaveLength(1);
 });
 
 it('sends the picked picture as the logo of the title', async () => {

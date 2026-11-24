@@ -63,6 +63,12 @@ pub fn season_id(show: &str, number: u32) -> String {
     format!("{show}:{number}")
 }
 
+/// The show and the number a [`season_id`] names, or None for any other id.
+pub fn season_of(id: &str) -> Option<(&str, u32)> {
+    let (show, number) = id.rsplit_once(':')?;
+    Some((show, number.parse().ok()?))
+}
+
 /// Where on disk the picture served under a URL is, and its role.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Source {
