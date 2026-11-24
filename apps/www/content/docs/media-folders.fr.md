@@ -136,12 +136,15 @@ endroit passe avant l'image du dossier et celle d'Internet, et **Rétablir l'ima
 automatique** les fait revenir. Sur la page d'une série, le bouton **Modifier la
 vignette** d'un épisode fait de même pour la vignette de cet épisode, et
 **Modifier l'affiche de la saison**, au-dessus des épisodes, pour l'affiche de
-la saison à l'écran. Il faut le droit de gérer la bibliothèque.
+la saison à l'écran. Une affiche, un fond ou une vignette s'ouvre d'abord dans
+un cadre à sa forme, 2:3 ou 16:9 : déplacez l'image, zoomez ou tournez-la, puis
+choisissez **Utiliser cette image**. Un logo part tel quel et garde sa
+transparence. Il faut le droit de gérer la bibliothèque.
 
 Au lieu d'un fichier, **Depuis un lien** prend l'adresse d'une image sur
-Internet. KROMA la télécharge une fois et la garde comme si vous l'aviez
-envoyée. Une adresse de votre propre réseau, comme celle de votre NAS, est
-refusée : téléchargez l'image puis envoyez-la.
+Internet. KROMA la télécharge une fois et la garde telle quelle, sans cadre.
+Une adresse de votre propre réseau, comme celle de votre NAS, est refusée :
+téléchargez l'image puis envoyez-la.
 
 ### Titres et résumés des fichiers .nfo
 

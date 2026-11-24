@@ -34,6 +34,14 @@ vi.mock('#web/shared/ui/media-info-modal.component', () => ({
 }));
 
 const inputHost = createInputTestHost();
+const SHOWN = {
+  title: 'Heat',
+  year: 1995,
+  overview: null,
+  genres: ['Crime'],
+  poster: '/api/images/heat.webp',
+  backdrop: null,
+};
 
 afterEach(() => {
   cleanup();
@@ -44,7 +52,7 @@ function show(kind: 'item' | 'show', permissions: string[], onChanged = vi.fn())
   seen.permissions = permissions;
   inputHost.render(
     <I18nProvider locale="en">
-      <TitleActions kind={kind} id="m1" title="Heat" onChanged={onChanged} />
+      <TitleActions kind={kind} id="m1" title="Heat" shown={SHOWN} onChanged={onChanged} />
     </I18nProvider>,
   );
   return onChanged;
@@ -112,5 +120,10 @@ it('opens the artwork of the title', () => {
 
   press('Edit artwork');
 
-  expect(seen.artwork).toHaveBeenCalledWith({ kind: 'item', id: 'm1', title: 'Heat' });
+  expect(seen.artwork).toHaveBeenCalledWith({
+    kind: 'item',
+    id: 'm1',
+    title: 'Heat',
+    shown: SHOWN,
+  });
 });

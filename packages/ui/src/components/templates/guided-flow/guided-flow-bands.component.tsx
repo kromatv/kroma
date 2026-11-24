@@ -1,4 +1,4 @@
-import { Children, isValidElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
@@ -8,6 +8,7 @@ import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { FocusRegion } from '#ui/lib/focus-scope.component';
 import { nameOf } from '#ui/lib/name-of';
+import { sortParts } from '#ui/lib/parts';
 import { useTDefault } from '#ui/services/i18n';
 import { useGuidedFlowPart } from './guided-flow-context';
 
@@ -57,22 +58,13 @@ function Hint({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-function isHint(child: ReactNode): boolean {
-  return isValidElement(child) && child.type === Hint;
-}
-
-function splitHints(children: ReactNode) {
-  const all = Children.toArray(children);
-  return { hints: all.filter(isHint), row: all.filter((child) => !isHint(child)) };
-}
-
 /** The pinned bottom: a `<GuidedFlow.Previous>` at the start and the
  *  `<GuidedFlow.Actions>` at the end, as one row for the remote. A direct
  *  `<GuidedFlow.Hint>` is drawn over that row. */
 function Footer({ children }: Readonly<GuidedFlowBandProps>) {
   const { pad } = useGuidedFlowPart('Footer');
   const s = useStyles(sDefinition);
-  const { hints, row } = splitHints(children);
+  const [hints, row] = sortParts(children, Hint);
   return (
     <>
       <Divider />

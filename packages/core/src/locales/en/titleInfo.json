@@ -4,7 +4,7 @@
   "titleInfo.airedHint": "The day it was first shown, as 2008-01-20.",
   "titleInfo.genres": "Genres",
   "titleInfo.genresHint": "Separate genres with commas.",
-  "titleInfo.hint": "What you write here shows instead of the text from TMDB, in every language. Leave a field empty to use TMDB's again.",
+  "titleInfo.hint": "What you write here shows instead of the text from the .nfo or TMDB, in every language. A field left empty keeps the text shown in grey.",
   "titleInfo.loadFailed": "Could not load the info.",
   "titleInfo.name": "Title",
   "titleInfo.released": "Release date",

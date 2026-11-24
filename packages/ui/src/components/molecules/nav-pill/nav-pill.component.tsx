@@ -6,21 +6,14 @@
 // backdrop, so the Root sorts its direct children once and publishes the size
 // and the label policy the items honour through context.
 
-import {
-  Children,
-  isValidElement,
-  type ReactNode,
-  useEffect,
-  useEffectEvent,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { PanResponder, type StyleProp, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
 import { RING_ROOM } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
 import { panHandlers } from '#ui/lib/pan-gestures';
+import { sortParts } from '#ui/lib/parts';
 import {
   type LensRect,
   NavPillContext,
@@ -82,23 +75,6 @@ interface NavPillRootProps {
   style?: StyleProp<ViewStyle>;
 }
 
-interface Sorted {
-  backdrop: ReactNode[];
-  items: ReactNode[];
-}
-
-function sort(children: ReactNode): Sorted {
-  const at: Sorted = { backdrop: [], items: [] };
-  for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Backdrop) {
-      at.backdrop.push(child);
-    } else {
-      at.items.push(child);
-    }
-  }
-  return at;
-}
-
 function Root({
   label,
   size = 'tv',
@@ -110,7 +86,7 @@ function Root({
   style,
 }: Readonly<NavPillRootProps>) {
   const labelPolicy = labels ?? (size === 'tv' ? 'all' : 'active');
-  const at = sort(children);
+  const [backdrop, items] = sortParts(children, Backdrop);
   const [lens, setLens] = useState<{ id: string; rect: LensRect } | null>(null);
   const claim = (id: string, rect: LensRect) => {
     setLens((prev) =>
@@ -254,12 +230,12 @@ function Root({
         p={PAD[size]}
         radius="pill"
         border="borderStrong"
-        bg={at.backdrop.length > 0 ? BACKDROP_FILL : PILL_FILL}
+        bg={backdrop.length > 0 ? BACKDROP_FILL : PILL_FILL}
         style={[HAND, style]}
       >
-        {at.backdrop}
+        {backdrop}
         <Lens rect={hover?.rect ?? lens?.rect ?? null} chase={hover !== null} tone={tone} />
-        {at.items}
+        {items}
       </Box>
     </NavPillContext.Provider>
   );

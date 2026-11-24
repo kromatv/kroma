@@ -4,7 +4,7 @@
   "titleInfo.airedHint": "Le jour de sa première diffusion, comme 2008-01-20.",
   "titleInfo.genres": "Genres",
   "titleInfo.genresHint": "Séparez les genres par des virgules.",
-  "titleInfo.hint": "Ce que vous écrivez ici remplace le texte de TMDB, dans toutes les langues. Laissez un champ vide pour reprendre celui de TMDB.",
+  "titleInfo.hint": "Ce que vous écrivez ici remplace le texte du .nfo ou de TMDB, dans toutes les langues. Un champ laissé vide garde le texte affiché en gris.",
   "titleInfo.loadFailed": "Impossible de charger les informations.",
   "titleInfo.name": "Titre",
   "titleInfo.released": "Date de sortie",

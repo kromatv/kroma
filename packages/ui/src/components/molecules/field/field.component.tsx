@@ -6,7 +6,7 @@
 // context. `Field.Input` and `Field.Textarea` are the doors to <TextField> and
 // <TextArea>, which is why neither atom is exported.
 
-import { Children, isValidElement, type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
@@ -14,6 +14,7 @@ import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field'
 import type { ControlSize } from '#ui/lib/field-shell';
 import { useGroupShape } from '#ui/lib/group-shape';
 import { partContext } from '#ui/lib/part-context';
+import { sortParts } from '#ui/lib/parts';
 import { useControllable } from '#ui/lib/use-controllable.hook';
 
 interface FieldContext {
@@ -69,7 +70,7 @@ function Root({
     () => ({ label, invalid, error: message, size, value, setValue, setFocused }),
     [label, invalid, message, size, value, setValue],
   );
-  const at = sort(children);
+  const [note, control] = sortParts(children, Hint);
   const group = useGroupShape(focused);
   return (
     <Context.Provider value={field}>
@@ -79,23 +80,11 @@ function Root({
             {label}
           </Text>
         )}
-        {at.control.length > 0 ? at.control : <Input />}
-        {at.note.length > 0 ? at.note : <Hint />}
+        {control.length > 0 ? control : <Input />}
+        {note.length > 0 ? note : <Hint />}
       </Box>
     </Context.Provider>
   );
-}
-
-function sort(children: ReactNode): { control: ReactNode[]; note: ReactNode[] } {
-  const at: { control: ReactNode[]; note: ReactNode[] } = { control: [], note: [] };
-  for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Hint) {
-      at.note.push(child);
-    } else {
-      at.control.push(child);
-    }
-  }
-  return at;
 }
 
 interface FocusHandlers {
