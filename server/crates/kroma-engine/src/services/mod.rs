@@ -15,6 +15,7 @@ pub mod folders;
 pub mod importers;
 pub mod imports;
 pub mod jobs;
+pub mod last_seen;
 pub mod library_counts;
 pub mod library_missing;
 pub mod llm;
