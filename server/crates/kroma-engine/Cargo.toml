@@ -77,6 +77,10 @@ tantivy = { workspace = true }
 rusty-chromaprint = { workspace = true }
 # The interfaces and addresses this machine holds, for the direct LAN route.
 if-addrs = "0.15"
+# The .nfo files Kodi, Jellyfin and Plex keep beside a title's files. A read-only
+# tree with no DTD by default, so an entity cannot expand; it brings only memchr,
+# which is already here.
+roxmltree = { version = "0.21", default-features = false, features = ["std"] }
 
 [dev-dependencies]
 # The shared HostCtx doubles: `testing::Recording` taps a real app host's bus,

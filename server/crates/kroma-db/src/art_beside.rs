@@ -8,6 +8,7 @@ use rusqlite::{params, OptionalExtension};
 use kroma_domain::Metadata;
 
 use crate::chunked::query_by_subject_ids;
+use crate::scanned::{self, Rewrite};
 use crate::{Connection, Pool, Result};
 
 /// The role of a picture kept as a title's poster.
@@ -18,8 +19,6 @@ pub const BACKDROP: &str = "backdrop";
 const INSERT: &str = "INSERT OR REPLACE INTO art_beside \
                       (subject_kind, subject_id, role, library, picture, url) \
                       VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
-const CLEAR: &str = "DELETE FROM art_beside \
-                     WHERE library NOT IN (SELECT value FROM json_each(?1))";
 
 /// One picture a scan found beside a title's files: whose it is, what it is to
 /// that title, where it is on disk, and the URL it is served under.
@@ -44,25 +43,22 @@ pub struct Source {
 /// whose folders a scan could not all read, keep what they held as well.
 /// Returns how many pictures were written.
 pub fn replace(pool: &Pool, pictures: &[Picture], kept: &HashSet<String>) -> Result<usize> {
-    let mut conn = pool.get()?;
-    let tx = conn.transaction()?;
-    tx.execute(CLEAR, [serde_json::to_string(kept)?])?;
-    let mut written = 0;
-    {
-        let mut insert = tx.prepare(INSERT)?;
-        for p in pictures {
-            written += insert.execute(params![
-                p.subject_kind,
-                p.subject_id,
-                p.role,
-                p.library,
-                p.path,
-                p.url
-            ])?;
-        }
-    }
-    tx.commit()?;
-    Ok(written)
+    let rows = pictures.iter().map(|p| {
+        (
+            p.subject_kind,
+            &p.subject_id,
+            p.role,
+            &p.library,
+            &p.path,
+            &p.url,
+        )
+    });
+    let table = Rewrite {
+        table: "art_beside",
+        insert: INSERT,
+        kept,
+    };
+    scanned::rewrite(pool, table, rows)
 }
 
 /// The picture served under `url`, when a scan found one.

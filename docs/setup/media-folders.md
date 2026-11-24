@@ -117,6 +117,33 @@ choose **Edit artwork**. A poster or a backdrop you upload there comes before
 the picture in the folder and the one from the internet, and **Restore the
 automatic picture** brings them back. It takes the right to manage the library.
 
+### Titles and summaries from .nfo files
+
+A title KROMA does not recognize can take its name, year, summary and genres
+from an `.nfo` file, the one Kodi, Jellyfin and Plex read:
+
+```
+Films/
+  Summer Trip (2019)/
+    Summer Trip (2019).mkv
+    Summer Trip (2019).nfo
+Series/
+  School Plays/
+    tvshow.nfo
+    Season 01/
+      School Plays - S01E01.mkv
+```
+
+- For a film, name the file after the video file, or `movie.nfo` in the film's
+  own folder.
+- For a series, put `tvshow.nfo` in the series folder, the one above the season
+  folders.
+- KROMA reads `<title>`, `<plot>`, `<premiered>` or `<year>`, and each
+  `<genre>`. The file must be UTF-8, as these programs write it.
+- Once KROMA recognizes the title, its text from the internet shows instead.
+  What you write with **Edit info** comes before the file.
+- KROMA reads a file you add or change at the next library scan.
+
 ### File types
 
 KROMA scans `.mkv`, `.mp4`, `.m4v`, `.mov`, `.webm`, `.avi` and `.ts` files.

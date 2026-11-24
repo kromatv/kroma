@@ -9,6 +9,7 @@ pub mod logbuf;
 pub mod loudness;
 pub mod metadata;
 pub mod metrics;
+pub mod nfo;
 pub mod probe;
 pub mod storyboard;
 pub mod subtitles;

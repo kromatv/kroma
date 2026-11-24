@@ -1,8 +1,11 @@
 //! What a person who manages the library wrote by hand about a film or a show
-//! (LIB-83). It is laid over the provider's text in every language, and over
-//! the catalog that search and the embeddings read.
+//! (LIB-83), over the text of the `.nfo` file beside a title the provider did
+//! not match (LIB-84). Both are laid over the provider's text in every
+//! language, and over the catalog that search and the embeddings read.
 
 use std::collections::HashMap;
+
+use rusqlite::OptionalExtension;
 
 use kroma_domain::title_edit::{Editable, TitleEdit};
 use kroma_domain::{MediaItem, Show};
@@ -39,11 +42,18 @@ pub fn write(pool: &Pool, title: Title<'_>, edit: &TitleEdit) -> Result<()> {
 /// What was written by hand for `title`.
 pub fn written(pool: &Pool, title: Title<'_>) -> Result<TitleEdit> {
     let conn = pool.get()?;
-    let mut edits = load(&conn, title.kind, &[title.id])?;
-    Ok(edits.remove(title.id).unwrap_or_default())
+    let edit: Option<String> = conn
+        .query_row(
+            "SELECT edit FROM title_edits WHERE subject_kind = ?1 AND subject_id = ?2",
+            params![title.kind, title.id],
+            |r| r.get(0),
+        )
+        .optional()?;
+    let edit = edit.and_then(|edit| serde_json::from_str(&edit).ok());
+    Ok(edit.unwrap_or_default())
 }
 
-pub(crate) fn load(
+pub(crate) fn shown(
     conn: &Connection,
     kind: &str,
     ids: &[&str],
@@ -55,13 +65,13 @@ pub(crate) fn load(
         &[],
         |ph| {
             format!(
-                "SELECT subject_id, edit FROM title_edits \
-                 WHERE subject_kind = ? AND subject_id IN ({ph})"
+                "SELECT subject_id, edit FROM title_texts \
+                 WHERE subject_kind = ? AND subject_id IN ({ph}) ORDER BY precedence"
             )
         },
         |r| Ok((r.get(0)?, r.get(1)?)),
     )?;
-    Ok(parsed(rows))
+    Ok(folded(rows))
 }
 
 pub(crate) fn lay_over(
@@ -87,18 +97,25 @@ fn onto_each<T: Editable>(
 }
 
 fn every(conn: &Connection, kind: &str) -> Result<HashMap<String, TitleEdit>> {
-    let mut stmt =
-        conn.prepare("SELECT subject_id, edit FROM title_edits WHERE subject_kind = ?1")?;
+    let mut stmt = conn.prepare(
+        "SELECT subject_id, edit FROM title_texts WHERE subject_kind = ?1 ORDER BY precedence",
+    )?;
     let rows = stmt
         .query_map([kind], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect::<rusqlite::Result<_>>()?;
-    Ok(parsed(rows))
+    Ok(folded(rows))
 }
 
-fn parsed(rows: Vec<(String, String)>) -> HashMap<String, TitleEdit> {
-    rows.into_iter()
-        .filter_map(|(id, edit)| Some((id, serde_json::from_str(&edit).ok()?)))
-        .collect()
+fn folded(rows: Vec<(String, String)>) -> HashMap<String, TitleEdit> {
+    let mut shown: HashMap<String, TitleEdit> = HashMap::new();
+    for (id, edit) in rows {
+        let Ok(edit) = serde_json::from_str::<TitleEdit>(&edit) else {
+            continue;
+        };
+        let below = shown.remove(&id).unwrap_or_default();
+        shown.insert(id, edit.over(below));
+    }
+    shown
 }
 
 #[cfg(test)]

@@ -10,6 +10,7 @@ mod announcer;
 mod art_beside;
 mod between_walks;
 mod subtitle_files;
+mod text_beside;
 
 const ONE_FILE: BatchSize = BatchSize {
     files: 1,

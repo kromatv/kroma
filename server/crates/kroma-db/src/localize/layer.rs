@@ -18,7 +18,7 @@ impl Ask<'_> {
     pub(super) fn layer(&self, kind: &str, ids: &[&str]) -> Result<Layer> {
         Ok(Layer {
             text: translations::resolve_many(self.conn, kind, ids, self.locale)?,
-            edits: title_edits::load(self.conn, kind, ids)?,
+            edits: title_edits::shown(self.conn, kind, ids)?,
             art: Art::load(self.conn, kind, ids)?,
         })
     }
