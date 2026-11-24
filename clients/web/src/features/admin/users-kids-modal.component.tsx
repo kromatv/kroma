@@ -58,12 +58,14 @@ function KidsDraft({
           {draft.error}
         </Text>
       ) : null}
-      <KidsFooter
-        busy={draft.busy}
-        ready={draft.ready}
-        onCancel={onCancel}
-        onCreate={draft.submit}
-      />
+      <Dialog.Footer>
+        <KidsActions
+          busy={draft.busy}
+          ready={draft.ready}
+          onCancel={onCancel}
+          onCreate={draft.submit}
+        />
+      </Dialog.Footer>
     </Dialog.Root>
   );
 }
@@ -110,7 +112,7 @@ function useKidsDraft(onCreated: () => void) {
   };
 }
 
-function KidsFooter({
+function KidsActions({
   busy,
   ready,
   onCancel,
@@ -123,16 +125,14 @@ function KidsFooter({
 }>) {
   const t = useT();
   return (
-    <Dialog.Footer>
-      <Dialog.Actions
-        onCancel={onCancel}
-        cancelLabel={t('common.cancel')}
-        onConfirm={onCreate}
-        confirmLabel={busy ? t('common.creating') : t('admin.addKidsConfirm')}
-        busy={busy}
-        disabled={!ready}
-      />
-    </Dialog.Footer>
+    <Dialog.Actions
+      onCancel={onCancel}
+      cancelLabel={t('common.cancel')}
+      onConfirm={onCreate}
+      confirmLabel={busy ? t('common.creating') : t('admin.addKidsConfirm')}
+      busy={busy}
+      disabled={!ready}
+    />
   );
 }
 
