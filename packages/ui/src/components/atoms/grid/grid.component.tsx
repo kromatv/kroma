@@ -14,7 +14,7 @@ import { sharedStyle, useStyleScope } from '#ui/core';
 // the third tile lands on the third tile of the next row, not on whichever one
 // that row last held.
 
-import { Children, type ReactNode, useCallback, useState } from 'react';
+import { Children, type ReactNode, useState } from 'react';
 import type { LayoutChangeEvent, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 
@@ -68,10 +68,10 @@ function Grid({ min, columns, width, gap = 24, rowGap, children }: Readonly<Grid
   const room = measured > 0 ? measured : (width ?? 0);
   const count = columns ?? (min ? columnsFor(room, min, gap) : 1);
 
-  const onLayout = useCallback((event: LayoutChangeEvent) => {
+  const onLayout = (event: LayoutChangeEvent) => {
     const next = Math.round(event.nativeEvent.layout.width);
     setMeasured((current) => (current === next ? current : next));
-  }, []);
+  };
 
   const style = sharedStyle(`grid:gap:${rowGap ?? gap}`, { gap: rowGap ?? gap }, scope);
   const line = sharedStyle(`grid:line:${gap}`, { flexDirection: 'row', gap }, scope);
