@@ -155,7 +155,11 @@ const manifest = {
   imports: {
     '#ui/*': { types: ['./*.d.ts', './*/index.d.ts'], default: './*.js' },
   },
-  dependencies: { zod: source.dependencies.zod },
+  dependencies: {
+    '@lezer/highlight': source.dependencies['@lezer/highlight'],
+    '@lezer/javascript': source.dependencies['@lezer/javascript'],
+    zod: source.dependencies.zod,
+  },
   peerDependencies: {
     '@testing-library/react': '>=16',
     react: '>=18',
