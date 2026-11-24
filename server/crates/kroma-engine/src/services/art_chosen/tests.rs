@@ -31,7 +31,7 @@ fn bytes_that_are_not_a_picture_are_refused() {
     assert_eq!(
         db::art_chosen::chosen(&state.db, ITEM, "m1")
             .unwrap()
-            .backdrop,
+            .get(BACKDROP),
         None
     );
 }
@@ -62,7 +62,7 @@ fn resetting_a_show_tells_every_client_to_load_it_again() {
     assert_eq!(
         db::art_chosen::chosen(&state.db, SHOW, "sh1")
             .unwrap()
-            .poster,
+            .get(POSTER),
         None
     );
     assert!(sent.payload_for("anyone").unwrap().contains("\"sh1\""));

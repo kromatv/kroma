@@ -24,12 +24,12 @@ export const MatchCandidate = z.object({
 });
 export type MatchCandidate = z.infer<typeof MatchCandidate>;
 
-/** Whose chosen art: a film (`item`) or a show. */
+/** Whose chosen art: a film or an episode (`item`), or a show. */
 export const ArtKind = z.enum(['item', 'show']);
 export type ArtKind = z.infer<typeof ArtKind>;
 
-/** Which of a title's pictures an admin chooses. */
-export const ArtRole = z.enum(['poster', 'backdrop', 'logo']);
+/** Which of a title's pictures an admin chooses: `still` is an episode's thumbnail. */
+export const ArtRole = z.enum(['poster', 'backdrop', 'logo', 'still']);
 export type ArtRole = z.infer<typeof ArtRole>;
 
 /** `GET /api/art/{kind}/{id}`: the URL of each picture an admin chose. */
@@ -37,6 +37,7 @@ export const ChosenArt = z.object({
   poster: z.string().nullable(),
   backdrop: z.string().nullable(),
   logo: z.string().nullish(),
+  still: z.string().nullish(),
 });
 export type ChosenArt = z.infer<typeof ChosenArt>;
 

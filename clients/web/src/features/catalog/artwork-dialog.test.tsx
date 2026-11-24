@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { ArtRole } from '@kromatv/client/media';
 import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -32,7 +33,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function open(kind: 'item' | 'show', id: string) {
+function open(kind: 'item' | 'show', id: string, roles?: readonly ArtRole[]) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   inputHost.render(
     <QueryClientProvider client={queries}>
@@ -42,7 +43,7 @@ function open(kind: 'item' | 'show', id: string) {
     </QueryClientProvider>,
   );
   act(() => {
-    void ArtworkDialog.call({ kind, id, title: 'Heat' });
+    void ArtworkDialog.call({ kind, id, title: 'Heat', roles });
   });
 }
 
@@ -80,6 +81,22 @@ it('sends the picked picture as the logo of the title', async () => {
     expect(art.choose).toHaveBeenCalledWith({ kind: 'show', id: 's1', role: 'logo' }, PICKED),
   );
   expect(screen.getByText('Logo')).toBeTruthy();
+});
+
+it('shows only the thumbnail of an episode and sends the picked picture as its still', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null, still: null });
+  art.choose.mockResolvedValue({ url: '/api/images/chosen-d.webp' });
+  open('item', 'e1', ['still']);
+
+  await waitFor(() => expect(art.get).toHaveBeenCalledWith('item', 'e1'));
+  pick(0, PICKED);
+
+  await waitFor(() =>
+    expect(art.choose).toHaveBeenCalledWith({ kind: 'item', id: 'e1', role: 'still' }, PICKED),
+  );
+  expect(screen.getByText('Thumbnail')).toBeTruthy();
+  expect(screen.queryByText('Poster')).toBeNull();
+  expect(document.querySelectorAll('input[type="file"]')).toHaveLength(1);
 });
 
 it('restores the automatic picture only where one was chosen', async () => {
