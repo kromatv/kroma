@@ -5,4 +5,5 @@ mod lang;
 mod pins;
 mod process;
 mod run;
+mod seasons;
 mod support;

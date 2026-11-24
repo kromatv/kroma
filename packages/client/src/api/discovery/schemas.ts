@@ -37,6 +37,7 @@ export const DiscoverSeason = z.object({
   name: z.string().nullable(),
   episodeCount: z.number(),
   airDate: z.string().nullable(),
+  posterUrl: z.string().nullish(),
   available: z.boolean(),
   episodesAvailable: z.number(),
   requested: z.boolean(),

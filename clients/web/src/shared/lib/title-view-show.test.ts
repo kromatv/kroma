@@ -134,6 +134,7 @@ describe('buildTitleView: show source', () => {
           available: false,
           requested: true,
           airDate: '2021-01-01',
+          posterUrl: '/api/images/tmdb-s2.webp',
         },
       ],
     };
@@ -164,7 +165,7 @@ describe('buildTitleView: show source', () => {
     expect(v.seasons[1]).toMatchObject({
       number: 2,
       name: 'Season Two',
-      poster: 'spos:sh1',
+      poster: 'art:/api/images/tmdb-s2.webp',
       available: false,
       requested: true,
       episodes: [],
@@ -230,6 +231,7 @@ describe('buildTitleView: show source', () => {
     });
     expect(v.seasons[1]).toMatchObject({
       number: 4,
+      poster: 'spos:sh1',
       episodeCount: 0,
       episodesAvailable: 0,
       episodes: [],

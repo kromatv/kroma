@@ -227,9 +227,7 @@ export function buildTitleView(
     video: null,
     playable: null,
     playLabel: null,
-    seasons: d.seasons.map((s) =>
-      seasonOf({ number: s.season, listed: s, poster: imageUrl(d.posterUrl) }),
-    ),
+    seasons: discoverSeasons(d),
     requestStatus: d.requestStatus,
     requestProgress: d.requestProgress,
     canRequest: canReq(d.tmdbId, true),
@@ -245,6 +243,12 @@ export function buildTitleView(
   };
 }
 
+function discoverSeasons(d: DiscoverDetail): TitleSeason[] {
+  return d.seasons.map((s) =>
+    seasonOf({ number: s.season, listed: s, poster: imageUrl(s.posterUrl ?? d.posterUrl) }),
+  );
+}
+
 function mergeSeasons(
   c: KromaClient,
   detail: ShowDetail,
@@ -258,8 +262,9 @@ function mergeSeasons(
     .sort((a, b) => a - b)
     .map((number) => {
       const own = ownedBy.get(number);
-      const poster = c.media.artwork.resolve(own?.posterUrl) ?? showPoster;
-      return seasonOf({ number, own, listed: listed.find((s) => s.season === number), poster });
+      const tmdb = listed.find((s) => s.season === number);
+      const poster = c.media.artwork.resolve(own?.posterUrl ?? tmdb?.posterUrl) ?? showPoster;
+      return seasonOf({ number, own, listed: tmdb, poster });
     });
 }
 

@@ -36,8 +36,10 @@ KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp`, and compares names without
 regard to case. An episode's `-thumb` picture comes before the one named after
 its video alone. A season's number is read with or without its leading zero
 (`Season01`, `Season1`), and a picture in the season's folder comes before one
-in the show's folder. `season-all-poster` is not read. A folder name is a season folder by the scan's own rule:
-`Season 01`, `Saison 1`, `Specials`, `S01`.
+in the show's folder. `season-all-poster` is not read. A folder name is a season
+folder by the scan's own rule: `Season 01`, `Saison 1`, `Specials`, `S01`. A
+season with no picture beside its files shows the poster TMDB has for it in the
+reader's language, else the show's.
 
 ## Backdrops
 
