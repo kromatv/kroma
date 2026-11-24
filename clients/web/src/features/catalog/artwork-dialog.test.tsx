@@ -68,6 +68,20 @@ it('sends the picked picture as the poster of the title', async () => {
   expect(screen.queryByRole('button', { name: 'Restore the automatic picture' })).toBeNull();
 });
 
+it('sends the picked picture as the logo of the title', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  art.choose.mockResolvedValue({ url: '/api/images/chosen-c.webp' });
+  open('show', 's1');
+
+  await waitFor(() => expect(art.get).toHaveBeenCalledWith('show', 's1'));
+  pick(2, PICKED);
+
+  await waitFor(() =>
+    expect(art.choose).toHaveBeenCalledWith({ kind: 'show', id: 's1', role: 'logo' }, PICKED),
+  );
+  expect(screen.getByText('Logo')).toBeTruthy();
+});
+
 it('restores the automatic picture only where one was chosen', async () => {
   art.get.mockResolvedValue({ poster: null, backdrop: '/api/images/chosen-b.webp' });
   art.reset.mockResolvedValue(undefined);

@@ -1,11 +1,11 @@
-//! `/api/art/{kind}/{id}`: the poster and the backdrop an admin chose for a
-//! film (`item`) or a show (`show`), behind `library.manage`. A change reaches
-//! clients through the `ItemUpdated` / `ShowUpdated` event.
+//! `/api/art/{kind}/{id}`: the poster, the backdrop and the logo an admin chose
+//! for a film (`item`) or a show (`show`), behind `library.manage`. A change
+//! reaches clients through the `ItemUpdated` / `ShowUpdated` event.
 //!
-//! - `GET /api/art/{kind}/{id}` → `{ poster, backdrop }`, the URL of each
+//! - `GET /api/art/{kind}/{id}` → `{ poster, backdrop, logo }`, the URL of each
 //!   picture an admin chose, or null.
-//! - `POST /api/art/{kind}/{id}/{role}` (raw `image/*` body, `role` is `poster`
-//!   or `backdrop`) → `{ url }`, where the title's picture is served now.
+//! - `POST /api/art/{kind}/{id}/{role}` (raw `image/*` body, `role` is `poster`,
+//!   `backdrop` or `logo`) → `{ url }`, where the title's picture is served now.
 //! - `DELETE /api/art/{kind}/{id}/{role}` → 204, and the title shows the
 //!   picture beside its files again, or its fetched one.
 
@@ -22,7 +22,7 @@ use crate::api::error::lerr;
 use crate::api::managed_title::{not_found, Managed};
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::db::art_beside::{BACKDROP, POSTER};
+use crate::db::art_beside::{BACKDROP, LOGO, POSTER};
 use crate::db::art_chosen::Slot;
 use crate::i18n;
 use crate::model::User;
@@ -64,7 +64,8 @@ async fn chosen(
         db::art_chosen::chosen(&pool, kind, &id)
     })
     .await?;
-    Ok(Json(json!({ "poster": urls.poster, "backdrop": urls.backdrop })).into_response())
+    let chosen = json!({ "poster": urls.poster, "backdrop": urls.backdrop, "logo": urls.logo });
+    Ok(Json(chosen).into_response())
 }
 
 struct Asked {
@@ -82,7 +83,7 @@ impl FromRequestParts<SharedState> for Asked {
             id,
             path,
         } = Managed::from_request_parts(parts, state).await?;
-        let role = [POSTER, BACKDROP]
+        let role = [POSTER, BACKDROP, LOGO]
             .into_iter()
             .find(|role| path.get("role").is_some_and(|asked| asked == role));
         let Some(role) = role else {

@@ -215,6 +215,10 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
   the season's folder when it holds no other season's episode, else one named
   `season01-poster` in the show's folder (MEDIA-48), with `season-specials-poster` for the
   specials.
+- **MEDIA-54** (SHIPPED) - A person who manages the library can upload a logo for a matched
+  film or show, as for its poster and its backdrop (MEDIA-50). It comes before the logo kept
+  beside the title's files (MEDIA-51) and the fetched one until the person removes it, and a
+  metadata refresh keeps it.
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.

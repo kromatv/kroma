@@ -126,8 +126,8 @@ Series/
   already opened.
 
 To change one title's picture without touching its folder, open the title and
-choose **Edit artwork**. A poster or a backdrop you upload there comes before
-the picture in the folder and the one from the internet, and **Restore the
+choose **Edit artwork**. A poster, a backdrop or a logo you upload there comes
+before the picture in the folder and the one from the internet, and **Restore the
 automatic picture** brings them back. It takes the right to manage the library.
 
 ### Titles and summaries from .nfo files
