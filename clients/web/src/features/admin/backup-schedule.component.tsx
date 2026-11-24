@@ -125,17 +125,12 @@ function ScheduleRefusal({ refusal }: Readonly<{ refusal: Refusal | null }>) {
   );
 }
 
-function ScheduleHeader() {
+function ScheduleWhenLink() {
   const t = useT();
   return (
-    <Section.Header>
-      <Section.Title>{t('admin.backupScheduleTitle')}</Section.Title>
-      <Section.Actions>
-        <Button variant="ghost" size="sm" label={t('admin.backupScheduleWhen')} asChild>
-          <RouteLink to="/admin/jobs" />
-        </Button>
-      </Section.Actions>
-    </Section.Header>
+    <Button variant="ghost" size="sm" label={t('admin.backupScheduleWhen')} asChild>
+      <RouteLink to="/admin/jobs" />
+    </Button>
   );
 }
 
@@ -150,7 +145,12 @@ export function BackupScheduleSection() {
   const save = (patch: BackupScheduleChange) => void change(patch);
   return (
     <Section.Root mt={28}>
-      <ScheduleHeader />
+      <Section.Header>
+        <Section.Title>{t('admin.backupScheduleTitle')}</Section.Title>
+        <Section.Actions>
+          <ScheduleWhenLink />
+        </Section.Actions>
+      </Section.Header>
       <Box gap={12}>
         <ScheduleRows schedule={schedule} onChange={save} />
         <FolderField
