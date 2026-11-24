@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { useResizableGroup, useSeamIndex } from './resizable-context';
 import { Seam } from './resizable-seam.component';
 
@@ -23,11 +22,8 @@ function Handle({ label = 'Resize', disabled }: Readonly<ResizableHandleProps>) 
   const group = useResizableGroup('Handle');
   const { orientation, begin, drag, reset } = group;
 
-  const onDrag = useCallback(
-    (delta: number, committed: boolean) => drag(at, delta, committed),
-    [drag, at],
-  );
-  const onReset = useCallback(() => reset(at), [reset, at]);
+  const onDrag = (delta: number, committed: boolean) => drag(at, delta, committed);
+  const onReset = () => reset(at);
 
   return (
     <Seam

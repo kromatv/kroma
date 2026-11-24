@@ -43,10 +43,7 @@ function Row({ asChild = false, children }: Readonly<TableRowProps>) {
   const { variant, head, ruled } = useTable('Row');
   const host = asChild ? hostOf(children) : null;
   const cells = useMemo(() => parts(host ? host.props.children : children), [host, children]);
-  const places = useMemo(
-    () => cells.map((_, at) => ({ variant, head, ruled, at, of: cells.length })),
-    [variant, head, ruled, cells],
-  );
+  const places = cells.map((_, at) => ({ variant, head, ruled, at, of: cells.length }));
   const face = (
     <>
       {ruled ? <Box pointerEvents="none" style={[s.rule, ruleReach(corner, scope)]} /> : null}
