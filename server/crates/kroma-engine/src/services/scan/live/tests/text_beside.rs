@@ -113,7 +113,11 @@ fn a_walk_keeps_what_tmdb_answered_for_the_imdb_id_an_nfo_names_while_the_file_i
         imdb: Some("tt0113277".into()),
         tvdb: None,
     };
-    crate::db::text_beside::answer(&state.db, ITEM, &asked, Some(949)).unwrap();
+    let found = crate::db::text_beside::Answer {
+        asked: &asked,
+        found: Some(949),
+    };
+    crate::db::text_beside::answer(&state.db, ITEM, found).unwrap();
 
     walk(&state, root.path());
 

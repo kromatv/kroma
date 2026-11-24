@@ -156,10 +156,18 @@ pub fn lead(conn: &Connection, kind: &str, id: &str) -> rusqlite::Result<Option<
         .map(|found| found.map(|(_, lead)| lead))
 }
 
-/// Keeps what TMDB answered for the titles of `kind` whose file names the
-/// ids `asked` and no TMDB id: the id it found, or that it knows none.
-/// Matching does not ask about them again until the file changes.
-pub fn answer(pool: &Pool, kind: &str, asked: &Elsewhere, found: Option<u64>) -> Result<()> {
+/// What TMDB answered when asked which title the ids `asked` name: the TMDB
+/// id it found, or `None` when it knows no such title.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Answer<'a> {
+    pub asked: &'a Elsewhere,
+    pub found: Option<u64>,
+}
+
+/// Keeps `answer` for the titles of `kind` whose file names its ids and no
+/// TMDB id. Matching does not ask about them again until the file changes.
+pub fn answer(pool: &Pool, kind: &str, answer: Answer<'_>) -> Result<()> {
+    let Answer { asked, found } = answer;
     pool.get()?.execute(
         "UPDATE text_beside SET tmdb_id = ?1 \
          WHERE subject_kind = ?2 AND tmdb_id IS NULL AND imdb_id IS ?3 AND tvdb_id IS ?4",

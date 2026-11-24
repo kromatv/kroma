@@ -138,7 +138,11 @@ pub(super) fn identified(eng: &Engine, mut job: Job) -> Job {
     if let Err(e) = db::imports::answer_identities(&eng.pool, subject, &unasked, found) {
         warn!(id = %job.id, error = %e, "failed to keep what TMDB answered for an imported identity");
     }
-    if let Err(e) = db::text_beside::answer(&eng.pool, kind_of(subject), &unasked, found) {
+    let answer = db::text_beside::Answer {
+        asked: &unasked,
+        found,
+    };
+    if let Err(e) = db::text_beside::answer(&eng.pool, kind_of(subject), answer) {
         warn!(id = %job.id, error = %e, "failed to keep what TMDB answered for the ids a .nfo names");
     }
     job.pin = job.pin.or(found);

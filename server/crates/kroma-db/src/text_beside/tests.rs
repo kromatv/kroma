@@ -135,7 +135,12 @@ fn what_tmdb_answered_for_a_file_leads_its_title_and_is_read_back_with_the_file(
     replace(&pool, &[on_imdb("m1", "tt0113277")], &kept(&[])).unwrap();
     let asked = on_imdb("m1", "tt0113277").elsewhere;
 
-    answer(&pool, ITEM, &asked, Some(949)).unwrap();
+    let found = Answer {
+        asked: &asked,
+        found: Some(949),
+    };
+
+    answer(&pool, ITEM, found).unwrap();
 
     let conn = pool.get().unwrap();
     let read = read_before(&pool).unwrap();
@@ -148,8 +153,13 @@ fn what_tmdb_answered_for_a_file_leads_its_title_and_is_read_back_with_the_file(
 fn a_file_tmdb_knows_nothing_about_leads_nowhere() {
     let pool = temp_pool("text-beside");
     replace(&pool, &[on_imdb("m1", "tt0000002")], &kept(&[])).unwrap();
+    let asked = on_imdb("m1", "tt0000002").elsewhere;
+    let none = Answer {
+        asked: &asked,
+        found: None,
+    };
 
-    answer(&pool, ITEM, &on_imdb("m1", "tt0000002").elsewhere, None).unwrap();
+    answer(&pool, ITEM, none).unwrap();
 
     let conn = pool.get().unwrap();
     assert_eq!(lead(&conn, ITEM, "m1").unwrap(), None);
