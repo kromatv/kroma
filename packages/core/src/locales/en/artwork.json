@@ -8,5 +8,6 @@
   "artwork.poster": "Poster",
   "artwork.reset": "Restore the automatic picture",
   "artwork.title": "Artwork",
-  "artwork.upload": "Upload a picture"
+  "artwork.upload": "Upload a picture",
+  "artwork.uploaded": "Uploaded"
 }

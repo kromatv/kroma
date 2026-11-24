@@ -8,5 +8,6 @@
   "artwork.poster": "Affiche",
   "artwork.reset": "Rétablir l'image automatique",
   "artwork.title": "Visuels",
-  "artwork.upload": "Importer une image"
+  "artwork.upload": "Importer une image",
+  "artwork.uploaded": "Importée"
 }

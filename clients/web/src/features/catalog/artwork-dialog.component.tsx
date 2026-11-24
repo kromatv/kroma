@@ -25,21 +25,24 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 
-import { TitleDialogHeader } from '#web/features/catalog/title-dialog-header.component';
+import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
+import type { TitleShown } from '#web/features/catalog/title-shown';
 import { useAuth } from '#web/shared/lib/auth';
+
+const PREVIEW_HEIGHT = 210;
 
 const sDefinition = styles({
   hidden: { display: 'none' },
-  slot: { flexGrow: 1, flexBasis: 0, minWidth: 180 },
-  poster: { width: '100%', maxWidth: 180, aspectRatio: 2 / 3 },
-  backdrop: { width: '100%', aspectRatio: 16 / 9 },
+  slot: { maxWidth: '100%' },
+  poster: { height: PREVIEW_HEIGHT, aspectRatio: 2 / 3 },
+  backdrop: { height: PREVIEW_HEIGHT, aspectRatio: 16 / 9, maxWidth: '100%' },
 });
 
 const ROLES = ['poster', 'backdrop'] as const satisfies readonly ArtRole[];
 
 const WASH = color('tint/4');
 
-type Props = Readonly<{ kind: ArtKind; id: string; title: string }>;
+type Props = Readonly<{ kind: ArtKind; id: string; title: string; shown?: TitleShown }>;
 
 interface Slots {
   chosen: ChosenArt | undefined;
@@ -78,24 +81,22 @@ function useChosenArt(kind: ArtKind, id: SubjectId): Slots {
   };
 }
 
-function ArtPreview({ role, url }: Readonly<{ role: ArtRole; url: string | null }>) {
-  const t = useT();
+function ArtPreview({
+  role,
+  chosen,
+  shown,
+}: Readonly<{ role: ArtRole; chosen: string | null; shown: string | null }>) {
   const s = useStyles(sDefinition);
   const { client } = useAuth();
+  const width = role === 'poster' ? 360 : 640;
+  const src = chosen ? client.media.artwork.resolve(chosen, width) : shown;
   return (
     <Img
-      src={client.media.artwork.resolve(url, role === 'poster' ? 360 : 640)}
+      src={src}
       alt=""
       radius="md"
       background={WASH}
       style={role === 'poster' ? s.poster : s.backdrop}
-      fallback={
-        <Box fill center>
-          <Text variant="meta" color="white/45">
-            {t('artwork.automatic')}
-          </Text>
-        </Box>
-      }
     />
   );
 }
@@ -138,59 +139,91 @@ function PickButton({
   );
 }
 
-function ArtSlot({ role, slots }: Readonly<{ role: ArtRole; slots: Slots }>) {
+function SlotActions({
+  role,
+  slots,
+  chosen,
+}: Readonly<{ role: ArtRole; slots: Slots; chosen: boolean }>) {
+  const t = useT();
+  const busy = slots.busy === role;
+  return (
+    <Row gap={8} wrap>
+      <PickButton
+        busy={busy}
+        disabled={slots.busy !== null && !busy}
+        onFile={(file) => slots.upload(role, file)}
+      />
+      {chosen ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          label={t('artwork.reset')}
+          disabled={slots.busy !== null}
+          onPress={() => slots.reset(role)}
+        />
+      ) : null}
+    </Row>
+  );
+}
+
+function ArtSlot({
+  role,
+  slots,
+  shown,
+}: Readonly<{ role: ArtRole; slots: Slots; shown: string | null }>) {
   const t = useT();
   const s = useStyles(sDefinition);
-  const url = slots.chosen?.[role] ?? null;
-  const busy = slots.busy === role;
+  const chosen = slots.chosen?.[role] ?? null;
   return (
     <Box gap={12} style={s.slot}>
       <Text variant="label">{t(`artwork.${role}`)}</Text>
-      <ArtPreview role={role} url={url} />
-      <Row gap={8} wrap>
-        <PickButton
-          busy={busy}
-          disabled={slots.busy !== null && !busy}
-          onFile={(file) => slots.upload(role, file)}
-        />
-        {url ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            label={t('artwork.reset')}
-            disabled={slots.busy !== null}
-            onPress={() => slots.reset(role)}
-          />
-        ) : null}
+      <ArtPreview role={role} chosen={chosen} shown={shown} />
+      <Text variant="meta" color="white/45">
+        {t(chosen ? 'artwork.uploaded' : 'artwork.automatic')}
+      </Text>
+      <SlotActions role={role} slots={slots} chosen={chosen !== null} />
+    </Box>
+  );
+}
+
+function ArtPanel({ slots, shown }: Readonly<{ slots: Slots; shown: TitleShown | undefined }>) {
+  const t = useT();
+  return (
+    <Box gap={20}>
+      <Text variant="meta" color="white/55">
+        {t('artwork.hint')}
+      </Text>
+      {slots.error ? (
+        <Callout.Root tone="danger">
+          <Callout.Title>{slots.error}</Callout.Title>
+        </Callout.Root>
+      ) : null}
+      <Row gap={24} wrap align="flex-start">
+        {ROLES.map((role) => (
+          <ArtSlot key={role} role={role} slots={slots} shown={shown?.[role] ?? null} />
+        ))}
       </Row>
     </Box>
   );
 }
 
-/** The poster and the backdrop an admin uploads for a film or a show. Open
- * with `await ArtworkDialog.call({ kind, id, title })`; it resolves on dismiss. */
-export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title }) => {
+/** The poster and the backdrop an admin uploads for a film or a show, each
+ * beside the picture shown while none is uploaded (`shown`). Open with `await
+ * ArtworkDialog.call({ kind, id, title, shown })`; it resolves on dismiss. */
+export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title, shown }) => {
   const t = useT();
   const slots = useChosenArt(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id));
   return (
     <Dialog.Root open title={title} width="lg" onClose={() => call.end()}>
-      <TitleDialogHeader overline={t('artwork.title')} title={title} onClose={() => call.end()} />
+      <Dialog.Header>
+        <TitleDialogHeading
+          overline={t('artwork.title')}
+          title={title}
+          onClose={() => call.end()}
+        />
+      </Dialog.Header>
       <Dialog.Panel>
-        <Box gap={20}>
-          <Text variant="meta" color="white/55">
-            {t('artwork.hint')}
-          </Text>
-          {slots.error ? (
-            <Callout.Root tone="danger">
-              <Callout.Title>{slots.error}</Callout.Title>
-            </Callout.Root>
-          ) : null}
-          <Row gap={24} wrap align="flex-start">
-            {ROLES.map((role) => (
-              <ArtSlot key={role} role={role} slots={slots} />
-            ))}
-          </Row>
-        </Box>
+        <ArtPanel slots={slots} shown={shown} />
       </Dialog.Panel>
     </Dialog.Root>
   );

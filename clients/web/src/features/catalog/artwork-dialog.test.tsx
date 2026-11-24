@@ -32,6 +32,15 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+const SHOWN = {
+  title: 'Heat',
+  year: 1995,
+  overview: null,
+  genres: [],
+  poster: '/api/images/beside-poster.webp',
+  backdrop: '/api/images/beside-backdrop.webp',
+};
+
 function open(kind: 'item' | 'show', id: string) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   inputHost.render(
@@ -42,7 +51,7 @@ function open(kind: 'item' | 'show', id: string) {
     </QueryClientProvider>,
   );
   act(() => {
-    void ArtworkDialog.call({ kind, id, title: 'Heat' });
+    void ArtworkDialog.call({ kind, id, title: 'Heat', shown: SHOWN });
   });
 }
 
@@ -92,4 +101,28 @@ it('says why a picture was refused', async () => {
   pick(1, PICKED);
 
   expect(await screen.findByText('Could not update the artwork.')).toBeTruthy();
+});
+
+it('shows the picture the page shows where none was uploaded, and says which is which', async () => {
+  art.get.mockResolvedValue({ poster: '/api/images/chosen-a.webp', backdrop: null });
+  open('item', 'm1');
+
+  expect(await screen.findByText('Uploaded')).toBeTruthy();
+
+  expect(screen.getAllByText('Automatic')).toHaveLength(1);
+  expect(document.querySelector('img[src="/api/images/chosen-a.webp"]')).not.toBeNull();
+  expect(document.querySelector('img[src="/api/images/beside-backdrop.webp"]')).not.toBeNull();
+  expect(document.querySelector('img[src="/api/images/beside-poster.webp"]')).toBeNull();
+});
+
+it('names the title once and closes from its own header', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  open('item', 'm1');
+
+  await waitFor(() => expect(art.get).toHaveBeenCalled());
+  expect(screen.getAllByText('Heat')).toHaveLength(1);
+  inputHost.clearPressGuard();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+  await waitFor(() => expect(screen.queryByText('Poster')).toBeNull());
 });

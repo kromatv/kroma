@@ -32,6 +32,7 @@ import {
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TitleActions } from '#web/features/catalog/title-actions.component';
+import type { TitleShown } from '#web/features/catalog/title-shown';
 
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -54,7 +55,8 @@ export function TreatmentsPanel({
   kind,
   id,
   title,
-}: Readonly<{ kind: Kind; id: string; title: string }>) {
+  shown,
+}: Readonly<{ kind: Kind; id: string; title: string; shown: TitleShown }>) {
   const webRuntime = useWebRuntime();
 
   const scope = useStyleScope();
@@ -138,7 +140,7 @@ export function TreatmentsPanel({
             </span>
           );
         })}
-        <TitleActions kind={kind} id={id} title={title} onChanged={refresh} />
+        <TitleActions kind={kind} id={id} title={title} shown={shown} onChanged={refresh} />
       </Box>
     </section>
   );

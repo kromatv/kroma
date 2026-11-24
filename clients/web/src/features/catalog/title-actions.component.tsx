@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { ArtworkDialog } from '#web/features/catalog/artwork-dialog.component';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog.component';
 import { TitleInfoDialog } from '#web/features/catalog/title-info-dialog.component';
+import type { TitleShown } from '#web/features/catalog/title-shown';
 import { useAuth } from '#web/shared/lib/auth';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
@@ -14,6 +15,7 @@ type Props = Readonly<{
   kind: 'item' | 'show';
   id: string;
   title: string;
+  shown: TitleShown;
   onChanged: () => void;
 }>;
 
@@ -50,7 +52,7 @@ async function rematch({ kind, id, title, onChanged }: Props) {
 
 function LibraryActions(props: Props) {
   const t = useT();
-  const { kind, id, title } = props;
+  const { kind, id, title, shown } = props;
   return (
     <>
       <Button
@@ -58,14 +60,14 @@ function LibraryActions(props: Props) {
         size="sm"
         icon="pencil"
         label={t('titleInfo.action')}
-        onPress={() => void TitleInfoDialog.call({ kind, id, title })}
+        onPress={() => void TitleInfoDialog.call({ kind, id, title, shown })}
       />
       <Button
         variant="glass"
         size="sm"
         icon="photo"
         label={t('artwork.action')}
-        onPress={() => void ArtworkDialog.call({ kind, id, title })}
+        onPress={() => void ArtworkDialog.call({ kind, id, title, shown })}
       />
       <Button
         variant="glass"
