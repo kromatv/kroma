@@ -4937,7 +4937,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 291
+    "line": 296
   },
   {
     "id": "LIB-42",
@@ -4947,7 +4947,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 293
+    "line": 298
   },
   {
     "id": "LIB-43",
@@ -4957,7 +4957,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 297
+    "line": 302
   },
   {
     "id": "LIB-44",
@@ -4967,7 +4967,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 301
+    "line": 306
   },
   {
     "id": "LIB-45",
@@ -4977,7 +4977,7 @@
     "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 323
+    "line": 328
   },
   {
     "id": "LIB-46",
@@ -4987,7 +4987,7 @@
     "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 328
+    "line": 333
   },
   {
     "id": "LIB-47",
@@ -4997,7 +4997,7 @@
     "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 332
+    "line": 337
   },
   {
     "id": "LIB-48",
@@ -5007,7 +5007,7 @@
     "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 336
+    "line": 341
   },
   {
     "id": "LIB-49",
@@ -5017,7 +5017,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 342
+    "line": 347
   },
   {
     "id": "LIB-50",
@@ -5027,7 +5027,7 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 305
+    "line": 310
   },
   {
     "id": "LIB-51",
@@ -5428,6 +5428,16 @@
     "text": "A person who manages the library can write an episode's name, air date",
     "file": "docs/spec/library/README.md",
     "line": 279
+  },
+  {
+    "id": "LIB-91",
+    "domain": "LIB",
+    "space": "library",
+    "number": 91,
+    "status": "SHIPPED",
+    "text": "The backdrops behind the sign-in screen, the notification that new",
+    "file": "docs/spec/library/README.md",
+    "line": 284
   },
   {
     "id": "MEDIA-1",

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use kroma_domain::title_edit::TitleEdit;
-use kroma_domain::{MediaItem, Metadata, Show};
+use kroma_domain::{MediaItem, Metadata, Show, SplashEntry};
 
 use super::{apply, apply_show};
 use crate::art_beside::Art;
@@ -82,6 +82,24 @@ impl Layer {
     pub(super) fn title(&self, id: &str) -> Option<&str> {
         let edited = self.edits.get(id).and_then(|edit| edit.title.as_deref());
         edited.or_else(|| self.text.get(id).and_then(|tr| tr.title.as_deref()))
+    }
+
+    pub(super) fn on_splash(&self, id: &str, entry: &mut SplashEntry) {
+        if let Some(title) = self.title(id) {
+            title.clone_into(&mut entry.title);
+        }
+        if let Some(year) = self.edits.get(id).and_then(|edit| edit.year) {
+            entry.year = Some(year);
+        }
+        let Some(kept) = self.art.urls(id) else {
+            return;
+        };
+        if let Some(backdrop) = &kept.backdrop {
+            backdrop.clone_into(&mut entry.backdrop_url);
+        }
+        if kept.poster.is_some() {
+            entry.poster_url.clone_from(&kept.poster);
+        }
     }
 
     pub(super) fn poster_onto(&self, id: &str, meta: Option<&mut Metadata>) {

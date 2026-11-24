@@ -9,11 +9,42 @@ use kroma_domain::{
 use rusqlite::{params, Connection, Row};
 
 use super::time_watched::TIME_WATCHED;
+use crate::art_beside::kept_url;
 use crate::Pool;
 
 // Enough groups that a per-kind ranking is never starved by another kind's
 // long tail, and few enough that one window cannot page the whole catalog in.
 const GROUP_SCAN_LIMIT: i64 = 2_000;
+
+const MOST_WATCHED_SQL: &str = concat!(
+    "WITH rolled AS ( \
+       SELECT COALESCE('show:' || h.show_title, h.item_id, 'title:' || h.title) AS group_id, \
+              h.item_id AS item_id, i.show_id AS show_id, \
+              COALESCE(ts.title, s.title, h.show_title, ti.title, i.title, h.title) AS title, \
+              h.kind AS kind, \
+              COALESCE(ts.year, s.year, ti.year, i.year) AS year, \
+              COALESCE(",
+    kept_url!("show", "i.show_id", "poster"),
+    ", ms.poster_url, json_extract(s.metadata,'$.posterUrl'), ",
+    kept_url!("item", "h.item_id", "poster"),
+    ", mi.poster_url, json_extract(i.metadata,'$.posterUrl')) AS poster_url, \
+              COALESCE(h.user_id, h.username) AS who \
+       FROM play_history h \
+       LEFT JOIN items i ON i.id = h.item_id \
+       LEFT JOIN shows s ON s.id = i.show_id \
+       LEFT JOIN title_shown ts ON ts.subject_kind = 'show' AND ts.subject_id = i.show_id \
+       LEFT JOIN title_shown ti ON ti.subject_kind = 'item' AND ti.subject_id = h.item_id \
+       LEFT JOIN metadata_core ms \
+         ON ms.subject_kind = 'show' AND ms.subject_id = i.show_id \
+       LEFT JOIN metadata_core mi \
+         ON mi.subject_kind = 'item' AND mi.subject_id = h.item_id \
+       WHERE h.ended_at >= ?1 AND (?2 IS NULL OR h.user_id = ?2) \
+     ) \
+     SELECT COALESCE(MAX(show_id), MIN(item_id), group_id), MIN(title), kind, \
+            MAX(year), MAX(poster_url), COUNT(*), COUNT(DISTINCT who) \
+     FROM rolled GROUP BY group_id, kind \
+     ORDER BY 6 DESC, 2 ASC LIMIT ?3"
+);
 
 /// Per-account watch aggregates since `since` (unix-seconds), most time first.
 /// Every account is listed, an account that watched nothing in the window
@@ -162,30 +193,7 @@ pub fn most_watched(
     per_kind: usize,
 ) -> Result<Vec<MostWatchedColumn>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "WITH rolled AS ( \
-           SELECT COALESCE('show:' || h.show_title, h.item_id, 'title:' || h.title) AS group_id, \
-                  h.item_id AS item_id, i.show_id AS show_id, \
-                  COALESCE(s.title, h.show_title, i.title, h.title) AS title, \
-                  h.kind AS kind, \
-                  COALESCE(s.year, i.year) AS year, \
-                  COALESCE(ms.poster_url, json_extract(s.metadata,'$.posterUrl'), \
-                           mi.poster_url, json_extract(i.metadata,'$.posterUrl')) AS poster_url, \
-                  COALESCE(h.user_id, h.username) AS who \
-           FROM play_history h \
-           LEFT JOIN items i ON i.id = h.item_id \
-           LEFT JOIN shows s ON s.id = i.show_id \
-           LEFT JOIN metadata_core ms \
-             ON ms.subject_kind = 'show' AND ms.subject_id = i.show_id \
-           LEFT JOIN metadata_core mi \
-             ON mi.subject_kind = 'item' AND mi.subject_id = h.item_id \
-           WHERE h.ended_at >= ?1 AND (?2 IS NULL OR h.user_id = ?2) \
-         ) \
-         SELECT COALESCE(MAX(show_id), MIN(item_id), group_id), MIN(title), kind, \
-                MAX(year), MAX(poster_url), COUNT(*), COUNT(DISTINCT who) \
-         FROM rolled GROUP BY group_id, kind \
-         ORDER BY 6 DESC, 2 ASC LIMIT ?3",
-    )?;
+    let mut stmt = conn.prepare(MOST_WATCHED_SQL)?;
     let rows = stmt.query_map(params![since, user, GROUP_SCAN_LIMIT], |r| {
         Ok(MostWatchedEntry {
             item_id: r.get(0)?,
@@ -221,6 +229,11 @@ mod tests {
     use super::*;
     use crate::admin::play_history::record_play;
     use crate::admin::test_support::*;
+    use crate::art_beside::POSTER;
+    use crate::metadata_core::{ITEM, SHOW};
+    use crate::testing::keep_beside;
+    use crate::title_edits::{self, Title};
+    use kroma_domain::title_edit::TitleEdit;
     use kroma_domain::PlayRecord;
 
     fn watched(pool: &Pool, user: &str, username: &str, item: &str, kind: &str, ms: i64) {
@@ -476,6 +489,61 @@ mod tests {
                 .poster_url
                 .as_deref(),
             Some("/api/images/severance.webp")
+        );
+    }
+
+    #[test]
+    fn an_entry_carries_the_name_and_year_written_for_it_and_the_poster_kept_beside_it() {
+        let p = pool();
+        seed_movie(&p, "trip", "lib-films", "summer.trip", 2019);
+        seed_show(&p, "sev", "lib-tv", "severance", 2022);
+        seed_episode(&p, "ep1", "sev", "lib-tv", "Good News About Hell");
+        seed_poster(&p, "show", "sev", "/api/images/severance.webp");
+        let film = TitleEdit {
+            title: Some("Summer Trip".into()),
+            year: Some(2018),
+            ..Default::default()
+        };
+        title_edits::write(
+            &p,
+            Title {
+                kind: ITEM,
+                id: "trip",
+            },
+            &film,
+        )
+        .unwrap();
+        let show = TitleEdit {
+            title: Some("Severance".into()),
+            ..Default::default()
+        };
+        title_edits::write(
+            &p,
+            Title {
+                kind: SHOW,
+                id: "sev",
+            },
+            &show,
+        )
+        .unwrap();
+        keep_beside(&p, &[(ITEM, "trip", POSTER), (SHOW, "sev", POSTER)]);
+        watched(&p, "u1", "alice", "trip", "movie", 1_000);
+        episode_of(&p, "u1", "alice", "ep1", "severance");
+
+        let columns = most_watched(&p, 0, None, 10).unwrap();
+
+        let film = &column(&columns, WatchKind::Movie).entries[0];
+        assert_eq!(film.title, "Summer Trip");
+        assert_eq!(film.year, Some(2018));
+        assert_eq!(
+            film.poster_url.as_deref(),
+            Some("/api/images/beside-trip-poster.webp")
+        );
+        let series = &column(&columns, WatchKind::Tv).entries[0];
+        assert_eq!(series.title, "Severance");
+        assert_eq!(
+            series.poster_url.as_deref(),
+            Some("/api/images/beside-sev-poster.webp")
         );
     }
 
