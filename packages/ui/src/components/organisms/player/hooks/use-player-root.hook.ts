@@ -1,5 +1,5 @@
 import { useHeldSeek } from '@kromatv/core/react';
-import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useMemo, useRef, useState } from 'react';
 import { Dimensions, type LayoutChangeEvent } from 'react-native';
 
 import { usePlayerKeys } from '#ui/lib/player/use-player-keys.hook';
@@ -83,18 +83,18 @@ function usePlayerRoot({
     const window = Dimensions.get('window');
     return { width: window.width, height: window.height };
   });
-  const onStageLayout = useCallback((e: LayoutChangeEvent) => {
+  const onStageLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     const next = { width: Math.round(width), height: Math.round(height) };
     setStageSize((prev) =>
       (prev.width === next.width && prev.height === next.height) || next.width <= 0 ? prev : next,
     );
-  }, []);
+  };
   const [statsOn, setStatsOn] = useState(false);
   const panelRef = useRef<PanelHandle>(null);
   const locked = slots.panel != null;
-  const close = useCallback((reason: PlayerCloseReason) => onClose({ reason }), [onClose]);
-  const closeFromChrome = useCallback(() => close('close'), [close]);
+  const close = (reason: PlayerCloseReason) => onClose({ reason });
+  const closeFromChrome = () => close('close');
   const notice = useResumeNotice({
     at: slots.resume?.at,
     cur: c.cur,
@@ -107,13 +107,9 @@ function usePlayerRoot({
   };
   // The skip pill waits: it is the same corner as the resume prompt, and the
   // remote belongs to whichever of the two is drawn.
-  const intro = useMemo(
-    () =>
-      onSkipIntro
-        ? { active: introActive === true && !notice.shown, onSkip: onSkipIntro }
-        : undefined,
-    [introActive, onSkipIntro, notice.shown],
-  );
+  const intro = onSkipIntro
+    ? { active: introActive === true && !notice.shown, onSkip: onSkipIntro }
+    : undefined;
 
   // Measured BEFORE the nav machine, which is then given the row that is drawn:
   // a shed control must not keep a focus stop.
@@ -188,10 +184,10 @@ function usePlayerRoot({
   // Measured rather than assumed, and it falls back to the design height until
   // the first `onLayout` arrives.
   const [transportHeight, setTransportHeight] = useState(0);
-  const onTransportLayout = useCallback((e: LayoutChangeEvent) => {
+  const onTransportLayout = (e: LayoutChangeEvent) => {
     const height = Math.round(e.nativeEvent.layout.height);
     setTransportHeight((prev) => (prev === height || height <= 0 ? prev : height));
-  }, []);
+  };
   const transport = transportHeight || px(TRANSPORT_HEIGHT);
   const bottomInset = peekVisible ? PEEK_HEIGHT : px(28);
   const clearance = bottomInset + transport + px(SKIP_GAP);
@@ -200,14 +196,14 @@ function usePlayerRoot({
   const input = playerInputHandlers(nav, c, flags, locked);
 
   const { openOverlay } = nav;
-  const openSheet = useCallback(() => openOverlay('sheet'), [openOverlay]);
+  const openSheet = () => openOverlay('sheet');
   // Close first: pip, cast and the next episode all change what is on screen, and
   // leaving the panel over it would hide the thing just asked for.
   const runOverflow = (id: ControlId) => {
     nav.closeOverlay();
     nav.activate(id);
   };
-  const playUpNextItem = useCallback((item: UpNextItem) => onPlayItem?.(item), [onPlayItem]);
+  const playUpNextItem = (item: UpNextItem) => onPlayItem?.(item);
   const seekNudge = (dir: -1 | 1) => seek.nudge(dir, 'hold');
   const volumeNudge = (dir: -1 | 1) => setVolume(volumeStep(c.volume, dir, volumeMax));
 

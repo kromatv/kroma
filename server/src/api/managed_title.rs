@@ -1,5 +1,5 @@
 //! A film (`item`) or a show (`show`) named by a route's `{kind}/{id}`, for a
-//! person who manages the library.
+//! person who manages the library, or another kind a route accepts.
 
 use std::collections::HashMap;
 
@@ -34,10 +34,13 @@ pub(super) fn not_found(user: &User) -> Response {
     )
 }
 
-impl FromRequestParts<SharedState> for Managed {
-    type Rejection = Response;
-
-    async fn from_request_parts(parts: &mut Parts, state: &SharedState) -> Result<Self, Response> {
+impl Managed {
+    /// The title a request names when its kind is one of `kinds`.
+    pub(super) async fn among(
+        parts: &mut Parts,
+        state: &SharedState,
+        kinds: &[&'static str],
+    ) -> Result<Self, Response> {
         let AuthUser(user) = AuthUser::from_request_parts(parts, state).await?;
         require(&user, Permission::LibraryManage)?;
         let Path(mut path) = Path::<HashMap<String, String>>::from_request_parts(parts, state)
@@ -45,7 +48,7 @@ impl FromRequestParts<SharedState> for Managed {
             .map_err(IntoResponse::into_response)?;
         let kind = path.remove("kind").unwrap_or_default();
         let (Some(kind), Some(id)) = (
-            [ITEM, SHOW].into_iter().find(|k| *k == kind),
+            kinds.iter().copied().find(|k| *k == kind),
             path.remove("id"),
         ) else {
             return Err(not_found(&user));
@@ -56,5 +59,13 @@ impl FromRequestParts<SharedState> for Managed {
             id,
             path,
         })
+    }
+}
+
+impl FromRequestParts<SharedState> for Managed {
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, state: &SharedState) -> Result<Self, Response> {
+        Self::among(parts, state, &[ITEM, SHOW]).await
     }
 }

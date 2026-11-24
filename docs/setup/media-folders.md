@@ -129,10 +129,11 @@ To change one title's picture without touching its folder, open the title and
 choose **Edit artwork**. A poster, a backdrop or a logo you upload there comes
 before the picture in the folder and the one from the internet, and **Restore the
 automatic picture** brings them back. On a series page, the **Edit thumbnail**
-button of an episode does the same for that episode's thumbnail. A poster, a
-backdrop or a thumbnail opens first in a frame of its shape, 2:3 or 16:9: drag
-it, zoom or turn it, then choose **Use this picture**. A logo is sent as it is,
-so its transparency stays. It takes the right to manage the library.
+button of an episode does the same for that episode's thumbnail, and **Edit
+season poster**, above the episodes, for the poster of the season shown. A
+poster, a backdrop or a thumbnail opens first in a frame of its shape, 2:3 or
+16:9: drag it, zoom or turn it, then choose **Use this picture**. A logo is sent
+as it is, so its transparency stays. It takes the right to manage the library.
 
 ### Titles and summaries from .nfo files
 

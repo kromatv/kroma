@@ -2,6 +2,7 @@ import { useT } from '@kromatv/ui';
 import { InputGroup } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { copyText } from '#web/shared/lib/copy-text';
+import { useLater } from '#web/shared/lib/use-later.hook';
 
 const COPIED_MS = 1500;
 
@@ -9,10 +10,11 @@ const COPIED_MS = 1500;
 export function CopyableLink({ label, link }: Readonly<{ label: string; link: string }>) {
   const t = useT();
   const [copied, setCopied] = useState(false);
+  const later = useLater();
   const copy = async () => {
     if (await copyText(link)) {
       setCopied(true);
-      setTimeout(() => setCopied(false), COPIED_MS);
+      later(() => setCopied(false), COPIED_MS);
     }
   };
   return (

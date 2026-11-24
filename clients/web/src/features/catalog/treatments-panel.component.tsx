@@ -35,6 +35,7 @@ import { TitleActions } from '#web/features/catalog/title-actions.component';
 import type { TitleShown } from '#web/features/catalog/title-shown';
 
 import { useAuth } from '#web/shared/lib/auth';
+import { useLater } from '#web/shared/lib/use-later.hook';
 
 type Kind = 'item' | 'show';
 
@@ -67,6 +68,7 @@ export function TreatmentsPanel({
   const t = useT();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const later = useLater();
   const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
   const admin = !!user && hasPermission(user, 'settings.manage');
   const canManageLibrary = !!user && hasPermission(user, 'library.manage');
@@ -97,7 +99,7 @@ export function TreatmentsPanel({
   }
 
   const refresh = () => {
-    setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500);
+    later(() => queryClient.invalidateQueries({ queryKey }), 1500);
   };
 
   return (

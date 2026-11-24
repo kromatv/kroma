@@ -21,6 +21,7 @@ import {
 } from '@kromatv/ui/kit';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
+import { useLater } from '#web/shared/lib/use-later.hook';
 import { PageFrame } from '#web/shared/ui';
 
 const EXPIRY_DAYS = ['1', '7', '30'] as const;
@@ -36,15 +37,19 @@ function joinUrl(token: string): string {
 
 function useCopied(): [boolean, (text: string) => Promise<void>] {
   const [copied, setCopied] = useState(false);
-  const copy = useCallback(async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), COPIED_MS);
-    } catch {
-      /* clipboard unavailable (insecure context) or blocked */
-    }
-  }, []);
+  const later = useLater();
+  const copy = useCallback(
+    async (text: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        later(() => setCopied(false), COPIED_MS);
+      } catch {
+        /* clipboard unavailable (insecure context) or blocked */
+      }
+    },
+    [later],
+  );
   return [copied, copy];
 }
 

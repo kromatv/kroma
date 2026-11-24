@@ -1,4 +1,4 @@
-import { type ArtKind, type ArtRole, ItemId, ShowId } from '@kromatv/client/media';
+import type { ArtKind, ArtRole } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import {
   Box,
@@ -221,7 +221,7 @@ type Steps = Props & Readonly<{ step: Framing; onClose: () => void }>;
 function ArtworkSteps({ step, onClose, ...props }: Steps) {
   const { kind, id, title, shown, roles = TITLE_ROLES } = props;
   const t = useT();
-  const slots = useChosenArt(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id));
+  const slots = useChosenArt(kind, id);
   const { framing, begin, end } = step;
   const keep = (role: ArtRole) => (picture: Blob) => {
     slots.upload(role, picture);
@@ -248,10 +248,10 @@ function ArtworkSteps({ step, onClose, ...props }: Steps) {
 
 /** The pictures an admin uploads for a title: the poster, the backdrop and the
  * logo of a film or a show unless `roles` names others, such as an episode's
- * `still`. Each slot shows the picture in place while none is uploaded
- * (`shown`), and a picked poster, backdrop or still is framed to its slot's
- * shape before it is sent. Open with `await ArtworkDialog.call({ kind, id,
- * title, roles, shown })`; it resolves on dismiss. */
+ * `still` or a season's `poster`. Each slot shows the picture in place while
+ * none is uploaded (`shown`), and a picked poster, backdrop or still is framed
+ * to its slot's shape before it is sent. Open with `await ArtworkDialog.call({
+ * kind, id, title, roles, shown })`; it resolves on dismiss. */
 export const ArtworkDialog = createCallable<Props>(({ call, ...props }) => {
   const step = useArtworkFraming();
   return (

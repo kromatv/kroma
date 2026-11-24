@@ -1,6 +1,7 @@
 import { useT } from '@kromatv/ui';
 import { Box, Button, classes, Row, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
+import { useLater } from '#web/shared/lib/use-later.hook';
 
 const STAY_MS = 6000;
 
@@ -18,10 +19,11 @@ export interface MonitoringNoticeState {
 export function useMonitoringNotice(): MonitoringNoticeState {
   const [notice, setNotice] = useState<Notice>({ text: '', undo: null });
   const [on, setOn] = useState(false);
+  const later = useLater();
   const say = (text: string, undo?: () => void) => {
     setNotice({ text, undo: undo ?? null });
     setOn(true);
-    window.setTimeout(() => setOn(false), STAY_MS);
+    later(() => setOn(false), STAY_MS);
   };
   return { notice, on, say };
 }

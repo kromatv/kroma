@@ -1,12 +1,21 @@
 import { apiErrorText } from '@kromatv/client';
-import type { ArtKind, ArtRole, ChosenArt, SubjectId } from '@kromatv/client/media';
+import {
+  type ArtKind,
+  type ArtRole,
+  type ChosenArt,
+  ItemId,
+  SeasonId,
+  ShowId,
+} from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { useAuth } from '#web/shared/lib/auth';
 
-/** A title's chosen poster and backdrop, and what changing one is doing. */
+const SUBJECTS = { item: ItemId, show: ShowId, season: SeasonId } as const;
+
+/** A title's or a season's chosen pictures, and what changing one is doing. */
 export interface Slots {
   chosen: ChosenArt | undefined;
   busy: ArtRole | null;
@@ -15,12 +24,13 @@ export interface Slots {
   reset: (role: ArtRole) => void;
 }
 
-/** The pictures an admin chose for a title, with the upload and the reset of
- * each slot. A failed change leaves its message in `error`. */
-export function useChosenArt(kind: ArtKind, id: SubjectId): Slots {
+/** The pictures an admin chose for a title or a season, with the upload and
+ * the reset of each slot. A failed change leaves its message in `error`. */
+export function useChosenArt(kind: ArtKind, raw: string): Slots {
   const t = useT();
   const { client } = useAuth();
   const queryClient = useQueryClient();
+  const id = SUBJECTS[kind].parse(raw);
   const queryKey = ['chosen-art', kind, id] as const;
   const { data, error: loadError } = useQuery({
     queryKey,

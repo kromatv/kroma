@@ -1,5 +1,5 @@
 import { IconCheck, IconCopy } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useFlash } from '#site/lib/use-flash.hook';
 import { m } from '#site/paraglide/messages';
 
 export interface CopyButtonProps {
@@ -7,16 +7,13 @@ export interface CopyButtonProps {
 }
 
 export function CopyButton({ value }: Readonly<CopyButtonProps>) {
-  const [copied, setCopied] = useState(false);
+  const [copied, flash] = useFlash<true>(1600);
 
   const handleCopy = () => {
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
       return;
     }
-    void navigator.clipboard.writeText(value).then(() => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
-    });
+    void navigator.clipboard.writeText(value).then(() => flash(true));
   };
 
   return (

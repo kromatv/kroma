@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Ground } from '#ui/components/atoms/ground';
@@ -40,10 +40,7 @@ export function StatsPanel({
   const sx = useStyles(sxDefinition);
 
   const t = useT();
-  const place = useMemo(
-    () => ({ position: 'absolute' as const, top, left, zIndex: 20 }),
-    [top, left],
-  );
+  const place = { position: 'absolute' as const, top, left, zIndex: 20 };
   const [s, setS] = useState<PlayerStats>(() => controller.getStats());
   const [history] = useState(() => new Map<string, number[]>());
   // The controller is rebuilt on every parent render (~4x/s while playing, via

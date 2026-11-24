@@ -1,10 +1,10 @@
 import { apiErrorText } from '@kromatv/client';
 import {
-  type ArtKind,
   ItemId,
   ShowId,
   TITLE_EDIT_LIMITS,
   type TitleEdit,
+  type TitleKind,
 } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import { Box, Callout, Dialog, Field, Spinner, Text } from '@kromatv/ui/kit';
@@ -18,7 +18,7 @@ import type { TitleShown } from '#web/features/catalog/title-shown';
 import { useAuth } from '#web/shared/lib/auth';
 
 type Props = Readonly<{
-  kind: ArtKind | 'episode';
+  kind: TitleKind | 'episode';
   id: string;
   title: string;
   shown?: TitleShown;

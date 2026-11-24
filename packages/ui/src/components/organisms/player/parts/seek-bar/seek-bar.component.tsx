@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, type PointerEvent, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -101,7 +101,7 @@ export function SeekBar({
   const px = scaler(scale);
   // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
   // so a fresh array would miss the style cache four times a second.
-  const sized = useMemo(() => scaled(scale, scope), [scale, scope]);
+  const sized = scaled(scale, scope);
   // The track measures itself rather than reading a DOM rect, so the same drag
   // maths runs on a TV; PanResponder is the one gesture API both renderers have.
   const track = useDragTrack();
@@ -115,13 +115,10 @@ export function SeekBar({
 
   // The segments are the track's coordinate system (see lib/seek-track), so
   // everything below is measured against them rather than against `cur / dur`.
-  const segs = useMemo(
-    () =>
-      chapters.length > 0
-        ? chapters
-        : [{ startMs: 0, endMs: dur * 1000, title: '', kind: 'chapter' as const }],
-    [chapters, dur],
-  );
+  const segs =
+    chapters.length > 0
+      ? chapters
+      : [{ startMs: 0, endMs: dur * 1000, title: '', kind: 'chapter' as const }];
 
   const secAtOffset = (offset: number | null): number | null => {
     if (offset == null || dur <= 0 || track.width <= 0) {

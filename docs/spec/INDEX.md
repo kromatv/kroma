@@ -3,7 +3,7 @@
 
 # Requirement index
 
-834 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+835 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -623,6 +623,7 @@
 - **MEDIA-53** (SHIPPED) - A show's page draws its seasons as a row of posters, the one on
 - **MEDIA-54** (SHIPPED) - A person who manages the library can upload a logo for a matched
 - **MEDIA-55** (SHIPPED) - A person who manages the library can upload a thumbnail for an
+- **MEDIA-56** (SHIPPED) - A person who manages the library can upload a poster for a season
 
 ## MOD - [modules](modules/)
 

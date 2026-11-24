@@ -69,5 +69,5 @@ export function usePlayerCredits(opts: {
     }
   }, [endedNonce, hasNext, cancelled, advance]);
 
-  return { show, secondsLeft, total: AUTO_NEXT, cancel: useCallback(() => setCancelled(true), []) };
+  return { show, secondsLeft, total: AUTO_NEXT, cancel: () => setCancelled(true) };
 }

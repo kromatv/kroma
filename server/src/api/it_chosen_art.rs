@@ -136,6 +136,59 @@ async fn a_thumbnail_an_admin_uploads_shows_on_the_episode() {
     );
 }
 
+async fn first_season(t: &TestApp) -> (String, String) {
+    let id = demo_show_id("The Office");
+    let show = format!("/api/shows/{id}");
+    let (_, detail) = get(&t.app, &show, Some(&t.token)).await;
+    let number = detail["seasons"][0]["number"].as_u64().expect("a season");
+    (show, format!("/api/art/season/{id}:{number}"))
+}
+
+#[tokio::test]
+async fn a_season_poster_an_admin_uploads_shows_on_the_season() {
+    let t = test_app();
+    let (show, art) = first_season(&t).await;
+
+    let status = upload(&t.app, &format!("{art}/poster"), &t.token, PNG.to_vec()).await;
+
+    let (_, chosen) = get(&t.app, &art, Some(&t.token)).await;
+    let (_, after) = get(&t.app, &show, Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        chosen["poster"]
+            .as_str()
+            .is_some_and(|url| url.starts_with("/api/images/chosen-"))
+    );
+    assert_eq!(after["seasons"][0]["posterUrl"], chosen["poster"]);
+}
+
+#[tokio::test]
+async fn a_season_takes_only_a_poster_and_only_with_an_episode_on_disk() {
+    let t = test_app();
+    let (_, art) = first_season(&t).await;
+    let show = demo_show_id("The Office");
+
+    let backdrop = upload(&t.app, &format!("{art}/backdrop"), &t.token, PNG.to_vec()).await;
+    let away = upload(
+        &t.app,
+        &format!("/api/art/season/{show}:99/poster"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+    let unnumbered = upload(
+        &t.app,
+        &format!("/api/art/season/{show}/poster"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+
+    assert_eq!(backdrop, StatusCode::NOT_FOUND);
+    assert_eq!(away, StatusCode::NOT_FOUND);
+    assert_eq!(unnumbered, StatusCode::NOT_FOUND);
+}
+
 #[tokio::test]
 async fn a_member_who_cannot_manage_the_library_cannot_choose_art() {
     let t = test_app();

@@ -94,3 +94,12 @@ fn a_poster_belongs_to_one_kind_of_title() {
     assert!(as_item.is_some());
     assert_eq!(as_show, None);
 }
+
+#[test]
+fn a_season_id_names_its_show_and_its_number() {
+    let id = season_id("sh1", 3);
+
+    assert_eq!(season_of(&id), Some(("sh1", 3)));
+    assert_eq!(season_of("sh1"), None);
+    assert_eq!(season_of("sh1:three"), None);
+}

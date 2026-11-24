@@ -16,6 +16,7 @@ import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row
 import { epKey } from '#web/features/catalog/episode-selection';
 import { RequestBar, SeasonAsk } from '#web/features/catalog/request-bar.component';
 import { SeasonRequestCard } from '#web/features/catalog/season-card.component';
+import { SeasonPosterButton } from '#web/features/catalog/season-poster-button.component';
 import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 
 import type { TitleSeason } from '#web/shared/lib/title-view';
@@ -137,16 +138,19 @@ export function SeasonSection({
           <h2>
             <Text variant="h2">{t('content.episodes')}</Text>
           </h2>
-          {canRequest ? (
-            <SeasonAsk
-              season={current.number}
-              seasonPickable={seasonPickable}
-              allPickable={hasOpen}
-              busy={requestBusy}
-              onRequestSeason={() => onRequestSeason(current.number)}
-              onRequestAll={onRequestAll}
-            />
-          ) : null}
+          <Box row gap={8} align="center">
+            <SeasonPosterButton season={current} />
+            {canRequest ? (
+              <SeasonAsk
+                season={current.number}
+                seasonPickable={seasonPickable}
+                allPickable={hasOpen}
+                busy={requestBusy}
+                onRequestSeason={() => onRequestSeason(current.number)}
+                onRequestAll={onRequestAll}
+              />
+            ) : null}
+          </Box>
         </Box>
       </div>
 

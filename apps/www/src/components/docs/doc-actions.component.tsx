@@ -11,6 +11,7 @@ import {
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { DOC_CHATS, type DocChatId } from '#site/lib/doc-chats';
 import { localizePath, useLang } from '#site/lib/i18n';
+import { useFlash } from '#site/lib/use-flash.hook';
 import { m } from '#site/paraglide/messages';
 
 export interface DocActionsProps {
@@ -46,7 +47,7 @@ function Glyph({ done, children }: Readonly<{ done: boolean; children: ReactNode
 export function DocActions({ title, markdown, className }: Readonly<DocActionsProps>) {
   const lang = useLang();
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState<Copied>();
+  const [copied, flash] = useFlash<Copied>(1600);
   const root = useRef<HTMLDivElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   const panel = useId();
@@ -80,11 +81,6 @@ export function DocActions({ title, markdown, className }: Readonly<DocActionsPr
     title,
     index: `${site.url}${localizePath('/llms.txt', lang)}`,
   });
-
-  const flash = (what: Copied) => {
-    setCopied(what);
-    window.setTimeout(() => setCopied(undefined), 1600);
-  };
 
   const copyPage = () => {
     const item = new ClipboardItem({ 'text/plain': pageBlob(markdown) });

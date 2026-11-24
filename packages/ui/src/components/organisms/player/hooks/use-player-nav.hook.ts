@@ -88,14 +88,14 @@ export function usePlayerNav(
     }
   }, []);
 
-  const poke = useCallback(() => {
+  const poke = () => {
     setRevealed(true);
     clearHide();
     if (!playing || overlay) {
       return;
     }
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
-  }, [clearHide, playing, overlay]);
+  };
 
   const rearmHide = useCallback(() => {
     clearHide();
@@ -105,10 +105,10 @@ export function usePlayerNav(
     hideTimer.current = setTimeout(() => setRevealed(false), HIDE_MS);
   }, [clearHide, playing, overlay]);
 
-  const hide = useCallback(() => {
+  const hide = () => {
     clearHide();
     setRevealed(false);
-  }, [clearHide]);
+  };
 
   const [chromeKeyOf, setChromeKeyOf] = useState({ playing, overlay });
   const [quietToggle, setQuietToggle] = useState(false);
@@ -130,14 +130,14 @@ export function usePlayerNav(
     return clearHide;
   }, [playing, overlay, rearmHide, clearHide]);
 
-  const openOverlay = useCallback((o: Exclude<Overlay, null>) => {
+  const openOverlay = (o: Exclude<Overlay, null>) => {
     setOverlay(o);
     setRevealed(true);
-  }, []);
-  const closeOverlay = useCallback(() => setOverlay(null), []);
+  };
+  const closeOverlay = () => setOverlay(null);
 
-  const focus = useCallback((at: Spot) => setSpot(at), []);
-  const blur = useCallback((at: Spot) => setSpot((was) => (was === at ? null : was)), []);
+  const focus = (at: Spot) => setSpot(at);
+  const blur = (at: Spot) => setSpot((was) => (was === at ? null : was));
   const exit = useEffectEvent((reason: PlayerCloseReason) => actions.onExit(reason));
 
   const activate = useStableCallback((id: ControlId) => {
