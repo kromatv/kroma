@@ -1,19 +1,17 @@
-import { KromaEvents } from '@kromatv/client/events';
 import { AddEngineHost, AdminHostProvider, ModuleSlotProvider } from '@kromatv/module-sdk';
 import { Box, useBreakpoint } from '@kromatv/ui/kit';
-import { useQueryClient } from '@tanstack/react-query';
-import { type ReactNode, useEffect, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { ScrollView } from 'react-native';
 import { usePoll } from '#web/features/admin/hooks';
 import { AdminModalHosts } from '#web/features/admin/modal-hosts.component';
 import { StoreOpsProvider } from '#web/features/admin/module-ops';
 import { AdminContext } from '#web/features/admin/shell-context';
 import { AdminMobileTopbar, AdminSidebar } from '#web/features/admin/shell-sidebar.component';
+import { useAdminLiveRefresh } from '#web/features/admin/use-admin-live-refresh.hook';
 import { ADMIN_SCROLLER, ADMIN_SCROLLER_CONTENT } from '#web/features/admin/web-style';
 import { useModuleRegistry } from '#web/modules/module-host-provider.component';
 import { apiBase } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
-import { useKromaClient } from '#web/shared/lib/web-runtime';
 import { PageFrame } from '#web/shared/ui';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
@@ -22,11 +20,8 @@ export { Denied, isAnyAdmin, useAsyncAction, useCap, usePoll } from '#web/featur
 export { useAdmin } from '#web/features/admin/shell-context';
 
 export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const eventClient = useKromaClient();
-
   const moduleRegistry = useModuleRegistry();
   const { client, user } = useAuth();
-  const queryClient = useQueryClient();
   const kit = useMemo(
     () => ({
       client,
@@ -40,43 +35,7 @@ export function AdminProvider({ children }: Readonly<{ children: ReactNode }>) {
   );
   const { data: serverInfo } = usePoll(['admin', 'server'], () => client.admin.server(), 15000);
 
-  // Coalesce to one refresh per window, since e.g. an enrich pass emits one
-  // item.updated per title. Compared as plain strings: download.progress is a
-  // module's frame, not part of core's union.
-  useEffect(() => {
-    const highFrequency = new Set([
-      'job.log',
-      'job.progress',
-      'download.progress',
-      'module.op.progress',
-      'module.op.done',
-    ]);
-    let pending: ReturnType<typeof setTimeout> | null = null;
-    const ev = new KromaEvents(apiBase(), {
-      token: () => eventClient.sessionToken,
-      refresh: () => eventClient.refreshSession(),
-
-      onEvent: (e) => {
-        if (highFrequency.has(e.type)) {
-          return;
-        }
-        if (pending) {
-          return;
-        }
-        pending = setTimeout(() => {
-          pending = null;
-          void queryClient.invalidateQueries({ queryKey: ['admin'] });
-        }, 1500);
-      },
-    });
-    ev.connect();
-    return () => {
-      if (pending) {
-        clearTimeout(pending);
-      }
-      ev.close();
-    };
-  }, [queryClient, eventClient.sessionToken, eventClient]);
+  useAdminLiveRefresh();
 
   const adminValue = useMemo(() => ({ serverInfo }), [serverInfo]);
 
