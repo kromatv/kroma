@@ -1,7 +1,7 @@
 use kroma_domain::title_edit::TitleEdit;
 use kroma_domain::{Kind, SectionItem};
 
-use crate::art_beside::{BACKDROP, POSTER};
+use crate::art_beside::{BACKDROP, LOGO, POSTER};
 use crate::art_chosen::{self, Slot};
 use crate::localize::test_support::*;
 use crate::localize::{
@@ -17,7 +17,14 @@ fn a_picture_beside_a_film_comes_before_its_fetched_art_in_every_language() {
     let mut fetched = td("Arrival", vec![]);
     fetched.poster_url = Some("/api/images/fetched-en.webp".into());
     translations::put(&p, ITEM, "m1", "en", translations::TMDB, &fetched).unwrap();
-    keep_beside(&p, &[(ITEM, "m1", POSTER), (ITEM, "m1", BACKDROP)]);
+    keep_beside(
+        &p,
+        &[
+            (ITEM, "m1", POSTER),
+            (ITEM, "m1", BACKDROP),
+            (ITEM, "m1", LOGO),
+        ],
+    );
     let mut items = vec![item("m1", Kind::Movie)];
 
     overlay_items(&p, &mut items, "en").unwrap();
@@ -31,6 +38,10 @@ fn a_picture_beside_a_film_comes_before_its_fetched_art_in_every_language() {
     assert_eq!(
         meta.backdrop_url.as_deref(),
         Some("/api/images/beside-m1-backdrop.webp")
+    );
+    assert_eq!(
+        meta.logo_url.as_deref(),
+        Some("/api/images/beside-m1-logo.webp")
     );
 }
 

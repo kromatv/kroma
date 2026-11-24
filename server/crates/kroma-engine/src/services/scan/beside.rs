@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use crate::db::art_beside::{Picture, BACKDROP, POSTER};
+use crate::db::art_beside::{Picture, BACKDROP, LOGO, POSTER};
 use crate::db::metadata_core::{ITEM, SHOW};
 use crate::db::text_beside::Nfo;
 use crate::infra::image::{beside_name, PUBLIC_PREFIX};
@@ -102,8 +102,12 @@ fn videos_of(item: &MediaItem) -> impl Iterator<Item = PathBuf> + '_ {
 }
 
 fn rows(subject: &Subject<'_>, art: Art) -> Vec<Picture> {
-    [(POSTER, art.poster), (BACKDROP, art.backdrop)]
-        .into_iter()
+    let kept = [
+        (POSTER, art.poster),
+        (BACKDROP, art.backdrop),
+        (LOGO, art.logo),
+    ];
+    kept.into_iter()
         .filter_map(|(role, path)| picture(subject, role, path?))
         .collect()
 }

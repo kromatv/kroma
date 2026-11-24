@@ -1,12 +1,12 @@
-//! What a person keeps beside a title's files: its poster and its backdrop,
-//! and the `.nfo` file that gives it its text.
+//! What a person keeps beside a title's files: its poster, its backdrop and
+//! its logo, and the `.nfo` file that gives it its text.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use kroma_domain::naming::is_season_folder;
 
-use crate::db::art_beside::BACKDROP;
+use crate::db::art_beside::{BACKDROP, LOGO};
 
 /// The extensions of the pictures read beside the media, compared without
 /// regard to case.
@@ -14,8 +14,10 @@ pub const PICTURES: [&str; 4] = ["jpg", "jpeg", "png", "webp"];
 const FILM_POSTERS: [&str; 5] = ["poster", "folder", "cover", "default", "movie"];
 const SHOW_POSTERS: [&str; 5] = ["poster", "folder", "cover", "default", "show"];
 const BACKDROPS: [&str; 4] = ["backdrop", "fanart", "background", "art"];
+const LOGOS: [&str; 2] = ["logo", "clearlogo"];
 const POSTER_WIDTH: u32 = 780;
 const BACKDROP_WIDTH: u32 = 1920;
+const LOGO_WIDTH: u32 = 800;
 
 struct Role {
     after_video: &'static [&'static str],
@@ -35,17 +37,25 @@ const FILM_BACKDROP: Role = Role {
     in_own_folder: &BACKDROPS,
 };
 
+const FILM_LOGO: Role = Role {
+    after_video: &LOGOS,
+    video_alone: false,
+    in_own_folder: &LOGOS,
+};
+
 const FILM_NFO: Role = Role {
     after_video: &[],
     video_alone: true,
     in_own_folder: &["movie"],
 };
 
-/// The poster and the backdrop a person keeps beside a title's files.
+/// The poster, the backdrop and the logo a person keeps beside a title's
+/// files.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Art {
     pub poster: Option<PathBuf>,
     pub backdrop: Option<PathBuf>,
+    pub logo: Option<PathBuf>,
 }
 
 /// The files of one kind a scan found, pictures or `.nfo` files, by the
@@ -128,13 +138,15 @@ impl Folder {
 
 /// The art kept beside a film's `videos`. A picture named after one of them
 /// comes first: alone or followed by `-poster` for the poster, followed by
-/// `-backdrop`, `-fanart`, `-background` or `-art` for the backdrop. Then, in a
-/// folder that holds no other title's video, `poster`, `folder`, `cover`,
-/// `default` or `movie`, and `backdrop`, `fanart`, `background` or `art`.
+/// `-backdrop`, `-fanart`, `-background` or `-art` for the backdrop, and by
+/// `-logo` or `-clearlogo` for the logo. Then, in a folder that holds no other
+/// title's video, `poster`, `folder`, `cover`, `default` or `movie`, `backdrop`,
+/// `fanart`, `background` or `art`, and `logo` or `clearlogo`.
 pub fn film_art(folders: &Folders, videos: &[PathBuf]) -> Art {
     Art {
         poster: film_file(folders, videos, &FILM_POSTER),
         backdrop: film_file(folders, videos, &FILM_BACKDROP),
+        logo: film_file(folders, videos, &FILM_LOGO),
     }
 }
 
@@ -152,13 +164,15 @@ fn film_file(folders: &Folders, videos: &[PathBuf], role: &Role) -> Option<PathB
 
 /// The art kept in a show's folder, the one above its season folders, when it
 /// holds no other show's episode: `poster`, `folder`, `cover`, `default` or
-/// `show`, and `backdrop`, `fanart`, `background` or `art`.
+/// `show`, `backdrop`, `fanart`, `background` or `art`, and `logo` or
+/// `clearlogo`.
 pub fn show_art(folders: &Folders, episodes: &[PathBuf]) -> Art {
     let held = folders.of_show(episodes);
     let pick = |names: &[&str]| held.iter().find_map(|folder| folder.first_of(names));
     Art {
         poster: pick(&SHOW_POSTERS),
         backdrop: pick(&BACKDROPS),
+        logo: pick(&LOGOS),
     }
 }
 
@@ -171,10 +185,10 @@ pub fn show_nfo(folders: &Folders, episodes: &[PathBuf]) -> Option<PathBuf> {
 
 /// The widest a picture kept as `role` is cached.
 pub fn max_width(role: &str) -> u32 {
-    if role == BACKDROP {
-        BACKDROP_WIDTH
-    } else {
-        POSTER_WIDTH
+    match role {
+        BACKDROP => BACKDROP_WIDTH,
+        LOGO => LOGO_WIDTH,
+        _ => POSTER_WIDTH,
     }
 }
 

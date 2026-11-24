@@ -76,9 +76,9 @@ folder beside the video works too. Subtitles inside the video file need nothing.
 The player finds a new subtitle file at once. The subtitle filter of the Films
 and Series pages counts it after the next library scan.
 
-### Posters and backdrops
+### Posters, backdrops and logos
 
-KROMA finds a poster and a backdrop on the internet for every title it
+KROMA finds a poster, a backdrop and a logo on the internet for every title it
 recognizes. A picture you put in the title's folder comes before them, and gives
 a title KROMA does not recognize a poster instead of the plain placeholder:
 
@@ -102,12 +102,15 @@ Series/
   `Summer Trip (2019)-poster.jpg`.
 - For a film's backdrop, name it `backdrop`, `fanart`, `background` or `art`,
   or after the video file in a shared folder: `Summer Trip (2019)-fanart.jpg`.
+- For a logo, the title's name drawn as a picture, name it `logo` or
+  `clearlogo`, or after the video file in a shared folder:
+  `Summer Trip (2019)-logo.png`.
 - For a series, put the pictures in the series folder, the one above the season
   folders, with the same names, or `show` for the poster. When two series share
   one folder, neither takes the pictures in it.
 - KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp` pictures, and passes over one
   it cannot open.
-- A backdrop shows only on a title KROMA recognizes.
+- A backdrop or a logo shows only on a title KROMA recognizes.
 - KROMA notices a picture you add, change or remove the way it notices a new
   video file. An app can take up to a day to show the change on a screen it has
   already opened.

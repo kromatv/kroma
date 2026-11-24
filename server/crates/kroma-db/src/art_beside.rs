@@ -1,5 +1,6 @@
-//! The pictures a scan found beside each title's files, and the poster and the
-//! backdrop they put in front of fetched art, behind the ones an admin chose.
+//! The pictures a scan found beside each title's files, and the poster, the
+//! backdrop and the logo they put in front of fetched art, behind the ones an
+//! admin chose.
 
 use std::collections::{HashMap, HashSet};
 
@@ -15,6 +16,8 @@ use crate::{Connection, Pool, Result};
 pub const POSTER: &str = "poster";
 /// The role of a picture kept as a title's backdrop.
 pub const BACKDROP: &str = "backdrop";
+/// The role of a picture kept as a title's logo.
+pub const LOGO: &str = "logo";
 
 const INSERT: &str = "INSERT OR REPLACE INTO art_beside \
                       (subject_kind, subject_id, role, library, picture, url) \
@@ -102,11 +105,12 @@ pub fn poster_of(pool: &Pool, kind: &str, id: &str) -> Result<Option<String>> {
     Ok(url)
 }
 
-/// The poster and the backdrop of one title.
+/// The poster, the backdrop and the logo of one title.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Urls {
     pub poster: Option<String>,
     pub backdrop: Option<String>,
+    pub logo: Option<String>,
 }
 
 impl Urls {
@@ -114,6 +118,7 @@ impl Urls {
         match role {
             POSTER => self.poster = Some(url),
             BACKDROP => self.backdrop = Some(url),
+            LOGO => self.logo = Some(url),
             _ => {}
         }
     }
@@ -153,6 +158,9 @@ impl Art {
         }
         if urls.backdrop.is_some() {
             meta.backdrop_url.clone_from(&urls.backdrop);
+        }
+        if urls.logo.is_some() {
+            meta.logo_url.clone_from(&urls.logo);
         }
     }
 

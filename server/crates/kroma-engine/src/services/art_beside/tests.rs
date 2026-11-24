@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::db::art_beside::{BACKDROP, POSTER};
+use crate::db::art_beside::{BACKDROP, LOGO, POSTER};
 
 use super::*;
 
@@ -66,6 +66,25 @@ fn a_folder_shared_by_two_films_gives_each_only_its_named_pictures() {
 }
 
 #[test]
+fn a_film_s_logo_is_named_after_its_video_or_is_its_own_folder_s() {
+    let (own, own_videos) = scanned(&["Heat/Heat.mkv", "Heat/ClearLogo.png"]);
+    let (shared, shared_videos) = scanned(&[
+        "Films/Heat.mkv",
+        "Films/Ronin.mkv",
+        "Films/logo.png",
+        "Films/Ronin-clearlogo.png",
+    ]);
+
+    let heat = film_art(&own, &own_videos);
+    let heat_shared = film_art(&shared, &shared_videos[..1]);
+    let ronin = film_art(&shared, &shared_videos[1..]);
+
+    assert_eq!(heat.logo, at("Heat/ClearLogo.png"));
+    assert_eq!(heat_shared.logo, None);
+    assert_eq!(ronin.logo, at("Films/Ronin-clearlogo.png"));
+}
+
+#[test]
 fn the_parts_of_one_film_keep_their_folder_s_poster() {
     let (folders, videos) = scanned(&["Heat/Heat cd1.mkv", "Heat/Heat cd2.mkv", "Heat/cover.jpeg"]);
 
@@ -93,12 +112,14 @@ fn a_show_reads_its_art_from_the_folder_above_its_seasons() {
         "Andor/Season 01/poster.jpg",
         "Andor/show.png",
         "Andor/background.jpg",
+        "Andor/logo.png",
     ]);
 
     let art = show_art(&folders, &videos);
 
     assert_eq!(art.poster, at("Andor/show.png"));
     assert_eq!(art.backdrop, at("Andor/background.jpg"));
+    assert_eq!(art.logo, at("Andor/logo.png"));
 }
 
 #[test]
@@ -161,6 +182,7 @@ fn a_show_s_nfo_is_in_the_folder_above_its_seasons() {
 }
 
 #[test]
-fn a_backdrop_is_cached_wider_than_a_poster() {
+fn a_backdrop_is_cached_wider_than_a_poster_or_a_logo() {
     assert!(max_width(BACKDROP) > max_width(POSTER));
+    assert!(max_width(BACKDROP) > max_width(LOGO));
 }
