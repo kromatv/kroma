@@ -3,7 +3,7 @@
 The picture names other media servers read from a media folder, which KROMA
 follows so a library moved from one of them keeps its posters
 ([`docs/spec/media/README.md`](../spec/media/README.md), MEDIA-33, MEDIA-48,
-MEDIA-49 and MEDIA-51).
+MEDIA-49, MEDIA-51 and MEDIA-52).
 Read 2026-11-24.
 
 ## Sources
@@ -25,10 +25,11 @@ Read 2026-11-24.
 | A show's folder | `poster`, `folder`, `show` | P | read |
 | A show's folder | `cover`, `default` | J | read |
 | A season folder | `Season01` (P), `poster`, `folder`, `cover`, `default` (J) | J, P | not yet |
-| Beside an episode's video | `<video name>` (P), `<video name>-thumb` (J) | J, P | not yet |
+| Beside an episode's video | `<video name>-thumb` (J), `<video name>` (P) | J, P | read |
 
 KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp`, and compares names without
-regard to case. A folder name is a season folder by the scan's own rule:
+regard to case. An episode's `-thumb` picture comes before the one named after
+its video alone. A folder name is a season folder by the scan's own rule:
 `Season 01`, `Saison 1`, `Specials`, `S01`.
 
 ## Backdrops

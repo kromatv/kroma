@@ -204,6 +204,10 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
   one of its video files followed by `-logo` or `-clearlogo`, or one named `logo` or
   `clearlogo` in a folder that holds no other title's video. For a show, it is one of those
   two names in the show's folder, under the same rule as its poster (MEDIA-48).
+- **MEDIA-52** (SHIPPED) - The thumbnail kept beside an episode's file comes before the
+  fetched still, and stands in for it when there is none, even on an episode KROMA did not
+  recognize. It is a picture named after the episode's video file followed by `-thumb`, or
+  named after it alone, with the poster's formats and case rule (MEDIA-48).
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.

@@ -76,7 +76,7 @@ folder beside the video works too. Subtitles inside the video file need nothing.
 The player finds a new subtitle file at once. The subtitle filter of the Films
 and Series pages counts it after the next library scan.
 
-### Posters, backdrops and logos
+### Posters, backdrops, logos and thumbnails
 
 KROMA finds a poster, a backdrop and a logo on the internet for every title it
 recognizes. A picture you put in the title's folder comes before them, and gives
@@ -94,6 +94,7 @@ Series/
     backdrop.jpg
     Season 01/
       School Plays - S01E01.mkv
+      School Plays - S01E01-thumb.jpg
 ```
 
 - For a film's poster, name the picture `poster`, `folder`, `cover`, `default`
@@ -108,6 +109,9 @@ Series/
 - For a series, put the pictures in the series folder, the one above the season
   folders, with the same names, or `show` for the poster. When two series share
   one folder, neither takes the pictures in it.
+- For an episode's thumbnail, name the picture after the episode's video file,
+  followed by `-thumb` or alone: `School Plays - S01E01-thumb.jpg`. It shows
+  even on an episode KROMA does not recognize.
 - KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp` pictures, and passes over one
   it cannot open.
 - A backdrop or a logo shows only on a title KROMA recognizes.

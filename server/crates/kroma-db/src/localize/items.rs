@@ -1,7 +1,7 @@
 //! Overlaying a locale onto items and home-section rows.
 
-use super::layer::{apply_item, Ask, Layer};
-use crate::{metadata_core, translations, Pool};
+use super::layer::{Ask, Layer};
+use crate::{metadata_core, Pool};
 use anyhow::Result;
 
 use kroma_domain::{Kind, MediaItem, SectionItem};
@@ -31,7 +31,7 @@ pub fn overlay_each<'a>(
     let movie_ids = ids_where(&items, |i| i.kind != Kind::Episode);
     let movies = ask.layer(metadata_core::ITEM, &movie_ids)?;
     let episode_ids = ids_where(&items, |i| i.kind == Kind::Episode);
-    let episodes = translations::resolve_many(&conn, "episode", &episode_ids, locale)?;
+    let episodes = ask.episodes(&episode_ids)?;
     // The show's name is printed beside the episode's on every continue row and
     // every up-next rail, so translating one without the other puts two
     // languages on one card.
@@ -40,8 +40,8 @@ pub fn overlay_each<'a>(
     for item in items.iter_mut() {
         if item.kind != Kind::Episode {
             movies.on_item(item);
-        } else if let Some(tr) = episodes.get(&item.id) {
-            apply_item(item, tr);
+        } else {
+            episodes.on_episode(item);
         }
         show_onto(item, &shows);
     }
@@ -107,7 +107,7 @@ pub fn overlay_section_items(pool: &Pool, items: &mut [SectionItem], locale: &st
 mod tests {
     use super::*;
     use crate::localize::test_support::*;
-    use crate::translations::TransData;
+    use crate::translations::{self, TransData};
 
     #[test]
     fn the_items_own_title_is_localized_not_only_its_metadata() {

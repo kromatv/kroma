@@ -3,7 +3,7 @@
 
 # Requirement index
 
-825 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+826 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -614,6 +614,7 @@
 - **MEDIA-49** (SHIPPED) - The backdrop kept beside a matched title's files comes before a
 - **MEDIA-50** (SHIPPED) - A person who manages the library can upload a poster for a film
 - **MEDIA-51** (SHIPPED) - The logo kept beside a matched title's files, the title's name
+- **MEDIA-52** (SHIPPED) - The thumbnail kept beside an episode's file comes before the
 
 ## MOD - [modules](modules/)
 

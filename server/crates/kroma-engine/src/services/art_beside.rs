@@ -1,5 +1,6 @@
 //! What a person keeps beside a title's files: its poster, its backdrop and
-//! its logo, and the `.nfo` file that gives it its text.
+//! its logo, an episode's thumbnail, and the `.nfo` file that gives a title its
+//! text.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
@@ -43,6 +44,12 @@ const FILM_LOGO: Role = Role {
     in_own_folder: &LOGOS,
 };
 
+const EPISODE_STILL: Role = Role {
+    after_video: &["thumb"],
+    video_alone: true,
+    in_own_folder: &[],
+};
+
 const FILM_NFO: Role = Role {
     after_video: &[],
     video_alone: true,
@@ -50,12 +57,13 @@ const FILM_NFO: Role = Role {
 };
 
 /// The poster, the backdrop and the logo a person keeps beside a title's
-/// files.
+/// files, or the still beside an episode's.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Art {
     pub poster: Option<PathBuf>,
     pub backdrop: Option<PathBuf>,
     pub logo: Option<PathBuf>,
+    pub still: Option<PathBuf>,
 }
 
 /// The files of one kind a scan found, pictures or `.nfo` files, by the
@@ -147,6 +155,17 @@ pub fn film_art(folders: &Folders, videos: &[PathBuf]) -> Art {
         poster: film_file(folders, videos, &FILM_POSTER),
         backdrop: film_file(folders, videos, &FILM_BACKDROP),
         logo: film_file(folders, videos, &FILM_LOGO),
+        still: None,
+    }
+}
+
+/// The thumbnail kept beside an episode's `videos`: a picture named after one
+/// of them followed by `-thumb`, as Jellyfin and Kodi name it, else named after
+/// it alone, as Plex does.
+pub fn episode_art(folders: &Folders, videos: &[PathBuf]) -> Art {
+    Art {
+        still: film_file(folders, videos, &EPISODE_STILL),
+        ..Art::default()
     }
 }
 
@@ -173,6 +192,7 @@ pub fn show_art(folders: &Folders, episodes: &[PathBuf]) -> Art {
         poster: pick(&SHOW_POSTERS),
         backdrop: pick(&BACKDROPS),
         logo: pick(&LOGOS),
+        still: None,
     }
 }
 

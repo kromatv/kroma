@@ -7,7 +7,7 @@ use super::{apply, apply_show};
 use crate::art_beside::Art;
 use crate::title_edits;
 use crate::translations::{self, TransData};
-use crate::{Connection, Result};
+use crate::{metadata_core, Connection, Result};
 
 pub(super) struct Ask<'a> {
     pub conn: &'a Connection,
@@ -21,6 +21,27 @@ impl Ask<'_> {
             edits: title_edits::shown(self.conn, kind, ids)?,
             art: Art::load(self.conn, kind, ids)?,
         })
+    }
+
+    pub(super) fn episodes(&self, ids: &[&str]) -> Result<Episodes> {
+        Ok(Episodes {
+            text: translations::resolve_many(self.conn, "episode", ids, self.locale)?,
+            art: Art::load(self.conn, metadata_core::ITEM, ids)?,
+        })
+    }
+}
+
+pub(super) struct Episodes {
+    text: HashMap<String, TransData>,
+    art: Art,
+}
+
+impl Episodes {
+    pub(super) fn on_episode(&self, episode: &mut MediaItem) {
+        if let Some(tr) = self.text.get(&episode.id) {
+            apply_item(episode, tr);
+        }
+        self.art.paint_still(&episode.id, &mut episode.metadata);
     }
 }
 

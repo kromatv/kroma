@@ -150,6 +150,28 @@ fn a_folder_holding_two_shows_gives_its_art_to_neither() {
 }
 
 #[test]
+fn an_episode_s_thumbnail_is_named_after_its_video() {
+    let (folders, videos) = scanned(&[
+        "Andor/Season 01/Andor S01E01.mkv",
+        "Andor/Season 01/Andor S01E02.mkv",
+        "Andor/Season 01/Andor S01E01.jpg",
+        "Andor/Season 01/Andor S01E01-thumb.jpg",
+        "Andor/Season 01/Andor S01E02.png",
+        "Andor/Season 01/poster.jpg",
+    ]);
+    let (alone, alone_videos) = scanned(&["Andor/Andor S01E03.mkv", "Andor/folder.jpg"]);
+
+    let first = episode_art(&folders, &videos[..1]);
+    let second = episode_art(&folders, &videos[1..]);
+    let third = episode_art(&alone, &alone_videos);
+
+    assert_eq!(first.still, at("Andor/Season 01/Andor S01E01-thumb.jpg"));
+    assert_eq!(second.still, at("Andor/Season 01/Andor S01E02.png"));
+    assert_eq!(first.poster, None);
+    assert_eq!(third, Art::default());
+}
+
+#[test]
 fn a_film_s_nfo_is_named_after_its_video_or_is_its_own_folder_s() {
     let (shared, videos) = scanned(&[
         "Films/Heat.mkv",

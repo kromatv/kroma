@@ -18,6 +18,9 @@ pub const POSTER: &str = "poster";
 pub const BACKDROP: &str = "backdrop";
 /// The role of a picture kept as a title's logo.
 pub const LOGO: &str = "logo";
+/// The role of a picture kept as an episode's still, which travels as its
+/// backdrop.
+pub const STILL: &str = "still";
 
 const INSERT: &str = "INSERT OR REPLACE INTO art_beside \
                       (subject_kind, subject_id, role, library, picture, url) \
@@ -117,7 +120,7 @@ impl Urls {
     pub(crate) fn set(&mut self, role: &str, url: String) {
         match role {
             POSTER => self.poster = Some(url),
-            BACKDROP => self.backdrop = Some(url),
+            BACKDROP | STILL => self.backdrop = Some(url),
             LOGO => self.logo = Some(url),
             _ => {}
         }
@@ -161,6 +164,13 @@ impl Art {
         }
         if urls.logo.is_some() {
             meta.logo_url.clone_from(&urls.logo);
+        }
+    }
+
+    pub(crate) fn paint_still(&self, id: &str, meta: &mut Option<Metadata>) {
+        let still = self.0.get(id).and_then(|urls| urls.backdrop.as_ref());
+        if let Some(still) = still {
+            meta.get_or_insert_with(Metadata::blank).backdrop_url = Some(still.clone());
         }
     }
 
