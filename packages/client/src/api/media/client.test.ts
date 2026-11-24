@@ -151,6 +151,7 @@ describe('the media endpoints', () => {
       call: (c) =>
         c.media.titleEdits.put('item', spaced, {
           title: 'Heat',
+          sortTitle: null,
           overview: null,
           year: null,
           released: '1995-12-15',
@@ -160,6 +161,7 @@ describe('the media endpoints', () => {
       path: '/edits/item/i%201',
       body: {
         title: 'Heat',
+        sortTitle: null,
         overview: null,
         year: null,
         released: '1995-12-15',

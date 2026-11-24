@@ -4,6 +4,7 @@ import type { TitleEdit } from '@kromatv/client/media';
  * genres on one line and the year or the full release date in one field. */
 export interface TitleDraft {
   title: string;
+  sortTitle: string;
   overview: string;
   released: string;
   genres: string;
@@ -13,6 +14,7 @@ export interface TitleDraft {
 export function draftOf(edit: TitleEdit): TitleDraft {
   return {
     title: edit.title ?? '',
+    sortTitle: edit.sortTitle ?? '',
     overview: edit.overview ?? '',
     released: edit.released ?? (edit.year === null ? '' : String(edit.year)),
     genres: (edit.genres ?? []).join(', '),
@@ -42,6 +44,7 @@ export function editOf(draft: TitleDraft): TitleEdit {
     .filter(Boolean);
   return {
     title: kept(draft.title),
+    sortTitle: kept(draft.sortTitle),
     overview: kept(draft.overview),
     ...dateOf(draft.released),
     genres: genres.length > 0 ? genres : null,

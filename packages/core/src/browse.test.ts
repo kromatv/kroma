@@ -58,6 +58,30 @@ describe('sortTitles', () => {
     expect(sortTitles(items, 'title').map((t) => t.title)).toEqual(['Asorted', 'B', 'Csorted']);
   });
 
+  it('files a title under its sort title and keeps the name shown', () => {
+    const lotr: Sortable = {
+      title: 'The Lord of the Rings',
+      year: null,
+      addedAt: '2020-01-01T00:00:00Z',
+      metadata: {
+        rating: null,
+        releaseDate: null,
+        genres: [],
+        sortTitle: 'Lord of the Rings, The',
+      },
+    };
+    const items = [title({ title: 'Matrix' }), lotr, title({ title: 'Alien' })];
+
+    const sorted = sortTitles(items, 'title');
+
+    expect(sorted.map((t) => t.title)).toEqual(['Alien', 'The Lord of the Rings', 'Matrix']);
+    expect(letterMarks(sorted)).toEqual([
+      { letter: 'A', index: 0 },
+      { letter: 'L', index: 1 },
+      { letter: 'M', index: 2 },
+    ]);
+  });
+
   it('sorts by date added, most recent first', () => {
     const items = [
       title({ title: 'old', addedAt: '2019-01-01T00:00:00Z' }),

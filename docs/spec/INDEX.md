@@ -3,7 +3,7 @@
 
 # Requirement index
 
-823 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+824 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -559,6 +559,7 @@
 - **LIB-85** (SHIPPED) - **A match named in the `.nfo` file.** A film's or a show's `.nfo` file <sub>[README.md](library/README.md)</sub>
 - **LIB-86** (SHIPPED) - The catalogue sorts and filters a title by the name, year and genres it <sub>[README.md](library/README.md)</sub>
 - **LIB-87** (SHIPPED) - A person can write the day a title came out in place of its year <sub>[README.md](library/README.md)</sub>
+- **LIB-88** (SHIPPED) - A person can write a sort title for a title (LIB-83), and a `.nfo` <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 

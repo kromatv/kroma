@@ -100,8 +100,9 @@ Series/
   dans le dossier du film.
 - Pour une série, placez `tvshow.nfo` dans le dossier de la série, au-dessus des
   dossiers de saison.
-- KROMA lit `<title>`, `<plot>`, `<premiered>` ou `<year>`, et chaque
-  `<genre>`. Le fichier doit être en UTF-8, comme ces logiciels l'écrivent.
+- KROMA lit `<title>`, `<sorttitle>`, `<plot>`, `<premiered>` ou `<year>`, et
+  chaque `<genre>`. Le fichier doit être en UTF-8, comme ces logiciels
+  l'écrivent.
 - Si le fichier donne le numéro TMDB du titre, dans `<uniqueid type="tmdb">` ou
   `<tmdbid>`, ou s'il se termine par le lien de sa page sur themoviedb.org,
   KROMA reconnaît le titre à ce numéro plutôt qu'à son nom. Une fiche corrigée
