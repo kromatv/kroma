@@ -2717,6 +2717,7 @@
     "perf.flagTempSort": "134c8a2d 3b73d2f7",
     "perf.kindHttp": "6f1c03cd 4c1a9fa2",
     "perf.kindJob": "fa030e17 e6afd7a7",
+    "perf.kindPoint": "6753920f 73f2462a",
     "perf.kindRequest": "d6b651a6 92bac14a",
     "perf.kindSpan": "59f205da 11dd41fa",
     "perf.kindSql": "b52e99f0 b52e99f0",

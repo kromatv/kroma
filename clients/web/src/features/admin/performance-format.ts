@@ -141,6 +141,7 @@ const KIND_LABEL: Readonly<Record<string, MessageKey>> = {
   sql: 'perf.kindSql',
   span: 'perf.kindSpan',
   http: 'perf.kindHttp',
+  point: 'perf.kindPoint',
 };
 
 /** How a kind of segment is named; one the page does not know reads as its own

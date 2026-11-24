@@ -1,7 +1,9 @@
 //! One module's answer as bytes, for a caller that reads no more than it chose
 //! and parses the answer itself.
 
-use super::{Answer, Point};
+use serde_json::Value;
+
+use super::{timed, Answer, Point, StubFn};
 
 /// What one call may cost the core: how long it may run, and how many bytes of
 /// answer the caller will read.
@@ -37,25 +39,23 @@ impl Point {
                     .into_iter()
                     .find(|found| found.module_id == module)
                     .ok_or(Silence::Absent)?;
-                kroma_http::Loopback::new()
-                    .header("authorization", format!("Bearer {}", found.token))
-                    .max_time(allowance.seconds)
-                    .post_json(
-                        &format!("{}/_port/{}/{method}", found.base_url, self.name),
-                        &sent,
-                    )
-                    .and_then(kroma_http::Response::ensure_ok)
-                    .map_err(|e| Silence::Failed(format!("{e:#}")))?
-                    .body
+                let route = format!("{}/{method}", self.name);
+                timed(&route, &found.module_id, || {
+                    kroma_http::Loopback::new()
+                        .header("authorization", format!("Bearer {}", found.token))
+                        .max_time(allowance.seconds)
+                        .post_json(&format!("{}/_port/{route}", found.base_url), &sent)
+                })
+                .and_then(kroma_http::Response::ensure_ok)
+                .map_err(|e| Silence::Failed(format!("{e:#}")))?
+                .body
             }
             Answer::Stub(answering) => {
                 let (_, f) = answering
                     .iter()
                     .find(|(id, _)| id == module)
                     .ok_or(Silence::Absent)?;
-                let answer = f(method, &sent)
-                    .ok_or_else(|| Silence::Failed(format!("no answer to {method}")))?;
-                serde_json::to_vec(&answer).map_err(|e| Silence::Failed(e.to_string()))?
+                stub_bytes(f, method, &sent)?
             }
             Answer::Absent => return Err(Silence::Absent),
         };
@@ -64,6 +64,12 @@ impl Point {
         }
         Ok(answer)
     }
+}
+
+fn stub_bytes(f: &StubFn, method: &str, sent: &Value) -> Result<Vec<u8>, Silence> {
+    let answer =
+        f(method, sent).ok_or_else(|| Silence::Failed(format!("no answer to {method}")))?;
+    serde_json::to_vec(&answer).map_err(|e| Silence::Failed(e.to_string()))
 }
 
 #[cfg(test)]
@@ -112,6 +118,27 @@ mod tests {
             kroma_module_host::test_serve::blocking(move || ask(point, "tv.x.import")).await;
 
         assert_eq!(answer, Ok(br#"{"Ok":{}}"#.to_vec()));
+    }
+
+    #[tokio::test]
+    async fn a_call_over_the_wire_counts_in_the_run_that_made_it() {
+        let point = served(
+            Router::new().route("/_port/importer/survey", post(|| async { r#"{"Ok":{}}"# })),
+        )
+        .await;
+
+        let finished = kroma_module_host::test_serve::blocking(move || {
+            let scope = kroma_perf::profiler()
+                .job("bounded-test")
+                .expect("profiling is on");
+            let entered = scope.enter();
+            let _ = ask(point, "tv.x.import");
+            drop(entered);
+            kroma_perf::profiler().finish(&scope, None, None)
+        })
+        .await;
+
+        assert_eq!(finished.kinds["point"].count, 1);
     }
 
     #[tokio::test]
