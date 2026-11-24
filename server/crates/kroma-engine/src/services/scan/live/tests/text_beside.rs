@@ -3,6 +3,7 @@ use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 
 use super::walk;
+use crate::db::metadata_core::ITEM;
 use crate::model::{Kind, MediaItem};
 use crate::state::SharedState;
 use crate::test_support::test_state;
@@ -81,4 +82,20 @@ fn a_show_takes_its_text_from_the_nfo_above_its_seasons() {
         shown(&state, Kind::Episode).show_title.as_deref(),
         Some("Our very own show")
     );
+}
+
+#[test]
+fn a_walk_keeps_the_tmdb_id_an_nfo_names_while_the_file_is_unchanged() {
+    let state = test_state();
+    let root = kroma_testing::temp_dir("live-text-beside-tmdb");
+    keep(root.path(), "tape.03/tape.03.mkv", "x", 1_000);
+    let named = r#"<movie><uniqueid type="tmdb">949</uniqueid></movie>"#;
+    keep(root.path(), "tape.03/tape.03.nfo", named, 1_000);
+    walk(&state, root.path());
+
+    walk(&state, root.path());
+
+    let film = shown(&state, Kind::Movie);
+    let leads = crate::db::text_beside::leads(&state.db, ITEM).unwrap();
+    assert_eq!(leads.get(&film.id), Some(&949));
 }

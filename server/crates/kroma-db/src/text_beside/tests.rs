@@ -15,6 +15,7 @@ fn text(id: &str, library: &str, title: &str) -> Text {
             title: Some(title.into()),
             ..Default::default()
         },
+        tmdb: None,
     }
 }
 
@@ -42,6 +43,7 @@ fn a_scan_replaces_what_an_earlier_one_read() {
         Some(&Read {
             modified: Some(1_700_000_000_000),
             edit: text("m1", "lib", "Tape three").edit,
+            tmdb: None,
         })
     );
 }
@@ -73,4 +75,24 @@ fn a_text_belongs_to_one_kind_of_title() {
     replace(&pool, &[text("x1", "lib", "Our film"), show], &kept(&[])).unwrap();
 
     assert_eq!(read_before(&pool).unwrap().len(), 2);
+}
+
+#[test]
+fn the_tmdb_id_a_file_names_leads_its_own_title() {
+    let pool = temp_pool("text-beside");
+    let mut heat = text("m1", "lib", "Heat");
+    heat.tmdb = Some(949);
+    let mut show = text("m1", "lib", "Our show");
+    show.nfo.subject_kind = SHOW;
+    show.nfo.path = "/media/m1/tvshow.nfo".into();
+    show.tmdb = Some(1438);
+    replace(&pool, &[heat, show, text("m2", "lib", "Reel")], &kept(&[])).unwrap();
+
+    let leads = leads(&pool, ITEM).unwrap();
+
+    let conn = pool.get().unwrap();
+    assert_eq!(leads, HashMap::from([("m1".to_string(), 949)]));
+    assert_eq!(lead(&conn, SHOW, "m1").unwrap(), Some(1438));
+    assert_eq!(lead(&conn, ITEM, "m2").unwrap(), None);
+    assert_eq!(read_before(&pool).unwrap()["/media/m1.nfo"].tmdb, Some(949));
 }

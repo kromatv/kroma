@@ -1,100 +1,15 @@
 use std::collections::HashSet;
 
-use serde_json::{Value, json};
-
 use super::super::enrich_one;
 use super::super::jobs::build_jobs;
 use super::super::pins::load_pins;
+use super::held::*;
 use super::support::*;
 use crate::db;
-use crate::db::imports::{Elsewhere, FileIdentity, HeldIds, Lead, NewImport, Subject};
+use crate::db::imports::{Lead, Subject};
 use crate::db::metadata_core::ITEM;
-use crate::model::imports::{Origin, Selection};
 use crate::state::SharedState;
 use crate::test_support::{FakeTmdb, seed_movie};
-
-const HEAT: u64 = 949;
-const THE_WIRE: u64 = 1438;
-const BY_HAND: u64 = 11;
-const MOVIE_FILE: &str = "/media/m1.mkv";
-const EPISODE_FILE: &str = "/media/s1e1.mkv";
-const HEAT_ON_IMDB: &str = "tt0113277";
-const WHILE_TMDB_IS_DOWN: &str = "tt0000002";
-
-fn catalogue(path: &str) -> (u16, Value) {
-    match path {
-        "/search/movie" => (
-            200,
-            json!({ "results": [{ "id": MOVIE_TMDB, "title": "Title m1" }] }),
-        ),
-        "/search/tv" => (
-            200,
-            json!({ "results": [{ "id": SHOW_TMDB, "name": "Show s1" }] }),
-        ),
-        "/movie/603" => (200, json!({ "id": MOVIE_TMDB, "title": "Title m1" })),
-        "/movie/949" => (200, json!({ "id": HEAT, "title": "Heat" })),
-        "/movie/11" => (200, json!({ "id": BY_HAND, "title": "Star Wars" })),
-        "/tv/1396" => (200, json!({ "id": SHOW_TMDB, "name": "Show s1" })),
-        "/tv/1438" => (200, json!({ "id": THE_WIRE, "name": "The Wire" })),
-        "/find/tt0113277" => (200, json!({ "movie_results": [{ "id": HEAT }] })),
-        "/find/79126" => (200, json!({ "tv_results": [{ "id": THE_WIRE }] })),
-        _ => (404, json!({})),
-    }
-}
-
-fn by_tmdb(tmdb: u64) -> HeldIds {
-    HeldIds {
-        tmdb: Some(tmdb),
-        ..Default::default()
-    }
-}
-
-fn by_imdb(imdb: &str) -> HeldIds {
-    HeldIds {
-        tmdb: None,
-        elsewhere: Elsewhere {
-            imdb: Some(imdb.into()),
-            tvdb: None,
-        },
-    }
-}
-
-fn by_tvdb(tvdb: u64) -> HeldIds {
-    HeldIds {
-        tmdb: None,
-        elsewhere: Elsewhere {
-            imdb: None,
-            tvdb: Some(tvdb),
-        },
-    }
-}
-
-fn an_import_kept(state: &SharedState, files: &[(&str, Subject, HeldIds)]) {
-    let server = Origin {
-        id: "srv".into(),
-        name: String::new(),
-    };
-    let new = NewImport {
-        id: "i1",
-        importer: "tv.x.import",
-        server: &server,
-        sign_in: "s-1",
-        selection: &Selection::default(),
-        started_by: None,
-        created_ms: 1,
-    };
-    db::imports::queue(&state.db, &new).unwrap();
-    let identities: Vec<FileIdentity> = files
-        .iter()
-        .map(|(path, subject, ids)| FileIdentity {
-            path: (*path).into(),
-            subject: *subject,
-            ids: ids.clone(),
-        })
-        .collect();
-    let server_id = db::imports::server_key("tv.x.import", "srv");
-    db::imports::keep_identities(&state.db, &server_id, &identities).unwrap();
-}
 
 fn lead_of_the_movie(state: &SharedState) -> Option<Lead> {
     let conn = state.db.get().unwrap();

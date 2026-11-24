@@ -1,8 +1,9 @@
 # The .nfo file kept beside the media
 
 The file names and the tags other media servers read from an `.nfo` file, which
-KROMA follows so a library moved from one of them keeps its text
-([`docs/spec/library/README.md`](../spec/library/README.md), LIB-84).
+KROMA follows so a library moved from one of them keeps its text and its
+matches ([`docs/spec/library/README.md`](../spec/library/README.md), LIB-84
+and LIB-85).
 Read 2026-11-24.
 
 ## Sources
@@ -40,8 +41,17 @@ An XML document saved as UTF-8 (K, P). Its root is `<movie>` for a film and
 | `<year>` | The year. K deprecated it in v17 and reads `<premiered>` alone from v20 | K, J | read when there is no `<premiered>` |
 | `<genre>` | One genre a tag, repeated for each | K, J, P | read |
 | `<originaltitle>`, `<sorttitle>`, `<tagline>` | Other names, and the tagline | K, J, P | not read |
-| `<uniqueid type="tmdb">` | The provider's id | K, J, P | not read |
+| `<uniqueid type="tmdb">` | The title's TMDB id. A file may hold one `<uniqueid>` for each provider, `type` naming it | K, J, P | read, whatever the case of `type`; the title is matched to that id |
+| `<tmdbid>` | The title's TMDB id, on a tag of its own | J | read when there is no `<uniqueid type="tmdb">` |
+| `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>`, `<tvdbid>` | The title's id on IMDb or TheTVDB | K, J, P | not read |
+| `<id>` | K: "Do not use", a tag Kodi generates. P: the provider id when there is no `<uniqueid>` | K, P | not read |
 
 A combination file holds the XML document followed by a link to a provider's
-page (K). KROMA reads the document and leaves the link out. A file that holds a
-link alone, or a root of another kind, gives nothing.
+page (K). KROMA reads the document, and takes the TMDB id from the link when
+the document names none: `themoviedb.org/movie/<id>` for a film,
+`themoviedb.org/tv/<id>` for a show. A file that holds such a link alone gives
+the id and no text. A link to another provider, or a root of another kind,
+gives nothing.
+
+A TMDB id in the file comes behind a match fixed by hand, an acquisition's id
+and an import's identity, and before matching by the name.

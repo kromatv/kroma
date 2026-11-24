@@ -143,6 +143,7 @@ fn read_beside(pool: &TempPool, kind: &'static str, id: &str, edit: TitleEdit) {
             modified: None,
         },
         edit,
+        tmdb: None,
     };
     text_beside::replace(pool, &[text], &HashSet::new()).unwrap();
 }
