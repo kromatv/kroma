@@ -1,5 +1,10 @@
 import { type ReactNode, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
-import { activeLocaleOverride, installAppLocales, onOverridesChange } from '../dev-overrides';
+import {
+  activeAppLocales,
+  activeLocaleOverride,
+  installAppLocales,
+  onOverridesChange,
+} from '../dev-overrides';
 import type { AnyI18n } from '../i18n';
 import type { Locale } from '../registry';
 import { I18nContext, type I18nValue } from './context';
@@ -45,7 +50,13 @@ export function I18nProvider({
   // The dev tools reach an engine they were never handed, so the engine says
   // what it can render rather than being read out of the app's own table.
   useEffect(() => {
-    installAppLocales({ codes: i18n.locales(), resolved: locale });
+    const app = { codes: i18n.locales(), resolved: locale };
+    installAppLocales(app);
+    return () => {
+      if (activeAppLocales() === app) {
+        installAppLocales(null);
+      }
+    };
   }, [i18n, locale]);
   const value = useMemo<I18nValue>(
     () => ({
