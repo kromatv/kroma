@@ -64,6 +64,10 @@ fn kept(text: Option<String>) -> Option<String> {
     text.map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
 }
 
+fn year_of(date: &str) -> Option<u32> {
+    date.get(..4)?.parse().ok()
+}
+
 fn cut(text: String, max: usize) -> String {
     if text.chars().count() <= max {
         return text;
@@ -158,10 +162,17 @@ impl TitleEdit {
     }
 
     /// Put each field that was written in place of the provider's, on a
-    /// title's record alone.
+    /// title's record alone. A year written drops the provider's release date
+    /// when the two disagree, so the date never contradicts the year shown.
     pub fn onto_metadata(&self, meta: &mut Metadata) {
         if self.title.is_some() {
             meta.title.clone_from(&self.title);
+        }
+        if let Some(year) = self.year {
+            let dated = meta.release_date.as_deref().and_then(year_of);
+            if dated.is_some_and(|dated| dated != year) {
+                meta.release_date = None;
+            }
         }
         if self.overview.is_some() {
             meta.overview.clone_from(&self.overview);

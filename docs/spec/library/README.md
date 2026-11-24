@@ -256,6 +256,11 @@ one named after a film's video or `movie.nfo` in a folder that holds that film a
 by field. Once the provider matches the title, the provider's text is shown instead. A file
 added or changed is read at the next scan, and one that is not such a document is passed over.
 
+**LIB-86** (SHIPPED) - The catalogue sorts and filters a title by the name, year and genres it
+shows: what a person wrote by hand (LIB-83), else its `.nfo` file (LIB-84), else the provider's.
+A year written in place of the provider's also replaces a release date that falls in another
+year, so a title sorted by release lands where its year says.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 
