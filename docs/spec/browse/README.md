@@ -215,7 +215,7 @@ search and on a person's page.
 
 ## Filtering the Films and Series pages
 
-Status: **SHIPPED** on web, television and mobile, except BROWSE-65, **AGREED**
+Status: **SHIPPED** on web, television and mobile
 
 **BROWSE-64** (SHIPPED) - The Films and Series pages filter by audio language and by subtitle
 language, beside the genre. Each lists only the languages the titles on the page carry, with
@@ -224,9 +224,9 @@ language, default or not, and with both set it must pass both. The web, televisi
 clients do this. On television and on mobile each filter is a chip in the row of sorts and
 genres, and opens the list of languages.
 
-**BROWSE-65** (AGREED) - A subtitle file beside a video, and a subtitle downloaded for it,
-count for the subtitle filter. Today the subtitles inside the file and the downloaded ones
-count, and a file beside the video does not.
+**BROWSE-65** (SHIPPED) - A subtitle file beside a video, and a subtitle downloaded for it,
+count for the subtitle filter. A file put beside a video counts once the next library scan has
+read its folder.
 
 **BROWSE-66** (SHIPPED) - With both filters set, a series passes only when one of its episodes
 has both, not when one episode has the audio and another the subtitles.

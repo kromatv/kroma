@@ -430,7 +430,7 @@
 - **BROWSE-62** (SHIPPED) - The home, search and a person's page obey the viewer's maturity
 - **BROWSE-63** (SHIPPED) - Under a maturity ceiling, a person's page lists only the titles the
 - **BROWSE-64** (SHIPPED) - The Films and Series pages filter by audio language and by subtitle
-- **BROWSE-65** (AGREED) - A subtitle file beside a video, and a subtitle downloaded for it,
+- **BROWSE-65** (SHIPPED) - A subtitle file beside a video, and a subtitle downloaded for it,
 - **BROWSE-66** (SHIPPED) - With both filters set, a series passes only when one of its episodes
 
 ## DISC - [discovery](discovery/)

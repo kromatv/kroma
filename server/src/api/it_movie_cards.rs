@@ -1,7 +1,19 @@
+use std::collections::HashMap;
+
 use axum::http::StatusCode;
 
 use crate::api::test_support::{demo_item_id, get, test_app};
 use crate::db;
+
+fn first_file_of(item: &str) -> String {
+    crate::services::demo::demo_data()
+        .items
+        .into_iter()
+        .find(|i| i.id == item)
+        .and_then(|i| i.files.into_iter().next())
+        .map(|f| f.id)
+        .unwrap()
+}
 
 #[tokio::test]
 async fn the_card_view_lists_every_movie_without_its_files_or_tracks() {
@@ -25,7 +37,7 @@ async fn the_card_view_lists_every_movie_without_its_files_or_tracks() {
 }
 
 #[tokio::test]
-async fn a_subtitle_downloaded_for_a_film_counts_on_its_card() {
+async fn a_subtitle_file_downloaded_for_a_film_or_lying_beside_it_counts_on_its_card() {
     let t = test_app();
     let film = demo_item_id("The Matrix");
     db::insert_downloaded_sub(
@@ -40,6 +52,8 @@ async fn a_subtitle_downloaded_for_a_film_counts_on_its_card() {
         },
     )
     .unwrap();
+    let beside = HashMap::from([(first_file_of(&film), vec!["pt".to_string()])]);
+    db::set_external_subtitle_languages(&t.state.db, &beside).unwrap();
 
     let (_, cards) = get(&t.app, "/api/movies?view=card", Some(&t.token)).await;
 
@@ -49,13 +63,9 @@ async fn a_subtitle_downloaded_for_a_film_counts_on_its_card() {
         .iter()
         .find(|card| card["id"] == film.as_str())
         .unwrap();
-    assert!(
-        card["subtitleLanguages"]
-            .as_array()
-            .unwrap()
-            .contains(&"kor".into()),
-        "{card}"
-    );
+    let subtitles = card["subtitleLanguages"].as_array().unwrap();
+    assert!(subtitles.contains(&"kor".into()), "{card}");
+    assert!(subtitles.contains(&"pt".into()), "{card}");
 }
 
 #[tokio::test]

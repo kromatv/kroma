@@ -24,7 +24,7 @@ fn item_count(state: &crate::state::SharedState) -> i64 {
 
 fn applied(scanned: Scanned) -> ScanData {
     match scanned {
-        Scanned::Applied(data) => data,
+        Scanned::Applied(data) => *data,
         Scanned::MountOffline { .. } | Scanned::Cancelled { .. } => {
             panic!("expected the scan to be applied")
         }

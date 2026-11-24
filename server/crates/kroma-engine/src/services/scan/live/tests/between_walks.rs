@@ -21,7 +21,7 @@ fn library_named(id: &str, root: &Path) -> LibraryDef {
 
 fn synced(walked: Walked) -> ScanData {
     match walked {
-        Walked::Synced(data) => data,
+        Walked::Synced(data) => *data,
         Walked::Empty { .. } | Walked::Stopped { .. } => {
             panic!("expected the walk to read every folder")
         }

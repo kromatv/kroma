@@ -2,10 +2,8 @@
 //! folder that `stat`s each video file and groups it (via [`crate::domain::naming`])
 //! into the shared logical-item / show maps.
 
-use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 
 use jwalk::{Parallelism, WalkDirGeneric};
 use tracing::{debug, warn};
@@ -17,6 +15,10 @@ use super::found::LibraryWalk;
 use super::ids::{detect_edition, short_hash};
 use super::index::index_parsed;
 use super::now_iso8601;
+
+use descent::Descent;
+
+mod descent;
 
 pub use kroma_media::video::{has_video_extension, VIDEO_EXTENSIONS};
 
@@ -47,13 +49,13 @@ pub(super) fn scan_root<S>(
     // files *in that pool*, so the readdir/stat network round-trips over SMB run
     // concurrently instead of serially (minutes → seconds). Synology `@eaDir`
     // and hidden dirs are pruned from the descent.
-    let descended = Arc::new(Mutex::new(HashSet::from([abs_root.clone()])));
+    let descent = Descent::new(root, &abs_root, lib.found.subtitles.clone());
     let walk = WalkDirGeneric::<((), FileMeta)>::new(root)
         .follow_links(true)
         .skip_hidden(false)
         .parallelism(Parallelism::RayonNewPool(walk_threads()))
         .process_read_dir(move |_depth, _path, _state, children| {
-            prepare_children(&descended, children);
+            prepare_children(&descent, children);
         });
 
     let mut unreadable = Skipped::default();
@@ -169,44 +171,18 @@ fn container_of(path: &Path) -> String {
 // jwalk `process_read_dir` body: prune Synology/hidden dirs and already-visited
 // symlink targets from the descent, and stat each file *in the walk's thread
 // pool* (so the SMB round-trips overlap).
-fn prepare_children(
-    descended: &Mutex<HashSet<PathBuf>>,
-    children: &mut Vec<jwalk::Result<jwalk::DirEntry<((), FileMeta)>>>,
-) {
+fn prepare_children(descent: &Descent, children: &mut Vec<jwalk::Result<WalkEntry>>) {
     children.retain(|res| match res {
         Ok(e) => !(e.file_type().is_dir() && is_pruned_dir(&e.file_name)),
         Err(_) => true,
     });
+    descent.note_subtitles(children);
     for e in children.iter_mut().flatten() {
         if e.file_type().is_file() {
             e.client_state = file_meta(&e.path());
-        } else if already_walked_link(descended, e) {
+        } else if descent.already_walked_link(e) {
             e.read_children = None;
         }
-    }
-}
-
-fn already_walked_link(
-    descended: &Mutex<HashSet<PathBuf>>,
-    e: &jwalk::DirEntry<((), FileMeta)>,
-) -> bool {
-    e.depth > 0
-        && e.file_type().is_dir()
-        && e.path_is_symlink()
-        && !first_descent(descended, &e.path())
-}
-
-// jwalk's own guard compares a symlink's raw target against the ancestor paths,
-// so `link -> /abs/ancestor` is caught and `link -> .` is not: the kernel's
-// 32-symlink ceiling then bounds the depth, which two such links in one
-// directory turn into 2^32 paths.
-fn first_descent(descended: &Mutex<HashSet<PathBuf>>, dir: &Path) -> bool {
-    let Ok(resolved) = dir.canonicalize() else {
-        return false;
-    };
-    match descended.lock() {
-        Ok(mut seen) => seen.insert(resolved),
-        Err(poisoned) => poisoned.into_inner().insert(resolved),
     }
 }
 

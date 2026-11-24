@@ -4174,7 +4174,7 @@
     "domain": "BROWSE",
     "space": "browse",
     "number": 65,
-    "status": "AGREED",
+    "status": "SHIPPED",
     "text": "A subtitle file beside a video, and a subtitle downloaded for it,",
     "file": "docs/spec/browse/README.md",
     "line": 227

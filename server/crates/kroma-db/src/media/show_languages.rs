@@ -21,6 +21,9 @@ UNION SELECT i.show_id, i.id, 'subtitles', json_extract(t.value, '$.language') \
  WHERE i.show_id IS NOT NULL AND i.absent_since IS NULL \
 UNION SELECT i.show_id, i.id, 'subtitles', d.language \
   FROM items i JOIN downloaded_subtitles d ON d.item_id = i.id \
+ WHERE i.show_id IS NOT NULL AND i.absent_since IS NULL \
+UNION SELECT i.show_id, i.id, 'subtitles', l.value \
+  FROM items i JOIN files f ON f.item_id = i.id, json_each(f.external_subtitle_languages) l \
  WHERE i.show_id IS NOT NULL AND i.absent_since IS NULL";
 
 type Episodes = BTreeMap<String, TrackLanguages>;
@@ -192,6 +195,30 @@ mod tests {
 
         assert_eq!(languages["s1"].all.subtitles, ["spa"]);
         assert_eq!(languages["s1"].episodes[0].subtitles, ["spa"]);
+    }
+
+    #[test]
+    fn a_subtitle_file_beside_an_episode_counts_for_that_episode() {
+        let p = pool();
+        let conn = p.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO libraries (id,name,kind,path,added_at) VALUES ('lib','L','shows','/x','t'); \
+             INSERT INTO shows (id,library,title,added_at) VALUES ('s1','lib','Show','t');",
+        )
+        .unwrap();
+        seed_episode(&conn, "e1", "[]", "[]");
+        seed_episode(&conn, "e2", "[]", "[]");
+        conn.execute(
+            "UPDATE files SET external_subtitle_languages = '[\"en\",\"pt\"]' WHERE item_id = 'e2'",
+            [],
+        )
+        .unwrap();
+        drop(conn);
+
+        let languages = show_languages(&p).unwrap();
+
+        assert_eq!(languages["s1"].all.subtitles, ["en", "pt"]);
+        assert_eq!(languages["s1"].episodes.len(), 1);
     }
 
     #[test]

@@ -12,7 +12,7 @@ use tracing::{info, warn};
 /// is open.
 pub enum Plan {
     /// The walk ran synchronously; this is what it produced.
-    Applied(services::scan::ScanData),
+    Applied(Box<services::scan::ScanData>),
     /// The walk ran and found nothing where a configured library should be, or
     /// the saved library list could not be read and no walk ran, so nothing
     /// was written. There is no catalog to announce, but the watcher still
@@ -113,7 +113,7 @@ fn startup_scan(
     })
 }
 
-fn index_ready(data: services::scan::ScanData) -> services::scan::Scanned {
+fn index_ready(data: Box<services::scan::ScanData>) -> services::scan::Scanned {
     info!(
         libraries = data.libraries.len(),
         shows = data.shows.len(),
