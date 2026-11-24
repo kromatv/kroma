@@ -40,9 +40,16 @@ Both resolve `#ui/*`, though the emitted declarations still spell it, which is
 why the staged `package.json` keeps an `imports` map pointing at the package's
 own files.
 
+Both run the React Compiler, the same pass every shell here runs over the
+source, so a consumer gets the memoised components without compiling
+`node_modules` itself. The compiled files import `react/compiler-runtime`, which
+stays external.
+
 Every peer is optional but `react`: a browser app installs `react-dom`,
 `react-native-web` and `@tabler/icons-react`, a native one installs React Native,
 `react-native-svg` and Tabler's native set, and neither is asked for the other's.
+`react` is `>=19.2`: the source calls `useEffectEvent` and renders `Activity`,
+and both arrived in 19.2.
 
 ## Consuming it
 
