@@ -116,13 +116,55 @@ fn a_file_on_disk_is_read_up_to_the_largest_size() {
     let latin = dir.path().join("Latin.nfo");
     std::fs::write(&latin, b"<movie><title>Caf\xe9</title></movie>").unwrap();
 
-    assert_eq!(read(&small, MOVIE).edit.title.as_deref(), Some("Heat"));
+    assert_eq!(read(&small, &[MOVIE]).edit.title.as_deref(), Some("Heat"));
     assert!(modified(&small).is_some());
-    assert_eq!(read(&large, MOVIE), Contents::default());
-    assert_eq!(read(&latin, MOVIE), Contents::default());
+    assert_eq!(read(&large, &[MOVIE]), Contents::default());
+    assert_eq!(read(&latin, &[MOVIE]), Contents::default());
     assert_eq!(
-        read(&dir.path().join("missing.nfo"), MOVIE),
+        read(&dir.path().join("missing.nfo"), &[MOVIE]),
         Contents::default()
     );
     assert_eq!(modified(&dir.path().join("missing.nfo")), None);
+}
+
+const PILOT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<episodedetails>
+    <title>Pilot</title>
+    <season>1</season>
+    <episode>1</episode>
+    <plot>A teacher learns he is ill.</plot>
+    <aired>2008-01-20</aired>
+    <uniqueid type="tmdb" default="true">62085</uniqueid>
+</episodedetails>
+<episodedetails>
+    <title>Cat's in the Bag</title>
+    <episode>2</episode>
+</episodedetails>
+https://www.themoviedb.org/movie/949"#;
+
+#[test]
+fn an_episode_s_file_gives_its_first_episode_s_name_summary_and_air_date() {
+    let Contents { edit, tmdb } = parsed(PILOT, EPISODE);
+
+    assert_eq!(edit.title.as_deref(), Some("Pilot"));
+    assert_eq!(
+        edit.overview.as_deref(),
+        Some("A teacher learns he is ill.")
+    );
+    assert_eq!(edit.released.as_deref(), Some("2008-01-20"));
+    assert_eq!(edit.year, Some(2008));
+    assert_eq!(edit.genres, None);
+    assert_eq!(tmdb, None);
+}
+
+#[test]
+fn a_file_read_for_a_film_or_an_episode_takes_the_root_it_holds() {
+    let dir = kroma_testing::temp_dir("nfo");
+    let path = dir.path().join("Breaking Bad - S01E01.nfo");
+    std::fs::write(&path, PILOT).unwrap();
+
+    let contents = read(&path, &[MOVIE, EPISODE]);
+
+    assert_eq!(contents.edit.title.as_deref(), Some("Pilot"));
+    assert_eq!(contents.tmdb, None);
 }

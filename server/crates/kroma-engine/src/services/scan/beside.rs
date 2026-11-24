@@ -7,8 +7,9 @@ use crate::db::text_beside::Nfo;
 use crate::infra::image::{beside_name, PUBLIC_PREFIX};
 use crate::infra::nfo;
 use crate::model::{Kind, MediaItem, Show};
+use crate::services::art_beside::nfo::{episode_nfo, film_nfo, show_nfo};
 use crate::services::art_beside::{
-    episode_art, film_art, film_nfo, season_poster, show_art, show_nfo, Art, Folders, SeasonVideos,
+    episode_art, film_art, season_poster, show_art, Art, Folders, SeasonVideos,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -108,7 +109,7 @@ pub(super) fn nfos_beside(subjects: &[Subject<'_>], nfos: Vec<PathBuf>) -> Vec<N
     let file = |subject: &Subject<'_>| match subject.what {
         What::Film => film_nfo(&folders, &subject.videos),
         What::Show => show_nfo(&folders, &subject.videos),
-        What::Episode => None,
+        What::Episode => episode_nfo(&folders, &subject.videos),
     };
     subjects
         .iter()

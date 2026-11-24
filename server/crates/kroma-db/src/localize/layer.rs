@@ -23,25 +23,12 @@ impl Ask<'_> {
         })
     }
 
-    pub(super) fn episodes(&self, ids: &[&str]) -> Result<Episodes> {
-        Ok(Episodes {
+    pub(super) fn episodes(&self, ids: &[&str]) -> Result<Layer> {
+        Ok(Layer {
             text: translations::resolve_many(self.conn, "episode", ids, self.locale)?,
+            edits: title_edits::shown(self.conn, metadata_core::ITEM, ids)?,
             art: Art::load(self.conn, metadata_core::ITEM, ids)?,
         })
-    }
-}
-
-pub(super) struct Episodes {
-    text: HashMap<String, TransData>,
-    art: Art,
-}
-
-impl Episodes {
-    pub(super) fn on_episode(&self, episode: &mut MediaItem) {
-        if let Some(tr) = self.text.get(&episode.id) {
-            apply_item(episode, tr);
-        }
-        self.art.paint_still(&episode.id, &mut episode.metadata);
     }
 }
 
@@ -53,13 +40,22 @@ pub(super) struct Layer {
 
 impl Layer {
     pub(super) fn on_item(&self, item: &mut MediaItem) {
+        self.text_onto(item);
+        self.art.paint(&item.id, item.metadata.as_mut());
+    }
+
+    pub(super) fn on_episode(&self, episode: &mut MediaItem) {
+        self.text_onto(episode);
+        self.art.paint_still(&episode.id, &mut episode.metadata);
+    }
+
+    fn text_onto(&self, item: &mut MediaItem) {
         if let Some(tr) = self.text.get(&item.id) {
             apply_item(item, tr);
         }
         if let Some(edit) = self.edits.get(&item.id) {
             edit.onto(item);
         }
-        self.art.paint(&item.id, item.metadata.as_mut());
     }
 
     pub(super) fn on_show(&self, show: &mut Show) {

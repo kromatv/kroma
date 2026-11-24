@@ -9,6 +9,8 @@ use kroma_domain::naming::is_season_folder;
 
 use crate::db::art_beside::{BACKDROP, LOGO};
 
+pub mod nfo;
+
 /// The extensions of the pictures read beside the media, compared without
 /// regard to case.
 pub const PICTURES: [&str; 4] = ["jpg", "jpeg", "png", "webp"];
@@ -49,12 +51,6 @@ const EPISODE_STILL: Role = Role {
     after_video: &["thumb"],
     video_alone: true,
     in_own_folder: &[],
-};
-
-const FILM_NFO: Role = Role {
-    after_video: &[],
-    video_alone: true,
-    in_own_folder: &["movie"],
 };
 
 /// The poster, the backdrop and the logo a person keeps beside a title's
@@ -182,12 +178,6 @@ pub fn episode_art(folders: &Folders, videos: &[PathBuf]) -> Art {
     }
 }
 
-/// The `.nfo` file kept beside a film's `videos`: one named after one of them,
-/// else `movie.nfo` in a folder that holds no other title's video.
-pub fn film_nfo(folders: &Folders, videos: &[PathBuf]) -> Option<PathBuf> {
-    film_file(folders, videos, &FILM_NFO)
-}
-
 fn film_file(folders: &Folders, videos: &[PathBuf], role: &Role) -> Option<PathBuf> {
     videos
         .iter()
@@ -249,13 +239,6 @@ fn numbered(number: u32) -> Vec<String> {
         names.push("season-specials-poster".into());
     }
     names
-}
-
-/// `tvshow.nfo` in a show's folder, the one above its season folders, when it
-/// holds no other show's episode.
-pub fn show_nfo(folders: &Folders, episodes: &[PathBuf]) -> Option<PathBuf> {
-    let held = folders.of_show(episodes);
-    held.iter().find_map(|folder| folder.file("tvshow"))
 }
 
 /// The widest a picture kept as `role` is cached.

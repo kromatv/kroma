@@ -40,10 +40,10 @@ fn contents_of(found: &Nfo, before: &HashMap<String, Read>) -> Contents {
     }
 }
 
-fn root_of(kind: &str) -> &'static str {
+fn root_of(kind: &str) -> &'static [&'static str] {
     if kind == SHOW {
-        nfo::TVSHOW
+        &[nfo::TVSHOW]
     } else {
-        nfo::MOVIE
+        &[nfo::MOVIE, nfo::EPISODE]
     }
 }

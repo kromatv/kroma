@@ -271,6 +271,11 @@ provider's. A year written alone stays possible for a title whose day nobody kno
 file's `<sorttitle>` gives one too (LIB-84). The catalogue sorts the title, and files it under
 a letter, by that name, while the name shown stays the same, as in Plex, Jellyfin and Kodi.
 
+**LIB-89** (SHIPPED) - An episode takes its name, summary and air date from the `.nfo` file
+named after its video, as Kodi, Jellyfin and Plex read it. The file comes before the provider's
+text, in every language and whether or not the provider recognized the episode, as a film's
+does (LIB-84). A file that describes several episodes gives the first.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

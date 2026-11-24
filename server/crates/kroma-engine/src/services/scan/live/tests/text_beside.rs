@@ -99,3 +99,34 @@ fn a_walk_keeps_the_tmdb_id_an_nfo_names_while_the_file_is_unchanged() {
     let leads = crate::db::text_beside::leads(&state.db, ITEM).unwrap();
     assert_eq!(leads.get(&film.id), Some(&949));
 }
+
+#[test]
+fn an_episode_shows_the_text_of_the_nfo_named_after_its_video() {
+    let state = test_state();
+    let root = kroma_testing::temp_dir("live-text-beside-episode");
+    keep(root.path(), "Andor/Season 01/Andor S01E01.mkv", "x", 1_000);
+    let pilot = "<episodedetails><title>Kassa</title><plot>A man looks for his sister.</plot>\
+                 <aired>2022-09-21</aired></episodedetails>";
+    keep(
+        root.path(),
+        "Andor/Season 01/Andor S01E01.nfo",
+        pilot,
+        1_000,
+    );
+
+    walk(&state, root.path());
+    let row = shown(&state, Kind::Episode);
+    let show = row.show_id.clone().unwrap();
+    let mut detail = crate::db::get_show(&state.db, &show).unwrap().unwrap();
+    crate::db::localize::overlay_show_detail(&state.db, &mut detail, "en").unwrap();
+
+    let on_page = &detail.seasons[0].episodes[0];
+    let meta = on_page.metadata.as_ref().expect("a record for the summary");
+    assert_eq!(row.title, "Kassa");
+    assert_eq!(on_page.title, "Kassa");
+    assert_eq!(
+        meta.overview.as_deref(),
+        Some("A man looks for his sister.")
+    );
+    assert_eq!(meta.release_date.as_deref(), Some("2022-09-21"));
+}
