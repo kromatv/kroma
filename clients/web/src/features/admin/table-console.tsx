@@ -17,6 +17,7 @@ import {
   useStyles,
 } from '@kromatv/ui/kit';
 import { useCallback, useRef, useState } from 'react';
+import { useLater } from '#web/shared/lib/use-later.hook';
 
 /** Coalesce event-driven reloads to at most one call per 1.5 s. */
 export function useThrottledReload(reload: () => unknown): () => void {
@@ -37,9 +38,10 @@ export function useConsoleToast(): {
   flash: (text: string) => void;
 } {
   const [toast, setToast] = useState<{ text: string; on: boolean }>({ text: '', on: false });
+  const later = useLater();
   const flash = (text: string) => {
     setToast({ text, on: true });
-    window.setTimeout(() => setToast((s) => ({ ...s, on: false })), 2800);
+    later(() => setToast((s) => ({ ...s, on: false })), 2800);
   };
   return { toast, flash };
 }

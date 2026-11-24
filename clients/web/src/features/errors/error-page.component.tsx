@@ -22,6 +22,7 @@ import {
 } from '@kromatv/ui/kit';
 import { type ErrorComponentProps, useRouter, useRouterState } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
+import { useLater } from '#web/shared/lib/use-later.hook';
 import { PAGE_RADIAL } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link.component';
 
@@ -196,15 +197,16 @@ function traceOf(error: unknown): string | null {
 function Trace({ trace }: Readonly<{ trace: string }>) {
   const t = useT();
   const [copied, setCopied] = useState(false);
+  const later = useLater();
   const copy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(trace);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      later(() => setCopied(false), 1500);
     } catch {
       /* clipboard unavailable */
     }
-  }, [trace]);
+  }, [trace, later]);
   return (
     <Box mt={20} w="100%">
       <Disclosure.Root>

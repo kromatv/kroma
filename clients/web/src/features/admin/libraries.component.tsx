@@ -22,6 +22,7 @@ import {
 import { Pill } from '#web/features/admin/pill.component';
 import { Denied, PageHeader, useCap, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
+import { useLater } from '#web/shared/lib/use-later.hook';
 import { TableSkeleton } from '#web/shared/ui';
 
 const ICONS: Record<string, IconName> = {
@@ -117,13 +118,14 @@ function LibraryCard({
   const fmt = useFormat();
   const { client } = useAuth();
   const [scanning, setScanning] = useState(false);
+  const later = useLater();
 
   async function scan() {
     setScanning(true);
     try {
       await client.library.scan(lib.id);
     } finally {
-      setTimeout(() => setScanning(false), 1200);
+      later(() => setScanning(false), 1200);
     }
   }
 

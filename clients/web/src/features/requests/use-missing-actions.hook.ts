@@ -9,6 +9,7 @@ import {
   type MissingGroup,
 } from '#web/features/requests/missing-model';
 import { useAuth } from '#web/shared/lib/auth';
+import { useLater } from '#web/shared/lib/use-later.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 /** `search` queues what the server already wants, `follow` records the want,
@@ -55,6 +56,7 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
   const [busyKeys, setBusyKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [startedKeys, setStartedKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const later = useLater();
 
   const actionOf = (group: MissingGroup): GroupAction => {
     if (!isFollowed(group)) {
@@ -127,10 +129,7 @@ export function useMissingActions(groups: readonly MissingGroup[]): MissingActio
         }
         setStartedKeys((started) => withKeys(started, keys, true));
         setSelected((picked) => withKeys(picked, keys, false));
-        setTimeout(
-          () => setStartedKeys((started) => withKeys(started, keys, false)),
-          STARTED_MARK_MS,
-        );
+        later(() => setStartedKeys((started) => withKeys(started, keys, false)), STARTED_MARK_MS);
       })
       .catch(() => undefined)
       .finally(() => {

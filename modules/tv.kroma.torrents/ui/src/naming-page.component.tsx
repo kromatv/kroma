@@ -110,7 +110,16 @@ export default function NamingPage() {
       .catch(() => setFailed(true));
   }, [torrents]);
 
+  useEffect(() => {
+    if (!saved) {
+      return undefined;
+    }
+    const timer = setTimeout(() => setSaved(false), 2500);
+    return () => clearTimeout(timer);
+  }, [saved]);
+
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(debounce.current), []);
   const refreshSample = useCallback(
     (next: NamingTemplatesView) => {
       clearTimeout(debounce.current);
@@ -157,10 +166,7 @@ export default function NamingPage() {
     setSaveError(null);
     torrents
       .saveNaming(tpl)
-      .then(() => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      })
+      .then(() => setSaved(true))
       .catch((e) => setSaveError(apiErrorText(e, t('naming.saveFailed'))))
       .finally(() => setSaving(false));
   };

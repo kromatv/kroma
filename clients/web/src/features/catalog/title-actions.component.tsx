@@ -8,6 +8,7 @@ import { ArtworkDialog } from '#web/features/catalog/artwork-dialog.component';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog.component';
 import { TitleInfoDialog } from '#web/features/catalog/title-info-dialog.component';
 import { useAuth } from '#web/shared/lib/auth';
+import { useLater } from '#web/shared/lib/use-later.hook';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
 type Props = Readonly<{
@@ -26,13 +27,14 @@ function usePermits() {
 function useReprocess({ kind, id, onChanged }: Props) {
   const { client } = useAuth();
   const [busy, setBusy] = useState(false);
+  const later = useLater();
   const reprocess = () => {
     setBusy(true);
     client.pipeline
       .reprocessSubject(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id))
       .then(onChanged)
       .catch(() => {})
-      .finally(() => setTimeout(() => setBusy(false), 1500));
+      .finally(() => later(() => setBusy(false), 1500));
   };
   return { busy, reprocess };
 }
