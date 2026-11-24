@@ -8,7 +8,7 @@
 // a node that exists).
 
 import { NavigatorNode, NavigatorView } from '@kromatv/spatial-nav/react';
-import { Children, type ReactElement, type ReactNode, useMemo } from 'react';
+import { Children, type ReactElement, type ReactNode } from 'react';
 import { ScrollView, type ViewStyle } from 'react-native';
 import { VirtualRail } from '#ui/components/organisms/virtual';
 import { RING_ROOM } from '#ui/core/tokens';
@@ -40,15 +40,12 @@ const asTile = (tile: ReactNode) => tile as ReactElement;
  */
 function List({ pitch, height, children }: Readonly<RailListProps>) {
   const { gap, inset } = useRail('List');
-  const tiles = useMemo(() => Children.toArray(children), [children]);
-  const style = useMemo(() => ({ height: height + RING_ROOM * 2 }), [height]);
+  const tiles = Children.toArray(children);
+  const style = { height: height + RING_ROOM * 2 };
   // The list translates the whole content and parks the focused tile at the
   // content's origin, so the left inset keeps it off the screen edge; the right
   // one stops the last tile sitting flush against the other edge.
-  const contentStyle = useMemo(
-    () => ({ paddingLeft: inset, paddingRight: inset, paddingVertical: RING_ROOM }),
-    [inset],
-  );
+  const contentStyle = { paddingLeft: inset, paddingRight: inset, paddingVertical: RING_ROOM };
   return (
     <VirtualRail
       data={tiles}
