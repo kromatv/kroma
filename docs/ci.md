@@ -277,6 +277,15 @@ version it names, still to ship) and bumps it by the squash titles since: below
 `feat`, `fix` or `perf` the patch; from 1.0 on it is semver. Maintenance alone
 builds the last release's version again, which deploy then refuses to promote.
 
+A push never cancels the candidate that is building. GitHub keeps one run of
+the group in progress and at most one pending, and a newer push replaces the
+pending one, so a burst of pushes builds its first commit and then its last.
+Cancelling the run in progress meant that on a busy day nothing finished: the
+Apple and phone jobs take 15 to 25 minutes, main took a push every 5 to 20, and
+in the 24 hours to 2026-11-24 00:30 UTC 19 of 23 runs were cancelled and 3
+succeeded. A cancelled run also never saved its compiler caches, so the next
+one started as cold as the last.
+
 CI stamps that version into the server binary as `KROMA_VERSION` through
 `server/build.rs`. A local build cannot ask GitHub which tags are prereleases,
 so it reads `server/Cargo.toml`, which names the version main is heading for and
@@ -339,8 +348,8 @@ that testers join by their public link, with no invitation:
   --group Canary --settle`: it waits until Apple has processed every build of
   the app, puts the newest valid build of each platform in the group, and
   submits it to Beta App Review when it waits on one. It is a workflow of its
-  own because a push to main cancels the Build & Release run before it, which
-  is usually still waiting on Apple.
+  own so that waiting on Apple, which takes longer than the build, does not
+  hold the next Build & Release run.
 - **Beta**, the group behind `testflight.apple.com/join/ZjgQdunW`, gets the
   newest build once a night from `testflight.yml` (02:17 UTC, or `gh
   workflow run testflight.yml`). A group that already has the newest build
