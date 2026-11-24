@@ -1,134 +1,134 @@
 use std::path::{Path, PathBuf};
 
-use crate::infra::image::test_support::scoped_dir;
+use crate::db::art_beside::{BACKDROP, POSTER};
 
 use super::*;
 
-fn lay_out(root: &Path, files: &[&str]) -> Vec<PathBuf> {
-    files
+fn scanned(files: &[&str]) -> (Folders, Vec<PathBuf>) {
+    let (pictures, videos): (Vec<PathBuf>, Vec<PathBuf>) = files
         .iter()
-        .map(|file| {
-            let path = root.join("media").join(file);
-            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-            std::fs::write(&path, "320").unwrap();
-            path
-        })
-        .collect()
+        .map(|file| Path::new("/media").join(file))
+        .partition(|path| picture_stem(path).is_some());
+    (Folders::new(pictures, videos.clone()), videos)
 }
 
-fn source_of(cached: Option<PathBuf>) -> Option<String> {
-    let encoded = std::fs::read_to_string(cached?).unwrap();
-    let (_, picture) = encoded.split_once("/media/")?;
-    Some(picture.split(" -o ").next()?.to_string())
+fn at(file: &str) -> Option<PathBuf> {
+    Some(Path::new("/media").join(file))
 }
 
 #[test]
-fn a_film_in_its_own_folder_shows_the_poster_beside_it() {
-    let dir = scoped_dir();
-    let files = lay_out(
-        dir.path(),
-        &["Heat (1995)/Heat (1995).mkv", "Heat (1995)/Folder.JPG"],
-    );
+fn a_film_in_its_own_folder_shows_the_pictures_beside_it() {
+    let (folders, videos) = scanned(&[
+        "Heat (1995)/Heat (1995).mkv",
+        "Heat (1995)/Folder.JPG",
+        "Heat (1995)/fanart.jpg",
+    ]);
 
-    let poster = film_poster(dir.path(), &files[..1]);
+    let art = film_art(&folders, &videos);
 
-    assert_eq!(source_of(poster).as_deref(), Some("Heat (1995)/Folder.JPG"));
+    assert_eq!(art.poster, at("Heat (1995)/Folder.JPG"));
+    assert_eq!(art.backdrop, at("Heat (1995)/fanart.jpg"));
 }
 
 #[test]
 fn a_picture_named_after_the_film_comes_before_the_folder_s_own() {
-    let dir = scoped_dir();
-    let files = lay_out(
-        dir.path(),
-        &["Heat/Heat.mkv", "Heat/poster.jpg", "Heat/Heat-poster.png"],
-    );
+    let (folders, videos) = scanned(&[
+        "Heat/Heat.mkv",
+        "Heat/poster.jpg",
+        "Heat/Heat-poster.png",
+        "Heat/backdrop.jpg",
+        "Heat/Heat-fanart.jpg",
+    ]);
 
-    let poster = film_poster(dir.path(), &files[..1]);
+    let art = film_art(&folders, &videos);
 
-    assert_eq!(source_of(poster).as_deref(), Some("Heat/Heat-poster.png"));
+    assert_eq!(art.poster, at("Heat/Heat-poster.png"));
+    assert_eq!(art.backdrop, at("Heat/Heat-fanart.jpg"));
 }
 
 #[test]
-fn a_folder_shared_by_two_films_gives_each_only_its_named_picture() {
-    let dir = scoped_dir();
-    let files = lay_out(
-        dir.path(),
-        &[
-            "Films/Heat.mkv",
-            "Films/Ronin.mkv",
-            "Films/poster.jpg",
-            "Films/Ronin.webp",
-        ],
-    );
+fn a_folder_shared_by_two_films_gives_each_only_its_named_pictures() {
+    let (folders, videos) = scanned(&[
+        "Films/Heat.mkv",
+        "Films/Ronin.mkv",
+        "Films/poster.jpg",
+        "Films/fanart.jpg",
+        "Films/Ronin.webp",
+        "Films/Ronin-backdrop.jpg",
+    ]);
 
-    let heat = film_poster(dir.path(), &files[..1]);
-    let ronin = film_poster(dir.path(), &files[1..2]);
+    let heat = film_art(&folders, &videos[..1]);
+    let ronin = film_art(&folders, &videos[1..]);
 
-    assert_eq!(source_of(heat), None);
-    assert_eq!(source_of(ronin).as_deref(), Some("Films/Ronin.webp"));
+    assert_eq!(heat, Art::default());
+    assert_eq!(ronin.poster, at("Films/Ronin.webp"));
+    assert_eq!(ronin.backdrop, at("Films/Ronin-backdrop.jpg"));
 }
 
 #[test]
 fn the_parts_of_one_film_keep_their_folder_s_poster() {
-    let dir = scoped_dir();
-    let files = lay_out(
-        dir.path(),
-        &["Heat/Heat cd1.mkv", "Heat/Heat cd2.mkv", "Heat/cover.jpeg"],
-    );
+    let (folders, videos) = scanned(&["Heat/Heat cd1.mkv", "Heat/Heat cd2.mkv", "Heat/cover.jpeg"]);
 
-    let poster = film_poster(dir.path(), &files[..2]);
+    let art = film_art(&folders, &videos);
 
-    assert_eq!(source_of(poster).as_deref(), Some("Heat/cover.jpeg"));
+    assert_eq!(art.poster, at("Heat/cover.jpeg"));
 }
 
 #[test]
-fn a_show_reads_its_poster_from_the_folder_above_its_seasons() {
-    let dir = scoped_dir();
-    let files = lay_out(
-        dir.path(),
-        &[
-            "Andor/Season 01/Andor S01E01.mkv",
-            "Andor/Season 01/poster.jpg",
-            "Andor/show.png",
-        ],
-    );
+fn two_pictures_with_one_name_settle_on_the_same_one_on_every_scan() {
+    let (one_way, videos) = scanned(&["Heat/Heat.mkv", "Heat/poster.png", "Heat/poster.jpg"]);
+    let (other_way, _) = scanned(&["Heat/Heat.mkv", "Heat/poster.jpg", "Heat/poster.png"]);
 
-    let poster = show_poster(dir.path(), &files[..1]);
+    let first = film_art(&one_way, &videos);
+    let second = film_art(&other_way, &videos);
 
-    assert_eq!(source_of(poster).as_deref(), Some("Andor/show.png"));
+    assert_eq!(first.poster, at("Heat/poster.jpg"));
+    assert_eq!(first, second);
+}
+
+#[test]
+fn a_show_reads_its_art_from_the_folder_above_its_seasons() {
+    let (folders, videos) = scanned(&[
+        "Andor/Season 01/Andor S01E01.mkv",
+        "Andor/Season 01/poster.jpg",
+        "Andor/show.png",
+        "Andor/background.jpg",
+    ]);
+
+    let art = show_art(&folders, &videos);
+
+    assert_eq!(art.poster, at("Andor/show.png"));
+    assert_eq!(art.backdrop, at("Andor/background.jpg"));
 }
 
 #[test]
 fn a_season_s_poster_is_not_its_show_s() {
-    let dir = scoped_dir();
-    let files = lay_out(
-        dir.path(),
-        &[
-            "Andor/Season 01/Andor S01E01.mkv",
-            "Andor/Season 01/poster.jpg",
-        ],
-    );
+    let (folders, videos) = scanned(&[
+        "Andor/Season 01/Andor S01E01.mkv",
+        "Andor/Season 01/poster.jpg",
+    ]);
 
-    let poster = show_poster(dir.path(), &files[..1]);
+    let art = show_art(&folders, &videos);
 
-    assert_eq!(source_of(poster), None);
+    assert_eq!(art, Art::default());
 }
 
 #[test]
-fn a_folder_holding_two_shows_gives_its_poster_to_neither() {
-    let dir = scoped_dir();
-    let files = lay_out(
-        dir.path(),
-        &[
-            "Shows/Andor S01E01.mkv",
-            "Shows/Severance S01E01.mkv",
-            "Shows/poster.jpg",
-        ],
-    );
+fn a_folder_holding_two_shows_gives_its_art_to_neither() {
+    let (folders, videos) = scanned(&[
+        "Shows/Andor S01E01.mkv",
+        "Shows/Severance S01E01.mkv",
+        "Shows/poster.jpg",
+    ]);
 
-    let andor = show_poster(dir.path(), &files[..1]);
-    let none = show_poster(dir.path(), &[]);
+    let andor = show_art(&folders, &videos[..1]);
+    let none = show_art(&folders, &[]);
 
-    assert_eq!(source_of(andor), None);
-    assert_eq!(source_of(none), None);
+    assert_eq!(andor, Art::default());
+    assert_eq!(none, Art::default());
+}
+
+#[test]
+fn a_backdrop_is_cached_wider_than_a_poster() {
+    assert!(max_width(BACKDROP) > max_width(POSTER));
 }

@@ -1,12 +1,15 @@
 //! Putting back one cached image whose file is gone. The rows that name its
 //! path say which title it belongs to, and enriching that title again caches
-//! every image its payload names under the same content-addressed name.
+//! every image its payload names under the same content-addressed name. A
+//! picture kept beside a title's files is cached again from that file.
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::db;
 use crate::infra::image;
+use crate::services::art_beside;
 use crate::state::SharedState;
 
 /// One lock per subject, so a page of stills from one show enriches it once
@@ -25,11 +28,15 @@ impl Inflight {
 }
 
 /// Whether `name` is on disk once the title it belongs to has been enriched
-/// again. False when no row names it, when there is no provider to ask, or
-/// when the provider could not be reached.
+/// again, or once the picture kept beside a title's files that it is named
+/// after has been cached again. False when no row names it, when there is no
+/// provider to ask, or when the provider could not be reached.
 pub async fn refill(state: &SharedState, name: &str) -> bool {
     let path = image::images_dir(&state.config.data_dir).join(name);
     let url = format!("{}{name}", image::PUBLIC_PREFIX);
+    if name.starts_with(image::BESIDE_PREFIX) {
+        return refill_beside(state, path, url).await;
+    }
     let pool = state.db.clone();
     let found = tokio::task::spawn_blocking(move || db::art_owner(&pool, &url)).await;
     let Ok(Ok(Some(owner))) = found else {
@@ -47,4 +54,22 @@ pub async fn refill(state: &SharedState, name: &str) -> bool {
     })
     .await;
     path.exists()
+}
+
+async fn refill_beside(state: &SharedState, path: PathBuf, url: String) -> bool {
+    let lock = state.art_refills.lock_for(&url);
+    let _held = lock.lock().await;
+    let pool = state.db.clone();
+    let cached = tokio::task::spawn_blocking(move || {
+        let Ok(Some(source)) = db::art_beside::source_of(&pool, &url) else {
+            return path.exists();
+        };
+        let width = art_beside::max_width(&source.role);
+        let cached = image::cache_picture_beside(Path::new(&source.path), &path, width);
+        if !cached {
+            let _ = db::art_beside::forget(&pool, &url);
+        }
+        cached
+    });
+    cached.await.unwrap_or(false)
 }

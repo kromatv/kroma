@@ -136,7 +136,7 @@ fn apply_startup_scan(state: &state::SharedState, data: &services::scan::ScanDat
     services::enrich::maybe_spawn(state, &data.changed_shows);
     infra::watch::spawn(
         state.clone(),
-        infra::watch::signature(&data.items, &data.mtimes),
+        infra::watch::signature(data),
     );
 }
 
@@ -185,7 +185,7 @@ fn spawn_startup_scan(state: state::SharedState) {
         );
         infra::watch::spawn(
             state.clone(),
-            infra::watch::signature(&data.items, &data.mtimes),
+            infra::watch::signature(&data),
         );
         // The probe pass and the reindex `boot::background` started ran against
         // the index as it was BEFORE this walk, so the files it just added need

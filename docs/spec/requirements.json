@@ -5687,7 +5687,7 @@
     "status": "AGREED",
     "text": "KROMA derives a fixed set of sizes per image, a small grid",
     "file": "docs/spec/media/README.md",
-    "line": 191
+    "line": 198
   },
   {
     "id": "MEDIA-35",
@@ -5697,7 +5697,7 @@
     "status": "AGREED",
     "text": "Derived sizes are cached and served without re-deriving, and a",
     "file": "docs/spec/media/README.md",
-    "line": 194
+    "line": 201
   },
   {
     "id": "MEDIA-36",
@@ -5707,7 +5707,7 @@
     "status": "AGREED",
     "text": "Artwork is never a reason a title fails to appear. A title with no",
     "file": "docs/spec/media/README.md",
-    "line": 196
+    "line": 203
   },
   {
     "id": "MEDIA-37",
@@ -5717,7 +5717,7 @@
     "status": "SHIPPED",
     "text": "KROMA learns a file's streams by **probing** it once, when the",
     "file": "docs/spec/media/README.md",
-    "line": 203
+    "line": 210
   },
   {
     "id": "MEDIA-38",
@@ -5727,7 +5727,7 @@
     "status": "AGREED",
     "text": "A probe is the authoritative stream truth until the file's bytes",
     "file": "docs/spec/media/README.md",
-    "line": 213
+    "line": 220
   },
   {
     "id": "MEDIA-39",
@@ -5737,7 +5737,7 @@
     "status": "AGREED",
     "text": "When a direct play fails in a way that implicates the stream",
     "file": "docs/spec/media/README.md",
-    "line": 216
+    "line": 223
   },
   {
     "id": "MEDIA-40",
@@ -5747,7 +5747,7 @@
     "status": "AGREED",
     "text": "Trust is per-file and durable: a corrected probe is written back,",
     "file": "docs/spec/media/README.md",
-    "line": 221
+    "line": 228
   },
   {
     "id": "MEDIA-41",
@@ -5757,7 +5757,7 @@
     "status": "AGREED",
     "text": "A file whose container opens and whose streams enumerate, but which",
     "file": "docs/spec/media/README.md",
-    "line": 235
+    "line": 242
   },
   {
     "id": "MEDIA-42",
@@ -5767,7 +5767,7 @@
     "status": "AGREED",
     "text": "The title **appears** in the library with whatever *is* known. A",
     "file": "docs/spec/media/README.md",
-    "line": 239
+    "line": 246
   },
   {
     "id": "MEDIA-43",
@@ -5777,7 +5777,7 @@
     "status": "AGREED",
     "text": "The unknown stream is marked **undescribed** and carries its raw",
     "file": "docs/spec/media/README.md",
-    "line": 242
+    "line": 249
   },
   {
     "id": "MEDIA-44",
@@ -5787,7 +5787,7 @@
     "status": "SHIPPED",
     "text": "An undescribed stream is *not direct-playable*, because KROMA will",
     "file": "docs/spec/media/README.md",
-    "line": 244
+    "line": 251
   },
   {
     "id": "MEDIA-45",
@@ -5797,7 +5797,7 @@
     "status": "SHIPPED",
     "text": "A file that will not open at all, a truncated or corrupt container,",
     "file": "docs/spec/media/README.md",
-    "line": 247
+    "line": 254
   },
   {
     "id": "MEDIA-46",
@@ -5807,7 +5807,7 @@
     "status": "AGREED",
     "text": "Undescribed and unreadable are distinct states. The first is \"we",
     "file": "docs/spec/media/README.md",
-    "line": 250
+    "line": 257
   },
   {
     "id": "MEDIA-47",
@@ -5825,9 +5825,19 @@
     "space": "media",
     "number": 48,
     "status": "SHIPPED",
-    "text": "A title with no fetched poster shows the poster kept beside its",
+    "text": "The poster kept beside a title's files comes before a fetched",
     "file": "docs/spec/media/README.md",
     "line": 184
+  },
+  {
+    "id": "MEDIA-49",
+    "domain": "MEDIA",
+    "space": "media",
+    "number": 49,
+    "status": "SHIPPED",
+    "text": "The backdrop kept beside a matched title's files comes before a",
+    "file": "docs/spec/media/README.md",
+    "line": 192
   },
   {
     "id": "MOD-1",

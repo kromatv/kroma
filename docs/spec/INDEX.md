@@ -3,7 +3,7 @@
 
 # Requirement index
 
-816 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+817 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -604,7 +604,8 @@
 - **MEDIA-45** (SHIPPED) - A file that will not open at all, a truncated or corrupt container,
 - **MEDIA-46** (AGREED) - Undescribed and unreadable are distinct states. The first is "we
 - **MEDIA-47** (AGREED) - An audio stream carries the region of its language when the file says
-- **MEDIA-48** (SHIPPED) - A title with no fetched poster shows the poster kept beside its
+- **MEDIA-48** (SHIPPED) - The poster kept beside a title's files comes before a fetched
+- **MEDIA-49** (SHIPPED) - The backdrop kept beside a matched title's files comes before a
 
 ## MOD - [modules](modules/)
 

@@ -8,6 +8,10 @@
       "broke": 1,
       "changed": 1
     },
+    "art_beside": {
+      "broke": 34,
+      "changed": 34
+    },
     "audio_analysis": {
       "broke": 1,
       "changed": 1
@@ -273,5 +277,5 @@
       "changed": 1
     }
   },
-  "version": 33
+  "version": 34
 }

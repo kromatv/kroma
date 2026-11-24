@@ -76,35 +76,41 @@ folder beside the video works too. Subtitles inside the video file need nothing.
 The player finds a new subtitle file at once. The subtitle filter of the Films
 and Series pages counts it after the next library scan.
 
-### Posters
+### Posters and backdrops
 
-KROMA finds a poster on the internet for every title it recognizes. For a title
-it does not recognize, put a picture in the title's folder, and KROMA shows it
-instead of the plain placeholder:
+KROMA finds a poster and a backdrop on the internet for every title it
+recognizes. A picture you put in the title's folder comes before them, and gives
+a title KROMA does not recognize a poster instead of the plain placeholder:
 
 ```
 Films/
   Summer Trip (2019)/
     Summer Trip (2019).mkv
     poster.jpg
+    fanart.jpg
 Series/
   School Plays/
     poster.jpg
+    backdrop.jpg
     Season 01/
       School Plays - S01E01.mkv
 ```
 
-- For a film, name the picture `poster`, `folder`, `cover`, `default` or
-  `movie`, in the film's own folder. In a folder that holds several films, name
-  it after the video file instead: `Summer Trip (2019).jpg` or
+- For a film's poster, name the picture `poster`, `folder`, `cover`, `default`
+  or `movie`, in the film's own folder. In a folder that holds several films,
+  name it after the video file instead: `Summer Trip (2019).jpg` or
   `Summer Trip (2019)-poster.jpg`.
-- For a series, put the picture in the series folder, the one above the season
-  folders, and name it `poster`, `folder`, `cover`, `default` or `show`. When
-  two series share one folder, neither takes the picture in it.
-- KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp` pictures.
-- A poster from the internet still comes first. The picture replaces only the
-  placeholder.
-- An app can take up to a day to show a new or changed picture.
+- For a film's backdrop, name it `backdrop`, `fanart`, `background` or `art`,
+  or after the video file in a shared folder: `Summer Trip (2019)-fanart.jpg`.
+- For a series, put the pictures in the series folder, the one above the season
+  folders, with the same names, or `show` for the poster. When two series share
+  one folder, neither takes the pictures in it.
+- KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp` pictures, and passes over one
+  it cannot open.
+- A backdrop shows only on a title KROMA recognizes.
+- KROMA notices a picture you add, change or remove the way it notices a new
+  video file. An app can take up to a day to show the change on a screen it has
+  already opened.
 
 ### File types
 

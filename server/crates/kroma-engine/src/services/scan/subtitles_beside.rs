@@ -1,30 +1,11 @@
 use std::collections::{BTreeSet, HashMap};
 use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, PoisonError};
 
 use kroma_media::external_subtitles::beside;
 
 use crate::infra::external_subtitles::is_subtitle_folder;
 use crate::model::{MediaFile, MediaItem};
-
-#[derive(Clone, Default)]
-pub(super) struct SubtitleFiles(Arc<Mutex<Vec<PathBuf>>>);
-
-impl SubtitleFiles {
-    pub(super) fn add(&self, files: Vec<PathBuf>) {
-        if !files.is_empty() {
-            self.0
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .extend(files);
-        }
-    }
-
-    pub(super) fn take(&self) -> Vec<PathBuf> {
-        std::mem::take(&mut self.0.lock().unwrap_or_else(PoisonError::into_inner))
-    }
-}
 
 #[derive(Default)]
 struct Held {

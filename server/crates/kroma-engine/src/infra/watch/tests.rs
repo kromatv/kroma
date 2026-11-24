@@ -21,8 +21,7 @@ fn put(root: &Path, rel: &str, bytes: &[u8]) {
 }
 
 fn signed(root: &Path) -> u64 {
-    let data = scan_all(&library(root));
-    signature(&data.items, &data.mtimes)
+    signature(&scan_all(&library(root)))
 }
 
 #[test]
@@ -72,6 +71,17 @@ fn two_files_trading_names_change_the_signature() {
     std::fs::rename(dir.join("Show S01E01.mkv"), dir.join("swap.mkv")).unwrap();
     std::fs::rename(dir.join("Show S01E02.mkv"), dir.join("Show S01E01.mkv")).unwrap();
     std::fs::rename(dir.join("swap.mkv"), dir.join("Show S01E02.mkv")).unwrap();
+
+    assert_ne!(signed(root.path()), before);
+}
+
+#[test]
+fn a_poster_put_beside_a_show_changes_the_signature() {
+    let root = kroma_testing::temp_dir("watch-poster");
+    put(root.path(), "Show/Season 1/Show S01E01.mkv", b"one");
+    let before = signed(root.path());
+
+    put(root.path(), "Show/poster.jpg", b"poster");
 
     assert_ne!(signed(root.path()), before);
 }

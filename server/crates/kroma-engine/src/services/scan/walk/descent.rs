@@ -3,7 +3,9 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use super::super::subtitles_beside::SubtitleFiles;
+use crate::services::art_beside::PICTURES;
+
+use super::super::found::Beside;
 use super::WalkEntry;
 
 const TEXT_SUBTITLES: [&str; 5] = ["srt", "ass", "ssa", "vtt", "webvtt"];
@@ -12,27 +14,37 @@ pub(super) struct Descent {
     root: PathBuf,
     abs_root: PathBuf,
     descended: Mutex<HashSet<PathBuf>>,
-    subtitles: SubtitleFiles,
+    beside: Beside,
 }
 
 impl Descent {
-    pub(super) fn new(root: &Path, abs_root: &Path, subtitles: SubtitleFiles) -> Self {
+    pub(super) fn new(root: &Path, abs_root: &Path, beside: Beside) -> Self {
         Self {
             root: root.to_path_buf(),
             abs_root: abs_root.to_path_buf(),
             descended: Mutex::new(HashSet::from([abs_root.to_path_buf()])),
-            subtitles,
+            beside,
         }
     }
 
-    pub(super) fn note_subtitles(&self, children: &[jwalk::Result<WalkEntry>]) {
-        let found = children
+    pub(super) fn note_beside(&self, children: &[jwalk::Result<WalkEntry>]) {
+        let (mut subtitles, mut pictures) = (Vec::new(), Vec::new());
+        for e in children
             .iter()
             .flatten()
-            .filter(|e| e.file_type().is_file() && is_text_subtitle(&e.file_name))
-            .map(|e| self.abs_root.join(e.path().trim_prefix(&self.root)))
-            .collect();
-        self.subtitles.add(found);
+            .filter(|e| e.file_type().is_file())
+        {
+            let held = if has_extension(&e.file_name, &TEXT_SUBTITLES) {
+                &mut subtitles
+            } else if has_extension(&e.file_name, &PICTURES) {
+                &mut pictures
+            } else {
+                continue;
+            };
+            held.push(self.abs_root.join(e.path().trim_prefix(&self.root)));
+        }
+        self.beside.subtitles.add(subtitles);
+        self.beside.pictures.add(pictures);
     }
 
     pub(super) fn already_walked_link(&self, e: &WalkEntry) -> bool {
@@ -57,13 +69,13 @@ impl Descent {
     }
 }
 
-fn is_text_subtitle(name: &OsStr) -> bool {
+fn has_extension(name: &OsStr, extensions: &[&str]) -> bool {
     Path::new(name)
         .extension()
         .and_then(OsStr::to_str)
         .is_some_and(|ext| {
-            TEXT_SUBTITLES
+            extensions
                 .iter()
-                .any(|text| ext.eq_ignore_ascii_case(text))
+                .any(|known| ext.eq_ignore_ascii_case(known))
         })
 }

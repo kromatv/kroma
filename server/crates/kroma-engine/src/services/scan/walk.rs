@@ -49,7 +49,7 @@ pub(super) fn scan_root<S>(
     // files *in that pool*, so the readdir/stat network round-trips over SMB run
     // concurrently instead of serially (minutes → seconds). Synology `@eaDir`
     // and hidden dirs are pruned from the descent.
-    let descent = Descent::new(root, &abs_root, lib.found.subtitles.clone());
+    let descent = Descent::new(root, &abs_root, lib.found.beside.clone());
     let walk = WalkDirGeneric::<((), FileMeta)>::new(root)
         .follow_links(true)
         .skip_hidden(false)
@@ -176,7 +176,7 @@ fn prepare_children(descent: &Descent, children: &mut Vec<jwalk::Result<WalkEntr
         Ok(e) => !(e.file_type().is_dir() && is_pruned_dir(&e.file_name)),
         Err(_) => true,
     });
-    descent.note_subtitles(children);
+    descent.note_beside(children);
     for e in children.iter_mut().flatten() {
         if e.file_type().is_file() {
             e.client_state = file_meta(&e.path());
