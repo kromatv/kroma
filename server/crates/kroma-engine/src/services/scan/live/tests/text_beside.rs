@@ -3,6 +3,7 @@ use std::path::Path;
 use std::time::{Duration, UNIX_EPOCH};
 
 use super::walk;
+use crate::db::imports::{Elsewhere, Lead};
 use crate::db::metadata_core::ITEM;
 use crate::model::{Kind, MediaItem};
 use crate::state::SharedState;
@@ -97,7 +98,32 @@ fn a_walk_keeps_the_tmdb_id_an_nfo_names_while_the_file_is_unchanged() {
 
     let film = shown(&state, Kind::Movie);
     let leads = crate::db::text_beside::leads(&state.db, ITEM).unwrap();
-    assert_eq!(leads.get(&film.id), Some(&949));
+    assert_eq!(leads.get(&film.id), Some(&Lead::Tmdb(949)));
+}
+
+#[test]
+fn a_walk_keeps_what_tmdb_answered_for_the_imdb_id_an_nfo_names_while_the_file_is_unchanged() {
+    let state = test_state();
+    let root = kroma_testing::temp_dir("live-text-beside-imdb");
+    keep(root.path(), "tape.03/tape.03.mkv", "x", 1_000);
+    let named = r#"<movie><uniqueid type="imdb">tt0113277</uniqueid></movie>"#;
+    keep(root.path(), "tape.03/tape.03.nfo", named, 1_000);
+    walk(&state, root.path());
+    let asked = Elsewhere {
+        imdb: Some("tt0113277".into()),
+        tvdb: None,
+    };
+    let found = crate::db::text_beside::Answer {
+        asked: &asked,
+        found: Some(949),
+    };
+    crate::db::text_beside::answer(&state.db, ITEM, found).unwrap();
+
+    walk(&state, root.path());
+
+    let film = shown(&state, Kind::Movie);
+    let leads = crate::db::text_beside::leads(&state.db, ITEM).unwrap();
+    assert_eq!(leads.get(&film.id), Some(&Lead::Tmdb(949)));
 }
 
 #[test]

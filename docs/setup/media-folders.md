@@ -161,6 +161,10 @@ Series/
   `<tmdbid>`, or that ends with a link to its themoviedb.org page, makes KROMA
   recognize the title by that number instead of by its name. A match you fix
   with **Fix the match** comes before the file.
+- A file that gives only the title's IMDb or TheTVDB number, in
+  `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>` or `<tvdbid>`,
+  or that ends with a link to its imdb.com page, makes KROMA ask TMDB once which
+  title the number belongs to, then recognize the title by the answer.
 - The file's text shows instead of the text from the internet, even once KROMA
   recognizes the title. What you write with **Edit info** comes before the file.
 - KROMA reads a file you add or change at the next library scan.

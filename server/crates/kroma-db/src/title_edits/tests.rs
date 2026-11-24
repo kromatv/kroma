@@ -146,6 +146,7 @@ fn read_beside(pool: &TempPool, files: Vec<(&'static str, &str, TitleEdit)>) {
             },
             edit,
             tmdb: None,
+            elsewhere: Default::default(),
         })
         .collect();
     text_beside::replace(pool, &texts, &HashSet::new()).unwrap();

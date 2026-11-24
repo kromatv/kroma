@@ -3,7 +3,7 @@ use super::super::pins::load_pins;
 use super::held::*;
 use super::support::*;
 use crate::db;
-use crate::db::imports::Subject;
+use crate::db::imports::{HeldIds, Lead, Subject};
 use crate::db::metadata_core::{ITEM, SHOW};
 use crate::test_support::{FakeTmdb, seed_movie};
 
@@ -84,4 +84,79 @@ fn tmdb_is_not_asked_about_an_imported_identity_where_an_nfo_names_an_id() {
 
     assert_eq!(pins.items["m1"], HEAT);
     assert!(pins.unasked_items.is_empty());
+}
+
+#[test]
+fn enrich_one_asks_tmdb_which_film_the_imdb_id_an_nfo_names_and_keeps_the_answer() {
+    let tmdb = FakeTmdb::start(catalogue);
+    let state = state_with_movie();
+    files_beside_on(&state, &[(ITEM, MOVIE_ID, by_imdb(HEAT_ON_IMDB))]);
+
+    enrich_one(&state, MOVIE_ID, false).unwrap();
+
+    let conn = state.db.get().unwrap();
+    let lead = db::text_beside::lead(&conn, ITEM, MOVIE_ID).unwrap();
+    assert_eq!(tmdb_id_of_movie(&state), Some(HEAT));
+    assert_eq!(lead, Some(Lead::Tmdb(HEAT)));
+    assert!(tmdb.requests().iter().all(|r| !r.starts_with("/search")));
+}
+
+#[test]
+fn enrich_one_asks_tmdb_which_show_the_tvdb_id_an_nfo_names() {
+    let tmdb = FakeTmdb::start(catalogue);
+    let state = state_with_show();
+    files_beside_on(&state, &[(SHOW, SHOW_ID, by_tvdb(79126))]);
+
+    enrich_one(&state, SHOW_ID, true).unwrap();
+
+    assert_eq!(tmdb_id_of_show(&state), Some(THE_WIRE));
+    assert!(tmdb.requests().iter().all(|r| !r.starts_with("/search")));
+}
+
+#[test]
+fn an_nfo_tmdb_was_not_asked_about_is_asked_about_on_a_full_pass() {
+    let state = state();
+    seed_movie(&state, "m1");
+    files_beside_on(&state, &[(ITEM, "m1", by_imdb(HEAT_ON_IMDB))]);
+
+    let pins = load_pins(&state.db);
+
+    assert!(pins.items.is_empty());
+    assert_eq!(pins.unasked_items["m1"], by_imdb(HEAT_ON_IMDB).elsewhere);
+}
+
+#[test]
+fn an_imported_identity_to_ask_about_comes_ahead_of_an_nfo_to_ask_about() {
+    let _tmdb = FakeTmdb::start(catalogue);
+    let state = state_with_movie();
+    an_import_kept(
+        &state,
+        &[(MOVIE_FILE, Subject::Movie, by_imdb(HEAT_ON_IMDB))],
+    );
+    files_beside_on(&state, &[(ITEM, MOVIE_ID, by_imdb(WHILE_TMDB_IS_DOWN))]);
+
+    let pins = load_pins(&state.db);
+    enrich_one(&state, MOVIE_ID, false).unwrap();
+
+    assert_eq!(
+        pins.unasked_items[MOVIE_ID],
+        by_imdb(HEAT_ON_IMDB).elsewhere
+    );
+    assert_eq!(tmdb_id_of_movie(&state), Some(HEAT));
+}
+
+#[test]
+fn an_nfo_that_names_a_tmdb_id_is_not_asked_about_its_imdb_one() {
+    let tmdb = FakeTmdb::start(catalogue);
+    let state = state_with_movie();
+    let both = HeldIds {
+        tmdb: Some(BY_HAND),
+        ..by_imdb(HEAT_ON_IMDB)
+    };
+    files_beside_on(&state, &[(ITEM, MOVIE_ID, both)]);
+
+    enrich_one(&state, MOVIE_ID, false).unwrap();
+
+    assert_eq!(tmdb_id_of_movie(&state), Some(BY_HAND));
+    assert!(tmdb.requests().iter().all(|r| !r.starts_with("/find")));
 }
