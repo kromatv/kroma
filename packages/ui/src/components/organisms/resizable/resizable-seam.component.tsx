@@ -5,7 +5,7 @@
 // The gesture is a PanResponder rather than pointer events, because the same
 // handle has to work on Apple TV, where there is no DOM to listen to.
 
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { PanResponder, type PanResponderGestureState } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -118,14 +118,14 @@ function Seam({
     onRelease: () => setHeld(false),
   });
 
-  const restore = useCallback(() => {
+  const restore = () => {
     setHeld(false);
     onReset();
-  }, [onReset]);
+  };
 
   const draggedAt = useRef(0);
   const pressedAt = useRef(0);
-  const press = useCallback(() => {
+  const press = () => {
     const now = Date.now();
     if (now - draggedAt.current < AFTER_DRAG_MS) {
       return;
@@ -137,7 +137,7 @@ function Seam({
     }
     pressedAt.current = now;
     setHeld((was) => !was);
-  }, [restore]);
+  };
 
   // A drag cut short by an unmount (a window crossing a breakpoint) would
   // otherwise leave the page wearing the resize cursor for the rest of the visit.

@@ -61,15 +61,14 @@ function useSave(save: Save, onDone: () => void) {
 
 type Change = (field: keyof TitleDraft) => (text: string) => void;
 
-function useDraft(saved: TitleEdit | undefined) {
+function useDraft(loaded: TitleDraft | undefined) {
   const [edited, setEdited] = useState<TitleDraft | null>(null);
-  const draft = edited ?? (saved ? draftOf(saved) : null);
-  const change: Change = (field) => (text) => {
-    if (draft) {
-      setEdited((now) => ({ ...(now ?? draft), [field]: FIT[field](text) }));
-    }
-  };
-  return { draft, change };
+  const change: Change = (field) => (text) =>
+    setEdited((now) => {
+      const base = now ?? loaded;
+      return base ? { ...base, [field]: FIT[field](text) } : now;
+    });
+  return { draft: edited ?? loaded, change };
 }
 
 type Placeholders = Readonly<Partial<Record<keyof TitleDraft, string>>>;
@@ -157,51 +156,6 @@ function EpisodeFields(fields: Fields) {
   );
 }
 
-function InfoPanel({
-  fields: InfoFields,
-  draft,
-  change,
-  placeholders,
-  failure,
-}: Fields &
-  Readonly<{
-    fields: (props: Fields) => ReactNode;
-    failure: string | null;
-  }>) {
-  const t = useT();
-  return (
-    <Box gap={16}>
-      <Text variant="meta" color="white/55">
-        {t('titleInfo.hint')}
-      </Text>
-      <InfoFields draft={draft} change={change} placeholders={placeholders} />
-      <Failure text={failure} />
-    </Box>
-  );
-}
-
-function useTitleEdit({ kind: asked, id }: Props) {
-  const { client } = useAuth();
-  const queryClient = useQueryClient();
-  const kind = asked === 'episode' ? 'item' : asked;
-  const queryKey = ['title-edit', kind, id] as const;
-  const subject = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
-  const query = useQuery({ queryKey, queryFn: () => client.media.titleEdits.get(kind, subject) });
-  const save = (edit: TitleEdit) =>
-    client.media.titleEdits
-      .put(kind, subject, edit)
-      .then((kept) => queryClient.setQueryData(queryKey, kept));
-  return { ...query, save };
-}
-
-function saveBand(save: Readonly<{ busy: boolean; onCancel: () => void; onSave: () => void }>) {
-  return (
-    <Dialog.Footer>
-      <SaveActions {...save} />
-    </Dialog.Footer>
-  );
-}
-
 function SaveActions({
   busy,
   onCancel,
@@ -219,9 +173,51 @@ function SaveActions({
   );
 }
 
+function InfoBody({
+  fields: InfoFields,
+  draft,
+  change,
+  placeholders,
+  failure,
+}: Readonly<Fields & { fields: (props: Fields) => ReactNode; failure: string | null }>) {
+  const t = useT();
+  return (
+    <Box gap={16}>
+      <Text variant="meta" color="white/55">
+        {t('titleInfo.hint')}
+      </Text>
+      <InfoFields draft={draft} change={change} placeholders={placeholders} />
+      <Failure text={failure} />
+    </Box>
+  );
+}
+
 function Loading({ error }: Readonly<{ error: unknown }>) {
   const t = useT();
   return error ? <Failure text={apiErrorText(error, t('titleInfo.loadFailed'))} /> : <Spinner />;
+}
+
+function useTitleEdit({ kind: asked, id }: Props) {
+  const { client } = useAuth();
+  const queryClient = useQueryClient();
+  const kind = asked === 'episode' ? 'item' : asked;
+  const queryKey = ['title-edit', kind, id] as const;
+  const subject = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
+  const query = useQuery({ queryKey, queryFn: () => client.media.titleEdits.get(kind, subject) });
+  const save = (edit: TitleEdit) =>
+    client.media.titleEdits
+      .put(kind, subject, edit)
+      .then((kept) => queryClient.setQueryData(queryKey, kept));
+  return { ...query, save };
+}
+
+function useInfoForm(props: Props, onDone: () => void) {
+  const { data, error, save } = useTitleEdit(props);
+  const { draft, change } = useDraft(data ? draftOf(data) : undefined);
+  const { busy, failure, submit } = useSave(save, onDone);
+  const fields = props.kind === 'episode' ? EpisodeFields : TitleFields;
+  const body = { fields, change, failure, placeholders: placeholdersOf(props.shown) };
+  return { draft, busy, submit, error, body };
 }
 
 /** The name, sort title, release date, summary and genres a person who
@@ -232,29 +228,21 @@ function Loading({ error }: Readonly<{ error: unknown }>) {
  * once the edit is saved. */
 export const TitleInfoDialog = createCallable<Props>((props) => {
   const t = useT();
-  const { data, error, save } = useTitleEdit(props);
   const close = () => props.call.end();
-  const { draft, change } = useDraft(data);
-  const { busy, failure, submit } = useSave(save, close);
+  const { draft, busy, submit, error, body } = useInfoForm(props, close);
   return (
     <Dialog.Root open title={props.title} width="lg" onClose={close}>
       <Dialog.Header>
         <TitleDialogHeading overline={t('titleInfo.title')} title={props.title} onClose={close} />
       </Dialog.Header>
       <Dialog.Panel>
-        {draft ? (
-          <InfoPanel
-            fields={props.kind === 'episode' ? EpisodeFields : TitleFields}
-            draft={draft}
-            change={change}
-            placeholders={placeholdersOf(props.shown)}
-            failure={failure}
-          />
-        ) : (
-          <Loading error={error} />
-        )}
+        {draft ? <InfoBody draft={draft} {...body} /> : <Loading error={error} />}
       </Dialog.Panel>
-      {draft ? saveBand({ busy, onCancel: close, onSave: () => submit(draft) }) : null}
+      {draft ? (
+        <Dialog.Footer>
+          <SaveActions busy={busy} onCancel={close} onSave={() => submit(draft)} />
+        </Dialog.Footer>
+      ) : null}
     </Dialog.Root>
   );
 });

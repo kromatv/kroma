@@ -1631,7 +1631,6 @@
         "clients/web/src/features/admin/network-rules.ts",
         "clients/web/src/features/catalog/browse-screen.component.tsx",
         "clients/web/src/features/catalog/use-saved-titles.hook.ts",
-        "clients/web/src/features/catalog/use-title-request.hook.ts",
         "clients/web/src/features/notifications/notification-row.component.tsx",
         "clients/web/src/features/playback/media-events.ts",
         "clients/web/src/features/playback/video-engine.test.ts",

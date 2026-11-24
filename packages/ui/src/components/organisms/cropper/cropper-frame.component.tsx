@@ -115,10 +115,10 @@ function Frame({ label = 'Crop', style }: Readonly<CropperFrameProps>) {
   });
 
   const [box, setBox] = useState<PixelSize | null>(null);
-  const measure = useCallback((event: LayoutChangeEvent) => {
+  const measure = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setBox(width > 0 && height > 0 ? { width, height } : null);
-  }, []);
+  };
 
   const surface = useRef<View>(null);
   const onWheel = useCallback((delta: number) => zoomBy(-delta * WHEEL_ZOOM), [zoomBy]);

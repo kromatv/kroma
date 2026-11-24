@@ -34,13 +34,23 @@ const sDefinition = styles({
   poster: { width: '100%', maxWidth: 180, aspectRatio: 2 / 3 },
   backdrop: { width: '100%', aspectRatio: 16 / 9 },
   logo: { width: '100%', aspectRatio: 16 / 9 },
+  still: { width: '100%', aspectRatio: 16 / 9 },
 });
 
-const ROLES = ['poster', 'backdrop', 'logo'] as const satisfies readonly ArtRole[];
+const TITLE_ROLES = ['poster', 'backdrop', 'logo'] as const satisfies readonly ArtRole[];
 
 const WASH = color('tint/4');
 
-type Props = Readonly<{ kind: ArtKind; id: string; title: string; shown?: TitleShown }>;
+type Props = Readonly<{
+  kind: ArtKind;
+  id: string;
+  title: string;
+  roles?: readonly ArtRole[];
+  shown?: TitleShown;
+}>;
+
+const shownArt = (shown: TitleShown | undefined, role: ArtRole) =>
+  role === 'poster' || role === 'backdrop' ? (shown?.[role] ?? null) : null;
 
 function ArtPreview({
   role,
@@ -170,11 +180,14 @@ function ArtSlot({
   );
 }
 
-function ArtPanel({
-  slots,
-  shown,
-  onPick,
-}: Readonly<{ slots: Slots; shown: TitleShown | undefined; onPick: Pick }>) {
+type Panel = Readonly<{
+  slots: Slots;
+  roles: readonly ArtRole[];
+  shown: TitleShown | undefined;
+  onPick: Pick;
+}>;
+
+function ArtPanel({ slots, roles, shown, onPick }: Panel) {
   const t = useT();
   return (
     <Box gap={20}>
@@ -187,12 +200,12 @@ function ArtPanel({
         </Callout.Root>
       ) : null}
       <Row gap={24} wrap align="flex-start">
-        {ROLES.map((role) => (
+        {roles.map((role) => (
           <ArtSlot
             key={role}
             role={role}
             slots={slots}
-            shown={shown?.[role] ?? null}
+            shown={shownArt(shown, role)}
             onPick={onPick}
           />
         ))}
@@ -206,7 +219,7 @@ type Framing = ReturnType<typeof useArtworkFraming>;
 type Steps = Props & Readonly<{ step: Framing; onClose: () => void }>;
 
 function ArtworkSteps({ step, onClose, ...props }: Steps) {
-  const { kind, id, title, shown } = props;
+  const { kind, id, title, shown, roles = TITLE_ROLES } = props;
   const t = useT();
   const slots = useChosenArt(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id));
   const { framing, begin, end } = step;
@@ -215,7 +228,7 @@ function ArtworkSteps({ step, onClose, ...props }: Steps) {
     end();
   };
   return (
-    <Dialog.Root open title={title} width="lg" onClose={onClose}>
+    <Dialog.Root open title={title} width={roles.length > 1 ? 'lg' : 'md'} onClose={onClose}>
       <Dialog.Header>
         <TitleDialogHeading overline={t('artwork.title')} title={title} onClose={onClose} />
       </Dialog.Header>
@@ -223,7 +236,7 @@ function ArtworkSteps({ step, onClose, ...props }: Steps) {
         {framing ? (
           <ArtworkFramingPanel role={framing.role} />
         ) : (
-          <ArtPanel slots={slots} shown={shown} onPick={pickFor(slots, begin)} />
+          <ArtPanel slots={slots} roles={roles} shown={shown} onPick={pickFor(slots, begin)} />
         )}
       </Dialog.Panel>
       {framing
@@ -233,10 +246,12 @@ function ArtworkSteps({ step, onClose, ...props }: Steps) {
   );
 }
 
-/** The poster, the backdrop and the logo an admin uploads for a film or a show,
- * each beside the picture shown while none is uploaded (`shown`). A picked
- * poster or backdrop is framed to its slot's shape before it is sent. Open with `await
- * ArtworkDialog.call({ kind, id, title, shown })`; it resolves on dismiss. */
+/** The pictures an admin uploads for a title: the poster, the backdrop and the
+ * logo of a film or a show unless `roles` names others, such as an episode's
+ * `still`. Each slot shows the picture in place while none is uploaded
+ * (`shown`), and a picked poster, backdrop or still is framed to its slot's
+ * shape before it is sent. Open with `await ArtworkDialog.call({ kind, id,
+ * title, roles, shown })`; it resolves on dismiss. */
 export const ArtworkDialog = createCallable<Props>(({ call, ...props }) => {
   const step = useArtworkFraming();
   return (

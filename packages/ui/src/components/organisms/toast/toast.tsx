@@ -7,7 +7,7 @@
 // is `pointerEvents: 'none'`, sized at 10-foot metrics, and leaves on a timer.
 // Deliberately not a dialog: nothing here is a question.
 
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { IconName } from '#ui/components/atoms/icon';
@@ -124,9 +124,9 @@ export function Toaster({
   const nextId = useRef(1);
   const [entries, setEntries] = useState<Placed[]>([]);
 
-  const dismiss = useCallback((id: number) => {
+  const dismiss = (id: number) => {
     setEntries((list) => list.filter((e) => e.id !== id));
-  }, []);
+  };
 
   // Re-registered when `position` changes, so the host's position is resolved
   // once into each entry: it is what a notice is BORN with, not something it

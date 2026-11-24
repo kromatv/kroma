@@ -28,7 +28,7 @@ import {
 import { useLocale, useT } from '@kromatv/ui';
 
 import { IconPlayerPlayFilled } from '@tabler/icons-react';
-import { EpisodeEditButton } from '#web/features/catalog/episode-edit-button.component';
+import { EpisodeEditButtons } from '#web/features/catalog/episode-edit-buttons.component';
 import {
   episodeRow,
   episodeRowStyles,
@@ -122,7 +122,7 @@ export function EpisodeRow({
             ) : null}
           </Box>
 
-          <EpisodeEditButton episode={episode} title={reportLabel} />
+          <EpisodeEditButtons episode={episode} title={reportLabel} />
           <IconButton
             icon="flag"
             label={t('report.action')}

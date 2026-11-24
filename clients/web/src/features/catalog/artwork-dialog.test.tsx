@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import type { ArtRole } from '@kromatv/client/media';
 import { I18nProvider } from '@kromatv/ui';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -50,7 +51,7 @@ const SHOWN = {
   backdrop: '/api/images/beside-backdrop.webp',
 };
 
-function open(kind: 'item' | 'show', id: string) {
+function open(kind: 'item' | 'show', id: string, roles?: readonly ArtRole[]) {
   const queries = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   inputHost.render(
     <QueryClientProvider client={queries}>
@@ -60,7 +61,7 @@ function open(kind: 'item' | 'show', id: string) {
     </QueryClientProvider>,
   );
   act(() => {
-    void ArtworkDialog.call({ kind, id, title: 'Heat', shown: SHOWN });
+    void ArtworkDialog.call({ kind, id, title: 'Heat', roles, shown: SHOWN });
   });
 }
 
@@ -143,6 +144,24 @@ it('sends a picked logo as it is, without a frame', async () => {
   expect(createObjectURL).not.toHaveBeenCalled();
 });
 
+it('shows only the thumbnail of an episode and sends the framed picture as its still', async () => {
+  pictureCannotBeDrawn();
+  art.get.mockResolvedValue({ poster: null, backdrop: null, still: null });
+  art.choose.mockResolvedValue({ url: '/api/images/chosen-d.webp' });
+  open('item', 'e1', ['still']);
+  await waitFor(() => expect(art.get).toHaveBeenCalledWith('item', 'e1'));
+  expect(document.querySelectorAll('input[type="file"]')).toHaveLength(1);
+  pick(0, PICKED);
+
+  press('Use this picture');
+
+  await waitFor(() =>
+    expect(art.choose).toHaveBeenCalledWith({ kind: 'item', id: 'e1', role: 'still' }, PICKED),
+  );
+  expect(screen.getByText('Thumbnail')).toBeTruthy();
+  expect(screen.queryByText('Poster')).toBeNull();
+});
+
 it('restores the automatic picture only where one was chosen', async () => {
   art.get.mockResolvedValue({ poster: null, backdrop: '/api/images/chosen-b.webp' });
   art.reset.mockResolvedValue(undefined);
@@ -183,12 +202,13 @@ it('shows the picture the page shows where none was uploaded, and says which is 
   expect(document.querySelector('img[src="/api/images/beside-poster.webp"]')).toBeNull();
 });
 
-it('names the title once and closes from its own header', async () => {
+it('names the title once, under what it edits, and closes from its own header', async () => {
   art.get.mockResolvedValue({ poster: null, backdrop: null });
   open('item', 'm1');
 
   await waitFor(() => expect(art.get).toHaveBeenCalled());
   expect(screen.getAllByText('Heat')).toHaveLength(1);
+  expect(screen.getByText('Artwork')).toBeTruthy();
   inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 

@@ -27,6 +27,7 @@ interface FrameShape {
 const SHAPES: Readonly<Partial<Record<ArtRole, FrameShape>>> = {
   poster: { aspect: 2 / 3, output: { width: 780, type: 'image/jpeg', quality: 0.95 } },
   backdrop: { aspect: 16 / 9, output: { width: 1920, type: 'image/jpeg', quality: 0.95 } },
+  still: { aspect: 16 / 9, output: { width: 780, type: 'image/jpeg', quality: 0.95 } },
 };
 
 /** The frame a slot's picture is cropped to before it is sent: its width over

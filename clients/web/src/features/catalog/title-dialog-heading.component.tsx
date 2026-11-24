@@ -1,9 +1,8 @@
 import { useT } from '@kromatv/ui';
 import { Box, IconButton, Row, Text } from '@kromatv/ui/kit';
 
-/** The heading of a dialog that changes one title, written inside its
- * `<Dialog.Header>`: what the dialog edits, the title's name, and a close
- * button. */
+/** What goes in the `<Dialog.Header>` of a dialog that changes one title: what
+ * the dialog edits, the title's name, and a close button. */
 export function TitleDialogHeading({
   overline,
   title,

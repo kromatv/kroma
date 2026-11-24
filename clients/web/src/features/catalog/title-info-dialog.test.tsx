@@ -98,6 +98,20 @@ it('shows what was written and saves what changed', async () => {
   });
 });
 
+it('names the title once, under what it edits, beside a close button', async () => {
+  edits.get.mockResolvedValue(WRITTEN);
+  const closed = open('show', 's1');
+
+  await screen.findByDisplayValue('Heat');
+  expect(screen.getAllByText('heat.1995')).toHaveLength(1);
+  expect(screen.getByText('Info')).toBeTruthy();
+  inputHost.clearPressGuard();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+  await closed;
+  expect(edits.put).not.toHaveBeenCalled();
+});
+
 it('asks an episode for its name, air date and summary, and saves them on the item', async () => {
   edits.get.mockResolvedValue({ ...WRITTEN, title: 'Pilot', year: null, genres: [] });
   edits.put.mockImplementation((_kind, _id, edit) => Promise.resolve(edit));
