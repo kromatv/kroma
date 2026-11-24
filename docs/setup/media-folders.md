@@ -133,6 +133,11 @@ button of an episode does the same for that episode's thumbnail, and **Edit
 season poster**, above the episodes, for the poster of the season shown. It
 takes the right to manage the library.
 
+Instead of a file, **From a link** takes the address of an image on the
+internet. KROMA fetches it once and keeps it as if you had uploaded it. An
+address on your own network, such as your NAS, is refused: download the image
+and upload it instead.
+
 ### Titles and summaries from .nfo files
 
 A title can take its name, year, summary and genres from an `.nfo` file, the

@@ -138,6 +138,11 @@ vignette** d'un épisode fait de même pour la vignette de cet épisode, et
 **Modifier l'affiche de la saison**, au-dessus des épisodes, pour l'affiche de
 la saison à l'écran. Il faut le droit de gérer la bibliothèque.
 
+Au lieu d'un fichier, **Depuis un lien** prend l'adresse d'une image sur
+Internet. KROMA la télécharge une fois et la garde comme si vous l'aviez
+envoyée. Une adresse de votre propre réseau, comme celle de votre NAS, est
+refusée : téléchargez l'image puis envoyez-la.
+
 ### Titres et résumés des fichiers .nfo
 
 Un titre peut prendre son nom, son année, son résumé et ses genres dans un

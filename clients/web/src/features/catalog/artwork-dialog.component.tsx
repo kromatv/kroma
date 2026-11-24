@@ -25,6 +25,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 
+import { ArtLinkForm } from '#web/features/catalog/art-link-form.component';
 import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import { useAuth } from '#web/shared/lib/auth';
 
@@ -55,36 +56,47 @@ interface Slots {
   busy: ArtRole | null;
   error: string | null;
   upload: (role: ArtRole, file: File) => void;
+  link: (role: ArtRole, url: string) => Promise<boolean>;
   reset: (role: ArtRole) => void;
+}
+
+function useArtAction(queryKey: readonly unknown[]) {
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [busy, setBusy] = useState<ArtRole | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const act = async (role: ArtRole, work: () => Promise<unknown>) => {
+    setBusy(role);
+    setFailure(null);
+    try {
+      await work();
+      await queryClient.invalidateQueries({ queryKey });
+      return true;
+    } catch (e: unknown) {
+      setFailure(apiErrorText(e, t('artwork.applyFailed')));
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  };
+  return { busy, failure, act };
 }
 
 function useChosenArt(kind: ArtKind, raw: string): Slots {
   const t = useT();
   const { client } = useAuth();
-  const queryClient = useQueryClient();
+  const art = client.media.chosenArt;
   const id = SUBJECTS[kind].parse(raw);
   const queryKey = ['chosen-art', kind, id] as const;
-  const { data, error: loadError } = useQuery({
-    queryKey,
-    queryFn: () => client.media.chosenArt.get(kind, id),
-  });
-  const [busy, setBusy] = useState<ArtRole | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
-  const act = (role: ArtRole, work: () => Promise<unknown>) => {
-    setBusy(role);
-    setFailure(null);
-    work()
-      .then(() => queryClient.invalidateQueries({ queryKey }))
-      .catch((e: unknown) => setFailure(apiErrorText(e, t('artwork.applyFailed'))))
-      .finally(() => setBusy(null));
-  };
+  const { data, error: loadError } = useQuery({ queryKey, queryFn: () => art.get(kind, id) });
+  const { busy, failure, act } = useArtAction(queryKey);
   return {
     chosen: data,
     busy,
     error: failure ?? (loadError ? apiErrorText(loadError, t('artwork.loadFailed')) : null),
-    upload: (role, file) =>
-      act(role, () => client.media.chosenArt.choose({ kind, id, role }, file)),
-    reset: (role) => act(role, () => client.media.chosenArt.reset({ kind, id, role })),
+    upload: (role, file) => void act(role, () => art.choose({ kind, id, role }, file)),
+    link: (role, url) => act(role, () => art.chooseLink({ kind, id, role }, url)),
+    reset: (role) => void act(role, () => art.reset({ kind, id, role })),
   };
 }
 
@@ -149,31 +161,71 @@ function PickButton({
   );
 }
 
-function ArtSlot({ role, slots }: Readonly<{ role: ArtRole; slots: Slots }>) {
+type SlotProps = Readonly<{ role: ArtRole; slots: Slots }>;
+
+function SlotButtons({
+  role,
+  slots,
+  linking,
+  onLinking,
+}: SlotProps & Readonly<{ linking: boolean; onLinking: (open: boolean) => void }>) {
+  const t = useT();
+  const busy = slots.busy === role;
+  return (
+    <Row gap={8} wrap>
+      <PickButton
+        busy={busy && !linking}
+        disabled={slots.busy !== null && !busy}
+        onFile={(file) => slots.upload(role, file)}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        icon="link"
+        label={t('artwork.fromLink')}
+        disabled={slots.busy !== null}
+        onPress={() => onLinking(!linking)}
+      />
+      <ResetButton role={role} slots={slots} />
+    </Row>
+  );
+}
+
+function ResetButton({ role, slots }: SlotProps) {
+  const t = useT();
+  if (!slots.chosen?.[role]) {
+    return null;
+  }
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      label={t('artwork.reset')}
+      disabled={slots.busy !== null}
+      onPress={() => slots.reset(role)}
+    />
+  );
+}
+
+function ArtSlot({ role, slots }: SlotProps) {
   const t = useT();
   const s = useStyles(sDefinition);
-  const url = slots.chosen?.[role] ?? null;
-  const busy = slots.busy === role;
+  const [linking, setLinking] = useState(false);
+  const link = (url: string) => {
+    void slots.link(role, url).then((done) => {
+      if (done) {
+        setLinking(false);
+      }
+    });
+  };
   return (
     <Box gap={12} style={s.slot}>
       <Text variant="label">{t(`artwork.${role}`)}</Text>
-      <ArtPreview role={role} url={url} />
-      <Row gap={8} wrap>
-        <PickButton
-          busy={busy}
-          disabled={slots.busy !== null && !busy}
-          onFile={(file) => slots.upload(role, file)}
-        />
-        {url ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            label={t('artwork.reset')}
-            disabled={slots.busy !== null}
-            onPress={() => slots.reset(role)}
-          />
-        ) : null}
-      </Row>
+      <ArtPreview role={role} url={slots.chosen?.[role] ?? null} />
+      <SlotButtons role={role} slots={slots} linking={linking} onLinking={setLinking} />
+      {linking ? (
+        <ArtLinkForm busy={slots.busy === role} disabled={slots.busy !== null} onLink={link} />
+      ) : null}
     </Box>
   );
 }

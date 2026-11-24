@@ -24,6 +24,14 @@ export function chosenArtApi(ctx: RequestContext) {
     choose: ({ kind, id, role }: ArtSlot, file: Blob) =>
       ctx.upload('/art/:kind/:id/:role', file, ArtShown, { params: { kind, id, role } }),
 
+    /** Show the picture at `url`, an `http` or `https` address on the public
+     * internet, in `slot`. The server fetches it once and keeps it as an upload. */
+    chooseLink: ({ kind, id, role }: ArtSlot, url: string) =>
+      ctx.post('/art/:kind/:id/:role/link', ArtShown, {
+        params: { kind, id, role },
+        body: { url },
+      }),
+
     /** Hand `slot` back to the picture beside the title's files, or to fetched art. */
     reset: ({ kind, id, role }: ArtSlot) =>
       ctx.delete('/art/:kind/:id/:role', { params: { kind, id, role } }),

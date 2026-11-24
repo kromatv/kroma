@@ -5,12 +5,12 @@ use kroma_domain::{
     DeliveryStatus, Notification, NotificationCategory, NotificationEvent, PushTransport, User,
 };
 
+use crate::infra::reach::public_reach;
 use crate::services::jobs::now_ms;
 use crate::services::notify::art;
 use crate::services::notify::record;
 
 use super::credentials::sender;
-use super::endpoint::web_push_reach;
 use super::transports;
 use super::{payload_of, public_url_of, urgency_of, Sender};
 
@@ -185,7 +185,7 @@ fn send_to(
     request: &kroma_push::PushRequest,
 ) -> anyhow::Result<kroma_http::Response> {
     let fetch = match sub.transport {
-        PushTransport::WebPush => web_push_reach(kroma_http::Fetch::new().purpose("push")),
+        PushTransport::WebPush => public_reach(kroma_http::Fetch::new().purpose("push")),
         _ => kroma_http::Fetch::new().purpose("push"),
     };
     post(fetch, request)

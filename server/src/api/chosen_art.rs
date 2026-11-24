@@ -9,6 +9,9 @@
 //! - `POST /api/art/{kind}/{id}/{role}` (raw `image/*` body, `role` is `poster`,
 //!   `backdrop`, `logo` or `still`, and only `poster` for a season) → `{ url }`,
 //!   where the title's picture is served now.
+//! - `POST /api/art/{kind}/{id}/{role}/link` with `{ url }`, an `http` or
+//!   `https` URL on the public internet → `{ url }` as for an upload, once the
+//!   server fetched the picture. 422 when nothing there can be fetched.
 //! - `DELETE /api/art/{kind}/{id}/{role}` → 204, and the title shows the
 //!   picture beside its files again, or its fetched one.
 
@@ -19,6 +22,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use serde::Deserialize;
 use serde_json::{json, Map, Value};
 
 use crate::api::error::lerr;
@@ -34,16 +38,23 @@ use crate::services::art_chosen::{self, Choice};
 use crate::state::SharedState;
 
 const MAX_PICTURE_BYTES: usize = 32 * 1024 * 1024;
+const MAX_LINK_BYTES: usize = 4 * 1024;
 const ROLES: [&str; 4] = [POSTER, BACKDROP, LOGO, STILL];
 const KINDS: [&str; 3] = [ITEM, SHOW, SEASON];
 
 pub fn routes() -> Router<SharedState> {
-    Router::new().route("/art/{kind}/{id}", get(chosen)).route(
-        "/art/{kind}/{id}/{role}",
-        post(choose)
-            .delete(reset)
-            .layer(DefaultBodyLimit::max(MAX_PICTURE_BYTES)),
-    )
+    Router::new()
+        .route("/art/{kind}/{id}", get(chosen))
+        .route(
+            "/art/{kind}/{id}/{role}",
+            post(choose)
+                .delete(reset)
+                .layer(DefaultBodyLimit::max(MAX_PICTURE_BYTES)),
+        )
+        .route(
+            "/art/{kind}/{id}/{role}/link",
+            post(choose_link).layer(DefaultBodyLimit::max(MAX_LINK_BYTES)),
+        )
 }
 
 struct Target {
@@ -129,11 +140,30 @@ async fn choose(
     Asked { user, target }: Asked,
     body: Bytes,
 ) -> Result<Response, Response> {
-    let locale = i18n::user_locale(&user);
     if body.is_empty() {
+        let locale = i18n::user_locale(&user);
         return Err(lerr(locale, StatusCode::BAD_REQUEST, "error.emptyBody"));
     }
     let choice = blocking(move || art_chosen::choose(&state, target.slot(), &body)).await?;
+    answer(&user, choice)
+}
+
+#[derive(Deserialize)]
+struct Linked {
+    url: String,
+}
+
+async fn choose_link(
+    State(state): State<SharedState>,
+    Asked { user, target }: Asked,
+    Json(Linked { url }): Json<Linked>,
+) -> Result<Response, Response> {
+    let choice = blocking(move || art_chosen::choose_link(&state, target.slot(), &url)).await?;
+    answer(&user, choice)
+}
+
+fn answer(user: &User, choice: Choice) -> Result<Response, Response> {
+    let locale = i18n::user_locale(user);
     match choice {
         Choice::Shown(url) => Ok(Json(json!({ "url": url })).into_response()),
         Choice::Unreadable => Err(lerr(
@@ -141,7 +171,12 @@ async fn choose(
             StatusCode::UNSUPPORTED_MEDIA_TYPE,
             "error.imageUnreadable",
         )),
-        Choice::NoSuchTitle => Err(not_found(&user)),
+        Choice::Unreachable => Err(lerr(
+            locale,
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "error.imageUnreachable",
+        )),
+        Choice::NoSuchTitle => Err(not_found(user)),
     }
 }
 
