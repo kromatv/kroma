@@ -14,10 +14,10 @@ CREATE TABLE text_beside (
 -- what a person wrote by hand first, then the file's text, on a title the
 -- provider did not match.
 CREATE VIEW title_texts AS
-    SELECT t.subject_kind, t.subject_id, t.edit, 0 AS precedence FROM text_beside t
-     WHERE NOT EXISTS (SELECT 1 FROM metadata_core m
-                        WHERE m.subject_kind = t.subject_kind
-                          AND m.subject_id = t.subject_id
-                          AND m.tmdb_id IS NOT NULL)
+    SELECT t.subject_kind, t.subject_id, t.edit, 0 AS precedence
+      FROM text_beside t
+      LEFT JOIN metadata_core m
+        ON m.subject_kind = t.subject_kind AND m.subject_id = t.subject_id
+     WHERE m.tmdb_id IS NULL
     UNION ALL
     SELECT subject_kind, subject_id, edit, 1 AS precedence FROM title_edits;
