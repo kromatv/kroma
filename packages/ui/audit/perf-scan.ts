@@ -46,6 +46,13 @@ const WHY: Record<Rule, string> = {
     'a context value is read PAST an unchanged element, so a fresh one re-renders every consumer in the subtree even when React would otherwise have bailed out.',
 };
 
+interface Tag {
+  type?: string;
+  name?: string;
+  object?: { name?: string };
+  property?: { name?: string };
+}
+
 interface Node {
   type: string;
   loc?: { start?: { line?: number } };
@@ -60,8 +67,8 @@ interface Node {
     property?: { name?: string };
   };
   arguments?: Node[];
-  name?: { type?: string; name?: string; object?: { name?: string }; property?: { name?: string } };
-  openingElement?: { attributes?: Node[]; name?: Node['name'] };
+  name?: Tag;
+  openingElement?: { attributes?: Node[]; name?: Tag };
 }
 
 const lineOf = (node: Node): number => node.loc?.start?.line ?? 0;
@@ -124,8 +131,6 @@ const CONTEXT_BINDING =
 function contextsIn(code: string): string[] {
   return Array.from(code.matchAll(CONTEXT_BINDING), (match) => match[1] ?? '');
 }
-
-type Tag = NonNullable<Node['name']>;
 
 const namesContext = (name: string, contexts: ReadonlySet<string>): boolean =>
   CONTEXT_NAME.test(name) || contexts.has(name);

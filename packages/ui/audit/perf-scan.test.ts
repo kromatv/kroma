@@ -75,10 +75,29 @@ describe('the source perf scan', () => {
     expect(found).toEqual([]);
   });
 
-  it('reports a context value built during render', async () => {
-    const found = await rules(
+  it.each([
+    [
+      'a context value built during render',
       'const A = () => <Ctx.Provider value={{ go }}>{kids}</Ctx.Provider>;',
-    );
+    ],
+    [
+      'a context value built during render on a context written as its own provider',
+      'const Ctx = createContext(null); const A = () => <Ctx value={{ go }}>{kids}</Ctx>;',
+    ],
+    [
+      'a context value built during render on a part context',
+      "const [Part, usePart] = partContext('A.Root'); const A = () => <Part value={() => go()}>{kids}</Part>;",
+    ],
+    [
+      'a context value built during render on an imported context the kit names as one',
+      "import { RowContext } from './row-context'; const A = () => <RowContext value={[go]}>{kids}</RowContext>;",
+    ],
+    [
+      'a context declared below a type, under a name that does not say it is one',
+      'interface Row { at: number; go: () => void }\nconst Held = createContext<Row | null>(null);\nconst A = () => <Held value={{ at, go }}>{kids}</Held>;',
+    ],
+  ])('reports %s', async (_what, source) => {
+    const found = await rules(source);
 
     expect(found).toEqual(['unstable-provider']);
   });
@@ -87,38 +106,6 @@ describe('the source perf scan', () => {
     const found = await rules('const A = () => <Ctx.Provider value={held}>{kids}</Ctx.Provider>;');
 
     expect(found).toEqual([]);
-  });
-
-  it('reports a context value built during render on a context written as its own provider', async () => {
-    const found = await rules(
-      'const Ctx = createContext(null); const A = () => <Ctx value={{ go }}>{kids}</Ctx>;',
-    );
-
-    expect(found).toEqual(['unstable-provider']);
-  });
-
-  it('reports a context value built during render on a part context', async () => {
-    const found = await rules(
-      "const [Part, usePart] = partContext('A.Root'); const A = () => <Part value={() => go()}>{kids}</Part>;",
-    );
-
-    expect(found).toEqual(['unstable-provider']);
-  });
-
-  it('reports a context value built during render on an imported context the kit names as one', async () => {
-    const found = await rules(
-      "import { RowContext } from './row-context'; const A = () => <RowContext value={[go]}>{kids}</RowContext>;",
-    );
-
-    expect(found).toEqual(['unstable-provider']);
-  });
-
-  it('reports a context declared below a type, under a name that does not say it is one', async () => {
-    const found = await rules(
-      'interface Row { at: number; go: () => void }\nconst Held = createContext<Row | null>(null);\nconst A = () => <Held value={{ at, go }}>{kids}</Held>;',
-    );
-
-    expect(found).toEqual(['unstable-provider']);
   });
 
   it('leaves a context written as its own provider whose value is held still', async () => {
