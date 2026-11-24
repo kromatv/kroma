@@ -9,7 +9,7 @@ import { fontSizes as textSizes } from '#ui/core/tokens';
 // <ListRow> takes - because a scrub is a hit test over POSITIONS, and a letter
 // cannot know where it sits in a rail it cannot see.
 
-import { Children, isValidElement, type ReactNode, useMemo, useRef } from 'react';
+import { Children, isValidElement, type ReactNode, useRef } from 'react';
 import { type StyleProp, useWindowDimensions, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
@@ -86,7 +86,7 @@ function Root({
   const rowH = size === 'sm' ? HAND.rowH : Math.round(clampNum(19, winH * 0.03, 31));
   const fontSize = size === 'sm' ? HAND.fontSize : Math.round(clampNum(12, winH * 0.019, 17));
 
-  const slots = useMemo(() => slotsOf(children), [children]);
+  const slots = slotsOf(children);
 
   const rail = useRef<View>(null);
   const { bubble, panHandlers } = useLetterScrub(rail, slots, rowH, onJump);
