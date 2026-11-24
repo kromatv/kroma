@@ -149,12 +149,16 @@ Series/
     tvshow.nfo
     Season 01/
       School Plays - S01E01.mkv
+      School Plays - S01E01.nfo
 ```
 
 - Pour un film, donnez au fichier le nom de la vidéo, ou appelez-le `movie.nfo`
   dans le dossier du film.
 - Pour une série, placez `tvshow.nfo` dans le dossier de la série, au-dessus des
   dossiers de saison.
+- Pour un épisode, donnez au fichier le nom de la vidéo de l'épisode. KROMA lit
+  son `<title>`, son `<plot>` et son `<aired>`, le jour de sa première
+  diffusion. Un fichier qui décrit plusieurs épisodes donne le premier.
 - KROMA lit `<title>`, `<sorttitle>`, `<plot>`, `<premiered>` ou `<year>`, et
   chaque `<genre>`. Le fichier doit être en UTF-8, comme ces logiciels
   l'écrivent.

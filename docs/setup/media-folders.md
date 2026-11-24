@@ -144,12 +144,16 @@ Series/
     tvshow.nfo
     Season 01/
       School Plays - S01E01.mkv
+      School Plays - S01E01.nfo
 ```
 
 - For a film, name the file after the video file, or `movie.nfo` in the film's
   own folder.
 - For a series, put `tvshow.nfo` in the series folder, the one above the season
   folders.
+- For an episode, name the file after the episode's video file. KROMA reads its
+  `<title>`, its `<plot>` and its `<aired>`, the day it was first shown. A file
+  that describes several episodes gives the first.
 - KROMA reads `<title>`, `<sorttitle>`, `<plot>`, `<premiered>` or `<year>`,
   and each `<genre>`. The file must be UTF-8, as these programs write it.
 - A file that gives the title's TMDB number, in `<uniqueid type="tmdb">` or

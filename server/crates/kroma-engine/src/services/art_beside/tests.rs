@@ -2,6 +2,7 @@ use std::path::{Path, PathBuf};
 
 use crate::db::art_beside::{BACKDROP, LOGO, POSTER};
 
+use super::nfo::{episode_nfo, film_nfo, show_nfo};
 use super::*;
 
 fn scanned(files: &[&str]) -> (Folders, Vec<PathBuf>) {
@@ -252,6 +253,22 @@ fn a_show_s_nfo_is_in_the_folder_above_its_seasons() {
 
     assert_eq!(show_nfo(&folders, &videos), at("Andor/tvshow.nfo"));
     assert_eq!(show_nfo(&shared, &shared_videos[..1]), None);
+}
+
+#[test]
+fn an_episode_s_nfo_is_named_after_its_video_and_never_its_folder_s() {
+    let (folders, videos) = scanned(&[
+        "Andor/Season 01/Andor S01E01.mkv",
+        "Andor/Season 01/Andor S01E02.mkv",
+        "Andor/Season 01/andor s01e01.NFO",
+        "Andor/Season 01/movie.nfo",
+    ]);
+
+    assert_eq!(
+        episode_nfo(&folders, &videos[..1]),
+        at("Andor/Season 01/andor s01e01.NFO")
+    );
+    assert_eq!(episode_nfo(&folders, &videos[1..]), None);
 }
 
 #[test]

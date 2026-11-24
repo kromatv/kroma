@@ -2,14 +2,15 @@
 
 The file names and the tags other media servers read from an `.nfo` file, which
 KROMA follows so a library moved from one of them keeps its text and its
-matches ([`docs/spec/library/README.md`](../spec/library/README.md), LIB-84
-and LIB-85).
+matches ([`docs/spec/library/README.md`](../spec/library/README.md), LIB-84,
+LIB-85 and LIB-89).
 Read 2026-11-24.
 
 ## Sources
 
 - **K**: Kodi, [NFO files/Movies](https://kodi.wiki/view/NFO_files/Movies),
-  [NFO files/TV shows](https://kodi.wiki/view/NFO_files/TV_shows) and
+  [NFO files/TV shows](https://kodi.wiki/view/NFO_files/TV_shows),
+  [NFO files/Episodes](https://kodi.wiki/view/NFO_files/Episodes) and
   [NFO files/Combination](https://kodi.wiki/view/NFO_files/Combination).
 - **J**: Jellyfin, [Local .nfo metadata](https://jellyfin.org/docs/general/server/metadata/nfo).
   Local metadata always comes before a remote provider such as TMDb.
@@ -26,7 +27,7 @@ Read 2026-11-24.
 | Film on a DVD | `VIDEO_TS.nfo` | J | not read |
 | Show | `tvshow.nfo` in the show's folder, above its seasons | K, J, P | read when the folder holds no other show |
 | Season | `season.nfo` | J | not read |
-| Episode | `<video name>.nfo` beside the episode | K, J, P | not read |
+| Episode | `<video name>.nfo` beside the episode | K, J, P | read |
 
 ## What is in it
 
@@ -60,3 +61,15 @@ and an import's identity, and before matching by the name.
 The text the file holds comes before the provider's, in every language, whether
 or not the title was matched, as local metadata does in Jellyfin (J). What a
 person writes with **Edit info** comes before the file.
+
+## An episode's file
+
+Its root is `<episodedetails>` (K). KROMA reads `<title>`, `<plot>` and
+`<aired>`, the day the episode first aired as `yyyy-mm-dd`, which K gives as
+the episode's own date and J writes for an episode alone. `<premiered>` in an
+episode's file is the show's (K) and is not read. A `<uniqueid>` in it is passed
+over: the episode is recognized through its show. Kodi up to v21 wrote a file
+for several episodes as one `<episodedetails>` after another, and v22 no longer
+reads one (K); KROMA reads the first.
+
+The text comes before the provider's in every language, as a film's does.

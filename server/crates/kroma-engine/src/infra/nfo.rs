@@ -1,6 +1,7 @@
 //! The `.nfo` file Kodi, Jellyfin and Plex keep beside a title's files, read
 //! for its name, sort title, summary, release date, year and genres, and the
-//! TMDB id it names (`docs/reference/nfo-files.md`).
+//! TMDB id it names, and the one beside an episode's file, read for its name,
+//! summary and air date (`docs/reference/nfo-files.md`).
 
 use std::fs::File;
 use std::io::Read;
@@ -17,6 +18,8 @@ pub const MAX_BYTES: u64 = 1 << 20;
 pub const MOVIE: &str = "movie";
 /// The root element of a show's `.nfo`.
 pub const TVSHOW: &str = "tvshow";
+/// The root element of an episode's `.nfo`.
+pub const EPISODE: &str = "episodedetails";
 
 /// What a `.nfo` file gives its title: its text, cut to what a title holds,
 /// and the TMDB id it names.
@@ -26,13 +29,20 @@ pub struct Contents {
     pub tmdb: Option<u64>,
 }
 
-/// What the `.nfo` at `path` gives a title, when its root element is `root`.
-/// A file that cannot be read, is not UTF-8 or is larger than [`MAX_BYTES`]
-/// gives nothing, and so does one that is neither such a document nor a link
-/// to the title's TMDB page.
-pub fn read(path: &Path, root: &str) -> Contents {
-    text_in(path)
-        .map(|text| parsed(&text, root))
+/// What the `.nfo` at `path` gives a title, when its root element is one of
+/// `roots`, or the first of them for a file holding only a link. A file that
+/// cannot be read, is not UTF-8 or is larger than [`MAX_BYTES`] gives nothing,
+/// and so does one that is neither such a document nor a link to the title's
+/// TMDB page.
+pub fn read(path: &Path, roots: &[&str]) -> Contents {
+    let Some(text) = text_in(path) else {
+        return Contents::default();
+    };
+    let held = roots
+        .iter()
+        .find(|root| text.contains(&format!("</{root}>")));
+    held.or(roots.first())
+        .map(|root| parsed(&text, root))
         .unwrap_or_default()
 }
 
@@ -53,7 +63,12 @@ fn text_in(path: &Path) -> Option<String> {
 
 fn parsed(text: &str, root: &str) -> Contents {
     let close = format!("</{root}>");
-    let end = text.rfind(&close).map_or(0, |at| at + close.len());
+    let at = if root == EPISODE {
+        text.find(&close)
+    } else {
+        text.rfind(&close)
+    };
+    let end = at.map_or(0, |at| at + close.len());
     let (document, link) = text.split_at(end);
     let mut contents = described(document, root).unwrap_or_default();
     contents.tmdb = contents.tmdb.or_else(|| linked(link, root));
@@ -65,6 +80,12 @@ fn described(document: &str, root: &str) -> Option<Contents> {
     let el = doc.root_element();
     if !el.has_tag_name(root) {
         return None;
+    }
+    if root == EPISODE {
+        return Some(Contents {
+            edit: episode_edit(el).clipped(),
+            tmdb: None,
+        });
     }
     let edit = TitleEdit {
         title: texts(el, "title").next(),
@@ -78,6 +99,15 @@ fn described(document: &str, root: &str) -> Option<Contents> {
         edit: edit.clipped(),
         tmdb: tmdb_of(el),
     })
+}
+
+fn episode_edit(el: Node<'_, '_>) -> TitleEdit {
+    TitleEdit {
+        title: texts(el, "title").next(),
+        overview: texts(el, "plot").next(),
+        released: texts(el, "aired").next(),
+        ..TitleEdit::default()
+    }
 }
 
 fn tmdb_of(el: Node<'_, '_>) -> Option<u64> {
@@ -94,10 +124,10 @@ fn tmdb_of(el: Node<'_, '_>) -> Option<u64> {
 }
 
 fn linked(link: &str, root: &str) -> Option<u64> {
-    let page = if root == TVSHOW {
-        "themoviedb.org/tv/"
-    } else {
-        "themoviedb.org/movie/"
+    let page = match root {
+        TVSHOW => "themoviedb.org/tv/",
+        MOVIE => "themoviedb.org/movie/",
+        _ => return None,
     };
     let (_, after) = link.split_once(page)?;
     let digits = after.split(|c: char| !c.is_ascii_digit()).next()?;
