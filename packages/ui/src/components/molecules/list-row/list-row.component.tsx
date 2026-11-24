@@ -15,6 +15,7 @@ import { IconWell, type IconWellSize } from '#ui/components/atoms/icon-well';
 import { CONTROL, type ControlSize, controlRadius, useEntryDefaults } from '#ui/lib/field-shell';
 import type { Radius } from '#ui/core/tokens/layout';
 import { nameOf } from '#ui/lib/name-of';
+import { sortParts } from '#ui/lib/parts';
 import { useRingScope } from '#ui/lib/ring-scope';
 import { ListGroup, useListGroup } from './list-group.component';
 import { ListRowContext } from './list-row-context';
@@ -50,22 +51,8 @@ function filled(child: ReactNode): boolean {
 }
 
 function sort(children: ReactNode): Sorted {
-  const at: Sorted = { leading: [], content: [], trailing: [] };
-  for (const child of Children.toArray(children)) {
-    const part = isValidElement(child) ? child.type : null;
-    if (part === Leading) {
-      if (filled(child)) {
-        at.leading.push(child);
-      }
-    } else if (part === Trailing) {
-      if (filled(child)) {
-        at.trailing.push(child);
-      }
-    } else {
-      at.content.push(child);
-    }
-  }
-  return at;
+  const [leading, trailing, content] = sortParts(children, Leading, Trailing);
+  return { leading: leading.filter(filled), content, trailing: trailing.filter(filled) };
 }
 
 function iconWell(name: IconName | undefined, size: ControlSize): ReactNode {

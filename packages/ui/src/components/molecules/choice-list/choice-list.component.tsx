@@ -13,7 +13,7 @@
 // thing a reader is aiming at. The indicator is drawn as a face and the ROW
 // carries `radio`/`checkbox` with its state to assistive tech.
 
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { CheckboxFace, type CheckboxSize } from '#ui/components/atoms/checkbox';
@@ -26,6 +26,7 @@ import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
+import { sortParts } from '#ui/lib/parts';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
 
 const FACE: Record<ControlSize, CheckboxSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
@@ -126,21 +127,12 @@ interface ItemProps {
   actions?: ReactNode;
 }
 
-function isMedia(child: ReactNode): boolean {
-  return isValidElement(child) && child.type === Media;
-}
-
-function splitMedia(children: ReactNode) {
-  const all = Children.toArray(children);
-  return { media: all.find(isMedia), rest: all.filter((child) => !isMedia(child)) };
-}
-
 function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
   const s = useStyles(sDefinition);
   const { mode, size, ground, picked, toggle } = useChoice('Item');
   const on = picked(value);
   const item = useMemo(() => ({ value, on }), [value, on]);
-  const { media, rest } = splitMedia(children);
+  const [[media], rest] = sortParts(children, Media);
   return (
     <ItemContext.Provider value={item}>
       <ListRow.Root
