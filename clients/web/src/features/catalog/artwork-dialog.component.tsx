@@ -29,13 +29,11 @@ import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.c
 import type { TitleShown } from '#web/features/catalog/title-shown';
 import { useAuth } from '#web/shared/lib/auth';
 
-const PREVIEW_HEIGHT = 210;
-
 const sDefinition = styles({
   hidden: { display: 'none' },
   slot: { maxWidth: '100%' },
-  poster: { height: PREVIEW_HEIGHT, aspectRatio: 2 / 3 },
-  backdrop: { height: PREVIEW_HEIGHT, aspectRatio: 16 / 9, maxWidth: '100%' },
+  poster: { width: 140, aspectRatio: 2 / 3 },
+  backdrop: { width: 372, maxWidth: '100%', aspectRatio: 16 / 9 },
 });
 
 const ROLES = ['poster', 'backdrop'] as const satisfies readonly ArtRole[];
