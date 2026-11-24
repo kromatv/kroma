@@ -124,6 +124,9 @@ screen reader or steals a D-pad stop.
   contents walks its direct children once, sorts them, and publishes what it
   learned through context: a position (`first`/`middle`/`last`), a padding, the
   layout the shell takes. `<ButtonGroup>` and `<InputGroup>` are both this.
+  Where a Root only places its parts, `sortParts` (`#ui/lib/parts`) is that
+  walk: `const [header, body] = sortParts(children, Header)` hands back the
+  headers, then every other child.
 - **What it publishes may be a face rather than a measurement.**
   `<Select.Root>` keys each item's `<Select.Media>` by that item's value, so
   `<Select.Value>` draws the pick's mark out of the context rather than out of a

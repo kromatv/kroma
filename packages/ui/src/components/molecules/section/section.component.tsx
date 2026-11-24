@@ -1,8 +1,9 @@
-import { Children, isValidElement, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { Text, type TextProps } from '#ui/components/atoms/text';
 import { style } from '#ui/core';
+import { sortParts } from '#ui/lib/parts';
 
 interface SectionRootProps extends Omit<BoxProps, 'children'> {
   /** Space between the band's content rows, not between them and the header.
@@ -13,30 +14,13 @@ interface SectionRootProps extends Omit<BoxProps, 'children'> {
   children?: ReactNode;
 }
 
-interface Buckets {
-  header: ReactNode[];
-  body: ReactNode[];
-}
-
-function sort(children: ReactNode): Buckets {
-  const at: Buckets = { header: [], body: [] };
-  for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Header) {
-      at.header.push(child);
-    } else {
-      at.body.push(child);
-    }
-  }
-  return at;
-}
-
 function Root({ gap = 16, children, ...box }: Readonly<SectionRootProps>) {
-  const at = sort(children);
+  const [header, body] = sortParts(children, Header);
   return (
     <Box gap={12} {...box}>
-      {at.header}
+      {header}
       <Box gap={gap} pt={4}>
-        {at.body}
+        {body}
       </Box>
     </Box>
   );

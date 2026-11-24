@@ -7,12 +7,13 @@ import { type StyleScope, sharedStyle, useStyleScope } from '#ui/core';
 // shape <PageHeader> and <ListRow> take - and publishes the two measurements a
 // heading and a row have to agree on through context.
 
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 
 import { gutter, type TypeRole } from '#ui/core/tokens';
+import { sortParts } from '#ui/lib/parts';
 import { RailContext, useRail } from './rail-context';
 import { GrowingRow, List } from './rail-row.component';
 
@@ -66,27 +67,6 @@ interface RailRootProps {
   children?: ReactNode;
 }
 
-interface Sorted {
-  title: ReactNode[];
-  list: ReactNode[];
-  tiles: ReactNode[];
-}
-
-function sort(children: ReactNode): Sorted {
-  const at: Sorted = { title: [], list: [], tiles: [] };
-  for (const child of Children.toArray(children)) {
-    const part = isValidElement(child) ? child.type : null;
-    if (part === Title) {
-      at.title.push(child);
-    } else if (part === List) {
-      at.list.push(child);
-    } else {
-      at.tiles.push(child);
-    }
-  }
-  return at;
-}
-
 function Root({
   gap = RAIL_GAP,
   inset = gutter.tv,
@@ -94,12 +74,12 @@ function Root({
   children,
 }: Readonly<RailRootProps>) {
   const ctx = useMemo(() => ({ gap, inset }), [gap, inset]);
-  const at = sort(children);
+  const [title, list, tiles] = sortParts(children, Title, List);
   return (
     <RailContext.Provider value={ctx}>
       <Box gap={16}>
-        {at.title}
-        {at.list.length > 0 ? at.list : <GrowingRow grow={grow}>{at.tiles}</GrowingRow>}
+        {title}
+        {list.length > 0 ? list : <GrowingRow grow={grow}>{tiles}</GrowingRow>}
       </Box>
     </RailContext.Provider>
   );
