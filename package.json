@@ -36,6 +36,7 @@
     "kit:dom": "bun packages/ui/scripts/dom-audit.ts",
     "kit:compiler": "bun packages/ui/scripts/compiler-coverage.ts",
     "kit:fanout": "bun packages/ui/scripts/fanout-audit.ts",
+    "kit:memo": "bun packages/ui/scripts/memo-audit.ts",
     "perf:scan": "bun packages/ui/scripts/perf-audit.ts",
     "kit:perf": "KROMA_PERF=1 bun x vitest run --project audit packages/ui/audit/perf-report.test.tsx --reporter=dot --disable-console-intercept",
     "kit:stage": "bun packages/ui/scripts/stage.ts",

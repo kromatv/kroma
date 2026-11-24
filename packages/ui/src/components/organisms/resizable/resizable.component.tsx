@@ -267,13 +267,10 @@ function Root({
     [orientation, disabled, available, layout, limits, parts.specs, begin, drag, reset, resize],
   );
 
-  const measure = useCallback(
-    (event: LayoutChangeEvent) => {
-      const { width, height } = event.nativeEvent.layout;
-      setLength(Math.round(orientation === 'horizontal' ? width : height));
-    },
-    [orientation],
-  );
+  const measure = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setLength(Math.round(orientation === 'horizontal' ? width : height));
+  };
 
   return (
     <ResizableGroupContext.Provider value={state}>

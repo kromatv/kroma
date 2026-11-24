@@ -97,7 +97,7 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
     [baseId, onDismiss, rows],
   );
 
-  const fireAt = useCallback((index: number) => fire(index, false), [fire]);
+  const fireAt = (index: number) => fire(index, false);
 
   const { onKeyDown } = useListKeys({
     count: rows.length,

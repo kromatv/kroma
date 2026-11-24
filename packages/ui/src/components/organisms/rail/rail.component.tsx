@@ -94,7 +94,7 @@ function Root({
   children,
 }: Readonly<RailRootProps>) {
   const ctx = useMemo(() => ({ gap, inset }), [gap, inset]);
-  const at = useMemo(() => sort(children), [children]);
+  const at = sort(children);
   return (
     <RailContext.Provider value={ctx}>
       <Box gap={16}>

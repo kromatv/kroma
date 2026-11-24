@@ -8,6 +8,8 @@
   "artwork.logo": "Logo",
   "artwork.poster": "Poster",
   "artwork.reset": "Restore the automatic picture",
+  "artwork.still": "Thumbnail",
+  "artwork.stillAction": "Edit thumbnail",
   "artwork.title": "Artwork",
   "artwork.upload": "Upload a picture"
 }

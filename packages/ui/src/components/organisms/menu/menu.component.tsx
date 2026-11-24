@@ -93,7 +93,7 @@ function Root({
     [setOpenState, onOpenChange],
   );
 
-  const dismiss = useCallback((reason: MenuDismissReason) => setOpen(false, reason), [setOpen]);
+  const dismiss = (reason: MenuDismissReason) => setOpen(false, reason);
 
   const state = useMemo<MenuState>(
     () => ({ open, label, anchor, setOpen }),

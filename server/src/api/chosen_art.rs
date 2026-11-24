@@ -1,11 +1,13 @@
 //! `/api/art/{kind}/{id}`: the poster, the backdrop and the logo an admin chose
-//! for a film (`item`) or a show (`show`), behind `library.manage`. A change
-//! reaches clients through the `ItemUpdated` / `ShowUpdated` event.
+//! for a film (`item`) or a show (`show`), and the thumbnail (`still`) of an
+//! episode (`item`), behind `library.manage`. A change reaches clients through
+//! the `ItemUpdated` / `ShowUpdated` event.
 //!
-//! - `GET /api/art/{kind}/{id}` → `{ poster, backdrop, logo }`, the URL of each
-//!   picture an admin chose, or null.
+//! - `GET /api/art/{kind}/{id}` → `{ poster, backdrop, logo, still }`, the URL
+//!   of each picture an admin chose, or null.
 //! - `POST /api/art/{kind}/{id}/{role}` (raw `image/*` body, `role` is `poster`,
-//!   `backdrop` or `logo`) → `{ url }`, where the title's picture is served now.
+//!   `backdrop`, `logo` or `still`) → `{ url }`, where the title's picture is
+//!   served now.
 //! - `DELETE /api/art/{kind}/{id}/{role}` → 204, and the title shows the
 //!   picture beside its files again, or its fetched one.
 
@@ -16,13 +18,13 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use serde_json::json;
+use serde_json::{json, Map, Value};
 
 use crate::api::error::lerr;
 use crate::api::managed_title::{not_found, Managed};
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::db::art_beside::{BACKDROP, LOGO, POSTER};
+use crate::db::art_beside::{BACKDROP, LOGO, POSTER, STILL};
 use crate::db::art_chosen::Slot;
 use crate::i18n;
 use crate::model::User;
@@ -30,6 +32,7 @@ use crate::services::art_chosen::{self, Choice};
 use crate::state::SharedState;
 
 const MAX_PICTURE_BYTES: usize = 32 * 1024 * 1024;
+const ROLES: [&str; 4] = [POSTER, BACKDROP, LOGO, STILL];
 
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/art/{kind}/{id}", get(chosen)).route(
@@ -60,11 +63,14 @@ async fn chosen(
     State(state): State<SharedState>,
     Managed { kind, id, .. }: Managed,
 ) -> Result<Response, Response> {
-    let urls = query(&state.db, move |pool| {
+    let mut urls = query(&state.db, move |pool| {
         db::art_chosen::chosen(&pool, kind, &id)
     })
     .await?;
-    let chosen = json!({ "poster": urls.poster, "backdrop": urls.backdrop, "logo": urls.logo });
+    let chosen: Map<String, Value> = ROLES
+        .into_iter()
+        .map(|role| (role.to_string(), urls.remove(role).into()))
+        .collect();
     Ok(Json(chosen).into_response())
 }
 
@@ -83,7 +89,7 @@ impl FromRequestParts<SharedState> for Asked {
             id,
             path,
         } = Managed::from_request_parts(parts, state).await?;
-        let role = [POSTER, BACKDROP, LOGO]
+        let role = ROLES
             .into_iter()
             .find(|role| path.get("role").is_some_and(|asked| asked == role));
         let Some(role) = role else {

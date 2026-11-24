@@ -15,9 +15,10 @@ check is either a rule that is simply never allowed, or a worklist you read.
 | Source perf worklist (`perf-scan.ts`) | `bun run perf:scan` | Faults a rendered tree cannot show: a layout animation, a memo that memoises nothing, a context value rebuilt per render |
 | DOM structure (`cost.ts`) | `bun run kit:dom` | Elements that paint nothing, carry no semantics and hold no text |
 | Interaction cost (`sweep.ts`, `perf.ts`) | `bun run kit:perf` | Components destroyed and rebuilt by a single press |
+| Memo hooks (`memo-scan.ts`) | `bun run kit:memo` | A hand-written `useMemo` or `useCallback` the compiled output is the same without |
 
 The first six are gates because they pass today, so a failure means something
-broke rather than something was already broken. The last three are worklists: the
+broke rather than something was already broken. The last four are worklists: the
 kit still carries real faults in them, and a gate born red is not a gate.
 
 ## Why it runs the React Compiler
@@ -125,7 +126,7 @@ bun run perf:scan --rule identity-memo
 
 ## The scanners know nothing about KROMA
 
-`source-scan.ts` is the substrate both source scanners stand on, and no file in
+`source-scan.ts` is the substrate the source scanners stand on, and no file in
 this directory names a workspace, a directory or a product. A scanner is handed
 the trees to read and told where the React Compiler lives:
 
@@ -161,6 +162,32 @@ whole list re-renders. The scan reads the compiler's OUTPUT, not the source,
 because the compiler hoists most of these on its own and a source-level reading
 cries wolf on more than half.
 
+## The memo hooks the compiler writes the same output without
+
+The compiler drops a hand-written `useMemo` or `useCallback` and works out its
+own cache blocks, so whether one still does anything is measured, not argued.
+`bun run kit:memo [needle]` compiles each file as written, then again with a
+hook's callback left bare, and compares the two outputs. The same text means
+the hook is `inert`: every shell runs the same code with it and without it.
+
+Neither verdict is an order. An inert hook stays when something other than the
+compiled output reads it:
+
+- It builds a context value. `react/jsx-no-constructed-context-values` asks for
+  the memo and cannot know the file is compiled.
+- A hook that stays names it in its dependency list. Left bare it would read as
+  a memo that never hits, and where nothing compiles it would be one.
+- Its identity is behaviour where nothing compiles, and the `web` and `native`
+  test projects do not: a ref callback, an effect's dependency, the function a
+  hook such as `useStableCallback` hands back as the same one every render.
+
+A hook that changes the output is usually one the compiler needs, for the
+reason in the last trap below. Not always: unwrapped, two blocks that were
+always invalidated together can merge into one, which is a different text and
+the same work.
+
+Where two hooks can each go but not both, the scan frees the one written first.
+
 ## Two traps worth writing down
 
 **`useEffectEvent` is not referentially stable.** React returns a new closure
@@ -185,6 +212,16 @@ Loop bodies count too, and `fanout-scan.test.ts` now pins both forms.
 was recomputed on every render and the compiler did not even guard the grid that
 read it. A member read off a module constant (`URL_ROWS[letters]`) it can hold
 still. If a helper returns a fresh array or object, make it a table.
+
+**A hand-written `useMemo` can be what lets the compiler cache.** The compiler
+does not know what an imported function returns, and a method called on the
+result may change it, so the call, the method and everything evaluated between
+them become one block keyed on all of their inputs. `<CountryChoice>` without
+the memo around `countryOptions(countries, locale)` ran it again and rebuilt
+every row when `value` changed, because `value` is read between the call and
+`rows.map`. The memo says the value is finished, and the compiler then caches
+the call on `countries` and `locale` alone. `bun run kit:memo` reads such a
+hook as changing the output.
 
 ## Trust the guard, not the eye
 

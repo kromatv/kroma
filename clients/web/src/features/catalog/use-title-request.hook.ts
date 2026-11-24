@@ -7,12 +7,13 @@ import { epKey, toEpisodeRefs, toggle } from '#web/features/catalog/episode-sele
 import { useAuth } from '#web/shared/lib/auth';
 import type { TitleView } from '#web/shared/lib/title-view';
 
-function nextViewAfterRequest(
-  v: TitleView,
-  status: TitleView['requestStatus'],
-  seasons: number[] | null,
-  episodes?: EpisodeRef[],
-): TitleView {
+interface Made {
+  status: TitleView['requestStatus'];
+  seasons: number[] | null;
+  episodes?: EpisodeRef[];
+}
+
+function afterRequest(v: TitleView, { status, seasons, episodes }: Made): TitleView {
   if (episodes?.length) {
     return { ...v, requestStatus: status };
   }
@@ -48,12 +49,14 @@ export interface TitleRequestState {
   onRequestClick: () => void;
 }
 
-/** Owns the acquisition-request half of the detail page: the locally patched
- * `view`, the episode selection, and every button that files a request. */
+/** Owns the acquisition-request half of the detail page: `view`, the latest
+ * `initial` with the requests filed from this page laid over it, the episode
+ * selection, and every button that files a request. */
 export function useTitleRequest(initial: TitleView): TitleRequestState {
   const t = useT();
   const { client } = useAuth();
-  const [view, setView] = useState(initial);
+  const [made, setMade] = useState<readonly Made[]>([]);
+  const view = made.reduce(afterRequest, initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
@@ -68,7 +71,7 @@ export function useTitleRequest(initial: TitleView): TitleRequestState {
     client.requests
       .create({ kind: view.kind, tmdbId: view.tmdbId, seasons, episodes })
       .then((req) => {
-        setView((v) => nextViewAfterRequest(v, req.status, seasons, episodes));
+        setMade((before) => [...before, { status: req.status, seasons, episodes }]);
         if (episodes?.length) {
           setPendingEps((prev) => addPendingEpisodes(prev, episodes));
         }
