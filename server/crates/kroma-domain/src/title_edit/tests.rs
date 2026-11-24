@@ -4,6 +4,7 @@ fn fetched() -> Metadata {
     Metadata {
         tmdb_id: 949,
         title: Some("Heat".into()),
+        release_date: Some("1995-12-15".into()),
         overview: Some("A thief and a detective.".into()),
         genres: vec!["Crime".into()],
         tmdb_genre_ids: vec![80],
@@ -202,4 +203,29 @@ fn an_edit_reads_back_what_it_wrote_and_fields_it_never_had() {
     assert_eq!(back, edit);
     assert_eq!(sparse.title.as_deref(), Some("Heat"));
     assert_eq!(sparse.genres, None);
+}
+
+#[test]
+fn a_year_written_drops_a_release_date_that_disagrees_with_it() {
+    let moved = TitleEdit {
+        year: Some(1996),
+        ..Default::default()
+    };
+    let same = TitleEdit {
+        year: Some(1995),
+        ..Default::default()
+    };
+
+    let (_, year, moved_meta) = written(&moved, Some(fetched()));
+    let (_, _, same_meta) = written(&same, Some(fetched()));
+
+    assert_eq!(year, Some(1996));
+    assert_eq!(moved_meta.expect("the fetched record").release_date, None);
+    assert_eq!(
+        same_meta
+            .expect("the fetched record")
+            .release_date
+            .as_deref(),
+        Some("1995-12-15")
+    );
 }

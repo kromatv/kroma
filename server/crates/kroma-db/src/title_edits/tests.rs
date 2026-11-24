@@ -169,12 +169,23 @@ fn what_was_written_by_hand_comes_before_the_file_beside_an_unmatched_title() {
 
     let conn = pool.get().unwrap();
     let shown = shown(&conn, ITEM, &["m1"]).unwrap();
+    let in_sql: (String, u32, String) = conn
+        .query_row(
+            "SELECT title, year, overview FROM title_shown WHERE subject_id = 'm1'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .unwrap();
 
     let edit = shown.get("m1").expect("a text for the film");
     assert_eq!(edit.title.as_deref(), Some("Home movies"));
     assert_eq!(edit.year, Some(1987));
     assert_eq!(edit.overview.as_deref(), Some("Found in the attic."));
     assert_eq!(written(&pool, title).unwrap(), renamed("Home movies"));
+    assert_eq!(
+        in_sql,
+        ("Home movies".into(), 1987, "Found in the attic.".into())
+    );
 }
 
 #[test]

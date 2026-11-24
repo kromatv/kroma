@@ -24,9 +24,17 @@ pub use find_titles::*;
 // Every query below selects `FROM cat`. The trailing space is intentional:
 // the per-query `SELECT …` is concatenated directly after it.
 const CAT_CTE: &str = concat!(
-    "WITH cat(id,title,year,kind,metadata) AS (\
-    SELECT id,title,year,'movie',metadata FROM items WHERE kind != 'episode' AND absent_since IS NULL \
-    UNION ALL SELECT s.id,s.title,s.year,'show',s.metadata FROM shows s WHERE ",
+    "WITH cat(id,title,year,kind,metadata,genres,overview) AS (\
+    SELECT i.id,COALESCE(e.title,i.title),COALESCE(e.year,i.year),'movie',i.metadata,\
+    COALESCE(e.genres,json_extract(i.metadata,'$.genres')),\
+    COALESCE(e.overview,json_extract(i.metadata,'$.overview')) \
+    FROM items i LEFT JOIN title_shown e ON e.subject_kind = 'item' AND e.subject_id = i.id \
+    WHERE i.kind != 'episode' AND i.absent_since IS NULL \
+    UNION ALL SELECT s.id,COALESCE(e.title,s.title),COALESCE(e.year,s.year),'show',s.metadata,\
+    COALESCE(e.genres,json_extract(s.metadata,'$.genres')),\
+    COALESCE(e.overview,json_extract(s.metadata,'$.overview')) \
+    FROM shows s LEFT JOIN title_shown e ON e.subject_kind = 'show' AND e.subject_id = s.id \
+    WHERE ",
     present_show!(),
     ") "
 );
@@ -56,17 +64,28 @@ pub fn get_title(pool: &Pool, query: &str) -> Result<Option<TitleFull>> {
     }
     let conn = pool.get()?;
     let sql = format!(
-        "{CAT_CTE}SELECT id,title,year,kind,metadata FROM cat \
+        "{CAT_CTE}SELECT id,title,year,kind,metadata,genres,overview FROM cat \
          WHERE id = ?1 OR title = ?1 COLLATE NOCASE \
          ORDER BY (id = ?1) DESC, CAST(json_extract(cat.metadata,'$.rating') AS REAL) DESC LIMIT 1"
     );
     let row = conn
         .query_row(&sql, params![q], |r| {
             let meta = parse_metadata(r.get::<_, Option<String>>(4)?);
-            Ok(full_from(r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, meta))
+            let full = full_from(r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, meta);
+            Ok(TitleFull {
+                genres: genres_in(r.get(5)?),
+                overview: r.get(6)?,
+                ..full
+            })
         })
         .optional()?;
     Ok(row)
+}
+
+fn genres_in(genres: Option<String>) -> Vec<String> {
+    genres
+        .and_then(|genres| serde_json::from_str(&genres).ok())
+        .unwrap_or_default()
 }
 
 /// Every genre present, with how many titles carry it (most common first).
@@ -74,7 +93,7 @@ pub fn genre_counts(pool: &Pool) -> Result<Vec<(String, usize)>> {
     let conn = pool.get()?;
     let sql = format!(
         "{CAT_CTE}SELECT g.value AS genre, COUNT(*) AS n \
-         FROM cat, json_each(cat.metadata,'$.genres') g \
+         FROM cat, json_each(cat.genres) g \
          GROUP BY genre ORDER BY n DESC, genre"
     );
     let mut stmt = conn.prepare(&sql)?;
@@ -160,6 +179,66 @@ fn full_from(
 mod tests {
     use super::*;
     use crate::catalog_query::test_support::*;
+    use crate::metadata_core::{ITEM, SHOW};
+    use crate::title_edits::{self, Title};
+    use kroma_domain::title_edit::TitleEdit;
+
+    fn edited(pool: &Pool, kind: &str, id: &str, edit: TitleEdit) {
+        title_edits::write(pool, Title { kind, id }, &edit).unwrap();
+    }
+
+    fn found(pool: &Pool, filter: TitleFilter) -> Vec<String> {
+        let titles = find_titles(pool, &filter).unwrap();
+        titles.into_iter().map(|t| t.title).collect()
+    }
+
+    fn of_genre(pool: &Pool, genre: &str) -> Vec<String> {
+        let filter = TitleFilter {
+            genre: Some(genre.into()),
+            ..Default::default()
+        };
+        found(pool, filter)
+    }
+
+    #[test]
+    fn a_title_is_found_and_counted_by_the_name_year_and_genres_written_for_it() {
+        let pool = seeded_pool();
+        let rewritten = TitleEdit {
+            title: Some("The Shining (extended)".into()),
+            year: Some(1981),
+            overview: Some("A winter at the hotel.".into()),
+            genres: Some(vec!["Drama".into()]),
+        };
+        edited(&pool, ITEM, "m3", rewritten);
+        let regenred = TitleEdit {
+            genres: Some(vec!["Comedy".into()]),
+            ..Default::default()
+        };
+        edited(&pool, SHOW, "s1", regenred);
+        let winter = TitleFilter {
+            keyword: Some("winter".into()),
+            ..Default::default()
+        };
+        let eighty_one = TitleFilter {
+            year_min: Some(1981),
+            year_max: Some(1981),
+            ..Default::default()
+        };
+
+        let full = get_title(&pool, "The Shining (extended)").unwrap();
+        let genres = genre_counts(&pool).unwrap();
+
+        let full = full.expect("the title under its written name");
+        let horror = genres.iter().find(|(g, _)| g == "Horror");
+        assert_eq!(of_genre(&pool, "Drama"), ["The Shining (extended)", "Old Unrated"]);
+        assert_eq!(of_genre(&pool, "comedy"), ["Severance"]);
+        assert_eq!(found(&pool, winter), ["The Shining (extended)"]);
+        assert_eq!(found(&pool, eighty_one), ["The Shining (extended)"]);
+        assert_eq!((full.id.as_str(), full.year), ("m3", Some(1981)));
+        assert_eq!(full.genres, ["Drama"]);
+        assert_eq!(full.overview.as_deref(), Some("A winter at the hotel."));
+        assert_eq!(horror.map(|(_, n)| *n), Some(1));
+    }
 
     #[test]
     fn get_title_and_counts() {

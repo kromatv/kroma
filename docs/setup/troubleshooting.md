@@ -104,7 +104,8 @@ To avoid it, name the folder with the title and the year:
 A home video or a film TMDB does not know has no match to fix. Open it, choose
 **Edit info**, and write its title, year, summary and genres. What you write
 there shows in every language and stays through a rescan. Clear a field to go
-back to TMDB's text.
+back to TMDB's text. **Movies** and **Series** sort and filter by what you
+write, and a year you write replaces TMDB's release date when the two differ.
 
 ## A TV or app does not find the server
 
