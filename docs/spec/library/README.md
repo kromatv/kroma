@@ -188,6 +188,10 @@ holding but cannot place.
 title or episode, and binds the file to it. The binding is remembered against the file, so a
 later rescan does not undo it.
 
+**LIB-93** (SHIPPED) - When a person's search for a film's or a show's match finds nothing at
+the provider, the screen offers to write the title's info by hand (LIB-83) instead, so a
+title the provider does not know is never left without a way forward.
+
 **LIB-34** (AGREED) - **Rename on disk.** A name fixed to the convention above matches
 automatically on the next rescan and leaves the Unmatched view. Neither repair is privileged
 over the other.
