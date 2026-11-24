@@ -43,9 +43,14 @@ const sDefinition = styles({
   box: { width: 220, maxWidth: '42vw' },
 });
 
-// Open with `await RematchDialog.call({ kind, id, title })`. Resolves `true`
-// once a correction is queued, `false` on dismiss. Mounted by `CatalogModalHosts`.
-export const RematchDialog = createCallable<{ kind: Kind; id: string; title: string }, boolean>(
+type RematchProps = { kind: Kind; id: string; title: string };
+type RematchOutcome = 'applied' | 'dismissed' | 'edit';
+
+// Open with `await RematchDialog.call({ kind, id, title })`. Resolves `'applied'`
+// once a correction is queued, `'dismissed'` on dismiss, and `'edit'` when TMDB found
+// nothing and the person chose to write the title's info by hand. Mounted by
+// `CatalogModalHosts`.
+export const RematchDialog = createCallable<RematchProps, RematchOutcome>(
   ({ call, kind, id, title }) => {
     const scope = useStyleScope();
     useThemeVersion();
@@ -79,7 +84,7 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
       setApplyError(null);
       client.media.rematch
         .set(kind, subjectId, tmdbId)
-        .then(() => call.end(true))
+        .then(() => call.end('applied'))
         .catch((e) => setApplyError(apiErrorText(e, t('rematch.applyFailed'))))
         .finally(() => setApplying(null));
     };
@@ -93,7 +98,7 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
           type="button"
           aria-label={t('common.close')}
           tabIndex={-1}
-          onClick={() => call.end(false)}
+          onClick={() => call.end('dismissed')}
           className={classes(MODAL_SCRIM)}
         />
         <div className={classes(MODAL_LAYER)}>
@@ -145,7 +150,7 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                   control="sm"
                   icon="x"
                   label={t('common.close')}
-                  onPress={() => call.end(false)}
+                  onPress={() => call.end('dismissed')}
                 />
               </form>
             </Box>
@@ -162,9 +167,21 @@ export const RematchDialog = createCallable<{ kind: Kind; id: string; title: str
                 </Box>
               ) : null}
               {!isPending && data?.results.length === 0 ? (
-                <Text variant="meta" color="white/40" textAlign="center" py={64}>
-                  {t('rematch.noResults')}
-                </Text>
+                <Box align="center" gap={12} py={56}>
+                  <Text variant="meta" color="white/40" textAlign="center">
+                    {t('rematch.noResults')}
+                  </Text>
+                  <Text variant="meta" color="white/40" textAlign="center">
+                    {t('rematch.noResultsHint')}
+                  </Text>
+                  <Button
+                    variant="glass"
+                    size="sm"
+                    icon="pencil"
+                    label={t('titleInfo.action')}
+                    onPress={() => call.end('edit')}
+                  />
+                </Box>
               ) : null}
               {!isPending && data && data.results.length > 0 ? (
                 <RematchResults results={data.results} applying={applying} onPick={apply} />

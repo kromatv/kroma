@@ -564,6 +564,7 @@
 - **LIB-90** (SHIPPED) - A person who manages the library can write an episode's name, air date <sub>[README.md](library/README.md)</sub>
 - **LIB-91** (SHIPPED) - The backdrops behind the sign-in screen, the notification that new <sub>[README.md](library/README.md)</sub>
 - **LIB-92** (SHIPPED) - A film's or a show's `.nfo` file (LIB-84) that names no provider id, <sub>[README.md](library/README.md)</sub>
+- **LIB-93** (SHIPPED) - When a person's search for a film's or a show's match finds nothing at <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 
