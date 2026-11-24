@@ -1,8 +1,8 @@
 //! The text a scan read from the `.nfo` file beside each title's files
-//! (LIB-84). It is shown on a title the provider did not match, under what a
-//! person wrote by hand ([`crate::title_edits`]). The TMDB id a file names
-//! (LIB-85) is what matching takes for the title, behind the ids a person, an
-//! acquisition or an import gave it.
+//! (LIB-84). It is shown over the provider's text, under what a person wrote
+//! by hand ([`crate::title_edits`]). The TMDB id a file names (LIB-85) is what
+//! matching takes for the title, behind the ids a person, an acquisition or an
+//! import gave it.
 
 use std::collections::{HashMap, HashSet};
 

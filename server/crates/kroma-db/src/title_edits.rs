@@ -1,7 +1,7 @@
 //! What a person who manages the library wrote by hand about a film or a show
-//! (LIB-83), over the text of the `.nfo` file beside a title the provider did
-//! not match (LIB-84). Both are laid over the provider's text in every
-//! language, and over the catalog that search and the embeddings read.
+//! (LIB-83), over the text of the `.nfo` file beside it (LIB-84). Both are
+//! laid over the provider's text in every language, and over the catalog that
+//! search and the embeddings read.
 
 use std::collections::HashMap;
 

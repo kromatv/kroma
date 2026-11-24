@@ -249,12 +249,13 @@ write is shown in place of the provider's, in every language, until they clear i
 they leave empty keeps following the provider. A rescan, a refresh or a re-match keeps what
 they wrote (LIB-44), search finds the name they wrote, and a backup carries it.
 
-**LIB-84** (SHIPPED) - A film or a show the provider did not match takes its name, summary,
-year and genres from the `.nfo` file kept beside it, the file Kodi, Jellyfin and Plex read:
-one named after a film's video or `movie.nfo` in a folder that holds that film alone, and
-`tvshow.nfo` in a show's folder. What a person wrote by hand (LIB-83) comes before it, field
-by field. Once the provider matches the title, the provider's text is shown instead. A file
-added or changed is read at the next scan, and one that is not such a document is passed over.
+**LIB-84** (SHIPPED) - A film or a show takes its name, summary, year and genres from the
+`.nfo` file kept beside it, the file Kodi, Jellyfin and Plex read: one named after a film's
+video or `movie.nfo` in a folder that holds that film alone, and `tvshow.nfo` in a show's
+folder. The file comes before the provider's text, in every language and whether or not the
+provider matched the title, as a local file does in Jellyfin and Kodi. What a person wrote by
+hand (LIB-83) comes before the file, field by field. A file added or changed is read at the
+next scan, and one that is not such a document is passed over.
 
 **LIB-86** (SHIPPED) - The catalogue sorts and filters a title by the name, year and genres it
 shows: what a person wrote by hand (LIB-83), else its `.nfo` file (LIB-84), else the provider's.

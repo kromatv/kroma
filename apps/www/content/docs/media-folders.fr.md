@@ -81,8 +81,8 @@ sous-titres intégrés au fichier vidéo ne demandent rien.
 
 ### Titres et résumés des fichiers .nfo
 
-Un titre que KROMA ne reconnaît pas peut prendre son nom, son année, son résumé
-et ses genres dans un fichier `.nfo`, celui que lisent Kodi, Jellyfin et Plex :
+Un titre peut prendre son nom, son année, son résumé et ses genres dans un
+fichier `.nfo`, celui que lisent Kodi, Jellyfin et Plex :
 
 ```
 Films/
@@ -106,9 +106,9 @@ Series/
   `<tmdbid>`, ou s'il se termine par le lien de sa page sur themoviedb.org,
   KROMA reconnaît le titre à ce numéro plutôt qu'à son nom. Une fiche corrigée
   avec **Corriger la fiche** passe avant le fichier.
-- Dès que KROMA reconnaît le titre, c'est le texte trouvé sur Internet qui
-  s'affiche. Ce que vous écrivez avec **Modifier les informations** passe avant
-  le fichier.
+- Le texte du fichier s'affiche à la place de celui trouvé sur Internet, même
+  quand KROMA reconnaît le titre. Ce que vous écrivez avec **Modifier les
+  informations** passe avant le fichier.
 - KROMA lit un fichier ajouté ou modifié à la prochaine analyse de la
   bibliothèque.
 
