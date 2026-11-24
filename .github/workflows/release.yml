@@ -103,17 +103,11 @@ on:
         default: false
         required: false
 
-# Candidates supersede.
-#
-# This used to queue unconditionally, because a superseded run could leave a
-# partially-uploaded Release. That reason is gone: a candidate build publishes
-# NOTHING - deploy.yml does - so the only thing a superseded candidate can lose
-# is a result nobody wants any more. Queuing them cost real time; four pushes in
-# an afternoon meant the fourth waited an hour behind three builds of code that
-# had already been replaced.
+# A push never cancels the candidate in progress, only the one still pending
+# (docs/ci.md says why).
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: false
 
 jobs:
   # One version for every artifact: the tag, the manual input, or what the
