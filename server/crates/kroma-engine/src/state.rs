@@ -105,6 +105,13 @@ impl AppState {
     }
 }
 
+fn recover_interrupted_work(db: &Pool) {
+    let _ = crate::db::reconcile_running_runs(db);
+    let _ = crate::db::drop_orphan_job_logs(db);
+    let _ = crate::db::imports::fail_interrupted(db, kroma_primitives::now_ms());
+    crate::services::pipeline::recover_on_boot(db);
+}
+
 impl AppState {
     pub fn new(
         config: Config,
@@ -152,9 +159,7 @@ impl AppState {
         }
         jobs.load_schedules(&db);
         jobs.set_pipeline_paused(settings.get_bool("pipelinePaused", false));
-        let _ = crate::db::reconcile_running_runs(&db);
-        let _ = crate::db::imports::fail_interrupted(&db, kroma_primitives::now_ms());
-        crate::services::pipeline::recover_on_boot(&db);
+        recover_interrupted_work(&db);
         let metrics = Metrics::new(db.clone());
         let network = Arc::new(crate::services::network::Network::new(
             db.clone(),

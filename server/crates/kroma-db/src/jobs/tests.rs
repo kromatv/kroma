@@ -148,3 +148,52 @@ fn any_other_failure_is_returned_at_once() {
     assert!(result.is_err());
     assert_eq!(attempts, 1);
 }
+
+fn logged_runs(p: &Pool) -> Vec<String> {
+    let conn = p.get().unwrap();
+    let mut stmt = conn
+        .prepare("SELECT DISTINCT run_id FROM job_logs ORDER BY run_id")
+        .unwrap();
+    let rows = stmt.query_map([], |r| r.get(0)).unwrap();
+    rows.collect::<rusqlite::Result<Vec<String>>>().unwrap()
+}
+
+fn run_with_a_log(p: &Pool, id: &str, key: &str, started_ms: i64) {
+    insert_job_run(p, id, key, "schedule", started_ms).unwrap();
+    insert_job_log(p, id, started_ms, "info", "started").unwrap();
+}
+
+#[test]
+fn pruning_keeps_the_newest_runs_of_a_job_and_drops_the_logs_of_the_rest() {
+    let p = pool();
+    run_with_a_log(&p, "old", "library.scan", 1);
+    run_with_a_log(&p, "mid", "library.scan", 2);
+    run_with_a_log(&p, "new", "library.scan", 3);
+    run_with_a_log(&p, "other", "cache.cleanup", 0);
+
+    prune_job_runs(&p, "library.scan", 2).unwrap();
+
+    let kept: Vec<String> = list_job_runs(&p, "library.scan", 10)
+        .unwrap()
+        .into_iter()
+        .map(|r| r.id)
+        .collect();
+    assert_eq!(kept, ["new", "mid"]);
+    assert_eq!(logged_runs(&p), ["mid", "new", "other"]);
+    assert_eq!(
+        last_job_run(&p, "cache.cleanup").unwrap().unwrap().id,
+        "other"
+    );
+}
+
+#[test]
+fn a_log_whose_run_has_no_row_is_dropped_at_the_orphan_sweep() {
+    let p = pool();
+    run_with_a_log(&p, "r1", "library.scan", 1);
+    insert_job_log(&p, "lost", 2, "info", "the start never landed").unwrap();
+
+    let dropped = drop_orphan_job_logs(&p).unwrap();
+
+    assert_eq!(dropped, 1);
+    assert_eq!(logged_runs(&p), ["r1"]);
+}
