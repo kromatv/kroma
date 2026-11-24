@@ -99,6 +99,17 @@ it('shows only the thumbnail of an episode and sends the picked picture as its s
   expect(document.querySelectorAll('input[type="file"]')).toHaveLength(1);
 });
 
+it('names the title once, under what it edits, beside a close button', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  open('item', 'm1');
+
+  await waitFor(() => expect(art.get).toHaveBeenCalled());
+
+  expect(screen.getAllByText('Heat')).toHaveLength(1);
+  expect(screen.getByText('Artwork')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
+});
+
 it('restores the automatic picture only where one was chosen', async () => {
   art.get.mockResolvedValue({ poster: null, backdrop: '/api/images/chosen-b.webp' });
   art.reset.mockResolvedValue(undefined);

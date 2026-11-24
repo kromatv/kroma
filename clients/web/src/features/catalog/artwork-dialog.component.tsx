@@ -25,7 +25,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 
-import { TitleDialogHeader } from '#web/features/catalog/title-dialog-header.component';
+import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 const sDefinition = styles({
@@ -214,7 +214,13 @@ export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title, rol
       width={shown.length > 1 ? 'lg' : 'md'}
       onClose={() => call.end()}
     >
-      <TitleDialogHeader overline={t('artwork.title')} title={title} onClose={() => call.end()} />
+      <Dialog.Header>
+        <TitleDialogHeading
+          overline={t('artwork.title')}
+          title={title}
+          onClose={() => call.end()}
+        />
+      </Dialog.Header>
       <Dialog.Panel>
         <ArtSlots kind={kind} id={id} roles={shown} />
       </Dialog.Panel>
