@@ -109,6 +109,8 @@ sort title files the title under another name, such as
 there shows in every language and stays through a rescan. Clear a field to go
 back to TMDB's text. **Movies** and **Series** sort and filter by what you
 write, and a year you write replaces TMDB's release date when the two differ.
+To write an episode's name, air date or summary, open its series and choose
+**Edit info** on the episode's row.
 
 ## A TV or app does not find the server
 

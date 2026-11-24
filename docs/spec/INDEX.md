@@ -3,7 +3,7 @@
 
 # Requirement index
 
-828 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+829 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -561,6 +561,7 @@
 - **LIB-87** (SHIPPED) - A person can write the day a title came out in place of its year <sub>[README.md](library/README.md)</sub>
 - **LIB-88** (SHIPPED) - A person can write a sort title for a title (LIB-83), and a `.nfo` <sub>[README.md](library/README.md)</sub>
 - **LIB-89** (SHIPPED) - An episode takes its name, summary and air date from the `.nfo` file <sub>[README.md](library/README.md)</sub>
+- **LIB-90** (SHIPPED) - A person who manages the library can write an episode's name, air date <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 

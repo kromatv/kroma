@@ -1,5 +1,7 @@
 {
   "titleInfo.action": "Edit info",
+  "titleInfo.aired": "Air date",
+  "titleInfo.airedHint": "The day it was first shown, as 2008-01-20.",
   "titleInfo.genres": "Genres",
   "titleInfo.genresHint": "Separate genres with commas.",
   "titleInfo.hint": "What you write here shows instead of the text from TMDB, in every language. Leave a field empty to use TMDB's again.",

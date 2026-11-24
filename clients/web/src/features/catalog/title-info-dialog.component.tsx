@@ -9,14 +9,14 @@ import {
 import { useT } from '@kromatv/ui';
 import { Box, Callout, Dialog, Field, Spinner, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { createCallable } from 'react-call';
 
 import { TitleDialogHeader } from '#web/features/catalog/title-dialog-header.component';
 import { draftOf, editOf, type TitleDraft } from '#web/features/catalog/title-info-draft';
 import { useAuth } from '#web/shared/lib/auth';
 
-type Props = Readonly<{ kind: ArtKind; id: string; title: string }>;
+type Props = Readonly<{ kind: ArtKind | 'episode'; id: string; title: string }>;
 
 type Save = (edit: TitleEdit) => Promise<unknown>;
 
@@ -77,22 +77,54 @@ function HintedField({
   );
 }
 
-function InfoFields({ draft, change }: Readonly<{ draft: TitleDraft; change: Change }>) {
+type Fields = Readonly<{ draft: TitleDraft; change: Change }>;
+
+function NameField({ draft, change }: Fields) {
+  const t = useT();
+  return (
+    <Field.Root label={t('titleInfo.name')} value={draft.title} onValueChange={change('title')} />
+  );
+}
+
+function SummaryField({ draft, change }: Fields) {
+  const t = useT();
+  return (
+    <Field.Root label={t('titleInfo.summary')}>
+      <Field.Textarea
+        rows={4}
+        maxRows={10}
+        value={draft.overview}
+        onValueChange={change('overview')}
+      />
+    </Field.Root>
+  );
+}
+
+function TitleFields({ draft, change }: Fields) {
+  return (
+    <>
+      <NameField draft={draft} change={change} />
+      <HintedField field="sortTitle" draft={draft} change={change} />
+      <HintedField field="released" draft={draft} change={change} />
+      <SummaryField draft={draft} change={change} />
+      <HintedField field="genres" draft={draft} change={change} />
+    </>
+  );
+}
+
+function EpisodeFields({ draft, change }: Fields) {
   const t = useT();
   return (
     <>
-      <Field.Root label={t('titleInfo.name')} value={draft.title} onValueChange={change('title')} />
-      <HintedField field="sortTitle" draft={draft} change={change} />
-      <HintedField field="released" draft={draft} change={change} />
-      <Field.Root label={t('titleInfo.summary')}>
-        <Field.Textarea
-          rows={4}
-          maxRows={10}
-          value={draft.overview}
-          onValueChange={change('overview')}
-        />
+      <NameField draft={draft} change={change} />
+      <Field.Root
+        label={t('titleInfo.aired')}
+        value={draft.released}
+        onValueChange={change('released')}
+      >
+        <Field.Hint>{t('titleInfo.airedHint')}</Field.Hint>
       </Field.Root>
-      <HintedField field="genres" draft={draft} change={change} />
+      <SummaryField draft={draft} change={change} />
     </>
   );
 }
@@ -117,10 +149,16 @@ function SaveFooter({
 }
 
 function InfoForm({
+  fields: InfoFields,
   initial,
   save,
   onDone,
-}: Readonly<{ initial: TitleDraft; save: Save; onDone: () => void }>) {
+}: Readonly<{
+  fields: (props: Fields) => ReactNode;
+  initial: TitleDraft;
+  save: Save;
+  onDone: () => void;
+}>) {
   const t = useT();
   const { draft, change } = useDraft(initial);
   const { busy, failure, submit } = useSave(save, onDone);
@@ -140,9 +178,10 @@ function InfoForm({
   );
 }
 
-function useTitleEdit({ kind, id }: Props) {
+function useTitleEdit({ kind: asked, id }: Props) {
   const { client } = useAuth();
   const queryClient = useQueryClient();
+  const kind = asked === 'episode' ? 'item' : asked;
   const queryKey = ['title-edit', kind, id] as const;
   const subject = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
   const query = useQuery({ queryKey, queryFn: () => client.media.titleEdits.get(kind, subject) });
@@ -154,7 +193,8 @@ function useTitleEdit({ kind, id }: Props) {
 }
 
 /** The name, sort title, release date, summary and genres a person who
- * manages the library writes by hand for a film or a show. Open with `await
+ * manages the library writes by hand for a film or a show, and the name, air
+ * date and summary for an episode (`kind: 'episode'`). Open with `await
  * TitleInfoDialog.call({ kind, id, title })`; it resolves on dismiss and once
  * the edit is saved. */
 export const TitleInfoDialog = createCallable<Props>((props) => {
@@ -165,7 +205,12 @@ export const TitleInfoDialog = createCallable<Props>((props) => {
     <Dialog.Root open title={props.title} width="lg" onClose={close}>
       <TitleDialogHeader overline={t('titleInfo.title')} title={props.title} onClose={close} />
       {data ? (
-        <InfoForm initial={draftOf(data)} save={save} onDone={close} />
+        <InfoForm
+          fields={props.kind === 'episode' ? EpisodeFields : TitleFields}
+          initial={draftOf(data)}
+          save={save}
+          onDone={close}
+        />
       ) : (
         <Dialog.Panel>
           {error ? <Failure text={apiErrorText(error, t('titleInfo.loadFailed'))} /> : <Spinner />}
