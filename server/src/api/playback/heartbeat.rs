@@ -13,6 +13,7 @@ use crate::api::util::{client_ip, query};
 use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::infra::events::ServerEvent;
+use crate::model::MediaItem;
 use crate::services::playback::{self, Beat, Ping};
 use crate::services::settings;
 use crate::state::SharedState;
@@ -82,18 +83,7 @@ pub async fn ping(
     // toggle is a disk read, not a whole-file demux. `extract_pending_locked`
     // dedupes against the pipeline stage and the on-demand endpoint.
     if let Some(item) = item.as_ref() {
-        if let Some(abs) = item.abs_path.clone() {
-            let subs = item.subtitles.clone();
-            let data_dir = state.config.data_dir.clone();
-            tokio::task::spawn_blocking(move || {
-                let _ = crate::infra::subtitles::extract_pending_locked(
-                    &data_dir,
-                    &abs,
-                    &subs,
-                    &|| false,
-                );
-            });
-        }
+        prewarm_subtitles(&state, item);
     }
 
     let ping = Ping {
@@ -108,6 +98,7 @@ pub async fn ping(
         audio: body.audio,
         subtitle: body.subtitle,
     };
+    ping.hold_back_background_work();
     let beat = state.playback.upsert(
         ping,
         Some(viewer.user.id.clone()),
@@ -131,6 +122,17 @@ pub async fn ping(
         ServerEvent::PlaybackUpdated { count }
     });
     StatusCode::NO_CONTENT.into_response()
+}
+
+fn prewarm_subtitles(state: &SharedState, item: &MediaItem) {
+    let Some(abs) = item.abs_path.clone() else {
+        return;
+    };
+    let subs = item.subtitles.clone();
+    let data_dir = state.config.data_dir.clone();
+    tokio::task::spawn_blocking(move || {
+        let _ = crate::infra::subtitles::extract_pending_locked(&data_dir, &abs, &subs, &|| false);
+    });
 }
 
 async fn mark_seen(state: &SharedState, user_id: &str) {

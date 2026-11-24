@@ -36,6 +36,17 @@ pub struct Ping {
     pub subtitle: Option<String>,
 }
 
+impl Ping {
+    /// A beat from a player that is playing holds background media work to one
+    /// pass at a time until its session would expire, so a library scan does
+    /// not take the disk from the film.
+    pub fn hold_back_background_work(&self) {
+        if self.state == PLAYING {
+            kroma_media::ffmpeg_gate::lease(SESSION_TTL);
+        }
+    }
+}
+
 /// A live playback session, serialized for the admin API.
 #[derive(Clone, Serialize)]
 pub struct Session {

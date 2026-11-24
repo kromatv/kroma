@@ -24,22 +24,53 @@ fn tile_4k() -> Footprint {
 
 #[test]
 fn an_unreserved_box_spends_its_whole_budget() {
-    assert_eq!(inner(7, 0).effective(), 7);
+    assert_eq!(inner(7, 0).effective(Instant::now()), 7);
 }
 
 #[test]
 fn a_reservation_leaves_background_work_one_pass_at_a_time() {
-    assert_eq!(inner(7, 1).effective(), 1);
+    assert_eq!(inner(7, 1).effective(Instant::now()), 1);
 }
 
 #[test]
 fn two_viewers_do_not_take_the_box_away_twice_over() {
-    assert_eq!(inner(7, 2).effective(), 1);
+    assert_eq!(inner(7, 2).effective(Instant::now()), 1);
+}
+
+#[test]
+fn a_lease_leaves_background_work_one_pass_at_a_time() {
+    let now = Instant::now();
+    let mut gate = inner(7, 0);
+
+    gate.lease_until(now + Duration::from_secs(30));
+
+    assert_eq!(gate.effective(now), 1);
+}
+
+#[test]
+fn a_lease_that_ran_out_gives_the_whole_budget_back() {
+    let now = Instant::now();
+    let mut gate = inner(7, 0);
+
+    gate.lease_until(now + Duration::from_secs(30));
+
+    assert_eq!(gate.effective(now + Duration::from_secs(31)), 7);
+}
+
+#[test]
+fn a_shorter_lease_never_cuts_a_longer_one_short() {
+    let now = Instant::now();
+    let mut gate = inner(7, 0);
+
+    gate.lease_until(now + Duration::from_secs(30));
+    gate.lease_until(now + Duration::from_secs(5));
+
+    assert_eq!(gate.effective(now + Duration::from_secs(10)), 1);
 }
 
 #[test]
 fn the_floor_never_hands_out_more_than_the_operator_allowed() {
-    assert_eq!(inner(1, 1).effective(), 1);
+    assert_eq!(inner(1, 1).effective(Instant::now()), 1);
 }
 
 #[test]
