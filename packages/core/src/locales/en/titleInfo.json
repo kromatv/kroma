@@ -1,0 +1,12 @@
+{
+  "titleInfo.action": "Edit info",
+  "titleInfo.genres": "Genres",
+  "titleInfo.genresHint": "Separate genres with commas.",
+  "titleInfo.hint": "What you write here shows instead of the text from TMDB, in every language. Leave a field empty to use TMDB's again.",
+  "titleInfo.loadFailed": "Could not load the info.",
+  "titleInfo.name": "Title",
+  "titleInfo.saveFailed": "Could not save the info.",
+  "titleInfo.summary": "Summary",
+  "titleInfo.title": "Info",
+  "titleInfo.year": "Year"
+}

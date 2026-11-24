@@ -1,4 +1,4 @@
-import { ageRatingOf, formatRuntime, genreLabels, qualityBadge } from '@kromatv/core';
+import { ageRatingOf, formatRuntime, genreLabels, qualityBadge, tmdbIdOf } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Button, FocusRegion, FocusSlot, styles, useFocusNav, useStyles } from '@kromatv/ui/kit';
 import { useMyList } from '#tv/app/providers/mylist';
@@ -64,7 +64,9 @@ export function TvMovieDetail() {
       // takes it as a prop (see TvDetailScaffold).
       actions={
         <FocusRegion style={s.actionRow}>
-          <LeadActions trailer={{ kind: 'movie', tmdbId: meta?.tmdbId, title: item.title }}>
+          <LeadActions
+            trailer={{ kind: 'movie', tmdbId: tmdbIdOf(meta?.tmdbId), title: item.title }}
+          >
             <Button
               size="lg"
               autoFocus

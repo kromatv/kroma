@@ -15,7 +15,6 @@ import {
   classes,
   color,
   Dialog,
-  IconButton,
   Img,
   Row,
   styles,
@@ -26,6 +25,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ChangeEvent, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 
+import { TitleDialogHeader } from '#web/features/catalog/title-dialog-header.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 const sDefinition = styles({
@@ -167,25 +167,6 @@ function ArtSlot({ role, slots }: Readonly<{ role: ArtRole; slots: Slots }>) {
   );
 }
 
-function ArtworkHeader({ title, onClose }: Readonly<{ title: string; onClose: () => void }>) {
-  const t = useT();
-  return (
-    <Dialog.Header>
-      <Row between align="flex-start" gap={16}>
-        <Box minW={0}>
-          <Text variant="overline" color="white/40">
-            {t('artwork.title')}
-          </Text>
-          <Text variant="title" mt={4} lines={1}>
-            {title}
-          </Text>
-        </Box>
-        <IconButton control="sm" icon="x" label={t('common.close')} onPress={onClose} />
-      </Row>
-    </Dialog.Header>
-  );
-}
-
 /** The poster and the backdrop an admin uploads for a film or a show. Open
  * with `await ArtworkDialog.call({ kind, id, title })`; it resolves on dismiss. */
 export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title }) => {
@@ -193,7 +174,7 @@ export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title }) =
   const slots = useChosenArt(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id));
   return (
     <Dialog.Root open title={title} width="lg" onClose={() => call.end()}>
-      <ArtworkHeader title={title} onClose={() => call.end()} />
+      <TitleDialogHeader overline={t('artwork.title')} title={title} onClose={() => call.end()} />
       <Dialog.Panel>
         <Box gap={20}>
           <Text variant="meta" color="white/55">

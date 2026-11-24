@@ -4,6 +4,7 @@ import { artworkApi } from './artwork';
 import type { ItemId, LibraryId, ShowId } from './ids';
 import { chosenArtApi } from './chosen-art';
 import { rematchApi } from './rematch';
+import { titleEditsApi } from './title-edits';
 import {
   CardSection,
   Health,
@@ -76,6 +77,7 @@ export default function mediaApi(ctx: RequestContext) {
     artwork,
     rematch: rematchApi(ctx),
     chosenArt: chosenArtApi(ctx),
+    titleEdits: titleEditsApi(ctx),
 
     /** Server liveness + counts. Takes a `signal` so a client-side heartbeat can
      * bound the probe with a short timeout. */

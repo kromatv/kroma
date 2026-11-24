@@ -43,6 +43,27 @@ export type ChosenArt = z.infer<typeof ChosenArt>;
 export const ArtShown = z.object({ url: z.string() });
 export type ArtShown = z.infer<typeof ArtShown>;
 
+/** `GET` and `PUT /api/edits/{kind}/{id}`: what was written by hand about a
+ * film or a show. Each field comes before the provider's in every language,
+ * and a null one follows the provider. */
+export const TitleEdit = z.object({
+  title: z.string().nullable(),
+  overview: z.string().nullable(),
+  year: z.number().int().nullable(),
+  genres: z.array(z.string()).nullable(),
+});
+export type TitleEdit = z.infer<typeof TitleEdit>;
+
+/** What a {@link TitleEdit} can hold, as the server checks it: characters in a
+ * name, a summary and one genre, how many genres, and the years. */
+export const TITLE_EDIT_LIMITS = {
+  title: 300,
+  overview: 10_000,
+  genre: 60,
+  genres: 20,
+  years: [1800, 2200],
+} as const;
+
 /** Route vocabulary for a rematch: the catalog's split, not TMDB's `tv`. */
 export const RematchKind = z.enum(['movie', 'show']);
 export type RematchKind = z.infer<typeof RematchKind>;

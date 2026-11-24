@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { ArtworkDialog } from '#web/features/catalog/artwork-dialog.component';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog.component';
+import { TitleInfoDialog } from '#web/features/catalog/title-info-dialog.component';
 import { useAuth } from '#web/shared/lib/auth';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
@@ -55,6 +56,13 @@ function LibraryActions(props: Props) {
       <Button
         variant="glass"
         size="sm"
+        icon="pencil"
+        label={t('titleInfo.action')}
+        onPress={() => void TitleInfoDialog.call({ kind, id, title })}
+      />
+      <Button
+        variant="glass"
+        size="sm"
         icon="photo"
         label={t('artwork.action')}
         onPress={() => void ArtworkDialog.call({ kind, id, title })}
@@ -71,7 +79,7 @@ function LibraryActions(props: Props) {
 }
 
 /** The buttons on a title's page for the people who look after the library:
- * its media details, its artwork, its match and a reprocess. Each shows for the
+ * its media details, its text, its artwork, its match and a reprocess. Each shows for the
  * permission it needs, and `onChanged` runs once a change is under way. */
 export function TitleActions(props: Props) {
   const t = useT();

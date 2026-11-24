@@ -12,33 +12,6 @@ use crate::model::{ListedEpisode, MediaItem, Metadata};
 
 use super::lang::{primary_lang, season_by_locale};
 
-pub(super) fn blank_metadata() -> Metadata {
-    Metadata {
-        provider: "tmdb",
-        tmdb_id: 0,
-        imdb_id: None,
-        title: None,
-        tagline: None,
-        overview: None,
-        release_date: None,
-        genres: Vec::new(),
-        tmdb_genre_ids: Vec::new(),
-        rating: None,
-        certification: None,
-        poster_url: None,
-        backdrop_url: None,
-        logo_url: None,
-        theme_url: None,
-        cast: Vec::new(),
-        crew: Vec::new(),
-        keywords: Vec::new(),
-        tvdb_id: None,
-        tmdb_url: String::new(),
-        ratings: Default::default(),
-        age_rating: None,
-    }
-}
-
 // The per-episode still travels in `backdrop_url`, where `backdropFor` finds it.
 pub(super) fn episode_metadata(art: &metadata::EpisodeArt) -> Metadata {
     Metadata {
@@ -47,7 +20,7 @@ pub(super) fn episode_metadata(art: &metadata::EpisodeArt) -> Metadata {
         release_date: art.air_date.clone(),
         rating: art.rating,
         backdrop_url: art.still_url.clone(),
-        ..blank_metadata()
+        ..Metadata::blank()
     }
 }
 
@@ -250,7 +223,7 @@ pub(super) fn store_season_cast(
             data_dir,
             Metadata {
                 cast: data.cast.clone(),
-                ..blank_metadata()
+                ..Metadata::blank()
             },
         );
         if let Err(e) = db::set_season_cast(pool, show_id, season_number, &carrier.cast) {

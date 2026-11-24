@@ -32,6 +32,7 @@
   "error.serverTitle": "Une erreur est survenue",
   "error.subtitleUnavailable": "Sous-titre indisponible",
   "error.technicalDetails": "Détails techniques",
+  "error.titleEditTooLong": "Impossible d'enregistrer ces informations. Le titre compte au plus 300 caractères, le résumé 10 000, et il y a au plus 20 genres. L'année est comprise entre 1800 et 2200.",
   "error.tmdbUnavailable": "TMDB n'est pas disponible sur ce serveur",
   "error.unauthorizedBody": "Votre session a expiré. Reconnectez-vous pour continuer à regarder.",
   "error.unauthorizedTitle": "Connexion requise",

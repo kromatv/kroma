@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
+use kroma_domain::title_edit::TitleEdit;
 use kroma_domain::{MediaItem, Metadata, Show};
 
 use super::{apply, apply_show};
 use crate::art_beside::Art;
+use crate::title_edits;
 use crate::translations::{self, TransData};
 use crate::{Connection, Result};
 
@@ -16,6 +18,7 @@ impl Ask<'_> {
     pub(super) fn layer(&self, kind: &str, ids: &[&str]) -> Result<Layer> {
         Ok(Layer {
             text: translations::resolve_many(self.conn, kind, ids, self.locale)?,
+            edits: title_edits::load(self.conn, kind, ids)?,
             art: Art::load(self.conn, kind, ids)?,
         })
     }
@@ -23,6 +26,7 @@ impl Ask<'_> {
 
 pub(super) struct Layer {
     text: HashMap<String, TransData>,
+    edits: HashMap<String, TitleEdit>,
     art: Art,
 }
 
@@ -31,12 +35,18 @@ impl Layer {
         if let Some(tr) = self.text.get(&item.id) {
             apply_item(item, tr);
         }
+        if let Some(edit) = self.edits.get(&item.id) {
+            edit.onto(item);
+        }
         self.art.paint(&item.id, item.metadata.as_mut());
     }
 
     pub(super) fn on_show(&self, show: &mut Show) {
         if let Some(tr) = self.text.get(&show.id) {
             apply_show(show, tr);
+        }
+        if let Some(edit) = self.edits.get(&show.id) {
+            edit.onto(show);
         }
         self.art.paint(&show.id, show.metadata.as_mut());
     }
@@ -45,11 +55,15 @@ impl Layer {
         if let Some(tr) = self.text.get(id) {
             apply(Some(meta), tr);
         }
+        if let Some(edit) = self.edits.get(id) {
+            edit.onto_metadata(meta);
+        }
         self.art.paint(id, Some(meta));
     }
 
     pub(super) fn title(&self, id: &str) -> Option<&str> {
-        self.text.get(id).and_then(|tr| tr.title.as_deref())
+        let edited = self.edits.get(id).and_then(|edit| edit.title.as_deref());
+        edited.or_else(|| self.text.get(id).and_then(|tr| tr.title.as_deref()))
     }
 
     pub(super) fn poster_onto(&self, id: &str, meta: Option<&mut Metadata>) {

@@ -6,6 +6,7 @@
 import { ArtworkDialog } from '#web/features/catalog/artwork-dialog.component';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog.component';
 import { ReportDialog } from '#web/features/catalog/report-dialog.component';
+import { TitleInfoDialog } from '#web/features/catalog/title-info-dialog.component';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
 export function CatalogModalHosts() {
@@ -15,6 +16,7 @@ export function CatalogModalHosts() {
       <MediaInfoModal />
       <RematchDialog />
       <ReportDialog />
+      <TitleInfoDialog />
     </>
   );
 }

@@ -1,3 +1,4 @@
+use kroma_domain::title_edit::TitleEdit;
 use kroma_domain::{Kind, SectionItem};
 
 use crate::art_beside::{BACKDROP, POSTER};
@@ -7,6 +8,7 @@ use crate::localize::{
     overlay_each, overlay_items, overlay_section_items, overlay_show_metadata, overlay_shows,
 };
 use crate::metadata_core::{ITEM, SHOW};
+use crate::title_edits::{self, Title};
 use crate::translations;
 
 #[test]
@@ -111,4 +113,113 @@ fn a_backdrop_an_admin_chose_comes_before_the_one_beside_the_files() {
         meta.backdrop_url.as_deref(),
         Some("/api/images/chosen-m1.webp")
     );
+}
+
+fn edit(title: &str) -> TitleEdit {
+    TitleEdit {
+        title: Some(title.into()),
+        genres: Some(vec!["Family".into()]),
+        ..Default::default()
+    }
+}
+
+#[test]
+fn a_name_written_by_hand_comes_before_the_provider_one_in_every_language() {
+    let p = pool();
+    translations::put(
+        &p,
+        ITEM,
+        "m1",
+        "en",
+        translations::TMDB,
+        &td("Arrival", vec![]),
+    )
+    .unwrap();
+    translations::put(
+        &p,
+        ITEM,
+        "m1",
+        "fr",
+        translations::TMDB,
+        &td("Premier contact", vec![]),
+    )
+    .unwrap();
+    title_edits::write(
+        &p,
+        Title {
+            kind: ITEM,
+            id: "m1",
+        },
+        &edit("Our first contact"),
+    )
+    .unwrap();
+    let mut en = vec![item("m1", Kind::Movie)];
+    let mut fr = vec![item("m1", Kind::Movie)];
+
+    overlay_items(&p, &mut en, "en").unwrap();
+    overlay_items(&p, &mut fr, "fr").unwrap();
+
+    for film in [&en[0], &fr[0]] {
+        let meta = film.metadata.as_ref().unwrap();
+        assert_eq!(film.title, "Our first contact");
+        assert_eq!(meta.title.as_deref(), Some("Our first contact"));
+        assert_eq!(meta.genres, vec!["Family".to_string()]);
+    }
+}
+
+#[test]
+fn a_summary_written_for_a_film_never_matched_shows_the_poster_beside_it() {
+    let p = pool();
+    keep_beside(&p, &[(ITEM, "m1", POSTER)]);
+    let summary = TitleEdit {
+        overview: Some("Found in the attic.".into()),
+        ..Default::default()
+    };
+    title_edits::write(
+        &p,
+        Title {
+            kind: ITEM,
+            id: "m1",
+        },
+        &summary,
+    )
+    .unwrap();
+    let mut film = item("m1", Kind::Movie);
+    film.metadata = None;
+
+    overlay_each(&p, std::iter::once(&mut film), "en").unwrap();
+
+    let meta = film.metadata.expect("a record for the summary");
+    assert_eq!(meta.overview.as_deref(), Some("Found in the attic."));
+    assert_eq!(
+        meta.poster_url.as_deref(),
+        Some("/api/images/beside-m1-poster.webp")
+    );
+}
+
+#[test]
+fn a_show_wears_its_edited_name_on_its_page_its_poster_and_its_episodes() {
+    let p = pool();
+    title_edits::write(
+        &p,
+        Title {
+            kind: SHOW,
+            id: "s1",
+        },
+        &edit("Our show"),
+    )
+    .unwrap();
+    let mut shows = vec![show("s1")];
+    let mut blob = meta("Show EN");
+    let mut episode = item("e1", Kind::Episode);
+    episode.show_id = Some("s1".into());
+
+    overlay_shows(&p, &mut shows, "fr").unwrap();
+    overlay_show_metadata(&p, "s1", &mut blob, "fr").unwrap();
+    overlay_each(&p, std::iter::once(&mut episode), "fr").unwrap();
+
+    assert_eq!(shows[0].title, "Our show");
+    assert_eq!(blob.title.as_deref(), Some("Our show"));
+    assert_eq!(blob.genres, vec!["Family".to_string()]);
+    assert_eq!(episode.show_title.as_deref(), Some("Our show"));
 }

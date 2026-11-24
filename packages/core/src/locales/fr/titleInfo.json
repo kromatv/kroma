@@ -1,0 +1,12 @@
+{
+  "titleInfo.action": "Modifier les informations",
+  "titleInfo.genres": "Genres",
+  "titleInfo.genresHint": "Séparez les genres par des virgules.",
+  "titleInfo.hint": "Ce que vous écrivez ici remplace le texte de TMDB, dans toutes les langues. Laissez un champ vide pour reprendre celui de TMDB.",
+  "titleInfo.loadFailed": "Impossible de charger les informations.",
+  "titleInfo.name": "Titre",
+  "titleInfo.saveFailed": "Impossible d'enregistrer les informations.",
+  "titleInfo.summary": "Résumé",
+  "titleInfo.title": "Informations",
+  "titleInfo.year": "Année"
+}

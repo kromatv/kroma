@@ -106,6 +106,15 @@ describe('the trailer button on a detail page', () => {
     expect(result.current).toBeNull();
   });
 
+  it('asks nothing for a title whose record was made without TMDB', async () => {
+    const { result, settled } = renderLink(0, { playable: true, trailers: [trailer()] });
+
+    await settled();
+
+    expect(state.list).not.toHaveBeenCalled();
+    expect(result.current).toBeNull();
+  });
+
   it('opens the trailer player for the title it was drawn for', async () => {
     const { result } = renderLink(1061474, { playable: true, trailers: [trailer()] });
     await waitFor(() => expect(result.current).not.toBeNull());

@@ -29,11 +29,12 @@ pub mod reports;
 pub mod requests;
 pub mod section;
 pub mod slug;
+pub mod title_edit;
 pub mod watching;
 
 // Flat re-export (mirrors the server's former `model.rs`). `import`, `imports`, `naming`,
-// `matching`, `people` and `slug` are intentionally not globbed here; reach them via their
-// module path.
+// `matching`, `people`, `slug` and `title_edit` are intentionally not globbed here; reach
+// them via their module path.
 pub use accounts::*;
 pub use admin::*;
 pub use app_version::*;
