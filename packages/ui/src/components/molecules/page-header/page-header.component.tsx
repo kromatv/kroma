@@ -2,7 +2,7 @@
 // its children once and the actions end up at the far end whatever order they
 // were written in.
 
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { Children, isValidElement, type ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -61,7 +61,7 @@ function sort(children: ReactNode): Buckets {
 function Root({ children, ...box }: Readonly<PageHeaderRootProps>) {
   const s = useStyles(sDefinition);
 
-  const at = useMemo(() => sort(children), [children]);
+  const at = sort(children);
   return (
     <Box row align="center" justify="space-between" gap={24} wrap {...box}>
       <Box row align="center" gap={BACK_GAP} shrink={1} style={s.minW}>

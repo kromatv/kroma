@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { reactCompiler } from '@kromatv/bundler/react-compiler';
 import { webResolve } from '@kromatv/bundler/rnw';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -76,6 +77,7 @@ export default defineConfig({
         return iconSubset(fileURLToPath(new URL('.', import.meta.url)));
       },
     },
+    reactCompiler(),
     react(),
   ],
   resolve: NATIVE ? nativeResolve : webResolve(),
@@ -104,6 +106,7 @@ export default defineConfig({
         'react',
         'react-dom',
         'react/jsx-runtime',
+        'react/compiler-runtime',
         'react-dom/client',
         /^zod(?:\/|$)/,
         /^@lezer\//,

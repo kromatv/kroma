@@ -1,4 +1,4 @@
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { Children, isValidElement, type ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { Text, type TextProps } from '#ui/components/atoms/text';
@@ -31,7 +31,7 @@ function sort(children: ReactNode): Buckets {
 }
 
 function Root({ gap = 16, children, ...box }: Readonly<SectionRootProps>) {
-  const at = useMemo(() => sort(children), [children]);
+  const at = sort(children);
   return (
     <Box gap={12} {...box}>
       {at.header}

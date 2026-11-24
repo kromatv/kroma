@@ -111,14 +111,11 @@ function Root({
 }: Readonly<StepperRootProps>) {
   const entryDefaults = useEntryDefaults();
   const t = useTDefault();
-  const stepLabel = useMemo(() => askedLabel ?? numberedStep(t), [askedLabel, t]);
+  const stepLabel = askedLabel ?? numberedStep(t);
   const shell = size ?? entryDefaults.size;
   const { members, join, mark } = useStepRegistry();
-  const order = useMemo(() => members.map((member) => member.value), [members]);
-  const off = useMemo(
-    () => members.filter((member) => member.disabled).map((member) => member.value),
-    [members],
-  );
+  const order = members.map((member) => member.value);
+  const off = members.filter((member) => member.disabled).map((member) => member.value);
   const flow = useSteps(order, {
     value,
     defaultValue,
