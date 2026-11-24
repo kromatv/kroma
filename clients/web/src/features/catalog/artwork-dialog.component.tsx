@@ -1,17 +1,10 @@
-import { apiErrorText } from '@kromatv/client';
-import {
-  type ArtKind,
-  type ArtRole,
-  type ChosenArt,
-  ItemId,
-  ShowId,
-  type SubjectId,
-} from '@kromatv/client/media';
+import { type ArtKind, type ArtRole, ItemId, ShowId } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import {
   Box,
   Button,
   Callout,
+  Cropper,
   classes,
   color,
   Dialog,
@@ -21,12 +14,18 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { type ChangeEvent, useRef, useState } from 'react';
+import { type ChangeEvent, useRef } from 'react';
 import { createCallable } from 'react-call';
 
+import {
+  ART_ASPECT,
+  ArtworkFramingPanel,
+  artworkFramingBand,
+} from '#web/features/catalog/artwork-framing-panel.component';
 import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import type { TitleShown } from '#web/features/catalog/title-shown';
+import { useArtworkFraming } from '#web/features/catalog/use-artwork-framing.hook';
+import { type Slots, useChosenArt } from '#web/features/catalog/use-chosen-art.hook';
 import { useAuth } from '#web/shared/lib/auth';
 
 const sDefinition = styles({
@@ -41,43 +40,6 @@ const ROLES = ['poster', 'backdrop'] as const satisfies readonly ArtRole[];
 const WASH = color('tint/4');
 
 type Props = Readonly<{ kind: ArtKind; id: string; title: string; shown?: TitleShown }>;
-
-interface Slots {
-  chosen: ChosenArt | undefined;
-  busy: ArtRole | null;
-  error: string | null;
-  upload: (role: ArtRole, file: File) => void;
-  reset: (role: ArtRole) => void;
-}
-
-function useChosenArt(kind: ArtKind, id: SubjectId): Slots {
-  const t = useT();
-  const { client } = useAuth();
-  const queryClient = useQueryClient();
-  const queryKey = ['chosen-art', kind, id] as const;
-  const { data, error: loadError } = useQuery({
-    queryKey,
-    queryFn: () => client.media.chosenArt.get(kind, id),
-  });
-  const [busy, setBusy] = useState<ArtRole | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
-  const act = (role: ArtRole, work: () => Promise<unknown>) => {
-    setBusy(role);
-    setFailure(null);
-    work()
-      .then(() => queryClient.invalidateQueries({ queryKey }))
-      .catch((e: unknown) => setFailure(apiErrorText(e, t('artwork.applyFailed'))))
-      .finally(() => setBusy(null));
-  };
-  return {
-    chosen: data,
-    busy,
-    error: failure ?? (loadError ? apiErrorText(loadError, t('artwork.loadFailed')) : null),
-    upload: (role, file) =>
-      act(role, () => client.media.chosenArt.choose({ kind, id, role }, file)),
-    reset: (role) => act(role, () => client.media.chosenArt.reset({ kind, id, role })),
-  };
-}
 
 function ArtPreview({
   role,
@@ -137,19 +99,22 @@ function PickButton({
   );
 }
 
+type Pick = (role: ArtRole, file: File) => void;
+
 function SlotActions({
   role,
   slots,
   chosen,
-}: Readonly<{ role: ArtRole; slots: Slots; chosen: boolean }>) {
+  onPick,
+}: Readonly<{ role: ArtRole; slots: Slots; chosen: boolean; onPick: Pick }>) {
   const t = useT();
   const busy = slots.busy === role;
   return (
-    <Row gap={8} wrap>
+    <Box gap={8} align="flex-start">
       <PickButton
         busy={busy}
         disabled={slots.busy !== null && !busy}
-        onFile={(file) => slots.upload(role, file)}
+        onFile={(file) => onPick(role, file)}
       />
       {chosen ? (
         <Button
@@ -160,7 +125,7 @@ function SlotActions({
           onPress={() => slots.reset(role)}
         />
       ) : null}
-    </Row>
+    </Box>
   );
 }
 
@@ -168,7 +133,8 @@ function ArtSlot({
   role,
   slots,
   shown,
-}: Readonly<{ role: ArtRole; slots: Slots; shown: string | null }>) {
+  onPick,
+}: Readonly<{ role: ArtRole; slots: Slots; shown: string | null; onPick: Pick }>) {
   const t = useT();
   const s = useStyles(sDefinition);
   const chosen = slots.chosen?.[role] ?? null;
@@ -179,12 +145,16 @@ function ArtSlot({
       <Text variant="meta" color="white/45">
         {t(chosen ? 'artwork.uploaded' : 'artwork.automatic')}
       </Text>
-      <SlotActions role={role} slots={slots} chosen={chosen !== null} />
+      <SlotActions role={role} slots={slots} chosen={chosen !== null} onPick={onPick} />
     </Box>
   );
 }
 
-function ArtPanel({ slots, shown }: Readonly<{ slots: Slots; shown: TitleShown | undefined }>) {
+function ArtPanel({
+  slots,
+  shown,
+  onPick,
+}: Readonly<{ slots: Slots; shown: TitleShown | undefined; onPick: Pick }>) {
   const t = useT();
   return (
     <Box gap={20}>
@@ -198,31 +168,65 @@ function ArtPanel({ slots, shown }: Readonly<{ slots: Slots; shown: TitleShown |
       ) : null}
       <Row gap={24} wrap align="flex-start">
         {ROLES.map((role) => (
-          <ArtSlot key={role} role={role} slots={slots} shown={shown?.[role] ?? null} />
+          <ArtSlot
+            key={role}
+            role={role}
+            slots={slots}
+            shown={shown?.[role] ?? null}
+            onPick={onPick}
+          />
         ))}
       </Row>
     </Box>
   );
 }
 
-/** The poster and the backdrop an admin uploads for a film or a show, each
- * beside the picture shown while none is uploaded (`shown`). Open with `await
- * ArtworkDialog.call({ kind, id, title, shown })`; it resolves on dismiss. */
-export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title, shown }) => {
+type Framing = ReturnType<typeof useArtworkFraming>;
+
+type Steps = Props & Readonly<{ step: Framing; onClose: () => void }>;
+
+function ArtworkSteps({ step, onClose, ...props }: Steps) {
+  const { kind, id, title, shown } = props;
   const t = useT();
   const slots = useChosenArt(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id));
+  const { framing, begin, end } = step;
+  const keep = (role: ArtRole) => (picture: Blob) => {
+    slots.upload(role, picture);
+    end();
+  };
   return (
-    <Dialog.Root open title={title} width="lg" onClose={() => call.end()}>
+    <Dialog.Root open title={title} width="lg" onClose={onClose}>
       <Dialog.Header>
-        <TitleDialogHeading
-          overline={t('artwork.title')}
-          title={title}
-          onClose={() => call.end()}
-        />
+        <TitleDialogHeading overline={t('artwork.title')} title={title} onClose={onClose} />
       </Dialog.Header>
       <Dialog.Panel>
-        <ArtPanel slots={slots} shown={shown} />
+        {framing ? (
+          <ArtworkFramingPanel role={framing.role} />
+        ) : (
+          <ArtPanel slots={slots} shown={shown} onPick={begin} />
+        )}
       </Dialog.Panel>
+      {framing
+        ? artworkFramingBand({ framing, onCancel: end, onFramed: keep(framing.role) })
+        : null}
     </Dialog.Root>
+  );
+}
+
+/** The poster and the backdrop an admin uploads for a film or a show, each
+ * beside the picture shown while none is uploaded (`shown`). A picked picture
+ * is framed to its slot's shape before it is sent. Open with `await
+ * ArtworkDialog.call({ kind, id, title, shown })`; it resolves on dismiss. */
+export const ArtworkDialog = createCallable<Props>(({ call, ...props }) => {
+  const step = useArtworkFraming();
+  return (
+    <Cropper.Root
+      src={step.framing?.src ?? null}
+      aspect={ART_ASPECT[step.framing?.role ?? 'poster']}
+      value={step.transform}
+      onValueChange={step.setTransform}
+    >
+      <ArtworkSteps {...props} step={step} onClose={() => call.end()} />
+    </Cropper.Root>
   );
 });

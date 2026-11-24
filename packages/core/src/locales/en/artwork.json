@@ -3,11 +3,18 @@
   "artwork.applyFailed": "Could not update the artwork.",
   "artwork.automatic": "Automatic",
   "artwork.backdrop": "Backdrop",
+  "artwork.frame": "Move the picture",
+  "artwork.frameHint": "Move the picture and zoom to choose what stays in the frame.",
   "artwork.hint": "A picture you upload shows instead of the one found beside the files or on TMDB.",
   "artwork.loadFailed": "Could not load the chosen artwork.",
   "artwork.poster": "Poster",
   "artwork.reset": "Restore the automatic picture",
+  "artwork.resetFrame": "Reset the framing",
+  "artwork.rotate": "Rotate left",
   "artwork.title": "Artwork",
   "artwork.upload": "Upload a picture",
-  "artwork.uploaded": "Uploaded"
+  "artwork.uploaded": "Uploaded",
+  "artwork.useFramed": "Use this picture",
+  "artwork.zoomIn": "Zoom in",
+  "artwork.zoomOut": "Zoom out"
 }

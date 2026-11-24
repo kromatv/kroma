@@ -3,11 +3,18 @@
   "artwork.applyFailed": "Impossible de modifier les visuels.",
   "artwork.automatic": "Automatique",
   "artwork.backdrop": "Arrière-plan",
+  "artwork.frame": "Déplacer l'image",
+  "artwork.frameHint": "Déplacez l'image et zoomez pour choisir ce qui reste dans le cadre.",
   "artwork.hint": "L'image que vous importez s'affiche à la place de celle trouvée à côté des fichiers ou sur TMDB.",
   "artwork.loadFailed": "Impossible de charger les visuels choisis.",
   "artwork.poster": "Affiche",
   "artwork.reset": "Rétablir l'image automatique",
+  "artwork.resetFrame": "Réinitialiser le cadrage",
+  "artwork.rotate": "Faire pivoter vers la gauche",
   "artwork.title": "Visuels",
   "artwork.upload": "Importer une image",
-  "artwork.uploaded": "Importée"
+  "artwork.uploaded": "Importée",
+  "artwork.useFramed": "Utiliser cette image",
+  "artwork.zoomIn": "Zoom avant",
+  "artwork.zoomOut": "Zoom arrière"
 }
