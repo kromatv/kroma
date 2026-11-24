@@ -332,6 +332,14 @@ extension among them. Those settings live in the cached `ios/` project, so
 `brew install ccache` runs on every run. The ccache entry is keyed on the
 Xcode version and `bun.lock`, and written once per key.
 
+The wrappers run `$CCACHE_BINARY clang`. React Native writes `CCACHE_BINARY` as
+a build setting, and Xcode exports build settings to script phases but not to
+the compiler: the first Apple TV archive with ccache ran 1,188 compiles through
+the wrapper and left ccache's statistics at zero, because an empty
+`CCACHE_BINARY` runs `clang` itself. The archive step therefore exports
+`CCACHE_BINARY` before `xcodebuild`, and the keys moved to `v2`, since the `v1`
+entries were saved empty and an exact hit is never saved again.
+
 ### TestFlight: Canary on a push, Beta each night
 
 The two `.ipa` bundles go to TestFlight instead, through two external groups
@@ -546,7 +554,7 @@ copies go before anything a run still reads.
 | `desktop-release` x4 (both Macs, Windows, Linux) | ~1.6 GB | _release-desktop.yml, desktop-autoupdate.yml |
 | `dd-tvnative-v1-*`, `dd-mobile-v1-*` | ~0.8 + 0.6 GB, one each | the Apple jobs, pruned to one |
 | `ios-tvnative-v4-*`, `ios-mobile-v4-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
-| `ccache-tvnative-v1-*`, `ccache-mobile-ios-v1-*` | measured on their first save | the Apple jobs, keyed by Xcode and `bun.lock` |
+| `ccache-tvnative-v2-*`, `ccache-mobile-ios-v2-*` | measured on their first save | the Apple jobs, keyed by Xcode and `bun.lock` |
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
 | `ccache-androidtv-release-v2-*`, `ccache-mobile-release-v2-*`, `ccache-androidtv-debug-v2-*` | measured on their first save, at most 1 GB each | the release Android jobs, ci.yml on main |
 | `synology-v4`, `synology-arm64-v3` | measured on their first save | synology.yml |
