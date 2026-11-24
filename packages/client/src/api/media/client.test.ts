@@ -118,6 +118,28 @@ describe('the media endpoints', () => {
       path: '/rematch/movie/i%201',
       body: { tmdbId: 603 },
     },
+    {
+      name: 'chosenArt.get',
+      call: (c) => c.media.chosenArt.get('show', show),
+      method: 'GET',
+      path: '/art/show/s1',
+    },
+    {
+      name: 'chosenArt.choose',
+      call: (c) =>
+        c.media.chosenArt.choose(
+          { kind: 'item', id: spaced, role: 'poster' },
+          new Blob(['x'], { type: 'image/png' }),
+        ),
+      method: 'POST',
+      path: '/art/item/i%201/poster',
+    },
+    {
+      name: 'chosenArt.reset',
+      call: (c) => c.media.chosenArt.reset({ kind: 'item', id: spaced, role: 'backdrop' }),
+      method: 'DELETE',
+      path: '/art/item/i%201/backdrop',
+    },
   ])('$name', checkEndpoint);
 });
 

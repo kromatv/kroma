@@ -2,6 +2,7 @@ import type { Query, RequestContext } from '../../core/client';
 import { JobStarted } from '../jobs';
 import { artworkApi } from './artwork';
 import type { ItemId, LibraryId, ShowId } from './ids';
+import { chosenArtApi } from './chosen-art';
 import { rematchApi } from './rematch';
 import {
   CardSection,
@@ -74,6 +75,7 @@ export default function mediaApi(ctx: RequestContext) {
   return {
     artwork,
     rematch: rematchApi(ctx),
+    chosenArt: chosenArtApi(ctx),
 
     /** Server liveness + counts. Takes a `signal` so a client-side heartbeat can
      * bound the probe with a short timeout. */

@@ -43,6 +43,7 @@ mod point;
 mod profiling;
 mod recommend;
 mod releases;
+mod chosen_art;
 mod rematch;
 mod remote_art;
 mod reports;
@@ -124,6 +125,8 @@ mod it_invitation_mail;
 mod it_invites;
 #[cfg(test)]
 mod it_library_visibility;
+#[cfg(test)]
+mod it_chosen_art;
 #[cfg(test)]
 mod it_posters_beside;
 #[cfg(test)]

@@ -38,6 +38,15 @@ fn basename(url: &str) -> Option<String> {
     path.rsplit('/').next().map(str::to_owned)
 }
 
+fn protected(pool: &crate::db::Pool) -> Result<HashSet<String>> {
+    let conn = pool.get()?;
+    let avatars = crate::db::avatar_urls(pool)?;
+    let attached = crate::db::notifications::referenced_images(&conn)?;
+    let chosen = crate::db::art_chosen::urls(&conn)?;
+    let urls = avatars.iter().chain(&attached).chain(&chosen);
+    Ok(urls.filter_map(|u| basename(u)).collect())
+}
+
 fn enforce_image_limit(ctx: &JobContext, images: &Path) {
     let label = ctx.state.settings.get_str("cacheLimit", "80 Go");
     let Some(limit) = parse_limit_bytes(&label) else {
@@ -54,27 +63,12 @@ fn enforce_image_limit(ctx: &JobContext, images: &Path) {
         return;
     }
 
-    // Avatars and notification images live in this dir but aren't regenerable;
-    // deleting one 404s it forever. Both reads must succeed before any deletion -
-    // a partial protected set is indistinguishable from "nothing is referenced".
-    let Ok(conn) = ctx.state.db.get() else {
-        ctx.info("image cache: no database connection, skipping the trim".to_string());
-        return;
-    };
-    let (Ok(avatars), Ok(attached)) = (
-        crate::db::avatar_urls(&ctx.state.db),
-        crate::db::notifications::referenced_images(&conn),
-    ) else {
+    let Ok(protected) = protected(&ctx.state.db) else {
         ctx.info(
             "image cache: could not read the referenced images, skipping the trim".to_string(),
         );
         return;
     };
-    let protected: HashSet<String> = avatars
-        .iter()
-        .chain(attached.iter())
-        .filter_map(|u| basename(u))
-        .collect();
 
     let mut files: Vec<(std::path::PathBuf, u64, std::time::SystemTime)> =
         walkdir::WalkDir::new(images)
@@ -310,6 +304,25 @@ mod tests {
         // Avatars aren't regenerable, so the poster is evicted instead despite
         // being newer.
         assert_eq!(names(&images), vec!["avatar.png"]);
+    }
+
+    #[test]
+    fn never_evicts_a_picture_an_admin_chose_for_a_title() {
+        let state = test_state();
+        set_limit(&state, "1 Go");
+        let images = images_dir(&state);
+        sparse(&images.join("chosen-a.webp"), 1500 * 1_000_000, 1);
+        sparse(&images.join("poster.jpg"), 1500 * 1_000_000, 9);
+        let slot = crate::db::art_chosen::Slot {
+            kind: "item",
+            id: "m1",
+            role: "poster",
+        };
+        crate::db::art_chosen::choose(&state.db, slot, "/api/images/chosen-a.webp").unwrap();
+
+        enforce_image_limit(&JobContext::for_test(state.clone()), &images);
+
+        assert_eq!(names(&images), vec!["chosen-a.webp"]);
     }
 
     #[test]

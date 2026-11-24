@@ -1,7 +1,6 @@
 import {
   activeTheme,
   Box,
-  Button,
   classes,
   color,
   Spinner,
@@ -32,11 +31,9 @@ import {
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { RematchDialog } from '#web/features/catalog/rematch-dialog.component';
+import { TitleActions } from '#web/features/catalog/title-actions.component';
 
 import { useAuth } from '#web/shared/lib/auth';
-import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
 type Kind = 'item' | 'show';
 
@@ -66,9 +63,8 @@ export function TreatmentsPanel({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const { user, client } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [busy, setBusy] = useState(false);
   const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
   const admin = !!user && hasPermission(user, 'settings.manage');
   const canManageLibrary = !!user && hasPermission(user, 'library.manage');
@@ -98,26 +94,8 @@ export function TreatmentsPanel({
     return null;
   }
 
-  const reprocess = () => {
-    setBusy(true);
-    client.pipeline
-      .reprocessSubject(kind, subjectId)
-      .then(() => setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500))
-      .catch(() => {})
-      .finally(() => setTimeout(() => setBusy(false), 1500));
-  };
-
-  const openRematch = async () => {
-    const applied = await RematchDialog.call({
-      kind: kind === 'show' ? 'show' : 'movie',
-      id,
-      title,
-    });
-    // The correction re-runs enrichment in the background; give it a beat, then
-    // pull the fresh treatments + art.
-    if (applied) {
-      setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500);
-    }
+  const refresh = () => {
+    setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500);
   };
 
   return (
@@ -160,36 +138,7 @@ export function TreatmentsPanel({
             </span>
           );
         })}
-        <Box row align="center" gap={8} ml="auto">
-          {admin && kind === 'item' ? (
-            <Button
-              variant="glass"
-              size="sm"
-              icon="file-info"
-              label={t('mediaInfo.action')}
-              onPress={() => void MediaInfoModal.call({ id, title })}
-            />
-          ) : null}
-          {canManageLibrary ? (
-            <Button
-              variant="glass"
-              size="sm"
-              icon="wand"
-              label={t('rematch.action')}
-              onPress={() => void openRematch()}
-            />
-          ) : null}
-          {admin ? (
-            <Button
-              variant="glass"
-              size="sm"
-              icon="refresh"
-              label={t('pipeline.reprocessBtn')}
-              onPress={reprocess}
-              loading={busy}
-            />
-          ) : null}
-        </Box>
+        <TitleActions kind={kind} id={id} title={title} onChanged={refresh} />
       </Box>
     </section>
   );

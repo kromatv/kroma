@@ -112,6 +112,11 @@ Series/
   video file. An app can take up to a day to show the change on a screen it has
   already opened.
 
+To change one title's picture without touching its folder, open the title and
+choose **Edit artwork**. A poster or a backdrop you upload there comes before
+the picture in the folder and the one from the internet, and **Restore the
+automatic picture** brings them back. It takes the right to manage the library.
+
 ### File types
 
 KROMA scans `.mkv`, `.mp4`, `.m4v`, `.mov`, `.webm`, `.avi` and `.ts` files.
