@@ -124,11 +124,7 @@ impl AppState {
             network_providers,
             network_listeners,
         } = wiring;
-        let hls = hls::HlsEngine::new(
-            config.data_dir.join("hls"),
-            crate::services::settings::max_transcodes(&settings),
-            crate::services::settings::transcode_cache_limit_bytes(&settings),
-        );
+        let hls = hls_engine(&config, &settings);
         let storyboard = Storyboard::new(&config.data_dir);
         // Mint (or read back) this install's stable identity before anything can
         // serve `/api/health`.
@@ -211,6 +207,14 @@ impl AppState {
             scratch_dir: std::sync::OnceLock::new(),
         })
     }
+}
+
+fn hls_engine(config: &Config, settings: &Settings) -> hls::HlsEngine {
+    hls::HlsEngine::new(
+        config.data_dir.join("hls"),
+        crate::services::settings::max_transcodes(settings),
+        crate::services::settings::transcode_cache_limit_bytes(settings),
+    )
 }
 
 #[cfg(test)]
