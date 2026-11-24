@@ -3,11 +3,12 @@
 //! (LIB-83). A change reaches clients through the `ItemUpdated` /
 //! `ShowUpdated` event.
 //!
-//! - `GET` → `{ title, overview, year, genres }`, each null where the title
-//!   follows the provider.
+//! - `GET` → `{ title, overview, year, released, genres }`, each null where
+//!   the title follows the provider. `released` is a day, `yyyy-mm-dd`.
 //! - `PUT` with the same body → the edit as kept: trimmed, with each empty
-//!   field handed back to the provider. 400 when a field is longer than a
-//!   title holds or the year is out of range.
+//!   field handed back to the provider and the year taken from `released`.
+//!   400 when a field is longer than a title holds, the year is out of range
+//!   or `released` is no day.
 
 use axum::extract::{DefaultBodyLimit, State};
 use axum::http::StatusCode;

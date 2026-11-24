@@ -208,6 +208,7 @@ mod tests {
             year: Some(1981),
             overview: Some("A winter at the hotel.".into()),
             genres: Some(vec!["Drama".into()]),
+            released: None,
         };
         edited(&pool, ITEM, "m3", rewritten);
         let regenred = TitleEdit {

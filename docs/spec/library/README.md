@@ -262,6 +262,11 @@ shows: what a person wrote by hand (LIB-83), else its `.nfo` file (LIB-84), else
 A year written in place of the provider's also replaces a release date that falls in another
 year, so a title sorted by release lands where its year says.
 
+**LIB-87** (SHIPPED) - A person can write the day a title came out in place of its year
+(LIB-83), and a `.nfo` file's premiere date gives it too (LIB-84). The year shown is the date's,
+as Plex and Kodi take a film's year from its release date, and the date replaces the
+provider's. A year written alone stays possible for a title whose day nobody knows.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

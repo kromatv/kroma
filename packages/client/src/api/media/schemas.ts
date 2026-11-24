@@ -50,6 +50,7 @@ export const TitleEdit = z.object({
   title: z.string().nullable(),
   overview: z.string().nullable(),
   year: z.number().int().nullable(),
+  released: z.string().nullable().default(null),
   genres: z.array(z.string()).nullable(),
 });
 export type TitleEdit = z.infer<typeof TitleEdit>;

@@ -4937,7 +4937,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 272
+    "line": 277
   },
   {
     "id": "LIB-42",
@@ -4947,7 +4947,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 274
+    "line": 279
   },
   {
     "id": "LIB-43",
@@ -4957,7 +4957,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 278
+    "line": 283
   },
   {
     "id": "LIB-44",
@@ -4967,7 +4967,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 282
+    "line": 287
   },
   {
     "id": "LIB-45",
@@ -4977,7 +4977,7 @@
     "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 304
+    "line": 309
   },
   {
     "id": "LIB-46",
@@ -4987,7 +4987,7 @@
     "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 309
+    "line": 314
   },
   {
     "id": "LIB-47",
@@ -4997,7 +4997,7 @@
     "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 313
+    "line": 318
   },
   {
     "id": "LIB-48",
@@ -5007,7 +5007,7 @@
     "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 317
+    "line": 322
   },
   {
     "id": "LIB-49",
@@ -5017,7 +5017,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 323
+    "line": 328
   },
   {
     "id": "LIB-50",
@@ -5027,7 +5027,7 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 286
+    "line": 291
   },
   {
     "id": "LIB-51",
@@ -5388,6 +5388,16 @@
     "text": "The catalogue sorts and filters a title by the name, year and genres it",
     "file": "docs/spec/library/README.md",
     "line": 260
+  },
+  {
+    "id": "LIB-87",
+    "domain": "LIB",
+    "space": "library",
+    "number": 87,
+    "status": "SHIPPED",
+    "text": "A person can write the day a title came out in place of its year",
+    "file": "docs/spec/library/README.md",
+    "line": 265
   },
   {
     "id": "MEDIA-1",

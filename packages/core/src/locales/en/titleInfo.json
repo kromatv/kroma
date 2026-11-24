@@ -5,8 +5,9 @@
   "titleInfo.hint": "What you write here shows instead of the text from TMDB, in every language. Leave a field empty to use TMDB's again.",
   "titleInfo.loadFailed": "Could not load the info.",
   "titleInfo.name": "Title",
+  "titleInfo.released": "Release date",
+  "titleInfo.releasedHint": "Just the year, as 1995, or the day, as 1995-12-15.",
   "titleInfo.saveFailed": "Could not save the info.",
   "titleInfo.summary": "Summary",
-  "titleInfo.title": "Info",
-  "titleInfo.year": "Year"
+  "titleInfo.title": "Info"
 }

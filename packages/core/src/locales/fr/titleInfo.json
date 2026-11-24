@@ -5,8 +5,9 @@
   "titleInfo.hint": "Ce que vous écrivez ici remplace le texte de TMDB, dans toutes les langues. Laissez un champ vide pour reprendre celui de TMDB.",
   "titleInfo.loadFailed": "Impossible de charger les informations.",
   "titleInfo.name": "Titre",
+  "titleInfo.released": "Date de sortie",
+  "titleInfo.releasedHint": "L'année seule, comme 1995, ou le jour, comme 1995-12-15.",
   "titleInfo.saveFailed": "Impossible d'enregistrer les informations.",
   "titleInfo.summary": "Résumé",
-  "titleInfo.title": "Informations",
-  "titleInfo.year": "Année"
+  "titleInfo.title": "Informations"
 }

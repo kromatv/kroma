@@ -18,7 +18,7 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 </movie>"#;
 
 #[test]
-fn a_film_s_file_gives_its_name_summary_year_genres_and_tmdb_id() {
+fn a_film_s_file_gives_its_name_summary_release_date_genres_and_tmdb_id() {
     let Contents { edit, tmdb } = parsed(HEAT, MOVIE);
 
     assert_eq!(edit.title.as_deref(), Some("Heat"));
@@ -27,6 +27,7 @@ fn a_film_s_file_gives_its_name_summary_year_genres_and_tmdb_id() {
         Some("A thief & a detective. Two men.")
     );
     assert_eq!(edit.year, Some(1995));
+    assert_eq!(edit.released.as_deref(), Some("1995-12-15"));
     assert_eq!(edit.genres, Some(vec!["Crime".into(), "Drama".into()]));
     assert_eq!(tmdb, Some(949));
 }
@@ -39,8 +40,19 @@ fn the_year_alone_is_read_when_the_file_has_no_premiere() {
 
     assert_eq!(edit.title.as_deref(), Some("Our show"));
     assert_eq!(edit.year, Some(2004));
+    assert_eq!(edit.released, None);
     assert_eq!(edit.genres, None);
     assert_eq!(edit.overview, None);
+}
+
+#[test]
+fn a_premiere_that_is_no_day_gives_its_year_and_no_date() {
+    let text = "<movie><premiered>1995</premiered><year>1990</year></movie>";
+
+    let edit = parsed(text, MOVIE).edit;
+
+    assert_eq!(edit.year, Some(1995));
+    assert_eq!(edit.released, None);
 }
 
 #[test]
