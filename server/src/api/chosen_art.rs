@@ -1,13 +1,14 @@
 //! `/api/art/{kind}/{id}`: the poster, the backdrop and the logo an admin chose
-//! for a film (`item`) or a show (`show`), and the thumbnail (`still`) of an
-//! episode (`item`), behind `library.manage`. A change reaches clients through
-//! the `ItemUpdated` / `ShowUpdated` event.
+//! for a film (`item`) or a show (`show`), the thumbnail (`still`) of an
+//! episode (`item`) and the poster of a season (`season`, id `{show}:{number}`),
+//! behind `library.manage`. A change reaches clients through the `ItemUpdated` /
+//! `ShowUpdated` event, a season's through its show's.
 //!
 //! - `GET /api/art/{kind}/{id}` → `{ poster, backdrop, logo, still }`, the URL
 //!   of each picture an admin chose, or null.
 //! - `POST /api/art/{kind}/{id}/{role}` (raw `image/*` body, `role` is `poster`,
-//!   `backdrop`, `logo` or `still`) → `{ url }`, where the title's picture is
-//!   served now.
+//!   `backdrop`, `logo` or `still`, and only `poster` for a season) → `{ url }`,
+//!   where the title's picture is served now.
 //! - `DELETE /api/art/{kind}/{id}/{role}` → 204, and the title shows the
 //!   picture beside its files again, or its fetched one.
 
@@ -24,8 +25,9 @@ use crate::api::error::lerr;
 use crate::api::managed_title::{not_found, Managed};
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::db::art_beside::{BACKDROP, LOGO, POSTER, STILL};
+use crate::db::art_beside::{BACKDROP, LOGO, POSTER, SEASON, STILL};
 use crate::db::art_chosen::Slot;
+use crate::db::metadata_core::{ITEM, SHOW};
 use crate::i18n;
 use crate::model::User;
 use crate::services::art_chosen::{self, Choice};
@@ -33,6 +35,7 @@ use crate::state::SharedState;
 
 const MAX_PICTURE_BYTES: usize = 32 * 1024 * 1024;
 const ROLES: [&str; 4] = [POSTER, BACKDROP, LOGO, STILL];
+const KINDS: [&str; 3] = [ITEM, SHOW, SEASON];
 
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/art/{kind}/{id}", get(chosen)).route(
@@ -59,9 +62,27 @@ impl Target {
     }
 }
 
+struct Pictured(Managed);
+
+impl FromRequestParts<SharedState> for Pictured {
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, state: &SharedState) -> Result<Self, Response> {
+        Managed::among(parts, state, &KINDS).await.map(Self)
+    }
+}
+
+fn roles_of(kind: &str) -> &'static [&'static str] {
+    if kind == SEASON {
+        &[POSTER]
+    } else {
+        &ROLES
+    }
+}
+
 async fn chosen(
     State(state): State<SharedState>,
-    Managed { kind, id, .. }: Managed,
+    Pictured(Managed { kind, id, .. }): Pictured,
 ) -> Result<Response, Response> {
     let mut urls = query(&state.db, move |pool| {
         db::art_chosen::chosen(&pool, kind, &id)
@@ -83,14 +104,15 @@ impl FromRequestParts<SharedState> for Asked {
     type Rejection = Response;
 
     async fn from_request_parts(parts: &mut Parts, state: &SharedState) -> Result<Self, Response> {
-        let Managed {
+        let Pictured(Managed {
             user,
             kind,
             id,
             path,
-        } = Managed::from_request_parts(parts, state).await?;
-        let role = ROLES
-            .into_iter()
+        }) = Pictured::from_request_parts(parts, state).await?;
+        let role = roles_of(kind)
+            .iter()
+            .copied()
             .find(|role| path.get("role").is_some_and(|asked| asked == role));
         let Some(role) = role else {
             return Err(not_found(&user));

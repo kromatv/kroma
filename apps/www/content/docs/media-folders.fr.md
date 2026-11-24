@@ -134,8 +134,9 @@ Pour changer l'image d'un titre sans toucher à son dossier, ouvrez le titre et
 choisissez **Modifier les visuels**. Une affiche, un fond ou un logo envoyé à cet
 endroit passe avant l'image du dossier et celle d'Internet, et **Rétablir l'image
 automatique** les fait revenir. Sur la page d'une série, le bouton **Modifier la
-vignette** d'un épisode fait de même pour la vignette de cet épisode. Il faut le
-droit de gérer la bibliothèque.
+vignette** d'un épisode fait de même pour la vignette de cet épisode, et
+**Modifier l'affiche de la saison**, au-dessus des épisodes, pour l'affiche de
+la saison à l'écran. Il faut le droit de gérer la bibliothèque.
 
 ### Titres et résumés des fichiers .nfo
 

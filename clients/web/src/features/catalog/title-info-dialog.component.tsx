@@ -1,10 +1,10 @@
 import { apiErrorText } from '@kromatv/client';
 import {
-  type ArtKind,
   ItemId,
   ShowId,
   TITLE_EDIT_LIMITS,
   type TitleEdit,
+  type TitleKind,
 } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import { Box, Callout, Dialog, Field, Spinner, Text } from '@kromatv/ui/kit';
@@ -16,7 +16,7 @@ import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.c
 import { draftOf, editOf, type TitleDraft } from '#web/features/catalog/title-info-draft';
 import { useAuth } from '#web/shared/lib/auth';
 
-type Props = Readonly<{ kind: ArtKind | 'episode'; id: string; title: string }>;
+type Props = Readonly<{ kind: TitleKind | 'episode'; id: string; title: string }>;
 
 type Save = (edit: TitleEdit) => Promise<unknown>;
 

@@ -4,8 +4,8 @@ import {
   type ArtRole,
   type ChosenArt,
   ItemId,
+  SeasonId,
   ShowId,
-  type SubjectId,
 } from '@kromatv/client/media';
 import { useT } from '@kromatv/ui';
 import {
@@ -39,6 +39,8 @@ const sDefinition = styles({
 
 const TITLE_ROLES = ['poster', 'backdrop', 'logo'] as const satisfies readonly ArtRole[];
 
+const SUBJECTS = { item: ItemId, show: ShowId, season: SeasonId } as const;
+
 const WASH = color('tint/4');
 
 type Props = Readonly<{
@@ -56,10 +58,11 @@ interface Slots {
   reset: (role: ArtRole) => void;
 }
 
-function useChosenArt(kind: ArtKind, id: SubjectId): Slots {
+function useChosenArt(kind: ArtKind, raw: string): Slots {
   const t = useT();
   const { client } = useAuth();
   const queryClient = useQueryClient();
+  const id = SUBJECTS[kind].parse(raw);
   const queryKey = ['chosen-art', kind, id] as const;
   const { data, error: loadError } = useQuery({
     queryKey,
@@ -181,7 +184,7 @@ function ArtSlots({
   roles,
 }: Readonly<{ kind: ArtKind; id: string; roles: readonly ArtRole[] }>) {
   const t = useT();
-  const slots = useChosenArt(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id));
+  const slots = useChosenArt(kind, id);
   return (
     <Box gap={20}>
       <Text variant="meta" color="white/55">
@@ -202,8 +205,9 @@ function ArtSlots({
 }
 
 /** The pictures an admin uploads for a title: the poster, the backdrop and the logo of
- * a film or a show unless `roles` names others, such as an episode's `still`. Open with
- * `await ArtworkDialog.call({ kind, id, title, roles })`; it resolves on dismiss. */
+ * a film or a show unless `roles` names others, such as an episode's `still` or a
+ * season's `poster`. Open with `await ArtworkDialog.call({ kind, id, title, roles })`;
+ * it resolves on dismiss. */
 export const ArtworkDialog = createCallable<Props>(({ call, kind, id, title, roles }) => {
   const t = useT();
   const shown = roles ?? TITLE_ROLES;
