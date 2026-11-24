@@ -76,8 +76,8 @@ fn what_was_chosen_leaves_out_the_pictures_beside_the_files() {
     assert_eq!(
         urls,
         Urls {
-            poster: None,
             backdrop: Some("/api/images/chosen-b.webp".into()),
+            ..Urls::default()
         }
     );
 }

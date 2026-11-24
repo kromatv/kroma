@@ -2,8 +2,8 @@
 
 The picture names other media servers read from a media folder, which KROMA
 follows so a library moved from one of them keeps its posters
-([`docs/spec/media/README.md`](../spec/media/README.md), MEDIA-33, MEDIA-48 and
-MEDIA-49).
+([`docs/spec/media/README.md`](../spec/media/README.md), MEDIA-33, MEDIA-48,
+MEDIA-49 and MEDIA-51).
 Read 2026-11-24.
 
 ## Sources
@@ -42,11 +42,10 @@ regard to case. A folder name is a season folder by the scan's own rule:
 
 ## Logos
 
-Not read yet. The names, for when they are:
+| Where | Names | Source | KROMA |
+| --- | --- | --- | --- |
+| A film's own folder | `logo`, `clearlogo` | J, P | read |
+| Beside a film's video, in any folder | `<video name>-logo`, `<video name>-clearlogo` | J | read |
+| A show's folder | `logo`, `clearlogo` | J, P | read |
 
-| What | Names | Source |
-| --- | --- | --- |
-| Logo | `logo`, `clearlogo` | J, P |
-
-They apply in a film's or a show's folder, and after the video's name beside a
-film in a shared folder (`Avatar (2009)-logo.png`, J).
+A logo is cached at most 800 pixels wide, as WebP.

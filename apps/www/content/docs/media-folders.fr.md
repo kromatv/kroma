@@ -79,6 +79,52 @@ des sous-titres forcés, et `.sdh` pour des sous-titres pour sourds et
 malentendants. Un dossier `Subs` à côté de la vidéo fonctionne aussi. Les
 sous-titres intégrés au fichier vidéo ne demandent rien.
 
+### Affiches, fonds et logos
+
+KROMA trouve sur Internet une affiche, un fond et un logo pour chaque titre qu'il
+reconnaît. Une image placée dans le dossier du titre passe avant eux, et donne
+une affiche à un titre que KROMA ne reconnaît pas, à la place de l'image par
+défaut :
+
+```
+Films/
+  Summer Trip (2019)/
+    Summer Trip (2019).mkv
+    poster.jpg
+    fanart.jpg
+Series/
+  School Plays/
+    poster.jpg
+    backdrop.jpg
+    Season 01/
+      School Plays - S01E01.mkv
+```
+
+- Pour l'affiche d'un film, nommez l'image `poster`, `folder`, `cover`,
+  `default` ou `movie`, dans le dossier du film. Dans un dossier qui contient
+  plusieurs films, donnez-lui plutôt le nom de la vidéo : `Summer Trip (2019).jpg`
+  ou `Summer Trip (2019)-poster.jpg`.
+- Pour le fond d'un film, nommez-la `backdrop`, `fanart`, `background` ou `art`,
+  ou, dans un dossier partagé, du nom de la vidéo :
+  `Summer Trip (2019)-fanart.jpg`.
+- Pour le logo, le nom du titre dessiné en image, nommez-la `logo` ou
+  `clearlogo`, ou, dans un dossier partagé, du nom de la vidéo :
+  `Summer Trip (2019)-logo.png`.
+- Pour une série, placez les images dans le dossier de la série, au-dessus des
+  dossiers de saison, avec les mêmes noms, ou `show` pour l'affiche. Quand deux
+  séries partagent un dossier, aucune ne prend les images qu'il contient.
+- KROMA lit les images `.jpg`, `.jpeg`, `.png` et `.webp`, et ignore celles qu'il
+  ne peut pas ouvrir.
+- Un fond ou un logo ne s'affiche que sur un titre que KROMA reconnaît.
+- KROMA remarque une image ajoutée, modifiée ou supprimée comme il remarque une
+  nouvelle vidéo. Une application peut mettre jusqu'à un jour à montrer le
+  changement sur un écran déjà ouvert.
+
+Pour changer l'image d'un titre sans toucher à son dossier, ouvrez le titre et
+choisissez **Modifier les visuels**. Une affiche ou un fond envoyé à cet endroit
+passe avant l'image du dossier et celle d'Internet, et **Rétablir l'image
+automatique** les fait revenir. Il faut le droit de gérer la bibliothèque.
+
 ### Titres et résumés des fichiers .nfo
 
 Un titre peut prendre son nom, son année, son résumé et ses genres dans un

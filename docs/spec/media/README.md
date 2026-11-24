@@ -199,6 +199,11 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
   or a show, and a backdrop for a matched one. Each comes before the picture kept beside the
   title's files and the fetched one, until the person removes it. A metadata refresh keeps it
   (LIB-44), and a backup carries it.
+- **MEDIA-51** (SHIPPED) - The logo kept beside a matched title's files, the title's name
+  drawn as a picture, comes before a fetched one. For a film, that is a picture named after
+  one of its video files followed by `-logo` or `-clearlogo`, or one named `logo` or
+  `clearlogo` in a folder that holds no other title's video. For a show, it is one of those
+  two names in the show's folder, under the same rule as its poster (MEDIA-48).
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.
