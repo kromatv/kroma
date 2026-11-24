@@ -8,7 +8,7 @@ fn scanned(files: &[&str]) -> (Folders, Vec<PathBuf>) {
     let (pictures, videos): (Vec<PathBuf>, Vec<PathBuf>) = files
         .iter()
         .map(|file| Path::new("/media").join(file))
-        .partition(|path| picture_stem(path).is_some());
+        .partition(|path| !path.extension().is_some_and(|ext| ext == "mkv"));
     (Folders::new(pictures, videos.clone()), videos)
 }
 
@@ -126,6 +126,38 @@ fn a_folder_holding_two_shows_gives_its_art_to_neither() {
 
     assert_eq!(andor, Art::default());
     assert_eq!(none, Art::default());
+}
+
+#[test]
+fn a_film_s_nfo_is_named_after_its_video_or_is_its_own_folder_s() {
+    let (shared, videos) = scanned(&[
+        "Films/Heat.mkv",
+        "Films/Ronin.mkv",
+        "Films/HEAT.nfo",
+        "Films/movie.nfo",
+    ]);
+    let (own, own_videos) = scanned(&["Heat (1995)/Heat (1995).mkv", "Heat (1995)/movie.nfo"]);
+
+    assert_eq!(film_nfo(&shared, &videos[..1]), at("Films/HEAT.nfo"));
+    assert_eq!(film_nfo(&shared, &videos[1..]), None);
+    assert_eq!(film_nfo(&own, &own_videos), at("Heat (1995)/movie.nfo"));
+}
+
+#[test]
+fn a_show_s_nfo_is_in_the_folder_above_its_seasons() {
+    let (folders, videos) = scanned(&[
+        "Andor/Season 01/Andor S01E01.mkv",
+        "Andor/Season 01/tvshow.nfo",
+        "Andor/tvshow.nfo",
+    ]);
+    let (shared, shared_videos) = scanned(&[
+        "Shows/Andor S01E01.mkv",
+        "Shows/Severance S01E01.mkv",
+        "Shows/tvshow.nfo",
+    ]);
+
+    assert_eq!(show_nfo(&folders, &videos), at("Andor/tvshow.nfo"));
+    assert_eq!(show_nfo(&shared, &shared_videos[..1]), None);
 }
 
 #[test]

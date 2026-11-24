@@ -64,10 +64,12 @@ pub mod art_beside;
 pub mod art_chosen;
 pub mod localize;
 pub mod metadata_core;
+mod scanned;
 mod schema;
 mod visibility;
 #[cfg(any(test, feature = "testing"))]
 pub mod testing;
+pub mod text_beside;
 pub mod title_edits;
 pub mod tmdb_pin;
 pub mod housekeeping;

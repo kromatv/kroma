@@ -1,6 +1,7 @@
 //! What a person who manages the library wrote by hand about a film or a show
-//! (LIB-83). Each field comes before the provider's, in every language, and a
-//! field left `None` keeps following the provider.
+//! (LIB-83), and what the `.nfo` file beside it says (LIB-84). Each field comes
+//! before the provider's, in every language, and a field left `None` keeps
+//! following the provider.
 
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +18,7 @@ pub const GENRE_MAX: usize = 60;
 /// The years a title can be given.
 pub const YEARS: std::ops::RangeInclusive<u32> = 1800..=2200;
 
-/// The fields a person wrote by hand for one title.
+/// The fields written for one title, by hand or in its `.nfo` file.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TitleEdit {
     #[serde(default)]
@@ -63,6 +64,17 @@ fn kept(text: Option<String>) -> Option<String> {
     text.map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
 }
 
+fn cut(text: String, max: usize) -> String {
+    if text.chars().count() <= max {
+        return text;
+    }
+    text.chars()
+        .take(max)
+        .collect::<String>()
+        .trim_end()
+        .to_string()
+}
+
 impl TitleEdit {
     /// The same edit with surrounding spaces trimmed, and every field that is
     /// left empty handed back to the provider.
@@ -78,6 +90,33 @@ impl TitleEdit {
             overview: kept(self.overview),
             year: self.year,
             genres: (!genres.is_empty()).then_some(genres),
+        }
+    }
+
+    /// This edit, with each field it leaves empty taken from `below`.
+    pub fn over(self, below: Self) -> Self {
+        Self {
+            title: self.title.or(below.title),
+            overview: self.overview.or(below.overview),
+            year: self.year.or(below.year),
+            genres: self.genres.or(below.genres),
+        }
+    }
+
+    /// The same edit tidied and cut to what a title can hold: a name or a
+    /// summary that runs long is cut short, the genres past the limit are
+    /// dropped, and a year outside [`YEARS`] is left out.
+    pub fn clipped(self) -> Self {
+        let tidied = self.tidied();
+        let genres = tidied.genres.map(|genres| {
+            let kept = genres.into_iter().take(GENRES_MAX);
+            kept.map(|genre| cut(genre, GENRE_MAX)).collect()
+        });
+        Self {
+            title: tidied.title.map(|title| cut(title, TITLE_MAX)),
+            overview: tidied.overview.map(|text| cut(text, OVERVIEW_MAX)),
+            year: tidied.year.filter(|year| YEARS.contains(year)),
+            genres,
         }
     }
 

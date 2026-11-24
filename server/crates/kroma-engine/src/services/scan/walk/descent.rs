@@ -9,6 +9,7 @@ use super::super::found::Beside;
 use super::WalkEntry;
 
 const TEXT_SUBTITLES: [&str; 5] = ["srt", "ass", "ssa", "vtt", "webvtt"];
+const SIDECARS: [&[&str]; 3] = [&TEXT_SUBTITLES, &PICTURES, &["nfo"]];
 
 pub(super) struct Descent {
     root: PathBuf,
@@ -28,23 +29,23 @@ impl Descent {
     }
 
     pub(super) fn note_beside(&self, children: &[jwalk::Result<WalkEntry>]) {
-        let (mut subtitles, mut pictures) = (Vec::new(), Vec::new());
+        let mut found: [Vec<PathBuf>; 3] = Default::default();
         for e in children
             .iter()
             .flatten()
             .filter(|e| e.file_type().is_file())
         {
-            let held = if has_extension(&e.file_name, &TEXT_SUBTITLES) {
-                &mut subtitles
-            } else if has_extension(&e.file_name, &PICTURES) {
-                &mut pictures
-            } else {
-                continue;
-            };
-            held.push(self.abs_root.join(e.path().trim_prefix(&self.root)));
+            let kind = SIDECARS
+                .iter()
+                .position(|extensions| has_extension(&e.file_name, extensions));
+            if let Some(kind) = kind {
+                found[kind].push(self.abs_root.join(e.path().trim_prefix(&self.root)));
+            }
         }
+        let [subtitles, pictures, nfos] = found;
         self.beside.subtitles.add(subtitles);
         self.beside.pictures.add(pictures);
+        self.beside.nfos.add(nfos);
     }
 
     pub(super) fn already_walked_link(&self, e: &WalkEntry) -> bool {

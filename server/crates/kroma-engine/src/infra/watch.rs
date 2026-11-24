@@ -121,15 +121,16 @@ fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {
     }
 }
 
-/// A digest of every file's path, size and mtime, and of every picture kept
-/// beside a title, in no particular order: a file added, removed, moved,
-/// renamed, resized or touched changes it, and so does a poster or a backdrop
-/// put beside a title or taken away.
+/// A digest of every file's path, size and mtime, and of every picture and
+/// `.nfo` file kept beside a title, in no particular order: a file added,
+/// removed, moved, renamed, resized or touched changes it, and so does a
+/// poster, a backdrop or an `.nfo` put beside a title, edited or taken away.
 pub fn signature(data: &ScanData) -> u64 {
     let files = data.items.iter().flat_map(|item| &item.files);
     let files = files.map(|f| hashed(&(&f.id, f.size, data.mtimes.get(&f.id).copied().flatten())));
     let pictures = data.art_beside.iter().map(|p| hashed(&(&p.subject_id, p.role, &p.url)));
-    files.chain(pictures).fold(0u64, u64::wrapping_add)
+    let nfos = data.nfo_beside.iter().map(|n| hashed(&(&n.subject_id, &n.path, n.modified)));
+    files.chain(pictures).chain(nfos).fold(0u64, u64::wrapping_add)
 }
 
 fn hashed(value: &impl Hash) -> u64 {

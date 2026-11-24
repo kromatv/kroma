@@ -59,4 +59,5 @@ pub(super) const STEPS: &[Step] = &[
     sql_step!("0034_art_beside"),
     sql_step!("0035_art_chosen"),
     sql_step!("0036_title_edits"),
+    sql_step!("0037_text_beside"),
 ];

@@ -79,6 +79,35 @@ des sous-titres forcés, et `.sdh` pour des sous-titres pour sourds et
 malentendants. Un dossier `Subs` à côté de la vidéo fonctionne aussi. Les
 sous-titres intégrés au fichier vidéo ne demandent rien.
 
+### Titres et résumés des fichiers .nfo
+
+Un titre que KROMA ne reconnaît pas peut prendre son nom, son année, son résumé
+et ses genres dans un fichier `.nfo`, celui que lisent Kodi, Jellyfin et Plex :
+
+```
+Films/
+  Summer Trip (2019)/
+    Summer Trip (2019).mkv
+    Summer Trip (2019).nfo
+Series/
+  School Plays/
+    tvshow.nfo
+    Season 01/
+      School Plays - S01E01.mkv
+```
+
+- Pour un film, donnez au fichier le nom de la vidéo, ou appelez-le `movie.nfo`
+  dans le dossier du film.
+- Pour une série, placez `tvshow.nfo` dans le dossier de la série, au-dessus des
+  dossiers de saison.
+- KROMA lit `<title>`, `<plot>`, `<premiered>` ou `<year>`, et chaque
+  `<genre>`. Le fichier doit être en UTF-8, comme ces logiciels l'écrivent.
+- Dès que KROMA reconnaît le titre, c'est le texte trouvé sur Internet qui
+  s'affiche. Ce que vous écrivez avec **Modifier les informations** passe avant
+  le fichier.
+- KROMA lit un fichier ajouté ou modifié à la prochaine analyse de la
+  bibliothèque.
+
 ### Types de fichiers
 
 KROMA analyse les fichiers `.mkv`, `.mp4`, `.m4v`, `.mov`, `.webm`, `.avi` et

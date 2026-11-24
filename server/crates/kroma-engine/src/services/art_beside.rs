@@ -1,3 +1,6 @@
+//! What a person keeps beside a title's files: its poster and its backdrop,
+//! and the `.nfo` file that gives it its text.
+
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
@@ -32,6 +35,12 @@ const FILM_BACKDROP: Role = Role {
     in_own_folder: &BACKDROPS,
 };
 
+const FILM_NFO: Role = Role {
+    after_video: &[],
+    video_alone: true,
+    in_own_folder: &["movie"],
+};
+
 /// The poster and the backdrop a person keeps beside a title's files.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Art {
@@ -39,27 +48,30 @@ pub struct Art {
     pub backdrop: Option<PathBuf>,
 }
 
-/// The pictures a scan found, by the folder they are in, with the videos of
-/// those folders.
+/// The files of one kind a scan found, pictures or `.nfo` files, by the
+/// folder they are in, with the videos of those folders.
 pub struct Folders(HashMap<PathBuf, Folder>);
 
 #[derive(Default)]
 struct Folder {
-    pictures: HashMap<String, PathBuf>,
+    files: HashMap<String, PathBuf>,
     videos: Vec<PathBuf>,
 }
 
 impl Folders {
-    /// Holds each of `pictures` in its folder, and each of `videos` that is in
-    /// one of those folders.
-    pub fn new(pictures: Vec<PathBuf>, videos: impl IntoIterator<Item = PathBuf>) -> Self {
+    /// Holds each of `files` in its folder by its name, and each of `videos`
+    /// that is in one of those folders.
+    pub fn new(files: Vec<PathBuf>, videos: impl IntoIterator<Item = PathBuf>) -> Self {
         let mut folders: HashMap<PathBuf, Folder> = HashMap::new();
-        for picture in pictures {
-            let (Some(dir), Some(stem)) = (picture.parent(), picture_stem(&picture)) else {
+        for file in files {
+            let (Some(dir), Some(stem)) = (file.parent(), file.file_stem()) else {
                 continue;
             };
-            let dir = dir.to_path_buf();
-            folders.entry(dir).or_default().hold(stem, picture);
+            let stem = stem.to_string_lossy().to_lowercase();
+            folders
+                .entry(dir.to_path_buf())
+                .or_default()
+                .hold(stem, file);
         }
         for video in videos {
             if let Some(folder) = video.parent().and_then(|dir| folders.get_mut(dir)) {
@@ -69,7 +81,14 @@ impl Folders {
         Self(folders)
     }
 
-    fn film_picture(&self, video: &Path, videos: &[PathBuf], role: &Role) -> Option<PathBuf> {
+    fn of_show(&self, episodes: &[PathBuf]) -> Vec<&Folder> {
+        show_folders(episodes)
+            .filter_map(|dir| self.0.get(&dir))
+            .filter(|folder| folder.holds_only(episodes))
+            .collect()
+    }
+
+    fn film_file(&self, video: &Path, videos: &[PathBuf], role: &Role) -> Option<PathBuf> {
         let folder = self.0.get(video.parent()?)?;
         let stem = video.file_stem()?.to_string_lossy().to_lowercase();
         let mut named = role
@@ -77,7 +96,7 @@ impl Folders {
             .iter()
             .map(|suffix| format!("{stem}-{suffix}"))
             .chain(role.video_alone.then(|| stem.clone()));
-        named.find_map(|name| folder.picture(&name)).or_else(|| {
+        named.find_map(|name| folder.file(&name)).or_else(|| {
             folder
                 .holds_only(videos)
                 .then(|| folder.first_of(role.in_own_folder))
@@ -87,13 +106,10 @@ impl Folders {
 }
 
 impl Folder {
-    fn hold(&mut self, stem: String, picture: PathBuf) {
-        let held = self
-            .pictures
-            .entry(stem)
-            .or_insert_with(|| picture.clone());
-        if picture < *held {
-            *held = picture;
+    fn hold(&mut self, stem: String, file: PathBuf) {
+        let held = self.files.entry(stem).or_insert_with(|| file.clone());
+        if file < *held {
+            *held = file;
         }
     }
 
@@ -101,12 +117,12 @@ impl Folder {
         self.videos.iter().all(|video| videos.contains(video))
     }
 
-    fn picture(&self, name: &str) -> Option<PathBuf> {
-        self.pictures.get(name).cloned()
+    fn file(&self, name: &str) -> Option<PathBuf> {
+        self.files.get(name).cloned()
     }
 
     fn first_of(&self, names: &[&str]) -> Option<PathBuf> {
-        names.iter().find_map(|name| self.picture(name))
+        names.iter().find_map(|name| self.file(name))
     }
 }
 
@@ -116,30 +132,41 @@ impl Folder {
 /// folder that holds no other title's video, `poster`, `folder`, `cover`,
 /// `default` or `movie`, and `backdrop`, `fanart`, `background` or `art`.
 pub fn film_art(folders: &Folders, videos: &[PathBuf]) -> Art {
-    let pick = |role: &Role| {
-        videos
-            .iter()
-            .find_map(|video| folders.film_picture(video, videos, role))
-    };
     Art {
-        poster: pick(&FILM_POSTER),
-        backdrop: pick(&FILM_BACKDROP),
+        poster: film_file(folders, videos, &FILM_POSTER),
+        backdrop: film_file(folders, videos, &FILM_BACKDROP),
     }
+}
+
+/// The `.nfo` file kept beside a film's `videos`: one named after one of them,
+/// else `movie.nfo` in a folder that holds no other title's video.
+pub fn film_nfo(folders: &Folders, videos: &[PathBuf]) -> Option<PathBuf> {
+    film_file(folders, videos, &FILM_NFO)
+}
+
+fn film_file(folders: &Folders, videos: &[PathBuf], role: &Role) -> Option<PathBuf> {
+    videos
+        .iter()
+        .find_map(|video| folders.film_file(video, videos, role))
 }
 
 /// The art kept in a show's folder, the one above its season folders, when it
 /// holds no other show's episode: `poster`, `folder`, `cover`, `default` or
 /// `show`, and `backdrop`, `fanart`, `background` or `art`.
 pub fn show_art(folders: &Folders, episodes: &[PathBuf]) -> Art {
-    let held: Vec<&Folder> = show_folders(episodes)
-        .filter_map(|dir| folders.0.get(&dir))
-        .filter(|folder| folder.holds_only(episodes))
-        .collect();
+    let held = folders.of_show(episodes);
     let pick = |names: &[&str]| held.iter().find_map(|folder| folder.first_of(names));
     Art {
         poster: pick(&SHOW_POSTERS),
         backdrop: pick(&BACKDROPS),
     }
+}
+
+/// `tvshow.nfo` in a show's folder, the one above its season folders, when it
+/// holds no other show's episode.
+pub fn show_nfo(folders: &Folders, episodes: &[PathBuf]) -> Option<PathBuf> {
+    let held = folders.of_show(episodes);
+    held.iter().find_map(|folder| folder.file("tvshow"))
 }
 
 /// The widest a picture kept as `role` is cached.
@@ -168,15 +195,6 @@ fn show_folder(episode: &Path) -> Option<PathBuf> {
         parent
     };
     Some(folder.to_path_buf())
-}
-
-fn picture_stem(file: &Path) -> Option<String> {
-    let ext = file.extension()?.to_str()?;
-    let stem = file.file_stem()?.to_string_lossy().to_lowercase();
-    PICTURES
-        .iter()
-        .any(|picture| ext.eq_ignore_ascii_case(picture))
-        .then_some(stem)
 }
 
 #[cfg(test)]

@@ -96,6 +96,48 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
 }
 
 #[test]
+fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
+    let long = TitleEdit {
+        title: Some(format!(" {}", "a".repeat(TITLE_MAX + 5))),
+        overview: Some("é".repeat(OVERVIEW_MAX + 1)),
+        year: Some(*YEARS.end() + 1),
+        genres: Some(vec!["g".repeat(GENRE_MAX + 1); GENRES_MAX + 1]),
+    };
+
+    let clipped = long.clipped();
+
+    assert!(clipped.fits());
+    assert_eq!(clipped.title.map(|t| t.chars().count()), Some(TITLE_MAX));
+    assert_eq!(
+        clipped.overview.map(|t| t.chars().count()),
+        Some(OVERVIEW_MAX)
+    );
+    assert_eq!(clipped.year, None);
+    assert_eq!(clipped.genres.map(|g| g.len()), Some(GENRES_MAX));
+}
+
+#[test]
+fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
+    let hand = TitleEdit {
+        title: Some("Heat".into()),
+        ..Default::default()
+    };
+    let file = TitleEdit {
+        title: Some("heat".into()),
+        overview: Some("Two men.".into()),
+        year: Some(1995),
+        genres: Some(vec!["Crime".into()]),
+    };
+
+    let shown = hand.over(file);
+
+    assert_eq!(shown.title.as_deref(), Some("Heat"));
+    assert_eq!(shown.overview.as_deref(), Some("Two men."));
+    assert_eq!(shown.year, Some(1995));
+    assert_eq!(shown.genres, Some(vec!["Crime".into()]));
+}
+
+#[test]
 fn each_written_field_replaces_the_provider_one_and_the_rest_stay() {
     let edit = TitleEdit {
         title: Some("Heat (director's cut)".into()),
