@@ -66,14 +66,14 @@ function ListGroup({ children, size, divider, style }: Readonly<ListGroupProps>)
         style={style}
       >
         <RingScope placement="inside" corner={metrics.radius}>
-          <InGroup.Provider value={slot}>
+          <InGroup value={slot}>
             {items.map((child, index) => (
               <Fragment key={memberKey(child, index)}>
                 {index > 0 ? <Box h={1} mx={divider ?? metrics.px} bg="border" /> : null}
                 {child}
               </Fragment>
             ))}
-          </InGroup.Provider>
+          </InGroup>
         </RingScope>
       </Box>
     </Frost>

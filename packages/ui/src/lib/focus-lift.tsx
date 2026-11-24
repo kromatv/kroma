@@ -85,7 +85,7 @@ export function FocusLiftHost({ children }: Readonly<{ children: (held: boolean)
     return () => parent(false);
   }, [lifted, parent]);
 
-  return <LiftContext.Provider value={report}>{children(lifted)}</LiftContext.Provider>;
+  return <LiftContext value={report}>{children(lifted)}</LiftContext>;
 }
 
 /**

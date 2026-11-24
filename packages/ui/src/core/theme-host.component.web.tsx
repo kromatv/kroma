@@ -93,7 +93,7 @@ export function ThemeHost({ runtime, themeScope = true, children }: Readonly<The
       data-theme={ground}
       data-kroma-bp={steps}
     >
-      <ScopeMarksContext.Provider value={marks}>{children}</ScopeMarksContext.Provider>
+      <ScopeMarksContext value={marks}>{children}</ScopeMarksContext>
     </div>
   );
 }

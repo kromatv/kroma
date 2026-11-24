@@ -2417,6 +2417,21 @@
     },
     {
       "files": [
+        "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.component.tsx",
+        "packages/ui/src/components/molecules/button-group/button-group.component.tsx",
+        "packages/ui/src/components/molecules/nav-pill/nav-pill.component.tsx",
+        "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx",
+        "packages/ui/src/components/molecules/select/select-options.component.tsx",
+        "packages/ui/src/components/organisms/chart/chart.component.tsx",
+        "packages/ui/src/lib/part-context.test.tsx",
+        "packages/ui/src/lib/scroll-mask.native.test.tsx"
+      ],
+      "rules": {
+        "kroma/no-constructed-context-value": "off"
+      }
+    },
+    {
+      "files": [
         "apps/www/src/routes/download_.archive.tsx",
         "clients/mobile/src/app/\\(app\\)/\\(tabs\\)/_layout.tsx",
         "clients/mobile/src/components/catalogue-screen.component.tsx",
@@ -2568,14 +2583,6 @@
       "files": [
         "apps/kit/src/stories.smoke.test.tsx",
         "packages/module-sdk/src/scope.tsx",
-        "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.component.tsx",
-        "packages/ui/src/components/molecules/button-group/button-group.component.tsx",
-        "packages/ui/src/components/molecules/nav-pill/nav-pill.component.tsx",
-        "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx",
-        "packages/ui/src/components/molecules/select/select-options.component.tsx",
-        "packages/ui/src/components/organisms/chart/chart.component.tsx",
-        "packages/ui/src/lib/part-context.test.tsx",
-        "packages/ui/src/lib/scroll-mask.native.test.tsx",
         "packages/workbench/src/story-mdx.test.tsx"
       ],
       "rules": {

@@ -27,7 +27,7 @@ interface ScreenProps {
 
 function Question({ width = WIDE, onBack, onNext, onSkip, children }: Readonly<ScreenProps>) {
   return (
-    <BreakpointIndexContext.Provider value={width}>
+    <BreakpointIndexContext value={width}>
       <GuidedFlow.Root label="Configuration">
         <GuidedFlow.Aside>
           <Text>Toutes les étapes</Text>
@@ -58,7 +58,7 @@ function Question({ width = WIDE, onBack, onNext, onSkip, children }: Readonly<S
           </GuidedFlow.Actions>
         </GuidedFlow.Footer>
       </GuidedFlow.Root>
-    </BreakpointIndexContext.Provider>
+    </BreakpointIndexContext>
   );
 }
 
@@ -182,7 +182,7 @@ describe('GuidedFlow', () => {
     const onNext = vi.fn();
     render(
       onScreen(
-        <BreakpointIndexContext.Provider value={WIDE}>
+        <BreakpointIndexContext value={WIDE}>
           <GuidedFlow.Root label="Configuration">
             <GuidedFlow.Footer>
               <GuidedFlow.Actions>
@@ -190,7 +190,7 @@ describe('GuidedFlow', () => {
               </GuidedFlow.Actions>
             </GuidedFlow.Footer>
           </GuidedFlow.Root>
-        </BreakpointIndexContext.Provider>,
+        </BreakpointIndexContext>,
       ),
     );
 

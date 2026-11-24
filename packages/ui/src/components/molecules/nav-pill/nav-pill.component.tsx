@@ -212,7 +212,7 @@ function Root({
   };
 
   return (
-    <NavPillContext.Provider value={context}>
+    <NavPillContext value={context}>
       <Box
         ref={capsule}
         {...(slide ? panHandlers(pan) : null)}
@@ -232,7 +232,7 @@ function Root({
         <Lens rect={hover?.rect ?? lens?.rect ?? null} chase={hover !== null} tone={tone} />
         {items}
       </Box>
-    </NavPillContext.Provider>
+    </NavPillContext>
   );
 }
 

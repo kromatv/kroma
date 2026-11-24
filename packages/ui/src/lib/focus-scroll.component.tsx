@@ -158,8 +158,8 @@ function AxisScroll({
   );
 
   return (
-    <RevealContext.Provider value={reveal}>
-      <ScrollPositionContext.Provider value={horizontal ? null : position}>
+    <RevealContext value={reveal}>
+      <ScrollPositionContext value={horizontal ? null : position}>
         <Scroller
           ref={scroller}
           horizontal={horizontal}
@@ -190,8 +190,8 @@ function AxisScroll({
         >
           {children}
         </Scroller>
-      </ScrollPositionContext.Provider>
-    </RevealContext.Provider>
+      </ScrollPositionContext>
+    </RevealContext>
   );
 }
 
@@ -246,7 +246,7 @@ function offsetFor({
 function FocusScroll(props: Readonly<FocusScrollProps>) {
   const report = useContext(ScrolledReport);
   return (
-    <ScrolledReport.Provider value={null}>
+    <ScrolledReport value={null}>
       <AxisScroll
         {...props}
         onScrolledChange={props.onScrolledChange ?? report ?? undefined}
@@ -257,7 +257,7 @@ function FocusScroll(props: Readonly<FocusScrollProps>) {
             one that shows there, not the one a rail was last left on. */}
         <NavigatorNode spatial>{props.children}</NavigatorNode>
       </AxisScroll>
-    </ScrolledReport.Provider>
+    </ScrolledReport>
   );
 }
 
@@ -280,10 +280,10 @@ function FocusSlot({
   const row = useRef<View>(null);
   return (
     <NavigatorNode onActive={onActive}>
-      <RowContext.Provider value={row}>
+      <RowContext value={row}>
         {/* Adds no layout of its own: a column that stretches its child. */}
         <FocusLiftView ref={row}>{children}</FocusLiftView>
-      </RowContext.Provider>
+      </RowContext>
     </NavigatorNode>
   );
 }
@@ -298,11 +298,11 @@ function FocusLine({
 }: Readonly<{ children: ReactNode; style?: StyleProp<ViewStyle> }>) {
   const row = useRef<View>(null);
   return (
-    <RowContext.Provider value={row}>
+    <RowContext value={row}>
       <FocusLiftView ref={row} style={flat(style)}>
         {children}
       </FocusLiftView>
-    </RowContext.Provider>
+    </RowContext>
   );
 }
 

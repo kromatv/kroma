@@ -147,7 +147,7 @@ function Root({
   );
 
   return (
-    <OtpFieldContext.Provider value={ctx}>
+    <OtpFieldContext value={ctx}>
       <Box
         row
         align="center"
@@ -199,7 +199,7 @@ function Root({
         ) : null}
         {placed(children ?? oneGroup(maxLength))}
       </Box>
-    </OtpFieldContext.Provider>
+    </OtpFieldContext>
   );
 }
 
@@ -213,7 +213,7 @@ function placed(children: ReactNode): ReactNode {
     }
     const at = start;
     start += Children.count((child.props as { children?: ReactNode }).children);
-    return <OtpGroupStartContext.Provider value={at}>{child}</OtpGroupStartContext.Provider>;
+    return <OtpGroupStartContext value={at}>{child}</OtpGroupStartContext>;
   });
 }
 

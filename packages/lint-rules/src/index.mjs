@@ -3,6 +3,7 @@ import importBoundaries from './rules/import-boundaries.mjs';
 import indexReexportsOnly from './rules/index-reexports-only.mjs';
 import noBooleanFlagParam from './rules/no-boolean-flag-param.mjs';
 import noCommentBanners from './rules/no-comment-banners.mjs';
+import noConstructedContextValue from './rules/no-constructed-context-value.mjs';
 import noEmDashes from './rules/no-em-dashes.mjs';
 import noModuleMutableBindings from './rules/no-module-mutable-bindings.mjs';
 import noPlatformBranch from './rules/no-platform-branch.mjs';
@@ -34,6 +35,7 @@ export default {
     'no-module-mutable-bindings': noModuleMutableBindings,
     'no-react-forward-ref': noReactForwardRef,
     'no-comment-banners': noCommentBanners,
+    'no-constructed-context-value': noConstructedContextValue,
     're-export-from': reExportFrom,
     'use-state-pair': useStatePair,
     'no-boolean-flag-param': noBooleanFlagParam,

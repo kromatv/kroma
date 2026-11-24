@@ -59,7 +59,7 @@ function DialogEntry({ entry, spec, first, onFire }: Readonly<DialogEntryProps>)
     }),
     [spec, first, onFire],
   );
-  return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
+  return <MenuRowContext value={row}>{entry}</MenuRowContext>;
 }
 
 export function MenuSurfaceDialog({

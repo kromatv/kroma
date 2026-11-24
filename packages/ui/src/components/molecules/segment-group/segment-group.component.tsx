@@ -168,7 +168,7 @@ function Root<T extends string>({
     </Box>
   );
   return (
-    <Context.Provider value={ctx}>
+    <Context value={ctx}>
       <RingScope placement="inside">
         {stretch ? (
           <FocusRegion>{group}</FocusRegion>
@@ -178,7 +178,7 @@ function Root<T extends string>({
           </ScrollView>
         )}
       </RingScope>
-    </Context.Provider>
+    </Context>
   );
 }
 

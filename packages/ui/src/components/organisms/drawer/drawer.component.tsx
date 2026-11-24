@@ -172,11 +172,11 @@ function DrawerSurface({
           accessibilityLabel={title}
           dataSet={FOCUS_SCOPE}
         >
-          <ShellContext.Provider value={shell}>
+          <ShellContext value={shell}>
             {headerPart ?? defaultHeader(title)}
             {panelPart ?? <Panel>{loose}</Panel>}
             {footerPart}
-          </ShellContext.Provider>
+          </ShellContext>
         </Box>
       </SlidePanel>
     </Box>

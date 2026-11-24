@@ -348,7 +348,7 @@
     "packages/ui/audit/cost.ts": 2,
     "packages/ui/audit/dom-report.test.tsx": 1,
     "packages/ui/audit/fanout-scan.ts": 2,
-    "packages/ui/audit/perf-scan.ts": 3,
+    "packages/ui/audit/perf-scan.ts": 2,
     "packages/ui/audit/report.ts": 1,
     "packages/ui/bundler/bundler.ts": 2,
     "packages/ui/scripts/audit-target.ts": 1,
@@ -2200,7 +2200,7 @@
     "packages/tv/src/features/playback/player/use-stall-guard.hook.ts": 1,
     "packages/tv/src/features/playback/use-docked-player.hook.ts": 1,
     "packages/tv/src/shared/ui/keyboard.test.tsx": 1,
-    "packages/ui/audit/perf-scan.ts": 2,
+    "packages/ui/audit/perf-scan.ts": 1,
     "packages/ui/src/components/atoms/box/box.component.tsx": 2,
     "packages/ui/src/components/atoms/focusable/focusable-delegate.ts": 2,
     "packages/ui/src/components/atoms/focusable/focusable-forms.component.tsx": 2,
@@ -2331,6 +2331,16 @@
     "packages/workbench/src/story.ts": 1,
     "packages/workbench/src/viewport.ts": 1
   },
+  "kroma/no-constructed-context-value": {
+    "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.component.tsx": 1,
+    "packages/ui/src/components/molecules/button-group/button-group.component.tsx": 1,
+    "packages/ui/src/components/molecules/nav-pill/nav-pill.component.tsx": 1,
+    "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx": 1,
+    "packages/ui/src/components/molecules/select/select-options.component.tsx": 1,
+    "packages/ui/src/components/organisms/chart/chart.component.tsx": 1,
+    "packages/ui/src/lib/part-context.test.tsx": 1,
+    "packages/ui/src/lib/scroll-mask.native.test.tsx": 1
+  },
   "oxc/no-map-spread": {
     "apps/www/src/routes/download_.archive.tsx": 1,
     "clients/mobile/src/app/(app)/(tabs)/_layout.tsx": 1,
@@ -2448,14 +2458,6 @@
   "react/jsx-no-constructed-context-values": {
     "apps/kit/src/stories.smoke.test.tsx": 1,
     "packages/module-sdk/src/scope.tsx": 1,
-    "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.component.tsx": 1,
-    "packages/ui/src/components/molecules/button-group/button-group.component.tsx": 1,
-    "packages/ui/src/components/molecules/nav-pill/nav-pill.component.tsx": 1,
-    "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx": 1,
-    "packages/ui/src/components/molecules/select/select-options.component.tsx": 1,
-    "packages/ui/src/components/organisms/chart/chart.component.tsx": 1,
-    "packages/ui/src/lib/part-context.test.tsx": 1,
-    "packages/ui/src/lib/scroll-mask.native.test.tsx": 1,
     "packages/workbench/src/story-mdx.test.tsx": 1
   },
   "react/memo-dependencies": {
@@ -3113,7 +3115,7 @@
     "packages/tv/src/shared/ui/auth-screen.test.tsx": 2,
     "packages/tv/src/workbench.component.tsx": 4,
     "packages/ui/audit/delegation.test.tsx": 1,
-    "packages/ui/audit/perf-scan.ts": 7,
+    "packages/ui/audit/perf-scan.ts": 6,
     "packages/ui/audit/report.ts": 1,
     "packages/ui/audit/source-scan.ts": 2,
     "packages/ui/audit/style-roots.test.tsx": 1,
@@ -4137,7 +4139,7 @@
     "packages/tv/src/shared/server.ts": 1,
     "packages/tv/src/shared/ui/auth-screen.test.tsx": 1,
     "packages/tv/src/workbench.component.tsx": 2,
-    "packages/ui/audit/perf-scan.ts": 4,
+    "packages/ui/audit/perf-scan.ts": 3,
     "packages/ui/audit/report.ts": 1,
     "packages/ui/audit/source-scan.ts": 2,
     "packages/ui/audit/style-roots.test.tsx": 1,

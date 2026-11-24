@@ -214,7 +214,7 @@ function Root({
   };
 
   return (
-    <ChartContext.Provider value={state}>
+    <ChartContext value={state}>
       <Box onLayout={width === undefined ? measure(setMeasured) : undefined}>
         <Row align="flex-start">
           {left}
@@ -244,7 +244,7 @@ function Root({
           </Row>
         ) : null}
       </Box>
-    </ChartContext.Provider>
+    </ChartContext>
   );
 }
 

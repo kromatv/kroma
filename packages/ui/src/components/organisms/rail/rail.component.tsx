@@ -76,12 +76,12 @@ function Root({
   const ctx = useMemo(() => ({ gap, inset }), [gap, inset]);
   const [title, list, tiles] = sortParts(children, Title, List);
   return (
-    <RailContext.Provider value={ctx}>
+    <RailContext value={ctx}>
       <Box gap={16}>
         {title}
         {list.length > 0 ? list : <GrowingRow grow={grow}>{tiles}</GrowingRow>}
       </Box>
-    </RailContext.Provider>
+    </RailContext>
   );
 }
 

@@ -1,6 +1,8 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { scanText } from './perf-scan';
+import { scanText, scanTrees } from './perf-scan';
 import { babelAt } from './source-scan';
 
 const BABEL = babelAt([join(process.cwd(), 'packages/bundler/package.json')]);
@@ -85,5 +87,68 @@ describe('the source perf scan', () => {
     const found = await rules('const A = () => <Ctx.Provider value={held}>{kids}</Ctx.Provider>;');
 
     expect(found).toEqual([]);
+  });
+
+  it('reports a context value built during render on a context written as its own provider', async () => {
+    const found = await rules(
+      'const Ctx = createContext(null); const A = () => <Ctx value={{ go }}>{kids}</Ctx>;',
+    );
+
+    expect(found).toEqual(['unstable-provider']);
+  });
+
+  it('reports a context value built during render on a part context', async () => {
+    const found = await rules(
+      "const [Part, usePart] = partContext('A.Root'); const A = () => <Part value={() => go()}>{kids}</Part>;",
+    );
+
+    expect(found).toEqual(['unstable-provider']);
+  });
+
+  it('reports a context value built during render on an imported context the kit names as one', async () => {
+    const found = await rules(
+      "import { RowContext } from './row-context'; const A = () => <RowContext value={[go]}>{kids}</RowContext>;",
+    );
+
+    expect(found).toEqual(['unstable-provider']);
+  });
+
+  it('reports a context declared below a type, under a name that does not say it is one', async () => {
+    const found = await rules(
+      'interface Row { at: number; go: () => void }\nconst Held = createContext<Row | null>(null);\nconst A = () => <Held value={{ at, go }}>{kids}</Held>;',
+    );
+
+    expect(found).toEqual(['unstable-provider']);
+  });
+
+  it('leaves a context written as its own provider whose value is held still', async () => {
+    const found = await rules(
+      'const Ctx = createContext(null); const A = () => <Ctx value={held}>{kids}</Ctx>;',
+    );
+
+    expect(found).toEqual([]);
+  });
+
+  it('leaves an ordinary component given a value built during render', async () => {
+    const found = await rules(
+      'const A = () => <><Slider value={[low, high]} /><TextField value={{ text }} /></>;',
+    );
+
+    expect(found).toEqual([]);
+  });
+
+  it('reports a context created in another file of the tree under any name', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'perf-scan-'));
+    mkdirSync(join(root, 'src'));
+    writeFileSync(join(root, 'src/report.ts'), 'export const Report = createContext(null);');
+    writeFileSync(
+      join(root, 'src/view.tsx'),
+      "import { Report } from './report';\nconst A = () => <Report value={() => go()}>{kids}</Report>;",
+    );
+
+    const found = await scanTrees(BABEL, root, ['src']);
+    rmSync(root, { recursive: true, force: true });
+
+    expect(found.map((f) => `${f.rule} ${f.file}`)).toEqual(['unstable-provider src/view.tsx']);
   });
 });

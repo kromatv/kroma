@@ -14,11 +14,11 @@ interface LegendRootProps extends Omit<BoxProps, 'children'> {
 
 function Root({ children, ...box }: Readonly<LegendRootProps>) {
   return (
-    <LegendContext.Provider value>
+    <LegendContext value>
       <Box row wrap align="center" gap={18} {...box}>
         {children}
       </Box>
-    </LegendContext.Provider>
+    </LegendContext>
   );
 }
 

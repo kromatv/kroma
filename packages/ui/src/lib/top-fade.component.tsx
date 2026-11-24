@@ -25,7 +25,7 @@ export function TopFade({
   const [top, setTop] = useState(0);
   return (
     <View style={style ?? FLEX} onLayout={(e: LayoutChangeEvent) => setTop(e.nativeEvent.layout.y)}>
-      <ScrolledReport.Provider value={setScrolled}>
+      <ScrolledReport value={setScrolled}>
         {selfMasked ? (
           children
         ) : (
@@ -33,7 +33,7 @@ export function TopFade({
             {children}
           </FrameMask>
         )}
-      </ScrolledReport.Provider>
+      </ScrolledReport>
       {FRAME_MASKS || selfMasked ? null : (
         <TopFadeBand inset={inset} active={scrolled} offset={top}>
           {backdrop}

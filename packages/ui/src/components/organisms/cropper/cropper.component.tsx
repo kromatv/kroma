@@ -142,7 +142,7 @@ function Root({
     [src, image, transform, aspect, shape, minZoom, maxZoom, actions],
   );
 
-  return <CropperContext.Provider value={state}>{children}</CropperContext.Provider>;
+  return <CropperContext value={state}>{children}</CropperContext>;
 }
 
 /**
