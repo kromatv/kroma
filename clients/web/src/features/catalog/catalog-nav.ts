@@ -18,3 +18,9 @@ export const CATALOG_NAV: readonly CatalogNavItem[] = [
   { labelKey: 'nav.series', to: '/shows', icon: 'device-tv' },
   { labelKey: 'nav.genres', to: '/genres', icon: 'category' },
 ];
+
+/** The catalogue page a title in the library goes back to: its own kind's. */
+export const TITLE_SHELF = {
+  movie: '/movies',
+  show: '/shows',
+} as const satisfies Record<'movie' | 'show', RoutePath>;

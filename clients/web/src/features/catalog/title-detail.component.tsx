@@ -8,6 +8,7 @@ import { classes, type HostElement, styles, Text, useStyles } from '@kromatv/ui/
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { AiSuggestRail } from '#web/features/catalog/ai-suggest-rail.component';
+import { TITLE_SHELF } from '#web/features/catalog/catalog-nav';
 import { CastRail, type SimilarItem, SimilarRail } from '#web/features/catalog/detail.component';
 import { SeasonSection } from '#web/features/catalog/episode-list.component';
 import { TitleHero } from '#web/features/catalog/title-hero.component';
@@ -190,10 +191,6 @@ export function TitleDetail({
 
   const owned = view.localId != null && view.playable != null;
   const localId = view.localId;
-  let backTo: '/' | '/shows' | '/search' = '/search';
-  if (owned) {
-    backTo = view.kind === 'show' ? '/shows' : '/';
-  }
 
   const { data: epProgress = {} } = useQuery({
     ...webRuntime.queries.userQueries.progress(),
@@ -238,7 +235,7 @@ export function TitleDetail({
         toggleList={toggleList}
         onPlay={play}
         onRequest={onRequestClick}
-        back={<RouteLink to={backTo} />}
+        back={<RouteLink to={owned ? TITLE_SHELF[view.kind] : '/search'} />}
       />
 
       <TitleBody
