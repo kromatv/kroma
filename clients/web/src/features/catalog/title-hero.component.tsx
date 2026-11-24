@@ -2,7 +2,7 @@ import { tmdbKindOf } from '@kromatv/client/discovery';
 import type { ItemId, SubjectId } from '@kromatv/client/media';
 import { formatRuntime } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Button, type HostElement } from '@kromatv/ui/kit';
+import { Button } from '@kromatv/ui/kit';
 import {
   audioFlagLabel,
   audioString,
@@ -30,7 +30,7 @@ export function TitleHero({
   toggleList,
   onPlay,
   onRequest,
-  back,
+  onBack,
 }: Readonly<{
   view: TitleView;
   owned: boolean;
@@ -43,7 +43,7 @@ export function TitleHero({
   toggleList: (id: SubjectId) => void;
   onPlay: (id: ItemId) => void;
   onRequest: () => void;
-  back: HostElement;
+  onBack: () => void;
 }>) {
   const t = useT();
   const playable = owned ? view.playable : null;
@@ -101,7 +101,7 @@ export function TitleHero({
       adminAction={
         <FollowState kind={view.kind === 'show' ? 'show' : 'movie'} tmdbId={view.tmdbId ?? null} />
       }
-      back={back}
+      onBack={onBack}
       onPlay={playable ? () => onPlay(playable.id) : undefined}
       onReport={
         owned && localId
