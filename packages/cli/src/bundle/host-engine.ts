@@ -1,15 +1,29 @@
-const IMPORTED = /kroma:module\/[a-z][a-z0-9-]*@(\d+\.\d+\.\d+)/g;
+const MENTIONED = /kroma:module\/[a-z][a-z0-9-]*@\d+\.\d+\.\d+/g;
+const NAME = /^kroma:module\/[a-z][a-z0-9-]*@(\d+\.\d+\.\d+)$/;
 
 /**
  * The version of the `kroma:module` interface a component imports, read from
- * the import names in its bytes. `null` when it imports none of it. A component
- * that names two versions is refused: no server could link it.
+ * the import names in its bytes. Each name is read whole through the length
+ * that precedes it, since the byte after a name can be a digit. `null` when it
+ * imports none of it. A component that names two versions is refused: no
+ * server could link it.
  */
 export function interfaceOf(wasm: Uint8Array): string | null {
   const names = Buffer.from(wasm.buffer, wasm.byteOffset, wasm.byteLength).toString('latin1');
-  const versions = [...new Set([...names.matchAll(IMPORTED)].map((found) => found[1] ?? ''))];
-  if (versions.length > 1) {
-    throw new Error(`the component imports kroma:module at ${versions.join(' and ')}`);
+  const versions = new Set<string>();
+  for (const found of names.matchAll(MENTIONED)) {
+    const version = versionNamedAt(names, found.index);
+    if (version) {
+      versions.add(version);
+    }
   }
-  return versions[0] ?? null;
+  if (versions.size > 1) {
+    throw new Error(`the component imports kroma:module at ${[...versions].join(' and ')}`);
+  }
+  return [...versions][0] ?? null;
+}
+
+function versionNamedAt(names: string, at: number): string | null {
+  const length = names.codePointAt(at - 1) ?? 0;
+  return NAME.exec(names.slice(at, at + length))?.[1] ?? null;
 }
