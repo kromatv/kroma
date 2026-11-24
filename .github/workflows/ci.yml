@@ -296,6 +296,7 @@ jobs:
     env:
       CCACHE_MAXSIZE: 1G
       CCACHE_SLOPPINESS: pch_defines,time_macros
+      CCACHE_COMPILERCHECK: content
       CMAKE_C_COMPILER_LAUNCHER: ccache
       CMAKE_CXX_COMPILER_LAUNCHER: ccache
     steps:
@@ -323,8 +324,8 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ccache
-          key: ccache-androidtv-debug-v1-${{ hashFiles('bun.lock', 'patches/**') }}
-          restore-keys: ccache-androidtv-debug-v1-
+          key: ccache-androidtv-debug-v2-${{ hashFiles('bun.lock', 'patches/**') }}
+          restore-keys: ccache-androidtv-debug-v2-
       # Writes from main like every other cache here. Read-only, the job
       # restored a Gradle home with neither this app's dependencies nor its
       # task outputs and compiled everything (592 tasks, 74 from cache, 8.5
@@ -357,7 +358,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ccache
-          key: ccache-androidtv-debug-v1-${{ hashFiles('bun.lock', 'patches/**') }}
+          key: ccache-androidtv-debug-v2-${{ hashFiles('bun.lock', 'patches/**') }}
 
   # The Linux binary-engine path (mpv IPC) a macOS laptop cannot check.
   # --no-default-features leaves the in-process libmpv out: ubuntu-22.04's

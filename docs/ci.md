@@ -372,6 +372,10 @@ React Native's own app CMake also finds `ccache` on the `PATH`, and the
 doubled launcher is harmless. Every one of those sources comes from the
 install, so each entry is keyed on `bun.lock` and the patches and written
 once per key: from the release jobs, and from main for the debug compile.
+The Android Gradle plugin installs the NDK on every run, so its `clang` has a
+new mtime each time, and ccache's default compiler check (the mtime) missed
+every one of the 231 compiles on the runs that restored an entry. The builds
+set `CCACHE_COMPILERCHECK=content`, which hashes the compiler itself.
 Each build prints `ccache --show-stats`, which is where the hit rate shows.
 
 Samsung and LG ship the native app first: `KROMA-tizen-<v>.tpk` and
@@ -544,7 +548,7 @@ copies go before anything a run still reads.
 | `ios-tvnative-v4-*`, `ios-mobile-v4-*` | ~0.2 GB each | the Apple jobs, keyed by config hash |
 | `ccache-tvnative-v1-*`, `ccache-mobile-ios-v1-*` | measured on their first save | the Apple jobs, keyed by Xcode and `bun.lock` |
 | Gradle dependencies + build cache, per app | ~0.9 GB each | the release Android jobs |
-| `ccache-androidtv-release-v1-*`, `ccache-mobile-release-v1-*`, `ccache-androidtv-debug-v1-*` | measured on their first save, at most 1 GB each | the release Android jobs, ci.yml on main |
+| `ccache-androidtv-release-v2-*`, `ccache-mobile-release-v2-*`, `ccache-androidtv-debug-v2-*` | measured on their first save, at most 1 GB each | the release Android jobs, ci.yml on main |
 | `synology-v4`, `synology-arm64-v3` | measured on their first save | synology.yml |
 | `kmod` (wasm32-wasip2) | ~0.1 GB | modules.yml |
 | `rust-server-clippy`, `rust-components`, `rust-audit`, `rust-modules` | measured on their first save | ci.yml on main |
