@@ -116,7 +116,9 @@ Pour l'éviter, nommez le dossier avec le titre et l'année :
 
 Une vidéo de famille ou un film que TMDB ne connaît pas n'a pas de fiche à
 corriger. Ouvrez-le, choisissez **Modifier les informations**, puis écrivez son
-titre, sa date de sortie, son résumé et ses genres. Pour la date de sortie,
+titre, sa date de sortie, son résumé et ses genres. Quand **Corriger la fiche**
+ne trouve rien, son bouton **Modifier les informations** ouvre le même
+formulaire. Pour la date de sortie,
 écrivez l'année seule, comme `1995`, ou le jour, comme `1995-12-15`. Un titre
 de tri classe le film sous un autre nom, comme `Seigneur des anneaux, Le`, sans
 changer le titre affiché. Ce que vous écrivez s'affiche dans toutes les langues

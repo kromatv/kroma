@@ -4867,7 +4867,7 @@
     "status": "AGREED",
     "text": "**Rename on disk.** A name fixed to the convention above matches",
     "file": "docs/spec/library/README.md",
-    "line": 191
+    "line": 195
   },
   {
     "id": "LIB-35",
@@ -4877,7 +4877,7 @@
     "status": "AGREED",
     "text": "A file that could be more than one identity, a title shared by a remake",
     "file": "docs/spec/library/README.md",
-    "line": 218
+    "line": 222
   },
   {
     "id": "LIB-36",
@@ -4887,7 +4887,7 @@
     "status": "AGREED",
     "text": "One unplaceable file never stalls a source. The catalogue is always the",
     "file": "docs/spec/library/README.md",
-    "line": 224
+    "line": 228
   },
   {
     "id": "LIB-37",
@@ -4897,7 +4897,7 @@
     "status": "AGREED",
     "text": "Every field and image a provider returns is written to the server's own",
     "file": "docs/spec/library/README.md",
-    "line": 234
+    "line": 238
   },
   {
     "id": "LIB-38",
@@ -4907,7 +4907,7 @@
     "status": "AGREED",
     "text": "With no internet, everything already matched browses and plays exactly",
     "file": "docs/spec/library/README.md",
-    "line": 239
+    "line": 243
   },
   {
     "id": "LIB-39",
@@ -4917,7 +4917,7 @@
     "status": "AGREED",
     "text": "Offline, a brand-new file that needs a first provider lookup stays",
     "file": "docs/spec/library/README.md",
-    "line": 242
+    "line": 246
   },
   {
     "id": "LIB-40",
@@ -4927,7 +4927,7 @@
     "status": "AGREED",
     "text": "Offline, a forced refresh queues rather than fails.",
     "file": "docs/spec/library/README.md",
-    "line": 246
+    "line": 250
   },
   {
     "id": "LIB-41",
@@ -4937,7 +4937,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 303
+    "line": 307
   },
   {
     "id": "LIB-42",
@@ -4947,7 +4947,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 305
+    "line": 309
   },
   {
     "id": "LIB-43",
@@ -4957,7 +4957,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 309
+    "line": 313
   },
   {
     "id": "LIB-44",
@@ -4967,7 +4967,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 313
+    "line": 317
   },
   {
     "id": "LIB-45",
@@ -4977,7 +4977,7 @@
     "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 335
+    "line": 339
   },
   {
     "id": "LIB-46",
@@ -4987,7 +4987,7 @@
     "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 340
+    "line": 344
   },
   {
     "id": "LIB-47",
@@ -4997,7 +4997,7 @@
     "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 344
+    "line": 348
   },
   {
     "id": "LIB-48",
@@ -5007,7 +5007,7 @@
     "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 348
+    "line": 352
   },
   {
     "id": "LIB-49",
@@ -5017,7 +5017,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 354
+    "line": 358
   },
   {
     "id": "LIB-50",
@@ -5027,7 +5027,7 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 317
+    "line": 321
   },
   {
     "id": "LIB-51",
@@ -5307,7 +5307,7 @@
     "status": "AGREED",
     "text": "**A match that came from another server.** An import",
     "file": "docs/spec/library/README.md",
-    "line": 195
+    "line": 199
   },
   {
     "id": "LIB-79",
@@ -5347,7 +5347,7 @@
     "status": "SHIPPED",
     "text": "A title's text is shown in the reader's language one field at a time.",
     "file": "docs/spec/library/README.md",
-    "line": 248
+    "line": 252
   },
   {
     "id": "LIB-83",
@@ -5357,7 +5357,7 @@
     "status": "SHIPPED",
     "text": "A person who manages the library can write a film's or a show's name,",
     "file": "docs/spec/library/README.md",
-    "line": 253
+    "line": 257
   },
   {
     "id": "LIB-84",
@@ -5367,7 +5367,7 @@
     "status": "SHIPPED",
     "text": "A film or a show takes its name, summary, year and genres from the",
     "file": "docs/spec/library/README.md",
-    "line": 259
+    "line": 263
   },
   {
     "id": "LIB-85",
@@ -5377,7 +5377,7 @@
     "status": "SHIPPED",
     "text": "**A match named in the `.nfo` file.** A film's or a show's `.nfo` file",
     "file": "docs/spec/library/README.md",
-    "line": 203
+    "line": 207
   },
   {
     "id": "LIB-86",
@@ -5387,7 +5387,7 @@
     "status": "SHIPPED",
     "text": "The catalogue sorts and filters a title by the name, year and genres it",
     "file": "docs/spec/library/README.md",
-    "line": 267
+    "line": 271
   },
   {
     "id": "LIB-87",
@@ -5397,7 +5397,7 @@
     "status": "SHIPPED",
     "text": "A person can write the day a title came out in place of its year",
     "file": "docs/spec/library/README.md",
-    "line": 272
+    "line": 276
   },
   {
     "id": "LIB-88",
@@ -5407,7 +5407,7 @@
     "status": "SHIPPED",
     "text": "A person can write a sort title for a title (LIB-83), and a `.nfo`",
     "file": "docs/spec/library/README.md",
-    "line": 277
+    "line": 281
   },
   {
     "id": "LIB-89",
@@ -5417,7 +5417,7 @@
     "status": "SHIPPED",
     "text": "An episode takes its name, summary and air date from the `.nfo` file",
     "file": "docs/spec/library/README.md",
-    "line": 281
+    "line": 285
   },
   {
     "id": "LIB-90",
@@ -5427,7 +5427,7 @@
     "status": "SHIPPED",
     "text": "A person who manages the library can write an episode's name, air date",
     "file": "docs/spec/library/README.md",
-    "line": 286
+    "line": 290
   },
   {
     "id": "LIB-91",
@@ -5437,7 +5437,7 @@
     "status": "SHIPPED",
     "text": "The backdrops behind the sign-in screen, the notification that new",
     "file": "docs/spec/library/README.md",
-    "line": 291
+    "line": 295
   },
   {
     "id": "LIB-92",
@@ -5447,7 +5447,17 @@
     "status": "SHIPPED",
     "text": "A film's or a show's `.nfo` file (LIB-84) that names no provider id,",
     "file": "docs/spec/library/README.md",
-    "line": 209
+    "line": 213
+  },
+  {
+    "id": "LIB-93",
+    "domain": "LIB",
+    "space": "library",
+    "number": 93,
+    "status": "SHIPPED",
+    "text": "When a person's search for a film's or a show's match finds nothing at",
+    "file": "docs/spec/library/README.md",
+    "line": 191
   },
   {
     "id": "MEDIA-1",
