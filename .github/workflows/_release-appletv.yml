@@ -293,8 +293,8 @@ jobs:
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/ccache
-          key: ccache-tvnative-v1-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'patches/**') }}
-          restore-keys: ccache-tvnative-v1-${{ env.XCODE_VERSION }}-
+          key: ccache-tvnative-v2-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'patches/**') }}
+          restore-keys: ccache-tvnative-v2-${{ env.XCODE_VERSION }}-
 
       - name: Archive + export .ipa
         if: steps.signing.outputs.ready == 'true'
@@ -318,7 +318,11 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         # Called by absolute path: this step runs from clients/tv-native/ios.
+        # React Native's wrapper runs `$CCACHE_BINARY clang`, and the build
+        # setting it writes for that reaches script phases, not the compiler:
+        # without this export every compile skipped ccache (docs/ci.md).
         run: |
+          export CCACHE_BINARY="$(command -v ccache)"
           ccache --zero-stats
           bash "$GITHUB_WORKSPACE/.github/scripts/ios-archive-export-ipa.sh"
           ccache --show-stats
@@ -328,7 +332,7 @@ jobs:
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/ccache
-          key: ccache-tvnative-v1-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'patches/**') }}
+          key: ccache-tvnative-v2-${{ env.XCODE_VERSION }}-${{ hashFiles('bun.lock', 'patches/**') }}
 
       # `-t tvos` is the whole difference from the phone upload: the platform is
       # what tells App Store Connect which half of the record this build belongs
