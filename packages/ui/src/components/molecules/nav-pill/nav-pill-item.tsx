@@ -2,7 +2,6 @@ import {
   type ComponentRef,
   type ReactNode,
   type Ref,
-  useCallback,
   useEffect,
   useEffectEvent,
   useId,
@@ -80,16 +79,13 @@ function Item({ icon, label, active = false, onPress, ref, ...focus }: Readonly<
   const { size, labels, claim, release, enrol, withdraw, hover } = useNavPill('Item');
   const id = useId();
   const rect = useRef<LensRect | null>(null);
-  const onLayout = useCallback(
-    (event: LayoutChangeEvent) => {
-      const { x, y, width, height } = event.nativeEvent.layout;
-      rect.current = { x, y, width, height };
-      if (active) {
-        claim(id, rect.current);
-      }
-    },
-    [active, claim, id],
-  );
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { x, y, width, height } = event.nativeEvent.layout;
+    rect.current = { x, y, width, height };
+    if (active) {
+      claim(id, rect.current);
+    }
+  };
   useEffect(() => {
     if (active && rect.current) {
       claim(id, rect.current);

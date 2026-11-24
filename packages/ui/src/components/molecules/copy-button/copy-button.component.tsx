@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { Button, type ButtonSize, type ButtonVariant } from '#ui/components/atoms/button';
 import type { IconName } from '#ui/components/atoms/icon';
 import { IconButton } from '#ui/components/atoms/icon-button';
@@ -43,7 +42,7 @@ export function CopyButton({
   iconOnly = false,
 }: Readonly<CopyButtonProps>) {
   const { available, state, copy } = useCopy();
-  const onPress = useCallback(() => copy(value), [copy, value]);
+  const onPress = () => copy(value);
 
   if (!available) {
     return null;

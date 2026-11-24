@@ -1,4 +1,4 @@
-import { type DragEvent, type KeyboardEvent, useCallback, useRef, useState } from 'react';
+import { type DragEvent, type KeyboardEvent, useRef, useState } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Spinner } from '#ui/components/atoms/spinner';
 import { styles } from '#ui/core';
@@ -47,21 +47,18 @@ function DropRoot({
   const [over, setOver] = useState(false);
   const inert = disabled || loading;
 
-  const take = useCallback(
-    (files: FileList | null) => {
-      if (!files || files.length === 0) {
-        return;
-      }
-      const { taken, turned } = sift([...files], { accept, maxSize, multiple });
-      if (turned.length > 0) {
-        onReject?.(turned);
-      }
-      if (taken.length > 0) {
-        onDrop?.(taken);
-      }
-    },
-    [accept, maxSize, multiple, onDrop, onReject],
-  );
+  const take = (files: FileList | null) => {
+    if (!files || files.length === 0) {
+      return;
+    }
+    const { taken, turned } = sift([...files], { accept, maxSize, multiple });
+    if (turned.length > 0) {
+      onReject?.(turned);
+    }
+    if (taken.length > 0) {
+      onDrop?.(taken);
+    }
+  };
 
   const onDropped = (e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
