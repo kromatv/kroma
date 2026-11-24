@@ -156,6 +156,7 @@ fn in_file() -> TitleEdit {
         title: Some("Tape three".into()),
         overview: Some("Found in the attic.".into()),
         year: Some(2004),
+        released: None,
         genres: Some(vec!["Family".into()]),
     }
 }

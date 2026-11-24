@@ -9,7 +9,7 @@ fn heat() -> Value {
     json!({
         "title": " Heat (director's cut) ",
         "overview": "A thief and a detective.",
-        "year": 1995,
+        "released": "1995-12-15",
         "genres": ["Crime", " "],
     })
 }
@@ -34,9 +34,11 @@ async fn what_an_admin_writes_about_a_film_is_what_its_page_shows_after_a_refres
     assert_eq!(status, StatusCode::OK);
     assert_eq!(kept["title"], json!("Heat (director's cut)"));
     assert_eq!(kept["genres"], json!(["Crime"]));
+    assert_eq!(kept["year"], json!(1995));
     assert_eq!(read, kept);
     assert_eq!(shown["title"], json!("Heat (director's cut)"));
     assert_eq!(shown["year"], json!(1995));
+    assert_eq!(shown["metadata"]["releaseDate"], json!("1995-12-15"));
     assert_eq!(
         shown["metadata"]["overview"],
         json!("A thief and a detective.")
@@ -45,15 +47,19 @@ async fn what_an_admin_writes_about_a_film_is_what_its_page_shows_after_a_refres
 }
 
 #[tokio::test]
-async fn a_name_longer_than_a_title_holds_is_refused() {
+async fn an_edit_that_does_not_fit_a_title_is_refused() {
     let t = test_app();
     let film = seed_playable_item(&t.state, "Heat", b"film");
+    let uri = format!("/api/edits/item/{film}");
     let long = json!({ "title": "a".repeat(301) });
+    let no_day = json!({ "released": "1995-02-30" });
 
-    let (status, body) = edit(&t, &format!("/api/edits/item/{film}"), &t.token, long).await;
+    let (status, body) = edit(&t, &uri, &t.token, long).await;
+    let (undated, _) = edit(&t, &uri, &t.token, no_day).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["code"], json!("error.titleEditTooLong"));
+    assert_eq!(undated, StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]

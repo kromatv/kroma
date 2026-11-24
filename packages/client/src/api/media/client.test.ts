@@ -153,11 +153,18 @@ describe('the media endpoints', () => {
           title: 'Heat',
           overview: null,
           year: null,
+          released: '1995-12-15',
           genres: ['Crime'],
         }),
       method: 'PUT',
       path: '/edits/item/i%201',
-      body: { title: 'Heat', overview: null, year: null, genres: ['Crime'] },
+      body: {
+        title: 'Heat',
+        overview: null,
+        year: null,
+        released: '1995-12-15',
+        genres: ['Crime'],
+      },
     },
   ])('$name', checkEndpoint);
 });

@@ -1,6 +1,6 @@
 //! The `.nfo` file Kodi, Jellyfin and Plex keep beside a title's files, read
-//! for its name, summary, year and genres, and the TMDB id it names
-//! (`docs/reference/nfo-files.md`).
+//! for its name, summary, release date, year and genres, and the TMDB id it
+//! names (`docs/reference/nfo-files.md`).
 
 use std::fs::File;
 use std::io::Read;
@@ -70,6 +70,7 @@ fn described(document: &str, root: &str) -> Option<Contents> {
         title: texts(el, "title").next(),
         overview: texts(el, "plot").next(),
         year: year_of(el),
+        released: texts(el, "premiered").next(),
         genres: Some(texts(el, "genre").collect()),
     };
     Some(Contents {

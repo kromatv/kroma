@@ -39,6 +39,7 @@ fn an_edit_left_blank_follows_the_provider_in_every_field() {
         title: Some("   ".into()),
         overview: Some(String::new()),
         year: None,
+        released: Some(" ".into()),
         genres: Some(vec![" ".into()]),
     };
 
@@ -53,6 +54,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
         title: Some("  Heat ".into()),
         overview: Some(" Two men. ".into()),
         year: Some(1995),
+        released: Some(" 1995-12-15 ".into()),
         genres: Some(vec![" Crime".into(), "".into(), "Drama ".into()]),
     };
 
@@ -61,6 +63,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
     assert_eq!(tidied.title.as_deref(), Some("Heat"));
     assert_eq!(tidied.overview.as_deref(), Some("Two men."));
     assert_eq!(tidied.year, Some(1995));
+    assert_eq!(tidied.released.as_deref(), Some("1995-12-15"));
     assert_eq!(tidied.genres, Some(vec!["Crime".into(), "Drama".into()]));
 }
 
@@ -70,6 +73,7 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         title: Some("a".repeat(TITLE_MAX)),
         overview: Some("é".repeat(OVERVIEW_MAX)),
         year: Some(*YEARS.end()),
+        released: Some("2200-12-31".into()),
         genres: Some(vec!["g".repeat(GENRE_MAX); GENRES_MAX]),
     };
     let long_title = TitleEdit {
@@ -102,6 +106,7 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         title: Some(format!(" {}", "a".repeat(TITLE_MAX + 5))),
         overview: Some("é".repeat(OVERVIEW_MAX + 1)),
         year: Some(*YEARS.end() + 1),
+        released: Some("1995-02-30".into()),
         genres: Some(vec!["g".repeat(GENRE_MAX + 1); GENRES_MAX + 1]),
     };
 
@@ -114,6 +119,7 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         Some(OVERVIEW_MAX)
     );
     assert_eq!(clipped.year, None);
+    assert_eq!(clipped.released, None);
     assert_eq!(clipped.genres.map(|g| g.len()), Some(GENRES_MAX));
 }
 
@@ -127,6 +133,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
         title: Some("heat".into()),
         overview: Some("Two men.".into()),
         year: Some(1995),
+        released: Some("1995-12-15".into()),
         genres: Some(vec!["Crime".into()]),
     };
 
@@ -135,6 +142,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
     assert_eq!(shown.title.as_deref(), Some("Heat"));
     assert_eq!(shown.overview.as_deref(), Some("Two men."));
     assert_eq!(shown.year, Some(1995));
+    assert_eq!(shown.released.as_deref(), Some("1995-12-15"));
     assert_eq!(shown.genres, Some(vec!["Crime".into()]));
 }
 
@@ -228,4 +236,68 @@ fn a_year_written_drops_a_release_date_that_disagrees_with_it() {
             .as_deref(),
         Some("1995-12-15")
     );
+}
+
+#[test]
+fn a_release_date_written_gives_the_year_and_the_date_shown() {
+    let edit = TitleEdit {
+        year: Some(1990),
+        released: Some("1996-03-01".into()),
+        ..Default::default()
+    }
+    .tidied();
+
+    let (_, year, metadata) = written(&edit, Some(fetched()));
+    let (_, _, unmatched) = written(&edit, None);
+
+    assert_eq!(edit.year, Some(1996));
+    assert_eq!(year, Some(1996));
+    assert_eq!(
+        metadata
+            .expect("the fetched record")
+            .release_date
+            .as_deref(),
+        Some("1996-03-01")
+    );
+    assert_eq!(
+        unmatched.expect("a blank record").release_date.as_deref(),
+        Some("1996-03-01")
+    );
+}
+
+#[test]
+fn only_a_day_written_yyyy_mm_dd_fits_as_a_release_date() {
+    let dated = |date: &str| TitleEdit {
+        released: Some(date.into()),
+        ..Default::default()
+    };
+
+    assert!(dated("2000-02-29").fits());
+    assert!(dated("1995-12-31").fits());
+    assert!(!dated("1900-02-29").fits());
+    assert!(!dated("1995-02-30").fits());
+    assert!(!dated("1995-13-01").fits());
+    assert!(!dated("1995-00-10").fits());
+    assert!(!dated("1995/12/15").fits());
+    assert!(!dated("1995-1-15").fits());
+    assert!(!dated("+995-12-15").fits());
+    assert!(!dated("1799-12-31").fits());
+}
+
+#[test]
+fn the_year_and_the_date_below_give_way_together_to_either_written_above() {
+    let file = TitleEdit {
+        year: Some(1995),
+        released: Some("1995-12-15".into()),
+        ..Default::default()
+    };
+    let year_by_hand = TitleEdit {
+        year: Some(1996),
+        ..Default::default()
+    };
+
+    let shown = year_by_hand.over(file);
+
+    assert_eq!(shown.year, Some(1996));
+    assert_eq!(shown.released, None);
 }

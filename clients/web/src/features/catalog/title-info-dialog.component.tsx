@@ -25,7 +25,7 @@ const upTo = (max: number) => (text: string) => text.slice(0, max);
 const FIT: Readonly<Record<keyof TitleDraft, (text: string) => string>> = {
   title: upTo(TITLE_EDIT_LIMITS.title),
   overview: upTo(TITLE_EDIT_LIMITS.overview),
-  year: (text) => text.replace(/\D/g, '').slice(0, 4),
+  released: (text) => text.replace(/[^\d-]/g, '').slice(0, 10),
   genres: upTo(TITLE_EDIT_LIMITS.genres * (TITLE_EDIT_LIMITS.genre + 2)),
 };
 
@@ -66,8 +66,12 @@ function InfoFields({ draft, change }: Readonly<{ draft: TitleDraft; change: Cha
   return (
     <>
       <Field.Root label={t('titleInfo.name')} value={draft.title} onValueChange={change('title')} />
-      <Field.Root label={t('titleInfo.year')}>
-        <Field.Input type="number" value={draft.year} onValueChange={change('year')} />
+      <Field.Root
+        label={t('titleInfo.released')}
+        value={draft.released}
+        onValueChange={change('released')}
+      >
+        <Field.Hint>{t('titleInfo.releasedHint')}</Field.Hint>
       </Field.Root>
       <Field.Root label={t('titleInfo.summary')}>
         <Field.Textarea
@@ -144,7 +148,7 @@ function useTitleEdit({ kind, id }: Props) {
   return { ...query, save };
 }
 
-/** The name, year, summary and genres a person who manages the library writes
+/** The name, release date, summary and genres a person who manages the library writes
  * by hand for a film or a show. Open with `await TitleInfoDialog.call({ kind,
  * id, title })`; it resolves on dismiss and once the edit is saved. */
 export const TitleInfoDialog = createCallable<Props>((props) => {

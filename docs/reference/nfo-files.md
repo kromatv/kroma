@@ -37,7 +37,7 @@ An XML document saved as UTF-8 (K, P). Its root is `<movie>` for a film and
 | --- | --- | --- | --- |
 | `<title>` | The name | K, J, P | read |
 | `<plot>` | The summary | K, J, P | read |
-| `<premiered>` | The release date, `yyyy-mm-dd`; KROMA keeps its year | K, J, P | read |
+| `<premiered>` | The release date, `yyyy-mm-dd` | K, J, P | read as the release date, which gives the year; one that is no day gives its year alone |
 | `<year>` | The year. K deprecated it in v17 and reads `<premiered>` alone from v20 | K, J | read when there is no `<premiered>` |
 | `<genre>` | One genre a tag, repeated for each | K, J, P | read |
 | `<originaltitle>`, `<sorttitle>`, `<tagline>` | Other names, and the tagline | K, J, P | not read |

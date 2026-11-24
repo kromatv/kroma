@@ -1,7 +1,7 @@
 //! What a person who manages the library wrote by hand about a film or a show
 //! (LIB-83), and what the `.nfo` file beside it says (LIB-84). Each field comes
 //! before the provider's, in every language, and a field left `None` keeps
-//! following the provider.
+//! following the provider. A release date written gives the year (LIB-87).
 
 use serde::{Deserialize, Serialize};
 
@@ -27,6 +27,9 @@ pub struct TitleEdit {
     pub overview: Option<String>,
     #[serde(default)]
     pub year: Option<u32>,
+    /// The day the title came out, as `yyyy-mm-dd`.
+    #[serde(default)]
+    pub released: Option<String>,
     #[serde(default)]
     pub genres: Option<Vec<String>>,
 }
@@ -68,6 +71,38 @@ fn year_of(date: &str) -> Option<u32> {
     date.get(..4)?.parse().ok()
 }
 
+fn leap(year: u32) -> bool {
+    year.is_multiple_of(4) && (!year.is_multiple_of(100) || year.is_multiple_of(400))
+}
+
+fn days_in(year: u32, month: u32) -> u32 {
+    match month {
+        2 if leap(year) => 29,
+        2 => 28,
+        4 | 6 | 9 | 11 => 30,
+        _ => 31,
+    }
+}
+
+fn day_of(date: &str) -> Option<(u32, u32, u32)> {
+    let shaped = date.len() == 10
+        && date.bytes().enumerate().all(|(at, b)| match at {
+            4 | 7 => b == b'-',
+            _ => b.is_ascii_digit(),
+        });
+    if !shaped {
+        return None;
+    }
+    let number = |at: std::ops::Range<usize>| date[at].parse().ok();
+    Some((number(0..4)?, number(5..7)?, number(8..10)?))
+}
+
+fn year_of_day(date: &str) -> Option<u32> {
+    let (year, month, day) = day_of(date)?;
+    let real = (1..=12).contains(&month) && (1..=days_in(year, month)).contains(&day);
+    (real && YEARS.contains(&year)).then_some(year)
+}
+
 fn cut(text: String, max: usize) -> String {
     if text.chars().count() <= max {
         return text;
@@ -80,8 +115,9 @@ fn cut(text: String, max: usize) -> String {
 }
 
 impl TitleEdit {
-    /// The same edit with surrounding spaces trimmed, and every field that is
-    /// left empty handed back to the provider.
+    /// The same edit with surrounding spaces trimmed, every field that is
+    /// left empty handed back to the provider, and the year taken from the
+    /// release date when one is written.
     pub fn tidied(self) -> Self {
         let genres: Vec<String> = self
             .genres
@@ -89,27 +125,38 @@ impl TitleEdit {
             .flatten()
             .filter_map(|g| kept(Some(g)))
             .collect();
+        let released = kept(self.released);
         Self {
             title: kept(self.title),
             overview: kept(self.overview),
-            year: self.year,
+            year: released.as_deref().and_then(year_of_day).or(self.year),
+            released,
             genres: (!genres.is_empty()).then_some(genres),
         }
     }
 
-    /// This edit, with each field it leaves empty taken from `below`.
+    /// This edit, with each field it leaves empty taken from `below`. The
+    /// year and the release date go together: either both are this edit's,
+    /// or both are `below`'s.
     pub fn over(self, below: Self) -> Self {
+        let (year, released) = if self.year.is_some() || self.released.is_some() {
+            (self.year, self.released)
+        } else {
+            (below.year, below.released)
+        };
         Self {
             title: self.title.or(below.title),
             overview: self.overview.or(below.overview),
-            year: self.year.or(below.year),
+            year,
+            released,
             genres: self.genres.or(below.genres),
         }
     }
 
     /// The same edit tidied and cut to what a title can hold: a name or a
     /// summary that runs long is cut short, the genres past the limit are
-    /// dropped, and a year outside [`YEARS`] is left out.
+    /// dropped, and a year outside [`YEARS`] or a date that is no day is left
+    /// out.
     pub fn clipped(self) -> Self {
         let tidied = self.tidied();
         let genres = tidied.genres.map(|genres| {
@@ -120,6 +167,7 @@ impl TitleEdit {
             title: tidied.title.map(|title| cut(title, TITLE_MAX)),
             overview: tidied.overview.map(|text| cut(text, OVERVIEW_MAX)),
             year: tidied.year.filter(|year| YEARS.contains(year)),
+            released: tidied.released.filter(|date| year_of_day(date).is_some()),
             genres,
         }
     }
@@ -138,13 +186,17 @@ impl TitleEdit {
         short(&self.title, TITLE_MAX)
             && short(&self.overview, OVERVIEW_MAX)
             && self.year.is_none_or(|y| YEARS.contains(&y))
+            && self
+                .released
+                .as_deref()
+                .is_none_or(|d| year_of_day(d).is_some())
             && genres.len() <= GENRES_MAX
             && genres.iter().all(|g| g.chars().count() <= GENRE_MAX)
     }
 
-    /// Put each field that was written in place of the provider's. A summary
-    /// or genres written for a title the provider never described give it a
-    /// [`Metadata::blank`] record to carry them.
+    /// Put each field that was written in place of the provider's. A summary,
+    /// genres or a release date written for a title the provider never
+    /// described give it a [`Metadata::blank`] record to carry them.
     pub fn onto(&self, title: &mut impl Editable) {
         let to = title.written();
         if let Some(title) = &self.title {
@@ -153,7 +205,7 @@ impl TitleEdit {
         if self.year.is_some() {
             *to.year = self.year;
         }
-        if self.overview.is_some() || self.genres.is_some() {
+        if self.describes() {
             to.metadata.get_or_insert_with(Metadata::blank);
         }
         if let Some(meta) = to.metadata.as_mut() {
@@ -162,24 +214,35 @@ impl TitleEdit {
     }
 
     /// Put each field that was written in place of the provider's, on a
-    /// title's record alone. A year written drops the provider's release date
-    /// when the two disagree, so the date never contradicts the year shown.
+    /// title's record alone. A year written without a date drops the
+    /// provider's release date when the two disagree, so the date never
+    /// contradicts the year shown.
     pub fn onto_metadata(&self, meta: &mut Metadata) {
         if self.title.is_some() {
             meta.title.clone_from(&self.title);
         }
-        if let Some(year) = self.year {
-            let dated = meta.release_date.as_deref().and_then(year_of);
-            if dated.is_some_and(|dated| dated != year) {
-                meta.release_date = None;
-            }
-        }
+        self.date_onto(meta);
         if self.overview.is_some() {
             meta.overview.clone_from(&self.overview);
         }
         if let Some(genres) = &self.genres {
             meta.genres.clone_from(genres);
             meta.tmdb_genre_ids.clear();
+        }
+    }
+
+    fn describes(&self) -> bool {
+        self.overview.is_some() || self.genres.is_some() || self.released.is_some()
+    }
+
+    fn date_onto(&self, meta: &mut Metadata) {
+        if self.released.is_some() {
+            meta.release_date.clone_from(&self.released);
+        } else if let Some(year) = self.year {
+            let dated = meta.release_date.as_deref().and_then(year_of);
+            if dated.is_some_and(|dated| dated != year) {
+                meta.release_date = None;
+            }
         }
     }
 }
