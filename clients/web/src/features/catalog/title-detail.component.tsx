@@ -8,7 +8,6 @@ import { classes, type HostElement, styles, Text, useStyles } from '@kromatv/ui/
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { AiSuggestRail } from '#web/features/catalog/ai-suggest-rail.component';
-import { TITLE_SHELF } from '#web/features/catalog/catalog-nav';
 import { CastRail, type SimilarItem, SimilarRail } from '#web/features/catalog/detail.component';
 import { SeasonSection } from '#web/features/catalog/episode-list.component';
 import { TitleHero } from '#web/features/catalog/title-hero.component';
@@ -19,6 +18,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 
 import type { SimilarTarget, TitleView } from '#web/shared/lib/title-view';
+import { useBack } from '#web/shared/lib/use-back.hook';
 import { useWatched } from '#web/shared/lib/watched';
 import { page } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link.component';
@@ -35,6 +35,8 @@ const sDefinition = styles({
     animationTimingFunction: 'ease',
   },
 });
+
+const SECTION = { movie: '/movies', show: '/shows' } as const;
 
 type ProgressEntry = { itemId: string; positionMs: number; durationMs?: number | null };
 
@@ -191,6 +193,7 @@ export function TitleDetail({
 
   const owned = view.localId != null && view.playable != null;
   const localId = view.localId;
+  const back = useBack(owned ? SECTION[view.kind] : '/search');
 
   const { data: epProgress = {} } = useQuery({
     ...webRuntime.queries.userQueries.progress(),
@@ -235,7 +238,7 @@ export function TitleDetail({
         toggleList={toggleList}
         onPlay={play}
         onRequest={onRequestClick}
-        back={<RouteLink to={owned ? TITLE_SHELF[view.kind] : '/search'} />}
+        onBack={back}
       />
 
       <TitleBody
