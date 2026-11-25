@@ -4,7 +4,7 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { nameComponent } from '../component-names';
 import { defineControl, useControl } from '../control';
-import { Counter, mount, Tally } from './control.fixtures';
+import { Counter, Languages, mount, Tally } from './control.fixtures';
 import { describeScreen } from './describe-screen';
 import { find } from './inspect.fixtures';
 import { snapshot } from './screen-snapshot';
@@ -124,6 +124,15 @@ describe('a control in the text of a screen', () => {
 });
 
 describe('what a control holds', () => {
+  it('is listed with the values of a list it holds', () => {
+    mount(<Languages defaultValue={['fr', 'en']} />);
+
+    expect(snapshot()[0]?.state).toEqual({ value: ['fr', 'en'] });
+    expect(screenText()).toBe(
+      'Languages [c1]  0,0 0x0  state: value=["fr","en"]  actions: setValue',
+    );
+  });
+
   it('is not reported when its component hides what is typed', () => {
     mount(<PinInput defaultValue="1234" />);
 

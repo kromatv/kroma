@@ -4,7 +4,7 @@ import { cleanup, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ChangeDetails } from '../control';
-import { Counter, mount } from './control.fixtures';
+import { Counter, Languages, mount } from './control.fixtures';
 import { act, MAX_STEPS } from './screen-act';
 import { snapshot } from './screen-snapshot';
 
@@ -77,6 +77,15 @@ describe('a call on a control', () => {
     const report = await call({ ref: 'c1', action: 'setValue', args: [8] });
 
     expect(report.controls[0]?.state).toEqual({ value: 8 });
+  });
+
+  it('reports the values of a list it set', async () => {
+    mount(<Languages defaultValue={['fr']} />);
+
+    const report = await call({ ref: 'c1', action: 'setValue', args: [['fr', 'en']] });
+
+    expect(report.controls[0]?.state).toEqual({ value: ['fr', 'en'] });
+    expect(screen.getByRole('status').textContent).toBe('fr,en');
   });
 
   it('says so when the control already holds the value, and asks nobody', async () => {

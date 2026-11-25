@@ -1,14 +1,14 @@
 import { actionsNow } from './control-calls';
 import { type Mounted, refOf } from './mounted-controls';
-import { type PropSummary, summarizeProps } from './prop-summary';
 import { type Fiber, propsOf } from './react-fiber';
+import { type StateSummary, summarizeState } from './state-summary';
 
 /** A control as a read reports it: the ref a call names it by, its kind, its
  *  state, and what a call may ask of it now. */
 export type ScreenControl = {
   ref: string;
   kind: string;
-  state: PropSummary;
+  state: StateSummary;
   actions: string[];
 };
 
@@ -26,7 +26,7 @@ export function screenControl(name: string, fiber: Fiber, mounted: Mounted): Scr
   return {
     ref: refOf(mounted),
     kind: control.definition.name,
-    state: summarizeProps(name, propsOf(fiber), control.state()),
+    state: summarizeState(name, propsOf(fiber), control.state()),
     actions: actionsNow(control),
   };
 }
