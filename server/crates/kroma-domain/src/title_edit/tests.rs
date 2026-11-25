@@ -551,10 +551,15 @@ fn an_age_rating_written_replaces_every_country_s_and_shows_where_the_provider_s
             borrowed: false,
         })
     );
-    assert_eq!(elsewhere.ratings.get("US").map(String::as_str), Some("PG-13"));
+    assert_eq!(
+        elsewhere.ratings.get("US").map(String::as_str),
+        Some("PG-13")
+    );
     assert!(!elsewhere.ratings.contains_key("FR"));
     assert_eq!(
-        elsewhere.age_rating.map(|shown| (shown.country, shown.borrowed)),
+        elsewhere
+            .age_rating
+            .map(|shown| (shown.country, shown.borrowed)),
         Some(("US".to_string(), true))
     );
 }
