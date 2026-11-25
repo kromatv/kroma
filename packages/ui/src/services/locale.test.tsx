@@ -53,6 +53,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  document.documentElement.removeAttribute('lang');
+  document.documentElement.removeAttribute('dir');
 });
 
 describe('LocaleProvider', () => {
@@ -151,24 +153,29 @@ describe('LocaleProvider', () => {
     expect(container.textContent).toBe('en');
   });
 
-  it('mirrors the locale onto <html lang> only when asked', () => {
+  it('mirrors the locale and its direction onto <html> only when asked', () => {
     document.documentElement.lang = '';
+    document.documentElement.dir = 'rtl';
     render(
-      <LocaleProvider client={fakeClient()} accountLanguage="en" syncHtmlLang>
+      <LocaleProvider client={fakeClient()} accountLanguage="en" syncDocumentLanguage>
         <Probe />
       </LocaleProvider>,
     );
-    expect(document.documentElement.lang).toBe('en');
+    expect([document.documentElement.lang, document.documentElement.dir]).toEqual(['en', 'ltr']);
   });
 
-  it('leaves <html lang> alone by default', () => {
+  it('leaves <html lang> and <html dir> alone by default', () => {
     document.documentElement.lang = 'untouched';
+    document.documentElement.dir = 'rtl';
     render(
       <LocaleProvider client={fakeClient()} accountLanguage="en">
         <Probe />
       </LocaleProvider>,
     );
-    expect(document.documentElement.lang).toBe('untouched');
+    expect([document.documentElement.lang, document.documentElement.dir]).toEqual([
+      'untouched',
+      'rtl',
+    ]);
   });
 
   it('saves the device language to an account that signs in after the first render', () => {

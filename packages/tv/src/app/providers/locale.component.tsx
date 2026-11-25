@@ -21,7 +21,7 @@ export function LocaleProvider({
       // the set's screen reader uses to choose pronunciation; a hardcoded value
       // read an English UI with French phonetics. No-ops where there is no
       // document, so native TVs are unaffected.
-      syncHtmlLang
+      syncDocumentLanguage
     >
       {children}
     </UiLocaleProvider>

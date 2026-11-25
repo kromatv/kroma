@@ -158,6 +158,7 @@
       "name": "@kromatv/site",
       "version": "0.0.0",
       "dependencies": {
+        "@kromatv/i18n": "workspace:*",
         "@kromatv/registry": "workspace:*",
         "@kromatv/site-meta": "workspace:*",
         "@kromatv/ui": "workspace:*",

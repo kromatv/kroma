@@ -7,6 +7,8 @@
 // ReferenceError there, which React Native turns into SIGABRT - so the check
 // lives here, once, as "is there a document?" rather than "does this crash?".
 
+import { directionOf } from '@kromatv/i18n';
+
 /** The DOM document, or null on a target that has none. */
 export function webDocument(): Document | null {
   return typeof document === 'undefined' ? null : document;
@@ -27,6 +29,17 @@ export function webWindow(): Window | null {
   }
   const w = window as Partial<Window>;
   return typeof w.addEventListener === 'function' ? window : null;
+}
+
+/** Marks the page as written in `tag`: `<html lang>` takes the tag and
+ *  `<html dir>` its writing direction. Does nothing where there is no document. */
+export function setDocumentLanguage(tag: string): void {
+  const root = webDocument()?.documentElement;
+  if (!root) {
+    return;
+  }
+  root.lang = tag;
+  root.dir = directionOf(tag);
 }
 
 /** Whether `element` is a form field or an editable region: where the keys

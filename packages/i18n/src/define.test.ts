@@ -21,9 +21,9 @@ function build() {
 describe('defineI18n', () => {
   it('offers the languages past a draft, and says which are still being translated', () => {
     expect(build().LOCALES).toEqual([
-      { code: 'fr', name: 'Français', labelKey: 'lang.fr', stage: 'stable' },
-      { code: 'en', name: 'English', labelKey: 'lang.en', stage: 'stable' },
-      { code: 'de', name: 'Deutsch', labelKey: 'lang.de', stage: 'beta' },
+      { code: 'fr', name: 'Français', dir: 'ltr', labelKey: 'lang.fr', stage: 'stable' },
+      { code: 'en', name: 'English', dir: 'ltr', labelKey: 'lang.en', stage: 'stable' },
+      { code: 'de', name: 'Deutsch', dir: 'ltr', labelKey: 'lang.de', stage: 'beta' },
     ]);
   });
 
