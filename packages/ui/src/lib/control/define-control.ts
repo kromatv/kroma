@@ -27,7 +27,7 @@ const capital = (key: string) => key.charAt(0).toUpperCase() + key.slice(1);
 
 function stateKey(key: string): StateKey {
   const name = capital(key);
-  return { key, initial: `default${name}`, change: `on${name}Change`, setter: `set${name}` };
+  return { key, from: `default${name}`, change: `on${name}Change`, setter: `set${name}` };
 }
 
 function clash(control: string, names: readonly string[]): void {
@@ -71,7 +71,7 @@ export function defineControl(name: string, parts: Loose): AnyDefinition {
   const actions = parts.actions ?? NOTHING;
   const keys = Object.keys(parts.state).map(stateKey);
   const optionNames = Object.keys(options);
-  const read = keys.flatMap(({ key, initial, change }) => [key, initial, change]);
+  const read = keys.flatMap(({ key, from, change }) => [key, from, change]);
   clash(name, [
     ...keys.map(({ key }) => key),
     ...keys.map(({ setter }) => setter),
@@ -85,7 +85,7 @@ export function defineControl(name: string, parts: Loose): AnyDefinition {
     actions,
     keys,
     keyOf: new Map(keys.map((entry) => [entry.key, entry])),
-    optionNames,
+    optionKeys: optionNames.map((key) => ({ key, from: key })),
     owned: new Set([...read, ...optionNames]),
   };
 }

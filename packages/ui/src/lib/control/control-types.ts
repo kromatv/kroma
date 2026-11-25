@@ -57,13 +57,12 @@ export type Bound<A extends ActionArgs> = {
   readonly [K in keyof A as Declared<K>]: (...args: A[K]) => boolean;
 };
 
-/** The prop names one state key is read from, and the name of its setter. */
-export type StateKey = {
-  readonly key: string;
-  readonly initial: string;
-  readonly change: string;
-  readonly setter: string;
-};
+/** An entry of the state or of the options, and the prop that gives it. */
+export type Slot = { readonly key: string; readonly from: string };
+
+/** A state key starts from its `default<Key>` prop. These are its callback's
+ *  name and its setter's. */
+export type StateKey = Slot & { readonly change: string; readonly setter: string };
 
 /** What a definition says about its props, whatever its types are. */
 export type ControlShape = {
@@ -72,7 +71,7 @@ export type ControlShape = {
   readonly options: object;
   readonly keys: readonly StateKey[];
   readonly keyOf: ReadonlyMap<string, StateKey>;
-  readonly optionNames: readonly string[];
+  readonly optionKeys: readonly Slot[];
   /** Every prop name the control reads, which is what `rest` leaves out. */
   readonly owned: ReadonlySet<string>;
 };

@@ -1,4 +1,4 @@
-import type { ControlShape } from './control-types';
+import type { ControlShape, Slot } from './control-types';
 
 export type Bag = Readonly<Record<string, unknown>>;
 
@@ -7,18 +7,21 @@ const NO_KEYS: ReadonlySet<string> = new Set();
 
 export const propOf = (props: object, name: string): unknown => Reflect.get(props, name);
 
-/** The state a control starts from: each key's declared value, or its
- *  `default<Key>` prop when the component was given one. */
-export function initialState(definition: ControlShape, props: object): Bag {
-  const state: Record<string, unknown> = { ...definition.state };
-  for (const { key, initial } of definition.keys) {
-    const given = propOf(props, initial);
+function filled(defaults: object, slots: readonly Slot[], props: object): Bag {
+  const values: Record<string, unknown> = { ...defaults };
+  for (const { key, from } of slots) {
+    const given = propOf(props, from);
     if (given !== undefined) {
-      state[key] = given;
+      values[key] = given;
     }
   }
-  return state;
+  return values;
 }
+
+/** The state a control starts from: each key's declared value, or its
+ *  `default<Key>` prop when the component was given one. */
+export const initialState = (definition: ControlShape, props: object): Bag =>
+  filled(definition.state, definition.keys, props);
 
 /** The keys the app owns: those whose prop was present at mount. */
 export function controlledKeys(definition: ControlShape, props: object): ReadonlySet<string> {
@@ -40,19 +43,10 @@ export function stateOf(own: Bag, props: object, controlled: ReadonlySet<string>
 }
 
 /** The options with their defaults under whatever the props give. */
-export function optionsOf(definition: ControlShape, props: object): Bag {
-  if (definition.optionNames.length === 0) {
-    return NO_OPTIONS;
-  }
-  const options: Record<string, unknown> = { ...definition.options };
-  for (const name of definition.optionNames) {
-    const given = propOf(props, name);
-    if (given !== undefined) {
-      options[name] = given;
-    }
-  }
-  return options;
-}
+export const optionsOf = (definition: ControlShape, props: object): Bag =>
+  definition.optionKeys.length === 0
+    ? NO_OPTIONS
+    : filled(definition.options, definition.optionKeys, props);
 
 /** The props the control does not read, for the component to pass on. */
 export function restOf(definition: ControlShape, props: object): Bag {

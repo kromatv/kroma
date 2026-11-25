@@ -17,7 +17,7 @@ describe('a definition', () => {
   it('names the three props of each state key', () => {
     expect(select.keyOf.get('open')).toEqual({
       key: 'open',
-      initial: 'defaultOpen',
+      from: 'defaultOpen',
       change: 'onOpenChange',
       setter: 'setOpen',
     });
