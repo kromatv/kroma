@@ -208,9 +208,11 @@ instead. The steps before it stay done.
 
 A call is at most 50 steps of at most 8 arguments each. One that is not
 `{ steps: [{ ref, action, args }] }` is refused whole, with an example in the
-message. The components that run a control today are Switch, Checkbox and
-Disclosure. The television routes below carry the rows without `control`, and
-have no route for a call yet.
+message. Every kit component whose value or open state an app can also own
+runs a control: Switch, Checkbox, Disclosure, TextField, TextArea, OtpField,
+PinField, Command, Menu, Select, Stepper, Chart, Cropper and Resizable. A
+Field's value is held by the entry it renders. The television routes below
+carry the rows without `control`, and have no route for a call yet.
 
 ## On a television, through the server
 

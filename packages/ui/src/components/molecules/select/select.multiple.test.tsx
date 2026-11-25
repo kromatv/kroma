@@ -73,9 +73,13 @@ describe('a <Select> that takes several values', () => {
 
     fireEvent.click(option('Terminés'));
 
-    expect(onValueChange).toHaveBeenCalledWith(['active', 'done'], {
-      item: expect.objectContaining({ value: 'done', label: 'Terminés' }),
-    });
+    expect(onValueChange).toHaveBeenCalledWith(
+      ['active', 'done'],
+      expect.objectContaining({
+        reason: 'select',
+        item: expect.objectContaining({ value: 'done', label: 'Terminés' }),
+      }),
+    );
   });
 
   it('takes the keyboard back from a row a pointer pressed, since the list outlives it', () => {

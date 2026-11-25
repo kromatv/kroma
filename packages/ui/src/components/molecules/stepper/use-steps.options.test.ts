@@ -24,7 +24,10 @@ describe('useSteps with steps nothing may enter', () => {
 
     act(() => result.current.previous());
 
-    expect(onValueChange).toHaveBeenCalledWith('account', { reason: 'previous' });
+    expect(onValueChange).toHaveBeenCalledWith(
+      'account',
+      expect.objectContaining({ reason: 'previous' }),
+    );
     expect(result.current.value).toBe('account');
   });
 

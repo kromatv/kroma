@@ -3,24 +3,29 @@
 
 import { createContext, type RefObject, useContext } from 'react';
 import type { View } from 'react-native';
+import { type ChangeDetails, type ControlOf, defineControl, type ReasonOf } from '#ui/lib/control';
 import { partContext } from '#ui/lib/part-context';
+
+const menuControl = defineControl('menu', {
+  state: { open: false },
+  actions: { trigger: () => ({ open: true }) },
+  reasons: ['select', 'outside', 'escape', 'back'],
+});
+
+/** Why the menu opened or closed. `set` is a setter called without a reason,
+ *  which is what a developer tool's call carries. */
+type MenuOpenReason = ReasonOf<typeof menuControl>;
 
 /** Why the menu closed. `back` is the remote's Back button (and, in a browser
  *  TV shell, the key it arrives as). */
-type MenuDismissReason = 'select' | 'outside' | 'escape' | 'back';
+type MenuDismissReason = Exclude<MenuOpenReason, 'trigger' | 'set'>;
 
-type MenuOpenReason = 'trigger' | MenuDismissReason;
+type MenuOpenDetails = ChangeDetails<MenuOpenReason>;
 
-interface MenuOpenDetails {
-  reason: MenuOpenReason;
-}
-
-interface MenuState {
-  open: boolean;
+type MenuState = Pick<ControlOf<typeof menuControl>, 'open' | 'setOpen' | 'trigger'> & {
   label: string | undefined;
   anchor: RefObject<View | null>;
-  setOpen: (open: boolean, reason: MenuOpenReason) => void;
-}
+};
 
 const [MenuContext, useMenu] = partContext<MenuState>('Menu.Root');
 
@@ -49,4 +54,4 @@ function useMenuRow(part: string): MenuRowState {
 }
 
 export type { MenuDismissReason, MenuOpenDetails, MenuOpenReason, MenuRowState, MenuState };
-export { MenuContext, MenuRowContext, useMenu, useMenuRow };
+export { MenuContext, MenuRowContext, menuControl, useMenu, useMenuRow };

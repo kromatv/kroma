@@ -1,27 +1,18 @@
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ChangeDetails, useControl } from '#ui/lib/control';
 import {
   CROP_IDENTITY,
   type CropBounds,
   type CropTransform,
   clampTransform,
   type PixelSize,
-  turn,
-  zoomTo,
 } from '#ui/lib/crop-geometry';
 import { cropImage } from '#ui/lib/crop-image';
 import type { CropOutput } from '#ui/lib/crop-image-types';
 import { imageSize } from '#ui/lib/image-size';
 import { safeImageUrl } from '#ui/lib/safe-image-url';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 import { CropperContext, type CropperShape, type CropperState } from './cropper-context.hook';
+import { type CropperReason, cropperControl } from './cropper-control';
 import { Frame } from './cropper-frame.component';
 import { Reset, Rotate, Zoom } from './cropper-tools.component';
 
@@ -40,8 +31,9 @@ interface CropperRootProps {
   value?: CropTransform;
   /** The transform to open on, the image centred and just covering by default. */
   defaultValue?: CropTransform;
-  /** Hears the transform already clamped to the image and the zoom range. */
-  onValueChange?: (next: CropTransform) => void;
+  /** Hears a gesture's transform already clamped to the image and the zoom
+   *  range; `details.cancel()` keeps the picture where it was. */
+  onValueChange?: (next: CropTransform, details: ChangeDetails<CropperReason>) => void;
   children?: ReactNode;
 }
 
@@ -50,8 +42,23 @@ interface Measured {
   size: PixelSize;
 }
 
-function sameTransform(a: CropTransform, b: CropTransform): boolean {
-  return a.zoom === b.zoom && a.x === b.x && a.y === b.y && a.rotation === b.rotation;
+function useImageSize(src: string | null): PixelSize | null {
+  const [measured, setMeasured] = useState<Measured | null>(null);
+  useEffect(() => {
+    if (!src) {
+      return undefined;
+    }
+    let current = true;
+    void imageSize(src).then((size) => {
+      if (current && size) {
+        setMeasured({ src, size });
+      }
+    });
+    return () => {
+      current = false;
+    };
+  }, [src]);
+  return measured?.src === src ? measured.size : null;
 }
 
 /**
@@ -78,22 +85,7 @@ function Root({
   children,
 }: Readonly<CropperRootProps>) {
   const src = safeImageUrl(requested);
-  const [measured, setMeasured] = useState<Measured | null>(null);
-  const image = measured?.src === src ? measured.size : null;
-  useEffect(() => {
-    if (!src) {
-      return undefined;
-    }
-    let current = true;
-    void imageSize(src).then((size) => {
-      if (current && size) {
-        setMeasured({ src, size });
-      }
-    });
-    return () => {
-      current = false;
-    };
-  }, [src]);
+  const image = useImageSize(src);
 
   const bounds = useMemo<CropBounds>(
     () => ({ aspect, minZoom, maxZoom }),
@@ -101,45 +93,47 @@ function Root({
   );
   const covering = useMemo<PixelSize>(() => image ?? { width: aspect, height: 1 }, [image, aspect]);
 
-  const [raw, setRaw] = useControllable(value, defaultValue, onValueChange);
+  const [{ value: raw, setTransform, panBy, zoomBy, rotate, reset }] = useControl(cropperControl, {
+    value,
+    defaultValue,
+    onValueChange,
+    covering,
+    ...bounds,
+    disabled: src === null,
+  });
   const transform = useMemo(() => clampTransform(covering, raw, bounds), [covering, raw, bounds]);
 
-  const latest = useRef(transform);
-  useLayoutEffect(() => {
-    latest.current = transform;
-  });
-
-  const setTransform = useCallback(
-    (next: CropTransform) => {
-      const clamped = clampTransform(covering, next, bounds);
-      if (sameTransform(clamped, latest.current)) {
-        return;
-      }
-      latest.current = clamped;
-      setRaw(clamped);
-    },
-    [covering, bounds, setRaw],
-  );
-
-  const actions = useMemo(
-    () => ({
-      setTransform,
-      panBy: (x: number, y: number) =>
-        setTransform({ ...latest.current, x: latest.current.x + x, y: latest.current.y + y }),
-      zoomBy: (delta: number) =>
-        setTransform(zoomTo(latest.current, latest.current.zoom + delta, bounds)),
-      rotate: (direction: 'left' | 'right') =>
-        setTransform({ ...latest.current, rotation: turn(latest.current.rotation, direction) }),
-      reset: () => setTransform(CROP_IDENTITY),
-      crop: (output?: CropOutput) =>
-        src ? cropImage({ src, transform: latest.current, aspect }, output) : Promise.resolve(null),
-    }),
-    [setTransform, bounds, src, aspect],
-  );
-
   const state = useMemo<CropperState>(
-    () => ({ src, image, transform, aspect, shape, minZoom, maxZoom, ...actions }),
-    [src, image, transform, aspect, shape, minZoom, maxZoom, actions],
+    () => ({
+      src,
+      image,
+      transform,
+      aspect,
+      shape,
+      minZoom,
+      maxZoom,
+      setTransform,
+      panBy,
+      zoomBy,
+      rotate,
+      reset,
+      crop: (output?: CropOutput) =>
+        src ? cropImage({ src, transform, aspect }, output) : Promise.resolve(null),
+    }),
+    [
+      src,
+      image,
+      transform,
+      aspect,
+      shape,
+      minZoom,
+      maxZoom,
+      setTransform,
+      panBy,
+      zoomBy,
+      rotate,
+      reset,
+    ],
   );
 
   return <CropperContext value={state}>{children}</CropperContext>;
