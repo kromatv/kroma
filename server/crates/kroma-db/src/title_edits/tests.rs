@@ -163,6 +163,7 @@ fn in_file() -> TitleEdit {
         released: None,
         genres: Some(vec!["Family".into()]),
         directors: None,
+        content_rating: None,
     }
 }
 

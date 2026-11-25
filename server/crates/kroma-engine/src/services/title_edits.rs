@@ -7,6 +7,7 @@ use anyhow::Result;
 
 use crate::db;
 use crate::db::title_edits::Title;
+use crate::domain::ratings::written_ratings;
 use crate::model::title_edit::TitleEdit;
 use crate::services::search::spawn_reindex;
 use crate::services::titles::{announce, exists};
@@ -17,9 +18,11 @@ use crate::state::SharedState;
 pub enum Edit {
     /// The title shows these fields now, trimmed, with the empty ones handed
     /// back to the provider.
-    Kept(TitleEdit),
+    Kept(Box<TitleEdit>),
     /// A field is longer than a title can hold, or the year is out of range.
     DoesNotFit,
+    /// No country's system has the age rating written.
+    UnknownRating,
     /// No title has that id.
     NoSuchTitle,
 }
@@ -27,6 +30,9 @@ pub enum Edit {
 /// Keep `edit` for `title`, in place of what was written before.
 pub fn write(state: &SharedState, title: Title<'_>, edit: TitleEdit) -> Result<Edit> {
     let edit = edit.tidied();
+    if edit.content_rating.as_deref().is_some_and(unknown) {
+        return Ok(Edit::UnknownRating);
+    }
     if !edit.fits() {
         return Ok(Edit::DoesNotFit);
     }
@@ -36,7 +42,11 @@ pub fn write(state: &SharedState, title: Title<'_>, edit: TitleEdit) -> Result<E
     db::title_edits::write(&state.db, title, &edit)?;
     announce(state, title.kind, title.id);
     spawn_reindex(state.clone());
-    Ok(Edit::Kept(edit))
+    Ok(Edit::Kept(Box::new(edit)))
+}
+
+fn unknown(rating: &str) -> bool {
+    written_ratings(rating).is_empty()
 }
 
 #[cfg(test)]

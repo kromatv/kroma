@@ -1,5 +1,6 @@
 use super::*;
 use crate::metadata::CrewMember;
+use crate::ratings::{AgeRating, CountryRatings};
 
 fn fetched() -> Metadata {
     Metadata {
@@ -46,6 +47,7 @@ fn an_edit_left_blank_follows_the_provider_in_every_field() {
         released: Some(" ".into()),
         genres: Some(vec![" ".into()]),
         directors: Some(vec!["".into(), "  ".into()]),
+        content_rating: Some(" ".into()),
     };
 
     let tidied = edit.tidied();
@@ -65,6 +67,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
         released: Some(" 1995-12-15 ".into()),
         genres: Some(vec![" Crime".into(), "".into(), "Drama ".into()]),
         directors: Some(vec![" Michael Mann ".into(), " ".into()]),
+        content_rating: Some(" R ".into()),
     };
 
     let tidied = edit.tidied();
@@ -78,6 +81,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
     assert_eq!(tidied.released.as_deref(), Some("1995-12-15"));
     assert_eq!(tidied.genres, Some(vec!["Crime".into(), "Drama".into()]));
     assert_eq!(tidied.directors, Some(vec!["Michael Mann".into()]));
+    assert_eq!(tidied.content_rating.as_deref(), Some("R"));
 }
 
 #[test]
@@ -92,6 +96,7 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         released: Some("2200-12-31".into()),
         genres: Some(vec!["g".repeat(GENRE_MAX); GENRES_MAX]),
         directors: Some(vec!["d".repeat(PERSON_MAX); DIRECTORS_MAX]),
+        content_rating: Some("FR-12".into()),
     };
     let long_title = TitleEdit {
         title: Some("a".repeat(TITLE_MAX + 1)),
@@ -129,6 +134,10 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         year: Some(*YEARS.start() - 1),
         ..Default::default()
     };
+    let unknown_rating = TitleEdit {
+        content_rating: Some("FSK 16".into()),
+        ..Default::default()
+    };
 
     assert!(at_limit.fits());
     assert!(!long_title.fits());
@@ -140,6 +149,7 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
     assert!(!too_many_directors.fits());
     assert!(!long_director.fits());
     assert!(!early.fits());
+    assert!(!unknown_rating.fits());
 }
 
 #[test]
@@ -154,6 +164,7 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         released: Some("1995-02-30".into()),
         genres: Some(vec!["g".repeat(GENRE_MAX + 1); GENRES_MAX + 1]),
         directors: Some(vec!["d".repeat(PERSON_MAX + 1); DIRECTORS_MAX + 1]),
+        content_rating: Some("Not Rated".into()),
     };
 
     let clipped = long.clipped();
@@ -183,6 +194,7 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         clipped.directors.map(|d| (d.len(), d[0].chars().count())),
         Some((DIRECTORS_MAX, PERSON_MAX))
     );
+    assert_eq!(clipped.content_rating, None);
 }
 
 #[test]
@@ -201,6 +213,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
         released: Some("1995-12-15".into()),
         genres: Some(vec!["Crime".into()]),
         directors: Some(vec!["Michael Mann".into()]),
+        content_rating: Some("Rated R".into()),
     };
 
     let shown = hand.over(file);
@@ -214,6 +227,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
     assert_eq!(shown.released.as_deref(), Some("1995-12-15"));
     assert_eq!(shown.genres, Some(vec!["Crime".into()]));
     assert_eq!(shown.directors, Some(vec!["Michael Mann".into()]));
+    assert_eq!(shown.content_rating.as_deref(), Some("Rated R"));
 }
 
 #[test]
@@ -494,4 +508,67 @@ fn directors_written_for_a_title_never_matched_give_it_a_record() {
     assert_eq!(crew.len(), 1);
     assert_eq!(crew[0].name, "Jane Doe");
     assert_eq!(crew[0].job, "Director");
+}
+
+fn rated_at_home() -> Metadata {
+    Metadata {
+        ratings: CountryRatings::from([
+            ("FR".to_string(), "16".to_string()),
+            ("US".to_string(), "R".to_string()),
+        ]),
+        certification: Some("16".into()),
+        age_rating: Some(AgeRating {
+            label: "16".into(),
+            country: "FR".into(),
+            borrowed: false,
+        }),
+        ..fetched()
+    }
+}
+
+fn rated(text: &str, metadata: Option<Metadata>) -> Metadata {
+    let edit = TitleEdit {
+        content_rating: Some(text.into()),
+        ..Default::default()
+    };
+    let (_, _, metadata) = written(&edit, metadata);
+    metadata.expect("a record")
+}
+
+#[test]
+fn an_age_rating_written_replaces_every_country_s_and_shows_where_the_provider_s_did() {
+    let twelve = rated("12", Some(rated_at_home()));
+    let elsewhere = rated("Rated PG-13", Some(rated_at_home()));
+
+    assert_eq!(twelve.ratings.get("FR").map(String::as_str), Some("12"));
+    assert!(!twelve.ratings.contains_key("US"));
+    assert_eq!(twelve.certification.as_deref(), Some("12"));
+    assert_eq!(
+        twelve.age_rating,
+        Some(AgeRating {
+            label: "12".into(),
+            country: "FR".into(),
+            borrowed: false,
+        })
+    );
+    assert_eq!(elsewhere.ratings.get("US").map(String::as_str), Some("PG-13"));
+    assert!(!elsewhere.ratings.contains_key("FR"));
+    assert_eq!(
+        elsewhere.age_rating.map(|shown| (shown.country, shown.borrowed)),
+        Some(("US".to_string(), true))
+    );
+}
+
+#[test]
+fn an_age_rating_written_for_a_title_never_matched_gives_it_a_record() {
+    let unmatched = rated("FR-12", None);
+
+    assert_eq!(
+        unmatched.ratings,
+        CountryRatings::from([("FR".to_string(), "12".to_string())])
+    );
+    assert_eq!(
+        unmatched.age_rating.map(|shown| shown.label),
+        Some("12".to_string())
+    );
 }

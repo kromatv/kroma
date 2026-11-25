@@ -38,5 +38,6 @@
   "error.unauthorizedBody": "Votre session a expiré. Reconnectez-vous pour continuer à regarder.",
   "error.unauthorizedTitle": "Connexion requise",
   "error.userNotFound": "Utilisateur introuvable",
-  "error.ratingsCountryUnknown": "KROMA ne connaît pas la classification par âge de ce pays"
+  "error.ratingsCountryUnknown": "KROMA ne connaît pas la classification par âge de ce pays",
+  "error.ageRatingUnknown": "KROMA ne connaît pas cette classification. Écrivez-la comme 12, PG-13 ou FR-12."
 }

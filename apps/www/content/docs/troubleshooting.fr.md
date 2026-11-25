@@ -116,7 +116,8 @@ Pour l'éviter, nommez le dossier avec le titre et l'année :
 
 Une vidéo de famille ou un film que TMDB ne connaît pas n'a pas de fiche à
 corriger. Ouvrez-le, choisissez **Modifier les informations**, puis écrivez son
-titre, sa date de sortie, son résumé, ses genres et sa réalisation. Quand
+titre, sa date de sortie, son résumé, ses genres, sa réalisation et sa
+classification. Quand
 **Corriger la fiche**
 ne trouve rien, son bouton **Modifier les informations** ouvre le même
 formulaire. Pour la date de sortie,
@@ -124,7 +125,8 @@ formulaire. Pour la date de sortie,
 de tri classe le film sous un autre nom, comme `Seigneur des anneaux, Le`, sans
 changer le titre affiché. Un titre original, comme `Das Boot`, s'affiche sous
 le titre quand les deux diffèrent, et un slogan s'affiche au-dessus du
-résumé. Ce que vous écrivez s'affiche dans toutes
+résumé. Écrivez la classification comme `12`, `PG-13` ou `FR-12` : les
+profils limités par âge s'y fient. Ce que vous écrivez s'affiche dans toutes
 les langues et reste après une nouvelle analyse. Videz un champ pour reprendre le texte de
 TMDB. **Films** et **Séries** trient et filtrent d'après
 ce que vous écrivez, et l'année que vous indiquez remplace la date de sortie de

@@ -96,7 +96,7 @@ pub async fn keep_discovered(
     Ok(())
 }
 
-pub(super) fn shows_behind<'a>(items: impl IntoIterator<Item = &'a MediaItem>) -> Vec<String> {
+fn shows_behind<'a>(items: impl IntoIterator<Item = &'a MediaItem>) -> Vec<String> {
     items
         .into_iter()
         .filter(|item| item.kind == Kind::Episode)
@@ -106,7 +106,7 @@ pub(super) fn shows_behind<'a>(items: impl IntoIterator<Item = &'a MediaItem>) -
         .collect()
 }
 
-pub(super) async fn ratings_of_shows(
+async fn ratings_of_shows(
     state: &SharedState,
     viewer: &Viewer,
     show_ids: Vec<String>,

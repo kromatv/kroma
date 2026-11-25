@@ -15,6 +15,7 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
     <genre>Drama</genre>
     <director>Michael Mann</director>
     <director> </director>
+    <mpaa>Rated R</mpaa>
     <uniqueid type="imdb">tt0113277</uniqueid>
     <uniqueid type="tmdb" default="true">949</uniqueid>
     <actor><name>Al Pacino</name><role>Vincent</role></actor>
@@ -22,7 +23,7 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 </movie>"#;
 
 #[test]
-fn a_film_s_file_gives_its_names_tagline_summary_date_genres_directors_and_ids() {
+fn a_film_s_file_gives_its_names_tagline_summary_date_genres_directors_rating_and_ids() {
     let Contents {
         edit,
         tmdb,
@@ -40,6 +41,7 @@ fn a_film_s_file_gives_its_names_tagline_summary_date_genres_directors_and_ids()
     assert_eq!(edit.released.as_deref(), Some("1995-12-15"));
     assert_eq!(edit.genres, Some(vec!["Crime".into(), "Drama".into()]));
     assert_eq!(edit.directors, Some(vec!["Michael Mann".into()]));
+    assert_eq!(edit.content_rating.as_deref(), Some("Rated R"));
     assert_eq!(tmdb, Some(949));
     assert_eq!(elsewhere.imdb.as_deref(), Some("tt0113277"));
     assert_eq!(elsewhere.tvdb, None);
@@ -227,4 +229,14 @@ fn a_file_read_for_a_film_or_an_episode_takes_the_root_it_holds() {
 
     assert_eq!(contents.edit.title.as_deref(), Some("Pilot"));
     assert_eq!(contents.tmdb, None);
+}
+
+#[test]
+fn a_rating_no_system_has_is_left_to_the_provider() {
+    let text = "<movie><title>Heat</title><mpaa>FSK 16</mpaa></movie>";
+
+    let Contents { edit, .. } = parsed(text, MOVIE);
+
+    assert_eq!(edit.content_rating, None);
+    assert_eq!(edit.title.as_deref(), Some("Heat"));
 }

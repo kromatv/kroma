@@ -166,8 +166,11 @@ Series/
   `<title>`, its `<plot>` and its `<aired>`, the day it was first shown. A file
   that describes several episodes gives the first.
 - KROMA reads `<title>`, `<originaltitle>`, `<sorttitle>`, `<tagline>`,
-  `<plot>`, `<premiered>` or `<year>`, each `<genre>` and each `<director>`.
-  The file must be UTF-8, as these programs write it.
+  `<plot>`, `<premiered>` or `<year>`, each `<genre>`, each `<director>` and
+  `<mpaa>`, the age rating. The file must be UTF-8, as these programs write it.
+- An age rating such as `PG-13`, `Rated R` or `FR-12` replaces the one from
+  the internet, and profiles with an age limit go by it. KROMA leaves out a
+  rating it does not know.
 - A file that gives the title's TMDB number, in `<uniqueid type="tmdb">` or
   `<tmdbid>`, or that ends with a link to its themoviedb.org page, makes KROMA
   recognize the title by that number instead of by its name. A match you fix

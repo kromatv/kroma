@@ -12,6 +12,7 @@ export interface TitleDraft {
   released: string;
   genres: string;
   directors: string;
+  contentRating: string;
 }
 
 const shown = (text: string | null) => text ?? '';
@@ -27,6 +28,7 @@ export function draftOf(edit: TitleEdit): TitleDraft {
     released: edit.released ?? (edit.year === null ? '' : String(edit.year)),
     genres: (edit.genres ?? []).join(', '),
     directors: (edit.directors ?? []).join(', '),
+    contentRating: shown(edit.contentRating),
   };
 }
 
@@ -64,5 +66,6 @@ export function editOf(draft: TitleDraft): TitleEdit {
     ...dateOf(draft.released),
     genres: listOf(draft.genres),
     directors: listOf(draft.directors),
+    contentRating: kept(draft.contentRating),
   };
 }

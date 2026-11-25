@@ -314,6 +314,14 @@ the provider's person, so it still leads to their page with their picture. A per
 and the catalogue filtered by director, find the title under the directors it shows and no
 longer under the ones they replace.
 
+**LIB-97** (SHIPPED) - A film or a show shows the age rating a person writes, or its `.nfo`
+file gives in `<mpaa>` (LIB-84), in place of the provider's, and a profile's ceiling weighs it
+as it weighs the provider's (ACCT-110); a show's covers its episodes (ACCT-103). A label after
+its country, as `FR-12`, is that country's. A label alone, as `PG-13` or `Rated R`, is the
+rating of every country whose system has it. What a person writes comes before the file. A
+rating no country's system has, or one that means no rating, is refused when written and not
+read from the file.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

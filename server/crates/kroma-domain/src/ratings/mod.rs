@@ -102,3 +102,6 @@ pub fn countries() -> Vec<&'static str> {
 
 mod rules;
 pub use rules::TitleRule;
+
+mod written;
+pub use written::written_ratings;

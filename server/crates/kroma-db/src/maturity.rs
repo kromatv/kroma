@@ -8,7 +8,7 @@ use rusqlite::OptionalExtension;
 
 use super::{Connection, IN_CHUNK, Pool, Result, params};
 
-use kroma_domain::{CountryRatings, MaturityLevel};
+use kroma_domain::{CountryRatings, MaturityLevel, written_ratings};
 
 /// The two maturity settings stored on an account. `ratings_country` is `None`
 /// until the person picks one, and reads as the server's metadata country.
@@ -62,14 +62,24 @@ pub fn set_ratings_country(pool: &Pool, user_id: &str, country: Option<&str>) ->
     Ok(pool.get()?.execute(sql, params![user_id, country])? > 0)
 }
 
+const ITEM_WRITTEN: &str =
+    "LEFT JOIN title_shown e ON e.subject_kind = 'item' AND e.subject_id = i.id";
+const SHOW_WRITTEN: &str =
+    "LEFT JOIN title_shown e ON e.subject_kind = 'show' AND e.subject_id = s.id";
+
 /// What each named item is held to, skipping ids nothing matches. An episode
-/// is held to its show's ratings, never to its own.
+/// is held to its show's ratings, never to its own, and an age rating written
+/// for a title stands for all of them (LIB-97).
 pub fn items_access(pool: &Pool, ids: &[String]) -> Result<HashMap<String, TitleAccess>> {
     let sql = |ph: &str| {
         format!(
             "SELECT i.id, CASE WHEN i.kind = 'episode' THEN i.show_id ELSE i.id END, i.library, \
-             CASE WHEN i.kind = 'episode' THEN s.metadata ELSE i.metadata END \
-             FROM items i LEFT JOIN shows s ON s.id = i.show_id WHERE i.id IN ({ph})"
+             CASE WHEN i.kind = 'episode' THEN s.metadata ELSE i.metadata END, e.content_rating \
+             FROM items i LEFT JOIN shows s ON s.id = i.show_id \
+             LEFT JOIN title_shown e \
+               ON e.subject_kind = CASE WHEN i.kind = 'episode' THEN 'show' ELSE 'item' END \
+              AND e.subject_id = CASE WHEN i.kind = 'episode' THEN i.show_id ELSE i.id END \
+             WHERE i.id IN ({ph})"
         )
     };
     access_of(pool, ids, sql)
@@ -77,7 +87,10 @@ pub fn items_access(pool: &Pool, ids: &[String]) -> Result<HashMap<String, Title
 
 pub fn shows_access(pool: &Pool, ids: &[String]) -> Result<HashMap<String, TitleAccess>> {
     access_of(pool, ids, |ph| {
-        format!("SELECT id, id, library, metadata FROM shows WHERE id IN ({ph})")
+        format!(
+            "SELECT s.id, s.id, s.library, s.metadata, e.content_rating \
+             FROM shows s {SHOW_WRITTEN} WHERE s.id IN ({ph})"
+        )
     })
 }
 
@@ -101,10 +114,15 @@ pub fn every_title_access(pool: &Pool) -> Result<HashMap<String, TitleAccess>> {
     let conn = pool.get()?;
     let mut out = HashMap::new();
     for sql in [
-        "SELECT id, id, library, metadata FROM items WHERE kind != 'episode'",
-        "SELECT id, id, library, metadata FROM shows",
+        format!(
+            "SELECT i.id, i.id, i.library, i.metadata, e.content_rating \
+             FROM items i {ITEM_WRITTEN} WHERE i.kind != 'episode'"
+        ),
+        format!(
+            "SELECT s.id, s.id, s.library, s.metadata, e.content_rating FROM shows s {SHOW_WRITTEN}"
+        ),
     ] {
-        keep_first(&mut out, read_access(&conn, sql, [])?);
+        keep_first(&mut out, read_access(&conn, &sql, [])?);
     }
     Ok(out)
 }
@@ -136,7 +154,8 @@ fn read_access(
     let rows = stmt.query_map(bound, |r| {
         let blob = r.get::<_, Option<String>>(3)?;
         let shelf = (r.get(1)?, r.get(2)?);
-        Ok((r.get::<_, String>(0)?, access(shelf, blob.as_deref())))
+        let title = access(shelf, blob.as_deref());
+        Ok((r.get::<_, String>(0)?, rated(title, r.get(4)?)))
     })?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
 }
@@ -168,6 +187,14 @@ fn access((title, library): (Option<String>, String), blob: Option<&str>) -> Tit
         certification: stored.certification,
         genres: stored.genres,
     }
+}
+
+fn rated(title: TitleAccess, written: Option<String>) -> TitleAccess {
+    let ratings = written.as_deref().map(written_ratings).unwrap_or_default();
+    if ratings.is_empty() {
+        return title;
+    }
+    TitleAccess { ratings, ..title }
 }
 
 fn level_at_most(age: i64) -> MaturityLevel {

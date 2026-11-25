@@ -45,6 +45,7 @@ An XML document saved as UTF-8 (K, P). Its root is `<movie>` for a film and
 | `<originaltitle>` | The title in its own language | K, J, P | read; shown under the title when the two differ |
 | `<tagline>` | The tagline | K, J, P | read; shown above the summary |
 | `<director>` | One director a tag, repeated for each | K, J | read; replaces the provider's directors, and a show's creators |
+| `<mpaa>` | The age rating. K: "Country specific mpaa rating system". P: "Content rating (e.g. PG-13, R)". None of the three says how to write the country | K, J, P | read; replaces the provider's rating, and profiles with an age limit go by it. A label after its country and `-`, `:`, `/` or a space (`FR-12`, `de/16`) is that country's. A label alone, after an optional `Rated ` (`PG-13`, `Rated R`), is every country's whose system has it. A label no system has, or one that means no rating, such as `NR`, is not read |
 | `<uniqueid type="tmdb">` | The title's TMDB id. A file may hold one `<uniqueid>` for each provider, `type` naming it | K, J, P | read, whatever the case of `type`; the title is matched to that id |
 | `<tmdbid>` | The title's TMDB id, on a tag of its own | J | read when there is no `<uniqueid type="tmdb">` |
 | `<uniqueid type="imdb">`, `<uniqueid type="tvdb">` | The title's id on IMDb, as `tt` and at least seven digits, or on TheTVDB | K, J, P | read, whatever the case of `type`; used when the file names no TMDB id |
