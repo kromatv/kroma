@@ -74,7 +74,7 @@ describe('OtpField', () => {
       <OtpField.Root maxLength={4} mask physicalKeyboard onValueChange={onValueChange} />,
     );
     type(container, '1234');
-    expect(onValueChange).toHaveBeenCalledWith('1234');
+    expect(onValueChange).toHaveBeenCalledWith('1234', expect.objectContaining({ reason: 'type' }));
     expect(container.textContent).toBe('••••');
   });
 
@@ -86,7 +86,10 @@ describe('OtpField', () => {
       </OtpField.Root>,
     );
     type(container, '12 34-56');
-    expect(onValueChange).toHaveBeenCalledWith('123456');
+    expect(onValueChange).toHaveBeenCalledWith(
+      '123456',
+      expect.objectContaining({ reason: 'type' }),
+    );
     expect(container.textContent).toBe('123456');
   });
 

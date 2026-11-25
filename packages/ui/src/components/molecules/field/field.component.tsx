@@ -11,19 +11,18 @@ import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
 import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field';
+import type { ChangeDetails } from '#ui/lib/control';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { useGroupShape } from '#ui/lib/group-shape';
 import { partContext } from '#ui/lib/part-context';
 import { sortParts } from '#ui/lib/parts';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 
 interface FieldContext {
   label: string;
   invalid: boolean;
   error: string | undefined;
   size: ControlSize | undefined;
-  value: string;
-  setValue: (next: string) => void;
+  entry: EntryValue;
   setFocused: (focused: boolean) => void;
 }
 
@@ -45,7 +44,7 @@ interface FieldRootProps extends Omit<BoxProps, 'children'> {
    *  `defaultValue` or `onValueChange` holds its state instead. */
   value?: string;
   defaultValue?: string;
-  onValueChange?: (next: string) => void;
+  onValueChange?: (next: string, details: ChangeDetails) => void;
   /** Without a control of its own, the field renders a <Field.Input>. A
    *  <Field.Hint> is sorted under the control, so both must be DIRECT children. */
   children?: ReactNode;
@@ -57,18 +56,24 @@ function Root({
   error,
   invalid = Boolean(error),
   size,
-  value: valueProp,
-  defaultValue = '',
+  value,
+  defaultValue,
   onValueChange,
   children,
   ...box
 }: Readonly<FieldRootProps>) {
-  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState(false);
   const message = error || undefined;
   const field = useMemo<FieldContext>(
-    () => ({ label, invalid, error: message, size, value, setValue, setFocused }),
-    [label, invalid, message, size, value, setValue],
+    () => ({
+      label,
+      invalid,
+      error: message,
+      size,
+      entry: { value, defaultValue, onValueChange },
+      setFocused,
+    }),
+    [label, invalid, message, size, value, defaultValue, onValueChange],
   );
   const [note, control] = sortParts(children, Hint);
   const group = useGroupShape(focused);
@@ -96,7 +101,7 @@ interface EntryValue {
   /** Held by the entry itself. Given none of the three, it binds to the Root's. */
   value?: string;
   defaultValue?: string;
-  onValueChange?: (next: string) => void;
+  onValueChange?: (next: string, details: ChangeDetails) => void;
 }
 
 function useEntry(part: string, own: Readonly<EntryValue>, focus?: FocusHandlers) {
@@ -119,9 +124,7 @@ function useEntry(part: string, own: Readonly<EntryValue>, focus?: FocusHandlers
     size: field.size,
     onFocus,
     onBlur,
-    ...(owned
-      ? { value: own.value, defaultValue: own.defaultValue, onValueChange: own.onValueChange }
-      : { value: field.value, onValueChange: field.setValue }),
+    ...(owned ? own : field.entry),
   };
 }
 

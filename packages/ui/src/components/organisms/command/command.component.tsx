@@ -6,11 +6,11 @@
 // the nth row sits in the scroller - and there is no arrangement of nested
 // children that keeps that true, nor any DOM to ask the way cmdk does.
 
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 import { useCommandKey } from '#ui/lib/command-key';
+import { type ChangeDetails, defineControl, useControl } from '#ui/lib/control';
 import { useDeliberateHover } from '#ui/lib/deliberate-hover.hook';
 import { useListCursorKeys } from '#ui/lib/list-cursor-keys.hook';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 import { Actions, Primary, Trigger } from './command-actions.component';
 import { CommandContext, type CommandState } from './command-context.hook';
 import { CommandLayer, CommandModal } from './command-layer.component';
@@ -25,6 +25,9 @@ import {
 } from './command-list';
 import { Empty, Footer, Input, List } from './command-parts';
 import { useActionPanel } from './use-action-panel.hook';
+import { useQueryCursor } from './use-query-cursor.hook';
+
+const commandControl = defineControl('command', { state: { query: '' } });
 
 // A television moves the spatial navigator's own focus, and a second highlight
 // following a keyboard it does not have would be a lie there.
@@ -43,7 +46,8 @@ interface CommandRootProps {
   onClose: () => void;
   query?: string;
   defaultQuery?: string;
-  onQueryChange?: (next: string) => void;
+  /** Told before the query changes; `details.cancel()` keeps it as it was. */
+  onQueryChange?: (next: string, details: ChangeDetails) => void;
   /** Draw over the whole window, holding the focus and the page's scroll, rather
    *  than over the nearest positioned ancestor. */
   modal?: boolean;
@@ -72,15 +76,13 @@ function Root({
   boost,
   onSelect,
   onClose,
-  query: queryProp,
-  defaultQuery = '',
-  onQueryChange,
   modal = false,
   closeLabel = 'Close search',
   children,
+  ...props
 }: Readonly<CommandRootProps>) {
-  const [query, setQueryValue] = useControllable(queryProp, defaultQuery, onQueryChange);
-  const [cursor, setCursor] = useState(0);
+  const [{ query, setQuery }] = useControl(commandControl, props);
+  const [cursor, setCursor] = useQueryCursor(query);
   const sections = useMemo(() => sectionsOf(items, query, boost), [items, query, boost]);
   const flat = useMemo(() => flatten(sections), [sections]);
   const at = Math.min(cursor, Math.max(0, flat.length - 1));
@@ -168,10 +170,7 @@ function Root({
       sections,
       cursor: cursorId,
       selected,
-      setQuery: (next: string) => {
-        setQueryValue(next);
-        setCursor(0);
-      },
+      setQuery,
       point,
       choose,
       chooseAction,
@@ -187,7 +186,7 @@ function Root({
       sections,
       cursorId,
       selected,
-      setQueryValue,
+      setQuery,
       point,
       choose,
       chooseAction,

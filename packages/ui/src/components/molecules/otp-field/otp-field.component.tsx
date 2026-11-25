@@ -17,17 +17,14 @@ import { Pressable, TextInput } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
+import { type ChangeDetails, useControl } from '#ui/lib/control';
 import { NO_ZOOM_FONT_SIZE } from '#ui/lib/field-shell';
 import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import { useCompleteOnce } from '#ui/lib/use-complete-once.hook';
-import { useControllable } from '#ui/lib/use-controllable.hook';
+import { otpFieldControl, REGEXP_ONLY_DIGITS } from './otp-field-control';
 import { OtpFieldContext, type OtpFieldState, OtpGroupStartContext } from './otp-field-context';
 import { Group, Separator, SLOT_GAP, Slot } from './otp-field-parts.component';
 import type { OtpSize } from './otp-field-variants';
-
-const REGEXP_ONLY_DIGITS = String.raw`^\d+$`;
-const REGEXP_ONLY_CHARS = '^[a-zA-Z]+$';
-const REGEXP_ONLY_DIGITS_AND_CHARS = '^[a-zA-Z0-9]+$';
 
 interface OtpFieldRootProps extends Omit<BoxProps, 'children' | 'onChange'> {
   /** How many characters make a code. shadcn's name for the same prop. */
@@ -35,7 +32,8 @@ interface OtpFieldRootProps extends Omit<BoxProps, 'children' | 'onChange'> {
   /** Present: you own the value (controlled). Absent: the field runs itself. */
   value?: string;
   defaultValue?: string;
-  onValueChange?: (next: string) => void;
+  /** Told before the code changes; `details.cancel()` keeps it as it was. */
+  onValueChange?: (next: string, details: ChangeDetails) => void;
   /** Fired once, the instant the last slot fills. Auto-submit belongs here. */
   onComplete?: (code: string) => void;
   /** Which characters are allowed, tested per character rather than against
@@ -68,13 +66,7 @@ interface OtpFieldRootProps extends Omit<BoxProps, 'children' | 'onChange'> {
 }
 
 function Root({
-  maxLength = 6,
-  value: valueProp,
-  defaultValue = '',
-  onValueChange,
   onComplete,
-  pattern = REGEXP_ONLY_DIGITS,
-  disabled = false,
   mask = false,
   invalid = false,
   size = 'md',
@@ -83,35 +75,19 @@ function Root({
   autoFocus = false,
   label,
   children,
-  ...box
+  ...props
 }: Readonly<OtpFieldRootProps>) {
   const s = useStyles(sDefinition);
 
-  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
+  const [{ value, maxLength, pattern, disabled, type }, box] = useControl(otpFieldControl, props);
   const input = useRef<TextInput>(null);
   const within = useFocusWithin();
-
-  const allowed = new RegExp(pattern);
 
   // Fire exactly once per fill - the shared rule, because a keypad-fed field
   // reaches a full code without the entry below ever seeing a keystroke, and a
   // code submitted twice is a lockout.
   const report = useCompleteOnce(maxLength, onComplete);
   useEffect(() => report(value), [value, report]);
-
-  const commit = (next: string) => {
-    if (disabled) {
-      return;
-    }
-    const clean = Array.from(next)
-      .filter((char) => allowed.test(char))
-      .slice(0, maxLength)
-      .join('');
-    if (clean === value) {
-      return;
-    }
-    setValue(clean);
-  };
 
   // A rejected code is checked with the row disabled and then handed back
   // empty, and iOS drops the keyboard the instant an input stops being
@@ -166,7 +142,7 @@ function Root({
             <TextInput
               ref={input}
               value={value}
-              onChangeText={commit}
+              onChangeText={type}
               onFocus={within.onFocus}
               onBlur={within.onBlur}
               maxLength={maxLength}
@@ -255,4 +231,9 @@ export { useOtpSlot } from './otp-field-context';
 export type { OtpGroupProps } from './otp-field-parts.component';
 export { otpVariants } from './otp-field-variants';
 export type { OtpFieldRootProps, OtpSize };
-export { OtpField, REGEXP_ONLY_CHARS, REGEXP_ONLY_DIGITS, REGEXP_ONLY_DIGITS_AND_CHARS };
+export {
+  REGEXP_ONLY_CHARS,
+  REGEXP_ONLY_DIGITS,
+  REGEXP_ONLY_DIGITS_AND_CHARS,
+} from './otp-field-control';
+export { OtpField };
