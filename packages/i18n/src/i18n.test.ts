@@ -40,6 +40,28 @@ describe('createI18n', () => {
     expect(i18n.translate('fr', 'item', { count: 5 })).toBe('5 items');
   });
 
+  it('pluralises a fallback message by the rules of the language that answers', () => {
+    const i18n = createI18n({
+      catalogs: {
+        en: { item: '{count} items', item_one: '{count} item' },
+        fr: { greeting: 'Bonjour' },
+        ko: { greeting: '안녕하세요' },
+      },
+      defaultLocale: 'en',
+    });
+
+    expect(i18n.translate('ko', 'item', { count: 1 })).toBe('1 item');
+    expect(i18n.translate('ko', 'item', { count: 2 })).toBe('2 items');
+    expect(i18n.translate('fr', 'item', { count: 0 })).toBe('0 items');
+  });
+
+  it("pluralises a scope's fallback message by the rules of the language that answers", () => {
+    const i18n = build();
+    i18n.add('mod', { en: { file: '{count} files', file_one: '{count} file' }, fr: {} });
+
+    expect(i18n.translator('fr', 'mod')('file', { count: 0 })).toBe('0 files');
+  });
+
   it('returns the key itself when no catalog knows it', () => {
     expect(build().translate('en', 'nope' as 'greeting')).toBe('nope');
   });

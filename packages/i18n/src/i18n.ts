@@ -170,19 +170,11 @@ export function createI18n<
       const inspector = activeKeyInspector();
       fn = inspector
         ? (key, vars) => {
-            const { at, text } = resolveInChain(
-              store.chain(locale, scope),
-              locale,
-              key,
-              vars,
-              plural,
-            );
-            const from = at === -1 ? undefined : store.sources(locale, scope)[at];
+            const { from, text } = resolveInChain(store.chain(locale, scope), key, vars, plural);
             return inspector({ key, from, locale, text: text ?? missed(locale, key), vars });
           }
         : (key, vars) =>
-            translateChain(store.chain(locale, scope), locale, key, vars, plural) ??
-            missed(locale, key);
+            translateChain(store.chain(locale, scope), key, vars, plural) ?? missed(locale, key);
       bound.set(cacheKey, fn);
     }
     return fn;

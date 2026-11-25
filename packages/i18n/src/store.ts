@@ -1,7 +1,7 @@
-import type { Chain } from './chain';
+import type { Chain, ChainLink } from './chain';
 import { expandRefs } from './nest';
 import { forgetStems } from './plural';
-import type { Catalog, CatalogSource, Catalogs } from './types';
+import type { Catalog, Catalogs } from './types';
 
 /** `$schema` points an editor at the catalog schema; it is not a message. */
 export const SCHEMA_KEY = '$schema' as const;
@@ -37,7 +37,6 @@ export class CatalogStore<L extends string> {
   private readonly base: Record<string, Record<string, string>> = {};
   private readonly scopes = new Map<string, Record<string, Catalog>>();
   private readonly chains = new Map<string, Chain>();
-  private readonly origins = new Map<string, readonly CatalogSource[]>();
   private readonly listeners = new Set<() => void>();
   private readonly waiting = new Map<string, () => Catalog>();
   private revision = 0;
@@ -67,15 +66,7 @@ export class CatalogStore<L extends string> {
    *  translation is a measurable share of the cheapest path. */
   chain(locale: string, scope?: string): Chain {
     const key = lookupKey(locale, scope);
-    return this.chains.get(key) ?? this.build(key, locale, scope).chain;
-  }
-
-  /** Where each catalog of {@link chain} came from, at the same indices. Kept
-   *  beside the chain rather than in it so that rendering a message never
-   *  walks provenance it does not read. */
-  sources(locale: string, scope?: string): readonly CatalogSource[] {
-    const key = lookupKey(locale, scope);
-    return this.origins.get(key) ?? this.build(key, locale, scope).sources;
+    return this.chains.get(key) ?? this.build(key, locale, scope);
   }
 
   // A catalog that is in the bundle but has not been read yet is read the
@@ -98,16 +89,14 @@ export class CatalogStore<L extends string> {
     for (const code of codes) {
       this.read(code);
     }
-    const chain: Catalog[] = [];
-    const sources: CatalogSource[] = [];
+    const chain: ChainLink[] = [];
     const add = (from: string | null, source: Record<string, Catalog> | undefined) => {
       for (const code of codes) {
         const catalog = source?.[code];
         if (!catalog) {
           continue;
         }
-        chain.push(catalog);
-        sources.push({ scope: from, locale: code });
+        chain.push({ catalog, scope: from, locale: code });
       }
     };
     if (scope) {
@@ -115,8 +104,7 @@ export class CatalogStore<L extends string> {
     }
     add(null, this.base);
     this.chains.set(key, chain);
-    this.origins.set(key, sources);
-    return { chain, sources };
+    return chain;
   }
 
   /** Add a scope's catalogs, returning a disposer that removes them again.
@@ -152,7 +140,6 @@ export class CatalogStore<L extends string> {
       this.base[locale] = own;
     }
     this.chains.clear();
-    this.origins.clear();
   }
 
   /** Bumped whenever a scope is added or removed or a locale's fetches have
@@ -170,7 +157,6 @@ export class CatalogStore<L extends string> {
 
   changed(): void {
     this.chains.clear();
-    this.origins.clear();
     this.revision += 1;
     for (const listener of this.listeners) {
       listener();

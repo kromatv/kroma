@@ -4,14 +4,12 @@
 //! policy `i18n.json` beside them sets: the language they are written in, the
 //! ones a reader is offered, and what an unfinished one reads in.
 
-use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use kroma_i18n::I18n;
 
 mod content;
 mod extract;
-mod fill;
 mod tag;
 mod tmdb;
 
@@ -33,16 +31,6 @@ pub const DEFAULT_LOCALE: &str = parts::SOURCE;
 /// stage the one place it is shipped, so this is read from them.
 pub const SUPPORTED_LOCALES: &[&str] = parts::LOCALES;
 
-fn parsed(code: &str) -> fill::Catalog {
-    let mut catalog = fill::Catalog::new();
-    for (_, json) in parts::CATALOG_PARTS.iter().filter(|(of, _)| *of == code) {
-        let part: HashMap<String, String> =
-            serde_json::from_str(json).expect("a KROMA catalog is a flat string map");
-        catalog.extend(part);
-    }
-    catalog
-}
-
 // The catalogs are shared with the TypeScript clients, which select a variant
 // through `Intl.PluralRules` and read an unfinished language in its fallbacks.
 // The same key has to resolve the same way on both sides, or a notification
@@ -50,18 +38,19 @@ fn parsed(code: &str) -> fill::Catalog {
 fn i18n() -> &'static I18n {
     static ENGINE: OnceLock<I18n> = OnceLock::new();
     ENGINE.get_or_init(|| {
-        let mut builder = parts::CATALOG_PARTS.iter().fold(
+        let builder = parts::CATALOG_PARTS.iter().fold(
             I18n::builder()
                 .default_locale(DEFAULT_LOCALE)
                 .plural_rule(kroma_i18n::cldr),
             |builder, (code, json)| builder.catalog_json(*code, *json),
         );
-        for (code, chain) in parts::FALLBACKS {
-            let fallbacks: Vec<fill::Catalog> = chain.iter().map(|other| parsed(other)).collect();
-            let gaps = fill::gaps(&parsed(code), &fallbacks.iter().collect::<Vec<_>>());
-            builder = builder.catalog(*code, gaps);
-        }
-        builder.build().expect("KROMA i18n catalogs")
+        parts::FALLBACKS
+            .iter()
+            .fold(builder, |builder, (code, chain)| {
+                builder.fallbacks(*code, chain.iter().copied())
+            })
+            .build()
+            .expect("KROMA i18n catalogs")
     })
 }
 
