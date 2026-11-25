@@ -44,7 +44,7 @@ describe('LangSwitcher', () => {
 
     const flags = [...details.querySelectorAll('img')].map((img) => img.getAttribute('src'));
 
-    expect(flags.length).toBe(screen.getAllByRole('link').length + 1);
+    expect(flags).toHaveLength(screen.getAllByRole('link').length + 1);
     expect(flags[0]).toContain('/US.svg');
     expect(flags.every(Boolean)).toBe(true);
   });
