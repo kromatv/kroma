@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
 import { cleanup, render } from '@testing-library/react';
-import { createRef, memo, type ReactNode, Suspense, use } from 'react';
+import { memo, type ReactNode, Suspense, use } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { nameComponent } from '../component-names';
-import { TreeProbe, paths } from './inspect.fixtures';
-import { readScreen } from './screen-tree';
+import { describeScreen } from './describe-screen';
+import { paths } from './inspect.fixtures';
+import { InspectAnchor } from './inspect-anchor';
 
 afterEach(cleanup);
 
@@ -20,10 +21,13 @@ nameComponent(e, 'Card');
 nameComponent(Part, 'Menu.Part');
 
 function read(ui: ReactNode) {
-  const probe = createRef<TreeProbe>();
-  render(<TreeProbe ref={probe}>{ui}</TreeProbe>);
-  const tree = probe.current?.tree();
-  return readScreen(tree ? [tree] : []);
+  render(
+    <>
+      <InspectAnchor />
+      {ui}
+    </>,
+  );
+  return describeScreen();
 }
 
 const never = new Promise<never>(() => {});

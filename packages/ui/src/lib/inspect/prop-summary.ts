@@ -15,10 +15,7 @@ const SECRET_FILL = /password|one-time-code/;
 const TYPED: ReadonlySet<string> = new Set(['value', 'defaultValue']);
 const NOTHING: ReadonlySet<string> = new Set();
 
-const splitsPair = (value: string, at: number) => {
-  const unit = value.charCodeAt(at - 1);
-  return unit >= 0xd800 && unit <= 0xdbff;
-};
+const splitsPair = (value: string, at: number) => (value.codePointAt(at - 1) ?? 0) > 0xffff;
 
 function cut(value: string, max: number): string {
   if (value.length <= max) {
