@@ -5,4 +5,5 @@ export * from './credits';
 export * from './ids';
 export * from './schemas';
 export * from './search';
+export * from './title-edit-suggestions';
 export * from './tracks';

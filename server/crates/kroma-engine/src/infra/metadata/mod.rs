@@ -4,6 +4,7 @@
 
 mod cache;
 mod client;
+pub mod company_search;
 mod find;
 pub mod person;
 pub mod person_search;
@@ -11,6 +12,8 @@ mod search;
 mod videos;
 
 use kroma_requests::tmdb::common;
+
+const MOST_OFFERED: usize = 10;
 
 pub use cache::Cache;
 pub(crate) use client::country_of;

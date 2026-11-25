@@ -58,6 +58,7 @@ mod sso;
 mod stream;
 mod suggest;
 mod themes;
+mod title_edit_suggestions;
 mod title_edits;
 mod trailers;
 mod util;
@@ -131,6 +132,8 @@ mod it_library_visibility;
 mod it_chosen_art;
 #[cfg(test)]
 mod it_title_edits;
+#[cfg(test)]
+mod it_title_edit_suggestions;
 #[cfg(test)]
 mod it_posters_beside;
 #[cfg(test)]
