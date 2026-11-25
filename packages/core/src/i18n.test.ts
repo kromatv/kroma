@@ -1,9 +1,10 @@
-import type { Catalogs } from '@kromatv/i18n';
+import type { AnyI18n, Catalogs } from '@kromatv/i18n';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   addCatalogs,
   createTranslator,
   detectLocale,
+  i18n,
   isLocale,
   LOCALES,
   normalizeLocale,
@@ -153,5 +154,39 @@ describe('catalogs added at runtime', () => {
     addCatalogs('probe.dispose', { fr: { 'nav.home': 'Détourné' } })();
 
     expect(translate('fr', 'nav.home')).not.toBe('Détourné');
+  });
+});
+
+describe('the number conventions in the catalogs', () => {
+  const kroma: AnyI18n = i18n;
+  const conventions = (locale: string) => {
+    const t = kroma.translator(locale);
+    return {
+      sample: t('format.numberSample'),
+      kilobytes: t('format.size.kilobytes', { size: 4 }),
+      gigabytes: t('format.size.gigabytes', { size: '1,5' }),
+    };
+  };
+
+  it('belong to each language', () => {
+    expect(conventions('fr')).toEqual({
+      sample: '12\u202F345,6',
+      kilobytes: '4 Ko',
+      gigabytes: '1,5 Go',
+    });
+    expect(conventions('de')).toEqual({
+      sample: '12.345,6',
+      kilobytes: '4 KB',
+      gigabytes: '1,5 GB',
+    });
+  });
+
+  it('come from its language where a regional locale writes none', () => {
+    expect(conventions('fr-CH')).toEqual(conventions('fr'));
+  });
+
+  it('come from English for a language that writes none', () => {
+    expect(conventions('it')).toEqual(conventions('en'));
+    expect(conventions('it').sample).toBe('12,345.6');
   });
 });

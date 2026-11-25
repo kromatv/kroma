@@ -194,10 +194,13 @@ the localizations the iOS apps declare all read `i18n.json`.
 A few things about a language are not words, and none of them is required to
 ship it:
 
-- **Number formats.** Numbers, dates and byte sizes come from `Intl`.
-  `packages/ui/src/lib/intl.ts` holds the separators and byte units of a
-  language whose conventions differ from English (French writes `1,5 Go`), for
-  the engines without `Intl`.
+- **Number formats.** Numbers and dates come from `Intl`. What it does not
+  write is in the language's `format` messages, translated like any other:
+  the byte units (`format.size.gigabytes` is `{size} Go` in French) and
+  `format.numberSample`, the number 12,345.6 as the language writes it, from
+  which an engine without `Intl` takes the thousands and decimal separators. A
+  regional locale reads them from its language and a language that leaves
+  them out reads English's, so no code lists them.
 - **Line breaks.** A browser breaks Korean between any two syllables, so
   `packages/ui/src/styles/language.ts` sets `word-break: keep-all` under
   `html:lang(ko)`, and the app, television and website stylesheets all carry

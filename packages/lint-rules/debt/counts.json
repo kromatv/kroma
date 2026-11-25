@@ -1772,7 +1772,6 @@
     "packages/ui/src/lib/gl-frost/renderer.ts": 2,
     "packages/ui/src/lib/glide-view.component.tsx": 1,
     "packages/ui/src/lib/group-shape.ts": 2,
-    "packages/ui/src/lib/intl.ts": 1,
     "packages/ui/src/lib/key-press.hook.ts": 1,
     "packages/ui/src/lib/loop.hook.ts": 1,
     "packages/ui/src/lib/player/stage-zoom.tsx": 1,

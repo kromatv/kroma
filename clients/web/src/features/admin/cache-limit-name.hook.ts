@@ -16,7 +16,7 @@ export function useCacheLimitName(): (limit: string) => string {
   return useCallback(
     (limit: string) => {
       const gigabytes = gigabytesOf(limit);
-      return gigabytes === null ? t('opt.unlimited') : formatGigabytes(gigabytes, locale);
+      return gigabytes === null ? t('opt.unlimited') : formatGigabytes({ locale, t }, gigabytes);
     },
     [t, locale],
   );
