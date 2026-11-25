@@ -27,6 +27,10 @@ export const counter = defineControl('counter', {
   },
 });
 
+const NO_LANGUAGES: readonly string[] = [];
+
+export const languages = defineControl('languages', { state: { value: NO_LANGUAGES } });
+
 export type CounterProps = {
   value?: number;
   defaultValue?: number;
@@ -59,6 +63,14 @@ export function Tally(props: Readonly<CounterProps>) {
   const [{ value }] = useControl(counter, props);
   return <output>{value}</output>;
 }
+
+/** A component the kit named, on a control that holds a list. */
+export function Languages(props: Readonly<{ defaultValue?: readonly string[] }>) {
+  const [{ value }] = useControl(languages, props);
+  return <output>{value.join(',')}</output>;
+}
+
+nameComponent(Languages, 'Languages');
 
 function Kit({ children }: Readonly<{ children: ReactNode }>) {
   return <KitProvider>{children}</KitProvider>;

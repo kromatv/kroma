@@ -92,6 +92,15 @@ describe('a screen as text', () => {
     );
   });
 
+  it('writes a list or a record a control holds as compact JSON', () => {
+    const state = { sizes: [30, 70], crop: { x: 0.1, width: 0.5 }, items: '[array 30]' };
+    const control = { ref: 'c2', kind: 'resizable', state, actions: [] };
+
+    expect(text([row(0, 'Resizable', { control })])).toBe(
+      'Resizable [c2]  state: sizes=[30,70] crop={"x":0.1,"width":0.5} items=[array 30]',
+    );
+  });
+
   it('ends a control that takes nothing now with its state', () => {
     const control = { ref: 'c1', kind: 'switch', state: { checked: true }, actions: [] };
 

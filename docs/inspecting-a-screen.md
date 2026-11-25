@@ -46,7 +46,12 @@ the function the component itself calls on a press, with no press simulated.
   `{ ref, kind, state, actions }`. `ref` names the control in a call: `c4`, its
   own for as long as it is mounted. `kind` is the name its definition was given.
   `state` is every key it holds, reduced like props, whether the control or the
-  app owns the key. `actions` is what a call may ask of it now: its setters, its
+  app owns the key, except that a list or a record reads as one, two levels
+  deep: `value: ["fr", "en"]`, a list of records of primitives. What lies
+  deeper is its tag, a list keeps 24 entries and ends with `"…+N"` for the
+  rest, and a record keeps 24 plus a `…` entry. Under a field that hides what
+  was typed, a list or a record at `value` reads `[secret]` like a string.
+  `actions` is what a call may ask of it now: its setters, its
   actions that take arguments, and its other actions when they would change
   something. An action is a pure function, so the reader tries it on the state
   as it is. A disabled component lists none. An app component that runs a
@@ -123,7 +128,8 @@ console.log(await page.evaluate(() => globalThis.__KROMA_UI__.screenText()));
 
 A component that runs a control has its ref after its name and ends with its
 state and the actions a call may ask of it now. Its state is not repeated among
-its props:
+its props, and a list or a record in it is written as compact JSON
+(`value=["fr","en"]`):
 
 ```
 Switch [c1]  316,221 46x28  size="sm" label="Subtitles"  state: checked=false  actions: setChecked, toggle

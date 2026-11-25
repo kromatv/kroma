@@ -3,6 +3,7 @@ import type { HostBox } from './host-box';
 import type { PropSummary, PropValue } from './prop-summary';
 import type { ScreenControl } from './screen-controls';
 import { type ScreenRow, type ScreenRows, screenRows } from './screen-rows';
+import type { StateSummary, StateValue } from './state-summary';
 
 const TAG = /^\[(?:function|element|object|symbol|bigint|array \d+)\]$/;
 
@@ -21,17 +22,17 @@ function boxText(box: HostBox): string {
   return `${x},${y} ${width}x${height}`;
 }
 
-const NO_STATE: PropSummary = {};
+const NO_STATE: StateSummary = {};
 
-function propsText(props: PropSummary, state: PropSummary): string {
+function propsText(props: PropSummary, state: StateSummary): string {
   return Object.entries(props)
     .filter(([key]) => !(key in state))
     .flatMap(([key, value]) => propText(key, value))
     .join(' ');
 }
 
-function stateText(key: string, value: PropValue): string {
-  const quoted = typeof value === 'string' && !TAG.test(value);
+function stateText(key: string, value: StateValue): string {
+  const quoted = typeof value === 'object' || (typeof value === 'string' && !TAG.test(value));
   return `${key}=${quoted ? JSON.stringify(value) : String(value)}`;
 }
 
@@ -65,8 +66,8 @@ function rowText(row: ScreenRow): string {
  *  and one that is not a primitive (a function, an element, an object) is left
  *  out. A component that runs a control has its ref after its name, `[c4]`,
  *  and ends with `state:` and the `actions:` a call may ask of it now; its
- *  state is not repeated among its props. Reads what is on screen now when
- *  given no rows. */
+ *  state is not repeated among its props, and a list or a record in it is
+ *  written as compact JSON. Reads what is on screen now when given no rows. */
 export function screenText(screen: ScreenRows = screenRows(describeScreen())): string {
   const lines = screen.rows.map(rowText);
   if (screen.truncated) {
