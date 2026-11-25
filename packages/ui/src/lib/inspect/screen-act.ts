@@ -9,12 +9,35 @@ export const MAX_STEPS = 50;
 const SETTLE_MS = 16;
 
 const stepSchema = z.object({
-  ref: z.string().nonempty().max(40),
-  action: z.string().nonempty().max(80),
-  args: z.array(z.unknown()).max(8).optional(),
+  ref: z
+    .string()
+    .nonempty()
+    .max(40)
+    .describe(
+      'The control, by its ref in read_screen or list_controls: c4, or 2:c4 in a second kit tree.',
+    ),
+  action: z
+    .string()
+    .nonempty()
+    .max(80)
+    .describe(
+      'One of the actions that control lists now: a setter (setChecked) or an action (toggle).',
+    ),
+  args: z
+    .array(z.unknown())
+    .max(8)
+    .optional()
+    .describe('What the action takes. A setter takes one value, the one to hold.'),
 });
 
-const callSchema = z.object({ steps: z.array(stepSchema).min(1).max(MAX_STEPS) });
+/** What `act` takes: the steps of a call, run in order. */
+export const callSchema = z.object({
+  steps: z
+    .array(stepSchema)
+    .min(1)
+    .max(MAX_STEPS)
+    .describe('Run in order. The call stops at the first step that cannot run.'),
+});
 
 /** One thing to ask of one control: its `ref` from a read, a setter or an
  *  action the read lists for it, and the arguments that takes. */

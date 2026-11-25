@@ -1,5 +1,6 @@
 import { PureComponent } from 'react';
 import { type MountedAnchor, mountedAnchors } from './mounted-anchors';
+import { offerScreenTools } from './offer-screen-tools';
 
 const GLOBAL = '__KROMA_UI__';
 
@@ -16,12 +17,14 @@ const reader = Object.freeze({
  *  control engine under it. It draws nothing and does nothing until mounted;
  *  mounting registers it for the reader and exposes `globalThis.__KROMA_UI__`,
  *  whose `describeScreen()`, `screenText()`, `snapshot()` and `act()` load the
- *  reader on their first call. */
+ *  reader on their first call. The first mount on a page whose browser exposes
+ *  WebMCP also registers the screen tools there. */
 export class InspectAnchor extends PureComponent<MountedAnchor['props']> {
   componentDidMount(): void {
     mountedAnchors.add(this);
     if (Reflect.get(globalThis, GLOBAL) === undefined) {
       Reflect.set(globalThis, GLOBAL, reader);
+      offerScreenTools();
     }
   }
 

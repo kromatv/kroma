@@ -214,6 +214,48 @@ PinField, Command, Menu, Select, Stepper, Chart, Cropper and Resizable. A
 Field's value is held by the entry it renders. The television routes below
 carry the rows without `control`, and have no route for a call yet.
 
+## As WebMCP tools
+
+In a browser that exposes WebMCP (`document.modelContext`), the first
+`KitProvider` on a page also registers the reader and `act` there as three
+tools. Chrome DevTools, an extension or an agent the browser runs can then call
+them by name, without evaluating anything in the page:
+
+| Tool | Takes | Answers with |
+| --- | --- | --- |
+| `read_screen` | nothing | `screenText()` |
+| `list_controls` | nothing | `snapshot()` |
+| `change_controls` | `{ steps: [{ ref, action, args }] }` | `act(call)` |
+
+`change_controls` describes what it takes with the JSON Schema of the zod schema
+`act` parses a call with, so the two cannot drift. Every tool is marked
+`debugging`, so an agent that acts for a user can leave it out, and
+`untrustedContentHint`, because what a screen shows (a title, a name, what was
+typed) comes from files and people the page does not control. The two reads are
+also marked `readOnlyHint`.
+
+Chrome exposes WebMCP behind a flag, or to an origin that carries an origin
+trial token, which a self-hosted server does not. To call the tools:
+
+1. Open `chrome://flags/#enable-webmcp-testing`, set **WebMCP for testing** to
+   **Enabled**, and relaunch Chrome.
+2. Open the page, then DevTools, **Application**, **WebMCP**. The three tools
+   are under **Available tools**. Select one to see what it declares, fill in
+   its parameters under **Run tool**, and press **Run tool** to call it. Every
+   call, from there or from an agent, is listed above the tools with its
+   status, what it was given and what it answered.
+
+Chrome DevTools MCP lists a tool marked `debugging` as a third-party developer
+tool: `list_3p_developer_tools` and `execute_3p_developer_tool`, once it runs
+with `--categoryExperimentalThirdParty`.
+
+Where the browser has no WebMCP, nothing is registered and nothing more loads:
+the tools' code loads with their registration. The tools are what
+`__KROMA_UI__` already gives the page, in a release build as on a development
+server. A read shows what a person sees, with what a field hides as
+`[secret]`. A change takes the path a press takes, signed `tool`, for the app's
+callback to refuse.
+
 ## On a television, through the server
 
 A signed-in television says `screen.hello` on its event socket once per
