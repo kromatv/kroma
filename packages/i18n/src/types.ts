@@ -23,12 +23,17 @@ export type PluralCategory = Intl.LDMLPluralRule;
  *  `Intl.PluralRules` is absent or wrong for a language you ship. */
 export type PluralRule = (locale: string, count: number) => PluralCategory;
 
+/** Which way a language's script runs. */
+export type TextDirection = 'ltr' | 'rtl';
+
 /** One language a reader can be offered. */
 export interface OfferedLocale<L extends string> {
   readonly code: L;
   /** The language's name for itself, `Français`, known before any of its
    *  messages load. */
   readonly name: string;
+  /** Which way the language is written, from its code: `rtl` for `ar` or `he`. */
+  readonly dir: TextDirection;
   /** The message holding the language's name for itself. */
   readonly labelKey: `lang.${L}`;
   /** `beta` while the translation is unfinished and reads in its fallback

@@ -33,7 +33,7 @@ export function LocaleProvider({ children }: Readonly<{ children: ReactNode }>) 
       client={client}
       accountLanguage={user?.language}
       onAccountChange={user ? (next: Locale) => updateUser({ language: next }) : undefined}
-      syncHtmlLang
+      syncDocumentLanguage
     >
       <RefetchOnLocaleChange>{children}</RefetchOnLocaleChange>
     </UiLocaleProvider>

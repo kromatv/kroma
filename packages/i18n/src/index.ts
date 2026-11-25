@@ -26,7 +26,7 @@ export {
   parseCatalogPath,
   sourcesByFile,
 } from './layout';
-export { createLocales, LABEL_NAMESPACE, labelKey } from './locales';
+export { createLocales, directionOf, LABEL_NAMESPACE, labelKey } from './locales';
 export {
   baseKeys,
   COUNT,
@@ -61,6 +61,7 @@ export type {
   OfferedLocale,
   PluralCategory,
   PluralRule,
+  TextDirection,
   TVars,
 } from './types';
 export type { Templated, VarsOf } from './vars';

@@ -1,4 +1,4 @@
-import type { LocaleSet, OfferedLocale } from './types.ts';
+import type { LocaleSet, OfferedLocale, TextDirection } from './types.ts';
 
 /** The namespace holding each locale's name for itself, the one catalog an app
  *  needs before anything renders. */
@@ -14,6 +14,34 @@ function subtags(tag: string): string[] {
   return tag.toLowerCase().split(/[-_]/);
 }
 
+function codeSet(list: string): ReadonlySet<string> {
+  return new Set(list.trim().split(/\s+/));
+}
+
+const RIGHT_TO_LEFT_SCRIPTS = codeSet(`
+  adlm arab armi avst chrs cprt elym gara hatr hebr hung khar lydi mand mani mend merc mero narb
+  nbat nkoo orkh ougr palm phli phlp phnx prti rohg samr sarb sidt sogd sogo syrc thaa yezi
+`);
+
+const RIGHT_TO_LEFT_LANGUAGES = codeSet(`
+  ae ar dv fa he iw ji ks ps sd ug ur yi aeb arc arq ars ary arz bal bej bgn bqi brh chg ckb gbz
+  glk jpr jrb khw lad lah lrc mde mzn nqo ota pal phn pnb rhg sam sdh shu sog swb syc syr trw
+`);
+
+const LANGUAGE_AND_SCRIPT = /^([a-z]{2,8})(?:-[a-z]{3}){0,3}(?:-([a-z]{4}))?(?=-|$)/;
+
+/** Which way a BCP 47 tag is written. A script subtag decides when there is
+ *  one (`az-Arab` is `rtl`, `ar-Latn` is `ltr`), else the language's usual
+ *  script does (`ar`, `fa`, `he` and its old tag `iw`). A table, not
+ *  `Intl.Locale#getTextInfo`, so it answers on every engine. */
+export function directionOf(tag: string): TextDirection {
+  const [, language = '', script] = LANGUAGE_AND_SCRIPT.exec(subtags(tag).join('-')) ?? [];
+  const rightToLeft = script
+    ? RIGHT_TO_LEFT_SCRIPTS.has(script)
+    : RIGHT_TO_LEFT_LANGUAGES.has(language);
+  return rightToLeft ? 'rtl' : 'ltr';
+}
+
 function offered<L extends string>(
   names: Readonly<Record<L, string>>,
   codes: readonly L[],
@@ -22,6 +50,7 @@ function offered<L extends string>(
   return codes.map((code) => ({
     code,
     name: names[code],
+    dir: directionOf(code),
     labelKey: labelKey(code),
     stage: beta.includes(code) ? 'beta' : 'stable',
   }));

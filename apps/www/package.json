@@ -24,6 +24,7 @@
     "paraglide": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy url --emit-ts-declarations --silent"
   },
   "dependencies": {
+    "@kromatv/i18n": "workspace:*",
     "@kromatv/registry": "workspace:*",
     "@kromatv/site-meta": "workspace:*",
     "@kromatv/ui": "workspace:*",

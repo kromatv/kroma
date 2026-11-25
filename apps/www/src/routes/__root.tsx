@@ -1,3 +1,4 @@
+import { directionOf } from '@kromatv/i18n';
 import { site } from '@kromatv/site-meta';
 import bricolageLatin from '@kromatv/ui/src/assets/fonts/bricolage-grotesque-latin.woff2?url';
 import hankenLatin from '@kromatv/ui/src/assets/fonts/hanken-grotesk-latin.woff2?url';
@@ -44,7 +45,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
     // hydrates and from a cookie no prerendered document could have read. The
     // attribute React renders is therefore always one short, and saying so is
     // what stops it reporting a mismatch it cannot fix.
-    <html lang={lang} suppressHydrationWarning>
+    <html lang={lang} dir={directionOf(lang)} suppressHydrationWarning>
       <head>
         <HeadContent />
         {/* oxlint-disable-next-line react/no-danger -- a literal, and it has to run before the first paint */}

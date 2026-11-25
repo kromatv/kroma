@@ -200,6 +200,13 @@ ship it:
   `html:lang(ko)`, and the app, television and website stylesheets all carry
   it. A language with its own rule adds a line there. iOS and tvOS keep a
   Hangul word whole through the kit's `Text`; Android has no such option.
+- **Writing direction.** `directionOf` in `@kromatv/i18n` reads it from the
+  language code, so there is no list to edit: `ar`, `fa`, `he`, `ur` and any
+  code naming a right-to-left script, such as `az-Arab`, read right to left.
+  The app, the television and the website write it onto `<html dir>`. The
+  layout does not follow yet. The kit still places things by left and right
+  rather than start and end, mirrors no icon, and the native apps stay left to
+  right, so a right-to-left language waits on that work before it ships.
 - **The social card.** kroma.tv renders a card per language in
   `apps/www/vite/og-cards.ts`. A language whose script the renderer has no font
   for shares the English one.

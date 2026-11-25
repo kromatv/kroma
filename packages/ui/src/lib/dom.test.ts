@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { webDocument, webWindow } from './dom';
+import { setDocumentLanguage, webDocument, webWindow } from './dom';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  document.documentElement.removeAttribute('lang');
+  document.documentElement.removeAttribute('dir');
+});
 
 describe('webDocument', () => {
   it('is the document in a browser, and null where there is none', () => {
@@ -25,5 +29,27 @@ describe('webWindow', () => {
   it('is null where there is no window at all', () => {
     vi.stubGlobal('window', undefined);
     expect(webWindow()).toBeNull();
+  });
+});
+
+describe('setDocumentLanguage', () => {
+  it('marks <html> with the language and the way it is written', () => {
+    setDocumentLanguage('ar');
+
+    expect([document.documentElement.lang, document.documentElement.dir]).toEqual(['ar', 'rtl']);
+  });
+
+  it('turns the page back left to right for a language written that way', () => {
+    document.documentElement.dir = 'rtl';
+
+    setDocumentLanguage('fr');
+
+    expect(document.documentElement.dir).toBe('ltr');
+  });
+
+  it('does nothing where there is no document', () => {
+    vi.stubGlobal('document', undefined);
+
+    expect(() => setDocumentLanguage('ar')).not.toThrow();
   });
 });

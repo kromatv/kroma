@@ -14,6 +14,7 @@ import { type KromaClient, saveLocalePref } from '@kromatv/client';
 import { deviceLocale, normalizeLocale } from '@kromatv/core';
 import type { Locale } from '@kromatv/i18n';
 import { type ReactNode, useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { setDocumentLanguage } from '#ui/lib/dom';
 import { I18nProvider } from './i18n';
 
 export interface LocaleProviderProps {
@@ -23,11 +24,10 @@ export interface LocaleProviderProps {
   accountLanguage?: string | null;
   /** Persist a manual change to the signed-in account. Omit when signed out. */
   onAccountChange?: (locale: Locale) => void;
-  /** Mirror the locale onto `<html lang>`. Every DOM target wants this, the
-   * browser TVs included: `lang` is what a set's screen reader reads to decide
-   * how to PRONOUNCE the interface. No-ops where there is no document, so a
-   * native target may pass it harmlessly. */
-  syncHtmlLang?: boolean;
+  /** Mirror the locale onto `<html lang>` and its direction onto `<html dir>`.
+   * Every DOM target wants it, the browser TVs included: a set's screen reader
+   * reads `lang` to pick a pronunciation. No-ops where there is no document. */
+  syncDocumentLanguage?: boolean;
   children: ReactNode;
 }
 
@@ -35,7 +35,7 @@ export function LocaleProvider({
   client,
   accountLanguage,
   onAccountChange,
-  syncHtmlLang,
+  syncDocumentLanguage,
   children,
 }: Readonly<LocaleProviderProps>) {
   const storage = useDeviceStore();
@@ -111,12 +111,10 @@ export function LocaleProvider({
   }, [client]);
 
   useEffect(() => {
-    /* oxlint-disable no-restricted-globals -- audited - guarded; there is no <html lang> to sync on a native target. */
-    if (syncHtmlLang && typeof document !== 'undefined') {
-      document.documentElement.lang = locale;
+    if (syncDocumentLanguage) {
+      setDocumentLanguage(locale);
     }
-    /* oxlint-enable no-restricted-globals */
-  }, [locale, syncHtmlLang]);
+  }, [locale, syncDocumentLanguage]);
 
   const handleChange = useCallback(
     (next: Locale) => {
