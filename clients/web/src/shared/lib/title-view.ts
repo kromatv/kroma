@@ -227,12 +227,12 @@ export function buildTitleView(
 }
 
 /** "2024 · 2h08" from a not-owned title's year + TMDB runtime (movies only). */
-export function tmdbMetaLine(year: number | null, runtimeMin: number | null): string {
+export function tmdbMetaLine(t: Translate, year: number | null, runtimeMin: number | null): string {
   const parts: string[] = [];
   if (year) {
     parts.push(String(year));
   }
-  const rt = formatRuntime((runtimeMin ?? 0) * 60000);
+  const rt = formatRuntime(t, (runtimeMin ?? 0) * 60000);
   if (rt) {
     parts.push(rt);
   }

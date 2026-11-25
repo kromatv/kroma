@@ -25,7 +25,7 @@ function factsOf(t: Translate, title: HeldTitle): string {
   const item = title.item;
   return [
     item.year ? String(item.year) : null,
-    formatRuntime(item.durationMs),
+    formatRuntime(t, item.durationMs),
     genreLabels(t, item.metadata)[0],
   ]
     .filter(Boolean)

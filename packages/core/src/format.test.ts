@@ -1,4 +1,5 @@
 import type { MediaItem, VideoTrack } from '@kromatv/client/media';
+import type { Translate, TVars } from '@kromatv/i18n';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   channelLabel,
@@ -19,6 +20,11 @@ import {
   resolveImageUrl,
   sizedImageUrl,
 } from './format';
+import { createTranslator } from './i18n';
+
+const en = createTranslator('en');
+const fr = createTranslator('fr');
+const words: Translate = (key: string, vars?: TVars) => `${key}:${JSON.stringify(vars)}`;
 
 function episode(p: {
   season?: number | null;
@@ -65,24 +71,30 @@ describe('episodeTag', () => {
   });
 });
 
+describe('metaLine', () => {
+  it('joins the year, the runtime and the video badges', () => {
+    expect(metaLine(fr, MOVIE)).toBe('1982 · 2h07 · H.265 · 4K · HDR');
+  });
+});
+
 describe('playerSubtitle', () => {
   it('joins show title and the S/E tag for an episode', () => {
-    expect(playerSubtitle(episode({ showTitle: 'Severance', season: 1, episode: 5 }))).toBe(
+    expect(playerSubtitle(en, episode({ showTitle: 'Severance', season: 1, episode: 5 }))).toBe(
       'Severance · S01E05',
     );
   });
 
   it('falls back to just the tag when the show title is missing', () => {
-    expect(playerSubtitle(episode({ showTitle: null, season: 3, episode: 2 }))).toBe('S03E02');
+    expect(playerSubtitle(en, episode({ showTitle: null, season: 3, episode: 2 }))).toBe('S03E02');
   });
 
   it('uses the movie meta line for non-episodes', () => {
-    expect(playerSubtitle(MOVIE)).toBe(metaLine(MOVIE));
+    expect(playerSubtitle(en, MOVIE)).toBe(metaLine(en, MOVIE));
   });
 
   it('falls back to the meta line for an episode with neither show nor numbering', () => {
     const orphan = episode({ showTitle: null, season: null, episode: null });
-    expect(playerSubtitle(orphan)).toBe(metaLine(orphan));
+    expect(playerSubtitle(en, orphan)).toBe(metaLine(en, orphan));
   });
 });
 
@@ -322,27 +334,30 @@ describe('posterGradient', () => {
 
 describe('formatRuntime', () => {
   it('formats hours and zero-padded minutes', () => {
-    expect(formatRuntime(7620000)).toBe('2h07'); // 127 min
-    expect(formatRuntime(3600000)).toBe('1h00'); // exactly 1h
-    expect(formatRuntime(3660000)).toBe('1h01');
+    expect(formatRuntime(en, 7620000)).toBe('2h07');
+    expect(formatRuntime(en, 3600000)).toBe('1h00');
+    expect(formatRuntime(fr, 3660000)).toBe('1h01');
   });
 
   it('formats sub-hour durations as minutes only', () => {
-    expect(formatRuntime(2820000)).toBe('47min');
-    expect(formatRuntime(60000)).toBe('1min');
+    expect(formatRuntime(en, 2820000)).toBe('47min');
+    expect(formatRuntime(fr, 60000)).toBe('1min');
   });
 
   it('rounds to the nearest minute', () => {
-    // 89 s rounds to 1 min.
-    expect(formatRuntime(89000)).toBe('1min');
-    // 29 s rounds to 0 min.
-    expect(formatRuntime(29000)).toBe('0min');
+    expect(formatRuntime(en, 89000)).toBe('1min');
+    expect(formatRuntime(en, 29000)).toBe('0min');
   });
 
   it('returns an empty string for missing / non-positive durations', () => {
-    expect(formatRuntime(0)).toBe('');
-    expect(formatRuntime(-5000)).toBe('');
-    expect(formatRuntime(null)).toBe('');
-    expect(formatRuntime(undefined)).toBe('');
+    expect(formatRuntime(en, 0)).toBe('');
+    expect(formatRuntime(en, -5000)).toBe('');
+    expect(formatRuntime(en, null)).toBe('');
+    expect(formatRuntime(en, undefined)).toBe('');
+  });
+
+  it('takes its words from the catalog of the language on screen', () => {
+    expect(formatRuntime(words, 7620000)).toBe('format.runtimeHours:{"hours":2,"minutes":"07"}');
+    expect(formatRuntime(words, 2820000)).toBe('format.runtimeMinutes:{"minutes":47}');
   });
 });

@@ -145,7 +145,7 @@ export function Player({
       onClose={onClose}
     >
       <UnifiedPlayer.Title>{item.title}</UnifiedPlayer.Title>
-      <UnifiedPlayer.Subtitle>{playerSubtitle(item)}</UnifiedPlayer.Subtitle>
+      <UnifiedPlayer.Subtitle>{playerSubtitle(t, item)}</UnifiedPlayer.Subtitle>
       {warn ? <UnifiedPlayer.Warning>{warn}</UnifiedPlayer.Warning> : null}
       <UnifiedPlayer.Transport tileAt={tileAt} />
       <UnifiedPlayer.Subtitles

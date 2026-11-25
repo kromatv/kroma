@@ -63,7 +63,7 @@ export function TvDiscoverDetail() {
   const detail = fiche.state === 'read' ? fiche.detail : null;
   const span = detail?.seasons.length
     ? t('content.seasonCount', { count: detail.seasons.length })
-    : formatRuntime((detail?.runtimeMin ?? 0) * 60_000);
+    : formatRuntime(t, (detail?.runtimeMin ?? 0) * 60_000);
   const meta = [entry.year ? String(entry.year) : null, span, detail?.genres[0]]
     .filter(Boolean)
     .join(' · ');

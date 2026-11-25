@@ -1,8 +1,11 @@
 {
   "format.durationHours": "{hours} h {minutes} min",
   "format.durationMinutes": "{minutes} min",
+  "format.hours": "{hours} h",
   "format.justNow": "à l'instant",
   "format.never": "jamais",
+  "format.runtimeHours": "{hours}h{minutes}",
+  "format.runtimeMinutes": "{minutes}min",
   "format.unknownTime": "-",
   "format.uptimeDays": "{days} j {hours} h",
   "format.uptimeHours": "{hours} h {minutes} min",

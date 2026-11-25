@@ -1,18 +1,20 @@
 import { artworkWidth, type MediaItem, type VideoTrack } from '@kromatv/client/media';
+import type { Translate } from '@kromatv/i18n';
 import { match } from './match';
 
-/** Formats a runtime as `"2h08"` or `"47min"`. */
-export function formatRuntime(durationMs: number | null | undefined): string {
+/** A title's runtime in the compact words of the reader's catalog: `2h08` or
+ *  `47min` in English and French. Empty for a missing or non-positive one. */
+export function formatRuntime(t: Translate, durationMs: number | null | undefined): string {
   if (!durationMs || durationMs <= 0) {
     return '';
   }
   const totalMin = Math.round(durationMs / 60000);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  if (h <= 0) {
-    return `${m}min`;
+  const hours = Math.floor(totalMin / 60);
+  const minutes = totalMin % 60;
+  if (hours <= 0) {
+    return t('format.runtimeMinutes', { minutes });
   }
-  return `${h}h${m.toString().padStart(2, '0')}`;
+  return t('format.runtimeHours', { hours, minutes: minutes.toString().padStart(2, '0') });
 }
 
 /** Requests a downscaled rendition of locally-cached artwork (`?w=`, snapped to
@@ -119,23 +121,26 @@ export function episodeTag(
 
 /** The player header's secondary line: for an episode "Show · S01E05" (the parts
  * that exist), else the movie meta line "2024 · 2h08 · H.265 · 4K". */
-export function playerSubtitle(item: MediaItem): string {
+export function playerSubtitle(t: Translate, item: MediaItem): string {
   if (item.kind === 'episode') {
     const parts = [item.showTitle, episodeTag(item)].filter(Boolean);
     if (parts.length) {
       return parts.join(' · ');
     }
   }
-  return metaLine(item);
+  return metaLine(t, item);
 }
 
 /** Terse dot-separated metadata line, e.g. "2024 · 2h08 · H.265 · 4K". */
-export function metaLine(item: Pick<MediaItem, 'year' | 'durationMs' | 'video'>): string {
+export function metaLine(
+  t: Translate,
+  item: Pick<MediaItem, 'year' | 'durationMs' | 'video'>,
+): string {
   const parts: string[] = [];
   if (item.year) {
     parts.push(String(item.year));
   }
-  const rt = formatRuntime(item.durationMs);
+  const rt = formatRuntime(t, item.durationMs);
   if (rt) {
     parts.push(rt);
   }

@@ -59,7 +59,8 @@ function reportPath(media: MediaItem, title: string): string {
 function ItemMeta({ media }: Readonly<{ media: MediaItem }>) {
   const s = useStyles(sDefinition);
 
-  const runtime = formatRuntime(media.durationMs);
+  const t = useT();
+  const runtime = formatRuntime(t, media.durationMs);
   const badge = qualityBadge(media);
   const rating = media.metadata?.rating;
   return (

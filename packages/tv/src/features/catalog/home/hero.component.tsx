@@ -228,7 +228,7 @@ function heroLine(t: Translate, e: HomeEntry): string {
   const m = e.item;
   return [
     m.year ? String(m.year) : null,
-    formatRuntime(m.durationMs),
+    formatRuntime(t, m.durationMs),
     genreLabels(t, m.metadata)[0],
   ]
     .filter(Boolean)

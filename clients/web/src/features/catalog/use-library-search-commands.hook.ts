@@ -94,7 +94,7 @@ function titleCommand(hit: SearchHit, context: TitleContext): CommandDef {
     subtitle: line(
       item.kind === 'movie' ? t('content.film') : null,
       yearOf(item),
-      (item.durationMs ?? 0) >= SHORTEST_RUNTIME_MS ? formatRuntime(item.durationMs) : null,
+      (item.durationMs ?? 0) >= SHORTEST_RUNTIME_MS ? formatRuntime(t, item.durationMs) : null,
     ),
     icon: 'movie',
     to: '/movies/$id',

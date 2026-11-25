@@ -16,7 +16,7 @@ export function featuredMetaLine(t: Translate, entry: HomeEntry): string {
   const title = entry.type === 'movie' ? entry.item : entry.show;
   return [
     title.year ? String(title.year) : '',
-    entry.type === 'movie' ? formatRuntime(entry.item.durationMs) : '',
+    entry.type === 'movie' ? formatRuntime(t, entry.item.durationMs) : '',
     ...genreLabels(t, title.metadata).slice(0, MAX_GENRES),
   ]
     .filter(Boolean)

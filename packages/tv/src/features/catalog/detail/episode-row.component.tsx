@@ -135,7 +135,7 @@ export function EpisodeRow({
   const locale = useLocale();
   const title = episode.episodeTitle ?? episode.title;
   const synopsis = episode.metadata?.overview;
-  const runtime = formatRuntime(episode.durationMs);
+  const runtime = formatRuntime(t, episode.durationMs);
   const tag =
     episode.episode != null ? t('content.episodeN', { n: episode.episode }) : episodeTag(episode);
   const inProgress = progress != null && !watched;

@@ -19,8 +19,8 @@ function toCard(client: KromaClient, t: Translate, item: MediaItem): UpNextItem 
     // The runtime belongs to this line and to nothing else: the card used to
     // print it again in a chip of its own.
     subtitle: isEp
-      ? `S${item.season} E${item.episode} · ${formatRuntime(item.durationMs)}`
-      : metaLine(item),
+      ? `S${item.season} E${item.episode} · ${formatRuntime(t, item.durationMs)}`
+      : metaLine(t, item),
     posterUrl:
       client.media.artwork.backdropFor(item, UP_NEXT_ART_W) ??
       client.media.artwork.posterFor(item, UP_NEXT_ART_W),
@@ -28,11 +28,11 @@ function toCard(client: KromaClient, t: Translate, item: MediaItem): UpNextItem 
   };
 }
 
-function toOffer(client: KromaClient, item: MediaItem): PostPlayItem {
+function toOffer(client: KromaClient, t: Translate, item: MediaItem): PostPlayItem {
   return {
     id: item.id,
     title: item.title,
-    subtitle: metaLine(item),
+    subtitle: metaLine(t, item),
     rating: item.metadata?.rating,
     overview: item.metadata?.overview,
     artUrl:
@@ -95,7 +95,7 @@ export function useUpNext(
         recommendations: recos.map((s) => toCard(client, t, s)),
       },
       byId,
-      postPlay: offer ? toOffer(client, offer) : null,
+      postPlay: offer ? toOffer(client, t, offer) : null,
     };
   }, [client, t, item.id, following, similar]);
 }

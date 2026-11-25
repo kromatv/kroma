@@ -1,6 +1,9 @@
+import { createTranslator } from '@kromatv/core';
 import { describe, expect, it } from 'vitest';
 import { tmdbMetaLine } from './title-view';
 import { build } from './title-view.fixture';
+
+const en = createTranslator('en');
 
 describe('buildTitleView: movie source', () => {
   const movieItem = {
@@ -93,20 +96,20 @@ describe('buildTitleView: movie source', () => {
 
 describe('tmdbMetaLine', () => {
   it('joins year and formatted runtime with a middle dot', () => {
-    expect(tmdbMetaLine(2024, 128)).toBe('2024 · 2h08');
+    expect(tmdbMetaLine(en, 2024, 128)).toBe('2024 · 2h08');
   });
 
   it('omits runtime when it is zero/null', () => {
-    expect(tmdbMetaLine(2024, 0)).toBe('2024');
-    expect(tmdbMetaLine(2024, null)).toBe('2024');
+    expect(tmdbMetaLine(en, 2024, 0)).toBe('2024');
+    expect(tmdbMetaLine(en, 2024, null)).toBe('2024');
   });
 
   it('shows only the runtime when the year is missing', () => {
-    expect(tmdbMetaLine(null, 47)).toBe('47min');
+    expect(tmdbMetaLine(en, null, 47)).toBe('47min');
   });
 
   it('is empty when both are missing', () => {
-    expect(tmdbMetaLine(null, null)).toBe('');
-    expect(tmdbMetaLine(0, 0)).toBe('');
+    expect(tmdbMetaLine(en, null, null)).toBe('');
+    expect(tmdbMetaLine(en, 0, 0)).toBe('');
   });
 });

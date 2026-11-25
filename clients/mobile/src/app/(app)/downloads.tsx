@@ -55,7 +55,7 @@ function DownloadRow({ entry }: Readonly<{ entry: DownloadEntry }>) {
   const downloads = useDownloads();
   const swipeRef = useRef<SwipeableMethods>(null);
   const { item } = entry;
-  const sub = [episodeTag(item), formatRuntime(item.durationMs), fmt.bytes(entry.sizeBytes)]
+  const sub = [episodeTag(item), formatRuntime(t, item.durationMs), fmt.bytes(entry.sizeBytes)]
     .filter(Boolean)
     .join(' · ');
 
