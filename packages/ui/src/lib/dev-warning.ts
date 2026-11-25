@@ -1,3 +1,5 @@
+declare const process: { readonly env: { readonly NODE_ENV?: string } };
+
 /**
  * Tells a developer about a misuse the kit survives but draws wrong, and says
  * nothing in a production build. `process.env.NODE_ENV` is the one signal
