@@ -1147,9 +1147,10 @@ from `kroma release`. See
 release on their own tags (`<module-id>@<version>`) from
 `.github/workflows/modules.yml`, and it refuses a module whose bundle changed
 while its version stood still. The Store decides "update available" by comparing
-versions, so a silent republish reaches nobody. `bun run kroma release
---dry-run --repo <owner/repo>` gives the same verdict locally, against whatever
-`dist/modules` currently holds. Full shape in
+versions, so a silent republish reaches nobody. `bun run i18n` bumps the patch
+itself, once per branch, when it writes a module's messages. `bun run kroma
+release --dry-run --repo <owner/repo>` gives the same verdict locally, against
+whatever `dist/modules` currently holds. Full shape in
 [`docs/modules-as-kmod.md`](../docs/modules-as-kmod.md#the-release-train).
 
 ## Checks
