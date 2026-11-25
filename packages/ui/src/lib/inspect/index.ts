@@ -1,6 +1,9 @@
 export { describeScreen } from './describe-screen';
 export type { HostBox } from './host-box';
 export type { PropSummary, PropValue } from './prop-summary';
-export type { KitNode, ScreenTree } from './screen-tree';
+export { type ActReport, type ActStep, act, type StepOutcome, type StepReport } from './screen-act';
+export type { ScreenControl } from './screen-controls';
 export { type ScreenRow, type ScreenRows, screenRows } from './screen-rows';
+export { type ControlRow, snapshot } from './screen-snapshot';
 export { screenText } from './screen-text';
+export type { KitNode, ScreenTree } from './screen-tree';
