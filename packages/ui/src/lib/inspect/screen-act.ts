@@ -80,9 +80,7 @@ function runStep(step: ActStep): Ran {
 }
 
 function settled(): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, SETTLE_MS);
-  });
+  return new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
 }
 
 type Run = { steps: readonly ActStep[]; done: StepReport[] };
