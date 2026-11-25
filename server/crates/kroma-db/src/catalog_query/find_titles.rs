@@ -111,7 +111,7 @@ impl Wheres {
 
 const GENRE: &str =
     " AND EXISTS (SELECT 1 FROM json_each(cat.genres) g WHERE g.value = ? COLLATE NOCASE)";
-const ACTOR: &str = " AND EXISTS (SELECT 1 FROM json_each(cat.metadata,'$.cast') c \
+const ACTOR: &str = " AND EXISTS (SELECT 1 FROM json_each(cat.actors) c \
      WHERE json_extract(c.value,'$.name') = ? COLLATE NOCASE)";
 const KEYWORD: &str =
     " AND (cat.title LIKE ? COLLATE NOCASE OR IFNULL(cat.overview,'') LIKE ? COLLATE NOCASE)";

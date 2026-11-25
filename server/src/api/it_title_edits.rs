@@ -16,6 +16,7 @@ fn heat() -> Value {
         "genres": ["Crime", " "],
         "directors": ["Michael Mann"],
         "contentRating": " Rated R ",
+        "cast": [{ "name": " Al Pacino ", "role": "Vincent Hanna" }, { "name": " " }],
     })
 }
 
@@ -60,6 +61,15 @@ async fn what_an_admin_writes_about_a_film_is_what_its_page_shows_after_a_refres
     assert_eq!(shown["metadata"]["crew"][0]["job"], json!("Director"));
     assert_eq!(shown["metadata"]["ageRating"]["label"], json!("R"));
     assert_eq!(shown["metadata"]["certification"], json!("R"));
+    assert_eq!(
+        kept["cast"],
+        json!([{ "name": "Al Pacino", "role": "Vincent Hanna" }])
+    );
+    assert_eq!(shown["metadata"]["cast"][0]["name"], json!("Al Pacino"));
+    assert_eq!(
+        shown["metadata"]["cast"][0]["character"],
+        json!("Vincent Hanna")
+    );
 }
 
 #[tokio::test]
@@ -70,16 +80,19 @@ async fn an_edit_that_does_not_fit_a_title_is_refused() {
     let long = json!({ "title": "a".repeat(301) });
     let no_day = json!({ "released": "1995-02-30" });
     let unknown = json!({ "contentRating": "FSK 16" });
+    let crowded = json!({ "cast": vec![json!({ "name": "Al Pacino" }); 51] });
 
     let (status, body) = edit(&t, &uri, &t.token, long).await;
     let (undated, _) = edit(&t, &uri, &t.token, no_day).await;
     let (unrated, why) = edit(&t, &uri, &t.token, unknown).await;
+    let (overcast, _) = edit(&t, &uri, &t.token, crowded).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["code"], json!("error.titleEditTooLong"));
     assert_eq!(undated, StatusCode::BAD_REQUEST);
     assert_eq!(unrated, StatusCode::BAD_REQUEST);
     assert_eq!(why["code"], json!("error.ageRatingUnknown"));
+    assert_eq!(overcast, StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]

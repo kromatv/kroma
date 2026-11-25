@@ -12,6 +12,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useState } from 'react';
 import { createCallable } from 'react-call';
 
+import { type CastDraft, castDraftOf, castOf } from '#web/features/catalog/title-cast-draft';
+import { CastField } from '#web/features/catalog/title-cast-field.component';
 import { TitleDialogHeading } from '#web/features/catalog/title-dialog-heading.component';
 import { draftOf, editOf, type TitleDraft } from '#web/features/catalog/title-info-draft';
 import type { TitleShown } from '#web/features/catalog/title-shown';
@@ -52,10 +54,10 @@ function useSave(save: Save, onDone: () => void) {
   const t = useT();
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
-  const submit = (draft: TitleDraft) => {
+  const submit = (edit: TitleEdit) => {
     setBusy(true);
     setFailure(null);
-    save(editOf(draft))
+    save(edit)
       .then(onDone)
       .catch((e: unknown) => setFailure(apiErrorText(e, t('titleInfo.saveFailed'))))
       .finally(() => setBusy(false));
@@ -104,7 +106,13 @@ type Hinted =
   | 'genres'
   | 'directors';
 
-type Fields = Readonly<{ draft: TitleDraft; change: Change; placeholders: Placeholders }>;
+type Fields = Readonly<{
+  draft: TitleDraft;
+  change: Change;
+  placeholders: Placeholders;
+  cast: CastDraft;
+  onCast: (next: CastDraft) => void;
+}>;
 
 function HintedField({ field, ...fields }: Fields & Readonly<{ field: Hinted }>) {
   const t = useT();
@@ -156,6 +164,7 @@ function TitleFields(fields: Fields) {
       <SummaryField {...fields} />
       <HintedField field="genres" {...fields} />
       <HintedField field="directors" {...fields} />
+      <CastField cast={fields.cast} onChange={fields.onCast} />
     </>
   );
 }
@@ -196,10 +205,8 @@ function SaveActions({
 
 function InfoBody({
   fields: InfoFields,
-  draft,
-  change,
-  placeholders,
   failure,
+  ...fields
 }: Readonly<Fields & { fields: (props: Fields) => ReactNode; failure: string | null }>) {
   const t = useT();
   return (
@@ -207,7 +214,7 @@ function InfoBody({
       <Text variant="meta" color="white/55">
         {t('titleInfo.hint')}
       </Text>
-      <InfoFields draft={draft} change={change} placeholders={placeholders} />
+      <InfoFields {...fields} />
       <Failure text={failure} />
     </Box>
   );
@@ -232,18 +239,27 @@ function useTitleEdit({ kind: asked, id }: Props) {
   return { ...query, save };
 }
 
+function useCast(written: TitleEdit['cast'] | undefined, shown: TitleShown | undefined) {
+  const [edited, setEdited] = useState<CastDraft | null>(null);
+  const cast = edited ?? castDraftOf(written ?? null, shown?.cast ?? []);
+  return { cast, onCast: setEdited };
+}
+
 function useInfoForm(props: Props, onDone: () => void) {
   const { data, error, save } = useTitleEdit(props);
   const { draft, change } = useDraft(data ? draftOf(data) : undefined);
-  const { busy, failure, submit } = useSave(save, onDone);
+  const { cast, onCast } = useCast(data?.cast, props.shown);
+  const { busy, failure, submit: send } = useSave(save, onDone);
+  const submit = (asked: TitleDraft) => send({ ...editOf(asked), cast: castOf(cast) });
   const fields = props.kind === 'episode' ? EpisodeFields : TitleFields;
-  const body = { fields, change, failure, placeholders: placeholdersOf(props.shown) };
+  const placeholders = placeholdersOf(props.shown);
+  const body = { fields, change, failure, placeholders, cast, onCast };
   return { draft, busy, submit, error, body };
 }
 
 /** The name, original title, sort title, release date, age rating, tagline,
- * summary, genres and directors a person who manages the library writes by
- * hand for a film or a show, and the name, air date and summary for an
+ * summary, genres, directors and cast a person who manages the library writes
+ * by hand for a film or a show, and the name, air date and summary for an
  * episode (`kind: 'episode'`). Each empty field shows in grey what the page shows instead
  * (`shown`). Open with `await TitleInfoDialog.call({ kind, id, title, shown
  * })`; it resolves on dismiss and once the edit is saved. */

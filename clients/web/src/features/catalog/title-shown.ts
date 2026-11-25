@@ -9,6 +9,7 @@ export interface TitleShown {
   overview: string | null;
   genres: readonly string[];
   directors: readonly Readonly<{ name: string }>[];
+  cast: readonly Readonly<{ name: string; character?: string | null }>[];
   ageRating: Readonly<{ label: string }> | null;
   poster: string | null;
   backdrop: string | null;

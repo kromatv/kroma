@@ -24,15 +24,17 @@ pub use find_titles::*;
 // Every query below selects `FROM cat`. The trailing space is intentional:
 // the per-query `SELECT …` is concatenated directly after it.
 const CAT_CTE: &str = concat!(
-    "WITH cat(id,title,year,kind,metadata,genres,overview,directors) AS (\
+    "WITH cat(id,title,year,kind,metadata,genres,overview,directors,actors) AS (\
     SELECT i.id,COALESCE(e.title,i.title),COALESCE(e.year,i.year),'movie',i.metadata,\
     COALESCE(e.genres,json_extract(i.metadata,'$.genres')),\
-    COALESCE(e.overview,json_extract(i.metadata,'$.overview')),e.directors \
+    COALESCE(e.overview,json_extract(i.metadata,'$.overview')),e.directors,\
+    COALESCE(e.actors,json_extract(i.metadata,'$.cast')) \
     FROM items i LEFT JOIN title_shown e ON e.subject_kind = 'item' AND e.subject_id = i.id \
     WHERE i.kind != 'episode' AND i.absent_since IS NULL \
     UNION ALL SELECT s.id,COALESCE(e.title,s.title),COALESCE(e.year,s.year),'show',s.metadata,\
     COALESCE(e.genres,json_extract(s.metadata,'$.genres')),\
-    COALESCE(e.overview,json_extract(s.metadata,'$.overview')),e.directors \
+    COALESCE(e.overview,json_extract(s.metadata,'$.overview')),e.directors,\
+    COALESCE(e.actors,json_extract(s.metadata,'$.cast')) \
     FROM shows s LEFT JOIN title_shown e ON e.subject_kind = 'show' AND e.subject_id = s.id \
     WHERE ",
     present_show!(),
@@ -64,7 +66,7 @@ pub fn get_title(pool: &Pool, query: &str) -> Result<Option<TitleFull>> {
     }
     let conn = pool.get()?;
     let sql = format!(
-        "{CAT_CTE}SELECT id,title,year,kind,metadata,genres,overview,directors FROM cat \
+        "{CAT_CTE}SELECT id,title,year,kind,metadata,genres,overview,directors,actors FROM cat \
          WHERE id = ?1 OR title = ?1 COLLATE NOCASE \
          ORDER BY (id = ?1) DESC, CAST(json_extract(cat.metadata,'$.rating') AS REAL) DESC LIMIT 1"
     );
@@ -77,6 +79,7 @@ pub fn get_title(pool: &Pool, query: &str) -> Result<Option<TitleFull>> {
                 genres: list_in(r.get(5)?),
                 overview: r.get(6)?,
                 directors: written.map_or(full.directors, |names| list_in(Some(names))),
+                cast: names_in(r.get(8)?),
                 ..full
             })
         })
@@ -87,6 +90,22 @@ pub fn get_title(pool: &Pool, query: &str) -> Result<Option<TitleFull>> {
 fn list_in(json: Option<String>) -> Vec<String> {
     json.and_then(|json| serde_json::from_str(&json).ok())
         .unwrap_or_default()
+}
+
+#[derive(serde::Deserialize)]
+struct Named {
+    name: String,
+}
+
+fn names_in(json: Option<String>) -> Vec<String> {
+    let people: Vec<Named> = json
+        .and_then(|json| serde_json::from_str(&json).ok())
+        .unwrap_or_default();
+    people
+        .into_iter()
+        .take(10)
+        .map(|person| person.name)
+        .collect()
 }
 
 /// Every genre present, with how many titles carry it (most common first).
@@ -113,7 +132,7 @@ pub fn people_counts(pool: &Pool, role: &str, limit: usize) -> Result<Vec<(Strin
     let sql = match role.trim().to_ascii_lowercase().as_str() {
         "actor" | "cast" => format!(
             "{CAT_CTE}SELECT json_extract(c.value,'$.name') AS name, COUNT(*) AS n \
-             FROM cat, json_each(cat.metadata,'$.cast') c \
+             FROM cat, json_each(cat.actors) c \
              WHERE name IS NOT NULL AND name != '' \
              GROUP BY name ORDER BY n DESC, name LIMIT {lim}"
         ),
@@ -164,7 +183,6 @@ fn full_from(
         .filter(|c| matches!(c.job.as_str(), "Director" | "Creator"))
         .map(|c| c.name.clone())
         .collect();
-    let cast = m.cast.iter().take(10).map(|c| c.name.clone()).collect();
     TitleFull {
         id,
         title,
@@ -173,7 +191,7 @@ fn full_from(
         rating: m.rating,
         genres: m.genres,
         directors,
-        cast,
+        cast: Vec::new(),
         overview: m.overview,
         tagline: m.tagline,
     }

@@ -240,3 +240,28 @@ fn a_rating_no_system_has_is_left_to_the_provider() {
     assert_eq!(edit.content_rating, None);
     assert_eq!(edit.title.as_deref(), Some("Heat"));
 }
+
+#[test]
+fn a_file_gives_the_cast_in_the_order_it_numbers_with_the_part_each_one_plays() {
+    let file = r#"<tvshow>
+    <actor><name>Anna Gunn</name></actor>
+    <actor><name>Bryan Cranston</name><role> Walter White </role><order>1</order></actor>
+    <actor><name>Aaron Paul</name><order>0</order><thumb>https://image.tmdb.org/a.jpg</thumb></actor>
+    <actor><name> </name><role>Nobody</role></actor>
+</tvshow>"#;
+
+    let cast = parsed(file, TVSHOW).edit.cast.expect("a cast");
+
+    let credited: Vec<(&str, Option<&str>)> = cast
+        .iter()
+        .map(|actor| (actor.name.as_str(), actor.role.as_deref()))
+        .collect();
+    assert_eq!(
+        credited,
+        vec![
+            ("Aaron Paul", None),
+            ("Bryan Cranston", Some("Walter White")),
+            ("Anna Gunn", None),
+        ]
+    );
+}
