@@ -11,10 +11,7 @@
 @import "@kromatv/ui/css/motion";
 @import "@kromatv/ui/css/page";
 @import "@kromatv/ui/css/theme";
-
-html:lang(ko) {
-  word-break: keep-all;
-}
+@import "@kromatv/ui/css/language";
 
 /* Tailwind v4 scans this app's own sources automatically; nothing outside
    apps/www contributes class names, so no extra @source is needed. */

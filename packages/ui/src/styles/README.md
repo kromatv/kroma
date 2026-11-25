@@ -4,7 +4,7 @@ The CSS half of the design system, for the targets that read CSS. The TV and nat
 apps never load any of it. They consume the TypeScript tokens directly.
 
 **There are no `.css` files here, and no CSS text.** Every rule is data:
-`reset.ts`, `page.ts` and `motion.ts` are lists of `rule()`,
+`reset.ts`, `page.ts`, `motion.ts` and `language.ts` are lists of `rule()`,
 `atMedia()` and `keyframes()` entries with colours read back through `cssRef`, and
 `sheet.ts` is the only thing that knows what CSS syntax looks like. `kromaUI()`
 (`@kromatv/ui/vite`) compiles them, together with the tokens and the `@font-face`
@@ -44,16 +44,18 @@ a reset, and a second unlayered one would outrank every utility it collides with
 @import "@kromatv/ui/css/motion";
 @import "@kromatv/ui/css/page";
 @import "@kromatv/ui/css/theme";
+@import "@kromatv/ui/css/language";
 ```
 
 | Part | Emits |
 | --- | --- |
-| `kroma` | fonts + tokens + motion + base: what an app wants |
-| `tv` | fonts + tokens + motion + reset: what a television wants |
+| `kroma` | fonts + tokens + motion + language + base: what an app wants |
+| `tv` | fonts + tokens + motion + language + reset: what a television wants |
 | `tokens` | the custom properties, both palettes |
 | `theme` | the Tailwind v4 bridge (`bg-accent`, `text-muted`, …) |
 | `fonts` | the `@font-face` rules |
 | `motion` | the component keyframes |
+| `language` | where each language's lines may break, under `html:lang()` |
 | `reset` | the UA stylesheet undone, and nothing else |
 | `page` | body, focus ring, scrollbars, admin tables, with the reset left out |
 | `base` | `reset` and `page` together |

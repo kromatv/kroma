@@ -162,7 +162,7 @@ function PaintedText({
       {rest.children}
     </StaticText>
   ) : (
-    <RNText {...rest} numberOfLines={lines} style={painted} />
+    <RNText lineBreakStrategyIOS="hangul-word" {...rest} numberOfLines={lines} style={painted} />
   );
 }
 

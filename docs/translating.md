@@ -195,9 +195,11 @@ ship it:
   `packages/ui/src/lib/intl.ts` holds the separators and byte units of a
   language whose conventions differ from English (French writes `1,5 Go`), for
   the engines without `Intl`.
-- **Line breaks.** A browser breaks Korean between any two syllables, so the
-  kit's reset and the website's stylesheet set `word-break: keep-all` under
-  `html:lang(ko)`. A language with its own rule adds one there.
+- **Line breaks.** A browser breaks Korean between any two syllables, so
+  `packages/ui/src/styles/language.ts` sets `word-break: keep-all` under
+  `html:lang(ko)`, and the app, television and website stylesheets all carry
+  it. A language with its own rule adds a line there. iOS and tvOS keep a
+  Hangul word whole through the kit's `Text`; Android has no such option.
 - **The social card.** kroma.tv renders a card per language in
   `apps/www/vite/og-cards.ts`. A language whose script the renderer has no font
   for shares the English one.

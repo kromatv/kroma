@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { kromaTokens } from './stylesheet';
-import { baseCss, fontsCss, SOURCE_ROOTS, themeCss, tokensCss, tvCss } from './tokens';
+import { baseCss, fontsCss, languageCss, SOURCE_ROOTS, themeCss, tokensCss, tvCss } from './tokens';
 
 const transform = (code: string, id = '/app/src/styles.css') => {
   const plugin = kromaTokens();
@@ -57,6 +57,16 @@ describe('the plugin', () => {
     expect(tv).toContain('@keyframes kroma-img-failsafe');
     expect(tv).toContain('font-size: inherit');
     expect(tv).not.toContain('::-webkit-scrollbar');
+  });
+
+  it('breaks Korean lines between words for an app, a television and a site alike', () => {
+    const language = transform('@import "@kromatv/ui/css/language";') ?? '';
+
+    expect(language).toBe(languageCss());
+    expect(language).toContain('html:lang(ko) {\n  word-break: keep-all;\n}');
+    expect(transform('@import "@kromatv/ui/css";')).toContain(language);
+    expect(tvCss()).toContain(language);
+    expect(transform('@import "@kromatv/ui/css/reset";')).not.toContain('keep-all');
   });
 
   it('accepts single quotes and stray whitespace', () => {
