@@ -101,7 +101,7 @@ function Root({
     return { columns: sort ?? NO_SORT, press: onSortChange ? press : null };
   }, [sort, onSortChange, press]);
   return (
-    <SortContext.Provider value={sorting}>
+    <SortContext value={sorting}>
       <GridScope
         columns={declared.list}
         boxes={declared.boxes}
@@ -116,7 +116,7 @@ function Root({
           </Frame>
         </RingScope>
       </GridScope>
-    </SortContext.Provider>
+    </SortContext>
   );
 }
 
@@ -145,9 +145,9 @@ function GridScope({
     [columns, dragged, step],
   );
   return (
-    <ResizeContext.Provider value={layout.resize}>
-      <GridContext.Provider value={value}>{children}</GridContext.Provider>
-    </ResizeContext.Provider>
+    <ResizeContext value={layout.resize}>
+      <GridContext value={value}>{children}</GridContext>
+    </ResizeContext>
   );
 }
 

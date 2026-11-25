@@ -101,7 +101,7 @@ function Root({
   );
 
   return (
-    <MenuContext.Provider value={state}>
+    <MenuContext value={state}>
       {kids.filter((node) => !isEntry(node))}
       <MenuSurface
         open={open}
@@ -113,7 +113,7 @@ function Root({
         anchor={anchor}
         onDismiss={dismiss}
       />
-    </MenuContext.Provider>
+    </MenuContext>
   );
 }
 

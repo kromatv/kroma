@@ -15,7 +15,7 @@ export function SurfaceRadiusProvider({
   radius,
   children,
 }: Readonly<{ radius: SurfaceRadius; children: ReactNode }>) {
-  return <SurfaceRadiusContext.Provider value={radius}>{children}</SurfaceRadiusContext.Provider>;
+  return <SurfaceRadiusContext value={radius}>{children}</SurfaceRadiusContext>;
 }
 
 /** The radius the surface should round itself to; 0 when fullscreen. */

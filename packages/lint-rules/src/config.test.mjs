@@ -77,6 +77,11 @@ it('loads all custom rules through the real config and preserves runtime exclusi
       ],
       ['widget.tsx', 'export function Widget() { return null; }', 'file-role'],
       [
+        'ctx.tsx',
+        "import { RowContext } from './row';\nexport const node = <RowContext value={{ go: 1 }} />;",
+        'no-constructed-context-value',
+      ],
+      [
         'flag.ts',
         'export function render(compact: boolean) { return compact; }',
         'no-boolean-flag-param',

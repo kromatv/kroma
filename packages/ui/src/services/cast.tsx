@@ -278,7 +278,7 @@ export function CastProvider({
     [receivers, waking, needsPower, pairable, active, position, select, playOn, send, error],
   );
 
-  return <CastCtx.Provider value={value}>{children}</CastCtx.Provider>;
+  return <CastCtx value={value}>{children}</CastCtx>;
 }
 
 export type { Cast, CastFailure, CastRowKey, CastRowState } from './cast-context';

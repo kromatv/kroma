@@ -165,7 +165,7 @@ function Root(props: Readonly<SelectRootProps>) {
   );
 
   return (
-    <SelectContext.Provider value={state}>
+    <SelectContext value={state}>
       {kids.filter((node) => !isItem(node))}
       <SelectOptions
         open={open}
@@ -179,7 +179,7 @@ function Root(props: Readonly<SelectRootProps>) {
         onDismiss={(reason: SelectDismissReason) => setOpen(false, reason)}
         anchor={anchor}
       />
-    </SelectContext.Provider>
+    </SelectContext>
   );
 }
 
@@ -224,9 +224,7 @@ function Trigger({
     >
       {(state) => (
         <>
-          <SelectInkContext.Provider value={state.slots.ink}>
-            {children ?? <Value />}
-          </SelectInkContext.Provider>
+          <SelectInkContext value={state.slots.ink}>{children ?? <Value />}</SelectInkContext>
           <Box flex />
           <Icon name="chevron-down" size={16} color="textDim" />
         </>

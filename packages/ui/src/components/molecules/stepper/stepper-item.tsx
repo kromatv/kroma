@@ -142,7 +142,7 @@ function Item({ value, icon, label, disabled, children }: Readonly<StepperItemPr
   const vertical = orientation === 'vertical';
   return (
     <>
-      <ItemContext.Provider value={slots}>
+      <ItemContext value={slots}>
         <Focusable
           role="tab"
           selected={step.active}
@@ -167,7 +167,7 @@ function Item({ value, icon, label, disabled, children }: Readonly<StepperItemPr
             </Box>
           ) : null}
         </Focusable>
-      </ItemContext.Provider>
+      </ItemContext>
       {step.last ? null : (
         <Connector
           vertical={vertical}

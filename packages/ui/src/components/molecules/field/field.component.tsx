@@ -73,7 +73,7 @@ function Root({
   const [note, control] = sortParts(children, Hint);
   const group = useGroupShape(focused);
   return (
-    <Context.Provider value={field}>
+    <Context value={field}>
       <Box gap={8} {...box} style={[group, box.style]}>
         {hideLabel ? null : (
           <Text variant="meta" color="textMuted">
@@ -83,7 +83,7 @@ function Root({
         {control.length > 0 ? control : <Input />}
         {note.length > 0 ? note : <Hint />}
       </Box>
-    </Context.Provider>
+    </Context>
   );
 }
 

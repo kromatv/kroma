@@ -94,7 +94,7 @@ function Root({ label, children, style }: Readonly<GuidedFlowRootProps>) {
   const pad = roomy ? PAD.roomy : PAD.narrow;
   const state = useMemo(() => ({ size, pad }), [size, pad]);
   return (
-    <GuidedFlowContext.Provider value={state}>
+    <GuidedFlowContext value={state}>
       <Box style={s.room} onLayout={measure}>
         <Surface
           elevated
@@ -112,7 +112,7 @@ function Root({ label, children, style }: Readonly<GuidedFlowRootProps>) {
           </FocusRegion>
         </Surface>
       </Box>
-    </GuidedFlowContext.Provider>
+    </GuidedFlowContext>
   );
 }
 

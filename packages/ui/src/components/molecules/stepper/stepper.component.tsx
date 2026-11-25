@@ -139,11 +139,11 @@ function Root({
   }
 
   return (
-    <Context.Provider value={state}>
+    <Context value={state}>
       <Box gap={CONTROL[shell].gap} style={style}>
         {children}
       </Box>
-    </Context.Provider>
+    </Context>
   );
 }
 

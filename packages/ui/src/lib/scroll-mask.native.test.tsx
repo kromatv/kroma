@@ -33,11 +33,11 @@ async function page(masks: { GPU_MASKS: boolean; PAGE_MASKS: boolean }, ground: 
   const { ScrollPositionContext } = await import('./scroll-position');
   const position = { offset: new Animated.Value(0), content: createRef<View>() };
   render(
-    <ScrollPositionContext.Provider value={position}>
+    <ScrollPositionContext value={position}>
       <ScrollMask inset={104} ground={ground}>
         <Text>rails</Text>
       </ScrollMask>
-    </ScrollPositionContext.Provider>,
+    </ScrollPositionContext>,
   );
 }
 

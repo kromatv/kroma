@@ -95,7 +95,7 @@ function AddonSlotProvider({
   children,
 }: Readonly<{ align: AddonAlign; edge: boolean; children: ReactNode }>) {
   const value = useMemo(() => ({ align, edge }), [align, edge]);
-  return <AddonContext.Provider value={value}>{children}</AddonContext.Provider>;
+  return <AddonContext value={value}>{children}</AddonContext>;
 }
 
 function Addon({

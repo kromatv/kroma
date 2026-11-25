@@ -48,12 +48,12 @@ function Root({ size = 'md', layout = 'inline', icon, children }: Readonly<RootP
   const shape = SHAPE[size];
   const frame = frameOf(shape, layout);
   return (
-    <Context.Provider value={size}>
+    <Context value={size}>
       <Box center gap={shape.gap} flex={frame.flex} py={frame.py}>
         {icon ? <Media name={icon} /> : null}
         {children}
       </Box>
-    </Context.Provider>
+    </Context>
   );
 }
 

@@ -28,5 +28,5 @@ export function RingScope({ placement, corner, children }: Readonly<RingScopePro
       ? undefined
       : nestedRadius(radiusValue(corner, undefined, theme), MEMBER_INSET);
   const value = useMemo(() => ({ placement, corner: member }), [placement, member]);
-  return <RingScopeContext.Provider value={value}>{children}</RingScopeContext.Provider>;
+  return <RingScopeContext value={value}>{children}</RingScopeContext>;
 }

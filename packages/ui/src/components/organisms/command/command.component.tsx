@@ -198,11 +198,11 @@ function Root({
   );
 
   const palette = (
-    <CommandContext.Provider value={state}>
+    <CommandContext value={state}>
       <CommandLayer closeLabel={closeLabel} onClose={onClose} animated={modal}>
         {children}
       </CommandLayer>
-    </CommandContext.Provider>
+    </CommandContext>
   );
   return modal ? <CommandModal onClose={onClose}>{palette}</CommandModal> : palette;
 }

@@ -86,7 +86,7 @@ function Root(props: Readonly<ChoiceRootProps>) {
   );
 
   return (
-    <Context.Provider value={ctx}>
+    <Context value={ctx}>
       <Box
         gap={gap}
         // `radiogroup` is the one-of-N contract; a set of checkboxes is a
@@ -97,7 +97,7 @@ function Root(props: Readonly<ChoiceRootProps>) {
       >
         {children}
       </Box>
-    </Context.Provider>
+    </Context>
   );
 }
 
@@ -119,7 +119,7 @@ function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
   const item = useMemo(() => ({ value, on }), [value, on]);
   const [[media], rest] = sortParts(children, Media);
   return (
-    <ItemContext.Provider value={item}>
+    <ItemContext value={item}>
       <ListRow.Root
         size={size}
         ground={ground}
@@ -137,7 +137,7 @@ function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
           {media ? <Indicator /> : null}
         </ListRow.Trailing>
       </ListRow.Root>
-    </ItemContext.Provider>
+    </ItemContext>
   );
 }
 

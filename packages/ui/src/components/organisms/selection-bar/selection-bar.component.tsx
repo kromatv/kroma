@@ -95,7 +95,7 @@ function Root({
   const measure = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
 
   return (
-    <SelectionBarContext.Provider value={context}>
+    <SelectionBarContext value={context}>
       <Announce text={shown ? at.status : ''} />
       {fade.mounted ? (
         <Box
@@ -119,7 +119,7 @@ function Root({
           </Animated.View>
         </Box>
       ) : null}
-    </SelectionBarContext.Provider>
+    </SelectionBarContext>
   );
 }
 

@@ -33,7 +33,7 @@ function FocusReporter(props: ReporterProps) {
     () => (index === undefined ? onFocus : () => onFocus(index)),
     [onFocus, index],
   );
-  return <FocusReportContext.Provider value={value}>{children}</FocusReportContext.Provider>;
+  return <FocusReportContext value={value}>{children}</FocusReportContext>;
 }
 
 export { FocusReporter, useFocusReport };

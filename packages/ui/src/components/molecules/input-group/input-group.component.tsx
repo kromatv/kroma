@@ -124,7 +124,7 @@ function Root({ label, size, invalid = false, style, children }: Readonly<InputG
   const run = { row: true, align: 'center', gap: metrics.gap, minH: metrics.height - 2 } as const;
 
   return (
-    <Context.Provider value={ctx}>
+    <Context value={ctx}>
       <Box
         role="group"
         accessibilityLabel={label}
@@ -147,7 +147,7 @@ function Root({ label, size, invalid = false, style, children }: Readonly<InputG
           inline
         )}
       </Box>
-    </Context.Provider>
+    </Context>
   );
 }
 

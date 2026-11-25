@@ -39,18 +39,15 @@ function SelectOptionsDialog(props: Readonly<SelectSurfaceProps>) {
       title={label}
       width="md"
     >
-      <SelectContext.Provider value={select}>
+      <SelectContext value={select}>
         <FocusColumn>
           {items.map((item, index) => (
-            <SelectRowContext.Provider
-              key={item.key}
-              value={index === entry ? ENTRY_ROW : DIALOG_ROW}
-            >
+            <SelectRowContext key={item.key} value={index === entry ? ENTRY_ROW : DIALOG_ROW}>
               {item}
-            </SelectRowContext.Provider>
+            </SelectRowContext>
           ))}
         </FocusColumn>
-      </SelectContext.Provider>
+      </SelectContext>
     </Dialog.Root>
   );
 }

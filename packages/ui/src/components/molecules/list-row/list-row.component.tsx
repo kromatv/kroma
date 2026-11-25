@@ -142,7 +142,7 @@ function Root({
   const chevron = (wantsChevron ?? pressable) && at.trailing.length === 0;
 
   return (
-    <ListRowContext.Provider value={ctx}>
+    <ListRowContext value={ctx}>
       <Focusable
         {...focusProps}
         asChild={asChild}
@@ -180,7 +180,7 @@ function Root({
           )
         }
       </Focusable>
-    </ListRowContext.Provider>
+    </ListRowContext>
   );
 }
 

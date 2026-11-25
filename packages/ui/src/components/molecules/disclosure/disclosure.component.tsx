@@ -51,12 +51,12 @@ function Root({
   // the open state through context, which lets the panel be written anywhere.
   const [trigger, panel, loose] = useMemo(() => sortParts(children, Trigger, Panel), [children]);
   return (
-    <DisclosureContext.Provider value={state}>
+    <DisclosureContext value={state}>
       <Box style={style}>
         {trigger}
         {slot(panel, <Panel>{loose}</Panel>)}
       </Box>
-    </DisclosureContext.Provider>
+    </DisclosureContext>
   );
 }
 

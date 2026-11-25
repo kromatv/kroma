@@ -70,7 +70,7 @@ function Item({ value, label, icon, disabled, children }: Readonly<ItemProps>) {
   const slots = segmentGroupVariantsScoped({ size, active });
   const keep = useCallback((view: View | null) => mount(value, view), [mount, value]);
   return (
-    <ItemContext.Provider value={slots}>
+    <ItemContext value={slots}>
       <Focusable
         ref={keep}
         role="radio"
@@ -92,7 +92,7 @@ function Item({ value, label, icon, disabled, children }: Readonly<ItemProps>) {
         {icon ? <Icon name={icon} size={glyph} color={active ? 'accentText' : 'text/75'} /> : null}
         {children}
       </Focusable>
-    </ItemContext.Provider>
+    </ItemContext>
   );
 }
 

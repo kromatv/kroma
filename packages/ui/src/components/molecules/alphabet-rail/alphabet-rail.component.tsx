@@ -104,7 +104,7 @@ function Root({
   };
 
   return (
-    <AlphabetRailContext.Provider value={context}>
+    <AlphabetRailContext value={context}>
       <Box
         ref={rail}
         {...panHandlers}
@@ -119,7 +119,7 @@ function Root({
         {children}
         {bubble ? <Bubble letter={bubble.letter} y={bubble.y} /> : null}
       </Box>
-    </AlphabetRailContext.Provider>
+    </AlphabetRailContext>
   );
 }
 

@@ -105,9 +105,9 @@ function SelectPopover({
       scroll={scroll}
     >
       {items.map((item, index) => (
-        <SelectRowContext.Provider key={item.key} value={row(index)}>
+        <SelectRowContext key={item.key} value={row(index)}>
           {item}
-        </SelectRowContext.Provider>
+        </SelectRowContext>
       ))}
     </AnchoredPopup>
   );

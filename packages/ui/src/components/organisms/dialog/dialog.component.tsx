@@ -170,11 +170,11 @@ function DialogSurface({
         aria-modal
         {...naming}
       >
-        <ShellContext.Provider value={shell}>
+        <ShellContext value={shell}>
           {header}
           {panelPart ?? <Panel>{loose}</Panel>}
           {footerPart}
-        </ShellContext.Provider>
+        </ShellContext>
       </Box>
     </Box>
   );
