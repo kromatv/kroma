@@ -1,0 +1,13 @@
+{
+  "format.durationHours": "{hours}時間{minutes}分",
+  "format.durationMinutes": "{minutes}分",
+  "format.hours": "{hours}時間",
+  "format.justNow": "たった今",
+  "format.never": "なし",
+  "format.runtimeHours": "{hours}時間{minutes}分",
+  "format.runtimeMinutes": "{minutes}分",
+  "format.unknownTime": "-",
+  "format.uptimeDays": "{days}日{hours}時間",
+  "format.uptimeHours": "{hours}時間{minutes}分",
+  "format.uptimeMinutes": "{minutes}分"
+}

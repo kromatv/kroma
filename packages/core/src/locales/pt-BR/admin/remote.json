@@ -1,0 +1,18 @@
+{
+  "admin.remoteAccess": "Acesso remoto",
+  "admin.remoteAccessDesc": "Streaming fora da rede local",
+  "admin.remoteBinaryMissing": "O binário cloudflared não está disponível no servidor.",
+  "admin.remoteConnected": "Conectado",
+  "admin.remoteConnecting": "Conectando…",
+  "admin.remoteDisconnected": "Parado",
+  "admin.remoteGetToken": "Obter um token no Cloudflare",
+  "admin.remoteLogs": "Logs do conector",
+  "admin.remoteManaged": "Conector gerenciado (Cloudflare Tunnel)",
+  "admin.remoteManagedHint": "Opcional. Se o servidor ainda não tem um túnel, o KROMA pode executar e monitorar o cloudflared para expor uma URL HTTPS pública sem encaminhamento de porta. Se você já usa um túnel (um contêiner compartilhado, um serviço do sistema), deixe isto desativado e só defina a URL pública.",
+  "admin.remoteNoLogs": "Nenhum log ainda.",
+  "admin.remoteSaved": "Salvo",
+  "admin.remoteSince": "Desde",
+  "admin.remoteToken": "Token do túnel",
+  "admin.remoteTokenHint": "Cole o token do conector do Cloudflare Tunnel. O servidor executa o cloudflared e o monitora.",
+  "admin.remoteTokenKeep": "•••••• (deixe em branco para manter)"
+}

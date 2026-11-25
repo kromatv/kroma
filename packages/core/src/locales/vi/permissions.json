@@ -1,0 +1,18 @@
+{
+  "permissions.library": "Thư viện",
+  "permissions.libraryHint": "Quét, thư viện, siêu dữ liệu",
+  "permissions.playback": "Phát",
+  "permissions.playbackHint": "Xem phim lẻ, phim bộ và xem tiếp",
+  "permissions.reportsManage": "Quản lý báo cáo",
+  "permissions.reportsManageHint": "Phân loại các báo cáo sự cố do người dùng gửi",
+  "permissions.requestAuto": "Tự động duyệt",
+  "permissions.requestAutoHint": "Yêu cầu của tài khoản này không phải chờ duyệt",
+  "permissions.requestCreate": "Yêu cầu",
+  "permissions.requestCreateHint": "Tìm trên TMDB và yêu cầu phim lẻ hoặc phim bộ",
+  "permissions.requestManage": "Quản lý yêu cầu",
+  "permissions.requestManageHint": "Duyệt hoặc từ chối yêu cầu, quản lý nội dung tải xuống",
+  "permissions.settings": "Cài đặt",
+  "permissions.settingsHint": "Cấu hình máy chủ",
+  "permissions.users": "Người dùng",
+  "permissions.usersHint": "Quản lý tài khoản và mời người khác"
+}

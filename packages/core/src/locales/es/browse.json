@@ -1,0 +1,19 @@
+{
+  "browse.allGenres": "Todos",
+  "browse.anyLanguage": "Todos los idiomas",
+  "browse.audioLanguage": "Idioma del audio",
+  "browse.count.movies": "{count} películas",
+  "browse.count.movies_one": "{count} película",
+  "browse.count.series": "{count} series",
+  "browse.count.series_one": "{count} serie",
+  "browse.genres": "Géneros",
+  "browse.jumpToLetter": "Ir a la {letter}",
+  "browse.letterNav": "Ir a una letra",
+  "browse.library": "Biblioteca",
+  "browse.sort.added": "Añadidos recientemente",
+  "browse.sort.rating": "Puntuación",
+  "browse.sort.release": "Fecha de estreno",
+  "browse.sort.title": "Título, de la A a la Z",
+  "browse.sortBy": "Ordenar por",
+  "browse.subtitleLanguage": "Subtítulos"
+}

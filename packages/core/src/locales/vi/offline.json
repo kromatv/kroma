@@ -1,0 +1,18 @@
+{
+  "offline.cancelDownload": "Hủy tải xuống",
+  "offline.download": "Tải xuống",
+  "offline.downloadSeason": "Tải xuống cả phần",
+  "offline.downloaded": "Đã tải xuống",
+  "offline.downloading": "Đang tải xuống {percent}%",
+  "offline.downloads": "Nội dung tải xuống",
+  "offline.empty": "Chưa có nội dung tải xuống nào. Nhấn nút tải xuống trên một phim hoặc một tập để xem khi không có mạng.",
+  "offline.failed": "Không thể tải xuống. Có thể máy chủ cần được cập nhật.",
+  "offline.inProgressCount": "{count} đang tải",
+  "offline.pause": "Tạm dừng",
+  "offline.paused": "Đã tạm dừng",
+  "offline.queued": "Đang chờ",
+  "offline.remove": "Xóa bản tải xuống",
+  "offline.resume": "Tiếp tục",
+  "offline.storageFree": "Còn trống",
+  "offline.storageOther": "Đã dùng"
+}

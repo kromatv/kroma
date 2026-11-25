@@ -1,0 +1,18 @@
+{
+  "mediaInfo.action": "文件详情",
+  "mediaInfo.audio": "音频",
+  "mediaInfo.bit": "位",
+  "mediaInfo.container": "封装格式",
+  "mediaInfo.default": "默认",
+  "mediaInfo.duration": "时长",
+  "mediaInfo.editionUnnamed": "标准版",
+  "mediaInfo.noFile": "此项没有对应的文件。",
+  "mediaInfo.noSubs": "无",
+  "mediaInfo.size": "大小",
+  "mediaInfo.subtitles": "字幕",
+  "mediaInfo.title": "文件详情",
+  "mediaInfo.unknownFile": "未知文件",
+  "mediaInfo.unprobed": "等待分析文件。",
+  "mediaInfo.unreadable": "无法打开此文件。",
+  "mediaInfo.video": "视频"
+}

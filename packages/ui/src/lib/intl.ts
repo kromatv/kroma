@@ -32,8 +32,20 @@ function relativeFormat(locale: Locale): Intl.RelativeTimeFormat | null {
   RELATIVE.set(locale, made);
   return made;
 }
-const DECIMAL_SEPARATOR: Partial<Record<string, string>> = { fr: ',' };
-const GROUP_SEPARATOR: Partial<Record<string, string>> = { fr: '\u202F' };
+const DECIMAL_SEPARATOR: Partial<Record<string, string>> = {
+  de: ',',
+  es: ',',
+  fr: ',',
+  pt: ',',
+  vi: ',',
+};
+const GROUP_SEPARATOR: Partial<Record<string, string>> = {
+  de: '.',
+  es: '.',
+  fr: '\u202F',
+  pt: '.',
+  vi: '.',
+};
 
 function convention<T>(table: Partial<Record<string, T>>, locale: Locale): T | undefined {
   return table[locale] ?? table[locale.split('-')[0] ?? locale];

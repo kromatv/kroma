@@ -1,0 +1,17 @@
+{
+  "browse.allGenres": "全部",
+  "browse.anyLanguage": "不限语言",
+  "browse.audioLanguage": "音频语言",
+  "browse.count.movies": "{count} 部电影",
+  "browse.count.series": "{count} 部剧集",
+  "browse.genres": "类型",
+  "browse.jumpToLetter": "跳到 {letter}",
+  "browse.letterNav": "按字母跳转",
+  "browse.library": "媒体库",
+  "browse.sort.added": "最近添加",
+  "browse.sort.rating": "评分",
+  "browse.sort.release": "上映日期",
+  "browse.sort.title": "名称",
+  "browse.sortBy": "排序方式",
+  "browse.subtitleLanguage": "字幕"
+}

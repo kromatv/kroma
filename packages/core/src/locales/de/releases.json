@@ -1,0 +1,15 @@
+{
+  "releases.action": "Zu erledigen",
+  "releases.current": "Installiert",
+  "releases.empty": "Noch keine Versionshinweise.",
+  "releases.fixCount": "{count} Fehlerbehebungen",
+  "releases.fixCount_one": "{count} Fehlerbehebung",
+  "releases.fixed": "Behoben",
+  "releases.highlightCount": "{count} neue Funktionen",
+  "releases.highlightCount_one": "{count} neue Funktion",
+  "releases.owner": "Für den Eigentümer des Servers",
+  "releases.subtitle": "Was sich in KROMA geändert hat, Version für Version.",
+  "releases.title": "Neuigkeiten",
+  "releases.upToDate": "Auf dem neuesten Stand",
+  "releases.version": "KROMA {version}"
+}

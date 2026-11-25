@@ -1,0 +1,8 @@
+{
+  "flow.continue": "続ける",
+  "flow.next": "次へ",
+  "flow.previous": "前へ",
+  "flow.step": "ステップ{position}/{count}",
+  "flow.stepDone": "{step}（完了）",
+  "flow.stepNamed": "ステップ{position}/{count}：{name}"
+}

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "messages": {
+    "nav.vpn": "95462336 95462336 mt",
+    "vpnBandwidth.bypassed": "d724e69c 800aa70c mt",
+    "vpnBandwidth.direction": "e26cd9b4 ce181e80 mt",
+    "vpnBandwidth.down": "a4925f5b 98e32fb9 mt",
+    "vpnBandwidth.empty": "9003940d de8af17b mt",
+    "vpnBandwidth.gap": "866746eb 99b69dde mt",
+    "vpnBandwidth.inTunnel": "2e54ea20 e4879726 mt",
+    "vpnBandwidth.leaked": "e27e5767 d2bf5a6f mt",
+    "vpnBandwidth.noBridge": "b9d51fc9 b1739154 mt",
+    "vpnBandwidth.noEngine": "7a9782b2 8120b8f9 mt",
+    "vpnBandwidth.otherClient": "96f64dcc fc7d99a9 mt",
+    "vpnBandwidth.outsideTunnel": "962eec6f 03583abf mt",
+    "vpnBandwidth.sealed": "dc5055fb 37a13121 mt",
+    "vpnBandwidth.throughTunnel": "4b32f168 92565b52 mt",
+    "vpnBandwidth.title": "e9af6def 1963cbad mt",
+    "vpnBandwidth.up": "f2ae45f2 14ae5a0f mt",
+    "vpnBandwidth.window": "f3885109 9bf8bacd mt"
+  }
+}

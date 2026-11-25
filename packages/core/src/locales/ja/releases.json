@@ -1,0 +1,13 @@
+{
+  "releases.action": "対応が必要です",
+  "releases.current": "現在のバージョン",
+  "releases.empty": "リリースノートはまだありません。",
+  "releases.fixCount": "{count}件の修正",
+  "releases.fixed": "修正",
+  "releases.highlightCount": "{count}件の新機能",
+  "releases.owner": "サーバーのオーナー向け",
+  "releases.subtitle": "KROMAの変更内容を、バージョンごとに紹介します。",
+  "releases.title": "新機能",
+  "releases.upToDate": "最新です",
+  "releases.version": "KROMA {version}"
+}

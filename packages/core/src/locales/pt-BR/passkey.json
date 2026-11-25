@@ -1,0 +1,10 @@
+{
+  "passkey.authFailed": "Não foi possível entrar com a chave de acesso",
+  "passkey.ceremonyExpired": "O pedido da chave de acesso expirou. Tente novamente.",
+  "passkey.defaultName": "Chave de acesso",
+  "passkey.notFound": "Chave de acesso não encontrada",
+  "passkey.originInvalid": "Chaves de acesso exigem uma conexão segura (HTTPS)",
+  "passkey.originMissing": "Origem da requisição ausente",
+  "passkey.registerFailed": "Não foi possível registrar a chave de acesso",
+  "passkey.startFailed": "Não foi possível iniciar o pedido da chave de acesso"
+}

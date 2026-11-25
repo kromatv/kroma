@@ -1,0 +1,10 @@
+{
+  "trailer.back": "Voltar",
+  "trailer.failed": "Não é possível reproduzir este trailer agora.",
+  "trailer.failedHint": "O YouTube não liberou o vídeo. Tente novamente em alguns minutos.",
+  "trailer.openOnYoutube": "Assistir no YouTube",
+  "trailer.preparing": "Preparando o trailer…",
+  "trailer.watch": "Trailer",
+  "trailer.watchOriginal": "Trailer (original)",
+  "trailer.watchSubtitled": "Trailer (legendado)"
+}

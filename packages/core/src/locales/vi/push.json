@@ -1,0 +1,19 @@
+{
+  "push.blocked.denied": "Thông báo đang bị chặn với trang web này. Hãy cho phép trong cài đặt trình duyệt rồi thử lại.",
+  "push.blocked.insecure": "Thông báo đẩy cần kết nối bảo mật (HTTPS).",
+  "push.blocked.needsInstall": "Trên iOS, hãy thêm KROMA vào Màn hình chính trước: thông báo đẩy chỉ hoạt động trong ứng dụng đã cài.",
+  "push.blocked.needsRebuild": "Bản dựng này chưa hỗ trợ thông báo đẩy. Hãy dựng lại ứng dụng (expo prebuild, rồi chạy) để bật tính năng này.",
+  "push.blocked.simulator": "Thông báo đẩy cần một thiết bị thật: trình mô phỏng không đăng ký nhận thông báo đẩy được.",
+  "push.blocked.unsupported": "Trình duyệt này không hỗ trợ thông báo đẩy.",
+  "push.channel.mediaAvailable": "Đã có thể xem",
+  "push.channel.requestReview": "Yêu cầu cần xem xét",
+  "push.description": "Nhận thông báo ngay cả khi KROMA đang đóng. Cài đặt này áp dụng riêng cho từng thiết bị; các loại bên dưới áp dụng cho cả tài khoản của bạn.",
+  "push.disable": "Tắt",
+  "push.enable": "Bật",
+  "push.failed": "Không bật được thông báo đẩy.",
+  "push.sendTest": "Gửi thử",
+  "push.testFailed": "Không gửi được thông báo nào.",
+  "push.testHint": "Kiểm tra xem thông báo đẩy có tới được thiết bị này không.",
+  "push.testSent": "Đã gửi. Hãy kiểm tra thông báo của bạn.",
+  "push.title": "Thông báo đẩy trên thiết bị này"
+}

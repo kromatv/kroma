@@ -1,0 +1,19 @@
+{
+  "browse.allGenres": "Alle",
+  "browse.anyLanguage": "Alle Sprachen",
+  "browse.audioLanguage": "Audiosprache",
+  "browse.count.movies": "{count} Filme",
+  "browse.count.movies_one": "{count} Film",
+  "browse.count.series": "{count} Serien",
+  "browse.count.series_one": "{count} Serie",
+  "browse.genres": "Genres",
+  "browse.jumpToLetter": "Zu {letter} springen",
+  "browse.letterNav": "Zu einem Buchstaben springen",
+  "browse.library": "Bibliothek",
+  "browse.sort.added": "Zuletzt hinzugefügt",
+  "browse.sort.rating": "Bewertung",
+  "browse.sort.release": "Erscheinungsdatum",
+  "browse.sort.title": "Alphabetisch",
+  "browse.sortBy": "Sortieren nach",
+  "browse.subtitleLanguage": "Untertitel"
+}

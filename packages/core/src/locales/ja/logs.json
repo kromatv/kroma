@@ -1,0 +1,11 @@
+{
+  "logs.allSources": "すべてのソース",
+  "logs.empty": "ログはありません。",
+  "logs.follow": "自動スクロール",
+  "logs.levelAll": "すべて",
+  "logs.levelError": "エラー",
+  "logs.levelInfo": "情報",
+  "logs.levelWarn": "警告",
+  "logs.searchPlaceholder": "行を絞り込み…",
+  "logs.sourceCore": "サーバー"
+}

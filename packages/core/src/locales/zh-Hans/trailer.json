@@ -1,0 +1,10 @@
+{
+  "trailer.back": "返回",
+  "trailer.failed": "暂时无法播放此预告片。",
+  "trailer.failedHint": "YouTube 没有提供该视频。请过几分钟再试。",
+  "trailer.openOnYoutube": "在 YouTube 上观看",
+  "trailer.preparing": "正在准备预告片…",
+  "trailer.watch": "预告片",
+  "trailer.watchOriginal": "预告片（原声）",
+  "trailer.watchSubtitled": "预告片（字幕版）"
+}

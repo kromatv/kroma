@@ -3,6 +3,12 @@
   "source": "en",
   "locales": {
     "fr": { "stage": "stable" },
-    "ko": { "stage": "beta" }
+    "ko": { "stage": "beta" },
+    "de": { "stage": "beta" },
+    "es": { "stage": "beta" },
+    "ja": { "stage": "beta" },
+    "pt-BR": { "stage": "beta" },
+    "vi": { "stage": "beta" },
+    "zh-Hans": { "stage": "beta" }
   }
 }

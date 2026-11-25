@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "Automatisch",
+  "playbackEngine.autoNote": "Spielt die Datei direkt ab, wenn das Gerät es kann, sonst über den Server",
+  "playbackEngine.avplay": "Samsung-Player",
+  "playbackEngine.avplayNote": "Der in Tizen-Fernseher eingebaute Decoder",
+  "playbackEngine.mpv": "mpv-Player",
+  "playbackEngine.mpvNote": "Der native Player der Desktop-App",
+  "playbackEngine.remux": "Remux auf dem Server",
+  "playbackEngine.remuxNote": "Der Server verpackt die Datei live neu, ohne das Bild neu zu kodieren",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "Ein JavaScript-Player für segmentierte Streams",
+  "playbackEngine.title": "Wiedergabe-Engine",
+  "playbackEngine.vlc": "VLC-Player",
+  "playbackEngine.vlcNote": "Mitgelieferte Software-Decoder für alles, was der Chip ablehnt",
+  "playbackEngine.webview": "Browser-Player",
+  "playbackEngine.webviewNote": "Das Videoelement des Browsers selbst, ohne Bibliothek"
+}

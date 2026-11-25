@@ -1,0 +1,19 @@
+{
+  "push.blocked.denied": "このサイトの通知はブロックされています。ブラウザーの設定で許可してから、もう一度お試しください。",
+  "push.blocked.insecure": "プッシュ通知には安全な接続（HTTPS）が必要です。",
+  "push.blocked.needsInstall": "iOSでは、先にKROMAをホーム画面に追加してください。プッシュ通知は、インストールしたアプリでのみ機能します。",
+  "push.blocked.needsRebuild": "このビルドはまだプッシュ通知に対応していません。有効にするには、アプリを再ビルドしてください（expo prebuildの後に実行）。",
+  "push.blocked.simulator": "プッシュ通知には実機が必要です。シミュレーターではプッシュ通知を登録できません。",
+  "push.blocked.unsupported": "このブラウザーはプッシュ通知に対応していません。",
+  "push.channel.mediaAvailable": "視聴可能になった作品",
+  "push.channel.requestReview": "確認待ちのリクエスト",
+  "push.description": "KROMAを閉じていても通知を受け取れます。この設定はデバイスごとですが、下のカテゴリはアカウント全体に適用されます。",
+  "push.disable": "オフにする",
+  "push.enable": "オンにする",
+  "push.failed": "プッシュ通知をオンにできませんでした。",
+  "push.sendTest": "テストを送信",
+  "push.testFailed": "通知は届きませんでした。",
+  "push.testHint": "このデバイスにプッシュ通知が届くか確認します。",
+  "push.testSent": "送信しました。通知を確認してください。",
+  "push.title": "このデバイスのプッシュ通知"
+}

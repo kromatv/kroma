@@ -1,0 +1,18 @@
+{
+  "mediaInfo.action": "Dateidetails",
+  "mediaInfo.audio": "Audio",
+  "mediaInfo.bit": "Bit",
+  "mediaInfo.container": "Container",
+  "mediaInfo.default": "Standard",
+  "mediaInfo.duration": "Dauer",
+  "mediaInfo.editionUnnamed": "Standardfassung",
+  "mediaInfo.noFile": "Keine Datei für diesen Eintrag.",
+  "mediaInfo.noSubs": "Keine",
+  "mediaInfo.size": "Größe",
+  "mediaInfo.subtitles": "Untertitel",
+  "mediaInfo.title": "Dateidetails",
+  "mediaInfo.unknownFile": "Unbekannte Datei",
+  "mediaInfo.unprobed": "Dateianalyse steht noch aus.",
+  "mediaInfo.unreadable": "Diese Datei lässt sich nicht öffnen.",
+  "mediaInfo.video": "Video"
+}

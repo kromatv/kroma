@@ -1,0 +1,12 @@
+{
+  "addProfile.addManually": "Thêm thủ công",
+  "addProfile.addManuallySub": "Nhập địa chỉ của một máy chủ từ xa",
+  "addProfile.availableServers": "Máy chủ có sẵn",
+  "addProfile.checking": "Đang kiểm tra…",
+  "addProfile.new": "Mới",
+  "addProfile.reachable": "Trực tuyến",
+  "addProfile.showCount": "{count} phim bộ",
+  "addProfile.subtitle": "Chọn máy chủ rồi liên kết hồ sơ bằng Kết nối nhanh.",
+  "addProfile.title": "Thêm hồ sơ",
+  "addProfile.unreachable": "Không kết nối được"
+}

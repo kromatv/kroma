@@ -1,0 +1,16 @@
+{
+  "licenses.body": "KROMA basiert auf Open-Source-Software. Hier sind alle Pakete, die der Server und diese App mitbringen, mit ihrer Lizenz.",
+  "licenses.count": "{count} Pakete",
+  "licenses.count_one": "{count} Paket",
+  "licenses.failed": "Die Lizenzen des Servers konnten nicht geladen werden, daher sind nur die dieser App aufgeführt.",
+  "licenses.matches": "{shown} von {count}",
+  "licenses.noText": "Dieses Paket enthält keinen Lizenztext. Die Bedingungen stehen in seinem Quellcode.",
+  "licenses.none": "Kein Paket passt zu dieser Suche.",
+  "licenses.search": "Pakete suchen",
+  "licenses.server": "Server",
+  "licenses.showAll": "Alle {count} anzeigen",
+  "licenses.source": "Quelle",
+  "licenses.title": "Open-Source-Lizenzen",
+  "licenses.unknown": "Lizenz nicht angegeben",
+  "licenses.web": "Web"
+}

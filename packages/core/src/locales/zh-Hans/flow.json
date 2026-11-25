@@ -1,0 +1,8 @@
+{
+  "flow.continue": "继续",
+  "flow.next": "下一步",
+  "flow.previous": "上一步",
+  "flow.step": "第 {position} 步，共 {count} 步",
+  "flow.stepDone": "{step}，已完成",
+  "flow.stepNamed": "第 {position} 步，共 {count} 步：{name}"
+}

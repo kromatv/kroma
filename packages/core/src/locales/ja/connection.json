@@ -1,0 +1,10 @@
+{
+  "connection.directOfferAction": "直接接続",
+  "connection.directOfferDetail": "直接接続すると、インターネットを経由せずにつながります。ブラウザーからローカルネットワークへのアクセス許可を求められます。",
+  "connection.directOfferDismiss": "今後表示しない",
+  "connection.directOfferFailed": "ローカルアドレスでサーバーに接続できませんでした。",
+  "connection.directOfferTitle": "サーバーと同じネットワークに接続しています",
+  "connection.directRoute": "直接接続（{host}）",
+  "connection.offline": "オフライン",
+  "connection.reconnecting": "再接続中…"
+}

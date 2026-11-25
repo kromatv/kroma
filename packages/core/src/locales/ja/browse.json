@@ -1,0 +1,17 @@
+{
+  "browse.allGenres": "すべて",
+  "browse.anyLanguage": "すべての言語",
+  "browse.audioLanguage": "音声の言語",
+  "browse.count.movies": "映画{count}本",
+  "browse.count.series": "シリーズ{count}本",
+  "browse.genres": "ジャンル",
+  "browse.jumpToLetter": "{letter}へ移動",
+  "browse.letterNav": "頭文字で移動",
+  "browse.library": "ライブラリ",
+  "browse.sort.added": "追加日順",
+  "browse.sort.rating": "評価順",
+  "browse.sort.release": "公開日順",
+  "browse.sort.title": "タイトル順",
+  "browse.sortBy": "並べ替え",
+  "browse.subtitleLanguage": "字幕"
+}

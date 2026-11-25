@@ -1,0 +1,19 @@
+{
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "Han circulado {total} por un cliente de descarga que el puente no cubre.",
+  "vpnBandwidth.direction": "Sentido",
+  "vpnBandwidth.down": "Descargado",
+  "vpnBandwidth.empty": "Todavía no se ha registrado nada. Las cifras empiezan en cuanto se mueve una descarga.",
+  "vpnBandwidth.gap": "No ha salido nada del túnel, pero el puente ha estado caído {duration} durante este periodo.",
+  "vpnBandwidth.inTunnel": "Por el túnel",
+  "vpnBandwidth.leaked": "Han circulado {total} de tráfico sin proteger mientras el puente tenía fugas.",
+  "vpnBandwidth.noBridge": "No hay ningún puente WireGuard configurado, así que nada de este tráfico ha pasado por un túnel.",
+  "vpnBandwidth.noEngine": "No hay ningún módulo de descarga instalado, así que no pasa nada por el puente que se pueda medir.",
+  "vpnBandwidth.otherClient": "Otro cliente",
+  "vpnBandwidth.outsideTunnel": "Fuera del túnel",
+  "vpnBandwidth.sealed": "El puente ha aguantado todo el periodo, así que todos los bytes de abajo han pasado por el túnel.",
+  "vpnBandwidth.throughTunnel": "{total} por el túnel",
+  "vpnBandwidth.title": "Ancho de banda del túnel",
+  "vpnBandwidth.up": "Subido",
+  "vpnBandwidth.window": "Periodo"
+}

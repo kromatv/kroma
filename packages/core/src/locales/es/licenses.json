@@ -1,0 +1,16 @@
+{
+  "licenses.body": "KROMA se basa en software de código abierto. Aquí tienes todos los paquetes que incluyen el servidor y esta app, con su licencia.",
+  "licenses.count": "{count} paquetes",
+  "licenses.count_one": "{count} paquete",
+  "licenses.failed": "No se han podido cargar las licencias del servidor, así que solo aparecen las de esta app.",
+  "licenses.matches": "{shown} de {count}",
+  "licenses.noText": "Este paquete no incluye el texto de su licencia. Los términos figuran en su código fuente.",
+  "licenses.none": "Ningún paquete coincide con esta búsqueda.",
+  "licenses.search": "Buscar paquetes",
+  "licenses.server": "Servidor",
+  "licenses.showAll": "Mostrar todos ({count})",
+  "licenses.source": "Código fuente",
+  "licenses.title": "Licencias de código abierto",
+  "licenses.unknown": "Licencia no indicada",
+  "licenses.web": "Web"
+}

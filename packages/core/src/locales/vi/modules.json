@@ -1,0 +1,14 @@
+{
+  "modules.accessDenied": "Không có quyền truy cập",
+  "modules.errorDetails": "Chi tiết",
+  "modules.errorNotRunning": "Mô-đun đã được cài đặt nhưng tiến trình của mô-đun không chạy.",
+  "modules.errorNotRunningHint": "Có thể mô-đun không khởi động được. Khởi động lại thường sẽ khắc phục được.",
+  "modules.errorServerDown": "Máy chủ không phản hồi.",
+  "modules.errorServerDownHint": "Có thể máy chủ đang khởi động lại hoặc đã dừng. Trang sẽ hoạt động lại khi máy chủ trở lại.",
+  "modules.errorStatus": "HTTP {status}",
+  "modules.loadFailed": "Không tải được trang này",
+  "modules.loadFailedHint": "Mô-đun đã được cài đặt nhưng dữ liệu của mô-đun không phản hồi.",
+  "modules.sectionDenied": "Bạn không có quyền truy cập mục này.",
+  "modules.unavailable": "Mô-đun không khả dụng",
+  "modules.unavailableHint": "Mô-đun chưa được cài đặt hoặc đã bị tắt."
+}

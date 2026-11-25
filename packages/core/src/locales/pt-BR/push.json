@@ -1,0 +1,19 @@
+{
+  "push.blocked.denied": "As notificações estão bloqueadas para este site. Permita-as nas configurações do navegador e tente novamente.",
+  "push.blocked.insecure": "As notificações push exigem uma conexão segura (HTTPS).",
+  "push.blocked.needsInstall": "No iOS, adicione o KROMA à Tela de Início primeiro: as notificações push só funcionam em um app instalado.",
+  "push.blocked.needsRebuild": "Este build ainda não inclui suporte a push. Recompile o app (expo prebuild e depois execute-o) para ativar.",
+  "push.blocked.simulator": "As notificações push precisam de um dispositivo real: um simulador não tem registro de push.",
+  "push.blocked.unsupported": "Este navegador não aceita notificações push.",
+  "push.channel.mediaAvailable": "Disponível para assistir",
+  "push.channel.requestReview": "Pedidos para analisar",
+  "push.description": "Receba notificações mesmo com o KROMA fechado. Esta opção vale só para este dispositivo. As categorias abaixo valem para toda a sua conta.",
+  "push.disable": "Desativar",
+  "push.enable": "Ativar",
+  "push.failed": "Não foi possível ativar as notificações push.",
+  "push.sendTest": "Enviar um teste",
+  "push.testFailed": "Nada foi entregue.",
+  "push.testHint": "Confira se uma notificação push chega a este dispositivo.",
+  "push.testSent": "Enviada. Confira suas notificações.",
+  "push.title": "Notificações push neste dispositivo"
+}

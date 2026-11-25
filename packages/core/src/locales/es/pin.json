@@ -1,0 +1,11 @@
+{
+  "pin.backHint": "Pulsa Atrás para volver a los perfiles",
+  "pin.changeSubtitle": "Introduce tu PIN actual",
+  "pin.clearSubtitle": "Introduce tu PIN para quitarlo",
+  "pin.confirmSubtitle": "Vuelve a introducir el PIN",
+  "pin.lockedRetry": "Vuelve a intentarlo en {seconds} s",
+  "pin.mismatch": "Los PIN no coinciden",
+  "pin.setSubtitle": "Elige un PIN de 4 dígitos",
+  "pin.verifySubtitle": "Perfil protegido con PIN",
+  "pin.verifying": "Comprobando…"
+}

@@ -1,0 +1,14 @@
+{
+  "modules.accessDenied": "Zugriff verweigert",
+  "modules.errorDetails": "Details",
+  "modules.errorNotRunning": "Das Modul ist installiert, aber sein Prozess läuft nicht.",
+  "modules.errorNotRunningHint": "Möglicherweise konnte es nicht starten. Ein Neustart behebt das meist.",
+  "modules.errorServerDown": "Der Server antwortet nicht.",
+  "modules.errorServerDownHint": "Er startet vielleicht gerade neu oder wurde gestoppt. Die Seite funktioniert wieder, sobald er zurück ist.",
+  "modules.errorStatus": "HTTP {status}",
+  "modules.loadFailed": "Diese Seite konnte nicht geladen werden",
+  "modules.loadFailedHint": "Das Modul ist installiert, liefert aber keine Daten.",
+  "modules.sectionDenied": "Du hast keine Berechtigung für diesen Bereich.",
+  "modules.unavailable": "Modul nicht verfügbar",
+  "modules.unavailableHint": "Es ist nicht installiert oder wurde deaktiviert."
+}

@@ -1,0 +1,10 @@
+{
+  "connection.directOfferAction": "Direkt verbinden",
+  "connection.directOfferDetail": "Eine direkte Verbindung spart den Umweg über das Internet. Dein Browser fragt dafür nach Zugriff auf dein lokales Netzwerk.",
+  "connection.directOfferDismiss": "Nicht mehr anbieten",
+  "connection.directOfferFailed": "Der Server hat unter seiner lokalen Adresse nicht geantwortet.",
+  "connection.directOfferTitle": "Du bist im selben Netzwerk wie dein Server",
+  "connection.directRoute": "Direkte Verbindung ({host})",
+  "connection.offline": "Offline",
+  "connection.reconnecting": "Verbindung wird wiederhergestellt…"
+}

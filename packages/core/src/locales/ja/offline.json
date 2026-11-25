@@ -1,0 +1,18 @@
+{
+  "offline.cancelDownload": "ダウンロードをキャンセル",
+  "offline.download": "ダウンロード",
+  "offline.downloadSeason": "シーズンをダウンロード",
+  "offline.downloaded": "ダウンロード済み",
+  "offline.downloading": "ダウンロード中（{percent}%）",
+  "offline.downloads": "ダウンロード",
+  "offline.empty": "ダウンロードした作品はまだありません。映画やエピソードのダウンロードボタンを使うと、オフラインで視聴できます。",
+  "offline.failed": "ダウンロードできませんでした。サーバーのアップデートが必要な可能性があります。",
+  "offline.inProgressCount": "{count}件をダウンロード中",
+  "offline.pause": "一時停止",
+  "offline.paused": "一時停止中",
+  "offline.queued": "待機中",
+  "offline.remove": "ダウンロードを削除",
+  "offline.resume": "再開",
+  "offline.storageFree": "空き容量",
+  "offline.storageOther": "使用済み"
+}

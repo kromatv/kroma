@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "テレビ画面の下部を確認してください。",
+  "handoff.checkPrompt": "{name}に表示されているコードを入力してください",
+  "handoff.checkRequired": "このテレビでは、画面に表示されたコードの入力が必要です",
+  "handoff.checkTooMany": "間違ったコードが多すぎます。テレビでもう一度やり直してください。",
+  "handoff.checkWrong": "コードが正しくありません。テレビの表示をもう一度確認してください。",
+  "handoff.connecting": "ログイン中…",
+  "handoff.gone": "待機終了",
+  "handoff.nearbyEmpty": "待機中のテレビはありません",
+  "handoff.nearbyEmptyHint": "テレビでKROMAを開き、ログイン画面のままにしてください。",
+  "handoff.nearbySearching": "テレビを検索中…",
+  "handoff.nearbySub": "ログインさせるテレビを選んでください。スキャンも入力も不要です。",
+  "handoff.nearbyTitle": "このネットワーク上のテレビ",
+  "handoff.otherWays": "ほかの接続方法",
+  "handoff.rowDone": "ログイン済み",
+  "handoff.tooManyHere": "このネットワークで待機中のテレビが多すぎます",
+  "handoff.tooOften": "このテレビから短時間に何度も接続が要求されました。まもなく自動で再試行します。",
+  "handoff.tvBeacon": "スマートフォンには、このテレビが「{name}」と表示されます",
+  "handoff.tvCheck": "コード：{check}"
+}

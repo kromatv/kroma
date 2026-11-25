@@ -1,0 +1,13 @@
+{
+  "format.durationHours": "{hours} h {minutes} min",
+  "format.durationMinutes": "{minutes} min",
+  "format.hours": "{hours} h",
+  "format.justNow": "agora mesmo",
+  "format.never": "nunca",
+  "format.runtimeHours": "{hours}h{minutes}",
+  "format.runtimeMinutes": "{minutes}min",
+  "format.unknownTime": "-",
+  "format.uptimeDays": "{days} d {hours} h",
+  "format.uptimeHours": "{hours} h {minutes} min",
+  "format.uptimeMinutes": "{minutes} min"
+}

@@ -1,0 +1,11 @@
+{
+  "pin.backHint": "戻るボタンでプロフィールに戻ります",
+  "pin.changeSubtitle": "現在のPINを入力してください",
+  "pin.clearSubtitle": "削除するにはPINを入力してください",
+  "pin.confirmSubtitle": "もう一度PINを入力してください",
+  "pin.lockedRetry": "{seconds}秒後にもう一度お試しください",
+  "pin.mismatch": "PINが一致しません",
+  "pin.setSubtitle": "4桁のPINを設定してください",
+  "pin.verifySubtitle": "PINで保護されたプロフィール",
+  "pin.verifying": "確認中…"
+}

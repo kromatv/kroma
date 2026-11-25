@@ -1,0 +1,21 @@
+{
+  "browse.allGenres": "Todos",
+  "browse.anyLanguage": "Qualquer idioma",
+  "browse.audioLanguage": "Idioma do áudio",
+  "browse.count.movies": "{count} filmes",
+  "browse.count.movies_zero": "{count} filmes",
+  "browse.count.movies_one": "{count} filme",
+  "browse.count.series": "{count} séries",
+  "browse.count.series_zero": "{count} séries",
+  "browse.count.series_one": "{count} série",
+  "browse.genres": "Gêneros",
+  "browse.jumpToLetter": "Ir para {letter}",
+  "browse.letterNav": "Ir para uma letra",
+  "browse.library": "Biblioteca",
+  "browse.sort.added": "Adicionados recentemente",
+  "browse.sort.rating": "Avaliação",
+  "browse.sort.release": "Data de lançamento",
+  "browse.sort.title": "Ordem alfabética",
+  "browse.sortBy": "Ordenar por",
+  "browse.subtitleLanguage": "Legendas"
+}

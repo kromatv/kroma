@@ -1,0 +1,18 @@
+{
+  "mediaInfo.action": "Chi tiết tệp",
+  "mediaInfo.audio": "Âm thanh",
+  "mediaInfo.bit": "bit",
+  "mediaInfo.container": "Định dạng chứa",
+  "mediaInfo.default": "Mặc định",
+  "mediaInfo.duration": "Thời lượng",
+  "mediaInfo.editionUnnamed": "Bản tiêu chuẩn",
+  "mediaInfo.noFile": "Mục này không có tệp nào.",
+  "mediaInfo.noSubs": "Không có",
+  "mediaInfo.size": "Dung lượng",
+  "mediaInfo.subtitles": "Phụ đề",
+  "mediaInfo.title": "Chi tiết tệp",
+  "mediaInfo.unknownFile": "Tệp không xác định",
+  "mediaInfo.unprobed": "Đang chờ phân tích tệp.",
+  "mediaInfo.unreadable": "Không mở được tệp này.",
+  "mediaInfo.video": "Video"
+}

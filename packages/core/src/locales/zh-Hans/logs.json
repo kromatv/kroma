@@ -1,0 +1,11 @@
+{
+  "logs.allSources": "所有来源",
+  "logs.empty": "没有日志。",
+  "logs.follow": "实时跟踪",
+  "logs.levelAll": "全部",
+  "logs.levelError": "错误",
+  "logs.levelInfo": "信息",
+  "logs.levelWarn": "警告",
+  "logs.searchPlaceholder": "筛选日志…",
+  "logs.sourceCore": "服务器"
+}

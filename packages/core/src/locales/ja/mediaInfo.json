@@ -1,0 +1,18 @@
+{
+  "mediaInfo.action": "ファイル情報",
+  "mediaInfo.audio": "音声",
+  "mediaInfo.bit": "ビット",
+  "mediaInfo.container": "コンテナー",
+  "mediaInfo.default": "デフォルト",
+  "mediaInfo.duration": "再生時間",
+  "mediaInfo.editionUnnamed": "通常版",
+  "mediaInfo.noFile": "この項目にはファイルがありません。",
+  "mediaInfo.noSubs": "なし",
+  "mediaInfo.size": "サイズ",
+  "mediaInfo.subtitles": "字幕",
+  "mediaInfo.title": "ファイル情報",
+  "mediaInfo.unknownFile": "不明なファイル",
+  "mediaInfo.unprobed": "ファイルの解析待ちです。",
+  "mediaInfo.unreadable": "このファイルを開けません。",
+  "mediaInfo.video": "映像"
+}

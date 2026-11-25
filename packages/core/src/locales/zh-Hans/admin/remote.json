@@ -1,0 +1,18 @@
+{
+  "admin.remoteAccess": "远程访问",
+  "admin.remoteAccessDesc": "在局域网之外播放",
+  "admin.remoteBinaryMissing": "服务器上没有可用的 cloudflared 程序。",
+  "admin.remoteConnected": "已连接",
+  "admin.remoteConnecting": "正在连接…",
+  "admin.remoteDisconnected": "已停止",
+  "admin.remoteGetToken": "在 Cloudflare 获取令牌",
+  "admin.remoteLogs": "连接器日志",
+  "admin.remoteManaged": "托管连接器（Cloudflare Tunnel）",
+  "admin.remoteManagedHint": "可选。如果服务器还没有隧道，KROMA 可以运行并监控 cloudflared，无需端口转发即可提供公网 HTTPS URL。如果你已经在运行隧道（共享容器、系统服务），请保持关闭，只需设置公网 URL。",
+  "admin.remoteNoLogs": "还没有日志。",
+  "admin.remoteSaved": "已保存",
+  "admin.remoteSince": "开始时间",
+  "admin.remoteToken": "隧道令牌",
+  "admin.remoteTokenHint": "粘贴 Cloudflare Tunnel 连接器令牌。服务器会运行并监控 cloudflared。",
+  "admin.remoteTokenKeep": "••••••（留空则保持不变）"
+}

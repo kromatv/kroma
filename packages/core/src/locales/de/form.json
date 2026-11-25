@@ -1,0 +1,8 @@
+{
+  "form.email": "Das sieht nicht nach einer E-Mail-Adresse aus.",
+  "form.mismatch": "Die beiden Eingaben stimmen nicht überein.",
+  "form.number": "Nur Ziffern.",
+  "form.required": "Dieses Feld ist erforderlich.",
+  "form.submitFailed": "Das hat nicht geklappt. Versuche es erneut.",
+  "form.tooShort": "Mindestens {min} Zeichen."
+}

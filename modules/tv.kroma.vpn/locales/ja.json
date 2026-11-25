@@ -1,0 +1,19 @@
+{
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "{total}が、ブリッジを経由しないダウンロードクライアントで転送されました。",
+  "vpnBandwidth.direction": "方向",
+  "vpnBandwidth.down": "ダウンロード",
+  "vpnBandwidth.empty": "まだ記録はありません。ダウンロードが始まると集計されます。",
+  "vpnBandwidth.gap": "トンネルの外に出た通信はありませんが、この期間中に{duration}、ブリッジが停止していました。",
+  "vpnBandwidth.inTunnel": "トンネル経由",
+  "vpnBandwidth.leaked": "ブリッジが保護されていない間に、保護されていない通信が{total}転送されました。",
+  "vpnBandwidth.noBridge": "WireGuardブリッジが設定されていないため、この通信はどれもトンネルを経由していません。",
+  "vpnBandwidth.noEngine": "ダウンロードモジュールがインストールされていないため、ブリッジを経由する通信がなく、計測できません。",
+  "vpnBandwidth.otherClient": "その他のクライアント",
+  "vpnBandwidth.outsideTunnel": "トンネル外",
+  "vpnBandwidth.sealed": "この期間中、ブリッジは維持されていたため、以下のデータはすべてトンネルを経由しています。",
+  "vpnBandwidth.throughTunnel": "トンネル経由：{total}",
+  "vpnBandwidth.title": "トンネルの通信量",
+  "vpnBandwidth.up": "アップロード",
+  "vpnBandwidth.window": "期間"
+}

@@ -1,0 +1,13 @@
+{
+  "releases.action": "需要操作",
+  "releases.current": "当前版本",
+  "releases.empty": "暂无更新说明。",
+  "releases.fixCount": "{count} 项修复",
+  "releases.fixed": "修复",
+  "releases.highlightCount": "{count} 项新功能",
+  "releases.owner": "服务器所有者须知",
+  "releases.subtitle": "KROMA 每个版本的变化。",
+  "releases.title": "更新内容",
+  "releases.upToDate": "已是最新",
+  "releases.version": "KROMA {version}"
+}

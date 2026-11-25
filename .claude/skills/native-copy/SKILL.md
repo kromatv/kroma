@@ -13,7 +13,10 @@ at once, on every screen, and stops trusting the product. The English string is
 the specification of what must be said. It is never the draft.
 
 Load the reference of the language before you write a word:
-[`references/fr.md`](references/fr.md). When a language has none, write it
+[`fr`](references/fr.md), [`de`](references/de.md), [`es`](references/es.md),
+[`ja`](references/ja.md), [`ko`](references/ko.md),
+[`pt-BR`](references/pt-BR.md), [`vi`](references/vi.md),
+[`zh-Hans`](references/zh-Hans.md). When a language has none, write it
 first, from what the platforms publish in that language, and add it in the same
 change.
 

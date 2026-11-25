@@ -1,0 +1,14 @@
+{
+  "modules.accessDenied": "アクセスが拒否されました",
+  "modules.errorDetails": "詳細",
+  "modules.errorNotRunning": "モジュールはインストールされていますが、プロセスが実行されていません。",
+  "modules.errorNotRunningHint": "起動に失敗した可能性があります。通常は再起動すると解決します。",
+  "modules.errorServerDown": "サーバーが応答していません。",
+  "modules.errorServerDownHint": "再起動中か、停止している可能性があります。サーバーが復帰すると、このページは再び使えるようになります。",
+  "modules.errorStatus": "HTTP {status}",
+  "modules.loadFailed": "このページを読み込めませんでした",
+  "modules.loadFailedHint": "モジュールはインストールされていますが、データが応答しませんでした。",
+  "modules.sectionDenied": "このセクションにアクセスする権限がありません。",
+  "modules.unavailable": "モジュールを利用できません",
+  "modules.unavailableHint": "インストールされていないか、オフになっています。"
+}

@@ -1,0 +1,11 @@
+{
+  "pin.backHint": "Nhấn Quay lại để trở về danh sách hồ sơ",
+  "pin.changeSubtitle": "Nhập mã PIN hiện tại",
+  "pin.clearSubtitle": "Nhập mã PIN để xóa",
+  "pin.confirmSubtitle": "Nhập lại mã PIN",
+  "pin.lockedRetry": "Thử lại sau {seconds} giây",
+  "pin.mismatch": "Mã PIN không khớp",
+  "pin.setSubtitle": "Chọn mã PIN gồm 4 chữ số",
+  "pin.verifySubtitle": "Hồ sơ được bảo vệ bằng mã PIN",
+  "pin.verifying": "Đang xác minh…"
+}

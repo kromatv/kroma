@@ -1,0 +1,10 @@
+{
+  "connection.directOfferAction": "直接连接",
+  "connection.directOfferDetail": "直接连接无需绕道互联网。浏览器会请求访问局域网的权限。",
+  "connection.directOfferDismiss": "不再提示",
+  "connection.directOfferFailed": "无法通过局域网地址连接到服务器。",
+  "connection.directOfferTitle": "你与服务器在同一网络中",
+  "connection.directRoute": "直接连接（{host}）",
+  "connection.offline": "离线",
+  "connection.reconnecting": "正在重新连接…"
+}

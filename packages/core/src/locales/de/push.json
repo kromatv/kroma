@@ -1,0 +1,19 @@
+{
+  "push.blocked.denied": "Benachrichtigungen sind für diese Website blockiert. Erlaube sie in den Einstellungen deines Browsers und versuche es dann erneut.",
+  "push.blocked.insecure": "Push-Benachrichtigungen brauchen eine sichere Verbindung (HTTPS).",
+  "push.blocked.needsInstall": "Füge KROMA unter iOS zuerst zum Home-Bildschirm hinzu: Push funktioniert nur in einer installierten App.",
+  "push.blocked.needsRebuild": "Dieser Build unterstützt noch keine Push-Benachrichtigungen. Erstelle die App neu (expo prebuild, dann starten), um sie zu aktivieren.",
+  "push.blocked.simulator": "Push-Benachrichtigungen brauchen ein echtes Gerät: Ein Simulator kann sich nicht für Push registrieren.",
+  "push.blocked.unsupported": "Dieser Browser unterstützt keine Push-Benachrichtigungen.",
+  "push.channel.mediaAvailable": "Jetzt verfügbar",
+  "push.channel.requestReview": "Zu prüfende Anfragen",
+  "push.description": "Lass dich benachrichtigen, auch wenn KROMA geschlossen ist. Diese Einstellung gilt nur für dieses Gerät, die Kategorien darunter für dein ganzes Konto.",
+  "push.disable": "Deaktivieren",
+  "push.enable": "Aktivieren",
+  "push.failed": "Push-Benachrichtigungen konnten nicht aktiviert werden.",
+  "push.sendTest": "Test senden",
+  "push.testFailed": "Es wurde nichts zugestellt.",
+  "push.testHint": "Prüfe, ob eine Push-Benachrichtigung auf diesem Gerät ankommt.",
+  "push.testSent": "Gesendet. Sieh in deinen Benachrichtigungen nach.",
+  "push.title": "Push auf diesem Gerät"
+}

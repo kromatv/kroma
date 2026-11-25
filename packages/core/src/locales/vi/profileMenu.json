@@ -1,0 +1,11 @@
+{
+  "profileMenu.changePin": "Đổi mã PIN",
+  "profileMenu.gpuRendering": "Kết xuất bằng GPU (khởi động lại ứng dụng)",
+  "profileMenu.off": "Tắt",
+  "profileMenu.on": "Bật",
+  "profileMenu.perfHud": "Lớp phủ hiệu năng",
+  "profileMenu.pin": "Mã PIN",
+  "profileMenu.quitApp": "Thoát KROMA",
+  "profileMenu.removePin": "Xóa mã PIN",
+  "profileMenu.setPin": "Đặt mã PIN"
+}

@@ -1,0 +1,9 @@
+{
+  "compat.clientOutdated": "このアプリのバージョン（{client}）は、サーバー{server}ではサポートされていません。続けるにはアプリをアップデートしてください。",
+  "compat.clientOutdatedTitle": "アプリのアップデートが必要です",
+  "compat.howToUpdateMobile": "App StoreまたはGoogle PlayからKROMAをアップデートしてください。",
+  "compat.howToUpdateTv": "テレビのアプリストア、またはインストールした場所からKROMAをアップデートしてください。",
+  "compat.howToUpdateWeb": "ページを再読み込みしてください。それでも表示される場合は、Webアプリがサーバーとは別にインストールされているため、アップデートが必要です。",
+  "compat.reload": "再読み込み",
+  "compat.serverOutdated": "サーバー（v{server}）が古いため、このアプリ（v{client}）の要件を満たしていません。問題を避けるため、サーバーをアップデートしてください。"
+}

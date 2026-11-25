@@ -1,0 +1,10 @@
+{
+  "trailer.back": "戻る",
+  "trailer.failed": "現在この予告編を再生できません。",
+  "trailer.failedHint": "YouTubeから動画を取得できませんでした。数分後にもう一度お試しください。",
+  "trailer.openOnYoutube": "YouTubeで見る",
+  "trailer.preparing": "予告編を準備中…",
+  "trailer.watch": "予告編",
+  "trailer.watchOriginal": "予告編（オリジナル版）",
+  "trailer.watchSubtitled": "予告編（字幕版）"
+}

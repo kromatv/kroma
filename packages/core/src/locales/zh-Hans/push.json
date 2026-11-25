@@ -1,0 +1,19 @@
+{
+  "push.blocked.denied": "此网站的通知已被屏蔽。请在浏览器设置中允许通知，然后重试。",
+  "push.blocked.insecure": "推送通知需要安全连接（HTTPS）。",
+  "push.blocked.needsInstall": "在 iOS 上，请先将 KROMA 添加到主屏幕：推送仅在已安装的应用中可用。",
+  "push.blocked.needsRebuild": "此构建版本尚不支持推送。请重新构建应用（先运行 expo prebuild，再运行应用）以启用推送。",
+  "push.blocked.simulator": "推送通知需要真机：模拟器无法注册推送。",
+  "push.blocked.unsupported": "此浏览器不支持推送通知。",
+  "push.channel.mediaAvailable": "可以观看了",
+  "push.channel.requestReview": "待审核的请求",
+  "push.description": "即使 KROMA 已关闭也能收到通知。此设置仅对本设备有效；下面的类别适用于你的整个账户。",
+  "push.disable": "停用",
+  "push.enable": "启用",
+  "push.failed": "无法启用推送通知。",
+  "push.sendTest": "发送测试通知",
+  "push.testFailed": "没有送达任何通知。",
+  "push.testHint": "检查推送能否送达此设备。",
+  "push.testSent": "已发送。请查看你的通知。",
+  "push.title": "此设备上的推送"
+}

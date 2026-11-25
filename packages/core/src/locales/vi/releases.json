@@ -1,0 +1,13 @@
+{
+  "releases.action": "Cần thực hiện",
+  "releases.current": "Đang dùng",
+  "releases.empty": "Chưa có ghi chú phát hành nào.",
+  "releases.fixCount": "{count} lỗi đã sửa",
+  "releases.fixed": "Đã sửa",
+  "releases.highlightCount": "{count} tính năng mới",
+  "releases.owner": "Dành cho chủ sở hữu máy chủ",
+  "releases.subtitle": "Những gì đã thay đổi trong KROMA, qua từng phiên bản.",
+  "releases.title": "Có gì mới",
+  "releases.upToDate": "Đã là bản mới nhất",
+  "releases.version": "KROMA {version}"
+}

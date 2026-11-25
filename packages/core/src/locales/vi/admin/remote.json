@@ -1,0 +1,18 @@
+{
+  "admin.remoteAccess": "Truy cập từ xa",
+  "admin.remoteAccessDesc": "Phát trực tuyến bên ngoài mạng nội bộ",
+  "admin.remoteBinaryMissing": "Máy chủ không có tệp thực thi cloudflared.",
+  "admin.remoteConnected": "Đã kết nối",
+  "admin.remoteConnecting": "Đang kết nối…",
+  "admin.remoteDisconnected": "Đã dừng",
+  "admin.remoteGetToken": "Lấy mã thông báo trên Cloudflare",
+  "admin.remoteLogs": "Nhật ký trình kết nối",
+  "admin.remoteManaged": "Trình kết nối do KROMA quản lý (Cloudflare Tunnel)",
+  "admin.remoteManagedHint": "Không bắt buộc. Nếu máy chủ chưa có đường hầm, KROMA có thể chạy và giám sát cloudflared để cung cấp một URL HTTPS công khai mà không cần chuyển tiếp cổng. Nếu bạn đã chạy một đường hầm (container dùng chung, dịch vụ hệ thống), hãy tắt mục này và chỉ cần đặt URL công khai.",
+  "admin.remoteNoLogs": "Chưa có nhật ký nào.",
+  "admin.remoteSaved": "Đã lưu",
+  "admin.remoteSince": "Từ",
+  "admin.remoteToken": "Mã thông báo đường hầm",
+  "admin.remoteTokenHint": "Dán mã thông báo trình kết nối Cloudflare Tunnel. Máy chủ sẽ chạy và giám sát cloudflared.",
+  "admin.remoteTokenKeep": "•••••• (để trống để giữ nguyên)"
+}

@@ -1,0 +1,8 @@
+{
+  "field.apiKey": "Khóa API",
+  "field.categories": "Danh mục",
+  "field.name": "Tên",
+  "field.password": "Mật khẩu",
+  "field.url": "URL",
+  "field.username": "Tên người dùng"
+}

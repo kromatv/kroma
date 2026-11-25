@@ -1,0 +1,12 @@
+{
+  "addProfile.addManually": "手動で追加",
+  "addProfile.addManuallySub": "リモートサーバーのアドレスを入力",
+  "addProfile.availableServers": "利用可能なサーバー",
+  "addProfile.checking": "確認中…",
+  "addProfile.new": "新規",
+  "addProfile.reachable": "オンライン",
+  "addProfile.showCount": "シリーズ{count}本",
+  "addProfile.subtitle": "サーバーを選んでから、クイック接続でプロフィールを連携します。",
+  "addProfile.title": "プロフィールを追加",
+  "addProfile.unreachable": "接続できません"
+}
