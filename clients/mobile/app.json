@@ -13,7 +13,7 @@
       "supportsTablet": true,
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true,
-        "CFBundleLocalizations": ["en", "fr"],
+        "CFBundleLocalizations": ["en", "fr", "ko"],
         "UIViewControllerBasedStatusBarAppearance": false,
         "ITSAppUsesNonExemptEncryption": false,
         "NSAppTransportSecurity": {
