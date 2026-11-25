@@ -38,7 +38,7 @@ function part(kind: string, key: number, seed: number, art: string | null): Reac
       <Box key={key} w={203} aspect={2 / 3} radius="xl" overflow="hidden" bg="surface1">
         <Img src={art} fill />
         <ArtScrim variant="deep" />
-        <Box absolute left={14} right={14} bottom={12} gap={3}>
+        <Box absolute start={14} end={14} bottom={12} gap={3}>
           <Text lines={1}>Film</Text>
           <Text lines={2}>{`Title ${seed}`}</Text>
         </Box>

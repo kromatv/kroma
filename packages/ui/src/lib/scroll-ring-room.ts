@@ -29,28 +29,28 @@ function ringRoom(
         ...style,
         marginTop: pad(style?.marginTop) - RING_ROOM,
         marginBottom: pad(style?.marginBottom) - RING_ROOM,
-        marginLeft: pad(style?.marginLeft) - RING_ROOM,
-        marginRight: pad(style?.marginRight) - RING_ROOM,
+        marginStart: pad(style?.marginStart) - RING_ROOM,
+        marginEnd: pad(style?.marginEnd) - RING_ROOM,
       },
       content: {
         ...c,
         paddingTop: pad(c.paddingTop ?? c.paddingVertical ?? c.padding) + RING_ROOM,
         paddingBottom: pad(c.paddingBottom ?? c.paddingVertical ?? c.padding) + RING_ROOM,
-        paddingLeft: pad(c.paddingLeft ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
-        paddingRight: pad(c.paddingRight ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
+        paddingStart: pad(c.paddingStart ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
+        paddingEnd: pad(c.paddingEnd ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
       },
     };
   }
   return {
     box: {
       ...style,
-      marginLeft: pad(style?.marginLeft) - RING_ROOM,
-      marginRight: pad(style?.marginRight) - RING_ROOM,
+      marginStart: pad(style?.marginStart) - RING_ROOM,
+      marginEnd: pad(style?.marginEnd) - RING_ROOM,
     },
     content: {
       ...c,
-      paddingLeft: pad(c.paddingLeft ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
-      paddingRight: pad(c.paddingRight ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
+      paddingStart: pad(c.paddingStart ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
+      paddingEnd: pad(c.paddingEnd ?? c.paddingHorizontal ?? c.padding) + RING_ROOM,
     },
   };
 }

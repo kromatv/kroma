@@ -69,10 +69,10 @@ const barGeometry = (gutter: number, top: number | string, scope: StyleScope) =>
   sharedStyle(
     `bar:${gutter}:${top}`,
     {
-      marginLeft: -gutter,
-      marginRight: -gutter,
-      paddingLeft: gutter,
-      paddingRight: gutter,
+      marginStart: -gutter,
+      marginEnd: -gutter,
+      paddingStart: gutter,
+      paddingEnd: gutter,
       top,
     },
     scope,

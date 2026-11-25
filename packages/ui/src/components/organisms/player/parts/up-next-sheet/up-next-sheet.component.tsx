@@ -275,8 +275,8 @@ const sDefinition = styles({
   scrimBox: { fill: true, z: 43 },
   sheetBox: {
     absolute: true,
-    left: 0,
-    right: 0,
+    start: 0,
+    end: 0,
     bottom: 0,
     h: `${SHEET_FRACTION * 100}%`,
     z: 45,

@@ -81,7 +81,7 @@ const sDefinition = styles({
   identity: { align: 'center', gap: spacing.xs, mt: spacing.xs },
   editBadge: {
     absolute: true,
-    right: -2,
+    end: -2,
     bottom: -2,
     center: true,
     w: 30,

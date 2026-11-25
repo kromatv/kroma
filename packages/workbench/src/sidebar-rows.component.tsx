@@ -135,7 +135,7 @@ function Leaf({
           {/* The rail every leaf hangs off. It is what keeps a folded branch's
               children reading as children once the chevron above them is scrolled
               out of sight. */}
-          <Box w={1} h={16} bg={active ? 'transparent' : 'border'} mr={7} shrink={0} />
+          <Box w={1} h={16} bg={active ? 'transparent' : 'border'} me={7} shrink={0} />
           <Text variant="body" style={slots.label} lines={1}>
             {name}
           </Text>
@@ -156,8 +156,8 @@ const sDefinition = styles({
   tally: { fontSize: 10.5 },
   searchInk: { fontSize: 12.5 },
   count: { fontSize: 10.5 },
-  branchRow: { ml: 8 },
-  leafRow: { ml: 8 + INDENT },
+  branchRow: { ms: 8 },
+  leafRow: { ms: 8 + INDENT },
 });
 const searchButton = sv({
   base: {

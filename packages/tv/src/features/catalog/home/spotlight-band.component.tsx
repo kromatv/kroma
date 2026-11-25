@@ -32,7 +32,7 @@ const sDefinition = styles({
     overflow: 'hidden',
     justifyContent: 'flex-end',
   },
-  copy: { pl: 48, py: 40, maxWidth: 760 + 48, gap: 10 },
+  copy: { ps: 48, py: 40, maxWidth: 760 + 48, gap: 10 },
 });
 
 interface SpotlightCopyProps {

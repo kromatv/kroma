@@ -88,7 +88,7 @@ function Heading({ group, context }: Readonly<{ group: MessageGroup; context: Ca
       ) : null}
       <Status status={statusOf(group)} />
       {context.editable && needsConfirm(group) ? (
-        <Box ml="auto">
+        <Box ms="auto">
           <Button
             variant="ghost"
             size="sm"

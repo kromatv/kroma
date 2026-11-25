@@ -98,7 +98,7 @@ export function EpisodeRow({
               <IconPlayerPlayFilled size={18} color={color('white', activeTheme(scope.theme))} />
             </Box>
             {progress != null && !watched ? (
-              <Box absolute left={0} right={0} bottom={0} h={4} bg="white/25">
+              <Box absolute start={0} end={0} bottom={0} h={4} bg="white/25">
                 <Box h="100%" bg="accent" w={`${progress}%`} />
               </Box>
             ) : null}

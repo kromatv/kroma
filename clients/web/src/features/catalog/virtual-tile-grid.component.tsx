@@ -28,7 +28,7 @@ const NOTHING: RowWindow = { first: 0, count: 0 };
 // the page runs away to the end.
 const sDefinition = styles({
   box: { position: 'relative', overflowAnchor: 'none' },
-  row: { position: 'absolute', left: 0, right: 0, display: 'flex', gap: TILE_GAP },
+  row: { position: 'absolute', start: 0, end: 0, display: 'flex', gap: TILE_GAP },
 });
 
 // Measured before paint rather than through <Box onLayout>, whose observer

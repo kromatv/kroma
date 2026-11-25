@@ -144,7 +144,7 @@ export function AuthScreen({ children }: Readonly<{ children: ReactNode }>) {
           still does not open the screen: entry belongs to whichever control
           carries `autoFocus`. */}
       {nav.canGoBack ? (
-        <Box absolute left={64} top={0} h={140} justify="center" z={20}>
+        <Box absolute start={64} top={0} h={140} justify="center" z={20}>
           <BackButton onPress={nav.back} label={t('common.back')} />
         </Box>
       ) : null}
@@ -188,8 +188,8 @@ const sDefinition = styles({
   content: { grow: 1, center: true, px: 40, py: 48 },
   beacon: {
     absolute: true,
-    left: 0,
-    right: 0,
+    start: 0,
+    end: 0,
     bottom: space[8],
     row: true,
     center: true,

@@ -18,7 +18,7 @@ const sDefinition = styles({
     position: 'fixed',
     top: 0,
     bottom: 0,
-    right: 10,
+    end: 10,
     zIndex: 30,
     marginTop: 'auto',
     marginBottom: 'auto',

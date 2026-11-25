@@ -209,7 +209,7 @@ function oneGroup(maxLength: number): ReactNode {
 const sDefinition = styles({
   entry: {
     absolute: true,
-    left: 0,
+    start: 0,
     top: 0,
     w: '100%',
     h: '100%',
@@ -221,7 +221,7 @@ const sDefinition = styles({
     fontSize: NO_ZOOM_FONT_SIZE,
     z: 1,
   },
-  hit: { absolute: true, left: 0, top: 0, w: '100%', h: '100%' },
+  hit: { absolute: true, start: 0, top: 0, w: '100%', h: '100%' },
 });
 
 const OtpField = { Root, Group, Slot, Separator };

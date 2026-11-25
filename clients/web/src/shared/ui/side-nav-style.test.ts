@@ -16,7 +16,7 @@ describe('a navigation row', () => {
   it('wears the shape of the control shell rather than one of its own', () => {
     expect(REST.root.gap).toBe(SHELL.gap);
     expect(REST.root.minHeight).toBe(SHELL.height);
-    expect(REST.root.paddingLeft).toBe(SHELL.px);
+    expect(REST.root.paddingStart).toBe(SHELL.px);
     expect(REST.root.borderRadius).toBe(`var(--radius-${SHELL.radius})`);
   });
 
@@ -79,7 +79,7 @@ describe('a navigation row', () => {
     for (const face of [HOVERED, CURRENT, CURRENT_HOVERED, UNREACHABLE]) {
       expect(face.root).toMatchObject({
         minHeight: REST.root.minHeight,
-        paddingLeft: REST.root.paddingLeft,
+        paddingStart: REST.root.paddingStart,
         paddingTop: REST.root.paddingTop,
         borderRadius: REST.root.borderRadius,
       });
@@ -90,6 +90,6 @@ describe('a navigation row', () => {
 describe('the navigation column', () => {
   it('shares one gutter with the rows it holds', () => {
     expect(SIDE_NAV_GUTTER).toBe(SHELL.px);
-    expect(REST.root.paddingLeft).toBe(SIDE_NAV_GUTTER);
+    expect(REST.root.paddingStart).toBe(SIDE_NAV_GUTTER);
   });
 });

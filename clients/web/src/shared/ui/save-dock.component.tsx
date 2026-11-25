@@ -85,8 +85,8 @@ export function SaveDock({
           border="borderStrong"
           bg="surface2"
           py={12}
-          pl={20}
-          pr={12}
+          ps={20}
+          pe={12}
         >
           <Row minW={0} gap={10}>
             <StatusLabel dirty={dirty} status={status} error={error} savedLabel={savedLabel} />

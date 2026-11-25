@@ -63,7 +63,7 @@ function Actions({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-const PUSH = style({ marginLeft: 'auto', maxW: '100%' });
+const PUSH = style({ marginStart: 'auto', maxW: '100%' });
 
 /**
  * A titled band: an overline, a rule, and the content under both.

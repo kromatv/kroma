@@ -131,7 +131,7 @@ export function ConsentSummary({
           ))}
         </Box>
       ) : null}
-      <Row ml={-14}>
+      <Row ms={-14}>
         <Button
           variant="ghost"
           size="sm"

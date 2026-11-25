@@ -50,7 +50,7 @@ function TileFace(tile: Readonly<TvProfileTileProps>) {
     <Box opacity={tile.online === false ? 0.4 : 1}>
       <Avatar name={tile.name} seed={tile.seed} size={146} src={tile.src} locked={tile.locked} />
       {tile.kids ? (
-        <Box absolute left={10} bottom={10}>
+        <Box absolute start={10} bottom={10}>
           <KidsMark size="md" />
         </Box>
       ) : null}

@@ -161,8 +161,8 @@ export function SubtitleRenderer({
     <Box
       nativeID={SUBTITLE_LAYER_ID}
       absolute
-      left={0}
-      right={0}
+      start={0}
+      end={0}
       bottom={cueBottom(clearance)}
       z={3}
       align="center"

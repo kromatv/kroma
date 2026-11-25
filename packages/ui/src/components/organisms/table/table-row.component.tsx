@@ -72,7 +72,7 @@ const sDefinition = styles({
 });
 
 const ruleReach = (corner: Radius, scope: StyleScope) =>
-  sharedStyle(`table:rule:${corner}`, { left: corner, right: corner }, scope);
+  sharedStyle(`table:rule:${corner}`, { start: corner, end: corner }, scope);
 
 export type { TableRowProps };
 export { Row };

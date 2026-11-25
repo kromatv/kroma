@@ -28,8 +28,8 @@ function shellProps(group: InputGroupContext) {
     flex: 1,
     minW: 0,
     flat: true,
-    pl: group.padStart,
-    pr: group.padEnd,
+    ps: group.padStart,
+    pe: group.padEnd,
     invalid: group.invalid,
   } as const;
 }
@@ -125,8 +125,8 @@ function Addon({
     row: true,
     align: 'center',
     gap: 8,
-    pl: align === 'inline-end' ? 0 : metrics.py,
-    pr: align === 'inline-start' ? 0 : metrics.py,
+    ps: align === 'inline-end' ? 0 : metrics.py,
+    pe: align === 'inline-start' ? 0 : metrics.py,
     py: block ? INSET : 0,
     minH: block ? metrics.height : undefined,
   };
@@ -188,8 +188,8 @@ function useInShell(part: string): { box: number; radius: Radius; pull: ViewStyl
     box: metrics.height - INSET * 2,
     radius: nestedRadius(controlRadius(metrics, scope), INSET),
     pull: {
-      ...(edge === 'inline-start' ? { marginLeft: by } : null),
-      ...(edge === 'inline-end' ? { marginRight: by } : null),
+      ...(edge === 'inline-start' ? { marginStart: by } : null),
+      ...(edge === 'inline-end' ? { marginEnd: by } : null),
     },
   };
 }
@@ -205,8 +205,8 @@ function GroupButton({ style, ...props }: Readonly<ButtonProps>) {
       minHeight: at.box,
       paddingTop: 0,
       paddingBottom: 0,
-      paddingLeft: 12,
-      paddingRight: 12,
+      paddingStart: 12,
+      paddingEnd: 12,
       borderRadius: at.radius,
       ...at.pull,
     },

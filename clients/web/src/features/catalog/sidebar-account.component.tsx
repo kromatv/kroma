@@ -34,7 +34,7 @@ const sDefinition = styles({
     fontSize: 'inherit',
     lineHeight: 'inherit',
     color: 'inherit',
-    textAlign: 'left',
+    textAlign: 'start',
     cursor: 'pointer',
   },
 });

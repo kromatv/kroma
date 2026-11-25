@@ -40,11 +40,11 @@ export function TvTopNav({ active }: Readonly<{ active?: NavKey }>) {
   const { client, online } = useConnection();
 
   return (
-    <Box absolute left={0} right={0} top={0} z={10} px={64} py={32}>
+    <Box absolute start={0} end={0} top={0} z={10} px={64} py={32}>
       <Box
         absolute
-        left={0}
-        right={0}
+        start={0}
+        end={0}
         top={0}
         h={144}
         pointerEvents="none"

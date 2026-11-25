@@ -23,7 +23,7 @@ import { WEB } from '#ui/lib/platform';
 const OVERLAY = (WEB ? 'fixed' : 'absolute') as 'absolute';
 
 const sDefinition = styles({
-  backdrop: { position: OVERLAY, top: 0, right: 0, bottom: 0, left: 0, zIndex: OVERLAY_Z.backdrop },
+  backdrop: { position: OVERLAY, top: 0, end: 0, bottom: 0, start: 0, zIndex: OVERLAY_Z.backdrop },
   shell: { position: OVERLAY, zIndex: OVERLAY_Z.panel },
 });
 

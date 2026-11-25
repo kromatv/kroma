@@ -207,7 +207,7 @@ function Connector({
         h={length + stepPaddingY * 2}
         mt={-stepPaddingY}
         mb={-stepPaddingY}
-        ml={indent}
+        ms={indent}
         radius="pill"
         bg={paint}
         aria-hidden

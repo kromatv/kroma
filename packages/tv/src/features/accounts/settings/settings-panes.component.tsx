@@ -85,7 +85,7 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
       <Box fill z={10}>
         <Veil ramp={CALM} />
         <FocusRegion style={s.screen}>
-          <FocusColumn style={s.left}>
+          <FocusColumn style={s.side}>
             {nav.canGoBack ? (
               <Box style={s.back}>
                 <BackButton onPress={nav.back} label={t('common.back')} />
@@ -125,7 +125,7 @@ export function SettingsPanes({ header, sections }: Readonly<SettingsPanesProps>
 
 const sDefinition = styles({
   screen: { flex: true, row: true },
-  left: { w: '38%', pl: 96, pr: 40, pt: 56, pb: 48, bg: 'surface1' },
+  side: { w: '38%', ps: 96, pe: 40, pt: 56, pb: 48, bg: 'surface1' },
   back: { mb: 24, align: 'flex-start' },
   header: { mb: 32, minH: 72, justify: 'center' },
   first: { gap: 10 },

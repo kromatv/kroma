@@ -51,8 +51,8 @@ function Input({ placeholder, label = 'Search' }: Readonly<CommandInputProps>) {
             // fill, an edge or a ring on this row would outline a box the
             // dialog's own corners clip.
             flat
-            pl={6}
-            pr={0}
+            ps={6}
+            pe={0}
             py={14}
             gap={16}
             textStyle={s.entry}
@@ -138,7 +138,7 @@ function Footer({ children }: Readonly<{ children?: ReactNode }>) {
   const s = useStyles(sDefinition);
 
   return (
-    <Box row align="center" gap={16} h={FOOTER_HEIGHT} pl={GUTTER} pr={8} style={s.ruleTop}>
+    <Box row align="center" gap={16} h={FOOTER_HEIGHT} ps={GUTTER} pe={8} style={s.ruleTop}>
       {children}
     </Box>
   );

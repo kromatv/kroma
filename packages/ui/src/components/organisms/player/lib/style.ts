@@ -36,7 +36,7 @@ export const playerStyle = styles({
     textTransform: 'uppercase',
     color: 'textDim',
   },
-  panel: { absolute: true, top: 0, bottom: 0, right: 0, z: 42, bg: 'playerSurface/94' },
+  panel: { absolute: true, top: 0, bottom: 0, end: 0, z: 42, bg: 'playerSurface/94' },
   body: { font: 'ui', fontSize: textRoles.label.size, color: 'text' },
   meta: { font: 'ui', fontSize: textRoles.meta.size, color: 'text/55' },
 });

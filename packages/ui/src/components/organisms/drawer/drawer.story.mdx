@@ -9,8 +9,8 @@ import { LONG_LIST, Demo } from './drawer.fixtures';
 
 export const story = defineStory({
   group: 'Overlays',
-  args: { title: 'Edit registry', side: 'right', width: 'md' },
-  controls: { side: ['right', 'left'], width: ['xs', 'sm', 'md', 'lg', 'xl'] },
+  args: { title: 'Edit registry', side: 'end', width: 'md' },
+  controls: { side: ['end', 'start'], width: ['xs', 'sm', 'md', 'lg', 'xl'] },
   render: (props) => (
     <Demo
       {...props}

@@ -117,7 +117,7 @@ function Menu({ onClose, children }: Readonly<{ onClose: () => void; children: R
 
   useEscapeKey(onClose);
   return (
-    <Box absolute top="100%" left={0} mt={6} minW={186} z={2} style={s.panel} bg="surface2" p={5}>
+    <Box absolute top="100%" start={0} mt={6} minW={186} z={2} style={s.panel} bg="surface2" p={5}>
       {children}
     </Box>
   );

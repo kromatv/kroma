@@ -17,6 +17,6 @@ export const TAB = {
   marginBottom: -1,
   borderBottomWidth: 2,
   borderBottomColor: 'transparent',
-  borderTopLeftRadius: radius.sm,
-  borderTopRightRadius: radius.sm,
+  borderTopStartRadius: radius.sm,
+  borderTopEndRadius: radius.sm,
 } as const;

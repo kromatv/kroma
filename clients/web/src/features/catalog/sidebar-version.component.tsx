@@ -114,7 +114,7 @@ function VersionStamp() {
                     color="textDim"
                     lines={1}
                     flex
-                    textAlign={line.side ? 'right' : undefined}
+                    textAlign={line.side ? 'end' : undefined}
                     style={s.tabular}
                   >
                     {line.text}

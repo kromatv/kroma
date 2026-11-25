@@ -78,6 +78,20 @@ an import of `#ui/lib/platform`, a read of `Platform.OS` / `select` / `isTV` /
 excluded.
 Run `bun run --cwd packages/lint-rules rules no-platform-branch` for repair steps.
 
+### no-physical-side
+
+Reject a physical side in the kit's components, the television app, the clients,
+the workbench and the module frontends: `paddingLeft`, `marginRight`,
+`borderLeftWidth` and the physical corner radii in any object, `left` and
+`right` in a style, the `pl`, `pr`, `ml` and `mr` props, and `textAlign` left
+or right. Only a start or an end turns with a language written right to left,
+and react-native-web and Yoga rank a physical side against a logical one in
+opposite orders. A side that is physical by nature stays so inside a box with
+`dir="ltr"`. A side read from a measured box or the safe-area insets on that
+same side, a side at 50% and a symmetric pair are allowed; the engine in
+`packages/ui/src/core` and `packages/ui/src/lib` is not in scope.
+Run `bun run --cwd packages/lint-rules rules no-physical-side` for repair steps.
+
 ### no-constructed-context-value
 
 Reject a context value built during render on the React 19 form, `<Ctx value={...}>`,

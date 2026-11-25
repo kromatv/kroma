@@ -125,7 +125,7 @@ function PanelSkeleton() {
   return (
     <Box>
       {[0, 1, 2, 3].map((i) => (
-        <Row key={i} align="flex-start" gap={12} p={10} pl={16}>
+        <Row key={i} align="flex-start" gap={12} p={10} ps={16}>
           <Skeleton w={48} h={48} radius="xl" />
           <Box flex gap={8} pt={4}>
             <Skeleton h={12} w="40%" radius="pill" />

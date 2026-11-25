@@ -77,7 +77,7 @@ interface TimelineRootProps {
 }
 
 const bodyOf = (gap: number, scope: StyleScope) =>
-  sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ml: gap }, scope);
+  sharedStyle(`timeline:body:${gap}`, { flex: true, minWidth: 0, ms: gap }, scope);
 function Root({ size, children }: Readonly<TimelineRootProps>) {
   const entryDefaults = useEntryDefaults();
   const shape = SHAPE[size ?? entryDefaults.size];
@@ -166,7 +166,7 @@ function Item({
           {body}
         </Focusable>
       ) : (
-        <Box flex minW={0} ml={shape.gap} gap={2} px={WASH} py={4}>
+        <Box flex minW={0} ms={shape.gap} gap={2} px={WASH} py={4}>
           {body}
         </Box>
       )}

@@ -26,7 +26,7 @@ export function ScreenClock() {
     <Box
       absolute
       top={0}
-      right={64}
+      end={64}
       h={HEADER_CENTRE * 2}
       justify="center"
       z={20}

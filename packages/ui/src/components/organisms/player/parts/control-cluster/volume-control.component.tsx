@@ -38,14 +38,14 @@ const volumePill = sv({
   },
 });
 
-const railOf = (height: number, width: number, paddingRight: number, scope: StyleScope) =>
+const railOf = (height: number, width: number, paddingEnd: number, scope: StyleScope) =>
   sharedStyle(
-    `volume:rail:${height}:${width}:${paddingRight}`,
+    `volume:rail:${height}:${width}:${paddingEnd}`,
     {
       height,
       width,
       justifyContent: 'center',
-      paddingRight,
+      paddingEnd,
     },
     scope,
   );
@@ -212,7 +212,7 @@ export function VolumeControl({
                   absolute
                   top={0}
                   bottom={0}
-                  left={0}
+                  start={0}
                   radius="pill"
                   bg="accent"
                   style={{ width: `${sliderPos * 100}%` }}
@@ -224,7 +224,7 @@ export function VolumeControl({
                     bottom={0}
                     radius="pill"
                     bg="accentBright"
-                    style={{ left: `${unity * 100}%`, width: `${(sliderPos - unity) * 100}%` }}
+                    style={{ start: `${unity * 100}%`, width: `${(sliderPos - unity) * 100}%` }}
                   />
                 ) : null}
                 {max > 1 ? (
@@ -236,7 +236,7 @@ export function VolumeControl({
                     radius="circle"
                     bg={boosted ? '#FFFFFF' : 'white/60'}
                     style={{
-                      left: `${unity * 100}%`,
+                      start: `${unity * 100}%`,
                       transform: [{ translateX: -px(3) }, { translateY: -px(3) }],
                     }}
                   />
@@ -252,7 +252,7 @@ export function VolumeControl({
                     // Half its own size, so the handle stays centred on the level at
                     // whatever scale the row is drawn.
                     {
-                      left: `${sliderPos * 100}%`,
+                      start: `${sliderPos * 100}%`,
                       transform: [{ translateX: -thumb / 2 }, { translateY: -thumb / 2 }],
                     },
                   ]}

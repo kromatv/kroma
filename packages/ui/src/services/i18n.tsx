@@ -10,6 +10,7 @@
 import type { Locale, Translate } from '@kromatv/i18n';
 import { I18nContext, I18nProvider as Provider } from '@kromatv/i18n/react';
 import { type ReactNode, useContext } from 'react';
+import { DirectionRoot } from '#ui/lib/direction-root.component';
 import { fallbackLocale, type KitI18n, providerI18n, translatorFor } from './i18n-instance';
 
 export { useI18n, useLocale, useScopedT, useSetLocale, useT } from '@kromatv/i18n/react';
@@ -33,7 +34,7 @@ export function I18nProvider({
   }
   return (
     <Provider i18n={i18n} locale={locale} onLocaleChange={onLocaleChange}>
-      {children}
+      <DirectionRoot locale={locale}>{children}</DirectionRoot>
     </Provider>
   );
 }

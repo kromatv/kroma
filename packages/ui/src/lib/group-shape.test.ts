@@ -25,9 +25,9 @@ describe('useGroupShape', () => {
   it('drops the corners the member shares with the one after it', () => {
     const { result } = renderHook(() => useGroupShape(), { wrapper: inGroup });
     expect(result.current).toMatchObject({
-      borderTopLeftRadius: 12,
-      borderTopRightRadius: 0,
-      borderBottomRightRadius: 0,
+      borderTopStartRadius: 12,
+      borderTopEndRadius: 0,
+      borderBottomEndRadius: 0,
     });
   });
 

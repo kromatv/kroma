@@ -45,7 +45,7 @@ export function ProfileTile({
           <FocusRing lit={hovered} style={slots.well}>
             <UserAvatar name={username} avatarUrl={avatarUrl} seed={seed} size={AVATAR} />
             {kids ? (
-              <Box absolute left={8} bottom={8}>
+              <Box absolute start={8} bottom={8}>
                 <KidsMark />
               </Box>
             ) : null}
@@ -66,7 +66,7 @@ function LockBadge({ label }: Readonly<{ label: string }>) {
   return (
     <Box
       absolute
-      right={8}
+      end={8}
       bottom={8}
       center
       w={30}

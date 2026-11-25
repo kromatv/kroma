@@ -65,6 +65,8 @@ export const COLOR_KEYS: ReadonlySet<string> = new Set([
   'borderRightColor',
   'borderBottomColor',
   'borderLeftColor',
+  'borderStartColor',
+  'borderEndColor',
   'shadowColor',
   'textDecorationColor',
   'textShadowColor',

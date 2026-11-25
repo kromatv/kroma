@@ -155,8 +155,8 @@ export function RowShortcut({
 
 const sDefinition = styles({
   scrim: { fill: true, bg: 'bg/22' },
-  scrimTop: { absolute: true, top: 0, right: 0, left: 0, h: 120 },
-  scrimBottom: { absolute: true, right: 0, bottom: 0, left: 0, h: 160 },
+  scrimTop: { absolute: true, top: 0, end: 0, start: 0, h: 120 },
+  scrimBottom: { absolute: true, end: 0, bottom: 0, start: 0, h: 160 },
   topBar: { row: true, align: 'center', gap: 12 },
   titleBox: { flex: true, minW: 0 },
   title: {

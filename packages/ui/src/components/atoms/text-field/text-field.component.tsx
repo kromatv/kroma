@@ -162,8 +162,8 @@ function TextField({
       // A side holding a glyph well or an inner button insets by py, not px,
       // so the glyph sits as far from its edge as from the top and bottom;
       // only a side where TEXT meets the edge keeps the wider px.
-      pl={icon ? metrics.py : metrics.px}
-      pr={type === 'password' || trailing ? metrics.py : metrics.px}
+      ps={icon ? metrics.py : metrics.px}
+      pe={type === 'password' || trailing ? metrics.py : metrics.px}
       py={metrics.py}
       {...shell.box}
       {...box}
@@ -231,7 +231,7 @@ function TextField({
             // Anchored where the spacer's well sits: pr (= py) plus the well's
             // own centring of the glyph, so the eye lines up with the leading
             // icon's inset on the other side.
-            right={metrics.py + (CONTENT - REVEAL_SIZE) / 2}
+            end={metrics.py + (CONTENT - REVEAL_SIZE) / 2}
           />
         </>
       ) : null}

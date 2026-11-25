@@ -194,9 +194,9 @@ const sDefinition = styles({
   cameraFrame: {
     absolute: true,
     top: 16,
-    right: 16,
+    end: 16,
     bottom: 16,
-    left: 16,
+    start: 16,
     radius: radius.md,
     border: 'accent',
     borderWidth: 2,

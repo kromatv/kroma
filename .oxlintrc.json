@@ -235,6 +235,28 @@
     },
     {
       "files": [
+        "packages/ui/src/components/**/*.ts",
+        "packages/ui/src/components/**/*.tsx",
+        "packages/tv/src/**/*.ts",
+        "packages/tv/src/**/*.tsx",
+        "packages/workbench/src/**/*.ts",
+        "packages/workbench/src/**/*.tsx",
+        "packages/module-sdk/src/**/*.ts",
+        "packages/module-sdk/src/**/*.tsx",
+        "clients/*/src/**/*.ts",
+        "clients/*/src/**/*.tsx",
+        "apps/kit/src/**/*.ts",
+        "apps/kit/src/**/*.tsx",
+        "modules/*/ui/src/**/*.ts",
+        "modules/*/ui/src/**/*.tsx"
+      ],
+      "excludeFiles": ["**/*.test.*", "**/*.d.ts"],
+      "rules": {
+        "kroma/no-physical-side": "error"
+      }
+    },
+    {
+      "files": [
         "packages/core/src/**/*.ts",
         "packages/client/src/**/*.ts",
         "packages/ui/src/**/*.ts",

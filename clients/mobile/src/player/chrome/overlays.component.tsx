@@ -130,7 +130,7 @@ export function UpNextCard({
 }
 
 const sDefinition = styles({
-  cueBox: { absolute: true, right: 40, left: 40, align: 'center' },
+  cueBox: { absolute: true, end: 40, start: 40, align: 'center' },
   cueText: {
     px: 10,
     py: 4,
@@ -139,16 +139,16 @@ const sDefinition = styles({
     fontWeight: '600',
     textAlign: 'center',
   },
-  skipIntro: { absolute: true, right: 32 },
+  skipIntro: { absolute: true, end: 32 },
   upNext: {
     absolute: true,
-    right: 32,
+    end: 32,
     row: true,
     align: 'center',
     gap: 10,
     maxW: 320,
     p: 8,
-    pr: 14,
+    pe: 14,
     bg: 'bg/85',
     radius: radius.md,
     border: 'borderStrong',

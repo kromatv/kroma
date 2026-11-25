@@ -2,15 +2,29 @@
 // never renders: an <img>, an <svg>, a client's own <div>. A style handed here
 // unregistered paints nothing and, on a dev server, is named in the console.
 
+import type { TextDirection } from '@kromatv/i18n';
 import { StyleSheet } from 'react-native';
+import { webDocument } from '#ui/lib/dom';
 import { WEB } from '#ui/lib/platform';
 
-type Resolver = (styles: unknown) => [string, unknown];
+type Resolver = (
+  styles: unknown,
+  options: { writingDirection: TextDirection },
+) => [string, unknown];
 
 type Layer = object | null | undefined | false;
 
-const SINGLE = new WeakMap<object, string | undefined>();
+const SINGLE: Readonly<Record<TextDirection, WeakMap<object, string | undefined>>> = {
+  ltr: new WeakMap(),
+  rtl: new WeakMap(),
+};
 
+const pageDirection = (): TextDirection =>
+  webDocument()?.documentElement.dir === 'rtl' ? 'rtl' : 'ltr';
+
+/** The class names `layers` compile to, laid out the way the page is written:
+ *  a start or an end lands on the side `<html dir>` names. Undefined off the
+ *  browser targets, and for no style at all. */
 export function classes(...layers: Layer[]): string | undefined {
   if (!WEB) {
     return undefined;
@@ -20,14 +34,16 @@ export function classes(...layers: Layer[]): string | undefined {
     return undefined;
   }
   const resolve = StyleSheet as unknown as Resolver;
+  const options = { writingDirection: pageDirection() };
   if (live.length > 1) {
-    return resolve(live)[0] || undefined;
+    return resolve(live, options)[0] || undefined;
   }
   const one = live[0] as object;
-  if (SINGLE.has(one)) {
-    return SINGLE.get(one);
+  const cache = SINGLE[options.writingDirection];
+  if (cache.has(one)) {
+    return cache.get(one);
   }
-  const name = resolve([one])[0] || undefined;
-  SINGLE.set(one, name);
+  const name = resolve([one], options)[0] || undefined;
+  cache.set(one, name);
   return name;
 }

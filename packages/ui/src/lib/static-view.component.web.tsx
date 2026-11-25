@@ -5,8 +5,12 @@
 
 import type { ReactNode } from 'react';
 import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
+import { useLocaleContext } from 'react-native-web';
 
-type Resolver = (styles: unknown) => [string, Record<string, unknown> | undefined];
+type Resolver = (
+  styles: unknown,
+  options: { writingDirection: 'ltr' | 'rtl' },
+) => [string, Record<string, unknown> | undefined];
 
 const resolve = StyleSheet as unknown as Resolver;
 
@@ -57,7 +61,8 @@ interface StaticViewProps {
 /** The `<div>` a react-native-web View renders, for a box that needs nothing
  *  else from it. */
 export function StaticView({ style, children, testID, dataSet }: Readonly<StaticViewProps>) {
-  const [className, inline] = resolve([reset.view$raw, style]);
+  const { direction } = useLocaleContext();
+  const [className, inline] = resolve([reset.view$raw, style], { writingDirection: direction });
   const data: Record<string, string | number> = {};
   if (dataSet) {
     for (const [key, value] of Object.entries(dataSet)) {

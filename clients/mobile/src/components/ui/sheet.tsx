@@ -54,7 +54,7 @@ export function SheetTitle({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 const sDefinition = styles({
-  surface: { bg: 'surface2', borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
+  surface: { bg: 'surface2', borderTopStartRadius: radius.xl, borderTopEndRadius: radius.xl },
   grabber: { w: 40, bg: 'textDim' },
   body: { px: spacing.md, pt: spacing.sm },
   title: { ...type.title, mb: spacing.md, color: 'text' },

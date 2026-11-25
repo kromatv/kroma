@@ -136,11 +136,11 @@ export function OnboardingTitle({
 
 const sDefinition = styles({
   screen: { flex: true, bg: 'bg' },
-  wash: { absolute: true, top: 0, right: 0, left: 0, h: '40%' },
+  wash: { absolute: true, top: 0, end: 0, start: 0, h: '40%' },
   // Above the wash and outside the keyboard-avoiding column, so it neither
   // tints nor moves when the keyboard does.
-  back: { absolute: true, left: spacing.md, z: 2 },
-  gear: { absolute: true, right: spacing.md, z: 2 },
+  back: { absolute: true, start: spacing.md, z: 2 },
+  gear: { absolute: true, end: spacing.md, z: 2 },
   body: { flex: true },
   inner: { flex: true, px: spacing.lg, ...boxed(contentWidth.form) },
   innerCentered: { justify: 'center' },

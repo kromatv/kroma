@@ -8,7 +8,7 @@ export function Tile({ variant }: Readonly<{ variant?: ArtScrimVariant }>) {
   return (
     <Box aspect={2 / 3} radius="xl" overflow="hidden" bg="accentBright">
       {variant ? <ArtScrim variant={variant} radius="xl" /> : null}
-      <Box absolute left={14} right={14} bottom={12}>
+      <Box absolute start={14} end={14} bottom={12}>
         <Text variant="title" color="white">
           Blade Runner 2049
         </Text>

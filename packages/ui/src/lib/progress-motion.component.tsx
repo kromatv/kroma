@@ -76,10 +76,10 @@ function arcShape({ centre, radius, thickness, fill, circumference }: Readonly<R
 }
 
 /** The fill of a <Progress> track, easing to `value` (0..1). `style` paints it
- *  and pins it to the track's left edge; the trailing inset is this component's. */
+ *  and pins it to the track's start edge; the trailing inset is this component's. */
 export function ProgressFill({ value, style }: Readonly<ProgressFillProps>) {
   const eased = useSettling(value);
   const trailing = eased.interpolate({ inputRange: [0, 1], outputRange: ['100%', '0%'] });
 
-  return <Animated.View style={[style, { right: trailing }]} />;
+  return <Animated.View style={[style, { end: trailing }]} />;
 }

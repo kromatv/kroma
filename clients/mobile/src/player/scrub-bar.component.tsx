@@ -106,13 +106,14 @@ export function ScrubBar({
   return (
     <GestureDetector gesture={gesture}>
       <Box
+        dir="ltr"
         style={[s.touch, compact && s.compactTouch]}
         onLayout={(e) => {
           setWidth(e.nativeEvent.layout.width);
         }}
       >
         {active ? (
-          <Box style={[s.previewBox, { left: previewLeft - THUMB_W / 2 }]}>
+          <Box style={[s.previewBox, { start: previewLeft - THUMB_W / 2 }]}>
             {tile ? (
               <Box style={[s.thumb, { width: THUMB_W, height: thumbH }]}>
                 <Image
@@ -120,7 +121,7 @@ export function ScrubBar({
                   contentFit="fill"
                   style={{
                     position: 'absolute',
-                    left: -tile.x * scale,
+                    start: -tile.x * scale,
                     top: -tile.y * scale,
                     width: tile.sheetW * scale,
                     height: tile.sheetH * scale,
@@ -146,7 +147,9 @@ export function ScrubBar({
           {dur > 0
             ? (markers ?? [])
                 .filter((m) => m > 0 && m < dur)
-                .map((m) => <Box key={m} style={[s.markerTick, { left: `${(m / dur) * 100}%` }]} />)
+                .map((m) => (
+                  <Box key={m} style={[s.markerTick, { start: `${(m / dur) * 100}%` }]} />
+                ))
             : null}
         </Box>
         <Box
@@ -157,7 +160,7 @@ export function ScrubBar({
               width: knob,
               height: knob,
               borderRadius: knob / 2,
-              left: playedFrac * width - knob / 2,
+              start: playedFrac * width - knob / 2,
             },
           ]}
         />
@@ -171,8 +174,8 @@ const sDefinition = styles({
   compactTouch: { h: 28 },
   compactTrack: { h: 3 },
   track: { h: BAR_H, radius: BAR_H / 2, overflow: 'hidden' },
-  buffered: { absolute: true, top: 0, bottom: 0, left: 0, radius: BAR_H / 2 },
-  played: { absolute: true, top: 0, bottom: 0, left: 0, radius: BAR_H / 2 },
+  buffered: { absolute: true, top: 0, bottom: 0, start: 0, radius: BAR_H / 2 },
+  played: { absolute: true, top: 0, bottom: 0, start: 0, radius: BAR_H / 2 },
   markerTick: { absolute: true, top: 0, bottom: 0, w: 2.5, bg: 'bg/90' },
   // The border stands in for a box-shadow ring, which native cannot spread.
   knob: { absolute: true, bg: 'white', borderWidth: 3 },

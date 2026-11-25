@@ -84,8 +84,8 @@ export function GenreTile({ genre, count, backdrop }: Readonly<GenreTileProps>) 
           <Box fill pointerEvents="none" style={tint(genre.slug, scope)} />
           <Box
             absolute
-            left={{ base: 16, md: 20 }}
-            right={{ base: 16, md: 20 }}
+            start={{ base: 16, md: 20 }}
+            end={{ base: 16, md: 20 }}
             bottom={{ base: 14, md: 16 }}
           >
             <Box row align="center" gap={8}>

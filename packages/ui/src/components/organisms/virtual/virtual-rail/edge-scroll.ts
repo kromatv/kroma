@@ -75,9 +75,9 @@ function horizontalInset(style: ViewStyle | undefined): number {
     return 0;
   }
   const both = typeof style.paddingHorizontal === 'number' ? style.paddingHorizontal : 0;
-  const left = typeof style.paddingLeft === 'number' ? style.paddingLeft : both;
-  const right = typeof style.paddingRight === 'number' ? style.paddingRight : both;
-  return left + right;
+  const start = typeof style.paddingStart === 'number' ? style.paddingStart : both;
+  const end = typeof style.paddingEnd === 'number' ? style.paddingEnd : both;
+  return start + end;
 }
 
 /**

@@ -91,7 +91,7 @@ export function AccountHeader() {
               size={AVATAR}
             />
           </Box>
-          <Box absolute bottom={-9} right={-9} radius="pill" p={3} bg="bg">
+          <Box absolute bottom={-9} end={-9} radius="pill" p={3} bg="bg">
             <IconButton
               icon="camera"
               variant="primary"

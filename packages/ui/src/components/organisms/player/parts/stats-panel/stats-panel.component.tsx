@@ -26,21 +26,21 @@ export function StatsPanel({
   controller,
   onClose,
   top = 100,
-  left = 34,
+  start = 34,
   width = PANEL_W,
   maxHeight,
 }: Readonly<{
   controller: Pick<PlayerController, 'getStats'>;
   onClose: () => void;
   top?: number;
-  left?: number;
+  start?: number;
   width?: number;
   maxHeight?: number;
 }>) {
   const sx = useStyles(sxDefinition);
 
   const t = useT();
-  const place = { position: 'absolute' as const, top, left, zIndex: 20 };
+  const place = { position: 'absolute' as const, top, start, zIndex: 20 };
   const [s, setS] = useState<PlayerStats>(() => controller.getStats());
   const [history] = useState(() => new Map<string, number[]>());
   // The controller is rebuilt on every parent render (~4x/s while playing, via
@@ -352,7 +352,7 @@ const sxDefinition = styles({
     font: 'ui',
     fontSize: textRoles.meta.size,
     fontWeight: '500',
-    textAlign: 'right',
+    textAlign: 'end',
     fontVariant: ['tabular-nums'],
   },
 });

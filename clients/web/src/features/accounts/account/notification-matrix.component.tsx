@@ -44,9 +44,9 @@ const cover = sv({
   base: {
     position: 'absolute',
     top: 0,
-    right: 0,
+    end: 0,
     bottom: 0,
-    left: 0,
+    start: 0,
     _hover: { bg: 'surface3' },
     _focus: { bg: 'accentSoft' },
   },
@@ -166,8 +166,8 @@ function Category({
         <Box
           px={ROW.px}
           pb={ROW.py + 4}
-          pl={ROW.px + KIND_INDENT}
-          pr={ROW.px + KIND_OUTDENT}
+          ps={ROW.px + KIND_INDENT}
+          pe={ROW.px + KIND_OUTDENT}
           style={s.kinds}
         >
           {types.map((type) => (

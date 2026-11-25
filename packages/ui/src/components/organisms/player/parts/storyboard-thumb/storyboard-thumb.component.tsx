@@ -37,7 +37,7 @@ export function StoryboardThumb({ tile }: Readonly<{ tile: StoryboardTile }>) {
         resizeMode="stretch"
         style={{
           position: 'absolute',
-          left: tile.offsetX,
+          start: tile.offsetX,
           top: tile.offsetY,
           // The sheet's OWN size, scaled as a layer: asking the image view for
           // `sheetWidth * scale` pixels instead can exceed the GPU's texture

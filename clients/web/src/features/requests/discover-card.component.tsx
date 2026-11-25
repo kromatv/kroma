@@ -151,7 +151,7 @@ export function DiscoverCard({ entry, width }: Readonly<{ entry: DiscoverEntry; 
               </Text>
             </Box>
           )}
-          <Box absolute left={12} top={12} gap={8}>
+          <Box absolute start={12} top={12} gap={8}>
             {statusChip(entry, owned, optimisticStatus)}
           </Box>
         </>

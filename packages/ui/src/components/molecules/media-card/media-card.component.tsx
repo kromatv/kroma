@@ -81,7 +81,7 @@ function MediaCard({
         <Img src={art} position="50% 28%" fill noCrossFade />
         <ArtScrim radius={0} />
         {watched ? <WatchedBadge /> : null}
-        <Box absolute left={18} right={18} bottom={16} gap={5}>
+        <Box absolute start={18} end={18} bottom={16} gap={5}>
           {overline ? <Text style={s.overline}>{overline}</Text> : null}
           <Text style={s.title} lines={2}>
             {title}

@@ -58,8 +58,8 @@ export const TopBar = memo(function TopBar({
   return (
     <Box
       absolute
-      left={0}
-      right={0}
+      start={0}
+      end={0}
       top={0}
       row
       align="center"
@@ -91,7 +91,7 @@ export const TopBar = memo(function TopBar({
         ) : null}
       </Box>
       {warn || actions ? (
-        <Box shrink={1} ml="auto" row align="center" gap={px(12)}>
+        <Box shrink={1} ms="auto" row align="center" gap={px(12)}>
           {warn ? (
             // The pill is the one thing here that may lose width before the
             // title does: a codec notice is a sentence, and it wraps to two

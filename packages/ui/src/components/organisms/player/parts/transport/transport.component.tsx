@@ -64,8 +64,8 @@ function Transport({
       its dark foot rather than the gradient ending in a hard band. */
     <Box
       absolute
-      left={0}
-      right={0}
+      start={0}
+      end={0}
       bottom={0}
       z={15}
       px={px(GUTTER)}

@@ -43,7 +43,7 @@ function PageToc({ sections, active, onJump }: Readonly<PageTocProps>) {
     // The rule is what makes the list an aside rather than a second column of
     // the article: the article is centred in what is left of the window, so
     // without one the gap between the two reads as an accident.
-    <Box w={TOC_WIDTH} shrink={0} pt={space[10]} pl={GUTTER} pr={space[4]} style={s.aside}>
+    <Box w={TOC_WIDTH} shrink={0} pt={space[10]} ps={GUTTER} pe={space[4]} style={s.aside}>
       <Text variant="overline" color="textDim" style={s.title}>
         On this page
       </Text>
@@ -99,8 +99,8 @@ const GUTTER = space[6];
 const RAIL = 2;
 
 const sDefinition = styles({
-  aside: { borderLeftWidth: 1, borderLeftColor: 'border' },
-  title: { paddingLeft: RAIL + space[3], paddingBottom: space[3] },
+  aside: { borderStartWidth: 1, borderStartColor: 'border' },
+  title: { paddingStart: RAIL + space[3], paddingBottom: space[3] },
   scroll: { grow: 0, shrink: 1 },
   list: { pb: space[6] },
 });
@@ -109,15 +109,15 @@ const tocEntry = sv({
   slots: {
     root: {
       py: space[2],
-      pl: space[3],
-      pr: space[2],
-      borderLeftWidth: RAIL,
-      borderLeftColor: 'border',
+      ps: space[3],
+      pe: space[2],
+      borderStartWidth: RAIL,
+      borderStartColor: 'border',
       radius: 'xs',
       // Square where it meets the rail: a rounded corner there would break the
       // line the entries draw together.
-      borderTopLeftRadius: 0,
-      borderBottomLeftRadius: 0,
+      borderTopStartRadius: 0,
+      borderBottomStartRadius: 0,
       _hover: { bg: 'tint/5' },
       _focus: { bg: 'tint/8' },
     },
@@ -128,7 +128,7 @@ const tocEntry = sv({
     // in and drops a size rather than getting a rail of its own.
     deep: {
       true: {
-        root: { pl: space[3] + space[3], py: space[1] + 2 },
+        root: { ps: space[3] + space[3], py: space[1] + 2 },
         label: { color: 'textDim', fontWeight: '500', fontSize: 12 },
       },
     },
@@ -137,7 +137,7 @@ const tocEntry = sv({
     // the reader as they scroll into it.
     active: {
       true: {
-        root: { borderLeftColor: 'accent', bg: 'accentSoft' },
+        root: { borderStartColor: 'accent', bg: 'accentSoft' },
         label: { color: 'accentText' },
       },
     },

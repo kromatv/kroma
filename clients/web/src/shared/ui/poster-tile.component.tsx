@@ -109,7 +109,7 @@ export function PosterTile({
               {art(engaged)}
               {watched ? (
                 <Box fill pointerEvents="none" opacity={fold ? 1 : 0}>
-                  <WatchedBadge corner="top-right" />
+                  <WatchedBadge corner="top-end" />
                 </Box>
               ) : null}
             </FocusRing>,

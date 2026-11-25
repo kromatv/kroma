@@ -64,7 +64,7 @@ export function footerColumns({
 function LinkColumn({ title, links }: Readonly<FooterColumn>) {
   return (
     <Column gap={8} grow={1} shrink={1} basis={160} minW={140}>
-      <Box pl={16}>
+      <Box ps={16}>
         <Text variant="overline" color="textDim">
           {title}
         </Text>

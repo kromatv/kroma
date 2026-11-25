@@ -51,7 +51,7 @@ export function TitleMenuHeader({ title }: Readonly<{ title: HeldTitle }>) {
       <Box aspect={16 / 9} radius="lg" overflow="hidden" mb={12}>
         <Img src={art} background={tintGradient(posterColors(title.item.id))} fill />
         {title.kind === 'resume' ? (
-          <Box absolute left={0} right={0} bottom={0}>
+          <Box absolute start={0} end={0} bottom={0}>
             <Progress value={title.progress} thickness={6} rounded={false} />
           </Box>
         ) : null}

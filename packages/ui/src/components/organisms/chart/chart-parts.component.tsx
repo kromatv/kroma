@@ -52,13 +52,13 @@ interface ChartGridProps {
 function ChartGrid({ ticks = TICKS }: Readonly<ChartGridProps>) {
   const state = useChart('Grid');
   return (
-    <Box absolute left={0} top={0} w={state.plot.width} h={state.plot.height}>
+    <Box absolute start={0} top={0} w={state.plot.width} h={state.plot.height}>
       {ticksOf(state.domain, ticks).map((level) => (
         <Box
           key={level}
           absolute
-          left={0}
-          right={0}
+          start={0}
+          end={0}
           h={1}
           bg="tint/5"
           top={px(yAt(level, state.domain, state.plot))}
@@ -98,7 +98,7 @@ function ChartAxis({ edge, ticks = TICKS, room, every, format }: Readonly<ChartA
           <Box
             key={level}
             absolute
-            right={AXIS_GAP}
+            end={AXIS_GAP}
             top={px(yAt(level, state.domain, state.plot)) - TICK_HALF}
           >
             <Text variant="meta" color="textDim" style={s.tick} lines={1}>
@@ -121,7 +121,7 @@ function ChartAxis({ edge, ticks = TICKS, room, every, format }: Readonly<ChartA
             key={at}
             absolute
             top={AXIS_GAP / 2}
-            left={px(sampleX(state, at)) - LABEL_ROOM / 2}
+            start={px(sampleX(state, at)) - LABEL_ROOM / 2}
             w={LABEL_ROOM}
             align="center"
           >
@@ -191,7 +191,7 @@ function ChartTooltip() {
       <Box
         absolute
         top={0}
-        left={x}
+        start={x}
         w={1}
         h={state.plot.height}
         bg="tint/14"
@@ -202,7 +202,7 @@ function ChartTooltip() {
         top={0}
         maxW={READOUT_MAX}
         pointerEvents="none"
-        {...(past ? { right: state.plot.width - x + CURSOR_GAP } : { left: x + CURSOR_GAP })}
+        {...(past ? { end: state.plot.width - x + CURSOR_GAP } : { start: x + CURSOR_GAP })}
       >
         <Box bg="surface2" borderWidth={1} border="border" radius="sm" px={10} py={8} gap={4}>
           {name ? (

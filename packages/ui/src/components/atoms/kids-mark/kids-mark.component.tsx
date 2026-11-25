@@ -20,8 +20,8 @@ const kidsMarkVariants = sv({
   },
   variants: {
     size: {
-      sm: { root: { py: 3, pl: 4, pr: 8 }, word: { fontSize: textRoles.overline.size } },
-      md: { root: { py: 4, pl: 5, pr: 11 }, word: { fontSize: textRoles.meta.size } },
+      sm: { root: { py: 3, ps: 4, pe: 8 }, word: { fontSize: textRoles.overline.size } },
+      md: { root: { py: 4, ps: 5, pe: 11 }, word: { fontSize: textRoles.meta.size } },
     },
   },
   defaults: { size: 'sm' },

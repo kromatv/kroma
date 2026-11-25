@@ -25,7 +25,7 @@ import { RouteLink } from '#web/shared/ui/route-link.component';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both scrollers stay plain elements around kit content.
-const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
+const GUTTER = { paddingStart: 'var(--gutter-web)', paddingEnd: 'var(--gutter-web)' } as const;
 
 const sDefinition = styles({
   gutter: GUTTER,

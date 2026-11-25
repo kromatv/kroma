@@ -85,7 +85,7 @@ export function PlayerChrome({
               controller={{ getStats: stats }}
               onClose={onToggleStats}
               top={top}
-              left={insets.left + 16}
+              start={insets.left + 16}
               width={Math.min(460, width - insets.left - insets.right - 32)}
               maxHeight={height - top - Math.max(insets.bottom, 12)}
             />

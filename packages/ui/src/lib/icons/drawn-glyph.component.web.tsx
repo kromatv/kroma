@@ -4,6 +4,7 @@ import type { DrawnGlyphProps } from './drawn-glyph-types';
 import { STROKE_PROP } from './stroke-prop';
 
 const FIRM = StyleSheet.create({ firm: { flexShrink: 0 } }).firm;
+const MIRROR = StyleSheet.create({ mirror: { transform: [{ scaleX: -1 }] } }).mirror;
 
 const FADES = new Map<number | string, ViewStyle>();
 function fade(opacity: number | string): ViewStyle {
@@ -17,10 +18,12 @@ function fade(opacity: number | string): ViewStyle {
 }
 
 /** Draws a glyph as a flex item that never shrinks; a translucent one fades on the <svg> itself. */
-function DrawnGlyph({ Glyph, size, color, opacity, thickness }: Readonly<DrawnGlyphProps>) {
+function DrawnGlyph({ Glyph, size, color, opacity, thickness, mirror }: Readonly<DrawnGlyphProps>) {
   const weight = { [STROKE_PROP]: thickness };
   const style = opacity === 1 ? FIRM : fade(opacity);
-  return <Glyph size={size} color={color} className={classes(style)} {...weight} />;
+  return (
+    <Glyph size={size} color={color} className={classes(style, mirror && MIRROR)} {...weight} />
+  );
 }
 
 export { DrawnGlyph };

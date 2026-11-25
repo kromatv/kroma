@@ -205,7 +205,7 @@ export function NotificationBench() {
 // <ListRow.Root>'s.
 const sDefinition = styles({
   centred: { textAlign: 'center' },
-  previewCard: { radius: 'xl', bg: 'surface2', p: 10, pl: 8 },
+  previewCard: { radius: 'xl', bg: 'surface2', p: 10, ps: 8 },
   note: { flex: true },
 });
 

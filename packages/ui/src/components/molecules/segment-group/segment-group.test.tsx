@@ -5,6 +5,7 @@ import type { ReactElement } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Badge } from '#ui/components/atoms/badge';
 import { Text } from '#ui/components/atoms/text';
+import { DirectionRoot } from '#ui/lib/direction-root.component';
 import { onScreen } from '#ui/testing';
 import { SegmentGroup } from './segment-group.component';
 
@@ -66,6 +67,19 @@ describe('SegmentGroup', () => {
     fireEvent.keyDown(screen.getByRole('radiogroup', { name: 'Mode' }), { key: 'ArrowLeft' });
 
     expect(onValueChange).toHaveBeenCalledWith('c');
+  });
+
+  it('steps forward on the left arrow in a language written right to left', () => {
+    const onValueChange = vi.fn();
+    render(
+      <DirectionRoot locale="ar">
+        <Group value="a" onValueChange={onValueChange} />
+      </DirectionRoot>,
+    );
+
+    fireEvent.keyDown(screen.getByRole('radiogroup', { name: 'Mode' }), { key: 'ArrowLeft' });
+
+    expect(onValueChange).toHaveBeenCalledWith('b');
   });
 
   it('is one Tab stop, which is the segment that is selected', () => {

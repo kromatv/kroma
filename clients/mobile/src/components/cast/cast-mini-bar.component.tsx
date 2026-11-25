@@ -87,7 +87,7 @@ const sDefinition = styles({
     align: 'center',
     gap: spacing.sm,
     h: 56,
-    pr: spacing.sm,
+    pe: spacing.sm,
     mx: spacing.md,
     mb: spacing.xs,
     bg: 'surface3',
@@ -102,6 +102,6 @@ const sDefinition = styles({
   title: { ...type.body, color: 'text', fontWeight: '600' },
   device: { ...type.small, color: 'accentText' },
   transport: { p: 4 },
-  track: { absolute: true, right: 0, bottom: 0, left: 0, h: 2, bg: 'border' },
+  track: { absolute: true, end: 0, bottom: 0, start: 0, h: 2, bg: 'border' },
   fill: { h: 2, bg: 'accent' },
 });

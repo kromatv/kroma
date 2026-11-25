@@ -14,7 +14,7 @@ export function Backdrop({ veiled = true }: Readonly<{ veiled?: boolean }>) {
     <Box aspect={16 / 9} overflow="hidden" radius="lg">
       <Img src={stillArt(1)} fill layered />
       {veiled ? <Veil ramp={PAGE_VEIL} /> : null}
-      <Box absolute left={24} bottom={24} maxW={260}>
+      <Box absolute start={24} bottom={24} maxW={260}>
         <Text variant="heading">Un titre posé sur l'image</Text>
       </Box>
     </Box>

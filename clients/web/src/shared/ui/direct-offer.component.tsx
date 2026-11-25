@@ -10,8 +10,8 @@ import { useKromaClient } from '#web/shared/lib/web-runtime';
 const sDefinition = styles({
   dock: {
     position: 'fixed',
-    left: 16,
-    right: 16,
+    start: 16,
+    end: 16,
     bottom: 'max(1rem, env(safe-area-inset-bottom))',
     zIndex: 45,
     display: 'flex',

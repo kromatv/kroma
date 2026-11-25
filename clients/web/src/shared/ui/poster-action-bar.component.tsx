@@ -71,7 +71,7 @@ export function PosterActionBar({ actions, shown }: Readonly<PosterActionBarProp
     <Box
       absolute
       top={8}
-      right={8}
+      end={8}
       z={2}
       gap={6}
       opacity={shown ? 1 : 0}

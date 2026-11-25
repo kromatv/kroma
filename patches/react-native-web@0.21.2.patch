@@ -78,7 +78,19 @@ diff --git a/dist/cjs/exports/StyleSheet/compiler/index.js b/dist/cjs/exports/St
 index fbdf038a97b1bb5b185b7f1e9807a35f5c3ef9b2..ed6202ce3e2203cf36d224f9857fd470e8c52bc3 100644
 --- a/dist/cjs/exports/StyleSheet/compiler/index.js
 +++ b/dist/cjs/exports/StyleSheet/compiler/index.js
-@@ -437,7 +437,10 @@ function createDeclarationBlock(style) {
+@@ -137,7 +137,10 @@ function atomic(style) {
+   var compiledRules = [];
+   function atomicCompile(srcProp, prop, value) {
+     var valueString = stringifyValueWithProperty(value, prop);
+-    var cacheKey = prop + valueString;
++    // KROMA: keyed by the authored property too, so a start compiled after a
++    // left of the same value keeps a class of its own, whatever order a build
++    // and a browser compile them in.
++    var cacheKey = srcProp + prop + valueString;
+     var cachedResult = cache.get(cacheKey);
+     var identifier;
+     if (cachedResult != null) {
+@@ -437,7 +440,10 @@ function createDeclarationBlock(style) {
   */
  function createIdentifier(prefix, name, key) {
    var hashedString = (0, _hash.default)(name + key);
@@ -150,7 +162,7 @@ index eedf49039dce440eb60bb4eefbc5c4c8be952f30..0d774e1a194a55561d2b2d9eeaec810a
 +// declaration that belongs in `styles()`, and is reported once per shape.
 +var INLINE_ALLOWED = {
 +  width: 1, height: 1, minWidth: 1, maxWidth: 1, maxHeight: 1,
-+  top: 1, left: 1, right: 1, bottom: 1, paddingTop: 1,
++  top: 1, left: 1, right: 1, bottom: 1, start: 1, end: 1, paddingTop: 1,
 +  transform: 1, opacity: 1, borderRadius: 1,
 +  backgroundImage: 1, backgroundPosition: 1, backgroundSize: 1
 +};
@@ -344,7 +356,19 @@ diff --git a/dist/exports/StyleSheet/compiler/index.js b/dist/exports/StyleSheet
 index b1b01e6b84e7872e560f91a1164c6470b9d43abc..59eadee57cf217b03d7b42458906747426014901 100644
 --- a/dist/exports/StyleSheet/compiler/index.js
 +++ b/dist/exports/StyleSheet/compiler/index.js
-@@ -430,7 +430,10 @@ function createDeclarationBlock(style) {
+@@ -130,7 +130,10 @@ function atomic(style) {
+   var compiledRules = [];
+   function atomicCompile(srcProp, prop, value) {
+     var valueString = stringifyValueWithProperty(value, prop);
+-    var cacheKey = prop + valueString;
++    // KROMA: keyed by the authored property too, so a start compiled after a
++    // left of the same value keeps a class of its own, whatever order a build
++    // and a browser compile them in.
++    var cacheKey = srcProp + prop + valueString;
+     var cachedResult = cache.get(cacheKey);
+     var identifier;
+     if (cachedResult != null) {
+@@ -430,7 +433,10 @@ function createDeclarationBlock(style) {
   */
  function createIdentifier(prefix, name, key) {
    var hashedString = hash(name + key);
@@ -416,7 +440,7 @@ index 891994c511839216d523e68786daea85261539fb..25493db362126fc29de3b37e0e7d4db5
 +// declaration that belongs in `styles()`, and is reported once per shape.
 +var INLINE_ALLOWED = {
 +  width: 1, height: 1, minWidth: 1, maxWidth: 1, maxHeight: 1,
-+  top: 1, left: 1, right: 1, bottom: 1, paddingTop: 1,
++  top: 1, left: 1, right: 1, bottom: 1, start: 1, end: 1, paddingTop: 1,
 +  transform: 1, opacity: 1, borderRadius: 1,
 +  backgroundImage: 1, backgroundPosition: 1, backgroundSize: 1
 +};

@@ -151,8 +151,8 @@ describe('horizontalInset', () => {
   });
 
   it('lets a longhand win over the shorthand, as React Native does', () => {
-    expect(horizontalInset({ paddingHorizontal: 4, paddingLeft: 16 })).toBe(20);
-    expect(horizontalInset({ paddingLeft: 10, paddingRight: 6 })).toBe(16);
+    expect(horizontalInset({ paddingHorizontal: 4, paddingStart: 16 })).toBe(20);
+    expect(horizontalInset({ paddingStart: 10, paddingEnd: 6 })).toBe(16);
   });
 
   it('ignores a length it cannot turn into a number rather than guessing', () => {

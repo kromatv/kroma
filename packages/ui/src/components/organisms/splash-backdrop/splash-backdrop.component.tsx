@@ -191,8 +191,8 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
         />
         <Veil ramp={VEIL} />
         <Box fill style={layers.vignette} />
-        <Box absolute left={0} right={0} bottom={0} h={FOOT_H} style={layers.foot} />
-        <Box absolute left={0} right={0} bottom={0} h={RULE_H} row>
+        <Box absolute start={0} end={0} bottom={0} h={FOOT_H} style={layers.foot} />
+        <Box absolute start={0} end={0} bottom={0} h={RULE_H} row>
           {WHEEL_COLORS.map((segment) => (
             <Box key={segment} flex bg={segment} />
           ))}
@@ -202,8 +202,8 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
           // portrait phone otherwise runs off the left edge.
           <Box
             absolute
-            left={20}
-            right={20}
+            start={20}
+            end={20}
             bottom={20}
             row
             align="center"
@@ -230,7 +230,7 @@ function SplashBackdrop({ covers, holdMs = HOLD_MS, style }: Readonly<SplashBack
 
 const sDefinition = styles({
   ground: { fill: true, pointerEvents: 'none' },
-  art: { absolute: true, top: 0, right: 0, bottom: 0, left: 0 },
+  art: { absolute: true, top: 0, end: 0, bottom: 0, start: 0 },
   eyebrow: { fontSize: textSizes.micro, letterSpacing: 2.6, shrink: 0 },
   caption: { fontSize: textSizes.compactLabel, fontWeight: '500', shrink: 1 },
 });

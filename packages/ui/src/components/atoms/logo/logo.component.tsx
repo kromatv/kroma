@@ -30,6 +30,7 @@ function Logo({ size = 24, markOnly = false, kids = false, spin, color }: Readon
   if (kids) {
     return (
       <Box
+        dir="ltr"
         w={wordmarkWidth(size)}
         align="flex-end"
         accessibilityRole="image"
@@ -43,7 +44,7 @@ function Logo({ size = 24, markOnly = false, kids = false, spin, color }: Readon
     );
   }
   return (
-    <Box row align="center" accessibilityRole="image" accessibilityLabel="KROMA">
+    <Box dir="ltr" row align="center" accessibilityRole="image" accessibilityLabel="KROMA">
       {wordmark}
     </Box>
   );
@@ -69,7 +70,7 @@ function Wordmark({
       >
         <Path d={KROMA_KR_PATH} fill={fill} />
       </Svg>
-      <Box ml={KROMA_LOCKUP.gapLeft * s} mr={KROMA_LOCKUP.gapRight * s}>
+      <Box ms={KROMA_LOCKUP.gapLeft * s} me={KROMA_LOCKUP.gapRight * s}>
         <Wheel size={size} spin={spin} />
       </Box>
       <Svg

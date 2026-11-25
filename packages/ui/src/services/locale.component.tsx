@@ -31,6 +31,24 @@ export interface LocaleProviderProps {
   children: ReactNode;
 }
 
+function useDocumentLanguage(
+  locale: Locale,
+  { syncDocumentLanguage }: Pick<LocaleProviderProps, 'syncDocumentLanguage'>,
+): (next: Locale) => void {
+  const mirror = useCallback(
+    (next: Locale) => {
+      if (syncDocumentLanguage) {
+        setDocumentLanguage(next);
+      }
+    },
+    [syncDocumentLanguage],
+  );
+  useEffect(() => {
+    mirror(locale);
+  }, [locale, mirror]);
+  return mirror;
+}
+
 export function LocaleProvider({
   client,
   accountLanguage,
@@ -47,6 +65,7 @@ export function LocaleProvider({
   // this resolves to the default there, and the prerendered shell carries no
   // translated markup for the two to disagree on.
   const [override, setOverride] = useState<Locale>(() => accountLocale ?? deviceLocale(storage));
+  const mirror = useDocumentLanguage(override, { syncDocumentLanguage });
 
   // The client's Accept-Language moves in the same step as the state, never in a
   // later effect: a consumer's own effect runs before this component's, and would
@@ -57,8 +76,9 @@ export function LocaleProvider({
       applied.current = next;
       setOverride(next);
       client?.setLocale(next);
+      mirror(next);
     },
-    [client],
+    [client, mirror],
   );
 
   // On mount: hand the device locale to the client's Accept-Language, unless the
@@ -109,12 +129,6 @@ export function LocaleProvider({
   useEffect(() => {
     client?.setLocale(applied.current);
   }, [client]);
-
-  useEffect(() => {
-    if (syncDocumentLanguage) {
-      setDocumentLanguage(locale);
-    }
-  }, [locale, syncDocumentLanguage]);
 
   const handleChange = useCallback(
     (next: Locale) => {

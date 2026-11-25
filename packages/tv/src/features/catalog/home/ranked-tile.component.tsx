@@ -3,7 +3,7 @@ import { Box, Numeral, PosterCard, type PosterCardProps, styles, useStyles } fro
 import { RANK_COLUMN, RANK_H, RANK_TUCK } from '#tv/features/catalog/home/tile-metrics';
 
 const sDefinition = styles({
-  rank: { w: RANK_COLUMN, mr: -RANK_TUCK, align: 'flex-end' },
+  rank: { w: RANK_COLUMN, me: -RANK_TUCK, align: 'flex-end' },
 });
 
 interface RankedTileProps extends PosterCardProps {

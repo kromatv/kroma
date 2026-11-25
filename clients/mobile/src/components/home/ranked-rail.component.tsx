@@ -73,6 +73,6 @@ const sDefinition = styles({
   rail: { gap: spacing.md },
   tile: { row: true, align: 'flex-end' },
   tilePressed: { opacity: 0.75 },
-  numeral: { mr: NUMERAL_TUCK, align: 'flex-end' },
+  numeral: { me: NUMERAL_TUCK, align: 'flex-end' },
   art: { radius: radius.sm, overflow: 'hidden' },
 });

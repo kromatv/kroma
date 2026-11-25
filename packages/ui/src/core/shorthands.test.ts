@@ -36,19 +36,24 @@ describe('boxStyle spacing', () => {
   it('expands `p` to all four longhands', () => {
     expect(boxStyle({ p: 16 }, 0)).toEqual({
       paddingTop: 16,
-      paddingRight: 16,
+      paddingEnd: 16,
       paddingBottom: 16,
-      paddingLeft: 16,
+      paddingStart: 16,
     });
   });
 
   it('lets an axis override the all-sides value, and a side override the axis', () => {
     expect(boxStyle({ p: 8, px: 24, pt: 40 }, 0)).toEqual({
       paddingTop: 40,
-      paddingRight: 24,
+      paddingEnd: 24,
       paddingBottom: 8,
-      paddingLeft: 24,
+      paddingStart: 24,
     });
+  });
+
+  it('names a side by start and end, and lets it beat its axis whatever the order', () => {
+    expect(boxStyle({ ps: 4, px: 20 }, 0)).toEqual({ paddingStart: 4, paddingEnd: 20 });
+    expect(boxStyle({ me: 8, mx: 0 }, 0)).toEqual({ marginStart: 0, marginEnd: 8 });
   });
 
   it('handles margins the same way, including zero', () => {
@@ -101,14 +106,15 @@ describe('boxStyle position', () => {
     expect(boxStyle({ fill: true }, 0)).toEqual({
       position: 'absolute',
       top: 0,
-      left: 0,
-      right: 0,
+      start: 0,
+      end: 0,
       bottom: 0,
     });
   });
 
   it('lets explicit insets refine a fill', () => {
     expect(boxStyle({ fill: true, top: 24 }, 0).top).toBe(24);
+    expect(boxStyle({ fill: true, start: 24 }, 0)).toMatchObject({ start: 24, end: 0 });
   });
 });
 

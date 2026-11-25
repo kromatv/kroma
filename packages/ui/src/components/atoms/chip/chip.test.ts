@@ -105,7 +105,7 @@ describe('chip design', () => {
     it('pads the 10-foot chip out, keeping the pill radius', () => {
       expect(chipVariants({ size: 'tv' }).root).toMatchObject({
         paddingTop: 10,
-        paddingLeft: 22,
+        paddingStart: 22,
         borderRadius: 'var(--radius-pill)',
       });
     });

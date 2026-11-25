@@ -154,7 +154,7 @@ function Avatar({
       {locked ? (
         <Box
           absolute
-          right={inset}
+          end={inset}
           bottom={inset}
           w={badge}
           h={badge}

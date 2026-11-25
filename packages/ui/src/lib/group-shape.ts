@@ -58,10 +58,10 @@ function groupSlot(
 // Keep joins in the build's sheet as well as the runtime sheet. Otherwise a
 // static button radius loaded after the SSR sheet rounds these corners again.
 const joins = styles({
-  left: { borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeftWidth: 0 },
-  right: { borderTopRightRadius: 0, borderBottomRightRadius: 0 },
-  top: { borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTopWidth: 0 },
-  bottom: { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  start: { borderTopStartRadius: 0, borderBottomStartRadius: 0, borderStartWidth: 0 },
+  end: { borderTopEndRadius: 0, borderBottomEndRadius: 0 },
+  top: { borderTopStartRadius: 0, borderTopEndRadius: 0, borderTopWidth: 0 },
+  bottom: { borderBottomStartRadius: 0, borderBottomEndRadius: 0 },
 });
 
 function corners(
@@ -74,13 +74,13 @@ function corners(
   const joinsAfter = position === 'middle' || position === 'first';
   const s = resolveStyles(joins, scope);
   const vertical = orientation === 'vertical';
-  const before = vertical ? s.top : s.left;
-  const after = vertical ? s.bottom : s.right;
+  const before = vertical ? s.top : s.start;
+  const after = vertical ? s.bottom : s.end;
   return {
-    borderTopLeftRadius: radius,
-    borderTopRightRadius: radius,
-    borderBottomLeftRadius: radius,
-    borderBottomRightRadius: radius,
+    borderTopStartRadius: radius,
+    borderTopEndRadius: radius,
+    borderBottomStartRadius: radius,
+    borderBottomEndRadius: radius,
     ...(joinsBefore ? before : null),
     ...(joinsAfter ? after : null),
   };

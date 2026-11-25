@@ -74,7 +74,7 @@ const sDefinition = styles({
   chart: { h: HEIGHT, justify: 'flex-end', mt: 6 },
   bars: { h: HEIGHT, align: 'flex-end', gap: 1 },
   bar: { w: 3, radius: cornerRadius.hairline },
-  rule: { absolute: true, left: 0, right: 0, h: 1, bg: 'border' },
+  rule: { absolute: true, start: 0, end: 0, h: 1, bg: 'border' },
 });
 
 export { PerfChart };

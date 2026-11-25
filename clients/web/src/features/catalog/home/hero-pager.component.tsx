@@ -27,7 +27,7 @@ const sDefinition = styles({
   },
   thumbUp: { opacity: 1 },
   dot: { w: 28, h: 4, radius: 'pill', overflow: 'hidden', bg: 'white/25' },
-  track: { position: 'absolute', left: 0, right: 0, bottom: 0, h: 3, bg: 'black/40' },
+  track: { position: 'absolute', start: 0, end: 0, bottom: 0, h: 3, bg: 'black/40' },
   fill: { fill: true, bg: 'accent', transformOrigin: 'left' },
   filling: {
     animationKeyframes: 'kroma-fill',

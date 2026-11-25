@@ -74,7 +74,7 @@ function PullRequestLink({ work }: Readonly<{ work: Work }>) {
 
 function Actions({ work, act }: Readonly<{ work: Work; act: SendBarActions }>) {
   return (
-    <Row gap={8} wrap ml="auto">
+    <Row gap={8} wrap ms="auto">
       <PullRequestLink work={work} />
       {work.drafts > 0 ? (
         <Button

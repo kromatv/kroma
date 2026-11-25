@@ -18,7 +18,7 @@ import type { ReactNode } from 'react';
 
 const sDefinition = styles({
   row: { display: 'flex', flex: true, alignItems: 'flex-start' },
-  tile: { width: 48, height: 48, flexShrink: 0, mr: 12, radius: 'sm', objectFit: 'cover' },
+  tile: { width: 48, height: 48, flexShrink: 0, me: 12, radius: 'sm', objectFit: 'cover' },
 });
 
 export function NotificationCard({
@@ -60,7 +60,7 @@ export function NotificationCard({
   return (
     <div className={classes(s.row, style)}>
       {/* The gutter is reserved on every row, empty or not, so nothing shifts. */}
-      <Row w={6} h={48} shrink={0} mr={8}>
+      <Row w={6} h={48} shrink={0} me={8}>
         {unread ? <Box w={3} h={30} radius="pill" bg="accent" /> : null}
       </Row>
       <NotificationTile event={event} src={src} />
@@ -96,7 +96,7 @@ export function NotificationTile({
     return <img src={src} alt="" loading="lazy" className={classes(s.tile)} />;
   }
   return (
-    <Box w={48} h={48} shrink={0} mr={12} center radius="sm" bg="white/6">
+    <Box w={48} h={48} shrink={0} me={12} center radius="sm" bg="white/6">
       <NotificationGlyph event={event} />
     </Box>
   );

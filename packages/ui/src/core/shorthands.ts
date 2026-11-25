@@ -20,10 +20,11 @@
 // what genuinely is a token takes a name - and those resolve through the active
 // theme, so a theme's palette or corner language reaches every declaration.
 
-import type { DimensionValue, TextStyle, ViewStyle } from 'react-native';
+import type { DimensionValue, ViewStyle } from 'react-native';
 import type { Responsive } from '#ui/core/breakpoint';
 import { type ColorValue, color } from '#ui/core/color';
 import { radiusValue } from '#ui/core/radius-value';
+import { textAlignOf } from '#ui/core/text-align';
 import type { RingToken, Theme } from '#ui/core/theme';
 import type { ShadowToken } from '#ui/core/tokens/effects';
 import { absoluteFill, type CornerValue } from '#ui/core/tokens/layout';
@@ -70,25 +71,25 @@ export interface BoxStyleProps {
   fill?: Flag;
   absolute?: Flag;
   top?: Size;
-  right?: Size;
+  end?: Size;
   bottom?: Size;
-  left?: Size;
+  start?: Size;
   z?: Responsive<number>;
 
   p?: Spacing;
   px?: Spacing;
   py?: Spacing;
   pt?: Spacing;
-  pr?: Spacing;
+  pe?: Spacing;
   pb?: Spacing;
-  pl?: Spacing;
+  ps?: Spacing;
   m?: Spacing;
   mx?: Spacing;
   my?: Spacing;
   mt?: Spacing;
-  mr?: Spacing;
+  me?: Spacing;
   mb?: Spacing;
-  ml?: Spacing;
+  ms?: Spacing;
 
   bg?: Responsive<ColorValue>;
   /** A radius token, a raw px value, or `'circle'`; see {@link CornerValue}. */
@@ -122,24 +123,24 @@ const TEXT_LAYOUT_ROWS = [
   'maxH',
   'absolute',
   'top',
-  'right',
+  'end',
   'bottom',
-  'left',
+  'start',
   'z',
   'p',
   'px',
   'py',
   'pt',
-  'pr',
+  'pe',
   'pb',
-  'pl',
+  'ps',
   'm',
   'mx',
   'my',
   'mt',
-  'mr',
+  'me',
   'mb',
-  'ml',
+  'ms',
   'opacity',
 ] as const satisfies readonly (keyof BoxStyleProps)[];
 
@@ -150,8 +151,12 @@ const TEXT_LAYOUT_ROWS = [
  * <Box>, and one name means one role across the kit.
  */
 export interface TextLayoutProps extends Pick<BoxStyleProps, (typeof TEXT_LAYOUT_ROWS)[number]> {
-  textAlign?: Responsive<NonNullable<TextStyle['textAlign']>>;
+  textAlign?: Responsive<TextAlign>;
 }
+
+/** Text alignment by the writing direction: `start` is the left in English and
+ *  the right in Arabic. */
+export type TextAlign = 'auto' | 'start' | 'end' | 'center' | 'justify';
 
 export type Rule =
   | string
@@ -196,28 +201,28 @@ export const RULES = {
 
   absolute: { position: 'absolute' },
   top: 'top',
-  right: 'right',
+  end: 'end',
   bottom: 'bottom',
-  left: 'left',
+  start: 'start',
   z: 'zIndex',
 
   // Longhands only, never `padding`: React Native resolves shorthand vs
   // longhand by declaration order inside one object, so a `{ padding,
   // paddingTop }` pair is surprising. All, then axis, then side.
-  p: ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'],
-  px: ['paddingLeft', 'paddingRight'],
+  p: ['paddingTop', 'paddingEnd', 'paddingBottom', 'paddingStart'],
+  px: ['paddingStart', 'paddingEnd'],
   py: ['paddingTop', 'paddingBottom'],
   pt: 'paddingTop',
-  pr: 'paddingRight',
+  pe: 'paddingEnd',
   pb: 'paddingBottom',
-  pl: 'paddingLeft',
-  m: ['marginTop', 'marginRight', 'marginBottom', 'marginLeft'],
-  mx: ['marginLeft', 'marginRight'],
+  ps: 'paddingStart',
+  m: ['marginTop', 'marginEnd', 'marginBottom', 'marginStart'],
+  mx: ['marginStart', 'marginEnd'],
   my: ['marginTop', 'marginBottom'],
   mt: 'marginTop',
-  mr: 'marginRight',
+  me: 'marginEnd',
   mb: 'marginBottom',
-  ml: 'marginLeft',
+  ms: 'marginStart',
 
   bg: (v, theme) => ({ backgroundColor: color(v as string, theme) }),
   radius: (v, theme) => ({ borderRadius: radiusValue(v as CornerValue, undefined, theme) }),
@@ -231,7 +236,7 @@ export const RULES = {
   opacity: 'opacity',
   overflow: 'overflow',
   isolate: { isolation: 'isolate' },
-  textAlign: 'textAlign',
+  textAlign: (v) => ({ textAlign: textAlignOf(v) }),
 } as const satisfies Record<keyof BoxStyleProps | keyof TextLayoutProps, Rule>;
 
 export const RULE_KEYS = Object.keys(RULES) as (keyof typeof RULES)[];

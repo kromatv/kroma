@@ -91,7 +91,7 @@ export function ProviderCard({
 
   return (
     <Surface members elevated radius="xl" border="border">
-      <Row gap={12} pr={20}>
+      <Row gap={12} pe={20}>
         <Box flex minW={0}>
           <Focusable style={s.header} label={name} expanded={expanded} onPress={onToggle}>
             <Box center w={38} h={38} shrink={0}>

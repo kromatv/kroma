@@ -73,7 +73,7 @@ function Face({ item }: Readonly<{ item: UpNextItem }>) {
           every row but the first stayed a gradient. */}
       <Img src={item.posterUrl ?? null} background={placeholder} fill priority />
       <Box fill style={[s.vignette, VIGNETTE]} />
-      <Box absolute left={14} right={14} bottom={12} gap={2}>
+      <Box absolute start={14} end={14} bottom={12} gap={2}>
         {item.categoryLabel ? (
           <Text lines={1} style={s.category} color="accentText">
             {item.categoryLabel}
@@ -135,9 +135,9 @@ const sDefinition = styles({
   face: {
     absolute: true,
     top: 0,
-    right: 0,
+    end: 0,
     bottom: 0,
-    left: 0,
+    start: 0,
     radius: 'xl',
     overflow: 'hidden',
     bg: 'surface1',

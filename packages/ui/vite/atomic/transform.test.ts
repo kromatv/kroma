@@ -22,7 +22,7 @@ const s = styles({
     expect(out?.compiled).toBe(2);
     expect(out?.code).toContain("import { staticStyle as __kromaStatic } from '#ui/core/atomic';");
     expect(out?.code).toContain('row: __kromaStatic({"flexDirection":"row","gap":6})');
-    expect(out?.code).toMatch(/fluid: __kromaStatic\(\{"paddingLeft":"var\(--k[\w-]{6},8px\)"/);
+    expect(out?.code).toMatch(/fluid: __kromaStatic\(\{"paddingStart":"var\(--k[\w-]{6},8px\)"/);
     expect(out?.code).toContain('computed: { width: measure() }');
     expect(out?.skipped).toEqual([{ line: 5, reason: 'a call to measure' }]);
     expect(out?.rules.map((rule) => rule.css)).toContain(
@@ -124,11 +124,11 @@ const v = svFor<{ root: StyleDecl; icon: Pick<IconProps, 'color'> }>()({
     const out = run(`import { Box } from '#ui/components/atoms/box';
 const GAP = 12;
 export const A = () => <Box row gap={GAP} px={64} style={extra} testID="a" />;
-export const B = () => <Box absolute left={14} />;`);
+export const B = () => <Box absolute start={14} />;`);
 
     expect(out?.compiled).toBe(2);
     expect(out?.code).toContain(
-      'const __kromaBox0 = __kromaStatic({"flexDirection":"row","gap":12,"paddingLeft":64,"paddingRight":64});',
+      'const __kromaBox0 = __kromaStatic({"flexDirection":"row","gap":12,"paddingStart":64,"paddingEnd":64});',
     );
     expect(out?.code).toMatch(/<Box\s+style=\{\[__kromaBox0, extra\]\} testID="a" \/>/);
     expect(out?.code).toMatch(/<Box style=\{__kromaBox1\}\s+\/>/);

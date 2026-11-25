@@ -47,12 +47,12 @@ Pins a subtree to one ground while the page around it keeps the reader's. Every 
   <Box aspect={16 / 9} radius="lg" overflow="hidden">
     <Img src={stillArt(4)} background={TINT} fill />
     <ArtScrim variant="soft" radius="lg" />
-    <Box absolute left={14} top={14}>
+    <Box absolute start={14} top={14}>
       <Ground tone="dark">
         <IconButton variant="scrim" diameter={40} icon="arrow-left" label="Back" />
       </Ground>
     </Box>
-    <Box absolute right={14} top={14}>
+    <Box absolute end={14} top={14}>
       <IconButton variant="scrim" diameter={40} icon="eye" label="Mark watched" />
     </Box>
   </Box>

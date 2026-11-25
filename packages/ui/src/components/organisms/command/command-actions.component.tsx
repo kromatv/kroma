@@ -99,7 +99,7 @@ function Actions({ label, closeLabel = 'Close actions' }: Readonly<CommandAction
       <Box
         absolute
         z={2}
-        right={PANEL_INSET}
+        end={PANEL_INSET}
         bottom={PANEL_BOTTOM}
         w={PANEL_WIDTH}
         maxW="94%"
@@ -220,8 +220,8 @@ function PanelField({ label }: Readonly<{ label: string }>) {
           physicalKeyboard
           autoFocus
           flat
-          pl={0}
-          pr={0}
+          ps={0}
+          pe={0}
           py={10}
         />
       </Field.Root>
@@ -235,8 +235,8 @@ const trigger = sv({
     align: 'center',
     gap: 8,
     h: 34,
-    pl: 10,
-    pr: 6,
+    ps: 10,
+    pe: 6,
     radius: 'sm',
     _hover: { bg: 'tint/7' },
     _focus: { bg: 'tint/7' },
@@ -263,7 +263,7 @@ const actionRow = sv({
 });
 
 const sDefinition = styles({
-  catcher: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 1 },
+  catcher: { position: 'absolute', top: 0, end: 0, bottom: 0, start: 0, zIndex: 1 },
   title: { fontWeight: '600' },
   panelBody: { p: ACTION_METRICS.pad },
   ruleTop: { borderTopWidth: 1, borderTopColor: 'border' },

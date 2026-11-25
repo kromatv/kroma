@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { Progress } from '#ui/components/atoms/progress';
 import { ProgressRing } from '#ui/components/atoms/progress-ring';
 import { color } from '#ui/core/color';
+import { DirectionRoot } from '#ui/lib/direction-root.component';
 import { declared } from '#ui/testing';
 import { ProgressFill } from './progress-motion.component';
 import { ringGeometry } from './ring';
@@ -32,7 +33,18 @@ describe('ProgressFill', () => {
     const { container } = render(<ProgressFill value={0.25} style={null} />);
     const fill = only(container, 'div');
     expect(fill.style.right).toBe('75%');
-    expect(declared(fill, 'transition-property')).toBe('right');
+    expect(declared(fill, 'transition-property')).toContain('right');
+  });
+
+  it('insets the left edge in a language written right to left, and transitions it too', () => {
+    const { container } = render(
+      <DirectionRoot locale="ar">
+        <ProgressFill value={0.25} style={null} />
+      </DirectionRoot>,
+    );
+    const fill = only(container, '[dir=rtl] > div');
+    expect(fill.style.left).toBe('75%');
+    expect(declared(fill, 'transition-property')).toContain('left');
   });
 
   it('reaches the far edge at 1 and shows nothing at 0', () => {

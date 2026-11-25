@@ -25,7 +25,7 @@ import { CastRemote } from './cast-remote.component';
 import { secondLine } from './second-line';
 import { TransportButton } from './transport-button.component';
 
-/** `inset` is the width the app's rail takes on the left, which the bar stays
+/** `inset` is the width the app's rail takes at the start, which the bar stays
  * clear of. Default 0. */
 export function CastBar({ inset = 0 }: Readonly<{ inset?: number }>) {
   const s = useStyles(sDefinition);
@@ -47,13 +47,13 @@ export function CastBar({ inset = 0 }: Readonly<{ inset?: number }>) {
     <aside
       aria-label={t('cast.playingOn', { device: active.name })}
       className={classes(s.bar)}
-      style={{ left: inset }}
+      style={{ insetInlineStart: inset }}
     >
       <Row w="100%" gap={16} px={20} py={12}>
         <Row gap={12} style={s.side}>
           <NowPlaying item={active.nowPlaying?.item} />
         </Row>
-        <Box style={s.middle}>
+        <Box style={s.middle} dir="ltr">
           <Middle active={active} cast={cast} scrub={wide} />
         </Box>
         <Row gap={8} style={[s.side, s.end]}>
@@ -146,7 +146,7 @@ function DeviceButton({ name, onSelect }: Readonly<{ name: string; onSelect: Cas
 const sDefinition = styles({
   bar: {
     position: 'fixed',
-    right: 0,
+    end: 0,
     bottom: 0,
     zIndex: 40,
     display: 'flex',

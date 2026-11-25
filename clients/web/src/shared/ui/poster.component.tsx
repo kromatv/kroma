@@ -154,8 +154,8 @@ export function Poster({
                 </Box>
                 <Box
                   absolute
-                  left={14}
-                  right={14}
+                  start={14}
+                  end={14}
                   bottom={14}
                   align="flex-start"
                   opacity={revealed ? 1 : 0}
@@ -173,7 +173,7 @@ export function Poster({
               </>
             ) : null}
             {progress != null ? (
-              <Box absolute left={0} right={0} bottom={0}>
+              <Box absolute start={0} end={0} bottom={0}>
                 <Progress
                   value={progress / 100}
                   thickness={5}

@@ -90,6 +90,6 @@ export function DownloadButton({ item, size = 22 }: Readonly<{ item: MediaItem; 
 
 const sDefinition = styles({
   pausedBox: { center: true },
-  pausedGlyph: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
+  pausedGlyph: { absolute: true, top: 0, end: 0, bottom: 0, start: 0, center: true },
   doneBadge: { center: true, w: RING - 6, h: RING - 6, bg: 'accent', radius: (RING - 6) / 2 },
 });

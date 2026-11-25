@@ -41,7 +41,7 @@ const sDefinition = styles({
   content: { py: PAD },
   cell: { w: '100%', maxW: CELL_W, h: POSTER_H, self: 'center' },
   hit: { w: '100%', h: '100%', radius: 'xl', row: true, align: 'flex-end' },
-  numeral: { w: COLUMN, mr: -TUCK, align: 'flex-end' },
+  numeral: { w: COLUMN, me: -TUCK, align: 'flex-end' },
   poster: {
     w: POSTER_W,
     aspect: 2 / 3,

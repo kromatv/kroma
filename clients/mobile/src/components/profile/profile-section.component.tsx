@@ -18,5 +18,5 @@ export function ProfileSection({
 
 const sDefinition = styles({
   section: { gap: spacing.xs },
-  sectionTitle: { ...type.small, pl: 2, mb: 2, textTransform: 'uppercase', letterSpacing: 1 },
+  sectionTitle: { ...type.small, ps: 2, mb: 2, textTransform: 'uppercase', letterSpacing: 1 },
 });

@@ -68,14 +68,14 @@ const sDefinition = styles({
   layer: {
     position: 'absolute',
     top: 0,
-    right: 0,
+    end: 0,
     bottom: 0,
-    left: 0,
+    start: 0,
     zIndex: 40,
     alignItems: 'center',
     bg: 'bg/72',
   },
-  catcher: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  catcher: { position: 'absolute', top: 0, end: 0, bottom: 0, start: 0 },
   sheet: { zIndex: 1, width: SHEET + MARGIN * 2, maxWidth: '100%', px: MARGIN, mt: 96 },
 });
 

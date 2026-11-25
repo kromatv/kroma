@@ -536,6 +536,19 @@ genuinely has its own ladder names its own type, but keeps the same three words.
 A prop that is only ever set one way is deleted, not defaulted. A handler whose
 only job is to redirect focus takes the target, not the event.
 
+A side is a start or an end, never a left or a right: `ps`, `me`, `start`,
+`end`, `paddingStart`, `borderEndWidth`, `textAlign="start"`, and a prop that
+names an edge takes `start` or `end` (`<Drawer.Root side="start">`). The start
+is on the right in a language written right to left, and the layout mirrors
+with nothing written for it. What reads the same in every script (a seek bar,
+transport controls, a chart, a picture, a code listing) sits in a
+`<Box dir="ltr">`, which keeps that direction in every language; its sides are
+still written start and end. A value a render computes rather than lays out,
+such as the sign of a slide or the step of an arrow key, reads
+`useDirection()`. `<Icon>` turns a glyph that points a way (a chevron, an
+arrow, back, forward, an external link) round by itself, and never a media
+glyph. `kroma/no-physical-side` refuses the physical names.
+
 ---
 
 ## 8. Adding, promoting, renaming
@@ -582,6 +595,8 @@ Before a component is done:
 - [ ] `value`/`defaultValue`/`onValueChange`; no `onChange`.
 - [ ] The shape comes from `lib/field-shell`, not from the component's own
       paddings.
+- [ ] Every side is a start or an end; what stays physical sits in a
+      `dir="ltr"` box.
 - [ ] It has a story, and the story passes `variants` so the controls derive.
 - [ ] It works under a D-pad and under a pointer without the caller writing
       anything different.

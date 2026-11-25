@@ -89,8 +89,8 @@ describe('sv shorthands', () => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingLeft: 18,
-      paddingRight: 18,
+      paddingStart: 18,
+      paddingEnd: 18,
       borderRadius: 'var(--radius-pill)',
       backgroundColor: 'var(--kroma-surface-2)',
     });
@@ -227,7 +227,7 @@ describe('sv flat form', () => {
     expect(pill().root).toMatchObject({
       flexDirection: 'row',
       borderRadius: 'var(--radius-pill)',
-      paddingLeft: 12,
+      paddingStart: 12,
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
     });
   });
@@ -268,9 +268,9 @@ describe('sv shorthand conflicts across layers', () => {
     });
     expect(r().root).toEqual({
       paddingTop: 12,
-      paddingRight: 12,
+      paddingEnd: 12,
       paddingBottom: 12,
-      paddingLeft: 12,
+      paddingStart: 12,
     });
   });
 
@@ -291,9 +291,9 @@ describe('sv shorthand conflicts across layers', () => {
     });
     expect(r().root).toEqual({
       paddingTop: 4,
-      paddingRight: 20,
+      paddingEnd: 20,
       paddingBottom: 20,
-      paddingLeft: 20,
+      paddingStart: 20,
     });
   });
 

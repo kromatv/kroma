@@ -48,6 +48,6 @@ export function PortraitHeader({
 
 const definition = styles({
   header: { row: true, align: 'center', px: spacing.sm, pb: spacing.xs },
-  context: { ...type.caption, color: 'textMuted', flex: true, ml: spacing.xs },
+  context: { ...type.caption, color: 'textMuted', flex: true, ms: spacing.xs },
   actions: { row: true, align: 'center' },
 });

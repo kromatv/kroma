@@ -78,10 +78,10 @@ describe('<Toaster>', () => {
   });
 
   it('caps each corner on its own, so a bottom notice never evicts a top one', () => {
-    render(<Toaster position="top-left" />);
+    render(<Toaster position="top-start" />);
     say('First', 'Second', 'Third');
     act(() => {
-      toast({ message: 'Elsewhere', position: 'bottom-right' });
+      toast({ message: 'Elsewhere', position: 'bottom-end' });
     });
     expect(stack()).toEqual(['Third', 'Second', 'First']);
     expect(screen.getAllByText('Elsewhere').length).toBeGreaterThan(0);
@@ -91,7 +91,7 @@ describe('<Toaster>', () => {
     expect(() => toast({ message: 'nobody is listening' })).not.toThrow();
   });
 
-  it('sits top-right at its default, inset 32 from both edges', () => {
+  it('sits at the top end by default, inset 32 from both edges', () => {
     render(<Toaster />);
     act(() => toast({ message: 'iPhone connected' }));
     const column = columnOf('iPhone connected');
@@ -116,19 +116,19 @@ describe('<Toaster>', () => {
   });
 
   it('lets one notice name its own corner without moving the rest', () => {
-    render(<Toaster position="top-right" />);
+    render(<Toaster position="top-end" />);
     act(() => {
       toast({ message: 'First' });
-      toast({ message: 'Second', position: 'bottom-left' });
+      toast({ message: 'Second', position: 'bottom-start' });
     });
     expect(anchor('First')).toEqual({ top: '32px', bottom: 'auto', align: 'flex-end' });
     expect(anchor('Second')).toEqual({ top: 'auto', bottom: '32px', align: 'flex-start' });
   });
 
   it('leaves a notice where it appeared when the host moves under it', () => {
-    const { rerender } = render(<Toaster position="top-right" />);
+    const { rerender } = render(<Toaster position="top-end" />);
     act(() => toast({ message: 'First' }));
-    rerender(<Toaster position="bottom-left" />);
+    rerender(<Toaster position="bottom-start" />);
     act(() => toast({ message: 'Second' }));
     expect(anchor('First')).toEqual({ top: '32px', bottom: 'auto', align: 'flex-end' });
     expect(anchor('Second')).toEqual({ top: 'auto', bottom: '32px', align: 'flex-start' });

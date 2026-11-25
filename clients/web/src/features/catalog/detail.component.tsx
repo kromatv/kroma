@@ -52,7 +52,7 @@ export { qualityBadges } from '#web/shared/lib/quality-badges';
 // overview on the same line.
 const sDefinition = styles({
   frame: { position: 'relative', minHeight: '62vh' },
-  gutter: { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' },
+  gutter: { paddingStart: 'var(--gutter-web)', paddingEnd: 'var(--gutter-web)' },
   text: {
     display: 'flex',
     flexDirection: 'column',
@@ -168,7 +168,7 @@ export function DetailHero({
     <div className={classes(s.frame)}>
       <HeroBackdrop backdrop={art.backdrop} gradient={heroGradient} />
 
-      <Box absolute z={3} left={CORNER_LEFT} top={CORNER_TOP}>
+      <Box absolute z={3} start={CORNER_LEFT} top={CORNER_TOP}>
         <Ground tone="dark">
           <BackButton diameter={42} label={t('common.back')} onPress={onBack} />
         </Ground>
@@ -267,7 +267,7 @@ function ThemeToggle({ theme }: Readonly<{ theme: ReturnType<typeof useThemeAudi
     return null;
   }
   return (
-    <Box absolute z={3} right={CORNER_LEFT} top={CORNER_TOP}>
+    <Box absolute z={3} end={CORNER_LEFT} top={CORNER_TOP}>
       <Ground tone="dark">
         <IconButton
           variant="scrim"

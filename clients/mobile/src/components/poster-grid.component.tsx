@@ -125,7 +125,7 @@ export function PosterGrid({
 
   // The cells carry the gaps, half on each side, so the content padding is
   // the gutter less that half; the header undoes it to bleed edge to edge.
-  const bleed = { marginLeft: GAP / 2 - pad.left, marginRight: GAP / 2 - pad.right };
+  const bleed = { marginStart: GAP / 2 - pad.left, marginEnd: GAP / 2 - pad.right };
 
   return (
     <FlashList
@@ -148,8 +148,8 @@ export function PosterGrid({
         </Box>
       )}
       contentContainerStyle={{
-        paddingLeft: pad.left - GAP / 2,
-        paddingRight: pad.right - GAP / 2,
+        paddingStart: pad.left - GAP / 2,
+        paddingEnd: pad.right - GAP / 2,
         paddingBottom: TAB_BAR_CLEARANCE,
       }}
       ListHeaderComponent={

@@ -30,7 +30,7 @@ const sDefinition = styles({
     fill: true,
     radius: 'circle',
     borderBottomColor: 'transparent',
-    borderLeftColor: 'transparent',
+    borderStartColor: 'transparent',
   },
 });
 
@@ -43,7 +43,7 @@ const trackOf = (arc: number, paint: string, scope: StyleScope) =>
 const arcOf = (arc: number, paint: string, scope: StyleScope) =>
   sharedStyle(
     `spinner-arc:${arc}:${paint}`,
-    { borderWidth: arc, borderTopColor: paint, borderRightColor: paint },
+    { borderWidth: arc, borderTopColor: paint, borderEndColor: paint },
     scope,
   );
 

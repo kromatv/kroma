@@ -67,7 +67,7 @@ function ConsoleFooter({ children }: Band) {
 
 function ConsoleActions({ children }: Band) {
   return (
-    <Row align="center" gap={8} ml="auto">
+    <Row align="center" gap={8} ms="auto">
       {children}
     </Row>
   );

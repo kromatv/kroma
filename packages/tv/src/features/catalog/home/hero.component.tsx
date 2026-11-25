@@ -57,7 +57,7 @@ const sDefinition = styles({
   featuredLabel: { fontSize: textSizes.compactLabel },
   copy: {
     position: 'absolute',
-    left: 64 - RING_ROOM,
+    start: 64 - RING_ROOM,
     bottom: 36 - RING_ROOM,
     zIndex: 2,
     maxWidth: 820 + RING_ROOM * 2,

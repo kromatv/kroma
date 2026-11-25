@@ -16,10 +16,10 @@ It is deliberately not the accent. Amber belongs to the controls: the toggle tha
 
 Its paint is absolute rather than themed, because it only ever sits on artwork and a poster is the same poster in either theme. The dark fill carries a bright poster, and the light ring and glyph carry a black one.
 
-It positions nothing. The surface pins it, because which corner it belongs in depends on what that surface already puts there: top-left on a poster, top-right on the TV episode still whose top-left is the episode number.
+It positions nothing. The surface pins it, because which corner it belongs in depends on what that surface already puts there: the top start on a poster, the top end on the TV episode still whose top start is the episode number.
 
 ```tsx
-<Box absolute left={12} top={12} z={1}>
+<Box absolute start={12} top={12} z={1}>
   <WatchedBadge />
 </Box>
 ```

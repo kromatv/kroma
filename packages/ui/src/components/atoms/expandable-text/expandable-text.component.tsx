@@ -131,7 +131,7 @@ function ExpandableText({
 }
 
 const sDefinition = styles({
-  ghost: { absolute: true, left: 0, right: 0, top: 0, opacity: 0, pointerEvents: 'none' },
+  ghost: { absolute: true, start: 0, end: 0, top: 0, opacity: 0, pointerEvents: 'none' },
   more: { fontWeight: '700', mt: 2 },
 });
 

@@ -8,7 +8,7 @@ export function Chord({ children, label }: Readonly<{ children: ReactNode; label
   return (
     <Box row align="center" gap={3}>
       {children}
-      <Text variant="meta" color="textDim" ml={3}>
+      <Text variant="meta" color="textDim" ms={3}>
         {label}
       </Text>
     </Box>

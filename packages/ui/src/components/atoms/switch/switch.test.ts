@@ -16,7 +16,7 @@ describe('switch geometry', () => {
       expect(switchVariants({ size }).root).toMatchObject({
         width: GEOM[size].w,
         height: GEOM[size].h,
-        paddingLeft: GEOM[size].pad,
+        paddingStart: GEOM[size].pad,
         borderWidth: 1,
       });
     }
@@ -29,7 +29,7 @@ describe('switch geometry', () => {
     for (const size of SIZES) {
       const root = switchVariants({ size }).root;
       const edge = root.borderWidth as number;
-      const pad = root.paddingLeft as number;
+      const pad = root.paddingStart as number;
       const inner = (root.width as number) - 2 * edge - 2 * pad;
       const travel = inner - GEOM[size].thumb;
 
