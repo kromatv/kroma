@@ -102,7 +102,6 @@ function TagPill(look: Readonly<TagLook>) {
           diameter={removal}
           glyph={glyph}
           label={t('tagField.remove', { name: look.value })}
-          tabbable={false}
           focusScale={1}
           onPress={() => look.field.remove(look.value)}
         />

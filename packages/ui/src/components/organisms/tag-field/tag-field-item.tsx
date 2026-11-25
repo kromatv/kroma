@@ -42,13 +42,13 @@ const rowVariants = sv({
   defaults: { active: false },
 });
 
-interface SuggestionRowProps {
+type SuggestionRowProps = Readonly<{
   label: string;
   lead: ReactNode;
   disabled?: boolean;
   onPress: () => void;
   children: ReactNode;
-}
+}>;
 
 function PanelRow({ label, lead, disabled = false, onPress, children }: SuggestionRowProps) {
   const s = useStyles(sDefinition);
