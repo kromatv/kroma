@@ -158,7 +158,9 @@ links on the three desktop targets (read with `cargo metadata`), then every
 installed package the bundle actually carries, each with its license text.
 Each text appears once, under every package that ships it. The file is
 embedded in the app with the rest of `dist`, and the release attaches it as
-`KROMA-desktop-THIRD-PARTY-NOTICES.txt`.
+`KROMA-desktop-THIRD-PARTY-NOTICES.txt`. The same lists go to
+`dist/third-party-licenses.json`, the shape the licenses page reads; see
+[`docs/third-party-licenses.md`](../../docs/third-party-licenses.md).
 
 On a laptop without cargo the Rust section is left out with a warning; under
 CI that fails the build. Changing what is bundled under `src-tauri/bin` or

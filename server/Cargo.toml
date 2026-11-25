@@ -152,6 +152,7 @@ kroma-module-kernel = { path = "crates/kroma-module-kernel" }
 kroma-engine = { path = "crates/kroma-engine" }
 # Request, job, statement and span timing. No module links it.
 kroma-perf = { path = "crates/kroma-perf" }
+kroma-notices = { path = "crates/kroma-notices" }
 # No module is named here. Every one of them is reached at runtime over HTTP by
 # the supervisor, resolved from a point name the core holds and a manifest it
 # reads, so nothing in this tree links a module or knows what one is for.
@@ -274,6 +275,9 @@ uuid = { workspace = true, features = ["v5"] }
 
 # Integration tests for the HTTP API layer (src/api/*): drive the real axum
 # router in-process with `tower::ServiceExt::oneshot`.
+[build-dependencies]
+kroma-notices = { workspace = true }
+
 [dev-dependencies]
 tempfile = { workspace = true }
 # `test-util` gives the shutdown tests a clock they can pause.

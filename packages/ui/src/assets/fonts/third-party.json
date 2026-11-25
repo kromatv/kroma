@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Bricolage Grotesque",
+    "version": "1.001",
+    "license": "OFL-1.1",
+    "source": "https://github.com/ateliertriay/bricolage",
+    "files": [
+      "BricolageGrotesque-ExtraBold.ttf",
+      "bricolage-grotesque-latin.woff2",
+      "bricolage-grotesque-latin-ext.woff2"
+    ],
+    "notice": "OFL-bricolage-grotesque.txt"
+  },
+  {
+    "name": "Hanken Grotesk",
+    "version": "3.013",
+    "license": "OFL-1.1",
+    "source": "https://github.com/marcologous/hanken-grotesk",
+    "files": ["HankenGrotesk.ttf", "hanken-grotesk-latin.woff2", "hanken-grotesk-latin-ext.woff2"],
+    "notice": "OFL-hanken-grotesk.txt"
+  }
+]

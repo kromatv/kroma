@@ -2393,6 +2393,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kroma-notices"
+version = "0.1.0"
+dependencies = [
+ "kroma-testing",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "kroma-perf"
 version = "0.1.0"
 dependencies = [
@@ -2475,6 +2484,7 @@ dependencies = [
  "kroma-module-kernel",
  "kroma-module-manifest",
  "kroma-module-supervisor",
+ "kroma-notices",
  "kroma-perf",
  "kroma-requests",
  "kroma-testing",

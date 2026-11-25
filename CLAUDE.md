@@ -44,6 +44,9 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
 - [`docs/direct-connection.md`](docs/direct-connection.md) for the route a
   signed-in client takes straight to its server on the same network, what
   proves it is the same server, and what each shell does with it.
+- [`docs/third-party-licenses.md`](docs/third-party-licenses.md) for how each
+  build lists the third-party code it ships, what to do when a crate has no
+  license text, and the `third-party.json` a vendored font or sound needs.
 - [`docs/inspecting-a-screen.md`](docs/inspecting-a-screen.md) for reading
   what the kit has on screen, by component name, with each box and the focus:
   `await __KROMA_UI__.screenText()` in any page, and the two admin routes that

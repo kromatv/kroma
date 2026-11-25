@@ -8,6 +8,7 @@ import {
   type AccountSection,
 } from '#web/features/accounts/account/account-sections';
 import { IdentitiesCard } from '#web/features/accounts/account/identities-card.component';
+import { LicensesCard } from '#web/features/accounts/account/licenses-card.component';
 import { NotificationsCard } from '#web/features/accounts/account/notifications-card.component';
 import { PasskeysCard } from '#web/features/accounts/account/passkeys-card.component';
 import { PinCard } from '#web/features/accounts/account/pin-card.component';
@@ -24,6 +25,7 @@ const LABEL: Record<AccountSection, MessageKey> = {
   notifications: 'account.sectionNotifications',
   security: 'account.sectionSecurity',
   devices: 'account.devices',
+  about: 'about.title',
 };
 
 const ICON: Record<AccountSection, IconName> = {
@@ -32,6 +34,7 @@ const ICON: Record<AccountSection, IconName> = {
   notifications: 'bell',
   security: 'shield-lock',
   devices: 'devices',
+  about: 'info-circle',
 };
 
 const COLUMN = 920;
@@ -114,6 +117,7 @@ export function AccountPage({ section, onSection, pinAsked }: Readonly<AccountPa
             </>
           ) : null}
           {section === 'devices' ? <SessionsCard /> : null}
+          {section === 'about' ? <LicensesCard /> : null}
         </Box>
       </Box>
     </PageFrame>
