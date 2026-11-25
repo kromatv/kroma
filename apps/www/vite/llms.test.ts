@@ -103,6 +103,7 @@ beforeAll(async () => {
   );
   await write(join(root, 'messages/en.json'), messages('Get started', 'A media server.'));
   await write(join(root, 'messages/fr.json'), messages('Bien démarrer', 'Un serveur.'));
+  await write(join(root, 'messages/ko.json'), messages('시작하기', '미디어 서버.'));
 });
 
 afterAll(async () => {
@@ -118,10 +119,12 @@ describe('llmsPlugin', () => {
       'docs/docker.md',
       'fr/docs/docker.md',
       'fr/llms.txt',
+      'ko/llms.txt',
       'llms.txt',
     ]);
     expect(files.get('docs.md')).toContain('[Docker](https://kroma.tv/docs/docker.md)');
     expect(files.get('fr/llms.txt')).toContain('# KROMA\n\n> Un serveur.\n\n## Bien démarrer');
+    expect(files.get('ko/llms.txt')).toContain('# KROMA\n\n> 미디어 서버.\n\n## 시작하기');
   });
 
   it('emits nothing into the server build', async () => {
@@ -159,6 +162,7 @@ describe('llmsPlugin', () => {
     const bare = join(repo, 'bare/www');
     await write(join(bare, 'messages/en.json'), JSON.stringify({ docs_section_start: 'Start' }));
     await write(join(bare, 'messages/fr.json'), messages('Bien démarrer', 'Un serveur.'));
+    await write(join(bare, 'messages/ko.json'), messages('시작하기', '미디어 서버.'));
     await mkdir(join(bare, 'content/docs'), { recursive: true });
     await mkdir(join(repo, 'docs/setup'), { recursive: true });
 
