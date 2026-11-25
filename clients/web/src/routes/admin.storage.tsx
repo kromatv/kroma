@@ -18,6 +18,7 @@ import {
 } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import { useCacheLimitName } from '#web/features/admin/cache-limit-name.hook';
 import { CacheLimitSelect } from '#web/features/admin/cache-limit-select.component';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
@@ -33,6 +34,7 @@ function StoragePage() {
   const confirm = useConfirm();
   const t = useT();
   const fmt = useFormat();
+  const limitName = useCacheLimitName();
   const { client } = useAuth();
   const { data, reload } = usePoll(['admin', 'storage'], () => client.admin.storage(), 10000);
   const [clearing, setClearing] = useState(false);
@@ -122,7 +124,9 @@ function StoragePage() {
           <StatCard.Root>
             <StatCard.Label>{t('admin.transcodeCacheSize')}</StatCard.Label>
             <StatCard.Value
-              unit={t('admin.transcodeCacheBudget', { limit: cache?.transcodeLimit ?? '20 Go' })}
+              unit={t('admin.transcodeCacheBudget', {
+                limit: limitName(cache?.transcodeLimit ?? '20 Go'),
+              })}
               color="accent"
             >
               {fmt.bytes(cache?.transcodeBytes ?? 0)}
