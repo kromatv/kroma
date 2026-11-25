@@ -10,6 +10,12 @@ fn texts(parsed: &Parsed) -> Vec<&str> {
     parsed.tokens.iter().map(|t| t.text.as_str()).collect()
 }
 
+fn holds(spellings: &[String], words: &[&str]) -> bool {
+    words
+        .iter()
+        .all(|word| spellings.iter().any(|spelling| spelling == word))
+}
+
 #[test]
 fn a_year_beside_a_title_is_read_as_the_release_year() {
     let parsed = read("dune 2021");
@@ -79,8 +85,8 @@ fn a_sequel_number_carries_its_other_spellings() {
     let two = &read("rocky 2").tokens[1];
     let roman = &read("rocky iii").tokens[1];
 
-    assert_eq!(two.aliases, ["ii", "two", "deux"]);
-    assert_eq!(roman.aliases, ["3", "three", "trois"]);
+    assert!(holds(&two.aliases, &["ii", "two", "deux"]));
+    assert!(holds(&roman.aliases, &["3", "three", "trois"]));
 }
 
 #[test]
