@@ -10,7 +10,6 @@ import {
   isValidElement,
   type ReactElement,
   type ReactNode,
-  useCallback,
   useContext,
   useMemo,
   useRef,
@@ -22,27 +21,25 @@ import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { sv } from '#ui/core';
 import { bySize, CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 import {
   SelectContext,
   type SelectDismissReason,
   SelectInkContext,
   type SelectOpenDetails,
-  type SelectOpenReason,
   type SelectOption,
   type SelectState,
   useSelect,
 } from './select-context';
 
-export type { SelectValueDetails } from './select-context';
+export type { SelectOpenReason, SelectValueDetails } from './select-context';
 
 import { Indicator, Item, Media, mediaOf, optionOf, type SelectItemProps } from './select-item';
 import { SelectOptions } from './select-options.component';
 import {
   type SelectMultipleValueProps,
   type SelectSingleValueProps,
-  useSelectSelection,
-} from './select-selection.hook';
+  useSelectControl,
+} from './select-control.hook';
 import type { SelectPresentation } from './select-surface';
 
 // The trigger IS a field: same well, same metrics table, so a select and an
@@ -73,6 +70,8 @@ const triggerVariants = sv({
 interface SelectRootBase {
   open?: boolean;
   defaultOpen?: boolean;
+  /** `details.reason` says what opened or closed it; `details.cancel()` keeps
+   *  it as it was. */
   onOpenChange?: (open: boolean, details: SelectOpenDetails) => void;
   /** Names the control to assistive tech; the trigger announces it with what is
    *  picked. Falls back to `placeholder`. */
@@ -99,24 +98,14 @@ function isItem(node: ReactNode): node is ReactElement<SelectItemProps> {
 }
 
 function Root(props: Readonly<SelectRootProps>) {
-  const {
-    open: openProp,
-    defaultOpen,
-    onOpenChange,
-    label,
-    placeholder,
-    presentation = 'auto',
-    disabled = false,
-    children,
-  } = props;
-  const multiple = props.multiple === true;
-  const { values, choose } = useSelectSelection(props);
-  const [open, setOpenState] = useControllable(openProp, defaultOpen ?? false);
+  const { label, placeholder, presentation = 'auto', disabled = false, children } = props;
   const anchor = useRef<View>(null);
 
   const kids = useMemo(() => Children.toArray(children), [children]);
   const items = useMemo(() => kids.filter(isItem), [kids]);
   const options = useMemo(() => items.map((item) => optionOf(item.props)), [items]);
+  const control = useSelectControl(props, options);
+  const { value: values, multiple, open, setOpen, trigger, select: pick } = control;
   const media = useMemo(
     () => new Map<string, ReactNode>(items.map((item) => [item.props.value, mediaOf(item.props)])),
     [items],
@@ -124,27 +113,6 @@ function Root(props: Readonly<SelectRootProps>) {
   const picked = useMemo(
     () => options.filter((option) => values.includes(option.value)),
     [options, values],
-  );
-
-  const setOpen = useCallback(
-    (next: boolean, reason: SelectOpenReason) => {
-      setOpenState(next);
-      onOpenChange?.(next, { reason });
-    },
-    [setOpenState, onOpenChange],
-  );
-
-  const pick = useCallback(
-    (next: string) => {
-      choose(
-        next,
-        options.find((option) => option.value === next),
-      );
-      if (!multiple) {
-        setOpen(false, 'select');
-      }
-    },
-    [options, choose, multiple, setOpen],
   );
 
   const state = useMemo<SelectState>(
@@ -159,9 +127,10 @@ function Root(props: Readonly<SelectRootProps>) {
       disabled,
       anchor,
       setOpen,
+      trigger,
       pick,
     }),
-    [values, multiple, picked, media, label, placeholder, open, disabled, setOpen, pick],
+    [values, multiple, picked, media, label, placeholder, open, disabled, setOpen, trigger, pick],
   );
 
   return (
@@ -207,7 +176,7 @@ function Trigger({
   ...focusProps
 }: Readonly<SelectTriggerProps>) {
   const entryDefaults = useEntryDefaults();
-  const { label, placeholder, picked, open, disabled, anchor, setOpen } = useSelect('Trigger');
+  const { label, placeholder, picked, open, disabled, anchor, trigger } = useSelect('Trigger');
   const shell = size ?? entryDefaults.size;
   return (
     <Focusable
@@ -217,7 +186,7 @@ function Trigger({
       expanded={open}
       label={triggerName(label, placeholder, picked)}
       disabled={disabled}
-      onPress={() => setOpen(true, 'trigger')}
+      onPress={trigger}
       sv={triggerVariants}
       vars={{ size: shell, invalid, filled: picked.length > 0, block }}
       style={style}
@@ -274,7 +243,6 @@ export type {
   SelectItemProps,
   SelectMultipleRootProps,
   SelectOpenDetails,
-  SelectOpenReason,
   SelectOption,
   SelectPresentation,
   SelectRootProps,

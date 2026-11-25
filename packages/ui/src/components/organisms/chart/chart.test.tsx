@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SERIES_COLORS } from '#ui/core/tokens';
+import { act, snapshot } from '#ui/lib/inspect';
+import type { ChangeDetails } from '#ui/lib/control';
+import { onScreen } from '#ui/testing';
 import { Chart } from './chart.component';
 
 afterEach(cleanup);
@@ -203,5 +207,81 @@ describe('<Chart>', () => {
 
   it('refuses a part written outside a Root', () => {
     expect(() => render(<Chart.Legend />)).toThrow('<Chart.Legend> must be used inside');
+  });
+});
+
+function Traffic(
+  props: Readonly<{
+    defaultActive?: number;
+    onActiveChange?: (index: number | null, details: ChangeDetails) => void;
+    active?: number | null;
+  }>,
+) {
+  return (
+    <Chart.Root data={SAMPLES} x="at" width={200} height={100} label="Traffic" {...props}>
+      <Chart.Line series="remote" label="Distant" />
+      <Chart.Tooltip />
+    </Chart.Root>
+  );
+}
+
+function Owned() {
+  const [active, setActive] = useState<number | null>(2);
+  return <Traffic active={active} onActiveChange={setActive} />;
+}
+
+const leave = () => fireEvent.pointerLeave(screen.getByLabelText('Traffic'));
+
+describe('the readout of <Chart>', () => {
+  it('leaves the plot with the pointer when the chart runs itself', () => {
+    render(<Traffic defaultActive={2} />);
+
+    leave();
+
+    expect(screen.queryByText('30s')).toBeNull();
+  });
+
+  it('asks a caller who owns it and stays until the prop moves', () => {
+    const asked: (number | null)[] = [];
+    render(<Traffic active={2} onActiveChange={(index) => asked.push(index)} />);
+
+    leave();
+
+    expect(asked).toEqual([null]);
+    expect(screen.getByText('30s')).toBeTruthy();
+  });
+
+  it('follows a caller who answers', () => {
+    render(<Owned />);
+
+    leave();
+
+    expect(screen.queryByText('30s')).toBeNull();
+  });
+
+  it('stays where it was when the app cancels the move', () => {
+    render(<Traffic defaultActive={2} onActiveChange={(_index, details) => details.cancel()} />);
+
+    leave();
+
+    expect(screen.getByText('30s')).toBeTruthy();
+  });
+
+  it('is read by a developer tool with its state and its setter', () => {
+    render(onScreen(<Traffic defaultActive={2} />));
+
+    const read = snapshot().map(({ kind, state, actions }) => ({ kind, state, actions }));
+
+    expect(read).toEqual([{ kind: 'chart', state: { active: 2 }, actions: ['setActive'] }]);
+  });
+
+  it('moves under a developer tool’s call', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', false);
+    render(onScreen(<Traffic defaultActive={2} />));
+
+    const report = await act({ steps: [{ ref: 'c1', action: 'setActive', args: [0] }] });
+
+    expect(report.controls[0]?.state).toEqual({ active: 0 });
+    expect(screen.getByText('now')).toBeTruthy();
   });
 });

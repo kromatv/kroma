@@ -11,8 +11,6 @@
 // there is no `:first-child` here and Yoga has no `order`.
 
 import {
-  Children,
-  isValidElement,
   type ReactNode,
   useCallback,
   useEffect,
@@ -24,29 +22,20 @@ import {
 import type { LayoutChangeEvent, StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { GroupOrientation } from '#ui/lib/group-shape';
-import { useControllable } from '#ui/lib/use-controllable.hook';
+import { type ChangeDetails, defineControl, typed, useControl } from '#ui/lib/control';
+import { useAutoSave } from './resizable-autosave.hook';
 import {
-  PanelIndexContext,
   ResizableGroupContext,
   type ResizableGroupState,
   type ResizableLayoutDetails,
-  SeamIndexContext,
 } from './resizable-context';
 import { Handle } from './resizable-handle.component';
-import {
-  adjust,
-  defaultLayout,
-  FULL,
-  limitsFor,
-  type PanelSpec,
-  resetSeam,
-  resizePanel,
-  sameLayout,
-  solve,
-} from './resizable-layout';
+import { defaultLayout, limitsFor, sameLayout, solve } from './resizable-layout';
+import { useMoves } from './resizable-moves.hook';
 import { Panel } from './resizable-panel';
+import { resizableParts } from './resizable-parts';
 import { HANDLE_THICKNESS } from './resizable-seam.component';
-import { browserStorage, type ResizableStorage, readLayout, writeLayout } from './resizable-store';
+import { browserStorage, type ResizableStorage, readLayout } from './resizable-store';
 
 interface ResizableRootProps {
   /** Which way the panels run. `horizontal` puts them side by side with
@@ -76,45 +65,12 @@ interface ResizableRootProps {
   children?: ReactNode;
 }
 
-interface Parts {
-  specs: PanelSpec[];
-  seams: number;
-  nodes: ReactNode[];
-}
-
-function walk(children: ReactNode): Parts {
-  const specs: PanelSpec[] = [];
-  let seams = 0;
-  // `Children.toArray` has already given every child a stable key of its own,
-  // which is what the providers wrap themselves in: an index would renumber the
-  // panels the moment a window crossing a breakpoint drops one.
-  const nodes = Children.toArray(children).map((child) => {
-    if (!isValidElement(child)) {
-      return child;
-    }
-    if (child.type === Panel) {
-      const at = specs.length;
-      specs.push(child.props as PanelSpec);
-      return (
-        <PanelIndexContext key={child.key} value={at}>
-          {child}
-        </PanelIndexContext>
-      );
-    }
-    if (child.type === Handle) {
-      seams += 1;
-      return (
-        <SeamIndexContext key={child.key} value={specs.length - 1}>
-          {child}
-        </SeamIndexContext>
-      );
-    }
-    return child;
-  });
-  return { specs, seams, nodes };
-}
-
 const NOTHING: readonly number[] = [];
+
+const resizableControl = defineControl('resizable', {
+  state: { layout: typed<readonly number[] | null>(null) },
+  reasons: ['drag', 'commit', 'restore'],
+});
 
 /**
  * A group of resizable panels.
@@ -138,7 +94,7 @@ function Root({
   style,
   children,
 }: Readonly<ResizableRootProps>) {
-  const parts = useMemo(() => walk(children), [children]);
+  const parts = useMemo(() => resizableParts(children), [children]);
   const arrangement = `${orientation}:${parts.specs.length}`;
 
   const [length, setLength] = useState(0);
@@ -154,31 +110,39 @@ function Root({
 
   const [restored] = useState(() => readLayout(store, autoSaveId, arrangement) ?? openAt ?? null);
 
-  // Null while nothing has been asked for: the panels' own defaults are then
-  // re-derived on every window, which is what resolves a `'280px'` default the
-  // first frame could not.
-  const [wish, setWish] = useControllable<readonly number[] | null>(layoutProp, restored);
-  const mine = wish?.length === parts.specs.length ? wish : null;
-  const layout = useMemo(() => (mine ? solve(mine, limits) : opened), [mine, limits, opened]);
-
   const report = useRef(onLayoutChange);
   const told = useRef<readonly number[]>(NOTHING);
   const settled = useRef(true);
+  const tell = (next: readonly number[] | null, { reason, source }: ChangeDetails) => {
+    if (next === null || reason === 'restore') {
+      return;
+    }
+    told.current = next;
+    settled.current = reason !== 'drag';
+    report.current?.(next, { committed: settled.current, user: source === 'user' });
+  };
+  // Null while nothing has been asked for: the panels' own defaults are then
+  // re-derived on every window, which is what resolves a `'280px'` default the
+  // first frame could not.
+  const [{ layout: wish, setLayout }] = useControl(resizableControl, {
+    layout: layoutProp,
+    defaultLayout: restored,
+    onLayoutChange: tell,
+    disabled,
+  });
+  const mine = wish?.length === parts.specs.length ? wish : null;
+  const layout = useMemo(() => (mine ? solve(mine, limits) : opened), [mine, limits, opened]);
 
   const commit = useCallback(
     (next: readonly number[], committed: boolean) => {
-      const moved = !sameLayout(next, told.current);
-      if (!moved && (!committed || settled.current)) {
-        return;
+      if (!sameLayout(next, told.current)) {
+        setLayout(next, committed ? 'commit' : 'drag');
+      } else if (committed && !settled.current) {
+        settled.current = true;
+        report.current?.(next, { committed, user: true });
       }
-      told.current = next;
-      settled.current = committed;
-      if (moved) {
-        setWish(next);
-      }
-      report.current?.(next, { committed, user: true });
     },
-    [setWish],
+    [setLayout],
   );
 
   // A layout that changed without anyone touching a seam - a window narrowing
@@ -193,63 +157,16 @@ function Root({
     report.current?.(layout, { committed: true, user: false });
   }, [layout]);
 
-  // A window crossing a breakpoint hands the group a different set of panels,
-  // and the layout written for the old set says nothing about the new one.
-  const arranged = useRef(arrangement);
-  useEffect(() => {
-    if (arranged.current === arrangement) {
-      return;
-    }
-    arranged.current = arrangement;
-    setWish(readLayout(store, autoSaveId, arrangement));
-  }, [arrangement, store, autoSaveId, setWish]);
+  useAutoSave({ store, autoSaveId, arrangement, mine, restore: setLayout });
 
-  useEffect(() => {
-    if (mine) {
-      writeLayout(store, autoSaveId, arrangement, mine);
-    }
-  }, [store, autoSaveId, arrangement, mine]);
-
-  const from = useRef<readonly number[]>(NOTHING);
-  const at = useRef({ layout, limits, available, opened });
-  // A layout effect rather than render-phase writes: as fresh (no drag or key
+  // A layout effect rather than a render-phase write: as fresh (no drag or key
   // event can land between the commit and it), and a place the React Compiler
   // allows a ref, so the group stays memoisable.
   useLayoutEffect(() => {
     report.current = onLayoutChange;
-    at.current = { layout, limits, available, opened };
   });
 
-  const begin = useCallback(() => {
-    from.current = at.current.layout;
-  }, []);
-
-  const drag = useCallback(
-    (seam: number, delta: number, committed: boolean) => {
-      const room = at.current.available;
-      if (room <= 0) {
-        return;
-      }
-      const base =
-        from.current.length === at.current.layout.length ? from.current : at.current.layout;
-      commit(adjust(base, seam, (delta / room) * FULL, at.current.limits), committed);
-    },
-    [commit],
-  );
-
-  const reset = useCallback(
-    (seam: number) => {
-      commit(resetSeam(at.current.layout, seam, at.current.opened, at.current.limits), true);
-    },
-    [commit],
-  );
-
-  const resize = useCallback(
-    (panel: number, size: number) => {
-      commit(resizePanel(at.current.layout, panel, size, at.current.limits), true);
-    },
-    [commit],
-  );
+  const { begin, drag, reset, resize } = useMoves({ layout, limits, available, opened }, commit);
 
   const state = useMemo<ResizableGroupState>(
     () => ({
