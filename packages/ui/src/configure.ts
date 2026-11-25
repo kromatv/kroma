@@ -26,6 +26,7 @@ import { FocusServicesProvider, useFocusServicesParent } from './lib/focus-servi
 import type { ImageBackend } from './lib/image-backend.hook';
 import { createInputGate, InputGateProvider, useInputGateParent } from './lib/input-gate';
 import { createInputSource, InputSourceProvider, useInputSourceParent } from './lib/input-source';
+import { InspectAnchor } from './lib/inspect/inspect-anchor';
 import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
 import { createMenuKeys } from './lib/menu-keys';
 import { createScrollLock } from './lib/scroll-lock';
@@ -146,18 +147,23 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
     };
   }, [parent, config, scrollLock, menuKeys, frostHost]);
   return createElement(
-    FocusServicesProvider,
-    { value: focus },
+    Fragment,
+    null,
+    createElement(InspectAnchor),
     createElement(
-      InputSourceProvider,
-      { value: input },
+      FocusServicesProvider,
+      { value: focus },
       createElement(
-        InputGateProvider,
-        { value: inheritedGate ?? ownedGate },
+        InputSourceProvider,
+        { value: input },
         createElement(
-          KitSettingsContext.Provider,
-          { value },
-          createElement(KitStyleProvider, { config }, children),
+          InputGateProvider,
+          { value: inheritedGate ?? ownedGate },
+          createElement(
+            KitSettingsContext.Provider,
+            { value },
+            createElement(KitStyleProvider, { config }, children),
+          ),
         ),
       ),
     ),
