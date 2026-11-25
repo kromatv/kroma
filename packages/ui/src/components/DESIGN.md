@@ -488,6 +488,15 @@ where it is.
 shims. Every call site is in this repo, `bun run typecheck` is the gate, and a shim
 that outlives the migration is a second API nobody is maintaining.
 
+**Its name.** Nobody writes a `displayName`. The build (`kroma-names` in
+`kromaUI()`, and the same door walk in the Metro transformer) follows the kit's
+two doors, `@kromatv/ui` and `@kromatv/ui/kit`, to the file that declares each
+export: a PascalCase component is named as the door exports it, and each part of
+an exported namespace `Namespace.Key`. That is what React DevTools and
+`componentName()` (`#ui/lib/component-names`) read in a minified build, and
+only what a door exports is named. `kit-names.compiled.test.tsx` holds every
+door export to it.
+
 ---
 
 ## 9. The checklist

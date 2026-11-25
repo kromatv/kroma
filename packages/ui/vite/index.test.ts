@@ -24,18 +24,23 @@ afterEach(() => {
 });
 
 describe('kromaUI', () => {
-  it('is the scan, the icon subset, the tokens, the font preload and the compiler, in order', () => {
+  it('is the scan, the icon subset, the tokens, the font preload, the names and the compiler, in order', () => {
     expect(kromaUI().map((p) => p.name)).toEqual([
       'kroma-scan',
       'kroma-ui',
       'kroma-tokens',
       'kroma-font-preload',
+      'kroma-names',
       'kroma-atomic',
     ]);
   });
 
   it('leaves the compiler out when asked', () => {
     expect(kromaUI({ atomic: false }).map((p) => p.name)).not.toContain('kroma-atomic');
+  });
+
+  it('leaves the names out when asked', () => {
+    expect(kromaUI({ names: false }).map((p) => p.name)).not.toContain('kroma-names');
   });
 
   it('answers both collectors from one walk, and only on a build', () => {
