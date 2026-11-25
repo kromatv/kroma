@@ -3,11 +3,14 @@ import {
   fallbackChain,
   generalForm,
   labelKey,
+  type Message,
   namespaceOf,
   namespaceOfFile,
   parentTags,
+  pluralCategories,
   tokensIn,
   variablesOf,
+  variantOf,
 } from '@kromatv/i18n/model';
 import { sameLock } from './lock.ts';
 import { NOTES_FILE, readNotes, strayNotes } from './notes.ts';
@@ -135,6 +138,29 @@ function translationProblems({ set, source, bin }: Checked, status: LocaleStatus
   return problems;
 }
 
+function pluralProblems(
+  { set, source }: Checked,
+  locale: string,
+  messages: ReadonlyMap<string, Message>,
+): Problem[] {
+  const categories = pluralCategories(locale);
+  if (categories === null) {
+    return [];
+  }
+  const allowed = new Set<string>(['zero', ...categories]);
+  return [...messages.values()]
+    .flatMap((message) => Object.keys(message.forms))
+    .flatMap((form) => {
+      const category = variantOf(form, source.bases)?.category;
+      return category === undefined || allowed.has(category) ? [] : [{ form, category }];
+    })
+    .map(({ form, category }) => ({
+      set: set.name,
+      where: catalogName(set, locale, fileOf(set, source, form)),
+      message: `${form}: ${category} is no plural category of ${locale} (${categories.join(', ')})`,
+    }));
+}
+
 function stageProblems({ set, bin }: Checked, status: LocaleStatus): Problem[] {
   const problems: Problem[] = [];
   const where = status.locale;
@@ -210,22 +236,26 @@ export function checkSet(set: CatalogSet, bin: string = DEFAULT_BIN): Problem[] 
       },
     ];
   }
-  const source = readSource(set);
-  const checked: Checked = { set, source, bin };
-  const problems: Problem[] = strayCatalogs(set);
-  for (const locale of locales) {
-    if (!isLocaleTag(locale)) {
-      problems.push({ set: set.name, where: locale, message: 'is not a language tag' });
-      continue;
-    }
-    problems.push(...fileProblems(checked, locale), ...labelProblems(set, source, locale));
-    if (locale === source.locale) {
-      continue;
-    }
-    const status = inspectLocale(set, source, locale);
-    problems.push(...translationProblems(checked, status), ...stageProblems(checked, status));
+  const checked: Checked = { set, source: readSource(set), bin };
+  return [...strayCatalogs(set), ...locales.flatMap((locale) => localeProblems(checked, locale))];
+}
+
+function localeProblems(checked: Checked, locale: string): Problem[] {
+  const { set, source } = checked;
+  if (!isLocaleTag(locale)) {
+    return [{ set: set.name, where: locale, message: 'is not a language tag' }];
   }
-  return problems;
+  const shared = [...fileProblems(checked, locale), ...labelProblems(set, source, locale)];
+  if (locale === source.locale) {
+    return [...shared, ...pluralProblems(checked, locale, source.messages)];
+  }
+  const status = inspectLocale(set, source, locale);
+  return [
+    ...shared,
+    ...translationProblems(checked, status),
+    ...pluralProblems(checked, locale, status.messages),
+    ...stageProblems(checked, status),
+  ];
 }
 
 /** What a policy file names that the folders do not hold. Asked of the set

@@ -15,6 +15,7 @@ const FR = {
   },
 };
 const DE_LANG = { 'de/lang.json': { 'lang.de': 'Deutsch' } };
+const PAGES = { 'fr/nav.json': { 'nav.count': '{count} pages', 'nav.count_one': 'Une page' } };
 
 function problemsOf(set: CatalogSet): string[] {
   syncSet(set);
@@ -48,6 +49,47 @@ describe('checkSet', () => {
     const set = setOf({ ...FR, ...DE_LANG, 'de/nav.json': { 'nav.count_one': 'Eine Seite' } });
 
     expect(problemsOf(set).join('\n')).toContain('nav.count_one has no nav.count beside it');
+  });
+
+  it('passes the plural forms a language has, without asking for every one of them', () => {
+    const set = setOf({
+      ...PAGES,
+      'pl/nav.json': {
+        'nav.count': '{count} stron',
+        'nav.count_one': 'Jedna strona',
+        'nav.count_few': '{count} strony',
+      },
+    });
+
+    expect(problemsOf(set)).toEqual([]);
+  });
+
+  it('refuses a plural form the language does not have, and names the ones it has', () => {
+    const set = setOf({
+      ...PAGES,
+      'ja/nav.json': { 'nav.count': '{count} ページ', 'nav.count_one': '1 ページ' },
+    });
+
+    expect(problemsOf(set)).toEqual([
+      'ja/nav.json: nav.count_one: one is no plural category of ja (other)',
+    ]);
+  });
+
+  it('holds the source language to its own plural categories', () => {
+    const set = setOf({ 'fr/nav.json': { ...PAGES['fr/nav.json'], 'nav.count_few': 'Peu' } });
+
+    expect(problemsOf(set)).toEqual([
+      'fr/nav.json: nav.count_few: few is no plural category of fr (one, many, other)',
+    ]);
+  });
+
+  it('lets every language write a zero form, for the sentence a count of zero reads', () => {
+    const set = setOf({
+      ...PAGES,
+      'ja/nav.json': { 'nav.count': '{count} ページ', 'nav.count_zero': 'ページなし' },
+    });
+
+    expect(problemsOf(set)).toEqual([]);
   });
 
   it('refuses an empty translation', () => {

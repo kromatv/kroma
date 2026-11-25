@@ -151,10 +151,13 @@ English, a limit on length.
 - Leave a message out when you have no translation. Never write an empty string
   or copy the English in.
 - Plurals are key suffixes: `_one`, `_few`, `_many`, `_other` and so on, the
-  categories your language has in CLDR. The key without a suffix is the general
-  form and must exist. Russian writes `key`, `key_one`, `key_few` and
-  `key_many`; Japanese writes `key` alone. `key_zero` is honoured at zero in
-  every language, for a sentence like "No results".
+  categories your language has in CLDR. `todo` lists them as `categories`
+  beside each plural message. The key without a suffix is the general form and
+  must exist. Write a suffix only where its sentence differs from the general
+  form: Russian writes `key`, `key_one`, `key_few` and `key_many`, French skips
+  `many` and writes `key` and `key_one`, Japanese writes `key` alone. The check
+  refuses a suffix your language does not have. `key_zero` is the exception,
+  honoured at zero in every language, for a sentence like "No results".
 - Translate the meaning. The English is the source of truth.
 
 ## Check
