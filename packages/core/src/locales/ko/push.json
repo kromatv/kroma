@@ -1,0 +1,19 @@
+{
+  "push.blocked.denied": "이 사이트의 알림이 차단되어 있습니다. 브라우저 설정에서 알림을 허용한 후 다시 시도하세요.",
+  "push.blocked.insecure": "푸시 알림에는 보안(HTTPS) 연결이 필요합니다.",
+  "push.blocked.needsInstall": "iOS에서는 먼저 KROMA를 홈 화면에 추가하세요. 푸시는 설치된 앱에서만 작동합니다.",
+  "push.blocked.needsRebuild": "이 빌드에는 아직 푸시 지원이 포함되어 있지 않습니다. 앱을 다시 빌드한 후(expo prebuild, 그다음 실행) 활성화하세요.",
+  "push.blocked.simulator": "푸시 알림에는 실제 기기가 필요합니다. 시뮬레이터는 푸시 등록을 지원하지 않습니다.",
+  "push.blocked.unsupported": "이 브라우저는 푸시 알림을 지원하지 않습니다.",
+  "push.channel.mediaAvailable": "시청 가능",
+  "push.channel.requestReview": "검토할 요청",
+  "push.description": "KROMA가 꺼져 있어도 알림을 받습니다. 이 설정은 기기별로 적용되며, 아래 카테고리는 계정 전체에 적용됩니다.",
+  "push.disable": "사용 안 함",
+  "push.enable": "사용",
+  "push.failed": "푸시 알림을 활성화하지 못했습니다.",
+  "push.sendTest": "테스트 전송",
+  "push.testFailed": "전송된 알림이 없습니다.",
+  "push.testHint": "푸시가 이 기기에 도착하는지 확인합니다.",
+  "push.testSent": "전송했습니다. 알림을 확인하세요.",
+  "push.title": "이 기기의 푸시"
+}

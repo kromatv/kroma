@@ -1,0 +1,17 @@
+{
+  "titleInfo.action": "정보 편집",
+  "titleInfo.aired": "방영일",
+  "titleInfo.airedHint": "처음 방영된 날짜입니다. 예: 2008-01-20",
+  "titleInfo.genres": "장르",
+  "titleInfo.genresHint": "장르는 쉼표로 구분하세요.",
+  "titleInfo.hint": "여기에 입력한 내용은 모든 언어에서 .nfo나 TMDB의 텍스트 대신 표시됩니다. 비워 둔 항목은 회색으로 표시된 텍스트를 유지합니다.",
+  "titleInfo.loadFailed": "정보를 불러오지 못했습니다.",
+  "titleInfo.name": "제목",
+  "titleInfo.released": "공개일",
+  "titleInfo.releasedHint": "연도만(예: 1995) 또는 날짜(예: 1995-12-15)를 입력하세요.",
+  "titleInfo.saveFailed": "정보를 저장하지 못했습니다.",
+  "titleInfo.sortTitle": "정렬 제목",
+  "titleInfo.sortTitleHint": "작품이 이 이름으로 정렬됩니다. 예: Lord of the Rings, The. 표시되는 제목은 바뀌지 않습니다.",
+  "titleInfo.summary": "줄거리",
+  "titleInfo.title": "정보"
+}

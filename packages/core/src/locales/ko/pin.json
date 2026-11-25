@@ -1,0 +1,11 @@
+{
+  "pin.backHint": "뒤로 가면 프로필 선택으로 돌아갑니다",
+  "pin.changeSubtitle": "현재 PIN을 입력하세요",
+  "pin.clearSubtitle": "PIN을 제거하려면 PIN을 입력하세요",
+  "pin.confirmSubtitle": "PIN을 다시 입력하세요",
+  "pin.lockedRetry": "{seconds}초 후 다시 시도하세요",
+  "pin.mismatch": "PIN이 일치하지 않습니다",
+  "pin.setSubtitle": "4자리 PIN을 선택하세요",
+  "pin.verifySubtitle": "PIN으로 보호된 프로필",
+  "pin.verifying": "확인 중…"
+}

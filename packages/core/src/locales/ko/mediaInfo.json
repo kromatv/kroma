@@ -1,0 +1,18 @@
+{
+  "mediaInfo.action": "미디어 정보",
+  "mediaInfo.audio": "오디오",
+  "mediaInfo.bit": "비트",
+  "mediaInfo.container": "컨테이너",
+  "mediaInfo.default": "기본",
+  "mediaInfo.duration": "재생 시간",
+  "mediaInfo.editionUnnamed": "일반판",
+  "mediaInfo.noFile": "이 항목에 파일이 없습니다.",
+  "mediaInfo.noSubs": "없음",
+  "mediaInfo.size": "크기",
+  "mediaInfo.subtitles": "자막",
+  "mediaInfo.title": "미디어 정보",
+  "mediaInfo.unknownFile": "알 수 없는 파일",
+  "mediaInfo.unprobed": "파일 분석 대기 중입니다.",
+  "mediaInfo.unreadable": "이 파일은 열리지 않습니다.",
+  "mediaInfo.video": "비디오"
+}

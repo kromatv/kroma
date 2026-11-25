@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "TV 화면 아래쪽을 확인하세요.",
+  "handoff.checkPrompt": "{name}에 표시된 코드를 입력하세요",
+  "handoff.checkRequired": "이 TV는 화면에 표시된 코드를 요구합니다",
+  "handoff.checkTooMany": "잘못된 코드를 너무 많이 입력했습니다. TV에서 다시 시작하세요.",
+  "handoff.checkWrong": "코드가 올바르지 않습니다. TV 화면에서 다시 확인하세요.",
+  "handoff.connecting": "로그인하는 중…",
+  "handoff.gone": "대기를 중단했습니다",
+  "handoff.nearbyEmpty": "대기 중인 TV가 없습니다",
+  "handoff.nearbyEmptyHint": "TV에서 KROMA를 열고 로그인 화면에 그대로 두세요.",
+  "handoff.nearbySearching": "TV를 찾는 중…",
+  "handoff.nearbySub": "로그인할 TV를 선택하세요. 스캔할 것도, 입력할 것도 없습니다.",
+  "handoff.nearbyTitle": "이 네트워크의 TV",
+  "handoff.otherWays": "다른 연결 방법",
+  "handoff.rowDone": "로그인됨",
+  "handoff.tooManyHere": "이 네트워크에서 이미 너무 많은 TV가 대기 중입니다",
+  "handoff.tooOften": "이 TV가 너무 자주 신호를 보냈습니다. 잠시 후 다시 시도합니다.",
+  "handoff.tvBeacon": "휴대폰에서 이 TV는 {name} 이름으로 표시됩니다",
+  "handoff.tvCheck": "코드 {check}"
+}

@@ -1,0 +1,8 @@
+{
+  "form.email": "이메일 주소 형식이 아닙니다.",
+  "form.mismatch": "두 값이 일치하지 않습니다.",
+  "form.number": "숫자만 입력하세요.",
+  "form.required": "필수 항목입니다.",
+  "form.submitFailed": "전송하지 못했습니다. 다시 시도하세요.",
+  "form.tooShort": "최소 {min}자 이상 입력하세요."
+}

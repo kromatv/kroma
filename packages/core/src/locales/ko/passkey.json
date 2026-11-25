@@ -1,0 +1,10 @@
+{
+  "passkey.authFailed": "패스키 로그인에 실패했습니다",
+  "passkey.ceremonyExpired": "패스키 요청이 만료되었습니다. 다시 시도하세요",
+  "passkey.defaultName": "패스키",
+  "passkey.notFound": "패스키를 찾을 수 없습니다",
+  "passkey.originInvalid": "패스키는 보안(HTTPS) 연결이 필요합니다",
+  "passkey.originMissing": "요청 출처가 없습니다",
+  "passkey.registerFailed": "패스키를 등록하지 못했습니다",
+  "passkey.startFailed": "패스키 요청을 시작하지 못했습니다"
+}

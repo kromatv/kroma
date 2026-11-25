@@ -1,0 +1,8 @@
+{
+  "field.apiKey": "API 키",
+  "field.categories": "카테고리",
+  "field.name": "이름",
+  "field.password": "비밀번호",
+  "field.url": "URL",
+  "field.username": "사용자 이름"
+}

@@ -1,0 +1,18 @@
+{
+  "rematch.action": "매칭 수정",
+  "rematch.applyFailed": "매칭을 업데이트하지 못했습니다.",
+  "rematch.confidence": "일치율 {score}%",
+  "rematch.confidenceValue": "{score}%",
+  "rematch.current": "현재",
+  "rematch.groupLikely": "일치 가능성 높음",
+  "rematch.groupOther": "기타 결과",
+  "rematch.loadFailed": "TMDB 추천을 불러오지 못했습니다.",
+  "rematch.noResults": "이 검색어로는 TMDB 결과가 없습니다.",
+  "rematch.noResultsHint": "제목, 연도, 줄거리를 직접 입력할 수 있습니다.",
+  "rematch.parsedAs": "감지된 제목: {title}",
+  "rematch.reset": "자동 매칭으로 복원",
+  "rematch.search": "검색",
+  "rematch.searchPlaceholder": "TMDB에서 다른 작품 검색",
+  "rematch.title": "TMDB 매칭 수정",
+  "rematch.tmdbId": "TMDB #{id}"
+}

@@ -1,0 +1,12 @@
+{
+  "addProfile.addManually": "직접 추가",
+  "addProfile.addManuallySub": "원격 서버 주소 입력",
+  "addProfile.availableServers": "사용 가능한 서버",
+  "addProfile.checking": "확인 중…",
+  "addProfile.new": "신규",
+  "addProfile.reachable": "온라인",
+  "addProfile.showCount": "시리즈 {count}개",
+  "addProfile.subtitle": "서버를 선택한 다음 빠른 연결로 프로필을 연결하세요.",
+  "addProfile.title": "프로필 추가",
+  "addProfile.unreachable": "연결 불가"
+}
