@@ -2,6 +2,7 @@
 
 import type { ArtKind, ArtRole } from '@kromatv/client/media';
 import { I18nProvider } from '@kromatv/ui';
+import { KitProvider } from '@kromatv/ui/kit';
 import { createInputTestHost } from '@kromatv/ui/testing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
@@ -11,6 +12,7 @@ import { ArtworkDialog } from './artwork-dialog.component';
 const art = vi.hoisted(() => ({
   get: vi.fn(),
   choose: vi.fn(),
+  chooseLink: vi.fn(),
   reset: vi.fn(),
 }));
 
@@ -56,7 +58,9 @@ function open(kind: ArtKind, id: string, roles?: readonly ArtRole[]) {
   inputHost.render(
     <QueryClientProvider client={queries}>
       <I18nProvider locale="en">
-        <ArtworkDialog />
+        <KitProvider config={{ entry: { physicalKeyboard: true } }}>
+          <ArtworkDialog />
+        </KitProvider>
       </I18nProvider>
     </QueryClientProvider>,
   );
@@ -76,6 +80,20 @@ function pick(slot: number, file: File) {
 function press(name: string) {
   inputHost.clearPressGuard();
   fireEvent.click(screen.getByRole('button', { name }));
+}
+
+const LINK = 'https://images.example/poster.png';
+
+async function typeLink(slot: number, address: string) {
+  const toggle = (await screen.findAllByRole('button', { name: 'From a link' }))[slot];
+  if (!toggle) {
+    throw new Error('no link button');
+  }
+  inputHost.clearPressGuard();
+  fireEvent.click(toggle);
+  const field = await screen.findByLabelText('Image address');
+  fireEvent.change(field, { target: { value: address } });
+  return field;
 }
 
 function pictureCannotBeDrawn() {
@@ -229,4 +247,54 @@ it('names the title once, under what it edits, and closes from its own header', 
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
   await waitFor(() => expect(screen.queryByText('Poster')).toBeNull());
+});
+
+it('sends the address typed as the poster of the title, then puts the field away', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  art.chooseLink.mockResolvedValue({ url: '/api/images/chosen-e.webp' });
+  open('item', 'm1');
+
+  await typeLink(0, `  ${LINK} `);
+  press('Use this picture');
+
+  await waitFor(() =>
+    expect(art.chooseLink).toHaveBeenCalledWith({ kind: 'item', id: 'm1', role: 'poster' }, LINK),
+  );
+  await waitFor(() => expect(screen.queryByLabelText('Image address')).toBeNull());
+  expect(createObjectURL).not.toHaveBeenCalled();
+});
+
+it('sends the address when Enter is pressed in the field', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  art.chooseLink.mockResolvedValue({ url: '/api/images/chosen-f.webp' });
+  open('show', 's1');
+
+  const field = await typeLink(1, LINK);
+  fireEvent.keyDown(field, { key: 'Enter', code: 'Enter' });
+
+  await waitFor(() =>
+    expect(art.chooseLink).toHaveBeenCalledWith({ kind: 'show', id: 's1', role: 'backdrop' }, LINK),
+  );
+});
+
+it('keeps the address and says why when the picture cannot be fetched', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  art.chooseLink.mockRejectedValue(new Error('unreachable'));
+  open('item', 'm1');
+
+  await typeLink(0, LINK);
+  press('Use this picture');
+
+  expect(await screen.findByText('Could not update the artwork.')).toBeTruthy();
+  expect(screen.getByLabelText('Image address')).toBeTruthy();
+});
+
+it('sends nothing until an address is typed', async () => {
+  art.get.mockResolvedValue({ poster: null, backdrop: null });
+  open('item', 'm1');
+
+  await typeLink(0, '   ');
+  press('Use this picture');
+
+  expect(art.chooseLink).not.toHaveBeenCalled();
 });

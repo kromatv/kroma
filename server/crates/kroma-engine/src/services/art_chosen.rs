@@ -1,13 +1,13 @@
 //! The poster, the backdrop and the logo an admin chooses for a title
-//! (MEDIA-50, MEDIA-54). They come before the pictures kept beside its files
-//! and before fetched art, and a refresh of its metadata leaves them where they
-//! are (LIB-44).
+//! (MEDIA-50, MEDIA-54), uploaded or linked to (MEDIA-57). They come before the
+//! pictures kept beside its files and before fetched art, and a refresh of its
+//! metadata leaves them where they are (LIB-44).
 
 use anyhow::Result;
 
 use crate::db;
 use crate::db::art_chosen::Slot;
-use crate::infra::image::store_upload;
+use crate::infra::image::{fetch_link, store_upload};
 use crate::services::art_beside::max_width;
 use crate::services::titles::{announce, exists};
 use crate::state::SharedState;
@@ -21,6 +21,8 @@ pub enum Choice {
     Shown(String),
     /// The bytes are not a picture KROMA can read.
     Unreadable,
+    /// The link serves nothing KROMA may fetch.
+    Unreachable,
     /// No title has that id.
     NoSuchTitle,
 }
@@ -30,6 +32,23 @@ pub fn choose(state: &SharedState, slot: Slot<'_>, bytes: &[u8]) -> Result<Choic
     if !exists(&state.db, slot.kind, slot.id)? {
         return Ok(Choice::NoSuchTitle);
     }
+    keep(state, slot, bytes)
+}
+
+/// Show the picture at `link`, an `http` or `https` URL on the public internet,
+/// in `slot`, in place of any chosen before. It is fetched once and kept as an
+/// upload is.
+pub fn choose_link(state: &SharedState, slot: Slot<'_>, link: &str) -> Result<Choice> {
+    if !exists(&state.db, slot.kind, slot.id)? {
+        return Ok(Choice::NoSuchTitle);
+    }
+    match fetch_link(link) {
+        Some(bytes) => keep(state, slot, &bytes),
+        None => Ok(Choice::Unreachable),
+    }
+}
+
+fn keep(state: &SharedState, slot: Slot<'_>, bytes: &[u8]) -> Result<Choice> {
     let width = Some(max_width(slot.role));
     let Some(url) = store_upload(&state.config.data_dir, bytes, width, CHOSEN_PREFIX) else {
         return Ok(Choice::Unreadable);

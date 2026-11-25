@@ -14,9 +14,10 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { type ChangeEvent, useRef } from 'react';
+import { type ChangeEvent, useRef, useState } from 'react';
 import { createCallable } from 'react-call';
 
+import { ArtLinkForm } from '#web/features/catalog/art-link-form.component';
 import {
   ArtworkFramingPanel,
   artworkFramingBand,
@@ -131,12 +132,15 @@ const pickFor =
     }
   };
 
-function SlotActions({
-  role,
-  slots,
-  chosen,
-  onPick,
-}: Readonly<{ role: ArtRole; slots: Slots; chosen: boolean; onPick: Pick }>) {
+type Actions = Readonly<{
+  role: ArtRole;
+  slots: Slots;
+  chosen: boolean;
+  onPick: Pick;
+  onLink: () => void;
+}>;
+
+function SlotActions({ role, slots, chosen, onPick, onLink }: Actions) {
   const t = useT();
   const busy = slots.busy === role;
   return (
@@ -145,6 +149,14 @@ function SlotActions({
         busy={busy}
         disabled={slots.busy !== null && !busy}
         onFile={(file) => onPick(role, file)}
+      />
+      <Button
+        variant="ghost"
+        size="sm"
+        icon="link"
+        label={t('artwork.fromLink')}
+        disabled={slots.busy !== null}
+        onPress={onLink}
       />
       {chosen ? (
         <Button
@@ -159,14 +171,24 @@ function SlotActions({
   );
 }
 
-function ArtSlot({
-  role,
-  slots,
-  shown,
-  onPick,
-}: Readonly<{ role: ArtRole; slots: Slots; shown: string | null; onPick: Pick }>) {
+type SlotProps = Readonly<{ role: ArtRole; slots: Slots; shown: string | null; onPick: Pick }>;
+
+function useSlotLink(role: ArtRole, slots: Slots) {
+  const [linking, setLinking] = useState(false);
+  const link = (url: string) => {
+    void slots.link(role, url).then((kept) => {
+      if (kept) {
+        setLinking(false);
+      }
+    });
+  };
+  return { linking, link, toggle: () => setLinking(!linking) };
+}
+
+function ArtSlot({ role, slots, shown, onPick }: SlotProps) {
   const t = useT();
   const s = useStyles(sDefinition);
+  const { linking, link, toggle } = useSlotLink(role, slots);
   const chosen = slots.chosen?.[role] ?? null;
   return (
     <Box gap={12} style={s.slot}>
@@ -175,7 +197,16 @@ function ArtSlot({
       <Text variant="meta" color="white/45">
         {t(chosen ? 'artwork.uploaded' : 'artwork.automatic')}
       </Text>
-      <SlotActions role={role} slots={slots} chosen={chosen !== null} onPick={onPick} />
+      <SlotActions
+        role={role}
+        slots={slots}
+        chosen={chosen !== null}
+        onPick={onPick}
+        onLink={toggle}
+      />
+      {linking ? (
+        <ArtLinkForm busy={slots.busy === role} disabled={slots.busy !== null} onLink={link} />
+      ) : null}
     </Box>
   );
 }

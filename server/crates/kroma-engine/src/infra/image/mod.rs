@@ -5,6 +5,7 @@
 mod beside;
 mod cache;
 mod encode;
+mod link;
 mod localize;
 mod rendition;
 mod scratch;
@@ -14,6 +15,7 @@ mod webp_header;
 pub use beside::{beside_name, cache_picture_beside, BESIDE_PREFIX};
 pub use cache::{cache_remote, local_art_missing};
 pub(crate) use encode::encode_webp_quality;
+pub use link::fetch_link;
 pub use localize::{localize, localize_title_art};
 pub use rendition::{card_base_png, card_logo_png, jpeg_rendition, sized_rendition};
 pub use upload::store_upload;
@@ -22,6 +24,8 @@ use std::path::{Path, PathBuf};
 
 #[cfg(test)]
 pub(crate) mod test_support;
+#[cfg(test)]
+pub(crate) mod test_server;
 #[cfg(test)]
 mod tests;
 
