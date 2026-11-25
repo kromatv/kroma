@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { makeClient } from '#tv/app/api-client';
 import type { Connection } from '#tv/app/providers/connection';
 import type { ServerBrowse } from '#tv/app/server-browse';
+import type { EventTap } from '#tv/app/event-tap';
 import { useCatalogueSync } from '#tv/app/use-catalogue-sync.hook';
 import { useServerHealth } from '#tv/app/use-server-health.hook';
 import {
@@ -43,6 +44,7 @@ export interface Catalogue {
   activeServerUrl: string | null;
   setActiveServer: (url: string) => void;
   setSignedIn: (v: boolean) => void;
+  events: EventTap;
 }
 
 /** Owns the TV's multi-server connection + catalogue state: discovery, the
@@ -232,7 +234,7 @@ export function useCatalogue(
     }
   });
 
-  const activity = useCatalogueSync(client, signedIn, fetchCatalogue, recheck);
+  const { activity, events } = useCatalogueSync(client, signedIn, fetchCatalogue, recheck);
 
   // Smart Hub preview (Samsung TV): keep the home-screen carousel in sync.
   useEffect(() => {
@@ -292,5 +294,5 @@ export function useCatalogue(
     ],
   );
 
-  return { connection, client, activeServerUrl, setActiveServer, setSignedIn };
+  return { connection, client, activeServerUrl, setActiveServer, setSignedIn, events };
 }

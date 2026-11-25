@@ -31,7 +31,7 @@ export function PerfProvider({
       }
     };
   }, [sampler, debug]);
-  return <Context.Provider value={sampler}>{children}</Context.Provider>;
+  return <Context value={sampler}>{children}</Context>;
 }
 
 export function usePerfSampler(): PerfSampler | null {

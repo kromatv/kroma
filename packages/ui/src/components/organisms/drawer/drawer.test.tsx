@@ -91,6 +91,31 @@ describe('the parts', () => {
     expect(scrollerOver('Resoudre')).toBeNull();
   });
 
+  it('are placed through a fragment, the way a render prop hands them over', () => {
+    const bands = (
+      <>
+        <Drawer.Header>
+          <Text>Le titre du signalement</Text>
+        </Drawer.Header>
+        <Text>Le message</Text>
+        <Drawer.Footer>
+          <Text>Resoudre</Text>
+        </Drawer.Footer>
+      </>
+    );
+
+    render(
+      <Drawer.Root open onClose={() => {}} title="Signalement">
+        {bands}
+      </Drawer.Root>,
+    );
+
+    expect(screen.queryByText('Signalement')).toBeNull();
+    expect(scrollerOver('Le message')).not.toBeNull();
+    expect(scrollerOver('Le titre du signalement')).toBeNull();
+    expect(scrollerOver('Resoudre')).toBeNull();
+  });
+
   it('keep the way out in a header of their own, without rewiring onClose', () => {
     const onClose = vi.fn();
     render(

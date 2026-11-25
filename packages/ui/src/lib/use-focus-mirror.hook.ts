@@ -5,13 +5,17 @@ import { useFocusServices } from '#ui/lib/focus-services-context';
  *  `focused`, the document's focus sits on the element it is attached to (see
  *  lib/focus-mirror). */
 export function useFocusMirror(focused: boolean): (element: unknown) => void {
-  const { mirror } = useFocusServices();
+  const { mirror, holder } = useFocusServices();
   const host = useRef<unknown>(null);
   useLayoutEffect(() => {
-    if (focused) {
-      mirror.mirrorFocus(host.current);
+    if (!focused) {
+      return undefined;
     }
-  }, [focused, mirror]);
+    const view = host.current;
+    mirror.mirrorFocus(view);
+    holder.hold(view);
+    return () => holder.drop(view);
+  }, [focused, mirror, holder]);
   return useCallback((element: unknown) => {
     host.current = element;
   }, []);

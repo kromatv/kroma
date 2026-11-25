@@ -1,10 +1,12 @@
 //! `GET /api/events`: a WebSocket streaming live [`ServerEvent`]s to a client
-//! (scan progress, library/metadata updates), and carrying the one thing a
-//! client sends upward: a TV attaching itself as a cast receiver.
+//! (scan progress, library/metadata updates), and carrying what a client sends
+//! upward: a TV attaching itself as a cast receiver, and a screen offering to
+//! describe itself and answering when asked.
 
 mod cast;
 mod connection;
 mod message;
+mod screen;
 
 use std::net::SocketAddr;
 
@@ -16,12 +18,13 @@ use axum::routing::get;
 use axum::Router;
 
 use crate::api::util::client_ip;
-use crate::model::Permission;
+use crate::model::{Permission, User};
 use crate::services::playback::classify_network;
 use crate::services::settings;
 use crate::state::SharedState;
 
 const SESSION_PROTO_PREFIX: &str = "kroma.session.";
+const MAX_SOCKET_MESSAGE: usize = 2 << 20;
 
 /// `GET /api/events` (WebSocket upgrade for the live event bus).
 pub fn routes() -> Router<SharedState> {
@@ -42,13 +45,7 @@ pub async fn events(
         return (StatusCode::UNAUTHORIZED, "authentication required").into_response();
     };
     let token = offered[SESSION_PROTO_PREFIX.len()..].to_string();
-    let pool = state.db.clone();
-    let user = tokio::task::spawn_blocking(move || crate::db::session_user(&pool, &token))
-        .await
-        .ok()
-        .and_then(|r| r.ok())
-        .flatten();
-    let Some(user) = user else {
+    let Some(user) = session_user(&state, token).await else {
         return (StatusCode::UNAUTHORIZED, "invalid or expired session").into_response();
     };
     // The bus carries per-user events (notifications) alongside server-wide
@@ -57,13 +54,25 @@ pub async fn events(
     let who = Viewer {
         network: classify_network(&ip, &settings::local_networks(&state.settings)),
         can_cast: user.can(Permission::Playback),
+        is_admin: user.is_any_admin(),
         id: user.id,
         username: user.username,
         avatar_url: user.avatar_url,
         ip,
     };
     ws.protocols([offered])
+        .max_message_size(MAX_SOCKET_MESSAGE)
+        .max_frame_size(MAX_SOCKET_MESSAGE)
         .on_upgrade(move |socket| connection::pump(socket, state, who))
+}
+
+async fn session_user(state: &SharedState, token: String) -> Option<User> {
+    let pool = state.db.clone();
+    tokio::task::spawn_blocking(move || crate::db::session_user(&pool, &token))
+        .await
+        .ok()
+        .and_then(|r| r.ok())
+        .flatten()
 }
 
 fn offered_protocol(headers: &HeaderMap) -> Option<String> {
@@ -85,4 +94,5 @@ struct Viewer {
     network: String,
     ip: String,
     can_cast: bool,
+    is_admin: bool,
 }

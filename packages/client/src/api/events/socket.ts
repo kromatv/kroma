@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import type { CastClientMessage } from '../cast';
+import type { ScreenClientMessage } from '../diagnostics';
 import type { ServerEvent } from './schemas';
+
+/** Everything a client says up `/api/events`. */
+export type ClientMessage = CastClientMessage | ScreenClientMessage;
 
 const OPEN = 1;
 
@@ -48,7 +52,7 @@ export class KromaEvents<E extends { type: string } = ServerEvent> {
 
   /** Returns false when the socket isn't open, so the caller can fall back to
    * the HTTP path rather than silently dropping the message. */
-  send(message: CastClientMessage): boolean {
+  send(message: ClientMessage): boolean {
     const ws = this.ws;
     if (ws?.readyState !== OPEN) {
       return false;

@@ -96,17 +96,17 @@ function walk(children: ReactNode): Parts {
       const at = specs.length;
       specs.push(child.props as PanelSpec);
       return (
-        <PanelIndexContext.Provider key={child.key} value={at}>
+        <PanelIndexContext key={child.key} value={at}>
           {child}
-        </PanelIndexContext.Provider>
+        </PanelIndexContext>
       );
     }
     if (child.type === Handle) {
       seams += 1;
       return (
-        <SeamIndexContext.Provider key={child.key} value={specs.length - 1}>
+        <SeamIndexContext key={child.key} value={specs.length - 1}>
           {child}
-        </SeamIndexContext.Provider>
+        </SeamIndexContext>
       );
     }
     return child;
@@ -273,7 +273,7 @@ function Root({
   };
 
   return (
-    <ResizableGroupContext.Provider value={state}>
+    <ResizableGroupContext value={state}>
       <Box
         flex
         row={orientation === 'horizontal'}
@@ -284,7 +284,7 @@ function Root({
       >
         {parts.nodes}
       </Box>
-    </ResizableGroupContext.Provider>
+    </ResizableGroupContext>
   );
 }
 

@@ -65,6 +65,7 @@ pub struct AppState {
     pub playback: Registry,
     pub last_seen: crate::services::last_seen::LastSeen,
     pub cast: crate::services::cast::Registry,
+    pub screens: crate::services::screens::Screens,
     pub metrics: Metrics,
     pub embedder: crate::point::Point,
     pub network: Arc<crate::services::network::Network>,
@@ -143,9 +144,7 @@ impl AppState {
         if settings.get_bool(crate::services::stats::ENABLED_KEY, false) {
             crate::services::stats::ensure_identity(&settings, &db);
         }
-        let downloads = Arc::new(tokio::sync::Semaphore::new(
-            crate::services::settings::max_transcodes(&settings),
-        ));
+        let downloads = download_gate(&settings);
         let services = module_services;
         kroma_media::ffmpeg_gate::set_capacity(crate::services::settings::media_workers(&settings));
         crate::services::settings::apply_encoder_choice(&settings);
@@ -190,6 +189,7 @@ impl AppState {
             playback: Registry::new(),
             last_seen: Default::default(),
             cast: crate::services::cast::Registry::new(),
+            screens: Default::default(),
             metrics,
             embedder,
             network,
@@ -212,6 +212,12 @@ impl AppState {
             scratch_dir: std::sync::OnceLock::new(),
         })
     }
+}
+
+fn download_gate(settings: &Settings) -> Arc<tokio::sync::Semaphore> {
+    Arc::new(tokio::sync::Semaphore::new(
+        crate::services::settings::max_transcodes(settings),
+    ))
 }
 
 fn hls_engine(config: &Config, settings: &Settings) -> hls::HlsEngine {

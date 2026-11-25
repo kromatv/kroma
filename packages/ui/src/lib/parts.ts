@@ -1,5 +1,6 @@
 import {
   Children,
+  Fragment,
   isValidElement,
   type JSXElementConstructor,
   type ReactElement,
@@ -7,6 +8,21 @@ import {
 } from 'react';
 
 type Sorted = ReactNode[];
+
+function opened(child: ReactNode): ReactNode {
+  return isValidElement<{ children?: ReactNode }>(child) && child.type === Fragment
+    ? directChildren(child.props.children)
+    : child;
+}
+
+/**
+ * A Root's DIRECT children, keyed like `Children.toArray`. A fragment is no
+ * wrapper: what it holds counts as written in its place, so a part inside one
+ * is still seen by its Root.
+ */
+function directChildren(children: ReactNode): ReactNode[] {
+  return Children.map(children, opened) ?? [];
+}
 
 /**
  * A Root's DIRECT children, sorted by part: one array for each part in the
@@ -18,7 +34,7 @@ function sortParts(children: ReactNode, first: unknown): [Sorted, Sorted];
 function sortParts(children: ReactNode, first: unknown, second: unknown): [Sorted, Sorted, Sorted];
 function sortParts(children: ReactNode, ...parts: unknown[]): Sorted[] {
   const sorted: Sorted[] = [...parts.map((): Sorted => []), []];
-  for (const child of Children.toArray(children)) {
+  for (const child of directChildren(children)) {
     const at = isValidElement(child) ? parts.indexOf(child.type) : -1;
     sorted[at < 0 ? parts.length : at]?.push(child);
   }
@@ -31,7 +47,7 @@ function sortParts(children: ReactNode, ...parts: unknown[]): Sorted[] {
  */
 function partsOf<P>(children: ReactNode, part: JSXElementConstructor<P>): ReactElement<P>[] {
   const found: ReactElement<P>[] = [];
-  for (const child of Children.toArray(children)) {
+  for (const child of directChildren(children)) {
     if (isValidElement<P>(child) && child.type === part) {
       found.push(child);
     }
@@ -39,4 +55,4 @@ function partsOf<P>(children: ReactNode, part: JSXElementConstructor<P>): ReactE
   return found;
 }
 
-export { partsOf, sortParts };
+export { directChildren, partsOf, sortParts };

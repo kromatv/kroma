@@ -4,9 +4,11 @@ import { iconPass, kromaUi, sourceRoots, walkSources } from '../bundler/index.ts
 import { alphaPass } from './alpha-scan.ts';
 import { kromaAtomic } from './atomic/index.ts';
 import { kromaFontPreload } from './font-preload.ts';
+import { kromaNames } from './names/index.ts';
 import { kromaTokens } from './stylesheet.ts';
 import { KNOWN_COLOR_NAMES } from './tokens.ts';
 
+export { appendNames, kromaNames, namesHash, walkKit } from './names/index.ts';
 export { tokensCss } from './tokens.ts';
 
 function findRepoRoot(from = process.cwd()): string {
@@ -28,6 +30,9 @@ export interface KromaUIOptions {
    *  `KROMA_ATOMIC=0` in the environment turns it off for a build or a dev
    *  server, to tell a compiler fault from a runtime one. */
   atomic?: boolean;
+  /** Give every kit component its public name (`Dialog.Footer`) as its
+   *  `displayName`. On by default; `KROMA_NAMES=0` turns it off. */
+  names?: boolean;
   repoRoot?: string;
 }
 
@@ -55,6 +60,7 @@ function kromaScan(repoRoot: string, icons: 'subset' | 'full') {
 export function kromaUI({
   icons = 'subset',
   atomic = process.env.KROMA_ATOMIC !== '0',
+  names = process.env.KROMA_NAMES !== '0',
   repoRoot,
 }: KromaUIOptions = {}) {
   const root = repoRoot ?? findRepoRoot();
@@ -63,6 +69,7 @@ export function kromaUI({
     kromaUi.vite({ repoRoot: root, icons }),
     kromaTokens(),
     kromaFontPreload(),
+    ...(names ? [kromaNames({ repoRoot: root })] : []),
     ...(atomic ? [kromaAtomic({ repoRoot: root })] : []),
   ];
 }

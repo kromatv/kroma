@@ -57,7 +57,7 @@ function PanelEntry({
     }),
     [nativeID, index, active, keyed, onActivate, onFire],
   );
-  return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
+  return <MenuRowContext value={row}>{entry}</MenuRowContext>;
 }
 
 function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<MenuSurfaceProps>) {

@@ -135,6 +135,11 @@ poster, a backdrop or a thumbnail opens first in a frame of its shape, 2:3 or
 16:9: drag it, zoom or turn it, then choose **Use this picture**. A logo is sent
 as it is, so its transparency stays. It takes the right to manage the library.
 
+Instead of a file, **From a link** takes the address of an image on the
+internet. KROMA fetches it once and keeps it as it is, without a frame. An
+address on your own network, such as your NAS, is refused: download the image
+and upload it instead.
+
 ### Titles and summaries from .nfo files
 
 A title can take its name, year, summary and genres from an `.nfo` file, the

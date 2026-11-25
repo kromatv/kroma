@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { getCacheKey, type TransformInput, transform } from './mdx-transformer.cjs';
 
@@ -22,6 +23,8 @@ function wraps(source: string): void {
 }
 
 const ECHO = 'module.exports = { transform: (input) => input };';
+
+const REPO = fileURLToPath(new URL('../../..', import.meta.url));
 
 const going = (filename: string, src: string): TransformInput => ({
   src,
@@ -61,6 +64,15 @@ describe('the transformer Metro reaches a .docs.mdx through', () => {
     )) as TransformInput;
 
     expect(out.src).toBe('export const a = 1;');
+  });
+
+  it('names what the kit doors export from a module, as the browser build does', async () => {
+    wraps(ECHO);
+    const input = going('packages/ui/src/components/atoms/box/box.component.tsx', '');
+
+    const out = await transform({ ...input, options: { projectRoot: REPO } });
+
+    expect(out).toMatchObject({ src: expect.stringContaining('__kromaName(Column, "Column");') });
   });
 
   it('names the variable it is missing rather than failing inside require', async () => {

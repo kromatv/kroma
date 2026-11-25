@@ -44,6 +44,7 @@
     "no-var": "error",
     "kroma/no-react-forward-ref": "error",
     "kroma/no-comment-banners": "error",
+    "kroma/no-constructed-context-value": "error",
     "kroma/index-reexports-only": "error",
     "kroma/no-nested-templates": "error",
     "kroma/owned-task-comments": "error",
@@ -377,7 +378,8 @@
         "**/*.config.ts",
         "**/*.config.mjs",
         "**/vite/**",
-        "apps/lingua/src/server/log.ts"
+        "apps/lingua/src/server/log.ts",
+        "packages/ui/src/lib/dev-warning.ts"
       ],
       "rules": {
         "no-console": "off"

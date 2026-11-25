@@ -5,8 +5,8 @@ import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
+import { type ChangeDetails, defineControl, useControl } from '#ui/lib/control';
 import { useFlipMotion } from '#ui/lib/flip-motion.hook';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 
 const FLIP_MS = motion.duration.fast;
 
@@ -58,6 +58,11 @@ const switchVariants = sv({
 
 type SwitchSize = keyof typeof track;
 
+const switchControl = defineControl('switch', {
+  state: { checked: false },
+  actions: { toggle: ({ checked }) => ({ checked: !checked }) },
+});
+
 interface SwitchProps extends Omit<
   FocusableProps,
   'children' | 'onPress' | 'style' | 'role' | 'checked'
@@ -66,7 +71,8 @@ interface SwitchProps extends Omit<
    *  from `defaultChecked` and reports through `onCheckedChange`. */
   checked?: boolean;
   defaultChecked?: boolean;
-  onCheckedChange?: (next: boolean) => void;
+  /** `details.cancel()` keeps the switch as it was. */
+  onCheckedChange?: (next: boolean, details: ChangeDetails) => void;
   size?: SwitchSize;
   style?: StyleProp<ViewStyle>;
 }
@@ -74,23 +80,14 @@ interface SwitchProps extends Omit<
 /** The on/off primitive. A television has no gestures, so it is a Focusable that
  *  toggles on Select rather than a draggable thumb, and the track fills amber so
  *  the state reads from three metres. */
-function Switch({
-  checked: checkedProp,
-  defaultChecked = false,
-  onCheckedChange,
-  size = 'sm',
-  disabled = false,
-  style,
-  ...focusProps
-}: Readonly<SwitchProps>) {
-  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onCheckedChange);
+function Switch({ size = 'sm', style, ...props }: Readonly<SwitchProps>) {
+  const [{ checked, toggle }, focusProps] = useControl(switchControl, props);
   return (
     <Focusable
       {...focusProps}
       role="switch"
       checked={checked}
-      disabled={disabled}
-      onPress={() => setChecked(!checked)}
+      onPress={toggle}
       sv={switchVariants}
       vars={{ size, checked }}
       style={style}

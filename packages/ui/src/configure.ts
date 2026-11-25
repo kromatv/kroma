@@ -18,6 +18,7 @@ import {
   type StyleRuntimeOptions,
 } from './core/style-runtime';
 import { ThemeHost } from './core/theme-host.component';
+import { ControlEngineProvider, useProvidedControlEngine } from './lib/control/control-context';
 import type { DeviceStore } from './lib/device-store';
 import type { ControlSize } from './lib/field-shell';
 import { createFocusServices } from './lib/focus-services';
@@ -26,6 +27,7 @@ import { FocusServicesProvider, useFocusServicesParent } from './lib/focus-servi
 import type { ImageBackend } from './lib/image-backend.hook';
 import { createInputGate, InputGateProvider, useInputGateParent } from './lib/input-gate';
 import { createInputSource, InputSourceProvider, useInputSourceParent } from './lib/input-source';
+import { InspectAnchor } from './lib/inspect/inspect-anchor';
 import { KitSettingsContext, useKitSettings } from './lib/kit-settings';
 import { createMenuKeys } from './lib/menu-keys';
 import { createScrollLock } from './lib/scroll-lock';
@@ -126,6 +128,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
     createFocusServices(config.remote ?? false, inheritedGate ?? ownedGate, input),
   );
   const focus = config.remote === undefined ? (inheritedFocus ?? ownedFocus) : ownedFocus;
+  const controls = useProvidedControlEngine();
   const [menuKeys] = useState(createMenuKeys);
   const [scrollLock] = useState(createScrollLock);
   const [frostHost] = useState(createFrostHost);
@@ -146,18 +149,27 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
     };
   }, [parent, config, scrollLock, menuKeys, frostHost]);
   return createElement(
-    FocusServicesProvider,
-    { value: focus },
+    Fragment,
+    null,
+    createElement(InspectAnchor, { focus: focus.holder, controls }),
     createElement(
-      InputSourceProvider,
-      { value: input },
+      FocusServicesProvider,
+      { value: focus },
       createElement(
-        InputGateProvider,
-        { value: inheritedGate ?? ownedGate },
+        InputSourceProvider,
+        { value: input },
         createElement(
-          KitSettingsContext.Provider,
-          { value },
-          createElement(KitStyleProvider, { config }, children),
+          InputGateProvider,
+          { value: inheritedGate ?? ownedGate },
+          createElement(
+            ControlEngineProvider,
+            { value: controls },
+            createElement(
+              KitSettingsContext.Provider,
+              { value },
+              createElement(KitStyleProvider, { config }, children),
+            ),
+          ),
         ),
       ),
     ),

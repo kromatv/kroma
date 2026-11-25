@@ -9,6 +9,7 @@ import { WEB_EXTENSIONS } from '@kromatv/bundler/rnw';
 import { storyCode } from '@kromatv/bundler/story-code';
 import { kromaCatalogs } from '@kromatv/core/vite';
 import { kromaModule } from '@kromatv/module-sdk/vite';
+import { kromaNames } from '@kromatv/ui/vite';
 import react from '@vitejs/plugin-react';
 import { configDefaults, defineConfig } from 'vitest/config';
 
@@ -192,7 +193,7 @@ export default defineConfig({
         }),
       ),
       {
-        plugins: [...plugins(), reactCompiler(), react()],
+        plugins: [...plugins(), kromaNames({ repoRoot: dir('.') }), reactCompiler(), react()],
         resolve: { alias, extensions: WEB_EXTENSIONS, dedupe },
         test: {
           name: 'audit',

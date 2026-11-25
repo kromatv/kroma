@@ -1,4 +1,5 @@
-import { Children, isValidElement, type ReactNode } from 'react';
+import { isValidElement, type ReactNode } from 'react';
+import { directChildren } from './parts';
 
 interface SurfaceParts {
   header: unknown;
@@ -13,6 +14,9 @@ interface SurfaceBands {
   /** Everything that claimed no band, which a Root hands to the panel it draws
    *  for itself. */
   loose: ReactNode[];
+  /** How many children claimed no band beside a panel the caller wrote. A Root
+   *  draws a panel of its own only when it was given none, so these are not drawn. */
+  unplaced: number;
 }
 
 /**
@@ -25,17 +29,13 @@ interface SurfaceBands {
  * around a condition draws no shelf on the pass where the condition is false.
  */
 function surfaceBands(children: ReactNode, parts: Readonly<SurfaceParts>): SurfaceBands {
-  const kids = Children.toArray(children).filter((node) => !isEmptyBand(node, parts));
+  const kids = directChildren(children).filter((node) => !isEmptyBand(node, parts));
   const find = (which: unknown) => kids.find((node) => isValidElement(node) && node.type === which);
   const header = find(parts.header);
   const panel = find(parts.panel);
   const footer = find(parts.footer);
-  return {
-    header,
-    panel,
-    footer,
-    loose: kids.filter((node) => node !== header && node !== panel && node !== footer),
-  };
+  const loose = kids.filter((node) => node !== header && node !== panel && node !== footer);
+  return { header, panel, footer, loose, unplaced: panel ? loose.length : 0 };
 }
 
 function isEmptyBand(node: ReactNode, parts: Readonly<SurfaceParts>): boolean {
@@ -48,7 +48,7 @@ function isEmptyBand(node: ReactNode, parts: Readonly<SurfaceParts>): boolean {
     return false;
   }
   const { children } = node.props as { children?: ReactNode };
-  return Children.toArray(children).length === 0;
+  return directChildren(children).length === 0;
 }
 
 export type { SurfaceBands };

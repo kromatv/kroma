@@ -9,9 +9,9 @@ function Placed({ items, places }: Readonly<{ items: ReactElement[]; places: Pla
   return (
     <>
       {items.map((child, at) => (
-        <TableContext.Provider key={child.key ?? at} value={places[at] as Place}>
+        <TableContext key={child.key ?? at} value={places[at] as Place}>
           {child}
-        </TableContext.Provider>
+        </TableContext>
       ))}
     </>
   );

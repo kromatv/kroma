@@ -12,7 +12,7 @@ interface Shape {
 const [ShapeContext, useShape] = partContext<Shape>('Widget.Root');
 
 const wrapper = ({ children }: { children: ReactNode }) => (
-  <ShapeContext.Provider value={{ gap: 12 }}>{children}</ShapeContext.Provider>
+  <ShapeContext value={{ gap: 12 }}>{children}</ShapeContext>
 );
 
 describe('partContext', () => {

@@ -86,7 +86,7 @@ function Focusable<R extends AnySv = AnySv>({
   value,
   ref,
 }: Readonly<FocusableProps<R>>) {
-  const { probe, mirror, source } = useFocusServices();
+  const { probe, mirror, source, holder } = useFocusServices();
   const { inputHeld, pressGuardActive } = useInputGate();
   const { markFocusSettled } = useFocusEntry();
   const perf = usePerfSampler();
@@ -153,6 +153,7 @@ function Focusable<R extends AnySv = AnySv>({
     lift?.(true);
     // Where the ring landed, for the reading-order walk Tab does.
     probe.noteFocus(box.current);
+    holder.hold(box.current);
     perf?.markFocus();
     // The screen now has a focus owner, so a control that mounts later must not
     // take it away.
@@ -165,6 +166,7 @@ function Focusable<R extends AnySv = AnySv>({
 
   const handleBlur = () => {
     lift?.(false);
+    holder.drop(box.current);
     setSelfFocused(false);
     onBlur?.();
   };

@@ -47,9 +47,9 @@ function Root({ ordered = false, label, children }: Readonly<ListRootProps>) {
   return (
     <Box role="list" aria-label={label} style={s.list}>
       {items.map((child, at) => (
-        <ListContext.Provider key={child.key ?? at} value={places[at] as Context}>
+        <ListContext key={child.key ?? at} value={places[at] as Context}>
           {child}
-        </ListContext.Provider>
+        </ListContext>
       ))}
     </Box>
   );

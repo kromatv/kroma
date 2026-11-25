@@ -1,4 +1,4 @@
-import { createElement, isValidElement, type ReactNode } from 'react';
+import { createElement, Fragment, isValidElement, type ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 import { surfaceBands } from './surface-bands';
 
@@ -39,5 +39,45 @@ describe('surfaceBands', () => {
     expect(bands.footer).toBeUndefined();
     expect(bands.header).toBeUndefined();
     expect(bands.loose).toEqual([]);
+  });
+
+  it('takes a band written inside a fragment, and leaves the rest of the fragment loose', () => {
+    const together = createElement(
+      Fragment,
+      null,
+      band(Header, 'Titre'),
+      'Corps',
+      band(Footer, 'Fermer'),
+    );
+
+    const bands = surfaceBands(together, parts);
+
+    expect(held(bands.header)).toBe('Titre');
+    expect(held(bands.footer)).toBe('Fermer');
+    expect(bands.loose).toEqual(['Corps']);
+  });
+
+  it('does not count a band that holds only an empty fragment', () => {
+    const footer = band(Footer, createElement(Fragment, null, false));
+
+    const bands = surfaceBands([footer], parts);
+
+    expect(bands.footer).toBeUndefined();
+  });
+
+  it('counts what was written beside a panel and is no band, which the Root has nowhere to draw', () => {
+    const stray = band(Other, 'Ailleurs');
+
+    const bands = surfaceBands([band(Panel, 'Corps'), stray, band(Footer, 'Fermer')], parts);
+
+    expect(bands.unplaced).toBe(1);
+  });
+
+  it('counts nothing when the Root draws the panel itself, since the rest goes inside it', () => {
+    const stray = band(Other, 'Ailleurs');
+
+    const bands = surfaceBands([band(Header, 'Titre'), 'Texte', stray], parts);
+
+    expect(bands.unplaced).toBe(0);
   });
 });

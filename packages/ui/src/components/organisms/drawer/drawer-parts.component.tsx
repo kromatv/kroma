@@ -10,6 +10,7 @@ import { Divider } from '#ui/components/atoms/divider';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
 
 import { useStyles } from '#ui/core/styles';
+import { SurfaceBand } from '#ui/lib/surface-band.component';
 import { useTDefault } from '#ui/services/i18n';
 
 interface Shell {
@@ -46,12 +47,12 @@ const bandOf = (pad: number, scope: StyleScope) =>
 function Header({ children, style }: Readonly<DrawerBandProps>) {
   const { pad } = useShell();
   return (
-    <>
+    <SurfaceBand part="Drawer.Header">
       <Box shrink={0} px={pad} py={BAND_Y} style={style}>
         {children}
       </Box>
       <Divider />
-    </>
+    </SurfaceBand>
   );
 }
 
@@ -63,14 +64,16 @@ function Panel({ children, style }: Readonly<DrawerBandProps>) {
 
   const { pad } = useShell();
   return (
-    <ScrollView
-      style={[s.panel, style]}
-      // Grows to the sheet's height so a short body can still pin something to
-      // its bottom edge with `mt="auto"`, as the navigation sheets do.
-      contentContainerStyle={bandOf(pad, scope)}
-    >
-      {children}
-    </ScrollView>
+    <SurfaceBand part="Drawer.Panel">
+      <ScrollView
+        style={[s.panel, style]}
+        // Grows to the sheet's height so a short body can still pin something to
+        // its bottom edge with `mt="auto"`, as the navigation sheets do.
+        contentContainerStyle={bandOf(pad, scope)}
+      >
+        {children}
+      </ScrollView>
+    </SurfaceBand>
   );
 }
 
@@ -78,12 +81,12 @@ function Panel({ children, style }: Readonly<DrawerBandProps>) {
 function Footer({ children, style }: Readonly<DrawerBandProps>) {
   const { pad } = useShell();
   return (
-    <>
+    <SurfaceBand part="Drawer.Footer">
       <Divider />
       <Box shrink={0} px={pad} py={BAND_Y} style={style}>
         {children}
       </Box>
-    </>
+    </SurfaceBand>
   );
 }
 

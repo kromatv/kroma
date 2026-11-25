@@ -118,7 +118,7 @@ function Item(props: Readonly<SelectItemProps>) {
   if (row.presentation === 'panel') {
     const slots = optionVariantsScoped({ chosen });
     return (
-      <SelectItemContext.Provider value={state}>
+      <SelectItemContext value={state}>
         <Pressable
           nativeID={row.nativeID}
           role="option"
@@ -148,12 +148,12 @@ function Item(props: Readonly<SelectItemProps>) {
         >
           {content(slots.ink)}
         </Pressable>
-      </SelectItemContext.Provider>
+      </SelectItemContext>
     );
   }
 
   return (
-    <SelectItemContext.Provider value={state}>
+    <SelectItemContext value={state}>
       <Focusable
         role="option"
         selected={chosen}
@@ -166,7 +166,7 @@ function Item(props: Readonly<SelectItemProps>) {
       >
         {(focus) => content(focus.slots.ink)}
       </Focusable>
-    </SelectItemContext.Provider>
+    </SelectItemContext>
   );
 }
 

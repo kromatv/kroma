@@ -33,13 +33,13 @@ function Root({ size, children }: Readonly<DataFieldRootProps>) {
   const entryDefaults = useEntryDefaults();
   const shape = SHAPE[size ?? entryDefaults.size];
   return (
-    <DataFieldContext.Provider value={shape}>
+    <DataFieldContext value={shape}>
       {/* minW 0 so a long value truncates inside its column instead of widening
           the row of readouts it sits in. */}
       <Box minW={0} gap={shape.gap}>
         {children}
       </Box>
-    </DataFieldContext.Provider>
+    </DataFieldContext>
   );
 }
 

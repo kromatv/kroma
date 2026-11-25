@@ -95,7 +95,7 @@ function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootPr
   const leading = slot(media, icon === undefined ? null : <Media name={icon} />);
 
   return (
-    <CalloutContext.Provider value={context}>
+    <CalloutContext value={context}>
       <Box
         row
         align="center"
@@ -115,7 +115,7 @@ function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootPr
         </Box>
         {actions}
       </Box>
-    </CalloutContext.Provider>
+    </CalloutContext>
   );
 }
 
