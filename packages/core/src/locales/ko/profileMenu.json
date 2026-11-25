@@ -1,0 +1,11 @@
+{
+  "profileMenu.changePin": "PIN 변경",
+  "profileMenu.gpuRendering": "GPU 렌더링 (앱 재시작)",
+  "profileMenu.off": "끄기",
+  "profileMenu.on": "켜기",
+  "profileMenu.perfHud": "성능 오버레이",
+  "profileMenu.pin": "PIN",
+  "profileMenu.quitApp": "KROMA 종료",
+  "profileMenu.removePin": "PIN 제거",
+  "profileMenu.setPin": "PIN 설정"
+}

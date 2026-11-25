@@ -1,0 +1,17 @@
+{
+  "browse.allGenres": "전체",
+  "browse.anyLanguage": "모든 언어",
+  "browse.audioLanguage": "오디오 언어",
+  "browse.count.movies": "영화 {count}편",
+  "browse.count.series": "시리즈 {count}개",
+  "browse.genres": "장르",
+  "browse.jumpToLetter": "{letter} 바로가기",
+  "browse.letterNav": "첫 글자로 이동",
+  "browse.library": "라이브러리",
+  "browse.sort.added": "최근 추가순",
+  "browse.sort.rating": "평점순",
+  "browse.sort.release": "공개일순",
+  "browse.sort.title": "제목순 (가나다)",
+  "browse.sortBy": "정렬 기준",
+  "browse.subtitleLanguage": "자막"
+}

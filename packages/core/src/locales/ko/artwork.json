@@ -1,0 +1,12 @@
+{
+  "artwork.action": "아트워크 편집",
+  "artwork.applyFailed": "아트워크를 업데이트하지 못했습니다.",
+  "artwork.automatic": "자동",
+  "artwork.backdrop": "배경 이미지",
+  "artwork.hint": "직접 업로드한 이미지가 파일 옆이나 TMDB에서 찾은 이미지 대신 표시됩니다.",
+  "artwork.loadFailed": "선택한 아트워크를 불러오지 못했습니다.",
+  "artwork.poster": "포스터",
+  "artwork.reset": "자동 이미지로 복원",
+  "artwork.title": "아트워크",
+  "artwork.upload": "이미지 업로드"
+}

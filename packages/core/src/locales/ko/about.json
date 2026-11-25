@@ -1,0 +1,17 @@
+{
+  "about.branch": "브랜치",
+  "about.buildDate": "빌드 날짜",
+  "about.commit": "커밋",
+  "about.cpu": "CPU",
+  "about.cpuCores": "{count}코어",
+  "about.memory": "메모리",
+  "about.memoryFree": "{total}GB 중 {free}GB 사용 가능",
+  "about.memorySize": "{gb}GB",
+  "about.platform": "플랫폼",
+  "about.privacyBody": "이 앱은 아무것도 수집하지 않습니다. 저희 쪽 계정도, 분석 도구도, 추적도 없습니다. 앱은 설정한 서버와 통신하며 그 서버가 제공하는 것만 표시합니다. 서버는 전 세계에서 실행 중인 KROMA 설치 수에 익명으로 포함되도록 요청할 수 있지만, 소유자가 직접 켜지 않는 한 포함되지 않습니다.",
+  "about.privacyTitle": "개인정보",
+  "about.privacyUrl": "전체 정책: kroma.tv/privacy",
+  "about.repository": "저장소",
+  "about.title": "정보",
+  "about.version": "버전"
+}

@@ -1,0 +1,10 @@
+{
+  "format.durationHours": "{hours}시간 {minutes}분",
+  "format.durationMinutes": "{minutes}분",
+  "format.justNow": "방금",
+  "format.never": "없음",
+  "format.unknownTime": "-",
+  "format.uptimeDays": "{days}일 {hours}시간",
+  "format.uptimeHours": "{hours}시간 {minutes}분",
+  "format.uptimeMinutes": "{minutes}분"
+}

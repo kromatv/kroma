@@ -1,0 +1,10 @@
+{
+  "connection.directOfferAction": "직접 연결",
+  "connection.directOfferDetail": "직접 연결은 인터넷을 거치는 우회 경로를 건너뜁니다. 브라우저에서 로컬 네트워크 접근 권한을 요청합니다.",
+  "connection.directOfferDismiss": "다시 표시 안 함",
+  "connection.directOfferFailed": "로컬 주소에서 서버가 응답하지 않았습니다.",
+  "connection.directOfferTitle": "서버와 같은 네트워크에 있습니다",
+  "connection.directRoute": "직접 연결 ({host})",
+  "connection.offline": "오프라인",
+  "connection.reconnecting": "다시 연결하는 중…"
+}

@@ -1,0 +1,13 @@
+{
+  "vocab.abbreviations": "박사, 교수, 씨, 님",
+  "vocab.articles": "그, 저",
+  "vocab.episode": "에피소드, 화",
+  "vocab.movie": "영화",
+  "vocab.numbers": "둘, 셋, 넷, 다섯, 여섯, 일곱, 여덟, 아홉, 열",
+  "vocab.season": "시즌",
+  "vocab.show": "시리즈, 드라마",
+  "vocab.theme.christmas": "크리스마스, 성탄절, 산타클로스",
+  "vocab.theme.heist": "강도, 은행 강도, 절도, 하이스트",
+  "vocab.theme.summer": "여름, 휴가, 바닷가, 로드 트립",
+  "vocab.theme.trueStory": "실화, 실제 사건, 실화 바탕, 전기 영화"
+}

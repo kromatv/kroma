@@ -1,0 +1,12 @@
+{
+  "search.backHint": "‹ 뒤로 가서 종료",
+  "search.empty": "리모컨으로 입력해 작품, 장르 또는 배우를 검색하세요…",
+  "search.noResults": "결과 없음",
+  "search.people": "인물",
+  "search.placeholder": "영화, 시리즈, 장르…",
+  "search.recent": "최근 검색어",
+  "search.results": "검색 결과",
+  "search.voice": "음성 검색",
+  "search.voiceHint": "말하는 동안 결과가 표시됩니다",
+  "search.voiceListening": "지금 말하세요…"
+}

@@ -1,0 +1,11 @@
+{
+  "logs.allSources": "전체 소스",
+  "logs.empty": "로그가 없습니다.",
+  "logs.follow": "자동 스크롤",
+  "logs.levelAll": "전체",
+  "logs.levelError": "오류",
+  "logs.levelInfo": "정보",
+  "logs.levelWarn": "경고",
+  "logs.searchPlaceholder": "로그 필터링…",
+  "logs.sourceCore": "서버"
+}

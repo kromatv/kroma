@@ -1,0 +1,18 @@
+{
+  "permissions.library": "라이브러리",
+  "permissions.libraryHint": "스캔, 라이브러리, 메타데이터",
+  "permissions.playback": "재생",
+  "permissions.playbackHint": "영화와 시리즈를 시청하고 이어보기",
+  "permissions.reportsManage": "신고 관리",
+  "permissions.reportsManageHint": "사용자가 보낸 문제 신고 처리",
+  "permissions.requestAuto": "자동 승인",
+  "permissions.requestAutoHint": "이 계정의 요청은 승인 대기열을 거치지 않습니다",
+  "permissions.requestCreate": "요청",
+  "permissions.requestCreateHint": "TMDB에서 검색해 영화나 시리즈 요청",
+  "permissions.requestManage": "요청 관리",
+  "permissions.requestManageHint": "요청 승인 또는 거부, 다운로드 관리",
+  "permissions.settings": "설정",
+  "permissions.settingsHint": "서버 구성",
+  "permissions.users": "사용자",
+  "permissions.usersHint": "계정 관리 및 사용자 초대"
+}
