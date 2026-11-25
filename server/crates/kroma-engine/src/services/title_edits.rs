@@ -9,6 +9,7 @@ use crate::db;
 use crate::db::title_edits::Title;
 use crate::domain::ratings::written_ratings;
 use crate::model::title_edit::TitleEdit;
+use crate::services::people_found;
 use crate::services::search::spawn_reindex;
 use crate::services::titles::{announce, exists};
 use crate::state::SharedState;
@@ -42,6 +43,9 @@ pub fn write(state: &SharedState, title: Title<'_>, edit: TitleEdit) -> Result<E
     db::title_edits::write(&state.db, title, &edit)?;
     announce(state, title.kind, title.id);
     spawn_reindex(state.clone());
+    if edit.cast.is_some() || edit.directors.is_some() {
+        people_found::ask(state);
+    }
     Ok(Edit::Kept(Box::new(edit)))
 }
 

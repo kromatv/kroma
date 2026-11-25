@@ -176,6 +176,9 @@ Series/
   `<mpaa>`, la classification d'âge, et chaque `<actor>` avec son `<name>`,
   son `<role>` et son `<order>`. Le fichier doit être en UTF-8, comme ces
   logiciels l'écrivent.
+- Une personne de la distribution ou de la réalisation que TMDB n'a pas donnée
+  pour le titre reçoit, après l'analyse, la photo et la page que TMDB a sous ce
+  nom exact.
 - Une classification comme `PG-13`, `Rated R` ou `FR-12` remplace celle
   trouvée sur Internet, et les profils limités par âge s'y fient. KROMA ignore
   une classification qu'il ne connaît pas.

@@ -6,6 +6,7 @@ mod cache;
 mod client;
 mod find;
 pub mod person;
+pub mod person_search;
 mod search;
 mod videos;
 

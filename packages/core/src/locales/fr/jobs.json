@@ -50,6 +50,8 @@
   "jobs.noRuns": "Aucune exécution pour l'instant.",
   "jobs.notifications.digest.desc": "Annonce aux comptes les films et épisodes ajoutés depuis le dernier résumé. Ne notifie personne au premier lancement : la bibliothèque existante devient la référence.",
   "jobs.notifications.digest.name": "Résumé des nouveautés",
+  "jobs.people.match.desc": "Cherche sur TMDB les acteurs et les réalisateurs écrits pour un titre ou lus dans son fichier .nfo, quand TMDB ne les a pas donnés, pour leur photo et leur page. Une seule recherche par nom.",
+  "jobs.people.match.name": "Recherche des personnes",
   "jobs.pipeline.credits.desc": "Repère le début du générique de chaque film, via sa découpe en chapitres et, en mode fingerprint, une analyse de l'image sur ses dernières minutes (image sombre portant un texte dense). Atteindre le générique compte alors comme vu. Incrémental : ignore les films dont le fichier est inchangé.",
   "jobs.pipeline.credits.name": "Détection du générique des films",
   "jobs.pipeline.embed.desc": "Calcule le vecteur de contenu utilisé par « Pour vous » et les titres similaires à partir des métadonnées. Ré-encode quand le modèle change.",

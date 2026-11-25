@@ -50,6 +50,8 @@
   "jobs.noRuns": "No runs yet.",
   "jobs.notifications.digest.desc": "Tells accounts which films and episodes arrived since the last digest. Notifies nobody on its first run: the library as it stands becomes the baseline.",
   "jobs.notifications.digest.name": "New arrivals digest",
+  "jobs.people.match.desc": "Looks up on TMDB the actors and directors written for a title or read from its .nfo file that TMDB did not give for it, for their photo and their page. Asks once for each name.",
+  "jobs.people.match.name": "People lookup",
   "jobs.pipeline.credits.desc": "Finds where each film's credits start, from its chapter cut and, in fingerprint mode, a scan of the picture in its last minutes (dark frames carrying dense text). Reaching the credits then counts as watched. Incremental: skips films whose file is unchanged.",
   "jobs.pipeline.credits.name": "Film credits detection",
   "jobs.pipeline.embed.desc": "Computes the content embedding behind 'For You' and similar rows from each title's metadata. Re-embeds when the model changes.",

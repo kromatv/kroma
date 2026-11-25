@@ -112,7 +112,9 @@ title, such as `Das Boot`, shows under the title when the two differ, and a
 tagline shows above the summary. Write the age rating as `12`, `PG-13` or
 `FR-12`: profiles with an age limit go by it. Under **Cast**, each row
 holds an actor's name and the part they play, in credit order; remove
-everyone to go back to the cast from the `.nfo` or TMDB. What you
+everyone to go back to the cast from the `.nfo` or TMDB. An actor or a
+director TMDB did not give for the title gets the photo and the page TMDB has
+under that exact name, a few moments later. What you
 write there shows in every language and stays through a rescan. Clear a field to go
 back to TMDB's text. **Movies** and **Series** sort and filter by what you
 write, and a year you write replaces TMDB's release date when the two differ.

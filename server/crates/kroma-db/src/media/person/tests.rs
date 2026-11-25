@@ -200,3 +200,20 @@ fn an_actor_written_under_the_provider_s_name_keeps_the_provider_s_id() {
     assert_eq!(found.movie_ids, ["m1"]);
     assert_eq!(both.movie_ids, ["m1", "m2"]);
 }
+
+#[test]
+fn a_written_person_tmdb_found_answers_under_the_id_it_found() {
+    let pool = seeded_pool();
+    wrote(&pool, (ITEM, "m1"), played(&["Jane Doe"]));
+    wrote(&pool, (ITEM, "m2"), directed(&["Jane Doe"]));
+    let found = crate::people_found::Found {
+        tmdb_id: Some(42),
+        ..Default::default()
+    };
+    crate::people_found::keep(&pool, "Jane Doe", &found).unwrap();
+
+    let person = resolve_person(&pool, "42").unwrap().unwrap();
+
+    assert_eq!(person.tmdb_id, Some(42));
+    assert_eq!(person.movie_ids, ["m1", "m2"]);
+}

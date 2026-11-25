@@ -1,7 +1,12 @@
+use std::time::Duration;
+
 use axum::http::StatusCode;
+use kroma_requests::testing::FakeTmdb;
 use serde_json::{json, Value};
 
-use crate::api::test_support::{get, seed_playable_item, seed_session, send, test_app, TestApp};
+use crate::api::test_support::{
+    get, seed_playable_item, seed_session, send, test_app, test_app_with_tmdb, TestApp,
+};
 use crate::db;
 use crate::model::Permission;
 
@@ -119,4 +124,41 @@ async fn an_edit_for_no_known_title_is_not_found() {
 
     assert_eq!(ghost, StatusCode::NOT_FOUND);
     assert_eq!(person, StatusCode::NOT_FOUND);
+}
+
+async fn shown_once_matched(t: &TestApp, film: &str) -> Value {
+    let uri = format!("/api/items/{film}");
+    for _ in 0..100 {
+        let (_, shown) = get(&t.app, &uri, Some(&t.token)).await;
+        if shown["metadata"]["cast"][0]["tmdbId"].is_u64() {
+            return shown;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    panic!("the actor written was never matched");
+}
+
+#[tokio::test]
+async fn an_actor_written_by_hand_gets_the_page_tmdb_has_for_the_name() {
+    let t = test_app_with_tmdb();
+    let _tmdb = FakeTmdb::start_shared(|path| match path {
+        "/search/person" => (
+            200,
+            json!({ "results": [{ "id": 42, "name": "Jane Doe", "profile_path": null }] }),
+        ),
+        _ => (404, json!({})),
+    });
+    let film = seed_playable_item(&t.state, "Heat", b"film");
+    let fetched = json!({ "tmdbId": 949, "genres": [], "tmdbUrl": "", "title": "Heat" });
+    let meta = serde_json::from_value(fetched).expect("metadata literal");
+    db::set_item_metadata(&t.state.db, &film, &meta).expect("metadata");
+    let cast = json!({ "cast": [{ "name": "Jane Doe" }] });
+
+    edit(&t, &format!("/api/edits/item/{film}"), &t.token, cast).await;
+    let shown = shown_once_matched(&t, &film).await;
+    let (_, page) = get(&t.app, "/api/people?name=42", Some(&t.token)).await;
+
+    assert_eq!(shown["metadata"]["cast"][0]["tmdbId"], json!(42));
+    assert_eq!(page["name"], json!("Jane Doe"));
+    assert_eq!(page["results"].as_array().map(Vec::len), Some(1));
 }

@@ -1,7 +1,8 @@
 //! Putting back one cached image whose file is gone. The rows that name its
 //! path say which title it belongs to, and enriching that title again caches
 //! every image its payload names under the same content-addressed name. A
-//! picture kept beside a title's files is cached again from that file.
+//! picture kept beside a title's files is cached again from that file, and the
+//! portrait of a person found on TMDB from the address it came from.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -28,9 +29,10 @@ impl Inflight {
 }
 
 /// Whether `name` is on disk once the title it belongs to has been enriched
-/// again, or once the picture kept beside a title's files that it is named
-/// after has been cached again. False when no row names it, when there is no
-/// provider to ask, or when the provider could not be reached.
+/// again, once the picture kept beside a title's files that it is named after
+/// has been cached again, or once the portrait TMDB found for a person written
+/// for a title has been fetched again. False when no row names it, when there
+/// is no provider to ask, or when the provider could not be reached.
 pub async fn refill(state: &SharedState, name: &str) -> bool {
     let path = image::images_dir(&state.config.data_dir).join(name);
     let url = format!("{}{name}", image::PUBLIC_PREFIX);
@@ -38,9 +40,10 @@ pub async fn refill(state: &SharedState, name: &str) -> bool {
         return refill_beside(state, path, url).await;
     }
     let pool = state.db.clone();
-    let found = tokio::task::spawn_blocking(move || db::art_owner(&pool, &url)).await;
+    let asked = url.clone();
+    let found = tokio::task::spawn_blocking(move || db::art_owner(&pool, &asked)).await;
     let Ok(Ok(Some(owner))) = found else {
-        return false;
+        return refill_portrait(state, url).await;
     };
     let lock = state.art_refills.lock_for(&format!("{}:{}", owner.kind, owner.id));
     let _held = lock.lock().await;
@@ -70,6 +73,18 @@ async fn refill_beside(state: &SharedState, path: PathBuf, url: String) -> bool 
             let _ = db::art_beside::forget(&pool, &url);
         }
         cached
+    });
+    cached.await.unwrap_or(false)
+}
+
+async fn refill_portrait(state: &SharedState, url: String) -> bool {
+    let pool = state.db.clone();
+    let data_dir = state.config.data_dir.clone();
+    let cached = tokio::task::spawn_blocking(move || {
+        let Ok(Some(source)) = db::people_found::source_of(&pool, &url) else {
+            return false;
+        };
+        image::cache_remote(&data_dir, &source).is_some_and(|cached| cached == url)
     });
     cached.await.unwrap_or(false)
 }
