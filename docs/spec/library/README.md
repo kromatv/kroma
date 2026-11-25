@@ -343,6 +343,14 @@ do: a film's production companies and a show's networks, from the provider. The 
 person writes, or its `.nfo` file names in `<studio>` (LIB-84), replace the provider's, and
 what a person writes comes before the file.
 
+**LIB-101** (SHIPPED) - While a person writes a title's directors, cast or studios, the form
+suggests the people and the companies the provider knows under what they type, each with its
+photo or logo and what tells two of the same name apart, and keeps a name it does not suggest.
+Genres are suggested from those the library already carries. Each of these lists is a row of
+names a person adds and removes one by one, never text cut at a separator. Every field written
+by hand can be given back to the `.nfo` file or the provider at the next save, as Plex unlocks a
+field, and the form opens on what the page shows.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

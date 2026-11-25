@@ -1,8 +1,12 @@
 import type { TitleEdit } from '@kromatv/client/media';
 
-/** A title's hand-written fields as a form holds them: plain text, with the
- * genres, the directors and the studios each on one line and the year or the
- * full release date in one field. */
+/** Names a form holds for a list: null while the list follows the `.nfo` file
+ * or the provider. */
+export type Names = readonly string[] | null;
+
+/** A title's hand-written fields as a form holds them: plain text, the year or
+ * the full release date in one field, and the genres, the directors and the
+ * studios as names. */
 export interface TitleDraft {
   title: string;
   originalTitle: string;
@@ -10,9 +14,9 @@ export interface TitleDraft {
   tagline: string;
   overview: string;
   released: string;
-  genres: string;
-  directors: string;
-  studios: string;
+  genres: Names;
+  directors: Names;
+  studios: Names;
   contentRating: string;
 }
 
@@ -27,21 +31,18 @@ export function draftOf(edit: Omit<TitleEdit, 'cast'>): TitleDraft {
     tagline: shown(edit.tagline),
     overview: shown(edit.overview),
     released: edit.released ?? (edit.year === null ? '' : String(edit.year)),
-    genres: (edit.genres ?? []).join(', '),
-    directors: (edit.directors ?? []).join(', '),
-    studios: (edit.studios ?? []).join(', '),
+    genres: edit.genres,
+    directors: edit.directors,
+    studios: edit.studios,
     contentRating: shown(edit.contentRating),
   };
 }
 
 const kept = (text: string) => text.trim() || null;
 
-function listOf(line: string): string[] | null {
-  const names = line
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean);
-  return names.length > 0 ? names : null;
+function listOf(names: Names): string[] | null {
+  const trimmed = (names ?? []).map((name) => name.trim()).filter(Boolean);
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function dateOf(text: string): Pick<TitleEdit, 'year' | 'released'> {
@@ -71,4 +72,17 @@ export function editOf(draft: TitleDraft): Omit<TitleEdit, 'cast'> {
     studios: listOf(draft.studios),
     contentRating: kept(draft.contentRating),
   };
+}
+
+/** The names a list field shows: those the form holds, else those the page
+ * shows, unless the page shows names that were written and then reset, which
+ * the provider's own replace only once saved. */
+export function namesShown(
+  held: Names,
+  { page, wasWritten }: Readonly<{ page: readonly string[]; wasWritten: boolean }>,
+) {
+  if (held !== null) {
+    return held;
+  }
+  return wasWritten ? [] : page;
 }
