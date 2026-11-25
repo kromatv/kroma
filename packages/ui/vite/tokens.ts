@@ -21,6 +21,7 @@ import {
   tracking,
   typeSpec,
 } from '../src/core/tokens/typography.ts';
+import { LANGUAGE } from '../src/styles/language.ts';
 import { MOTION } from '../src/styles/motion.ts';
 import { PAGE } from '../src/styles/page.ts';
 import { RESET } from '../src/styles/reset.ts';
@@ -231,6 +232,11 @@ export const motionCss = () => sheetCss(MOTION);
  *  needs whatever chrome it goes on to supply itself. */
 export const resetCss = () => sheetCss(RESET);
 
+/** Where each language's lines may break, under its `html:lang()`: Korean
+ *  between words rather than between any two syllables, Japanese between
+ *  phrases where the engine knows how. */
+export const languageCss = () => sheetCss(LANGUAGE);
+
 /** The page furniture on top of a reset: the grounded body, the focus ring, the
  *  scrollbars and the admin table grid. Taken alone by a target that brings its
  *  own reset - a Tailwind app has preflight, and two unlayered resets would
@@ -262,12 +268,12 @@ export type FontDisplay = 'optional' | 'swap';
 /** The whole design system, framework-free: type, tokens, motion and the reset.
  *  A Tailwind app adds `@import "tailwindcss"` and `@kromatv/ui/css/theme`. */
 export function kromaCss(display: FontDisplay = 'optional'): string {
-  return [fontsCss(display), tokensCss(), motionCss(), baseCss()].join('\n\n');
+  return [fontsCss(display), tokensCss(), motionCss(), languageCss(), baseCss()].join('\n\n');
 }
 
 /** What a television takes: the same sheet without the page furniture on top of
  *  the reset. A TV shell hides overflow, grounds itself dark and owns its focus
  *  visuals, so `page` would only fight it. */
 export function tvCss(display: FontDisplay = 'optional'): string {
-  return [fontsCss(display), tokensCss(), motionCss(), resetCss()].join('\n\n');
+  return [fontsCss(display), tokensCss(), motionCss(), languageCss(), resetCss()].join('\n\n');
 }
