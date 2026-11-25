@@ -4,6 +4,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { memo, type ReactNode, Suspense, use } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { nameComponent } from '../component-names';
+import { createControlEngine } from '../control';
 import { createFocusHolder } from '../focus-holder';
 import { describeScreen } from './describe-screen';
 import { focusedPaths, paths } from './inspect.fixtures';
@@ -36,7 +37,7 @@ function mount(ui: ReactNode) {
   const focus = createFocusHolder();
   render(
     <>
-      <InspectAnchor focus={focus} />
+      <InspectAnchor focus={focus} controls={createControlEngine()} />
       {ui}
     </>,
   );

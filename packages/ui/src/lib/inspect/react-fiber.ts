@@ -9,6 +9,7 @@ const MEMO = 14;
 const SIMPLE_MEMO = 15;
 const OFFSCREEN = 22;
 const COMPONENT_TAGS: ReadonlySet<number> = new Set([0, CLASS, FORWARD_REF, MEMO, SIMPLE_MEMO]);
+const HOOK_TAGS: ReadonlySet<number> = new Set([0, FORWARD_REF, SIMPLE_MEMO]);
 
 /** One field of an object React keeps, or undefined for anything else. */
 export function field(value: unknown, key: string): unknown {
@@ -53,6 +54,21 @@ export function siblingOf(fiber: Fiber): Fiber | null {
  *  included), or undefined for a host, a fragment, a provider or a portal. */
 export function componentOf(fiber: Fiber): unknown {
   return COMPONENT_TAGS.has(tag(fiber)) ? field(fiber, 'elementType') : undefined;
+}
+
+/** The first entry of `known` that a hook of the function component on this
+ *  fiber holds, whichever hook that is. Undefined for any other fiber. */
+export function heldByHook<T>(fiber: Fiber, known: ReadonlyMap<unknown, T>): T | undefined {
+  if (known.size === 0 || !HOOK_TAGS.has(tag(fiber))) {
+    return undefined;
+  }
+  for (let hook = field(fiber, 'memoizedState'); hook; hook = field(hook, 'next')) {
+    const found = known.get(field(hook, 'memoizedState'));
+    if (found !== undefined) {
+      return found;
+    }
+  }
+  return undefined;
 }
 
 export function propsOf(fiber: Fiber): unknown {

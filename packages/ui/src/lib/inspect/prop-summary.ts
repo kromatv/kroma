@@ -49,6 +49,8 @@ function summarize(value: unknown): PropValue | undefined {
   }
 }
 
+const isObject = (value: unknown): value is object => typeof value === 'object' && value !== null;
+
 function holdsSecret(name: string, props: object): boolean {
   return (
     SECRET_NAME.test(name) ||
@@ -58,6 +60,9 @@ function holdsSecret(name: string, props: object): boolean {
     SECRET_FILL.test(String(Reflect.get(props, 'autoComplete')))
   );
 }
+
+const both = (props: object, values: object): object =>
+  values === props ? props : { ...props, ...values };
 
 function typedSecrets(name: string, props: object): ReadonlySet<string> {
   if (!holdsSecret(name, props)) {
@@ -69,17 +74,18 @@ function typedSecrets(name: string, props: object): ReadonlySet<string> {
 /**
  * Reduces the props of the component `name` to at most a few dozen JSON-safe
  * entries, with long names and long strings cut. What was typed into a field that hides it (a password, a PIN, a
- * one-time code) is never reported, only that there is a value.
+ * one-time code) is never reported, only that there is a value. Given `values`,
+ * it reduces those instead and reads `props` only to know what to hide.
  */
-export function summarizeProps(name: string, props: unknown): PropSummary {
+export function summarizeProps(name: string, props: unknown, values: unknown = props): PropSummary {
   const summary: Record<string, PropValue> = {};
-  if (typeof props !== 'object' || props === null) {
+  if (!isObject(props) || !isObject(values)) {
     return summary;
   }
-  const hidden = typedSecrets(name, props);
-  const keys = Object.keys(props);
+  const hidden = typedSecrets(name, both(props, values));
+  const keys = Object.keys(values);
   for (const key of keys.slice(0, MAX_KEYS)) {
-    const value = hidden.has(key) ? SECRET : summarize(Reflect.get(props, key));
+    const value = hidden.has(key) ? SECRET : summarize(Reflect.get(values, key));
     if (value !== undefined) {
       summary[cut(key, MAX_KEY)] = value;
     }

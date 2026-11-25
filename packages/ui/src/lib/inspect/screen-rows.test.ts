@@ -54,4 +54,16 @@ describe('a screen as flat rows', () => {
     expect(rows.map((row) => row.focused)).toEqual([undefined, true]);
     expect(rows[0]).not.toHaveProperty('focused');
   });
+
+  it('keeps the control of a row that runs one', () => {
+    const control = { ref: 'c1', kind: 'switch', state: { checked: true }, actions: ['toggle'] };
+
+    const { rows } = screenRows({
+      fibers: 2,
+      nodes: [node('Card', [{ ...node('Switch'), control }])],
+    });
+
+    expect(rows.map((row) => row.control)).toEqual([undefined, control]);
+    expect(rows[0]).not.toHaveProperty('control');
+  });
 });

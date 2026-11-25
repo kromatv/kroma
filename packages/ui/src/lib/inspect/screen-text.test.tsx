@@ -3,6 +3,7 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { nameComponent } from '../component-names';
+import { createControlEngine } from '../control';
 import { createFocusHolder } from '../focus-holder';
 import { InspectAnchor } from './inspect-anchor';
 import type { ScreenRow } from './screen-rows';
@@ -77,6 +78,26 @@ describe('a screen as text', () => {
     expect(text(rows)).toBe('Button\n  Focusable (focused)  label="Lire"');
   });
 
+  it('writes the ref, the state and the actions of a component that runs a control', () => {
+    const control = {
+      ref: 'c3',
+      kind: 'select',
+      state: { open: false, value: 'fr', items: '[array 3]' },
+      actions: ['setOpen', 'setValue', 'open'],
+    };
+    const props = { value: 'fr', label: 'Langue' };
+
+    expect(text([row(1, 'Select.Root', { props, control, focused: true })])).toBe(
+      '  Select.Root [c3] (focused)  label="Langue"  state: open=false value="fr" items=[array 3]  actions: setOpen, setValue, open',
+    );
+  });
+
+  it('ends a control that takes nothing now with its state', () => {
+    const control = { ref: 'c1', kind: 'switch', state: { checked: true }, actions: [] };
+
+    expect(text([row(0, 'Switch', { control })])).toBe('Switch [c1]  state: checked=true');
+  });
+
   it('says where a screen was cut', () => {
     const rows = [row(0, 'Box'), row(0, 'Box')];
 
@@ -92,7 +113,7 @@ describe('a screen as text', () => {
   it('reads what is on screen when it is given no rows', () => {
     render(
       <>
-        <InspectAnchor focus={createFocusHolder()} />
+        <InspectAnchor focus={createFocusHolder()} controls={createControlEngine()} />
         <Plate label="Lire" />
       </>,
     );

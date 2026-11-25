@@ -433,9 +433,13 @@ function Counter({ style, ...props }: Readonly<CounterProps>) {
   `partContext<ControlOf<typeof counterControl>>('Counter.Root')`.
 
 A mounted control joins the engine of its `KitProvider`, which lists the
-controls on screen and hears every change that took effect. `useControllable`
-is the hook this replaces; a component still on it moves when it is next
-touched.
+controls on screen and hears every change that took effect. A developer tool
+reads them there and calls their setters and actions by name
+([`docs/inspecting-a-screen.md`](../../../../docs/inspecting-a-screen.md)). It
+tries an action on the state before anything is written, so an action reads its
+arguments and nothing else: no ref, no clock, no module value.
+`useControllable` is the hook this replaces; a component still on it moves when
+it is next touched.
 
 ---
 

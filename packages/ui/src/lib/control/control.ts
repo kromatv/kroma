@@ -29,6 +29,8 @@ export type Control = {
   readonly actions: AnyActions;
   readonly state: () => Bag;
   readonly options: () => Bag;
+  /** The props of the render that last committed. */
+  readonly props: () => object;
   /** The control's own values, which is what a component subscribes to. */
   readonly own: () => Bag;
   readonly subscribe: (listener: () => void) => () => void;
@@ -193,6 +195,7 @@ export function createControl(
     actions,
     state: store.state,
     options,
+    props: store.props,
     own: store.own,
     subscribe: store.subscribe,
     sync: store.sync,
