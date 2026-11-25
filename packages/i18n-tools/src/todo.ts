@@ -1,4 +1,9 @@
-import { groupMessages, type Message } from '@kromatv/i18n/model';
+import {
+  groupMessages,
+  type Message,
+  type PluralCategory,
+  pluralCategories,
+} from '@kromatv/i18n/model';
 import { noteFor, readNotes } from './notes.ts';
 import { type CatalogSet, merged, readFiles } from './set.ts';
 import { inspectLocale, readSource } from './status.ts';
@@ -9,6 +14,9 @@ import { inspectLocale, readSource } from './status.ts';
 export interface TodoEntry {
   readonly state: 'missing' | 'outdated';
   readonly source: string | Readonly<Record<string, string>>;
+  /** The CLDR plural categories of the language asked for, on a message the
+   *  source writes in plural forms. */
+  readonly categories?: readonly PluralCategory[];
   /** The same message in the language the translator reads beside the source. */
   readonly reference?: string | Readonly<Record<string, string>>;
   /** What the locale says today, for an outdated message. */
@@ -27,6 +35,14 @@ export interface TodoOptions {
 function shown(message: Message): string | Readonly<Record<string, string>> {
   const forms = Object.keys(message.forms);
   return forms.length === 1 ? (message.forms[message.key] ?? message.forms) : message.forms;
+}
+
+function categoriesFor(
+  message: Message,
+  locale: string,
+): { categories?: readonly PluralCategory[] } {
+  const categories = message.selectors.length > 0 ? pluralCategories(locale) : null;
+  return categories === null ? {} : { categories };
 }
 
 /**
@@ -59,6 +75,7 @@ export function todo(
     entries[key] = {
       state,
       source: shown(original),
+      ...categoriesFor(original, locale),
       ...(second?.forms[key] === undefined ? {} : { reference: shown(second) }),
       ...(current ? { current: shown(current) } : {}),
       ...(noteFor(notes, key) === undefined ? {} : { note: noteFor(notes, key) }),

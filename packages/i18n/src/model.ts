@@ -14,6 +14,7 @@ export {
   variablesOf,
   variantOf,
 } from './messages.ts';
+export { pluralCategories } from './plural.ts';
 export {
   fallbackChain,
   isOffered,
@@ -22,4 +23,4 @@ export {
   type Stage,
   stageOf,
 } from './project.ts';
-export type { Catalog } from './types.ts';
+export type { Catalog, PluralCategory } from './types.ts';

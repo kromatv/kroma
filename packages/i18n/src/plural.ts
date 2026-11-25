@@ -1,4 +1,5 @@
-import type { Catalog, PluralCategory, PluralRule, TVars } from './types';
+import { PLURAL_CATEGORIES } from './messages.ts';
+import type { Catalog, PluralCategory, PluralRule, TVars } from './types.ts';
 
 const RULES = new Map<string, Intl.PluralRules | null>();
 const SUFFIX = /_(zero|one|two|few|many|other)$/;
@@ -44,6 +45,17 @@ function rulesFor(locale: string): Intl.PluralRules | null {
   }
   RULES.set(locale, rules);
   return rules;
+}
+
+/** The CLDR plural categories `locale` has, in CLDR order with `other` last,
+ *  or `null` where the runtime has no rules for the language. */
+export function pluralCategories(locale: string): readonly PluralCategory[] | null {
+  const rules = rulesFor(locale);
+  if (!rules || Intl.PluralRules.supportedLocalesOf(locale).length === 0) {
+    return null;
+  }
+  const own = new Set(rules.resolvedOptions().pluralCategories);
+  return PLURAL_CATEGORIES.filter((category) => own.has(category));
 }
 
 /** The CLDR plural category `count` falls in for `locale`. Falls back to a

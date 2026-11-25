@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolvePluralKey, selectCategory } from './plural';
+import { pluralCategories, resolvePluralKey, selectCategory } from './plural';
 
 describe('selectCategory', () => {
   it('follows CLDR, which puts zero in one for French and in other for English', () => {
@@ -12,6 +12,19 @@ describe('selectCategory', () => {
 
   it('defers to a supplied rule', () => {
     expect(selectCategory('fr', 0, () => 'other')).toBe('other');
+  });
+});
+
+describe('pluralCategories', () => {
+  it('lists the categories a language has, in CLDR order', () => {
+    expect(pluralCategories('ru')).toEqual(['one', 'few', 'many', 'other']);
+    expect(pluralCategories('fr')).toEqual(['one', 'many', 'other']);
+    expect(pluralCategories('ja')).toEqual(['other']);
+  });
+
+  it('knows nothing of a language the runtime has no rules for', () => {
+    expect(pluralCategories('qaa')).toBeNull();
+    expect(pluralCategories('not a locale')).toBeNull();
   });
 });
 

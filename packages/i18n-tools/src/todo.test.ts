@@ -33,6 +33,22 @@ describe('todo', () => {
     });
   });
 
+  it('names the plural categories of the language asked for beside a plural message', () => {
+    const set = setOf({ ...FILES, 'ru/nav.json': {} });
+
+    expect(todo(set, 'ru')['nav.count']).toEqual({
+      state: 'missing',
+      source: { 'nav.count': '{count} pages', 'nav.count_one': 'Une page' },
+      categories: ['one', 'few', 'many', 'other'],
+    });
+  });
+
+  it('gives a language with no plural only its general form to write', () => {
+    const set = setOf({ ...FILES, 'ko/nav.json': {} });
+
+    expect(todo(set, 'ko')['nav.count']?.categories).toEqual(['other']);
+  });
+
   it('lists an outdated message first, with what the locale says today', () => {
     const set = setOf(FILES);
     syncSet(set);
