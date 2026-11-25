@@ -3,6 +3,7 @@
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { memo } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Button } from '#ui/components/atoms/button';
 import { Text } from '#ui/components/atoms/text';
 import { ChoiceList } from '#ui/components/molecules/choice-list';
 import { ListRow } from '#ui/components/molecules/list-row';
@@ -10,7 +11,7 @@ import { Dialog } from '#ui/components/organisms/dialog';
 import { KitProvider } from '#ui/configure';
 import { onScreen } from '#ui/testing';
 import { describeScreen } from './describe-screen';
-import { find, paths } from './inspect.fixtures';
+import { find, focusedPaths, paths } from './inspect.fixtures';
 
 afterEach(cleanup);
 
@@ -126,6 +127,22 @@ describe('the screen as the kit names it', () => {
     const text = find(describeScreen().nodes, 'Text');
 
     expect(text?.box).toEqual({ x: 4, y: 8, width: 120, height: 40 });
+  });
+
+  it('marks the control the navigator focused, and only that one', () => {
+    render(
+      onScreen(
+        <>
+          <Button label="Lire" autoFocus onPress={vi.fn()} />
+          <Button label="Plus tard" onPress={vi.fn()} />
+        </>,
+      ),
+    );
+
+    const { nodes } = describeScreen();
+
+    expect(focusedPaths(nodes)).toEqual([expect.stringMatching(/FocusScope\/Button\/Focusable$/)]);
+    expect(find(nodes, 'Focusable')?.focused).toBe(true);
   });
 
   it('counts the fibers it read', () => {

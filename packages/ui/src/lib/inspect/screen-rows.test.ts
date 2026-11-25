@@ -45,4 +45,13 @@ describe('a screen as flat rows', () => {
   it('reads an empty screen as no rows', () => {
     expect(screenRows({ fibers: 0, nodes: [] })).toEqual({ fibers: 0, truncated: false, rows: [] });
   });
+
+  it('says which row holds the focus and leaves the key off every other', () => {
+    const tree = { fibers: 2, nodes: [node('Card', [{ ...node('Button'), focused: true }])] };
+
+    const { rows } = screenRows(tree);
+
+    expect(rows.map((row) => row.focused)).toEqual([undefined, true]);
+    expect(rows[0]).not.toHaveProperty('focused');
+  });
 });

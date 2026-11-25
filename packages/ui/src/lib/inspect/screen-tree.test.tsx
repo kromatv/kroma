@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { memo, type ReactNode, Suspense, use } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { nameComponent } from '../component-names';
+import { createFocusHolder } from '../focus-holder';
 import { describeScreen } from './describe-screen';
-import { paths } from './inspect.fixtures';
+import { focusedPaths, paths } from './inspect.fixtures';
 import { InspectAnchor } from './inspect-anchor';
 
 afterEach(cleanup);
@@ -20,13 +21,30 @@ const App = ({ children }: { children?: ReactNode }) => <section>{children}</sec
 nameComponent(e, 'Card');
 nameComponent(Part, 'Menu.Part');
 
-function read(ui: ReactNode) {
+const Field = memo(() => <input aria-label="field" />);
+
+nameComponent(Field, 'Field');
+
+const focusedForm = (
+  <Card>
+    <Part />
+    <Field />
+  </Card>
+);
+
+function mount(ui: ReactNode) {
+  const focus = createFocusHolder();
   render(
     <>
-      <InspectAnchor />
+      <InspectAnchor focus={focus} />
       {ui}
     </>,
   );
+  return focus;
+}
+
+function read(ui: ReactNode) {
+  mount(ui);
   return describeScreen();
 }
 
@@ -72,5 +90,25 @@ describe('the tree walk', () => {
     const { fibers } = read(<Card />);
 
     expect(fibers).toBe(4);
+  });
+
+  it('marks the nearest named component around the element that holds the focus', () => {
+    const focus = mount(focusedForm);
+
+    focus.hold(screen.getByLabelText('field'));
+
+    expect(focusedPaths(describeScreen().nodes)).toEqual(['Card/Field']);
+  });
+
+  it('marks nothing when nothing holds the focus', () => {
+    expect(focusedPaths(read(focusedForm).nodes)).toEqual([]);
+  });
+
+  it('marks nothing when the element that holds the focus is not on screen', () => {
+    const focus = mount(focusedForm);
+
+    focus.hold(document.createElement('input'));
+
+    expect(focusedPaths(describeScreen().nodes)).toEqual([]);
   });
 });

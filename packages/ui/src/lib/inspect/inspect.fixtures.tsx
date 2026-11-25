@@ -8,6 +8,14 @@ export function paths(nodes: readonly KitNode[], prefix = ''): string[] {
   });
 }
 
+/** The path of every node marked as holding the focus. */
+export function focusedPaths(nodes: readonly KitNode[], prefix = ''): string[] {
+  return nodes.flatMap((node) => {
+    const path = `${prefix}${node.name}`;
+    return [...(node.focused ? [path] : []), ...focusedPaths(node.children, `${path}/`)];
+  });
+}
+
 /** The first node called `name`, depth first. */
 export function find(nodes: readonly KitNode[], name: string): KitNode | undefined {
   for (const node of nodes) {

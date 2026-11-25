@@ -149,7 +149,7 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
   return createElement(
     Fragment,
     null,
-    createElement(InspectAnchor),
+    createElement(InspectAnchor, { focus: focus.holder }),
     createElement(
       FocusServicesProvider,
       { value: focus },

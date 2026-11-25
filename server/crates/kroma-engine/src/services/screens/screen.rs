@@ -22,7 +22,8 @@ pub struct Screen {
     pub rows: Vec<ScreenRow>,
 }
 
-/// One mounted kit component, `depth` levels under the screen's top.
+/// One mounted kit component, `depth` levels under the screen's top, and
+/// `focused` on the one that holds the focus.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScreenRow {
     pub depth: u32,
@@ -30,6 +31,8 @@ pub struct ScreenRow {
     pub props: BTreeMap<String, PropValue>,
     #[serde(rename = "box")]
     pub bounds: Option<ScreenBox>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub focused: bool,
 }
 
 /// Where a component sits, in the device's viewport pixels.

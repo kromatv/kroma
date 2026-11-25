@@ -10,7 +10,8 @@ const SIMPLE_MEMO = 15;
 const OFFSCREEN = 22;
 const COMPONENT_TAGS: ReadonlySet<number> = new Set([0, CLASS, FORWARD_REF, MEMO, SIMPLE_MEMO]);
 
-function field(value: unknown, key: string): unknown {
+/** One field of an object React keeps, or undefined for anything else. */
+export function field(value: unknown, key: string): unknown {
   return typeof value === 'object' && value !== null ? Reflect.get(value, key) : undefined;
 }
 
