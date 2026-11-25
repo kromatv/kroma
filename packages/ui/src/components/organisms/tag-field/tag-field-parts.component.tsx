@@ -23,7 +23,8 @@ const LOGO_PAD_SHARE = 0.12;
 
 /** The mark of a name: a face, a logo or a glyph. Inside a <TagField.Tag> or a
  *  <TagField.Item>, which size it (a tag's mark is smaller than a row's) and
- *  give it the name its initials are drawn from. */
+ *  give it the name its initials are drawn from. In a tag it takes the tag's
+ *  corner less its inset, so the two stay concentric. */
 function Media({ src = null, logo = false, name }: Readonly<TagFieldMediaProps>) {
   const place = useMediaPlace();
   if (name) {
@@ -33,27 +34,40 @@ function Media({ src = null, logo = false, name }: Readonly<TagFieldMediaProps>)
       </Box>
     );
   }
-  if (logo && src) {
-    return <Logo src={src} />;
+  const face = logo && src ? <Logo src={src} /> : <Face src={src} logo={logo} />;
+  if (place.corner === undefined) {
+    return face;
   }
+  return (
+    <Box w={place.size} h={place.size} radius={place.corner} overflow="hidden" shrink={0}>
+      {face}
+    </Box>
+  );
+}
+
+function Face({ src, logo }: Readonly<{ src: string | null; logo: boolean }>) {
+  const place = useMediaPlace();
+  const clipped = place.corner !== undefined;
+  const roundness = clipped ? 0 : LOGO_ROUNDNESS;
   return (
     <Avatar
       name={place.name}
       src={src}
       size={place.size}
-      roundness={logo ? LOGO_ROUNDNESS : undefined}
-      circle={!logo}
+      roundness={logo || clipped ? roundness : undefined}
+      circle={!logo && !clipped}
     />
   );
 }
 
 function Logo({ src }: Readonly<{ src: string }>) {
-  const { name, size } = useMediaPlace();
+  const { name, size, corner: kept } = useMediaPlace();
   const [failed, setFailed] = useState<string | null>(null);
+  const clipped = kept !== undefined;
   if (failed === src) {
-    return <Avatar name={name} size={size} roundness={LOGO_ROUNDNESS} />;
+    return <Avatar name={name} size={size} roundness={clipped ? 0 : LOGO_ROUNDNESS} />;
   }
-  const corner = Math.round(size * LOGO_ROUNDNESS);
+  const corner = clipped ? 0 : Math.round(size * LOGO_ROUNDNESS);
   const pad = Math.round(size * LOGO_PAD_SHARE);
   return (
     <Box w={size} h={size} radius={corner} bg="white" overflow="hidden" shrink={0}>

@@ -6,9 +6,11 @@ import { Icon } from '#ui/components/atoms/icon';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
 import { sharedStyle, sv, useStyleScope, useSv } from '#ui/core';
+import { nestedRadius, type Radius } from '#ui/core/tokens';
 import { sortParts } from '#ui/lib/parts';
 import { useTDefault } from '#ui/services/i18n';
 import { MediaPlaceContext, type TagFieldState, useTagField } from './tag-field-context';
+import { tagCorner } from './tag-field-metrics';
 import { Media } from './tag-field-parts.component';
 
 interface TagFieldTagProps {
@@ -22,7 +24,7 @@ interface TagFieldTagProps {
 
 const tagVariants = sv({
   slots: {
-    root: { row: true, align: 'center', radius: 'pill', bg: 'tint/10', shrink: 1, minW: 0 },
+    root: { row: true, align: 'center', bg: 'tint/10', shrink: 1, minW: 0 },
     label: { color: 'text', fontWeight: '600', shrink: 1 },
   },
   variants: {
@@ -43,21 +45,26 @@ interface TagLook {
 function useTagBox({ field, face }: Readonly<TagLook>) {
   const scope = useStyleScope();
   const { tag, tagMedia, gap, fontSize } = field.metrics;
+  const corner = tagCorner(field.metrics, scope);
   const removal = tag - 2 * REMOVAL_INSET;
   const ps = face === null ? gap + REMOVAL_INSET : (tag - tagMedia) / 2;
-  const key = `tag-field:tag:${tag}:${ps}:${gap}`;
+  const key = `tag-field:tag:${tag}:${ps}:${gap}:${corner}`;
   return {
     removal,
+    removalCorner: nestedRadius(corner, REMOVAL_INSET),
+    mediaCorner: nestedRadius(corner, (tag - tagMedia) / 2),
     glyph: Math.round(removal * GLYPH_SHARE),
-    box: sharedStyle(key, { h: tag, gap: gap - 2, ps, pe: REMOVAL_INSET }, scope),
+    box: sharedStyle(key, { h: tag, gap: gap - 2, ps, pe: REMOVAL_INSET, radius: corner }, scope),
     ink: sharedStyle(`tag-field:ink:${fontSize}`, { fontSize }, scope),
   };
 }
 
-function TagFace({ look, ink }: Readonly<{ look: TagLook; ink: StyleProp<TextStyle> }>) {
+type FaceProps = Readonly<{ look: TagLook; ink: StyleProp<TextStyle>; corner: Radius }>;
+
+function TagFace({ look, ink, corner }: FaceProps) {
   const slots = useSv(tagVariants)({ stop: false });
   const size = look.field.metrics.tagMedia;
-  const place = useMemo(() => ({ name: look.value, size }), [look.value, size]);
+  const place = useMemo(() => ({ name: look.value, size, corner }), [look.value, size, corner]);
   return (
     <>
       <MediaPlaceContext value={place}>{look.face}</MediaPlaceContext>
@@ -70,7 +77,7 @@ function TagFace({ look, ink }: Readonly<{ look: TagLook; ink: StyleProp<TextSty
 
 function TagStop(look: Readonly<TagLook>) {
   const t = useTDefault();
-  const { box, ink, removal, glyph } = useTagBox(look);
+  const { box, ink, removal, glyph, mediaCorner } = useTagBox(look);
   return (
     <Focusable
       label={t('tagField.remove', { name: look.value })}
@@ -80,7 +87,7 @@ function TagStop(look: Readonly<TagLook>) {
       vars={{ stop: true }}
       style={box}
     >
-      <TagFace look={look} ink={ink} />
+      <TagFace look={look} ink={ink} corner={mediaCorner} />
       <Box w={removal} h={removal} center>
         <Icon name="x" size={glyph} color="textMuted" />
       </Box>
@@ -91,15 +98,16 @@ function TagStop(look: Readonly<TagLook>) {
 function TagPill(look: Readonly<TagLook>) {
   const t = useTDefault();
   const slots = useSv(tagVariants)({ stop: false });
-  const { box, ink, removal, glyph } = useTagBox(look);
+  const { box, ink, removal, glyph, mediaCorner, removalCorner } = useTagBox(look);
   return (
     <Box style={[slots.root, box]}>
-      <TagFace look={look} ink={ink} />
+      <TagFace look={look} ink={ink} corner={mediaCorner} />
       {look.field.disabled ? null : (
         <IconButton
           icon="x"
           variant="ghost"
           diameter={removal}
+          radius={removalCorner}
           glyph={glyph}
           label={t('tagField.remove', { name: look.value })}
           focusScale={1}

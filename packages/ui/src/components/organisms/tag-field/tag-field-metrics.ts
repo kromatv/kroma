@@ -1,5 +1,6 @@
-import { fontSizes } from '#ui/core/tokens';
-import { CONTROL, type ControlMetrics, type ControlSize } from '#ui/lib/field-shell';
+import type { StyleScope } from '#ui/core';
+import { fontSizes, nestedRadius, type Radius } from '#ui/core/tokens';
+import { CONTROL, type ControlMetrics, type ControlSize, controlRadius } from '#ui/lib/field-shell';
 
 interface TagMetrics {
   control: ControlMetrics;
@@ -25,5 +26,11 @@ function tagMetrics(size: ControlSize): TagMetrics {
   return { ...tag, control, inset: control.py + (control.line - tag.tag) / 2 };
 }
 
+/** The corner of what stands in the well, a tag or the stop after them:
+ *  the well's own less the inset, so the two stay concentric. */
+function tagCorner(metrics: TagMetrics, scope?: StyleScope): Radius {
+  return nestedRadius(controlRadius(metrics.control, scope), metrics.inset);
+}
+
 export type { TagMetrics };
-export { tagMetrics };
+export { tagCorner, tagMetrics };

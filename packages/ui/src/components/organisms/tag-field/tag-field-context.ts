@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext } from 'react';
+import type { Radius } from '#ui/core/tokens';
 import type { ChangeDetails, ControlOf, ReasonOf } from '#ui/lib/control';
 import { partContext } from '#ui/lib/part-context';
 import type { ResolvedPresentation } from '#ui/lib/surface-presentation.hook';
@@ -49,6 +50,7 @@ function useTagFieldRow(): TagFieldRowState {
 interface MediaPlace {
   name: string;
   size: number;
+  corner?: Radius;
 }
 
 const MediaPlaceContext = createContext<MediaPlace>({ name: '', size: 20 });

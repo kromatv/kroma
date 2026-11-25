@@ -6,7 +6,7 @@ import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { SearchKeyboard } from '#ui/components/organisms/keyboard';
-import { sv } from '#ui/core';
+import { sv, useStyleScope } from '#ui/core';
 import { PLACEHOLDER, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusColumn } from '#ui/lib/focus-scope.component';
 import { usePointerDriving } from '#ui/lib/input-source';
@@ -18,6 +18,7 @@ import {
   useTagField,
 } from './tag-field-context';
 import { faceOf, FreeRow, LoadingRow } from './tag-field-item';
+import { tagCorner } from './tag-field-metrics';
 import type { TagFieldSurfaceProps } from './tag-field-surface';
 import { TagFieldWell } from './tag-field-well.component';
 
@@ -29,7 +30,6 @@ const addVariants = sv({
       row: true,
       align: 'center',
       gap: 8,
-      radius: 'pill',
       _hover: { bg: 'tint/8' },
       _focus: { bg: 'accentSoft' },
     },
@@ -40,6 +40,7 @@ const addVariants = sv({
 
 function AddStop({ surface }: Readonly<{ surface: TagFieldSurfaceProps }>) {
   const { metrics, control, tags, placeholder } = surface;
+  const scope = useStyleScope();
   const alone = tags.length === 0;
   return (
     <Focusable
@@ -47,7 +48,12 @@ function AddStop({ surface }: Readonly<{ surface: TagFieldSurfaceProps }>) {
       onPress={() => control.setOpen(true, 'trigger')}
       sv={addVariants}
       vars={{ alone }}
-      style={{ height: metrics.tag, minWidth: metrics.tag, paddingHorizontal: metrics.inset }}
+      style={{
+        height: metrics.tag,
+        minWidth: metrics.tag,
+        paddingHorizontal: metrics.inset,
+        borderRadius: tagCorner(metrics, scope),
+      }}
     >
       <Icon name="plus" size={Math.round(metrics.tag * 0.5)} color="textMuted" />
       {alone && placeholder ? (
