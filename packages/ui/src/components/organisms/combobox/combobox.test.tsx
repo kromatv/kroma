@@ -150,3 +150,24 @@ describe('a <Combobox> inside a <Field.Root>', () => {
     expect(ink('Director')).not.toBe(ink('Actor'));
   });
 });
+
+describe('the face of a <Combobox>', () => {
+  it('draws a logo whole, and the initials once it fails to load', () => {
+    const { container } = inEnglish(
+      <Combobox.Root label="Studio" defaultValue="Warner Bros.">
+        <Combobox.Value value="Warner Bros.">
+          <Combobox.Media src="wb.png" logo />
+        </Combobox.Value>
+      </Combobox.Root>,
+    );
+    const logo = container.querySelector('img:not([aria-hidden])');
+    if (logo === null) {
+      throw new Error('no logo drawn');
+    }
+
+    fireEvent.error(logo);
+
+    expect(container.querySelector('img:not([aria-hidden])')).toBeNull();
+    expect(screen.getByText('WB')).toBeTruthy();
+  });
+});

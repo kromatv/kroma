@@ -44,10 +44,10 @@ function useSuggestionRow(): SuggestionRowState {
 interface MediaPlace {
   name: string;
   size: number;
-  corner?: Radius;
+  corner: Radius;
 }
 
-const MediaPlaceContext = createContext<MediaPlace>({ name: '', size: 20 });
+const MediaPlaceContext = createContext<MediaPlace>({ name: '', size: 20, corner: 0 });
 
 function useMediaPlace(): MediaPlace {
   return useContext(MediaPlaceContext);

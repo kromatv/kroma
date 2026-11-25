@@ -11,64 +11,48 @@ interface SuggestionMediaProps {
    *  initials of the name it stands beside. */
   src?: string | null;
   /** Draws the picture whole on a light tile, as a company's mark wants, rather
-   *  than cropped to a disc. */
+   *  than cropped to fill the place. */
   logo?: boolean;
   /** A glyph the kit sizes, drawn instead of a picture. */
   name?: IconName;
 }
 
 const GLYPH_SHARE = 0.6;
-const LOGO_ROUNDNESS = 0.25;
 const LOGO_PAD_SHARE = 0.12;
 
 /** The mark of a name, at the size and corner the place it stands in gives
  *  it, with that place's name for its initials. */
 function SuggestionMedia({ src = null, logo = false, name }: Readonly<SuggestionMediaProps>) {
   const place = useMediaPlace();
-  if (name) {
-    return (
-      <Box w={place.size} h={place.size} center shrink={0}>
-        <Icon name={name} size={Math.round(place.size * GLYPH_SHARE)} color="textMuted" />
-      </Box>
-    );
-  }
-  const face = logo && src ? <Logo src={src} /> : <Face src={src} logo={logo} />;
-  if (place.corner === undefined) {
-    return face;
-  }
   return (
-    <Box w={place.size} h={place.size} radius={place.corner} overflow="hidden" shrink={0}>
-      {face}
+    <Box w={place.size} h={place.size} radius={place.corner} overflow="hidden" center shrink={0}>
+      <Mark src={src} logo={logo} glyph={name} />
     </Box>
   );
 }
 
-function Face({ src, logo }: Readonly<{ src: string | null; logo: boolean }>) {
-  const place = useMediaPlace();
-  const clipped = place.corner !== undefined;
-  const roundness = clipped ? 0 : LOGO_ROUNDNESS;
-  return (
-    <Avatar
-      name={place.name}
-      src={src}
-      size={place.size}
-      roundness={logo || clipped ? roundness : undefined}
-      circle={!logo && !clipped}
-    />
-  );
+type MarkProps = Readonly<{ src: string | null; logo: boolean; glyph?: IconName }>;
+
+function Mark({ src, logo, glyph }: MarkProps) {
+  const { name, size } = useMediaPlace();
+  if (glyph) {
+    return <Icon name={glyph} size={Math.round(size * GLYPH_SHARE)} color="textMuted" />;
+  }
+  if (logo && src) {
+    return <Logo src={src} />;
+  }
+  return <Avatar name={name} src={src} size={size} roundness={0} />;
 }
 
 function Logo({ src }: Readonly<{ src: string }>) {
-  const { name, size, corner: kept } = useMediaPlace();
+  const { name, size } = useMediaPlace();
   const [failed, setFailed] = useState<string | null>(null);
-  const clipped = kept !== undefined;
   if (failed === src) {
-    return <Avatar name={name} size={size} roundness={clipped ? 0 : LOGO_ROUNDNESS} />;
+    return <Avatar name={name} size={size} roundness={0} />;
   }
-  const corner = clipped ? 0 : Math.round(size * LOGO_ROUNDNESS);
   const pad = Math.round(size * LOGO_PAD_SHARE);
   return (
-    <Box w={size} h={size} radius={corner} bg="white" overflow="hidden" shrink={0}>
+    <Box w={size} h={size} bg="white">
       <Box absolute top={pad} end={pad} bottom={pad} start={pad}>
         <Img
           src={src}
