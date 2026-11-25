@@ -36,7 +36,7 @@ export interface CastArgs {
   size?: ControlSize;
   invalid?: boolean;
   disabled?: boolean;
-  presentation?: ComboboxRootProps['presentation'];
+  presentation?: NonNullable<ComboboxRootProps['presentation']>;
 }
 
 function searchPeople(query: string): readonly Person[] {

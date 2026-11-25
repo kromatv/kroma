@@ -10,8 +10,8 @@ import type { SuggestingField } from './suggestion-context';
 
 interface SuggestingAt {
   query: string;
-  size?: ControlSize | undefined;
-  presentation?: SurfacePresentation | undefined;
+  size?: ControlSize;
+  presentation?: SurfacePresentation;
   take: (name: string) => unknown;
 }
 
