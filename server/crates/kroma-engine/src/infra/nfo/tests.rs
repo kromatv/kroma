@@ -16,6 +16,8 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
     <director>Michael Mann</director>
     <director> </director>
     <mpaa>Rated R</mpaa>
+    <studio>Regency Enterprises</studio>
+    <studio>Forward Pass</studio>
     <uniqueid type="imdb">tt0113277</uniqueid>
     <uniqueid type="tmdb" default="true">949</uniqueid>
     <actor><name>Al Pacino</name><role>Vincent</role></actor>
@@ -23,7 +25,7 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 </movie>"#;
 
 #[test]
-fn a_film_s_file_gives_its_names_tagline_summary_date_genres_directors_rating_and_ids() {
+fn a_film_s_file_gives_its_names_tagline_summary_date_genres_people_rating_studios_and_ids() {
     let Contents {
         edit,
         tmdb,
@@ -42,6 +44,10 @@ fn a_film_s_file_gives_its_names_tagline_summary_date_genres_directors_rating_an
     assert_eq!(edit.genres, Some(vec!["Crime".into(), "Drama".into()]));
     assert_eq!(edit.directors, Some(vec!["Michael Mann".into()]));
     assert_eq!(edit.content_rating.as_deref(), Some("Rated R"));
+    assert_eq!(
+        edit.studios,
+        Some(vec!["Regency Enterprises".into(), "Forward Pass".into()])
+    );
     assert_eq!(tmdb, Some(949));
     assert_eq!(elsewhere.imdb.as_deref(), Some("tt0113277"));
     assert_eq!(elsewhere.tvdb, None);

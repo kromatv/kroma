@@ -74,14 +74,15 @@ export const TitleEdit = z.object({
   directors: z.array(z.string()).nullable().default(null),
   contentRating: z.string().nullable().default(null),
   cast: z.array(Actor).nullable().default(null),
+  studios: z.array(z.string()).nullable().default(null),
 });
 export type TitleEdit = z.infer<typeof TitleEdit>;
 
 /** What a {@link TitleEdit} can hold, as the server checks it: characters in a
- * name, a tagline, a summary, one genre, one person's name and one part, how
- * many genres, directors and actors, and the years. An age rating is held to
- * the labels the server knows, and `contentRating` only bounds what a field
- * takes. */
+ * name, a tagline, a summary, one genre, one person's name and one part, one
+ * studio, how many genres, directors, actors and studios, and the years. An
+ * age rating is held to the labels the server knows, and `contentRating` only
+ * bounds what a field takes. */
 export const TITLE_EDIT_LIMITS = {
   title: 300,
   tagline: 300,
@@ -92,6 +93,8 @@ export const TITLE_EDIT_LIMITS = {
   directors: 20,
   cast: 50,
   role: 100,
+  studio: 100,
+  studios: 10,
   contentRating: 40,
   years: [1800, 2200],
 } as const;

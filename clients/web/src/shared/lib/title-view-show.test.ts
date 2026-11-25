@@ -26,6 +26,7 @@ describe('buildTitleView: show source', () => {
       genres: ['Drama'],
       crew: [{ job: 'Creator', name: 'Vince' }],
       cast: [{ name: 'Bryan' }],
+      studios: ['AMC'],
     },
   };
 
@@ -58,6 +59,7 @@ describe('buildTitleView: show source', () => {
     expect(v.backdrop).toBe('bd:sh1');
     expect(v.themeUrl).toBe('theme:sh1');
     expect(v.directors.map((d) => d.name)).toEqual(['Vince']); // Creator counts as a director
+    expect(v.studios).toEqual(['AMC']);
     expect(v.playable).toEqual(ep(1, 1));
     expect(v.playLabel).toBe('player.playEpisode:1,1');
     expect(v.canRequest).toBe(false); // no discover overlay
@@ -215,6 +217,7 @@ describe('buildTitleView: show source', () => {
     expect(v.genres).toEqual([]);
     expect(v.cast).toEqual([]);
     expect(v.directors).toEqual([]);
+    expect(v.studios).toEqual([]);
     expect(v.backdrop).toBeNull();
     expect(v.playable).toBeNull();
     expect(v.playLabel).toBeNull();

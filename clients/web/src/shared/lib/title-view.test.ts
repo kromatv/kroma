@@ -23,6 +23,7 @@ describe('buildTitleView: movie source', () => {
         { job: 'Writer', name: 'Jon' },
       ],
       cast: [{ name: 'Timothee' }],
+      studios: ['Legendary Pictures'],
     },
   };
 
@@ -49,6 +50,7 @@ describe('buildTitleView: movie source', () => {
     expect(v.poster).toBe('poster:mv1');
     expect(v.backdrop).toBe('bd:mv1');
     expect(v.directors.map((d) => d.name)).toEqual(['Denis']); // Writer filtered out
+    expect(v.studios).toEqual(['Legendary Pictures']);
     expect(v.themeUrl).toBeNull();
     expect(v.playable).toBe(movieItem);
     expect(v.playLabel).toBeNull();
@@ -87,6 +89,7 @@ describe('buildTitleView: movie source', () => {
     expect(v.genres).toEqual([]);
     expect(v.directors).toEqual([]);
     expect(v.cast).toEqual([]);
+    expect(v.studios).toEqual([]);
     expect(v.year).toBeNull();
     expect(v.backdrop).toBeNull(); // client returns null for id "nobd"
     expect(v.requestStatus).toBeNull();

@@ -1,8 +1,8 @@
 //! The `.nfo` file Kodi, Jellyfin and Plex keep beside a title's files, read
 //! for its name, original title, sort title, tagline, summary, release date,
-//! year, genres, directors, age rating and cast, and the TMDB, IMDb and
-//! TheTVDB ids it names, and the one beside an episode's file, read for its
-//! name, summary and air date (`docs/reference/nfo-files.md`).
+//! year, genres, directors, age rating, cast and studios, and the TMDB, IMDb
+//! and TheTVDB ids it names, and the one beside an episode's file, read for
+//! its name, summary and air date (`docs/reference/nfo-files.md`).
 
 use std::fs::File;
 use std::io::Read;
@@ -94,7 +94,14 @@ fn described(document: &str, root: &str) -> Option<Contents> {
             ..Contents::default()
         });
     }
-    let edit = TitleEdit {
+    Some(Contents {
+        edit: title_edit(el).clipped(),
+        ..named_ids(el)
+    })
+}
+
+fn title_edit(el: Node<'_, '_>) -> TitleEdit {
+    TitleEdit {
         title: texts(el, "title").next(),
         original_title: texts(el, "originaltitle").next(),
         sort_title: texts(el, "sorttitle").next(),
@@ -106,11 +113,8 @@ fn described(document: &str, root: &str) -> Option<Contents> {
         directors: Some(texts(el, "director").collect()),
         content_rating: texts(el, "mpaa").next(),
         cast: Some(actors(el)),
-    };
-    Some(Contents {
-        edit: edit.clipped(),
-        ..named_ids(el)
-    })
+        studios: Some(texts(el, "studio").collect()),
+    }
 }
 
 fn episode_edit(el: Node<'_, '_>) -> TitleEdit {

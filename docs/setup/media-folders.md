@@ -167,8 +167,9 @@ Series/
   that describes several episodes gives the first.
 - KROMA reads `<title>`, `<originaltitle>`, `<sorttitle>`, `<tagline>`,
   `<plot>`, `<premiered>` or `<year>`, each `<genre>`, each `<director>`,
-  `<mpaa>`, the age rating, and each `<actor>` with its `<name>`, `<role>` and
-  `<order>`. The file must be UTF-8, as these programs write it.
+  each `<studio>`, `<mpaa>`, the age rating, and each `<actor>` with its
+  `<name>`, `<role>` and `<order>`. The file must be UTF-8, as these programs
+  write it.
 - An actor or a director TMDB did not give for the title gets the photo and the
   page TMDB has under that exact name, after the scan.
 - An age rating such as `PG-13`, `Rated R` or `FR-12` replaces the one from

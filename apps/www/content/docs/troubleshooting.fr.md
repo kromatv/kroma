@@ -116,8 +116,8 @@ Pour l'éviter, nommez le dossier avec le titre et l'année :
 
 Une vidéo de famille ou un film que TMDB ne connaît pas n'a pas de fiche à
 corriger. Ouvrez-le, choisissez **Modifier les informations**, puis écrivez son
-titre, sa date de sortie, son résumé, ses genres, sa réalisation, sa
-classification et sa distribution. Quand
+titre, sa date de sortie, son résumé, ses genres, sa réalisation, ses
+studios, sa classification et sa distribution. Quand
 **Corriger la fiche**
 ne trouve rien, son bouton **Modifier les informations** ouvre le même
 formulaire. Pour la date de sortie,
@@ -126,7 +126,8 @@ de tri classe le film sous un autre nom, comme `Seigneur des anneaux, Le`, sans
 changer le titre affiché. Un titre original, comme `Das Boot`, s'affiche sous
 le titre quand les deux diffèrent, et un slogan s'affiche au-dessus du
 résumé. Écrivez la classification comme `12`, `PG-13` ou `FR-12` : les
-profils limités par âge s'y fient. Sous **Distribution**, chaque ligne
+profils limités par âge s'y fient. Le studio d'une série est la chaîne qui
+la diffuse, comme `HBO`. Sous **Distribution**, chaque ligne
 donne le nom d'une personne et son rôle, dans l'ordre du générique ;
 retirez tout le monde pour revenir à la distribution du `.nfo` ou de TMDB.
 Une personne de la distribution ou de la réalisation que TMDB n'a pas donnée

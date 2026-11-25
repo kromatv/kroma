@@ -62,6 +62,9 @@ pub struct Metadata {
     // Directors first, then writers; TV creators folded in.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub crew: Vec<CrewMember>,
+    /// The companies that made a film, or the networks that air a show.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub studios: Vec<String>,
     // Internal: consumed by `build_doc` during enrichment, never persisted.
     #[serde(default, skip_serializing)]
     pub keywords: Vec<String>,
@@ -187,6 +190,7 @@ impl Metadata {
             theme_url: None,
             cast: Vec::new(),
             crew: Vec::new(),
+            studios: Vec::new(),
             keywords: Vec::new(),
             tvdb_id: None,
             tmdb_url: String::new(),
@@ -314,6 +318,7 @@ mod tests {
             theme_url: None,
             cast: Vec::new(),
             crew: Vec::new(),
+            studios: Vec::new(),
             keywords: Vec::new(),
             tvdb_id: None,
             tmdb_url: "https://themoviedb.org/movie/603".into(),

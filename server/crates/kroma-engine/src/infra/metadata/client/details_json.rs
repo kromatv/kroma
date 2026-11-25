@@ -35,6 +35,10 @@ pub(super) struct Details {
     #[serde(default)]
     pub(super) genres: Vec<Genre>,
     #[serde(default)]
+    pub(super) production_companies: Vec<Company>, // movies and shows
+    #[serde(default)]
+    pub(super) networks: Vec<Company>, // shows
+    #[serde(default)]
     pub(super) imdb_id: Option<String>, // present on movie details
     #[serde(default)]
     pub(super) external_ids: Option<ExternalIds>, // appended (carries imdb_id for shows)
@@ -79,6 +83,12 @@ pub(super) fn collect_keywords(k: Keywords) -> Vec<String> {
 #[derive(Debug, Deserialize)]
 pub(super) struct Genre {
     pub(super) id: u32,
+    pub(super) name: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub(super) struct Company {
+    #[serde(default)]
     pub(super) name: String,
 }
 

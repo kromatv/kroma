@@ -165,6 +165,7 @@ fn in_file() -> TitleEdit {
         directors: None,
         content_rating: None,
         cast: None,
+        studios: Some(vec!["Home Video".into()]),
     }
 }
 

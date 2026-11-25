@@ -131,27 +131,41 @@ export function ReportButton({ onReport }: Readonly<{ onReport?: () => void }>) 
   );
 }
 
-export function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subtitles?: string }>) {
-  const s = useStyles(sDefinition);
+type HeroField = Readonly<{ label: string; value: string }>;
 
+const NO_STUDIOS: readonly string[] = [];
+
+const isShown = (field: Readonly<{ label: string; value?: string }>): field is HeroField =>
+  field.value != null;
+
+/** The audio and subtitles a title plays with, and the studios that made it,
+ * under a rule. Nothing when none is known. */
+export function HeroFields({
+  audio,
+  subtitles,
+  studios = NO_STUDIOS,
+}: Readonly<{ audio?: string; subtitles?: string; studios?: readonly string[] }>) {
+  const s = useStyles(sDefinition);
   const t = useT();
-  if (audio == null && subtitles == null) {
+  const fields = [
+    { label: t('content.fieldAudio'), value: audio },
+    { label: t('content.fieldSubtitles'), value: subtitles },
+    {
+      label: t('content.fieldStudios', { count: studios.length }),
+      value: studios.length > 0 ? studios.join(', ') : undefined,
+    },
+  ].filter(isShown);
+  if (fields.length === 0) {
     return null;
   }
   return (
     <Box row wrap gapX={FIELD_GAP_X} gapY={16} py={18} style={s.rule}>
-      {audio != null ? (
-        <DataField.Root size="md">
-          <DataField.Label>{t('content.fieldAudio')}</DataField.Label>
-          <DataField.Value>{audio}</DataField.Value>
+      {fields.map((field) => (
+        <DataField.Root key={field.label} size="md">
+          <DataField.Label>{field.label}</DataField.Label>
+          <DataField.Value>{field.value}</DataField.Value>
         </DataField.Root>
-      ) : null}
-      {subtitles != null ? (
-        <DataField.Root size="md">
-          <DataField.Label>{t('content.fieldSubtitles')}</DataField.Label>
-          <DataField.Value>{subtitles}</DataField.Value>
-        </DataField.Root>
-      ) : null}
+      ))}
     </Box>
   );
 }

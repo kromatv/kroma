@@ -23,6 +23,8 @@
   "content.episodesWatched": "{watched} sur {count} vus",
   "content.featured": "En vedette",
   "content.fieldAudio": "Audio",
+  "content.fieldStudios": "Studios",
+  "content.fieldStudios_one": "Studio",
   "content.fieldSubtitles": "Sous-titres",
   "content.film": "Film",
   "content.filmsEmpty": "Aucun film dans la bibliothèque pour l'instant.",

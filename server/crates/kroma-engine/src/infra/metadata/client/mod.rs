@@ -53,6 +53,7 @@ impl Target {
 
 const MAX_CAST: usize = 12;
 const MAX_CREW: usize = 8;
+const MAX_STUDIOS: usize = 3;
 
 // TMDB returns keywords unordered; this bounds how much feeds the embedding doc.
 const MAX_KEYWORDS: usize = 20;

@@ -71,6 +71,7 @@ describe('buildTitleView: discover source (not owned)', () => {
     expect(v.poster).toBe('http://localhost:4040/api/p.jpg');
     expect(v.backdrop).toBe('https://cdn/bd.jpg');
     expect(v.directors.map((d) => d.name)).toEqual(['Ava']);
+    expect(v.studios).toEqual([]);
     expect(v.video).toBeNull();
     expect(v.playable).toBeNull();
     expect(v.canRequest).toBe(true);

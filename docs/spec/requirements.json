@@ -4937,7 +4937,7 @@
     "status": "SHIPPED",
     "text": "A newly matched item fetches its metadata once.",
     "file": "docs/spec/library/README.md",
-    "line": 348
+    "line": 353
   },
   {
     "id": "LIB-42",
@@ -4947,7 +4947,7 @@
     "status": "AGREED",
     "text": "Running series are re-checked on a slow cadence, so a new episode's air",
     "file": "docs/spec/library/README.md",
-    "line": 350
+    "line": 355
   },
   {
     "id": "LIB-43",
@@ -4957,7 +4957,7 @@
     "status": "AGREED",
     "text": "A \"Refresh metadata\" action on any title, season or whole source",
     "file": "docs/spec/library/README.md",
-    "line": 354
+    "line": 359
   },
   {
     "id": "LIB-44",
@@ -4967,7 +4967,7 @@
     "status": "AGREED",
     "text": "A forced refresh **never** discards a manual match or user-chosen",
     "file": "docs/spec/library/README.md",
-    "line": 358
+    "line": 363
   },
   {
     "id": "LIB-45",
@@ -4977,7 +4977,7 @@
     "status": "SHIPPED",
     "text": "When a file disappears from a source, its title is **marked absent**:",
     "file": "docs/spec/library/README.md",
-    "line": 380
+    "line": 385
   },
   {
     "id": "LIB-46",
@@ -4987,7 +4987,7 @@
     "status": "SHIPPED",
     "text": "Content that reappears, because a NAS remounts or a file is moved back",
     "file": "docs/spec/library/README.md",
-    "line": 385
+    "line": 390
   },
   {
     "id": "LIB-47",
@@ -4997,7 +4997,7 @@
     "status": "SHIPPED",
     "text": "A **move** is therefore not a special case. It is an absent path plus a",
     "file": "docs/spec/library/README.md",
-    "line": 389
+    "line": 394
   },
   {
     "id": "LIB-48",
@@ -5007,7 +5007,7 @@
     "status": "SHIPPED",
     "text": "A rescan **only ever marks absent**. It never deletes user data.",
     "file": "docs/spec/library/README.md",
-    "line": 393
+    "line": 398
   },
   {
     "id": "LIB-49",
@@ -5017,7 +5017,7 @@
     "status": "AGREED",
     "text": "Permanently deleting a title's history is an explicit, person-initiated",
     "file": "docs/spec/library/README.md",
-    "line": 399
+    "line": 404
   },
   {
     "id": "LIB-50",
@@ -5027,7 +5027,7 @@
     "status": "SHIPPED",
     "text": "Refreshing metadata and re-running identification are two actions, and",
     "file": "docs/spec/library/README.md",
-    "line": 362
+    "line": 367
   },
   {
     "id": "LIB-51",
@@ -5518,6 +5518,16 @@
     "text": "An actor or a director written for a film or a show, by a person or in",
     "file": "docs/spec/library/README.md",
     "line": 333
+  },
+  {
+    "id": "LIB-100",
+    "domain": "LIB",
+    "space": "library",
+    "number": 100,
+    "status": "SHIPPED",
+    "text": "A film or a show shows the studios that made it, as Plex and Jellyfin",
+    "file": "docs/spec/library/README.md",
+    "line": 341
   },
   {
     "id": "MEDIA-1",

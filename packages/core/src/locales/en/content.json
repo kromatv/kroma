@@ -23,6 +23,8 @@
   "content.episodesWatched": "{watched} of {count} watched",
   "content.featured": "Featured",
   "content.fieldAudio": "Audio",
+  "content.fieldStudios": "Studios",
+  "content.fieldStudios_one": "Studio",
   "content.fieldSubtitles": "Subtitles",
   "content.film": "Movie",
   "content.filmsEmpty": "No movies in the library yet.",

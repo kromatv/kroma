@@ -83,6 +83,7 @@ export interface DetailHeroProps {
   badges: QualityTone[];
   audioFlag?: string | null;
   directors?: CrewMember[];
+  studios?: readonly string[];
   tagline?: string | null;
   overview?: string | null;
   audio?: string;
@@ -116,6 +117,7 @@ export function DetailHero({
   badges,
   audioFlag,
   directors,
+  studios,
   tagline,
   overview,
   audio,
@@ -246,7 +248,7 @@ export function DetailHero({
               {adminAction}
             </Box>
 
-            <HeroFields audio={audio} subtitles={subtitles} />
+            <HeroFields audio={audio} subtitles={subtitles} studios={studios} />
             {unsupported ? (
               <Text variant="meta" color="textMuted" mt={14}>
                 {unsupported}

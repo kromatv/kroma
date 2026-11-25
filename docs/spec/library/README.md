@@ -338,6 +338,11 @@ picture on the title's page and leads to their page. A name the provider knows n
 its initials and is looked up again a month later; a name written while the provider cannot be
 reached is looked up at the next try.
 
+**LIB-100** (SHIPPED) - A film or a show shows the studios that made it, as Plex and Jellyfin
+do: a film's production companies and a show's networks, from the provider. The studios a
+person writes, or its `.nfo` file names in `<studio>` (LIB-84), replace the provider's, and
+what a person writes comes before the file.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 
