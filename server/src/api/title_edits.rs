@@ -4,8 +4,8 @@
 //! `ShowUpdated` event.
 //!
 //! - `GET` → `{ title, originalTitle, sortTitle, tagline, overview, year,
-//!   released, genres }`, each null where the title follows the provider.
-//!   `released` is a day, `yyyy-mm-dd`.
+//!   released, genres, directors }`, each null where the title follows the
+//!   provider. `released` is a day, `yyyy-mm-dd`.
 //! - `PUT` with the same body → the edit as kept: trimmed, with each empty
 //!   field handed back to the provider and the year taken from `released`.
 //!   400 when a field is longer than a title holds, the year is out of range

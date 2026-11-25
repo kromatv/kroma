@@ -158,6 +158,7 @@ describe('the media endpoints', () => {
           year: null,
           released: '1995-12-15',
           genres: ['Crime'],
+          directors: ['Michael Mann'],
         }),
       method: 'PUT',
       path: '/edits/item/i%201',
@@ -170,6 +171,7 @@ describe('the media endpoints', () => {
         year: null,
         released: '1995-12-15',
         genres: ['Crime'],
+        directors: ['Michael Mann'],
       },
     },
   ])('$name', checkEndpoint);

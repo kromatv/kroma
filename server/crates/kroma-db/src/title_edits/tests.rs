@@ -162,6 +162,7 @@ fn in_file() -> TitleEdit {
         year: Some(2004),
         released: None,
         genres: Some(vec!["Family".into()]),
+        directors: None,
     }
 }
 

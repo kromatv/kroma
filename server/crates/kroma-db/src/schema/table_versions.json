@@ -245,8 +245,8 @@
       "changed": 1
     },
     "text_beside": {
-      "broke": 45,
-      "changed": 45
+      "broke": 46,
+      "changed": 46
     },
     "title_edits": {
       "broke": 36,
@@ -289,5 +289,5 @@
       "changed": 1
     }
   },
-  "version": 45
+  "version": 47
 }

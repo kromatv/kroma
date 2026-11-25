@@ -3,12 +3,17 @@
 //! before the provider's, in every language, and a field left `None` keeps
 //! following the provider. A release date written gives the year (LIB-87),
 //! a sort title files the title under another name (LIB-88), an original
-//! title names it in the language it was made in (LIB-94), and a tagline
-//! stands above its summary (LIB-95).
+//! title names it in the language it was made in (LIB-94), a tagline stands
+//! above its summary (LIB-95), and the names written as its directors stand in
+//! for the provider's (LIB-96).
+
+mod crew;
+mod day;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{MediaItem, Metadata, Show};
+use day::{year_of, year_of_day};
 
 /// The longest name a person can write for a title, in characters.
 pub const TITLE_MAX: usize = 300;
@@ -20,6 +25,10 @@ pub const OVERVIEW_MAX: usize = 10_000;
 pub const GENRES_MAX: usize = 20;
 /// The longest genre name a person can write, in characters.
 pub const GENRE_MAX: usize = 60;
+/// How many directors a person can give a title.
+pub const DIRECTORS_MAX: usize = 20;
+/// The longest name a person can write for one director, in characters.
+pub const PERSON_MAX: usize = 100;
 /// The years a title can be given.
 pub const YEARS: std::ops::RangeInclusive<u32> = 1800..=2200;
 
@@ -46,6 +55,9 @@ pub struct TitleEdit {
     pub released: Option<String>,
     #[serde(default)]
     pub genres: Option<Vec<String>>,
+    /// The people who directed the title, or created the show.
+    #[serde(default)]
+    pub directors: Option<Vec<String>>,
 }
 
 /// The parts of a title a [`TitleEdit`] writes onto.
@@ -81,40 +93,25 @@ fn kept(text: Option<String>) -> Option<String> {
     text.map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
 }
 
-fn year_of(date: &str) -> Option<u32> {
-    date.get(..4)?.parse().ok()
+fn listed(names: Option<Vec<String>>) -> Option<Vec<String>> {
+    let names: Vec<String> = names
+        .into_iter()
+        .flatten()
+        .filter_map(|name| kept(Some(name)))
+        .collect();
+    (!names.is_empty()).then_some(names)
 }
 
-fn leap(year: u32) -> bool {
-    year.is_multiple_of(4) && (!year.is_multiple_of(100) || year.is_multiple_of(400))
+fn clip_list(names: Option<Vec<String>>, count: usize, each: usize) -> Option<Vec<String>> {
+    names.map(|names| {
+        let kept = names.into_iter().take(count);
+        kept.map(|name| cut(name, each)).collect()
+    })
 }
 
-fn days_in(year: u32, month: u32) -> u32 {
-    match month {
-        2 if leap(year) => 29,
-        2 => 28,
-        4 | 6 | 9 | 11 => 30,
-        _ => 31,
-    }
-}
-
-fn day_of(date: &str) -> Option<(u32, u32, u32)> {
-    let shaped = date.len() == 10
-        && date.bytes().enumerate().all(|(at, b)| match at {
-            4 | 7 => b == b'-',
-            _ => b.is_ascii_digit(),
-        });
-    if !shaped {
-        return None;
-    }
-    let number = |at: std::ops::Range<usize>| date[at].parse().ok();
-    Some((number(0..4)?, number(5..7)?, number(8..10)?))
-}
-
-fn year_of_day(date: &str) -> Option<u32> {
-    let (year, month, day) = day_of(date)?;
-    let real = (1..=12).contains(&month) && (1..=days_in(year, month)).contains(&day);
-    (real && YEARS.contains(&year)).then_some(year)
+fn list_fits(names: &Option<Vec<String>>, count: usize, each: usize) -> bool {
+    let names = names.as_deref().unwrap_or_default();
+    names.len() <= count && names.iter().all(|name| name.chars().count() <= each)
 }
 
 fn put(to: &mut Option<String>, written: &Option<String>) {
@@ -139,12 +136,6 @@ impl TitleEdit {
     /// left empty handed back to the provider, and the year taken from the
     /// release date when one is written.
     pub fn tidied(self) -> Self {
-        let genres: Vec<String> = self
-            .genres
-            .into_iter()
-            .flatten()
-            .filter_map(|g| kept(Some(g)))
-            .collect();
         let released = kept(self.released);
         Self {
             title: kept(self.title),
@@ -154,7 +145,8 @@ impl TitleEdit {
             overview: kept(self.overview),
             year: released.as_deref().and_then(year_of_day).or(self.year),
             released,
-            genres: (!genres.is_empty()).then_some(genres),
+            genres: listed(self.genres),
+            directors: listed(self.directors),
         }
     }
 
@@ -176,19 +168,16 @@ impl TitleEdit {
             year,
             released,
             genres: self.genres.or(below.genres),
+            directors: self.directors.or(below.directors),
         }
     }
 
     /// The same edit tidied and cut to what a title can hold: a name or a
-    /// summary that runs long is cut short, the genres past the limit are
-    /// dropped, and a year outside [`YEARS`] or a date that is no day is left
-    /// out.
+    /// summary that runs long is cut short, the genres and the directors past
+    /// the limit are dropped, and a year outside [`YEARS`] or a date that is
+    /// no day is left out.
     pub fn clipped(self) -> Self {
         let tidied = self.tidied();
-        let genres = tidied.genres.map(|genres| {
-            let kept = genres.into_iter().take(GENRES_MAX);
-            kept.map(|genre| cut(genre, GENRE_MAX)).collect()
-        });
         Self {
             title: tidied.title.map(|title| cut(title, TITLE_MAX)),
             original_title: tidied.original_title.map(|title| cut(title, TITLE_MAX)),
@@ -197,7 +186,8 @@ impl TitleEdit {
             overview: tidied.overview.map(|text| cut(text, OVERVIEW_MAX)),
             year: tidied.year.filter(|year| YEARS.contains(year)),
             released: tidied.released.filter(|date| year_of_day(date).is_some()),
-            genres,
+            genres: clip_list(tidied.genres, GENRES_MAX, GENRE_MAX),
+            directors: clip_list(tidied.directors, DIRECTORS_MAX, PERSON_MAX),
         }
     }
 
@@ -208,15 +198,14 @@ impl TitleEdit {
 
     /// Whether each field fits what a title can hold.
     pub fn fits(&self) -> bool {
-        let genres = self.genres.as_deref().unwrap_or_default();
         self.texts_fit()
             && self.year.is_none_or(|y| YEARS.contains(&y))
             && self
                 .released
                 .as_deref()
                 .is_none_or(|d| year_of_day(d).is_some())
-            && genres.len() <= GENRES_MAX
-            && genres.iter().all(|g| g.chars().count() <= GENRE_MAX)
+            && list_fits(&self.genres, GENRES_MAX, GENRE_MAX)
+            && list_fits(&self.directors, DIRECTORS_MAX, PERSON_MAX)
     }
 
     fn texts_fit(&self) -> bool {
@@ -230,10 +219,9 @@ impl TitleEdit {
             && short(&self.overview, OVERVIEW_MAX)
     }
 
-    /// Put each field that was written in place of the provider's. A summary,
-    /// a tagline, genres, a release date, a sort title or an original title
-    /// written for a title the provider never described give it a
-    /// [`Metadata::blank`] record to carry them.
+    /// Put each field that was written in place of the provider's. Any field
+    /// but the name and the year, written for a title the provider never
+    /// described, gives it a [`Metadata::blank`] record to carry it.
     pub fn onto(&self, title: &mut impl Editable) {
         let to = title.written();
         if let Some(title) = &self.title {
@@ -253,7 +241,8 @@ impl TitleEdit {
     /// Put each field that was written in place of the provider's, on a
     /// title's record alone. A year written without a date drops the
     /// provider's release date when the two disagree, so the date never
-    /// contradicts the year shown.
+    /// contradicts the year shown. Directors written replace the provider's
+    /// directors and creators, and keep the profile of each one it named too.
     pub fn onto_metadata(&self, meta: &mut Metadata) {
         put(&mut meta.title, &self.title);
         put(&mut meta.original_title, &self.original_title);
@@ -265,15 +254,18 @@ impl TitleEdit {
             meta.genres.clone_from(genres);
             meta.tmdb_genre_ids.clear();
         }
+        if let Some(directors) = &self.directors {
+            crew::directed_by(&mut meta.crew, directors);
+        }
     }
 
     fn describes(&self) -> bool {
-        self.overview.is_some()
-            || self.tagline.is_some()
-            || self.genres.is_some()
-            || self.released.is_some()
-            || self.sort_title.is_some()
-            || self.original_title.is_some()
+        let named = Self {
+            title: self.title.clone(),
+            year: self.year,
+            ..Self::default()
+        };
+        *self != named
     }
 
     fn date_onto(&self, meta: &mut Metadata) {
