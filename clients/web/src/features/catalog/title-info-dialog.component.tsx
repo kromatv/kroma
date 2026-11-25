@@ -39,6 +39,7 @@ const FIT: Readonly<Record<keyof TitleDraft, (text: string) => string>> = {
   released: (text) => text.replace(/[^\d-]/g, '').slice(0, 10),
   genres: upTo(TITLE_EDIT_LIMITS.genres * (TITLE_EDIT_LIMITS.genre + 2)),
   directors: upTo(TITLE_EDIT_LIMITS.directors * (TITLE_EDIT_LIMITS.person + 2)),
+  studios: upTo(TITLE_EDIT_LIMITS.studios * (TITLE_EDIT_LIMITS.studio + 2)),
   contentRating: upTo(TITLE_EDIT_LIMITS.contentRating),
 };
 
@@ -80,6 +81,7 @@ function useDraft(loaded: TitleDraft | undefined) {
 type Placeholders = Readonly<Partial<Record<keyof TitleDraft, string>>>;
 
 const grey = (text: string | null) => text ?? undefined;
+const greyList = (names: readonly string[]) => names.join(', ') || undefined;
 
 function placeholdersOf(shown: TitleShown | undefined): Placeholders {
   if (!shown) {
@@ -91,8 +93,9 @@ function placeholdersOf(shown: TitleShown | undefined): Placeholders {
     tagline: grey(shown.tagline),
     overview: grey(shown.overview),
     released: shown.year === null ? undefined : String(shown.year),
-    genres: shown.genres.join(', ') || undefined,
-    directors: shown.directors.map((person) => person.name).join(', ') || undefined,
+    genres: greyList(shown.genres),
+    directors: greyList(shown.directors.map((person) => person.name)),
+    studios: greyList(shown.studios),
     contentRating: shown.ageRating?.label,
   };
 }
@@ -104,7 +107,8 @@ type Hinted =
   | 'released'
   | 'contentRating'
   | 'genres'
-  | 'directors';
+  | 'directors'
+  | 'studios';
 
 type Fields = Readonly<{
   draft: TitleDraft;
@@ -164,6 +168,7 @@ function TitleFields(fields: Fields) {
       <SummaryField {...fields} />
       <HintedField field="genres" {...fields} />
       <HintedField field="directors" {...fields} />
+      <HintedField field="studios" {...fields} />
       <CastField cast={fields.cast} onChange={fields.onCast} />
     </>
   );
@@ -258,8 +263,8 @@ function useInfoForm(props: Props, onDone: () => void) {
 }
 
 /** The name, original title, sort title, release date, age rating, tagline,
- * summary, genres, directors and cast a person who manages the library writes
- * by hand for a film or a show, and the name, air date and summary for an
+ * summary, genres, directors, studios and cast a person who manages the
+ * library writes by hand for a film or a show, and the name, air date and summary for an
  * episode (`kind: 'episode'`). Each empty field shows in grey what the page shows instead
  * (`shown`). Open with `await TitleInfoDialog.call({ kind, id, title, shown
  * })`; it resolves on dismiss and once the edit is saved. */

@@ -40,6 +40,7 @@ const SHOWN = {
   tagline: null,
   directors: [],
   cast: [],
+  studios: [],
   ageRating: null,
   year: 1995,
   overview: null,

@@ -50,6 +50,7 @@ export interface TitleView {
   backdrop: string | null;
   directors: CrewMember[];
   cast: CastMember[];
+  studios: string[];
   themeUrl: string | null;
   video: VideoTrack | null;
   playable: MediaItem | null;
@@ -76,6 +77,7 @@ export type TitleInput =
 
 /** The "more like this" tiles for a movie, from its neighbours' cards. */
 const originalTitleOf = (meta: Metadata | null | undefined) => meta?.originalTitle ?? null;
+const studiosOf = (meta: Metadata | null | undefined) => meta?.studios ?? [];
 
 export function movieSimilarTargets(
   c: KromaClient,
@@ -123,6 +125,7 @@ export function buildTitleView(
       backdrop: c.media.artwork.backdropFor(item),
       directors: directorsOf(meta?.crew),
       cast: meta?.cast ?? [],
+      studios: studiosOf(meta),
       themeUrl: null,
       video: item.video,
       playable: item,
@@ -167,6 +170,7 @@ export function buildTitleView(
       backdrop: c.media.artwork.backdropFor(show),
       directors: directorsOf(meta?.crew),
       cast: meta?.cast ?? [],
+      studios: studiosOf(meta),
       themeUrl: c.media.artwork.themeFor(show),
       video: show.video,
       playable: playTarget,
@@ -206,6 +210,7 @@ export function buildTitleView(
     backdrop: imageUrl(d.backdropUrl),
     directors: directorsOf(d.crew),
     cast: d.cast,
+    studios: [],
     themeUrl: null,
     video: null,
     playable: null,

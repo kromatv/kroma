@@ -11,6 +11,7 @@ const NOTHING = {
   released: null,
   genres: null,
   directors: null,
+  studios: null,
   contentRating: null,
 };
 
@@ -24,6 +25,7 @@ it('shows nothing in the form for a title that follows the provider', () => {
     released: '',
     genres: '',
     directors: '',
+    studios: '',
     contentRating: '',
   });
 });
@@ -39,6 +41,7 @@ it('puts the genres on one line, and reads them back one by one', () => {
     released: null,
     genres: ['Crime', 'Drama'],
     directors: ['Michael Mann', 'Jane Doe'],
+    studios: ['Forward Pass', 'Regency Enterprises'],
     contentRating: 'FR-12',
   };
 
@@ -53,6 +56,7 @@ it('puts the genres on one line, and reads them back one by one', () => {
     released: '1995',
     genres: 'Crime, Drama',
     directors: 'Michael Mann, Jane Doe',
+    studios: 'Forward Pass, Regency Enterprises',
     contentRating: 'FR-12',
   });
   expect(editOf(draft)).toEqual(edit);
@@ -77,6 +81,7 @@ it('hands every field left blank back to the provider', () => {
     released: ' ',
     genres: ' , ,',
     directors: ', ',
+    studios: ' ,',
     contentRating: ' ',
   };
 
@@ -93,6 +98,7 @@ it('keeps each field trimmed', () => {
     released: ' 1995 ',
     genres: ' Crime ,Drama ',
     directors: ' Michael Mann ',
+    studios: ' A24 , ',
     contentRating: ' 12 ',
   };
 
@@ -106,6 +112,7 @@ it('keeps each field trimmed', () => {
     released: null,
     genres: ['Crime', 'Drama'],
     directors: ['Michael Mann'],
+    studios: ['A24'],
     contentRating: '12',
   });
 });

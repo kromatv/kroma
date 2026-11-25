@@ -10,6 +10,7 @@ fn fetched() -> Metadata {
         overview: Some("A thief and a detective.".into()),
         genres: vec!["Crime".into()],
         tmdb_genre_ids: vec![80],
+        studios: vec!["Regency Enterprises".into(), "Forward Pass".into()],
         ..Metadata::blank()
     }
 }
@@ -52,6 +53,7 @@ fn an_edit_left_blank_follows_the_provider_in_every_field() {
             name: " ".into(),
             role: None,
         }]),
+        studios: Some(vec![" ".into()]),
     };
 
     let tidied = edit.tidied();
@@ -73,6 +75,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
         directors: Some(vec![" Michael Mann ".into(), " ".into()]),
         content_rating: Some(" R ".into()),
         cast: None,
+        studios: Some(vec![" Forward Pass ".into(), "".into()]),
     };
 
     let tidied = edit.tidied();
@@ -87,6 +90,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
     assert_eq!(tidied.genres, Some(vec!["Crime".into(), "Drama".into()]));
     assert_eq!(tidied.directors, Some(vec!["Michael Mann".into()]));
     assert_eq!(tidied.content_rating.as_deref(), Some("R"));
+    assert_eq!(tidied.studios, Some(vec!["Forward Pass".into()]));
 }
 
 #[test]
@@ -103,6 +107,7 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         directors: Some(vec!["d".repeat(PERSON_MAX); DIRECTORS_MAX]),
         content_rating: Some("FR-12".into()),
         cast: None,
+        studios: Some(vec!["s".repeat(STUDIO_MAX); STUDIOS_MAX]),
     };
     let long_title = TitleEdit {
         title: Some("a".repeat(TITLE_MAX + 1)),
@@ -136,6 +141,14 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         directors: Some(vec!["d".repeat(PERSON_MAX + 1)]),
         ..Default::default()
     };
+    let too_many_studios = TitleEdit {
+        studios: Some(vec!["s".into(); STUDIOS_MAX + 1]),
+        ..Default::default()
+    };
+    let long_studio = TitleEdit {
+        studios: Some(vec!["s".repeat(STUDIO_MAX + 1)]),
+        ..Default::default()
+    };
     let early = TitleEdit {
         year: Some(*YEARS.start() - 1),
         ..Default::default()
@@ -154,6 +167,8 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
     assert!(!long_genre.fits());
     assert!(!too_many_directors.fits());
     assert!(!long_director.fits());
+    assert!(!too_many_studios.fits());
+    assert!(!long_studio.fits());
     assert!(!early.fits());
     assert!(!unknown_rating.fits());
 }
@@ -172,6 +187,7 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         directors: Some(vec!["d".repeat(PERSON_MAX + 1); DIRECTORS_MAX + 1]),
         content_rating: Some("Not Rated".into()),
         cast: None,
+        studios: Some(vec!["s".repeat(STUDIO_MAX + 1); STUDIOS_MAX + 1]),
     };
 
     let clipped = long.clipped();
@@ -202,6 +218,10 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         Some((DIRECTORS_MAX, PERSON_MAX))
     );
     assert_eq!(clipped.content_rating, None);
+    assert_eq!(
+        clipped.studios.map(|s| (s.len(), s[0].chars().count())),
+        Some((STUDIOS_MAX, STUDIO_MAX))
+    );
 }
 
 #[test]
@@ -222,6 +242,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
         directors: Some(vec!["Michael Mann".into()]),
         content_rating: Some("Rated R".into()),
         cast: None,
+        studios: Some(vec!["Forward Pass".into()]),
     };
 
     let shown = hand.over(file);
@@ -236,6 +257,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
     assert_eq!(shown.genres, Some(vec!["Crime".into()]));
     assert_eq!(shown.directors, Some(vec!["Michael Mann".into()]));
     assert_eq!(shown.content_rating.as_deref(), Some("Rated R"));
+    assert_eq!(shown.studios, Some(vec!["Forward Pass".into()]));
 }
 
 #[test]
@@ -255,7 +277,23 @@ fn each_written_field_replaces_the_provider_one_and_the_rest_stay() {
     assert_eq!(meta.overview.as_deref(), Some("A thief and a detective."));
     assert_eq!(meta.genres, vec!["Thriller".to_string()]);
     assert!(meta.tmdb_genre_ids.is_empty());
+    assert_eq!(meta.studios, vec!["Regency Enterprises", "Forward Pass"]);
     assert_eq!(meta.tmdb_id, 949);
+}
+
+#[test]
+fn studios_written_replace_the_provider_s() {
+    let edit = TitleEdit {
+        studios: Some(vec!["Warner Bros.".into()]),
+        ..Default::default()
+    };
+
+    let (_, _, metadata) = written(&edit, Some(fetched()));
+
+    assert_eq!(
+        metadata.expect("the fetched record").studios,
+        vec!["Warner Bros."]
+    );
 }
 
 #[test]

@@ -22,6 +22,7 @@ fn heat() -> Value {
         "directors": ["Michael Mann"],
         "contentRating": " Rated R ",
         "cast": [{ "name": " Al Pacino ", "role": "Vincent Hanna" }, { "name": " " }],
+        "studios": [" Forward Pass ", ""],
     })
 }
 
@@ -75,6 +76,8 @@ async fn what_an_admin_writes_about_a_film_is_what_its_page_shows_after_a_refres
         shown["metadata"]["cast"][0]["character"],
         json!("Vincent Hanna")
     );
+    assert_eq!(kept["studios"], json!(["Forward Pass"]));
+    assert_eq!(shown["metadata"]["studios"], json!(["Forward Pass"]));
 }
 
 #[tokio::test]

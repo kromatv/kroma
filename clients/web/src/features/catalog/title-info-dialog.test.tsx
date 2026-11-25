@@ -27,6 +27,7 @@ const WRITTEN = {
   directors: null,
   contentRating: null,
   cast: null,
+  studios: null,
 };
 
 afterEach(() => {
@@ -46,6 +47,7 @@ const NOTHING_WRITTEN = {
   directors: null,
   contentRating: null,
   cast: null,
+  studios: null,
 };
 
 const SHOWN = {
@@ -61,6 +63,7 @@ const SHOWN = {
     { name: 'Kurt Weill', character: null },
   ],
   ageRating: { label: 'TP' },
+  studios: ['Kurt Weill Foundation', 'Arte'],
   poster: null,
   backdrop: null,
 };
@@ -106,6 +109,7 @@ it('shows what was written and saves what changed', async () => {
   type('Original title', ' Heat ');
   type('Tagline', ' A Los Angeles crime saga ');
   type('Age rating', ' Rated R ');
+  type('Studios', ' Forward Pass , ');
   save();
 
   await closed;
@@ -122,6 +126,7 @@ it('shows what was written and saves what changed', async () => {
     directors: ['Michael Mann'],
     contentRating: 'Rated R',
     cast: null,
+    studios: ['Forward Pass'],
   });
 });
 
@@ -169,6 +174,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
     directors: null,
     contentRating: null,
     cast: null,
+    studios: null,
   });
 });
 
@@ -204,6 +210,7 @@ it('shows in grey what the page shows where nothing was written', async () => {
   expect(screen.getByPlaceholderText('Drama, Music')).toBeTruthy();
   expect(screen.getByPlaceholderText('Barbara Kusa, Lotte Lenya')).toBeTruthy();
   expect(screen.getByPlaceholderText('TP')).toBeTruthy();
+  expect(screen.getByPlaceholderText('Kurt Weill Foundation, Arte')).toBeTruthy();
 });
 
 it('names the title once and closes from its own header', async () => {

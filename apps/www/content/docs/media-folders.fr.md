@@ -173,9 +173,9 @@ Series/
   diffusion. Un fichier qui décrit plusieurs épisodes donne le premier.
 - KROMA lit `<title>`, `<originaltitle>`, `<sorttitle>`, `<tagline>`,
   `<plot>`, `<premiered>` ou `<year>`, chaque `<genre>`, chaque `<director>`,
-  `<mpaa>`, la classification d'âge, et chaque `<actor>` avec son `<name>`,
-  son `<role>` et son `<order>`. Le fichier doit être en UTF-8, comme ces
-  logiciels l'écrivent.
+  chaque `<studio>`, `<mpaa>`, la classification d'âge, et chaque `<actor>`
+  avec son `<name>`, son `<role>` et son `<order>`. Le fichier doit être en
+  UTF-8, comme ces logiciels l'écrivent.
 - Une personne de la distribution ou de la réalisation que TMDB n'a pas donnée
   pour le titre reçoit, après l'analyse, la photo et la page que TMDB a sous ce
   nom exact.

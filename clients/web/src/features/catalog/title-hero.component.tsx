@@ -79,6 +79,7 @@ export function TitleHero({
       badges={view.video ? qualityBadges(view.video) : []}
       audioFlag={owned ? audioFlagLabel(t, view.playable) : null}
       directors={view.directors}
+      studios={view.studios}
       tagline={view.tagline}
       overview={view.overview}
       audio={trackInfo.audio}

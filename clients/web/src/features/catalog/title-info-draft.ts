@@ -1,8 +1,8 @@
 import type { TitleEdit } from '@kromatv/client/media';
 
 /** A title's hand-written fields as a form holds them: plain text, with the
- * genres and the directors each on one line and the year or the full release
- * date in one field. */
+ * genres, the directors and the studios each on one line and the year or the
+ * full release date in one field. */
 export interface TitleDraft {
   title: string;
   originalTitle: string;
@@ -12,6 +12,7 @@ export interface TitleDraft {
   released: string;
   genres: string;
   directors: string;
+  studios: string;
   contentRating: string;
 }
 
@@ -28,6 +29,7 @@ export function draftOf(edit: Omit<TitleEdit, 'cast'>): TitleDraft {
     released: edit.released ?? (edit.year === null ? '' : String(edit.year)),
     genres: (edit.genres ?? []).join(', '),
     directors: (edit.directors ?? []).join(', '),
+    studios: (edit.studios ?? []).join(', '),
     contentRating: shown(edit.contentRating),
   };
 }
@@ -66,6 +68,7 @@ export function editOf(draft: TitleDraft): Omit<TitleEdit, 'cast'> {
     ...dateOf(draft.released),
     genres: listOf(draft.genres),
     directors: listOf(draft.directors),
+    studios: listOf(draft.studios),
     contentRating: kept(draft.contentRating),
   };
 }

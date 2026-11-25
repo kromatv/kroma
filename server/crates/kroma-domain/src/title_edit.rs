@@ -6,8 +6,9 @@
 //! title names it in the language it was made in (LIB-94), a tagline stands
 //! above its summary (LIB-95), the names written as its directors stand in for
 //! the provider's (LIB-96), an age rating written stands for every country's,
-//! the one a profile's ceiling weighs too (LIB-97), and the cast written, with
-//! the part each one plays, stands for the provider's (LIB-98).
+//! the one a profile's ceiling weighs too (LIB-97), the cast written, with
+//! the part each one plays, stands for the provider's (LIB-98), and so do the
+//! studios written (LIB-100).
 
 mod cast;
 mod crew;
@@ -37,6 +38,10 @@ pub const DIRECTORS_MAX: usize = 20;
 /// The longest name a person can write for one director or actor, in
 /// characters.
 pub const PERSON_MAX: usize = 100;
+/// How many studios a person can give a title.
+pub const STUDIOS_MAX: usize = 10;
+/// The longest name a person can write for one studio, in characters.
+pub const STUDIO_MAX: usize = 100;
 /// How many actors a person can give a title.
 pub const CAST_MAX: usize = 50;
 /// The longest part a person can write for one actor, in characters.
@@ -76,6 +81,9 @@ pub struct TitleEdit {
     /// The people who play in the title, in the order they are credited.
     #[serde(default)]
     pub cast: Option<Vec<Actor>>,
+    /// The companies that made the film, or the networks that air the show.
+    #[serde(default)]
+    pub studios: Option<Vec<String>>,
 }
 
 /// The parts of a title a [`TitleEdit`] writes onto.
@@ -125,6 +133,7 @@ impl TitleEdit {
             directors: listed(self.directors),
             content_rating: kept(self.content_rating),
             cast: cast::listed(self.cast),
+            studios: listed(self.studios),
         }
     }
 
@@ -149,12 +158,13 @@ impl TitleEdit {
             directors: self.directors.or(below.directors),
             content_rating: self.content_rating.or(below.content_rating),
             cast: self.cast.or(below.cast),
+            studios: self.studios.or(below.studios),
         }
     }
 
     /// The same edit tidied and cut to what a title can hold: a name or a
-    /// summary that runs long is cut short, the genres, the directors and the
-    /// cast past the limit are dropped, and a year outside [`YEARS`], a date
+    /// summary that runs long is cut short, the genres, the directors, the
+    /// cast and the studios past the limit are dropped, and a year outside [`YEARS`], a date
     /// that is no day or an age rating no system has is left out.
     pub fn clipped(self) -> Self {
         let tidied = self.tidied();
@@ -170,6 +180,7 @@ impl TitleEdit {
             directors: clip_list(tidied.directors, DIRECTORS_MAX, PERSON_MAX),
             content_rating: tidied.content_rating.filter(|text| rating::known(text)),
             cast: cast::clipped(tidied.cast),
+            studios: clip_list(tidied.studios, STUDIOS_MAX, STUDIO_MAX),
         }
     }
 
@@ -190,6 +201,7 @@ impl TitleEdit {
             && list_fits(&self.directors, DIRECTORS_MAX, PERSON_MAX)
             && self.content_rating.as_deref().is_none_or(rating::known)
             && cast::fits(self.cast.as_deref())
+            && list_fits(&self.studios, STUDIOS_MAX, STUDIO_MAX)
     }
 
     fn texts_fit(&self) -> bool {
@@ -230,7 +242,8 @@ impl TitleEdit {
     /// An age rating written replaces every country's, and the badge shows
     /// it in the country the provider's was shown in when it has one there.
     /// The cast written replaces the provider's, and keeps the profile of each
-    /// actor it named too, with their part unless another is written.
+    /// actor it named too, with their part unless another is written. The
+    /// studios written replace the provider's.
     pub fn onto_metadata(&self, meta: &mut Metadata) {
         put(&mut meta.title, &self.title);
         put(&mut meta.original_title, &self.original_title);
@@ -250,6 +263,9 @@ impl TitleEdit {
         }
         if let Some(cast) = &self.cast {
             cast::played_by(&mut meta.cast, cast);
+        }
+        if let Some(studios) = &self.studios {
+            meta.studios.clone_from(studios);
         }
     }
 

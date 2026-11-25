@@ -44,6 +44,7 @@ export const Metadata = z.object({
   themeUrl: z.string().nullish(),
   cast: z.array(CastMember).nullish(),
   crew: z.array(CrewMember).nullish(),
+  studios: z.array(z.string()).nullish(),
   tmdbUrl: z.string(),
 });
 export type Metadata = z.infer<typeof Metadata>;
