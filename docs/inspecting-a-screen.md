@@ -67,11 +67,39 @@ Every mounted `KitProvider` exposes the reader on the page. It loads on its
 first call:
 
 ```js
-await __KROMA_UI__.describeScreen();
+await __KROMA_UI__.describeScreen(); // the tree above
+await __KROMA_UI__.screenText(); // the same screen as text
 ```
 
-This works in the web client, the desktop shell and the browser TV shells, from
-the developer tools console or from anything that can evaluate in the page.
+This works in the web client, the desktop shell and the browser TV shells, on a
+development server and in a release build, from the developer tools console or
+from anything that can evaluate in the page.
+
+`screenText()` is the form to read. It writes one component a line, indented
+two spaces a level: its name, `(focused)` on the one that holds the focus, its
+box as `x,y widthxheight`, then its props. A prop that is `true` is its name
+alone, and one that is not a primitive (a function, an element, an object) is
+left out. On the home screen of the browser TV shell it is 136 lines, half the
+characters of the tree as JSON:
+
+```
+FocusRegion  64,587 510x68
+  Button  61,586 155x71  size="tv" autoFocus icon="player-play-filled" label="Play"
+    Focusable (focused)  61,586 155x71  autoFocus asChild=false disabled=false inert=false focusScale=1.04 label="Play"
+      Icon  103,610 23x23  name="player-play-filled" color="var(--kroma-accent-ink)" size=22
+      Text  135,605 40x31  children="Play"
+```
+
+A script that drives the page reads it the same way. With Playwright, pressing
+a key and reading where the focus went is two lines:
+
+```js
+await page.keyboard.press('ArrowDown');
+console.log(await page.evaluate(() => globalThis.__KROMA_UI__.screenText()));
+```
+
+`screenText(rows)` from `@kromatv/ui/inspect` writes rows in the same form,
+for the ones a television answers with through the server.
 
 ## On a television, through the server
 
