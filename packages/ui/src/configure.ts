@@ -18,6 +18,7 @@ import {
   type StyleRuntimeOptions,
 } from './core/style-runtime';
 import { ThemeHost } from './core/theme-host.component';
+import { ControlEngineProvider, createControlEngine, useControlEngine } from './lib/control';
 import type { DeviceStore } from './lib/device-store';
 import type { ControlSize } from './lib/field-shell';
 import { createFocusServices } from './lib/focus-services';
@@ -127,6 +128,8 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
     createFocusServices(config.remote ?? false, inheritedGate ?? ownedGate, input),
   );
   const focus = config.remote === undefined ? (inheritedFocus ?? ownedFocus) : ownedFocus;
+  const inheritedControls = useControlEngine();
+  const [ownedControls] = useState(createControlEngine);
   const [menuKeys] = useState(createMenuKeys);
   const [scrollLock] = useState(createScrollLock);
   const [frostHost] = useState(createFrostHost);
@@ -160,9 +163,13 @@ export function KitProvider<P extends FrostBackdropProps = FrostBackdropProps>({
           InputGateProvider,
           { value: inheritedGate ?? ownedGate },
           createElement(
-            KitSettingsContext.Provider,
-            { value },
-            createElement(KitStyleProvider, { config }, children),
+            ControlEngineProvider,
+            { value: inheritedControls ?? ownedControls },
+            createElement(
+              KitSettingsContext.Provider,
+              { value },
+              createElement(KitStyleProvider, { config }, children),
+            ),
           ),
         ),
       ),

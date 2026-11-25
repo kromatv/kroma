@@ -375,15 +375,67 @@ Giving the pairs `value`/`defaultValue`/`onValueChange`,
 
 - **Never `onChange`.** In React DOM `value` + `onChange` means a form input with
   its own semantics, and reusing it invites `e.target.value`.
-- **Controlled-ness is per prop and fixed at mount.** `useControllable`
-  (`#ui/lib/use-controllable`) pins the mode on first render for exactly the reason
-  React warns about an input flipping between the two.
+- **Controlled-ness is per prop and fixed at mount.** A control pins the mode on
+  first render for exactly the reason React warns about an input flipping between
+  the two.
 - **Value first, details second.** `(next, details)` keeps the 95% call site as
   `onValueChange={setPicked}`; a details-only object costs every call site a
   destructure.
 - **A dismissal carries its reason.** One `onOpenChange(open, details)` with
   `reason` beats four separate outside/escape/focus handlers, and this kit has a
   reason the web does not: `reason: 'back'`, the remote's Back button.
+
+### One declaration per control
+
+A component does not write that signature by hand. It declares its state once
+with `defineControl` and runs it with `useControl` (`#ui/lib/control`):
+
+```tsx
+const counterControl = defineControl('counter', {
+  state: { value: 0 },
+  options: { step: 1, max: 10 },
+  actions: {
+    increment: ({ value, step, max }) => ({ value: Math.min(max, value + step) }),
+    jump: (_now, to: number) => ({ value: to }),
+  },
+});
+
+function Counter({ style, ...props }: Readonly<CounterProps>) {
+  const [{ value, increment }, rest] = useControl(counterControl, props);
+  return (
+    <Button {...rest} onPress={increment} style={style}>
+      {value}
+    </Button>
+  );
+}
+```
+
+- **`state` is the three props of each key.** `value: 0` reads `value`,
+  `defaultValue` and `onValueChange`, and starts from `0` when neither is given.
+- **`options` are props the control reads and never changes**, each with its
+  default. The component gets them resolved.
+- **An action is a pure function.** It reads the state and the options as they
+  are now and answers with the keys it changes. Arguments after the first are
+  the action's own, and the component calls it without the first: `jump(4)`.
+- **Every key has a setter**, `setValue(next, reason?)`. A dismissal passes its
+  reason there: `setOpen(false, 'back')`.
+- **Every change takes one path.** A value the control already holds is
+  ignored. Otherwise `on<Key>Change(next, details)` runs, with the action's name
+  as `details.reason` and who acted as `details.source`; `details.cancel()` keeps
+  the value as it was. An action or a setter answers `false` when nothing
+  changed.
+- **`rest` is the props the control did not read**, for the component to pass on.
+- **The props stay written in the component's interface.** The workbench reads a
+  prop's type and its doc line where it is declared, and the compiler checks the
+  three against the definition. `ControlProps<typeof counterControl>` is the same
+  props derived, for code the workbench does not document.
+- **A compound's Root publishes its control to its parts**:
+  `partContext<ControlOf<typeof counterControl>>('Counter.Root')`.
+
+A mounted control joins the engine of its `KitProvider`, which lists the
+controls on screen and hears every change that took effect. `useControllable`
+is the hook this replaces; a component still on it moves when it is next
+touched.
 
 ---
 

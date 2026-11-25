@@ -3,9 +3,14 @@ import { Box } from '#ui/components/atoms/box';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 
-import { useControllable } from '#ui/lib/use-controllable.hook';
+import { type ChangeDetails, defineControl, useControl } from '#ui/lib/control';
 
 type CheckboxSize = 'sm' | 'tv';
+
+const checkboxControl = defineControl('checkbox', {
+  state: { checked: false },
+  actions: { toggle: ({ checked }) => ({ checked: !checked }) },
+});
 
 const BOX = { sm: 20, tv: 28 } as const;
 
@@ -49,31 +54,23 @@ interface CheckboxProps extends Omit<
   /** Some of the things under this one are checked. Announced as `mixed`, and
    *  a press from here checks them all. */
   indeterminate?: boolean;
-  onCheckedChange?: (next: boolean) => void;
+  /** `details.cancel()` keeps the box as it was. */
+  onCheckedChange?: (next: boolean, details: ChangeDetails) => void;
   size?: CheckboxSize;
 }
 
 /** The many-of-N control: a <Switch> says "this is on", a checkbox says "this one
  *  is included". It toggles on Select and paints its state as a FILL rather than
  *  a mark alone, so it reads from three metres. */
-function Checkbox({
-  checked: checkedProp,
-  defaultChecked = false,
-  indeterminate = false,
-  onCheckedChange,
-  size = 'sm',
-  disabled = false,
-  ...focusProps
-}: Readonly<CheckboxProps>) {
-  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onCheckedChange);
+function Checkbox({ indeterminate = false, size = 'sm', ...props }: Readonly<CheckboxProps>) {
+  const [{ checked, toggle }, focusProps] = useControl(checkboxControl, props);
   const on = checked || indeterminate;
   return (
     <Focusable
       {...focusProps}
       role="checkbox"
       checked={indeterminate ? 'mixed' : checked}
-      disabled={disabled}
-      onPress={() => setChecked(!checked)}
+      onPress={toggle}
       sv={checkboxVariants}
       vars={{ size, checked: on }}
     >
