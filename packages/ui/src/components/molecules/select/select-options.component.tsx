@@ -11,7 +11,7 @@ import {
   useTriggerFocus,
   useTriggerKeys,
 } from '#ui/lib/anchored-panel';
-import { AnchoredPopup } from '#ui/lib/anchored-popup.component';
+import { AnchoredPopup, LISTBOX } from '#ui/lib/anchored-popup.component';
 import { useFocusVisible } from '#ui/lib/focus-visible.hook';
 import { useSurfacePresentation } from '#ui/lib/surface-presentation.hook';
 import { type SelectOption, SelectRowContext, type SelectRowState } from './select-context';
@@ -112,9 +112,5 @@ function SelectPopover({
     </AnchoredPopup>
   );
 }
-
-// `listbox` reaches the DOM through react-native-web even though React
-// Native's `Role` union stops short of it.
-const LISTBOX = 'listbox' as import('react-native').Role;
 
 export { SelectOptions };

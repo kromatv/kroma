@@ -1,0 +1,71 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { CastRow, Faces, Form } from './combobox.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: { min: 300, max: 560 },
+  args: { size: 'sm', invalid: false, disabled: false, presentation: 'auto' },
+  controls: { size: ['sm', 'md', 'tv'], presentation: ['auto', 'panel', 'dialog'] },
+  render: (args) => <CastRow {...args} />,
+});
+
+A text entry for one name, with suggestions under it. What is typed is the value, kept as it is typed; a suggestion picked replaces it with its name and closes the list. **Root** owns the name and whether the suggestions are open. **Item** is a suggestion, **Value** gives a name its face, **Media** is the mark on either, **Hint** is a suggestion's second line and **Empty** is what the list says when nothing is left to suggest.
+
+It is `<TagField>` for a single name, with the same rows and dialog and no tag. Wear it inside a `<Field.Root>`, which draws the label row and the hint and lends it its label, its error and its size. Outside one, give the Root a `label`. Nothing draws it, but it names the entry.
+
+```tsx
+<Field.Root label="Actor">
+  <Combobox.Root
+    value={cast.name}
+    onValueChange={setName}
+    filter={false}
+    loading={search.isFetching}
+    placeholder="Search for a person"
+  >
+    <Combobox.Value value={row.name}>
+      <Combobox.Media src={row.photo} />
+    </Combobox.Value>
+    {search.people.map((person) => (
+      <Combobox.Item key={person.id} value={person.name}>
+        <Combobox.Media src={person.photoUrl} />
+        <Combobox.Hint>{`Acting · ${person.knownFor}`}</Combobox.Hint>
+      </Combobox.Item>
+    ))}
+    <Combobox.Empty>No one by that name on TMDB.</Combobox.Empty>
+  </Combobox.Root>
+</Field.Root>
+```
+
+Typing opens the list. A search already matched what it returns, so `filter={false}` draws the items in the order written; without it the Root matches them against the value, case and accents aside, best first. Once something is typed the first suggestion is the active row. Enter picks it, Down and Up walk the rows, and Up from the first lets go of them, so Enter keeps the text as typed and closes the list. Escape closes it too, and so does a press outside. There is no row to add what is typed: it already is the value.
+
+<Scene name="Cast row">
+  Type `j` or `rebecca`. The entry starts on the face the row was loaded with, and a pick brings the face of the person picked.
+
+  <CastRow presentation="panel" />
+</Scene>
+
+## A name's face
+
+The face is drawn at the start of the entry, in the well's inset, with the well's corner less that inset. A pick leaves the face of the suggestion it came from. A name loaded from the server has none until a `<Combobox.Value value>` declares it, and a written Value wins over a pick. It draws only while the entry holds exactly that name, so typing over a name lets its face go.
+
+A name nobody gave a face draws nothing, and the text starts where a `<Field.Input>`'s does. Initials there would change with every letter typed and claim a person the field knows nothing about. A `<Combobox.Media>` with no `src` still draws the initials, for a person known to have no photo.
+
+<Scene name="Faces">
+  <Faces />
+</Scene>
+
+## In a form
+
+<Scene name="Beside a text entry">
+  The well of a `<Field.Input>` and of a cast row, off the same shell table.
+
+  <Form />
+</Scene>
+
+## Under a D-pad
+
+Where a spatial navigator drives, or the shell says `surfaces: 'dialog'`, the well is one stop showing the name and its face. Its press opens a dialog with the entry, the on-screen keyboard where there is no real one, and the suggestions as rows. A pick closes the dialog on the new name. The caller writes nothing different.
+
+<Scene name="Dialog">
+  <CastRow presentation="dialog" />
+</Scene>

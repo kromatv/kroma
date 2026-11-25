@@ -160,6 +160,38 @@ describe('the note under the control', () => {
   });
 });
 
+describe("the field's own controls", () => {
+  it('sit in the label row, before the entry', () => {
+    render(
+      <Field.Root label="Genres">
+        <Field.Input />
+        <Field.Actions>
+          <Button variant="ghost" size="sm" label="Reset" />
+        </Field.Actions>
+      </Field.Root>,
+    );
+
+    const reset = screen.getByRole('button', { name: 'Reset' });
+    const entry = screen.getByLabelText('Genres');
+
+    const before = reset.compareDocumentPosition(entry) & Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(before).toBeTruthy();
+  });
+
+  it('still show when the label row is hidden', () => {
+    render(
+      <Field.Root label="Genres" hideLabel>
+        <Field.Actions>
+          <Button variant="ghost" size="sm" label="Reset" />
+        </Field.Actions>
+      </Field.Root>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeTruthy();
+    expect(screen.queryByText('Genres')).toBeNull();
+  });
+});
+
 describe('an invalid field', () => {
   it('tints the entry the Root renders', () => {
     render(<Field.Root label="Port" />);
