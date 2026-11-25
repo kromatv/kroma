@@ -3,12 +3,12 @@
 // imports @kromatv/ui. Spreading a plain object leaves the only dependency a TYPE,
 // and a type import is erased, so at runtime nothing points back.
 
+import { DEFAULT_LOCALE, LOCALES } from '@kromatv/core';
+import type { Locale } from '@kromatv/i18n';
 import type { ProviderSpec } from '@kromatv/workbench';
 import type { ReactNode } from 'react';
 import { Logo } from '#ui/components/atoms/logo';
 import { I18nProvider } from '#ui/services/i18n';
-
-type Locale = 'en' | 'fr' | 'ko';
 
 export const KROMA_WORKBENCH: {
   title: string;
@@ -22,11 +22,8 @@ export const KROMA_WORKBENCH: {
   provider: {
     name: 'Language',
     glyph: 'language',
-    values: [
-      { value: 'en', label: 'English' },
-      { value: 'fr', label: 'Français' },
-      { value: 'ko', label: '한국어' },
-    ],
+    values: LOCALES.map(({ code, name }) => ({ value: code, label: name })),
+    initial: DEFAULT_LOCALE,
     render: (locale, onLocaleChange, children) => (
       <I18nProvider locale={locale} onLocaleChange={onLocaleChange}>
         {children}

@@ -234,6 +234,9 @@
     "clients/build-info": {
       "name": "@kromatv/build-info",
       "version": "0.0.0",
+      "dependencies": {
+        "@kromatv/i18n": "workspace:*",
+      },
     },
     "clients/desktop": {
       "name": "@kromatv/desktop",

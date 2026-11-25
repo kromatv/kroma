@@ -182,6 +182,26 @@ A maintainer changes the stage in `packages/core/src/locales/i18n.json`:
   message has to translate it, so reserve it for a language with someone behind
   it.
 
+The stage is the only switch. No code lists the languages: the pickers, the
+kit's workbench, the server, the formatting data the native TV app ships and
+the localizations the iOS apps declare all read `i18n.json`.
+
+## Beyond the messages
+
+A few things about a language are not words, and none of them is required to
+ship it:
+
+- **Number formats.** Numbers, dates and byte sizes come from `Intl`.
+  `packages/ui/src/lib/intl.ts` holds the separators and byte units of a
+  language whose conventions differ from English (French writes `1,5 Go`), for
+  the engines without `Intl`.
+- **Line breaks.** A browser breaks Korean between any two syllables, so the
+  kit's reset and the website's stylesheet set `word-break: keep-all` under
+  `html:lang(ko)`. A language with its own rule adds one there.
+- **The social card.** kroma.tv renders a card per language in
+  `apps/www/vite/og-cards.ts`. A language whose script the renderer has no font
+  for shares the English one.
+
 ## A regional variant
 
 `bun run i18n add fr-CH` starts a locale that reads everything from `fr`.
@@ -195,14 +215,15 @@ kroma.tv has its own messages, `apps/www/messages/<code>.json`, built by
 Paraglide. The report counts them under `www`, and `todo`, `fill` and
 `translate` cover them. The website ships the locales listed in
 `apps/www/project.inlang/settings.json`, so a new language there is a file plus
-its code in that list.
+its code in that list. Its URLs, its 404 page, the language switcher and the
+`og:locale` of its pages follow from that list.
 
 ## Modules
 
 A module's messages are in `modules/<id>/locales/<code>.json`. `todo` and `fill`
 cover them under the module's id, next to `core`. Adding a language file to a
 module changes its bundle, so bump `version` in its `module.json` in the same
-commit. A module outside this repository uses the same commands as
+commit: CI refuses a bundle whose bytes changed under the same version. A module outside this repository uses the same commands as
 `bunx kroma i18n`.
 
 ## When the source changes

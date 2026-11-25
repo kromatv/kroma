@@ -1,8 +1,9 @@
 // The dynamic half of the native TV app's Expo config.
 //
-// app.json still holds everything static and is the file to edit; this adds the
-// one thing a JSON file cannot state - which build this is (git commit, branch,
-// compile time, repository), for the About screen.
+// app.json still holds everything static and is the file to edit; this adds
+// what a JSON file cannot state - which build this is (git commit, branch,
+// compile time, repository), for the About screen, and the languages
+// `packages/core/src/locales/i18n.json` offers.
 //
 // The VERSION is the product's, not this package's: the browser TV shells report
 // `server/Cargo.toml`'s version (see clients/tv-build/shell.ts), and the native
@@ -19,12 +20,24 @@
 
 import path from 'node:path';
 import { androidVersionCode } from '@kromatv/android-build';
-import { collectBuildInfo, productVersion } from '@kromatv/build-info';
+import { collectBuildInfo, productLocales, productVersion } from '@kromatv/build-info';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 const repoRoot = path.join(__dirname, '..', '..');
 
+const TV_PLUGIN = '@kromatv/react-native-tv';
+
+type PluginEntry = NonNullable<ExpoConfig['plugins']>[number];
+
+function withLocales(plugin: PluginEntry, locales: readonly string[]): PluginEntry {
+  if (Array.isArray(plugin) && plugin.length === 2 && plugin[0] === TV_PLUGIN) {
+    return [TV_PLUGIN, { ...plugin[1], locales }];
+  }
+  return plugin;
+}
+
 export default function tvNativeAppConfig({ config }: ConfigContext): Partial<ExpoConfig> {
+  const locales = productLocales(repoRoot);
   return {
     ...config,
     // The product version, for the same reason the About screen reports it: a
@@ -50,7 +63,9 @@ export default function tvNativeAppConfig({ config }: ConfigContext): Partial<Ex
       // share a build-number namespace - so this is free to be minted the same
       // way `clients/mobile` mints its own.
       buildNumber: String(Number(process.env.KROMA_VERSION_CODE) || 1),
+      infoPlist: { ...config.ios?.infoPlist, CFBundleLocalizations: locales },
     },
+    plugins: config.plugins?.map((plugin) => withLocales(plugin, locales)),
     extra: {
       ...config.extra,
       buildInfo: collectBuildInfo(__dirname, { version: productVersion(repoRoot) }),

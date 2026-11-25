@@ -18,6 +18,7 @@
     "./layout": "./src/layout.ts",
     "./locales": "./src/locales.ts",
     "./model": "./src/model.ts",
+    "./project": "./vite/project.ts",
     "./react": "./src/react/index.ts",
     "./schema": "./schema/catalog.schema.json",
     "./vite": "./vite/index.ts"

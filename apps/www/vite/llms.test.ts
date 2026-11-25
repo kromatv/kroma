@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Plugin } from 'vite';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { BASE_LOCALE, LOCALES } from '../src/lib/locales.ts';
 import { llmsPlugin } from './llms';
 
 interface Response {
@@ -28,6 +29,16 @@ async function write(path: string, content: string) {
 
 function messages(sectionStart: string, summary: string) {
   return JSON.stringify({ site_description: summary, docs_section_start: sectionStart });
+}
+
+const OTHERS = LOCALES.filter((locale) => locale !== BASE_LOCALE && locale !== 'fr');
+
+async function otherCatalogs(at: string) {
+  await Promise.all(
+    OTHERS.map((locale) =>
+      write(join(at, `messages/${locale}.json`), messages(`Start ${locale}`, locale)),
+    ),
+  );
 }
 
 function resolved(at: string): Plugin {
@@ -103,7 +114,7 @@ beforeAll(async () => {
   );
   await write(join(root, 'messages/en.json'), messages('Get started', 'A media server.'));
   await write(join(root, 'messages/fr.json'), messages('Bien démarrer', 'Un serveur.'));
-  await write(join(root, 'messages/ko.json'), messages('시작하기', '미디어 서버.'));
+  await otherCatalogs(root);
 });
 
 afterAll(async () => {
@@ -114,17 +125,18 @@ describe('llmsPlugin', () => {
   it('emits every guide and both indexes into the client build', async () => {
     const files = await emitted(resolved(root), 'client');
 
-    expect([...files.keys()].sort()).toEqual([
-      'docs.md',
-      'docs/docker.md',
-      'fr/docs/docker.md',
-      'fr/llms.txt',
-      'ko/llms.txt',
-      'llms.txt',
-    ]);
+    expect([...files.keys()].sort()).toEqual(
+      [
+        'docs.md',
+        'docs/docker.md',
+        'fr/docs/docker.md',
+        'fr/llms.txt',
+        'llms.txt',
+        ...OTHERS.map((locale) => `${locale}/llms.txt`),
+      ].sort(),
+    );
     expect(files.get('docs.md')).toContain('[Docker](https://kroma.tv/docs/docker.md)');
     expect(files.get('fr/llms.txt')).toContain('# KROMA\n\n> Un serveur.\n\n## Bien démarrer');
-    expect(files.get('ko/llms.txt')).toContain('# KROMA\n\n> 미디어 서버.\n\n## 시작하기');
   });
 
   it('emits nothing into the server build', async () => {
@@ -162,7 +174,7 @@ describe('llmsPlugin', () => {
     const bare = join(repo, 'bare/www');
     await write(join(bare, 'messages/en.json'), JSON.stringify({ docs_section_start: 'Start' }));
     await write(join(bare, 'messages/fr.json'), messages('Bien démarrer', 'Un serveur.'));
-    await write(join(bare, 'messages/ko.json'), messages('시작하기', '미디어 서버.'));
+    await otherCatalogs(bare);
     await mkdir(join(bare, 'content/docs'), { recursive: true });
     await mkdir(join(repo, 'docs/setup'), { recursive: true });
 

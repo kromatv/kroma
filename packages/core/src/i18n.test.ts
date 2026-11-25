@@ -14,7 +14,7 @@ describe('isLocale', () => {
   it('accepts supported codes and rejects everything else', () => {
     expect(isLocale('fr')).toBe(true);
     expect(isLocale('en')).toBe(true);
-    expect(isLocale('de')).toBe(false);
+    expect(isLocale('xx')).toBe(false);
     expect(isLocale('')).toBe(false);
     expect(isLocale(null)).toBe(false);
     expect(isLocale(42 as unknown as string)).toBe(false);
@@ -41,7 +41,7 @@ describe('normalizeLocale', () => {
   });
 
   it('returns null for unknown / empty tags', () => {
-    expect(normalizeLocale('de-DE')).toBeNull();
+    expect(normalizeLocale('xx-XX')).toBeNull();
     expect(normalizeLocale('')).toBeNull();
     expect(normalizeLocale(null as unknown as string)).toBeNull();
     expect(normalizeLocale(undefined)).toBeNull();
@@ -64,7 +64,7 @@ describe('detectLocale', () => {
   });
 
   it('uses navigator languages when no explicit preference resolves', () => {
-    vi.stubGlobal('navigator', { languages: ['de', 'en-US'] });
+    vi.stubGlobal('navigator', { languages: ['xx', 'en-US'] });
     expect(detectLocale(null as unknown as string)).toBe('en');
     vi.stubGlobal('navigator', { language: 'fr-CH' });
     expect(detectLocale('xx')).toBe('fr');
