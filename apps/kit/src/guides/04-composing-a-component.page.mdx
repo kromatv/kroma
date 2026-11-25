@@ -218,6 +218,11 @@ shape for `open`, `checked` and `expanded`.
   separate handlers, and there is a reason here the web does not have:
   `reason: 'back'`, the remote's Back button.
 
+A component does not write any of this by hand. It declares what it holds with
+`defineControl` and runs it with `useControl`, which gives it the three props of
+each key, the details, the cancel, and a place where a developer tool can read
+and change it. The next guide, The control engine, is the whole of it.
+
 ## Prop naming
 
 | Use | Not |
@@ -264,6 +269,7 @@ Before a component is done:
 - [ ] Nothing is reachable only through a prop. Where a part could not express
       something, the part grew; the prop did not come back.
 - [ ] `value` / `defaultValue` / `onValueChange`; no `onChange`.
+- [ ] What it holds is a control: `defineControl` once, `useControl` in the Root.
 - [ ] The shape comes from `lib/field-shell`, not from the component's own paddings.
 - [ ] It has a story, and the story passes `variants` so the controls derive.
 - [ ] It works under a D-pad and under a pointer without the caller writing
