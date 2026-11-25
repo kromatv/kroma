@@ -127,14 +127,18 @@ changer le titre affiché. Un titre original, comme `Das Boot`, s'affiche sous
 le titre quand les deux diffèrent, et un slogan s'affiche au-dessus du
 résumé. Écrivez la classification comme `12`, `PG-13` ou `FR-12` : les
 profils limités par âge s'y fient. Le studio d'une série est la chaîne qui
-la diffuse, comme `HBO`. Sous **Distribution**, chaque ligne
-donne le nom d'une personne et son rôle, dans l'ordre du générique ;
-retirez tout le monde pour revenir à la distribution du `.nfo` ou de TMDB.
+la diffuse, comme `HBO`. Genres, réalisation, studios et distribution sont
+des listes de noms : saisissez un nom, puis choisissez une suggestion, ou
+**Ajouter** pour garder un nom qui n'est pas proposé. Les genres viennent de
+votre bibliothèque, les personnes et les studios de TMDB, avec leur photo ou
+leur logo. Sous **Distribution**, chaque ligne donne une personne et son rôle,
+dans l'ordre du générique.
 Une personne de la distribution ou de la réalisation que TMDB n'a pas donnée
 pour le titre reçoit, quelques instants plus tard, la photo et la page que
 TMDB a sous ce nom exact. Ce que vous écrivez s'affiche dans toutes
-les langues et reste après une nouvelle analyse. Videz un champ pour reprendre le texte de
-TMDB. **Films** et **Séries** trient et filtrent d'après
+les langues et reste après une nouvelle analyse. **Rétablir**, à côté d'un
+champ modifié, lui rend à l'enregistrement la valeur du `.nfo` ou de TMDB.
+**Films** et **Séries** trient et filtrent d'après
 ce que vous écrivez, et l'année que vous indiquez remplace la date de sortie de
 TMDB quand elles ne concordent pas.
 Pour écrire le nom, la date de diffusion ou le résumé d'un épisode, ouvrez sa

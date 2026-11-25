@@ -3,7 +3,7 @@
 
 # Requirement index
 
-843 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+844 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -572,6 +572,7 @@
 - **LIB-98** (SHIPPED) - A film or a show shows the cast a person writes, or its `.nfo` file <sub>[README.md](library/README.md)</sub>
 - **LIB-99** (SHIPPED) - An actor or a director written for a film or a show, by a person or in <sub>[README.md](library/README.md)</sub>
 - **LIB-100** (SHIPPED) - A film or a show shows the studios that made it, as Plex and Jellyfin <sub>[README.md](library/README.md)</sub>
+- **LIB-101** (SHIPPED) - While a person writes a title's directors, cast or studios, the form <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 

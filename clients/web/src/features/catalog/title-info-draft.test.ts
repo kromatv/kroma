@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { draftOf, editOf } from './title-info-draft';
+import { draftOf, editOf, namesShown } from './title-info-draft';
 
 const NOTHING = {
   title: null,
@@ -23,14 +23,14 @@ it('shows nothing in the form for a title that follows the provider', () => {
     tagline: '',
     overview: '',
     released: '',
-    genres: '',
-    directors: '',
-    studios: '',
+    genres: null,
+    directors: null,
+    studios: null,
     contentRating: '',
   });
 });
 
-it('puts the genres on one line, and reads them back one by one', () => {
+it('holds the genres, the directors and the studios as names, and sends them back', () => {
   const edit = {
     title: 'Heat',
     originalTitle: 'Heat',
@@ -54,9 +54,9 @@ it('puts the genres on one line, and reads them back one by one', () => {
     tagline: 'A Los Angeles crime saga',
     overview: 'Two men.',
     released: '1995',
-    genres: 'Crime, Drama',
-    directors: 'Michael Mann, Jane Doe',
-    studios: 'Forward Pass, Regency Enterprises',
+    genres: ['Crime', 'Drama'],
+    directors: ['Michael Mann', 'Jane Doe'],
+    studios: ['Forward Pass', 'Regency Enterprises'],
     contentRating: 'FR-12',
   });
   expect(editOf(draft)).toEqual(edit);
@@ -79,9 +79,9 @@ it('hands every field left blank back to the provider', () => {
     tagline: '  ',
     overview: '',
     released: ' ',
-    genres: ' , ,',
-    directors: ', ',
-    studios: ' ,',
+    genres: [' ', ''],
+    directors: [],
+    studios: null,
     contentRating: ' ',
   };
 
@@ -96,9 +96,9 @@ it('keeps each field trimmed', () => {
     tagline: ' A Los Angeles crime saga ',
     overview: ' Two men. ',
     released: ' 1995 ',
-    genres: ' Crime ,Drama ',
-    directors: ' Michael Mann ',
-    studios: ' A24 , ',
+    genres: [' Crime ', 'Drama '],
+    directors: [' Michael Mann '],
+    studios: [' A24 ', ' '],
     contentRating: ' 12 ',
   };
 
@@ -115,4 +115,15 @@ it('keeps each field trimmed', () => {
     studios: ['A24'],
     contentRating: '12',
   });
+});
+
+it('shows the names held, else those the page shows', () => {
+  const page = ['Crime', 'Drama'];
+
+  expect(namesShown(['Thriller'], { page, wasWritten: false })).toEqual(['Thriller']);
+  expect(namesShown(null, { page, wasWritten: false })).toEqual(page);
+});
+
+it('shows no name for a list written and then reset, as the page still shows what was written', () => {
+  expect(namesShown(null, { page: ['Thriller'], wasWritten: true })).toEqual([]);
 });

@@ -8,8 +8,12 @@ export interface TitleShown {
   year: number | null;
   overview: string | null;
   genres: readonly string[];
-  directors: readonly Readonly<{ name: string }>[];
-  cast: readonly Readonly<{ name: string; character?: string | null }>[];
+  directors: readonly Readonly<{ name: string; profileUrl?: string | null }>[];
+  cast: readonly Readonly<{
+    name: string;
+    character?: string | null;
+    profileUrl?: string | null;
+  }>[];
   studios: readonly string[];
   ageRating: Readonly<{ label: string }> | null;
   poster: string | null;

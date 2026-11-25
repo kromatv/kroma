@@ -111,13 +111,16 @@ sort title files the title under another name, such as
 title, such as `Das Boot`, shows under the title when the two differ, and a
 tagline shows above the summary. Write the age rating as `12`, `PG-13` or
 `FR-12`: profiles with an age limit go by it. A series' studio is the
-network that airs it, such as `HBO`. Under **Cast**, each row
-holds an actor's name and the part they play, in credit order; remove
-everyone to go back to the cast from the `.nfo` or TMDB. An actor or a
+network that airs it, such as `HBO`. Genres, directors, studios and cast are
+lists of names: type, then pick a suggestion, or choose **Add** to keep a name
+nothing suggests. Genres are suggested from your library, people and studios
+from TMDB, with their photo or logo. Under **Cast**, each row holds an actor
+and the part they play, in credit order. An actor or a
 director TMDB did not give for the title gets the photo and the page TMDB has
 under that exact name, a few moments later. What you
-write there shows in every language and stays through a rescan. Clear a field to go
-back to TMDB's text. **Movies** and **Series** sort and filter by what you
+write there shows in every language and stays through a rescan. **Reset**,
+beside a field you changed, gives it back to the `.nfo` or TMDB when you save.
+**Movies** and **Series** sort and filter by what you
 write, and a year you write replaces TMDB's release date when the two differ.
 To write an episode's name, air date or summary, open its series and choose
 **Edit info** on the episode's row.
