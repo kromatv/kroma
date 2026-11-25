@@ -330,6 +330,14 @@ picture, and keeps the provider's part when none is written. A person's page, an
 catalogue filtered by actor, find the title under the cast it shows and no longer under the
 actors it replaces.
 
+**LIB-99** (SHIPPED) - An actor or a director written for a film or a show, by a person or in
+its `.nfo` file, whom the provider did not give for that title, is looked up by name with the
+provider in the background, once for each name, the way Jellyfin finds a person. The best known
+person whose name is the one written, accents, case and punctuation aside, gives them their
+picture on the title's page and leads to their page. A name the provider knows nobody under keeps
+its initials and is looked up again a month later; a name written while the provider cannot be
+reached is looked up at the next try.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

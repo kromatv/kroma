@@ -16,6 +16,7 @@ mod library_monitoring;
 mod library_scan;
 mod metadata_enrich;
 mod notifications_digest;
+mod people_match;
 mod reco_refresh;
 mod reembed;
 mod search_reindex;
@@ -57,6 +58,7 @@ const JOBS: &[Builtin] = &[
     household_import::SPEC,
     metadata_enrich::SPEC,
     search_reindex::SPEC,
+    people_match::SPEC,
     notifications_digest::SPEC,
     stats_report::SPEC,
     update_check::SPEC,

@@ -5,6 +5,7 @@ use kroma_domain::{MediaItem, Metadata, Show, SplashEntry};
 
 use super::{apply, apply_show};
 use crate::art_beside::Art;
+use crate::people_found::People;
 use crate::title_edits;
 use crate::translations::{self, TransData};
 use crate::{metadata_core, Connection, Result};
@@ -16,9 +17,11 @@ pub(super) struct Ask<'a> {
 
 impl Ask<'_> {
     pub(super) fn layer(&self, kind: &str, ids: &[&str]) -> Result<Layer> {
+        let edits = title_edits::shown(self.conn, kind, ids)?;
         Ok(Layer {
             text: translations::resolve_many(self.conn, kind, ids, self.locale)?,
-            edits: title_edits::shown(self.conn, kind, ids)?,
+            people: People::written_in(self.conn, edits.values())?,
+            edits,
             art: Art::load(self.conn, kind, ids)?,
         })
     }
@@ -27,6 +30,7 @@ impl Ask<'_> {
         Ok(Layer {
             text: translations::resolve_many(self.conn, "episode", ids, self.locale)?,
             edits: title_edits::shown(self.conn, metadata_core::ITEM, ids)?,
+            people: People::default(),
             art: Art::load(self.conn, metadata_core::ITEM, ids)?,
         })
     }
@@ -35,6 +39,7 @@ impl Ask<'_> {
 pub(super) struct Layer {
     text: HashMap<String, TransData>,
     edits: HashMap<String, TitleEdit>,
+    people: People,
     art: Art,
 }
 
@@ -55,6 +60,7 @@ impl Layer {
         }
         if let Some(edit) = self.edits.get(&item.id) {
             edit.onto(item);
+            self.people.onto(item.metadata.as_mut());
             rename(item, edit.title.as_deref());
         }
     }
@@ -65,6 +71,7 @@ impl Layer {
         }
         if let Some(edit) = self.edits.get(&show.id) {
             edit.onto(show);
+            self.people.onto(show.metadata.as_mut());
         }
         self.art.paint(&show.id, show.metadata.as_mut());
     }
@@ -75,6 +82,7 @@ impl Layer {
         }
         if let Some(edit) = self.edits.get(id) {
             edit.onto_metadata(meta);
+            self.people.onto(Some(meta));
         }
         self.art.paint(id, Some(meta));
     }

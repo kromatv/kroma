@@ -27,6 +27,7 @@ pub mod media_ticket;
 pub mod network;
 pub mod notify;
 pub mod pairing;
+pub mod people_found;
 pub mod pipeline;
 pub mod playback;
 pub mod reco;

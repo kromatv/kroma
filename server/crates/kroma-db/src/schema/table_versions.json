@@ -188,6 +188,10 @@
       "broke": 1,
       "changed": 1
     },
+    "people_found": {
+      "broke": 50,
+      "changed": 50
+    },
     "pin_attempts": {
       "broke": 1,
       "changed": 1
@@ -289,5 +293,5 @@
       "changed": 1
     }
   },
-  "version": 49
+  "version": 50
 }

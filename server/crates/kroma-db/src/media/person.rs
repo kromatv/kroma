@@ -21,9 +21,10 @@ macro_rules! credits {
               WHERE ", $kept, " AND e.actors IS NULL \
              UNION ALL \
              SELECT t.id, json_extract(a.value,'$.name'), \
-                    (SELECT json_extract(p.value,'$.tmdbId') FROM json_each(t.metadata,'$.cast') p \
+                    COALESCE((SELECT json_extract(p.value,'$.tmdbId') FROM json_each(t.metadata,'$.cast') p \
                       WHERE lower(json_extract(p.value,'$.name')) = lower(json_extract(a.value,'$.name')) \
-                      LIMIT 1) \
+                      LIMIT 1), \
+                     (SELECT f.tmdb_id FROM people_found f WHERE f.name = json_extract(a.value,'$.name'))) \
                FROM ", $table, " t \
                JOIN title_shown e ON e.subject_kind = '", $kind, "' AND e.subject_id = t.id, \
                     json_each(e.actors) a \
@@ -37,9 +38,10 @@ macro_rules! credits {
                 AND (e.directors IS NULL OR json_extract(c.value,'$.job') NOT IN ('Director','Creator')) \
              UNION ALL \
              SELECT t.id, d.value, \
-                    (SELECT json_extract(p.value,'$.tmdbId') FROM json_each(t.metadata,'$.crew') p \
+                    COALESCE((SELECT json_extract(p.value,'$.tmdbId') FROM json_each(t.metadata,'$.crew') p \
                       WHERE json_extract(p.value,'$.job') IN ('Director','Creator') \
-                        AND lower(json_extract(p.value,'$.name')) = lower(d.value) LIMIT 1) \
+                        AND lower(json_extract(p.value,'$.name')) = lower(d.value) LIMIT 1), \
+                     (SELECT f.tmdb_id FROM people_found f WHERE f.name = d.value)) \
                FROM ", $table, " t \
                JOIN title_shown e ON e.subject_kind = '", $kind, "' AND e.subject_id = t.id, \
                     json_each(e.directors) d \

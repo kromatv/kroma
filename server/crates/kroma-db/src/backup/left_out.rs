@@ -22,6 +22,7 @@ const REBUILT_FROM_THE_MEDIA_AND_ITS_PROVIDERS: &[&str] = &[
     "library_gaps",
     "markers",
     "metadata_core",
+    "people_found",
     "pipeline_tasks",
     "season_meta",
     "translations",

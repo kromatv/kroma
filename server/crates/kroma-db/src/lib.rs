@@ -64,6 +64,7 @@ pub mod art_beside;
 pub mod art_chosen;
 pub mod localize;
 pub mod metadata_core;
+pub mod people_found;
 mod scanned;
 mod schema;
 mod visibility;
