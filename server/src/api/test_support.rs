@@ -12,6 +12,7 @@ mod mail_relay;
 mod media;
 mod modules;
 mod requests;
+mod socket;
 mod sso;
 mod waiting;
 
@@ -44,6 +45,7 @@ pub use modules::{
     store_settings, write_settings,
 };
 pub use requests::{get, get_from, raw, send, send_from, text, upload};
+pub use socket::{serve, EventSocket};
 pub use sso::{at_provider, ProviderRound, ORIGIN};
 pub use waiting::{join, mint_invitation, put_to_wait, seed_waiting};
 

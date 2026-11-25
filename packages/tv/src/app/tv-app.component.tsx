@@ -43,6 +43,7 @@ import { ARTWORK_SCALE, ArtworkPrefProvider, createArtworkPref } from '#tv/app/s
 import { useCatalogue } from '#tv/app/use-catalogue.hook';
 import { useOwnerRoad } from '#tv/app/use-owner-road.hook';
 import { useRouteGuards } from '#tv/app/use-route-guards.hook';
+import { useScreenResponder } from '#tv/app/use-screen-responder.hook';
 import { type VoiceSearchBackend, VoiceSearchProvider } from '#tv/app/voice-search';
 import { HandoffBeaconProvider } from '#tv/features/accounts/handoff-beacon-provider.component';
 import { CastReceiverProvider } from '#tv/features/cast/cast-receiver-provider.component';
@@ -122,12 +123,8 @@ export function TvApp({
   const [devicePreferences] = useState(() => createDevicePreferences(storage));
   const [artworkPref] = useState(() => createArtworkPref(storage));
   const artworkScale = useCallback(() => ARTWORK_SCALE[artworkPref.get()], [artworkPref]);
-  const { connection, client, activeServerUrl, setActiveServer, setSignedIn } = useCatalogue(
-    platform,
-    serverBrowse ?? undefined,
-    deepLinks,
-    artworkScale,
-  );
+  const { connection, client, activeServerUrl, setActiveServer, setSignedIn, events } =
+    useCatalogue(platform, serverBrowse ?? undefined, deepLinks, artworkScale);
   const kitConfig = useMemo(
     () => ({
       ...TV_KIT,
@@ -141,6 +138,7 @@ export function TvApp({
   const [ownedSearchRequests] = useState(createSearchRequests);
   const searchRequests = suppliedSearchRequests ?? ownedSearchRequests;
   const name = useDeviceName(deviceName, platform);
+  useScreenResponder(events, { screenId: identity(), name, platform });
   const screens = useMemo(
     () => ({ ...SCREENS, player: playback.Player, trailer: playback.Trailer }),
     [playback.Player, playback.Trailer],

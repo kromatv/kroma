@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CastCommand, CastReceiver, CastState } from '../cast';
+import { ScreenRequest } from '../diagnostics';
 import { JobKey, JobRunId } from '../jobs';
 import { ItemId, ShowId } from '../media';
 import { ModuleId } from '../modules';
@@ -48,6 +49,7 @@ export const ServerEvent = z.discriminatedUnion('type', [
     state: CastState,
   }),
   frame('cast.command', { receiverId: z.string(), seq: z.number(), command: CastCommand }),
+  ScreenRequest,
   frame('settings.updated', {}),
   frame('job.started', { key: JobKey, runId: JobRunId }),
   frame('job.progress', { key: JobKey, runId: JobRunId, ...progress }),

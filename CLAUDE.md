@@ -44,6 +44,9 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
 - [`docs/direct-connection.md`](docs/direct-connection.md) for the route a
   signed-in client takes straight to its server on the same network, what
   proves it is the same server, and what each shell does with it.
+- [`docs/inspecting-a-screen.md`](docs/inspecting-a-screen.md) for reading
+  what the kit has on screen: `describeScreen()` in a browser, and the two admin
+  routes that ask a signed-in television over its event socket.
 
 ## Checks
 

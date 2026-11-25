@@ -2,6 +2,7 @@ import type { KromaClient } from '@kromatv/client';
 import type { Activity } from '@kromatv/client/admin';
 import { KromaEvents } from '@kromatv/client/events';
 import { useEffect, useState } from 'react';
+import { createEventTap, type EventTap } from '#tv/app/event-tap';
 
 const EMPTY_ACTIVITY: Activity = {
   phase: 'idle',
@@ -19,14 +20,15 @@ const base = (a: Activity | null): Activity => a ?? EMPTY_ACTIVITY;
 
 /** Holds the server's event stream open while signed in, mapping scan/enrich
  * events onto the reported activity and coalescing catalog changes into a
- * throttled refetch. */
+ * throttled refetch. The returned tap reaches that same stream. */
 export function useCatalogueSync(
   client: KromaClient | null,
   signedIn: boolean,
   fetchCatalogue: (c: KromaClient, quiet?: boolean) => Promise<void>,
   recheck: () => void,
-): Activity | null {
+): { activity: Activity | null; events: EventTap } {
   const [activity, setActivity] = useState<Activity | null>(null);
+  const [tap] = useState(createEventTap);
 
   // Live sync: hold the event stream open and refetch when the catalog changes.
   // A leading+trailing throttle coalesces bursts into at most one refetch/window.
@@ -60,12 +62,14 @@ export function useCatalogueSync(
       onClose: () => recheck(),
       onOpen: () => {
         recheck();
+        tap.opened();
         void client.admin
           .status()
           .then(setActivity)
           .catch(() => undefined);
       },
       onEvent: (e) => {
+        tap.heard(e);
         switch (e.type) {
           case 'scan.started':
             setActivity((a) => ({ ...base(a), phase: 'scanning', scanning: true }));
@@ -108,12 +112,14 @@ export function useCatalogueSync(
         }
       },
     });
+    tap.attach(events);
     events.connect();
     return () => {
       clearTimeout(trailing);
+      tap.attach(null);
       events.close();
     };
-  }, [client, signedIn, fetchCatalogue, recheck]);
+  }, [client, signedIn, fetchCatalogue, recheck, tap]);
 
-  return activity;
+  return { activity, events: tap };
 }
