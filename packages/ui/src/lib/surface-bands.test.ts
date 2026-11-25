@@ -64,4 +64,20 @@ describe('surfaceBands', () => {
 
     expect(bands.footer).toBeUndefined();
   });
+
+  it('counts what was written beside a panel and is no band, which the Root has nowhere to draw', () => {
+    const stray = band(Other, 'Ailleurs');
+
+    const bands = surfaceBands([band(Panel, 'Corps'), stray, band(Footer, 'Fermer')], parts);
+
+    expect(bands.unplaced).toBe(1);
+  });
+
+  it('counts nothing when the Root draws the panel itself, since the rest goes inside it', () => {
+    const stray = band(Other, 'Ailleurs');
+
+    const bands = surfaceBands([band(Header, 'Titre'), 'Texte', stray], parts);
+
+    expect(bands.unplaced).toBe(0);
+  });
 });

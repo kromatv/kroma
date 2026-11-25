@@ -138,6 +138,10 @@ be a direct child to be sorted, and only a part that reads the context takes par
 in the shape. A fragment is no wrapper: the walk opens it (`directChildren`), so
 a part written inside one is still direct. A part returned by a component of the
 caller's own is not, because the Root cannot see what that component will draw.
+A band of `<Dialog.Root>` or `<Drawer.Root>` written that way says so in
+development (`SurfaceBand`, `PlacedBands`): it lands in the panel the Root
+draws, or nowhere when the caller wrote the panel too, and the warning names
+the band and its Root.
 
 ---
 
