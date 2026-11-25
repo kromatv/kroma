@@ -52,7 +52,9 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   `await __KROMA_UI__.screenText()` in any page, and the two admin routes that
   ask a signed-in television over its event socket. Read the screen this way
   before changing code to fix what it shows. `__KROMA_UI__.act()` changes what
-  a control holds, by the ref the text gives it.
+  a control holds, by the ref the text gives it. In a Chrome with WebMCP on,
+  the page offers the same as three WebMCP tools: `read_screen`,
+  `list_controls` and `change_controls`.
 
 ## Checks
 

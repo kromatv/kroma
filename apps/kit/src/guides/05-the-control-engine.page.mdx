@@ -262,6 +262,15 @@ The steps before it stay done. A disabled component refuses every call, a setter
 refuses a value of another kind than its key holds, and a call is at most 50
 steps. The whole table is in `docs/inspecting-a-screen.md`.
 
+## The same, as WebMCP tools
+
+In a browser that exposes WebMCP, the first `KitProvider` on a page also
+registers these as three tools: `read_screen` answers with `screenText()`,
+`list_controls` with `snapshot()`, and `change_controls` takes `{ steps }` and
+runs `act`. Chrome DevTools lists them under Application, WebMCP, and runs one
+from there, once `chrome://flags/#enable-webmcp-testing` is on. Each is marked
+as a developer tool, which an agent that acts for a user can leave out.
+
 ## What an action may not do
 
 A tool tries an action before it runs it, and the list of what a control offers
