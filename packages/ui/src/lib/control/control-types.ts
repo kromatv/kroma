@@ -33,7 +33,10 @@ export type AnyReason = string & NonNullable<unknown>;
 
 /** Every reason a change of this control can carry: one per action, `set` for
  *  a setter called without one, and the reasons the control declared. */
-export type Reasons<A, R extends string = AnyReason> = Extract<keyof A, string> | 'set' | R;
+export type Reasons<A, R extends string = AnyReason> =
+  | Extract<Declared<keyof A>, string>
+  | 'set'
+  | R;
 
 /** What a setter is told beside the value: a reason, or the details of the
  *  change it passes on, whose reason it keeps. */

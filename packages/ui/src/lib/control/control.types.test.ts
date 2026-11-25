@@ -54,6 +54,18 @@ const closeForNoReason = (view: Menu) => view.setOpen(false, 'outside');
 
 const passOn = (view: Mounted[0]): SliderProps['onValueChange'] => view.setValue;
 
+const sheet = defineControl('sheet', {
+  state: { open: false },
+  reasons: ['outside', 'escape'],
+});
+
+const useSheet = (props: ControlProps<typeof sheet>) => useControl(sheet, props);
+
+type Sheet = ReturnType<typeof useSheet>[0];
+
+// @ts-expect-error a control that declares no action has none to call
+const callNothing = (view: Sheet) => view.toggle();
+
 describe('the types a definition gives', () => {
   it('are the three props of each state key and one per option', () => {
     expectTypeOf<SliderProps['value']>().toEqualTypeOf<number | undefined>();
@@ -112,6 +124,15 @@ describe('the types a definition gives', () => {
     expectTypeOf<ReasonOf<typeof menu>>().toEqualTypeOf<
       'trigger' | 'escape' | 'back' | 'toggle' | 'set'
     >();
+  });
+
+  it('tell the app the declared reasons and `set` when the control has no action', () => {
+    expectTypeOf<ReasonOf<typeof sheet>>().toEqualTypeOf<'outside' | 'escape' | 'set'>();
+  });
+
+  it('give a control without actions its state and its setters alone', () => {
+    expectTypeOf<keyof Sheet>().toEqualTypeOf<'open' | 'setOpen'>();
+    expectTypeOf(callNothing).toBeFunction();
   });
 
   it('let a setter stand as the callback of another control', () => {
