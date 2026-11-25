@@ -118,6 +118,15 @@ export type {
   TableVariant,
 } from './table';
 export { Table } from './table';
+export type {
+  TagFieldDetails,
+  TagFieldItemProps,
+  TagFieldMediaProps,
+  TagFieldReason,
+  TagFieldRootProps,
+  TagFieldTagProps,
+} from './tag-field';
+export { TagField } from './tag-field';
 export type { ToasterProps, ToastOptions, ToastPosition } from './toast';
 export { Toaster, toast } from './toast';
 export type { VirtualGridProps, VirtualRailProps } from './virtual';

@@ -15,6 +15,9 @@ declare module 'react-native' {
     onClick?: ((event: { stopPropagation: () => void }) => void) | undefined;
     /** The active-row wiring of the aria-activedescendant listbox pattern. */
     'aria-activedescendant'?: string | undefined;
+    /** The list a combobox entry opens, by its `nativeID`. */
+    'aria-controls'?: string | undefined;
+    'aria-multiselectable'?: boolean | undefined;
   }
 }
 

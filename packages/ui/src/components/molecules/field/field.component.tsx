@@ -6,7 +6,7 @@
 // context. `Field.Input` and `Field.Textarea` are the doors to <TextField> and
 // <TextArea>, which is why neither atom is exported.
 
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useContext, useMemo, useState } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
@@ -28,6 +28,15 @@ interface FieldContext {
 
 const [Context, useField] = partContext<FieldContext>('Field.Root');
 
+/** What a control that is not one of Field's parts reads from the Root around it. */
+type EnclosingField = Pick<FieldContext, 'label' | 'invalid' | 'size' | 'setFocused'>;
+
+/** The <Field.Root> a control sits in, or null outside one: how a control the
+ *  kit composes into a field takes its label, its error and its size. */
+function useEnclosingField(): EnclosingField | null {
+  return useContext(Context);
+}
+
 interface FieldRootProps extends Omit<BoxProps, 'children'> {
   /** Names the control to assistive tech, and heads the field unless `hideLabel`. */
   label: string;
@@ -46,7 +55,8 @@ interface FieldRootProps extends Omit<BoxProps, 'children'> {
   defaultValue?: string;
   onValueChange?: (next: string, details: ChangeDetails) => void;
   /** Without a control of its own, the field renders a <Field.Input>. A
-   *  <Field.Hint> is sorted under the control, so both must be DIRECT children. */
+   *  <Field.Hint> is sorted under the control and a <Field.Actions> into the
+   *  label row, so each must be a DIRECT child. */
   children?: ReactNode;
 }
 
@@ -75,20 +85,36 @@ function Root({
     }),
     [label, invalid, message, size, value, defaultValue, onValueChange],
   );
-  const [note, control] = sortParts(children, Hint);
+  const [note, actions, control] = sortParts(children, Hint, Actions);
   const group = useGroupShape(focused);
   return (
     <Context value={field}>
       <Box gap={8} {...box} style={[group, box.style]}>
-        {hideLabel ? null : (
-          <Text variant="meta" color="textMuted">
-            {label}
-          </Text>
-        )}
+        <LabelRow label={hideLabel ? null : label} actions={actions} />
         {control.length > 0 ? control : <Input />}
         {note.length > 0 ? note : <Hint />}
       </Box>
     </Context>
+  );
+}
+
+const ACTIONS_OVERHANG = -10;
+
+function LabelRow({ label, actions }: Readonly<{ label: string | null; actions: ReactNode[] }>) {
+  if (label === null && actions.length === 0) {
+    return null;
+  }
+  return (
+    <Box row align="center" justify="space-between" gap={12}>
+      <Text variant="meta" color="textMuted">
+        {label}
+      </Text>
+      {actions.length > 0 ? (
+        <Box row align="center" gap={8} my={ACTIONS_OVERHANG}>
+          {actions}
+        </Box>
+      ) : null}
+    </Box>
   );
 }
 
@@ -171,7 +197,13 @@ function Hint({ children }: Readonly<{ children?: ReactNode }>) {
   );
 }
 
-const Field = { Root, Input, Textarea, Hint };
+/** The field's own controls, at the end of its label row: a button that puts
+ *  the value back, a link to where it comes from. */
+function Actions({ children }: Readonly<{ children?: ReactNode }>) {
+  return <>{children}</>;
+}
 
-export type { FieldInputProps, FieldRootProps, FieldTextareaProps };
-export { Field };
+const Field = { Root, Input, Textarea, Hint, Actions };
+
+export type { EnclosingField, FieldInputProps, FieldRootProps, FieldTextareaProps };
+export { Field, useEnclosingField };

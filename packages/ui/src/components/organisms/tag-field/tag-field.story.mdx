@@ -1,0 +1,101 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { Directors, Form, Genres, Studios } from './tag-field.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: { min: 300, max: 560 },
+  args: { size: 'sm', invalid: false, disabled: false, presentation: 'auto' },
+  controls: { size: ['sm', 'md', 'tv'], presentation: ['auto', 'panel', 'dialog'] },
+  render: (args) => (
+    <Box gap={20}>
+      <Genres {...args} />
+      <Directors {...args} />
+    </Box>
+  ),
+});
+
+A field whose value is a list of names, each drawn as a tag in the well, with suggestions under it. **Root** owns the names, what is typed after them and whether the suggestions are open. **Item** is a suggestion, **Tag** gives a name its face, **Media** is the mark on either, **Hint** is a suggestion's second line and **Empty** is what the list says when nothing is left to suggest.
+
+The well is the one every entry wears, so a line of tags is exactly a `<Field.Input>` tall. Wear it inside a `<Field.Root>`, which draws the label row and the hint and lends the field its label, its error and its size. Outside one, give the Root a `label`. Nothing draws it, but it names the entry.
+
+```tsx
+<Field.Root label="Genres">
+  <TagField.Root value={genres} onValueChange={setGenres} placeholder="Add a genre">
+    {library.map((genre) => (
+      <TagField.Item key={genre} value={genre} />
+    ))}
+  </TagField.Root>
+  <Field.Hint>Pick from the library, or type a new one.</Field.Hint>
+</Field.Root>
+```
+
+Typing writes the query and the Root matches the items against it, case and accents aside, best first. Once something is typed the first suggestion is the active row. Enter adds it, Down and Up walk the rows, and Up from the first lets go of them so Enter adds the text as typed. A comma closes a name, and a pasted `Action, Comedy, Crime` is three. Backspace in an empty entry takes the last tag out. A name the field already holds is ignored however it is spelled, and `max` stops adding at that count.
+
+While the query names no suggestion exactly, the list ends on a row that adds it as typed. Its words default to the kit's "Add" and `addLabel` changes them.
+
+## Suggestions from a search
+
+A search already matched what it returns, so `filter={false}` draws the items in the order written. Hold the query to search with it, and say `loading` while the answer is on its way. Until it arrives the list shows a spinner row in place of `<TagField.Empty>`. The active row is held by its key, so a result that arrives late does not move the highlight under the reader.
+
+```tsx
+<TagField.Root
+  label="Directors"
+  value={names}
+  onValueChange={setNames}
+  query={query}
+  onQueryChange={setQuery}
+  filter={false}
+  loading={search.isFetching}
+>
+  {search.people.map((person) => (
+    <TagField.Item key={person.id} value={person.name}>
+      <TagField.Media src={person.photo} />
+      <TagField.Hint>{`Directing · ${person.knownFor}`}</TagField.Hint>
+    </TagField.Item>
+  ))}
+  <TagField.Empty>No one by that name on TMDB.</TagField.Empty>
+</TagField.Root>
+```
+
+<Scene name="Directors">
+  Type `g` or `bong`. Céline Sciamma has no photo, so her disc draws her initials over the colour her name hashes to.
+
+  <Directors presentation="panel" />
+</Scene>
+
+## A tag's face
+
+`<TagField.Media>` is sized by where it is: 20px on a tag at `sm`, 32px at the head of a row. `src` draws a round photo, `logo` draws the picture whole on a light tile, and `name` a glyph. Without a picture it draws the initials of the name beside it.
+
+A tag added from a suggestion keeps that suggestion's mark. A name that arrived with the value has none until a `<TagField.Tag value>` declares it. The tag is drawn where the name sits in the value whether or not one is written, so a Tag only gives the face.
+
+```tsx
+{directors.map((person) => (
+  <TagField.Tag key={person.name} value={person.name}>
+    <TagField.Media src={person.photo} />
+  </TagField.Tag>
+))}
+```
+
+<Scene name="Studios">
+  A24 has a logo, the other two draw their initials on the same rounded tile.
+
+  <Studios />
+</Scene>
+
+## In a form
+
+<Scene name="Beside a text entry">
+  The wells of a `<Field.Input>` and three tag fields, off the same shell table.
+
+  <Form />
+</Scene>
+
+## Under a D-pad
+
+Where a spatial navigator drives, or the shell says `surfaces: 'dialog'`, the well is a row of stops. Each tag is one, and its press takes it out. The stop after them opens a dialog with the entry, the on-screen keyboard where there is no real one, and the suggestions as rows. A pick closes the dialog on the new tag. The caller writes nothing different.
+
+<Scene name="Dialog">
+  <Genres presentation="dialog" />
+</Scene>

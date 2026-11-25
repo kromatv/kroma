@@ -62,6 +62,13 @@ THE text entry. There is no second input component to choose between. `<TextFiel
   <PinField onComplete={verify} />
 </Field.Root>
 
+// The field's own controls go at the end of its label row:
+<Field.Root label="Genres" value={genres} onValueChange={setGenres}>
+  <Field.Actions>
+    <Button variant="ghost" size="sm" icon="arrow-back-up" label="Reset" onPress={reset} />
+  </Field.Actions>
+</Field.Root>
+
 // A bare entry (a header search box). The label is still required and still
 // reaches the platform as the accessible name; only the label ROW is dropped.
 <Field.Root label="Search" hideLabel size="tv">
