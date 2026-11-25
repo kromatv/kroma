@@ -36,6 +36,7 @@ pub struct Builder {
     default: Option<String>,
     raw: Vec<(String, String)>,
     parsed: Vec<(String, HashMap<String, String>)>,
+    fallbacks: HashMap<String, Vec<String>>,
     plural: PluralRule,
     label_key: fn(&str) -> String,
 }
@@ -46,6 +47,7 @@ impl Default for Builder {
             default: None,
             raw: Vec::new(),
             parsed: Vec::new(),
+            fallbacks: HashMap::new(),
             plural: one_other,
             // Native display name lives at `lang.<code>` by convention.
             label_key: |code| format!("lang.{code}"),
@@ -58,6 +60,19 @@ impl Builder {
     /// then to the raw key. Must have a catalog. Required.
     pub fn default_locale(mut self, code: impl Into<String>) -> Self {
         self.default = Some(code.into());
+        self
+    }
+
+    /// The locales `code` reads a message it lacks in, in order, before the
+    /// default locale. Each answers in full, its plural variant chosen by its
+    /// own language's rule. A code with no catalog is skipped.
+    pub fn fallbacks<S: Into<String>>(
+        mut self,
+        code: impl Into<String>,
+        chain: impl IntoIterator<Item = S>,
+    ) -> Self {
+        let chain = chain.into_iter().map(Into::into).collect();
+        self.fallbacks.insert(code.into(), chain);
         self
     }
 
@@ -118,11 +133,28 @@ impl Builder {
             }
             first.entries = crate::expand_refs(fallback, &HashMap::new());
         }
+        attach_fallbacks(&mut locales, self.fallbacks, &default);
         Ok(I18n {
             default,
             locales,
             plural: self.plural,
         })
+    }
+}
+
+fn attach_fallbacks(
+    locales: &mut [Locale],
+    mut fallbacks: HashMap<String, Vec<String>>,
+    default: &str,
+) {
+    let known: Vec<String> = locales.iter().map(|l| l.code.clone()).collect();
+    for locale in locales {
+        locale.fallbacks = fallbacks
+            .remove(&locale.code)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|other| *other != locale.code && other != default && known.contains(other))
+            .collect();
     }
 }
 
@@ -140,6 +172,7 @@ fn merge_part(
             label_key: label_key(&code),
             code,
             entries,
+            fallbacks: Vec::new(),
         });
         return Ok(());
     };

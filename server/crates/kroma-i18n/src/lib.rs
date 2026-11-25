@@ -42,6 +42,7 @@ struct Locale {
     code: String,
     label_key: String,
     entries: HashMap<String, String>,
+    fallbacks: Vec<String>,
 }
 
 /// A locale's code and the message key holding its native display name.
@@ -94,9 +95,7 @@ impl I18n {
             .map(String::as_str)
     }
 
-    // The category is chosen from `tag` (see `translate`); the variant is then
-    // looked up under the resolved `code`.
-    fn variant_in(&self, code: &str, tag: &str, stem: &str, count: i64) -> Option<String> {
+    fn variant_in(&self, code: &str, stem: &str, count: i64) -> Option<String> {
         // An explicit `_zero` wins at zero even where the rule has no zero
         // category, because "nothing yet" is usually its own sentence.
         if count == 0 {
@@ -105,7 +104,7 @@ impl I18n {
                 return Some(zero);
             }
         }
-        let category = format!("{stem}_{}", (self.plural)(tag, count).suffix());
+        let category = format!("{stem}_{}", (self.plural)(code, count).suffix());
         if self.lookup(code, &category).is_some() {
             return Some(category);
         }
@@ -116,15 +115,9 @@ impl I18n {
         None
     }
 
-    fn resolve_in(
-        &self,
-        code: &str,
-        tag: &str,
-        key: &str,
-        vars: &[(&str, &str)],
-    ) -> Option<String> {
+    fn resolve_in(&self, code: &str, key: &str, vars: &[(&str, &str)]) -> Option<String> {
         if let Some(count) = numeric(vars, "count") {
-            if let Some(hit) = self.variant_in(code, tag, key, count) {
+            if let Some(hit) = self.variant_in(code, key, count) {
                 return Some(hit);
             }
         }
@@ -135,7 +128,7 @@ impl I18n {
             let Some(count) = numeric(vars, name) else {
                 continue;
             };
-            if let Some(hit) = self.variant_in(code, tag, &format!("{key}_{name}"), count) {
+            if let Some(hit) = self.variant_in(code, &format!("{key}_{name}"), count) {
                 return Some(hit);
             }
         }
@@ -143,47 +136,40 @@ impl I18n {
     }
 
     // A variant is only ever taken from the catalog that will also supply the
-    // template, so a locale cannot borrow another language's singular purely
-    // because that language happens to declare one.
-    fn resolve_plural_key(
-        &self,
-        tag: &str,
-        code: &str,
-        key: &str,
-        vars: &[(&str, &str)],
-    ) -> String {
-        if let Some(hit) = self.resolve_in(code, tag, key, vars) {
-            return hit;
-        }
-        if self.lookup(code, key).is_some() {
-            return key.to_string();
-        }
-        self.resolve_in(&self.default, tag, key, vars)
-            .unwrap_or_else(|| key.to_string())
+    // template, and chosen by that catalog's own plural rule.
+    fn render_in(&self, code: &str, key: &str, vars: &[(&str, &str)]) -> Option<String> {
+        let variant = if vars.is_empty() {
+            None
+        } else {
+            self.resolve_in(code, key, vars)
+        };
+        let template = self.lookup(code, variant.as_deref().unwrap_or(key))?;
+        Some(interpolate(template, vars))
     }
 
-    /// Translate `key` in `locale`, falling back to the default locale then the
-    /// raw key. Regional tags resolve to their base catalog (`fr_CH` → `fr`). A
-    /// numeric `count` var selects a plural variant and, like every var, is
-    /// interpolated into `{count}`.
+    fn chain<'a>(&'a self, code: &'a str) -> impl Iterator<Item = &'a str> {
+        let fallbacks = self
+            .locales
+            .iter()
+            .find(|l| l.code == code)
+            .map(|l| l.fallbacks.as_slice())
+            .unwrap_or_default();
+        let default = (code != self.default).then_some(self.default.as_str());
+        std::iter::once(code)
+            .chain(fallbacks.iter().map(String::as_str))
+            .chain(default)
+    }
+
+    /// Translate `key` in `locale`, falling back to its fallbacks, the default
+    /// locale, then the raw key. Regional tags resolve to their base catalog
+    /// (`fr_CH` → `fr`). A numeric `count` var selects a plural variant by the
+    /// rule of the language that answers and, like every var, is interpolated
+    /// into `{count}`.
     pub fn translate(&self, locale: &str, key: &str, vars: &[(&str, &str)]) -> String {
-        let resolved = self.resolve_code(locale);
-        let code = resolved.unwrap_or(&self.default);
-        // A plural rule can only read a language tag, so it sees the caller's
-        // own when that is what it is (a rule telling `pt_BR` from `pt_PT`
-        // needs the region), and the resolved code when the caller passed
-        // something else a rule cannot parse, such as the endonym "Français".
-        let tag = resolved.unwrap_or(code);
-        let lookup_key = if vars.is_empty() {
-            key.to_string()
-        } else {
-            self.resolve_plural_key(tag, code, key, vars)
-        };
-        let template = self
-            .lookup(code, &lookup_key)
-            .or_else(|| self.lookup(&self.default, &lookup_key))
-            .unwrap_or(key);
-        interpolate(template, vars)
+        let code = self.resolve_code(locale).unwrap_or(&self.default);
+        self.chain(code)
+            .find_map(|language| self.render_in(language, key, vars))
+            .unwrap_or_else(|| interpolate(key, vars))
     }
 
     /// Short alias for [`translate`](Self::translate).
@@ -261,6 +247,40 @@ mod tests {
         let i = asymmetric();
 
         assert_eq!(i.t("de", "n", &[("count", "1")]), "1 objet");
+    }
+
+    #[test]
+    fn a_message_read_in_the_default_takes_the_plural_of_the_default_language() {
+        let i = I18n::builder()
+            .default_locale("en")
+            .plural_rule(cldr)
+            .catalog_json("en", r#"{ "n": "{count} items", "n_one": "{count} item" }"#)
+            .catalog_json("fr", r#"{ "hi": "Salut" }"#)
+            .catalog_json("ko", r#"{ "hi": "안녕" }"#)
+            .build()
+            .unwrap();
+
+        assert_eq!(i.t("ko", "n", &[("count", "1")]), "1 item");
+        assert_eq!(i.t("ko", "n", &[("count", "2")]), "2 items");
+        assert_eq!(i.t("fr", "n", &[("count", "0")]), "0 items");
+    }
+
+    #[test]
+    fn a_fallback_language_answers_by_its_own_plural_rule_before_the_default() {
+        let i = I18n::builder()
+            .default_locale("en")
+            .plural_rule(cldr)
+            .catalog_json("en", r#"{ "n": "{count} items", "hi": "Hi" }"#)
+            .catalog_json("fr", r#"{ "n": "{count} objets", "n_one": "{count} objet" }"#)
+            .catalog_json("de", r#"{ "bye": "Tschüss" }"#)
+            .fallbacks("de", ["fr", "it"])
+            .build()
+            .unwrap();
+
+        assert_eq!(i.t("de", "n", &[("count", "0")]), "0 objet");
+        assert_eq!(i.t("de", "n", &[("count", "2")]), "2 objets");
+        assert_eq!(i.t("de", "hi", &[]), "Hi");
+        assert_eq!(i.t("de", "bye", &[]), "Tschüss");
     }
 
     #[test]
