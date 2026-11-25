@@ -4,7 +4,7 @@ import { MDX_COMPONENTS } from '@kromatv/workbench';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createIconLibrary, type IconLibrary, IconLibraryProvider } from '#ui/lib/icons/library';
-import IconsPage, { summary, title } from './06-icons.page.mdx';
+import IconsPage, { summary, title } from './07-icons.page.mdx';
 
 // The runner already resolves every Tabler name, so the glyph half of the
 // library has nothing to add here and the page's wait is the catalogue's.

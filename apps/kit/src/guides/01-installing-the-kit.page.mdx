@@ -59,6 +59,8 @@ that colour a code sample.
 | `@kromatv/ui/bundler` | the icon pass, for a Metro config |
 | `@kromatv/ui/ssr` | `withTheme()`, which grounds `<html>` before it is sent |
 | `@kromatv/ui/testing` | a focus scope and a locale, so a test can render a control |
+| `@kromatv/ui/control` | `defineControl` and `useControl`, for a component that holds a value a tool can read and change |
+| `@kromatv/ui/inspect` | the reader: `screenText()`, `snapshot()` and `act()`, which `globalThis.__KROMA_UI__` also loads |
 
 The kit's own files say `#ui/...`. That is an internal alias declared in the
 package's `imports` field. A bundler has to be told how to follow it (below), but
@@ -285,7 +287,9 @@ const kit = configureKit({
 - **`KitProvider`** nested under another inherits every answer it does not
   give, so a part of the app that differs in one thing says that one thing:
   `<KitProvider config={{ entry: { physicalKeyboard: true } }}>` around a form a
-  keyboard types into keeps the image decoder and the frost of the root.
+  keyboard types into keeps the image decoder and the frost of the root. The
+  root one also holds the control engine every control under it joins, and a
+  nested one shares it, so a tool sees the whole tree as one screen.
 - **`ThemeProvider`** given a `theme` opens a scope of its own, and a swap
   remounts the subtree under it, so place it below whatever state must survive one.
 - **`OverlayHost`** is where a dialog or a drawer actually renders. React Native
