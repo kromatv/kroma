@@ -7,8 +7,8 @@ use super::encode::encode_webp;
 use super::scratch::finalize;
 use super::{images_dir, PUBLIC_PREFIX};
 
-const MAX_TIME_SECS: u32 = 25;
-const MAX_ARTWORK_BYTES: u64 = 32 * 1024 * 1024;
+pub(super) const MAX_TIME_SECS: u32 = 25;
+pub(super) const MAX_ARTWORK_BYTES: u64 = 32 * 1024 * 1024;
 
 pub(super) fn cache_verbatim(data_dir: &Path, remote_url: &str, ext: &str) -> Option<String> {
     if !remote_url.starts_with("http") {

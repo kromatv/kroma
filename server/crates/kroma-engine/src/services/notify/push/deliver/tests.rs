@@ -526,7 +526,7 @@ fn a_service_that_quotes_the_address_back_does_not_get_it_written_down() {
 
 #[test]
 fn a_web_push_endpoint_on_a_private_address_is_never_contacted() {
-    crate::services::notify::push::endpoint::test_reach::refuse_private();
+    crate::infra::reach::test_reach::refuse_private();
     let service = FakeService::answering(201);
     let (state, user) = state_with_endpoint(&service.endpoint, PushTransport::WebPush, true);
 

@@ -1,5 +1,6 @@
 import type { HostBox } from './host-box';
 import type { PropSummary } from './prop-summary';
+import type { ScreenControl } from './screen-controls';
 import type { KitNode, ScreenTree } from './screen-tree';
 
 /** One mounted kit component, `depth` levels under the top of the screen. */
@@ -9,6 +10,7 @@ export type ScreenRow = {
   props: PropSummary;
   box: HostBox | null;
   focused?: true;
+  control?: ScreenControl;
 };
 
 /** A screen as rows in document order: a parent comes before its children, and
@@ -59,6 +61,9 @@ function rowOf({ node, depth }: Pending): ScreenRow {
   const row: ScreenRow = { depth, name: node.name, props: node.props, box: node.box };
   if (node.focused) {
     row.focused = true;
+  }
+  if (node.control) {
+    row.control = node.control;
   }
   return row;
 }

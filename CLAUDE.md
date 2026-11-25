@@ -48,7 +48,8 @@ for the structural north-star, and [`CONTRIBUTING.md`](CONTRIBUTING.md) for setu
   what the kit has on screen, by component name, with each box and the focus:
   `await __KROMA_UI__.screenText()` in any page, and the two admin routes that
   ask a signed-in television over its event socket. Read the screen this way
-  before changing code to fix what it shows.
+  before changing code to fix what it shows. `__KROMA_UI__.act()` changes what
+  a control holds, by the ref the text gives it.
 
 ## Checks
 

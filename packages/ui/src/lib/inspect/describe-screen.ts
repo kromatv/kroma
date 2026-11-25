@@ -1,5 +1,7 @@
 import { mountedAnchors } from './mounted-anchors';
+import { mountedControls } from './mounted-controls';
 import { committedTree, type Fiber, fiberOfInstance } from './react-fiber';
+import { rosterOf } from './screen-controls';
 import { readScreen, type ScreenTree } from './screen-tree';
 
 function committedTrees(): Fiber[] {
@@ -25,7 +27,8 @@ function heldViews(): Set<unknown> {
 
 /** The kit components mounted under every `KitProvider`, as a tree of their
  *  public names (`Dialog.Footer`), props and boxes, with the one that holds the
- *  focus marked. */
+ *  focus marked and, on each one that runs a control, its ref, its state and
+ *  what a call may ask of it. */
 export function describeScreen(): ScreenTree {
-  return readScreen(committedTrees(), heldViews());
+  return readScreen(committedTrees(), heldViews(), rosterOf(mountedControls()));
 }

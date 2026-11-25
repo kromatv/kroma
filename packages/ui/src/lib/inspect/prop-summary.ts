@@ -6,7 +6,8 @@ export type PropValue = string | number | boolean | null;
 /** A component's props, bounded in keys and in string length, safe to serialise. */
 export type PropSummary = Readonly<Record<string, PropValue>>;
 
-const MAX_KEYS = 24;
+/** The most entries a summary keeps. */
+export const MAX_KEYS = 24;
 const MAX_KEY = 40;
 const MAX_TEXT = 120;
 const SECRET = '[secret]';
@@ -34,7 +35,8 @@ function tagOf(value: unknown): string {
   return isValidElement(value) ? '[element]' : '[object]';
 }
 
-function summarize(value: unknown): PropValue | undefined {
+/** A value as a primitive, or a short tag for anything else. */
+export function summarize(value: unknown): PropValue | undefined {
   switch (typeof value) {
     case 'undefined':
       return undefined;
@@ -49,6 +51,12 @@ function summarize(value: unknown): PropValue | undefined {
   }
 }
 
+/** Whether a value is an object a reader may look into. */
+export const isObject = (value: unknown): value is object =>
+  typeof value === 'object' && value !== null;
+
+const isText = (value: unknown): boolean => typeof value === 'string';
+
 function holdsSecret(name: string, props: object): boolean {
   return (
     SECRET_NAME.test(name) ||
@@ -59,27 +67,28 @@ function holdsSecret(name: string, props: object): boolean {
   );
 }
 
-function typedSecrets(name: string, props: object): ReadonlySet<string> {
+const both = (props: object, values: object): object =>
+  values === props ? props : { ...props, ...values };
+
+type Hides = (value: unknown) => boolean;
+
+function typedSecrets(name: string, props: object, hides: Hides): ReadonlySet<string> {
   if (!holdsSecret(name, props)) {
     return NOTHING;
   }
-  return new Set([...TYPED].filter((key) => typeof Reflect.get(props, key) === 'string'));
+  return new Set([...TYPED].filter((key) => hides(Reflect.get(props, key))));
 }
 
-/**
- * Reduces the props of the component `name` to at most a few dozen JSON-safe
- * entries, with long names and long strings cut. What was typed into a field that hides it (a password, a PIN, a
- * one-time code) is never reported, only that there is a value.
- */
-export function summarizeProps(name: string, props: unknown): PropSummary {
-  const summary: Record<string, PropValue> = {};
-  if (typeof props !== 'object' || props === null) {
-    return summary;
-  }
-  const hidden = typedSecrets(name, props);
-  const keys = Object.keys(props);
+/** The entries of `values`, at most {@link MAX_KEYS} of them plus a `…` entry
+ *  counting the rest, each name cut and each value as `read` reduces it. */
+export function summarizeEntries<T>(
+  values: object,
+  read: (value: unknown, key: string) => T | undefined,
+): Record<string, T | string> {
+  const summary: Record<string, T | string> = {};
+  const keys = Object.keys(values);
   for (const key of keys.slice(0, MAX_KEYS)) {
-    const value = hidden.has(key) ? SECRET : summarize(Reflect.get(props, key));
+    const value = read(Reflect.get(values, key), key);
     if (value !== undefined) {
       summary[cut(key, MAX_KEY)] = value;
     }
@@ -88,4 +97,34 @@ export function summarizeProps(name: string, props: unknown): PropSummary {
     summary['…'] = `+${keys.length - MAX_KEYS}`;
   }
   return summary;
+}
+
+type Summarized = { name: string; props: unknown; values: unknown };
+
+/** How a summary reduces a value, and which typed values it hides. */
+export type Reader<T> = { read: (value: unknown) => T | undefined; hides: Hides };
+
+/** The entries of `values`, with what was typed into a field that hides it
+ *  reported as `[secret]`. */
+export function summarizeHiding<T>(
+  { name, props, values }: Summarized,
+  { read, hides }: Reader<T>,
+): Readonly<Record<string, T | string>> {
+  if (!isObject(props) || !isObject(values)) {
+    return {};
+  }
+  const hidden = typedSecrets(name, both(props, values), hides);
+  return summarizeEntries(values, (value, key) => (hidden.has(key) ? SECRET : read(value)));
+}
+
+const PROPS: Reader<PropValue> = { read: summarize, hides: isText };
+
+/**
+ * Reduces the props of the component `name` to at most a few dozen JSON-safe
+ * entries, with long names and long strings cut. What was typed into a field that hides it (a password, a PIN, a
+ * one-time code) is never reported, only that there is a value. Given `values`,
+ * it reduces those instead and reads `props` only to know what to hide.
+ */
+export function summarizeProps(name: string, props: unknown, values: unknown = props): PropSummary {
+  return summarizeHiding({ name, props, values }, PROPS);
 }

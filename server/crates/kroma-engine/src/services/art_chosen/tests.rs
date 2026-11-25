@@ -1,7 +1,10 @@
 use super::*;
 use crate::db::art_beside::{BACKDROP, POSTER, SEASON};
 use crate::db::metadata_core::{ITEM, SHOW};
+use crate::infra::image::test_server::{answer, serve};
 use crate::test_support::{seed_movie, seed_show_episode, test_state};
+
+const PNG: &[u8] = b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR\x00\x00\x00\x02\x00\x00\x00\x03\x08\x02\x00\x00\x00\x36\x88\x49\xd6\x00\x00\x00\x10IDAT\x78\x9c\x63\xf8\xcf\xc0\x00\x44\x0c\x28\x14\x00\x44\xd0\x05\xfb\xa4\xcf\xde\x80\x00\x00\x00\x00IEND\xae\x42\x60\x82";
 
 fn slot<'a>(kind: &'a str, id: &'a str, role: &'a str) -> Slot<'a> {
     Slot { kind, id, role }
@@ -95,5 +98,49 @@ fn resetting_a_season_tells_every_client_to_load_its_show_again() {
     assert_eq!(
         sent.payload_for("anyone"),
         Some(r#"{"type":"show.updated","id":"sh1"}"#)
+    );
+}
+
+#[test]
+fn the_picture_a_link_serves_is_shown_as_an_upload_is() {
+    let state = test_state();
+    seed_movie(&state, "m1");
+    let base = serve(|_| vec![answer("200 OK", "Content-Type: image/png\r\n", PNG)]);
+
+    let choice = choose_link(
+        &state,
+        slot(ITEM, "m1", POSTER),
+        &format!("{base}/poster.png"),
+    )
+    .unwrap();
+
+    let chosen = db::art_chosen::chosen(&state.db, ITEM, "m1").unwrap();
+    let shown = chosen.get(POSTER).expect("a chosen poster");
+    assert!(shown.starts_with("/api/images/chosen-"));
+    assert_eq!(choice, Choice::Shown(shown.clone()));
+}
+
+#[test]
+fn a_link_that_serves_no_picture_is_refused() {
+    let state = test_state();
+    seed_movie(&state, "m1");
+    let base = serve(|_| vec![answer("200 OK", "", b"not a picture")]);
+
+    let unreachable = choose_link(&state, slot(ITEM, "m1", POSTER), "file:///etc/passwd").unwrap();
+    let unreadable =
+        choose_link(&state, slot(ITEM, "m1", POSTER), &format!("{base}/page")).unwrap();
+    let ghost = choose_link(
+        &state,
+        slot(ITEM, "ghost", POSTER),
+        "https://images.example/p.png",
+    )
+    .unwrap();
+
+    assert_eq!(unreachable, Choice::Unreachable);
+    assert_eq!(unreadable, Choice::Unreadable);
+    assert_eq!(ghost, Choice::NoSuchTitle);
+    assert_eq!(
+        db::art_chosen::chosen(&state.db, ITEM, "m1").unwrap(),
+        Default::default()
     );
 }

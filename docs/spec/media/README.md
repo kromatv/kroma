@@ -227,6 +227,10 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
   with an episode on disk, from the show's page. It comes before the poster kept beside the
   season's files and the fetched one (MEDIA-53) until the person removes it, and a metadata
   refresh keeps it.
+- **MEDIA-57** (SHIPPED) - Each picture a person who manages the library can upload
+  (MEDIA-50, MEDIA-54, MEDIA-55, MEDIA-56) can instead be taken from the address of an image
+  on the internet. KROMA fetches it once and keeps it as if it was uploaded, and never fetches
+  an address on the server's own machine or network.
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.

@@ -6,19 +6,24 @@ import {
   childOf,
   componentOf,
   type Fiber,
+  heldByHook,
   isHidden,
   isHost,
   propsOf,
   siblingOf,
 } from './react-fiber';
+import { type Roster, type ScreenControl, screenControl } from './screen-controls';
 
 /** A mounted kit component: its public name, its props, its box, whether it
- *  holds the focus, and the kit components under it. */
+ *  holds the focus, the control it runs, and the kit components under it. A
+ *  component the kit did not name is here too when it runs a control, under
+ *  the control's kind. */
 export type KitNode = {
   name: string;
   props: PropSummary;
   box: HostBox | null;
   focused?: true;
+  control?: ScreenControl;
   children: KitNode[];
 };
 
@@ -27,12 +32,24 @@ export type ScreenTree = { fibers: number; nodes: KitNode[] };
 
 type Visit = { fiber: Fiber; owner: KitNode };
 
-function nodeOf(fiber: Fiber): KitNode | null {
-  const name = componentName(componentOf(fiber));
+const NO_CONTROLS: Roster = new Map();
+
+function nodeOf(fiber: Fiber, roster: Roster): KitNode | null {
+  const mounted = heldByHook(fiber, roster);
+  const name = componentName(componentOf(fiber)) ?? mounted?.control.definition.name;
   if (name === undefined) {
     return null;
   }
-  return { name, props: summarizeProps(name, propsOf(fiber)), box: hostBox(fiber), children: [] };
+  const node: KitNode = {
+    name,
+    props: summarizeProps(name, propsOf(fiber)),
+    box: hostBox(fiber),
+    children: [],
+  };
+  if (mounted) {
+    node.control = screenControl(name, fiber, mounted);
+  }
+  return node;
 }
 
 function push(pending: Visit[], fiber: Fiber | null, owner: KitNode): void {
@@ -48,9 +65,14 @@ function markFocus(fiber: Fiber, owner: KitNode, held: ReadonlySet<unknown>): vo
 }
 
 /** Walks each committed tree once, depth first, keeping only the components the
- *  kit named (`componentName`) and marking the nearest one around each element
- *  in `held`, the elements that hold the focus. */
-export function readScreen(trees: Iterable<Fiber>, held: ReadonlySet<unknown>): ScreenTree {
+ *  kit named (`componentName`) and those that run a control of `roster`, and
+ *  marking the nearest one around each element in `held`, the elements that
+ *  hold the focus. */
+export function readScreen(
+  trees: Iterable<Fiber>,
+  held: ReadonlySet<unknown>,
+  roster: Roster = NO_CONTROLS,
+): ScreenTree {
   const top: KitNode = { name: '', props: {}, box: null, children: [] };
   const pending: Visit[] = [];
   for (const tree of trees) {
@@ -66,7 +88,7 @@ export function readScreen(trees: Iterable<Fiber>, held: ReadonlySet<unknown>): 
       continue;
     }
     markFocus(fiber, owner, held);
-    const node = nodeOf(fiber);
+    const node = nodeOf(fiber, roster);
     if (node) {
       owner.children.push(node);
     }

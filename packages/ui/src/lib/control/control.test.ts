@@ -77,6 +77,16 @@ describe('a control that runs itself', () => {
     expect(onValueChange).toHaveBeenCalledWith(3, expect.objectContaining({ reason: 'drag' }));
   });
 
+  it('keeps the reason of the change its setter passes on', () => {
+    const onValueChange = vi.fn();
+    const outer = createControl(counter, { onValueChange }, null);
+    const inner = createControl(counter, { value: 0, onValueChange: outer.actions.setValue }, null);
+
+    inner.actions.jump(3);
+
+    expect(onValueChange).toHaveBeenCalledWith(3, expect.objectContaining({ reason: 'jump' }));
+  });
+
   it('keeps its value when the app cancels the change', () => {
     const control = createControl(counter, { onValueChange: refuse }, null);
 
@@ -88,6 +98,15 @@ describe('a control that runs itself', () => {
 });
 
 describe('a control the app owns', () => {
+  it('keeps the props of the render that last committed', () => {
+    const control = createControl(counter, { value: 1 }, null);
+    const next = { value: 2, step: 4 };
+
+    control.sync(next);
+
+    expect(control.props()).toBe(next);
+  });
+
   it('reads the value from the props it was last handed', () => {
     const control = createControl(counter, { value: 1 }, null);
 
@@ -209,6 +228,17 @@ describe('what a component renders from', () => {
 });
 
 describe('a control under an engine', () => {
+  it('has a short name there that stays its own', () => {
+    const engine = createControlEngine();
+    createControl(counter, {}, engine).attach();
+    createControl(counter, {}, engine).attach();
+
+    const names = engine.controls().map(engine.ref);
+
+    expect(names).toEqual(['c1', 'c2']);
+    expect(engine.controls().map(engine.ref)).toEqual(names);
+  });
+
   it('is listed only while it is attached', () => {
     const engine = createControlEngine();
     const control = createControl(counter, {}, engine);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { restOf } from './control-props';
-import { defineControl } from './define-control';
+import { defineControl, typed } from './define-control';
 
 const select = defineControl('select', {
   state: { open: false, value: '' },
@@ -40,6 +40,24 @@ describe('a definition', () => {
 
     expect(plain.options).toEqual({});
     expect(plain.actions).toEqual({});
+  });
+
+  it('starts a key from the value `typed` was given', () => {
+    const chart = defineControl('chart', { state: { active: typed<number | null>(null) } });
+
+    expect(chart.state).toEqual({ active: null });
+  });
+
+  it('lists the reasons its setters give', () => {
+    const menu = defineControl('menu', { state: { open: false }, reasons: ['trigger', 'back'] });
+
+    expect(menu.reasons).toEqual(['trigger', 'back']);
+  });
+
+  it('lists no reason when it declares none', () => {
+    const plain = defineControl('plain', { state: { open: false } });
+
+    expect(plain.reasons).toEqual([]);
   });
 
   it('refuses an action named like one of its setters', () => {

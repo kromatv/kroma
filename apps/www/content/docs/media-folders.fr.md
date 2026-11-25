@@ -141,6 +141,11 @@ un cadre à sa forme, 2:3 ou 16:9 : déplacez l'image, zoomez ou tournez-la, pui
 choisissez **Utiliser cette image**. Un logo part tel quel et garde sa
 transparence. Il faut le droit de gérer la bibliothèque.
 
+Au lieu d'un fichier, **Depuis un lien** prend l'adresse d'une image sur
+Internet. KROMA la télécharge une fois et la garde telle quelle, sans cadre.
+Une adresse de votre propre réseau, comme celle de votre NAS, est refusée :
+téléchargez l'image puis envoyez-la.
+
 ### Titres et résumés des fichiers .nfo
 
 Un titre peut prendre son nom, son année, son résumé et ses genres dans un

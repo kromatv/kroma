@@ -10,6 +10,7 @@
   "error.forbiddenBody": "Votre compte n'a pas accès à cette page.",
   "error.forbiddenTitle": "Accès refusé",
   "error.home": "Retour à l'accueil",
+  "error.imageUnreachable": "KROMA n'a pas pu récupérer d'image à cette adresse",
   "error.imageUnreadable": "Ce fichier n'est pas une image lisible par KROMA",
   "error.indexerNotFound": "Indexeur introuvable",
   "error.internal": "Erreur interne",

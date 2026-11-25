@@ -2,8 +2,8 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{
-    demo_item_id, demo_show_id, get, raw, seed_playable_item, seed_session, test_app, upload,
-    TestApp,
+    demo_item_id, demo_show_id, get, raw, seed_playable_item, seed_session, send, test_app,
+    upload, TestApp,
 };
 use crate::db;
 use crate::db::art_beside::POSTER;
@@ -247,4 +247,32 @@ async fn a_file_that_is_not_a_picture_is_refused() {
 
     assert_eq!(unreadable, StatusCode::UNSUPPORTED_MEDIA_TYPE);
     assert_eq!(empty, StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn a_link_to_the_servers_own_network_is_never_fetched() {
+    let t = test_app();
+    let film = seed_playable_item(&t.state, "Heat", b"film");
+    let uri = format!("/api/art/item/{film}/poster/link");
+
+    let (local, said) = send(
+        &t.app,
+        "POST",
+        &uri,
+        Some(&t.token),
+        Some(json!({ "url": "http://127.0.0.1:4040/api/images/x.png" })),
+    )
+    .await;
+    let (garbled, _) = send(&t.app, "POST", &uri, Some(&t.token), Some(json!({}))).await;
+
+    assert_eq!(local, StatusCode::UNPROCESSABLE_ENTITY);
+    assert!(
+        said.to_string().contains("could not fetch an image"),
+        "{said}"
+    );
+    assert!(garbled.is_client_error());
+    assert_eq!(
+        db::art_chosen::chosen(&t.state.db, ITEM, &film).expect("read the chosen art"),
+        Default::default()
+    );
 }
