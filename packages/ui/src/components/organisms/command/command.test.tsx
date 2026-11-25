@@ -326,7 +326,7 @@ describe('Command', () => {
     );
     expect(screen.queryByRole('button', { name: 'Button' })).toBeNull();
     fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'menu' } });
-    expect(typed).toHaveBeenCalledWith('menu');
+    expect(typed).toHaveBeenCalledWith('menu', expect.objectContaining({ source: 'user' }));
     // Controlled: the list stays where its caller put it.
     expect(screen.getByRole('button', { name: 'Chip' })).toBeTruthy();
   });

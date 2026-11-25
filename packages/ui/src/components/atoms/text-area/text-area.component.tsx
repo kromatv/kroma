@@ -20,6 +20,7 @@ import { Text } from '#ui/components/atoms/text';
 import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret.component';
 import { useContentHeight } from '#ui/lib/content-height.hook';
+import { type ChangeDetails, defineControl, useControl } from '#ui/lib/control';
 import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import {
   CONTROL,
@@ -31,12 +32,11 @@ import {
   useEntryDefaults,
   useEntryFontSize,
 } from '#ui/lib/field-shell';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 
 interface TextAreaProps extends Omit<BoxProps, 'children' | 'ring'> {
   value?: string;
   defaultValue?: string;
-  onValueChange?: (next: string) => void;
+  onValueChange?: (next: string, details: ChangeDetails) => void;
   /** After the entry takes focus; see <TextField>. */
   onFocus?: () => void;
   /** After the entry loses focus: the commit point of a save-on-blur field. */
@@ -59,6 +59,8 @@ interface TextAreaProps extends Omit<BoxProps, 'children' | 'ring'> {
   flat?: boolean;
 }
 
+const textAreaControl = defineControl('text-area', { state: { value: '' } });
+
 const SHRINK = style({ flexShrink: 1 });
 
 const entryOf = (
@@ -79,7 +81,7 @@ const entryOf = (
   );
 function TextArea({
   value: valueProp,
-  defaultValue = '',
+  defaultValue,
   onValueChange,
   onFocus,
   onBlur,
@@ -105,7 +107,11 @@ function TextArea({
   const metrics = useControlMetrics(size);
   const fontSize = useEntryFontSize(metrics.fontSize);
   const theme = useTheme();
-  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
+  const [{ value, setValue }] = useControl(textAreaControl, {
+    value: valueProp,
+    defaultValue,
+    onValueChange,
+  });
   const within = useFocusWithin(onFocus, onBlur);
   const input = useRef<TextInput>(null);
 

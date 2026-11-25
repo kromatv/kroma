@@ -1347,7 +1347,6 @@
     "packages/ui/src/components/molecules/otp-field/otp-field.verify-flow.demo.tsx": 1,
     "packages/ui/src/components/molecules/pagination/pagination.component.tsx": 1,
     "packages/ui/src/components/molecules/person-card/person-card.component.tsx": 1,
-    "packages/ui/src/components/molecules/pin-field/pin-field.component.tsx": 1,
     "packages/ui/src/components/molecules/poster-card/poster-card.component.tsx": 1,
     "packages/ui/src/components/molecules/segment-group/segment-group-item.tsx": 1,
     "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx": 2,

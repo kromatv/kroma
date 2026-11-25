@@ -44,10 +44,16 @@ describe('PinField', () => {
 
     press('1');
     press('2');
-    expect(onValueChange).toHaveBeenLastCalledWith('12');
+    expect(onValueChange).toHaveBeenLastCalledWith(
+      '12',
+      expect.objectContaining({ reason: 'append' }),
+    );
 
     press('Backspace');
-    expect(onValueChange).toHaveBeenLastCalledWith('1');
+    expect(onValueChange).toHaveBeenLastCalledWith(
+      '1',
+      expect.objectContaining({ reason: 'erase' }),
+    );
   });
 
   it('hears nothing without a keyboard, or while it is disabled', () => {

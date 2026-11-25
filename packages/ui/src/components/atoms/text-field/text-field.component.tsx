@@ -15,13 +15,13 @@ import {
 import { type ReactNode, type RefObject, useRef, useState } from 'react';
 import { type StyleProp, TextInput, type TextInputProps, type TextStyle } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
-import { Focusable } from '#ui/components/atoms/focusable';
 import { useFrostCoat } from '#ui/components/atoms/frost';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 
 import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret.component';
+import { type ChangeDetails, defineControl, useControl } from '#ui/lib/control';
 import {
   type ControlSize,
   controlRadius,
@@ -34,7 +34,7 @@ import {
 } from '#ui/lib/field-shell';
 import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import { useGroupMember } from '#ui/lib/group-shape';
-import { useControllable } from '#ui/lib/use-controllable.hook';
+import { REVEAL_SIZE, RevealButton } from './text-field-reveal.component';
 
 type TextFieldType = 'text' | 'email' | 'password' | 'url' | 'search' | 'number';
 
@@ -50,7 +50,7 @@ const TYPE_PROPS: Record<TextFieldType, Partial<TextInputProps>> = {
 interface TextFieldProps extends Omit<BoxProps, 'children' | 'ring'> {
   value?: string;
   defaultValue?: string;
-  onValueChange?: (next: string) => void;
+  onValueChange?: (next: string, details: ChangeDetails) => void;
   type?: TextFieldType;
   onSubmit?: () => void;
   /** After the entry takes focus. A shell drawn AROUND this field (see
@@ -89,11 +89,10 @@ interface TextFieldProps extends Omit<BoxProps, 'children' | 'ring'> {
   flat?: boolean;
 }
 
+const textFieldControl = defineControl('text-field', { state: { value: '' } });
+
 const typeOf = (fontSize: number, lineHeight: number, scope: StyleScope) =>
   sharedStyle(`text-field:type:${fontSize}:${lineHeight}`, { fontSize, lineHeight }, scope);
-
-const revealAt = (right: number, scope: StyleScope) =>
-  sharedStyle(`text-field:reveal:${right}`, { right }, scope);
 
 const inputOf = (fontSize: number, minHeight: number, scope: StyleScope) =>
   sharedStyle(
@@ -103,7 +102,7 @@ const inputOf = (fontSize: number, minHeight: number, scope: StyleScope) =>
   );
 function TextField({
   value: valueProp,
-  defaultValue = '',
+  defaultValue,
   onValueChange,
   type = 'text',
   onSubmit,
@@ -141,7 +140,12 @@ function TextField({
   const metrics = useControlMetrics(size ?? group.size ?? undefined);
   const CONTENT = metrics.line;
   const fontSize = useEntryFontSize(metrics.fontSize);
-  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
+  const [{ value, setValue }] = useControl(textFieldControl, {
+    value: valueProp,
+    defaultValue,
+    onValueChange,
+    disabled: readOnly,
+  });
   const [revealed, setRevealed] = useState(false);
   const own = useRef<TextInput>(null);
   const input = entryRef ?? own;
@@ -275,43 +279,9 @@ function SoftValue({
   );
 }
 
-function RevealButton({
-  revealed,
-  onToggle,
-  right,
-}: Readonly<{ revealed: boolean; onToggle: () => void; right: number }>) {
-  const scope = useStyleScope();
-
-  const s = useStyles(sDefinition);
-
-  return (
-    <Box absolute style={[s.revealSlot, revealAt(right, scope)]}>
-      <Focusable
-        label={revealed ? 'Hide password' : 'Show password'}
-        ring="inside"
-        onPress={onToggle}
-        style={s.reveal}
-        states={REVEAL_STATES}
-      >
-        <Icon
-          name={revealed ? 'eye-off' : 'eye'}
-          size={REVEAL_SIZE}
-          thickness={1.8}
-          color="text/50"
-        />
-      </Focusable>
-    </Box>
-  );
-}
-
-const REVEAL_SIZE = 20;
-const REVEAL_STATES = { hover: { bg: 'tint/10' } } as const;
-
 const sDefinition = styles({
   input: { flex: true, minW: 0, borderWidth: 0, bg: 'transparent', p: 0 },
   tvValue: { shrink: 1 },
-  revealSlot: { top: 0, bottom: 0, justify: 'center' },
-  reveal: { p: 4, m: -4, radius: 'md' },
 });
 
 export type { TextFieldProps, TextFieldType };
