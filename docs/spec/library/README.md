@@ -303,6 +303,10 @@ from the provider, the `.nfo` file's `<originaltitle>` (LIB-84) comes before it,
 person writes (LIB-83) comes before both, the same in every language. Search finds a title by
 its original title too.
 
+**LIB-95** (SHIPPED) - A film or a show shows its tagline above its summary. It comes from the
+provider, the `.nfo` file's `<tagline>` (LIB-84) comes before it, and what a person writes
+(LIB-83) comes before both, the same in every language.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

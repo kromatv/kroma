@@ -157,6 +157,7 @@ fn in_file() -> TitleEdit {
         title: Some("Tape three".into()),
         original_title: None,
         sort_title: None,
+        tagline: None,
         overview: Some("Found in the attic.".into()),
         year: Some(2004),
         released: None,
