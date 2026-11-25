@@ -15,8 +15,8 @@ const sDefinition = styles({
     position: 'sticky',
     bottom: 16,
     zIndex: 3,
-    paddingLeft: 'var(--gutter-web)',
-    paddingRight: 'var(--gutter-web)',
+    paddingStart: 'var(--gutter-web)',
+    paddingEnd: 'var(--gutter-web)',
     mt: 20,
   },
 });

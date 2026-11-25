@@ -74,7 +74,7 @@ export function PasswordDialog({ onClose }: Readonly<{ onClose: () => void }>) {
                 />
               </Box>
               {strength.labelKey ? (
-                <Text variant="meta" color={strength.color} minW={54} textAlign="right">
+                <Text variant="meta" color={strength.color} minW={54} textAlign="end">
                   {t(strength.labelKey)}
                 </Text>
               ) : null}

@@ -88,18 +88,18 @@ function episodeStill(
         />
       </Box>
       {at.tag ? (
-        <Box absolute top={10} left={10} px={9} py={4} radius={cornerRadius.badge} bg={CHIP_BG}>
+        <Box absolute top={10} start={10} px={9} py={4} radius={cornerRadius.badge} bg={CHIP_BG}>
           <Text style={resolveStyles(sDefinition, scope).tagChip}>{at.tag}</Text>
         </Box>
       ) : null}
       {at.runtime ? (
-        <Box absolute bottom={11} right={11} px={8} py={3} radius={cornerRadius.xs} bg={CHIP_BG}>
+        <Box absolute bottom={11} end={11} px={8} py={3} radius={cornerRadius.xs} bg={CHIP_BG}>
           <Text style={resolveStyles(sDefinition, scope).runtimeChip}>{at.runtime}</Text>
         </Box>
       ) : null}
-      {at.watched ? <WatchedBadge corner="top-right" /> : null}
+      {at.watched ? <WatchedBadge corner="top-end" /> : null}
       {at.inProgress ? (
-        <Box absolute left={0} right={0} bottom={0}>
+        <Box absolute start={0} end={0} bottom={0}>
           <Progress value={(at.progress ?? 0) / 100} rounded={false} />
         </Box>
       ) : null}

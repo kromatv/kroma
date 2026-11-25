@@ -65,7 +65,9 @@ function pinnedOpen(flat: Record<string, unknown>): boolean {
   if (flat.position !== 'absolute') {
     return false;
   }
-  return pinned(flat, 'top', 'bottom') || pinned(flat, 'left', 'right');
+  return (
+    pinned(flat, 'top', 'bottom') || pinned(flat, 'left', 'right') || pinned(flat, 'start', 'end')
+  );
 }
 
 /**

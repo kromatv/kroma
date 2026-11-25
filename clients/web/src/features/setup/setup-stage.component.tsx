@@ -18,7 +18,7 @@ const STAGE_LINE = {
 const sDefinition = styles({
   words: {
     position: 'absolute',
-    right: 64,
+    end: 64,
     bottom: 72,
     zIndex: 3,
     display: 'flex',
@@ -41,10 +41,10 @@ export function SetupStage({ step }: Readonly<{ step: SetupStep }>) {
   const t = useT();
   return (
     <div key={step} className={classes(s.words)}>
-      <Text variant="overline" color="white/60" textAlign="right">
+      <Text variant="overline" color="white/60" textAlign="end">
         {t('setup.stageEyebrow')}
       </Text>
-      <Text variant="h1" color="white" textAlign="right">
+      <Text variant="h1" color="white" textAlign="end">
         {t(STAGE_LINE[step])}
       </Text>
     </div>

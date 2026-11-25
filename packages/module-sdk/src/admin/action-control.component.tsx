@@ -35,7 +35,7 @@ export function ActionControl({ actionKey }: Readonly<{ actionKey: string }>) {
         }}
       />
       {result ? (
-        <Text variant="overline" color={result.ok ? 'success' : 'danger'} textAlign="right">
+        <Text variant="overline" color={result.ok ? 'success' : 'danger'} textAlign="end">
           {result.text}
         </Text>
       ) : null}

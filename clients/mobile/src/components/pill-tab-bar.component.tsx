@@ -66,7 +66,7 @@ export function PillTabBar({
 }
 
 const sDefinition = styles({
-  dock: { absolute: true, right: 0, left: 0, px: 12, align: 'center' },
+  dock: { absolute: true, end: 0, start: 0, px: 12, align: 'center' },
   shadow: {
     self: 'stretch',
     radius: cornerRadius.pill,

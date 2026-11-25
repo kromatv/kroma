@@ -53,7 +53,7 @@ function sourceKey(origin: ModuleOrigin | undefined): MessageKey {
 // The label takes the cell's free space and right-aligns inside it: a longer
 // word ("Desactive") then grows leftwards instead of pushing the switch, so both
 // columns line up down the list whatever each row says.
-const sDefinition = styles({ stateLabel: { flex: true, textAlign: 'right' } });
+const sDefinition = styles({ stateLabel: { flex: true, textAlign: 'end' } });
 
 function InstalledRow({
   m,

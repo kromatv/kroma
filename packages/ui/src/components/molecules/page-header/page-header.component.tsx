@@ -160,7 +160,7 @@ const sDefinition = styles({
   minW: { minWidth: 0 },
   quiet: { fontWeight: '400' },
   subtitle: { mt: 6 },
-  push: { marginLeft: 'auto' },
+  push: { marginStart: 'auto' },
 });
 const BACK_GAP = 14;
 const GLYPH_GAP = 10;

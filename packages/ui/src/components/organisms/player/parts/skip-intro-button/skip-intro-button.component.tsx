@@ -60,7 +60,7 @@ export function SkipIntroButton({
   // Scaled off the SAME constant as the row beneath it: unscaled, the two right
   // edges would disagree below the design width.
   return (
-    <Box absolute bottom={lift} right={px(GUTTER)} z={30}>
+    <Box absolute bottom={lift} end={px(GUTTER)} z={30}>
       <Button
         variant={within.focused ? 'primary' : 'scrim'}
         focusHandle={handle}

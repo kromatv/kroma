@@ -100,7 +100,7 @@ export function StageFlashView({ flash, scale = 1, lift }: Readonly<StageFlashPr
       : t('player.volumeLevel', { percent: Math.round(held.level * 100) });
 
   return (
-    <Box absolute left={0} right={0} bottom={lift} z={12} align="center" style={s.inert}>
+    <Box absolute start={0} end={0} bottom={lift} z={12} align="center" style={s.inert}>
       <Animated.View style={fade.style}>
         <Box
           row

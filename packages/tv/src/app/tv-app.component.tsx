@@ -204,7 +204,7 @@ export function TvApp({
                                                       {/* Above the router so notices survive a screen
                                 change; they never take focus. */}
                                                       <Toaster
-                                                        position="top-right"
+                                                        position="top-end"
                                                         inset={TOAST_INSET}
                                                       />
                                                     </OverlayHost>

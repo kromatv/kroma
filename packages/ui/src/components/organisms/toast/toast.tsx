@@ -23,24 +23,24 @@ const DEFAULT_INSET = 32;
 const SLIDE = 8;
 
 export type ToastPosition =
-  | 'top-left'
+  | 'top-start'
   | 'top-center'
-  | 'top-right'
-  | 'bottom-left'
+  | 'top-end'
+  | 'bottom-start'
   | 'bottom-center'
-  | 'bottom-right';
+  | 'bottom-end';
 
-const DEFAULT_POSITION: ToastPosition = 'top-right';
+const DEFAULT_POSITION: ToastPosition = 'top-end';
 
 const NO_POINTER: ViewStyle = styles({ none: { pointerEvents: 'none' } }).none;
 
 const COLUMNS = {
-  'top-left': { top: true, align: 'flex-start' },
+  'top-start': { top: true, align: 'flex-start' },
   'top-center': { top: true, align: 'center' },
-  'top-right': { top: true, align: 'flex-end' },
-  'bottom-left': { top: false, align: 'flex-start' },
+  'top-end': { top: true, align: 'flex-end' },
+  'bottom-start': { top: false, align: 'flex-start' },
   'bottom-center': { top: false, align: 'center' },
-  'bottom-right': { top: false, align: 'flex-end' },
+  'bottom-end': { top: false, align: 'flex-end' },
 } as const satisfies Record<
   ToastPosition,
   { top: boolean; align: 'flex-start' | 'center' | 'flex-end' }
@@ -93,7 +93,7 @@ export function toast(options: ToastOptions): void {
 }
 
 export interface ToasterProps {
-  /** Where notices sit unless one names its own. TVs read top-right, next to
+  /** Where notices sit unless one names its own. TVs read `top-end`, next to
    * the status cluster they are usually about; phones and browsers expect the
    * bottom. */
   position?: ToastPosition;
@@ -220,8 +220,8 @@ function ToastColumn({
       absolute
       top={top ? gutters.top : undefined}
       bottom={top ? undefined : gutters.bottom}
-      left={gutters.x}
-      right={gutters.x}
+      start={gutters.x}
+      end={gutters.x}
       gap={10}
       align={align}
     >

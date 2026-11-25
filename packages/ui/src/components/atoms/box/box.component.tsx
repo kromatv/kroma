@@ -1,3 +1,4 @@
+import type { TextDirection } from '@kromatv/i18n';
 import { useStyleScope } from '#ui/core/style-context';
 import type { StyleScope } from '#ui/core/style-scope';
 
@@ -6,6 +7,7 @@ import { type StyleProp, View, type ViewProps, type ViewStyle } from 'react-nati
 import { type BoxStyleProps, splitShorthand, styles, useBreakpointStep } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { sharedBoxStyle } from '#ui/lib/box-style';
+import { directionStyle, inDirection } from '#ui/lib/direction';
 import { Slot } from '#ui/lib/slot.component';
 import { isStaticHost, StaticView } from '#ui/lib/static-view.component';
 
@@ -23,6 +25,9 @@ interface BoxProps extends BoxStyleProps, Omit<ViewProps, 'style'> {
   /** Browser targets only: becomes `data-*` on the host element. Declared here
    *  because only react-native-web's own `ViewProps` carries it. */
   dataSet?: Record<string, string | number | undefined>;
+  /** Lays the box and everything in it out one way whatever the language, for
+   *  what reads the same in every script: transport controls, a seek bar. */
+  dir?: TextDirection;
 }
 
 // A style, never the prop of the same name: react-native-web deprecated the
@@ -43,23 +48,25 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
 
   const split = splitShorthand(props);
   const plain = ref == null && isStaticHost(split.rest);
-  const hit = pointerEvents ? HIT[pointerEvents] : null;
+  const tail = [pointerEvents ? HIT[pointerEvents] : null, directionStyle(props.dir), style];
   // A box holding a breakpoint object is a different component, not a branch:
   // it is the only one that has to follow the design width, and a hook here
   // would tax every box in the app with a subscription it never reads.
   if (split.breakpoints !== 0) {
-    return (
-      <FluidBox host={hostOf(asChild, plain)} split={split} style={[hit, style]} ref={ref}>
+    return inDirection(
+      props.dir,
+      <FluidBox host={hostOf(asChild, plain)} split={split} style={tail} ref={ref}>
         {children}
-      </FluidBox>
+      </FluidBox>,
     );
   }
-  const hostStyle = [layoutOf(split, 0, scope), hit, style];
+  const hostStyle = [layoutOf(split, 0, scope), ...tail];
   if (asChild) {
-    return (
+    return inDirection(
+      props.dir,
       <Slot {...split.rest} ref={ref} style={hostStyle}>
         {children}
-      </Slot>
+      </Slot>,
     );
   }
   if (plain) {
@@ -69,10 +76,11 @@ function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonl
       </StaticView>
     );
   }
-  return (
+  return inDirection(
+    props.dir,
     <View {...split.rest} ref={ref} style={hostStyle}>
       {children}
-    </View>
+    </View>,
   );
 }
 
@@ -88,7 +96,7 @@ function hostOf(asChild: boolean | undefined, plain: boolean) {
 interface FluidBoxProps {
   host: ReturnType<typeof hostOf>;
   split: Split;
-  style?: StyleProp<ViewStyle>;
+  style?: readonly StyleProp<ViewStyle>[];
   ref?: Ref<View>;
   children?: ReactNode;
 }
@@ -97,7 +105,7 @@ function FluidBox({ host: Host, split, style, ref, children }: Readonly<FluidBox
   const scope = useStyleScope();
   const step = useBreakpointStep(split.breakpoints);
   return (
-    <Host {...split.rest} ref={ref} style={[layoutOf(split, step, scope), style]}>
+    <Host {...split.rest} ref={ref} style={[layoutOf(split, step, scope), ...(style ?? [])]}>
       {children}
     </Host>
   );

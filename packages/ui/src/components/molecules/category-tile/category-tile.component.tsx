@@ -116,7 +116,7 @@ function CategoryTile({
       <Box aspect={aspect} radius="xl" overflow="hidden" bg="surface1">
         <Img src={art} background={background} position="50% 25%" fill />
         {wash ? <Box fill style={[NO_POINTER, washOf(wash, scope)]} /> : null}
-        <Box absolute left={20} right={20} bottom={16} gap={2}>
+        <Box absolute start={20} end={20} bottom={16} gap={2}>
           {accent ? <Box h={4} w={28} radius="pill" bg={accent} mb={8} /> : null}
           <Box row align="center" gap={8}>
             {icon ? <Icon name={icon} size={GLYPH[size]} color="white" /> : null}

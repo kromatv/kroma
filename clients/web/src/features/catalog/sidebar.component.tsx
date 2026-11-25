@@ -31,9 +31,9 @@ const sDefinition = styles({
     display: 'flex',
     flexDirection: 'column',
     borderWidth: 0,
-    borderRightWidth: 1,
+    borderEndWidth: 1,
     borderStyle: 'solid',
-    borderRightColor: 'var(--kroma-border)',
+    borderEndColor: 'var(--kroma-border)',
     backgroundColor: 'var(--kroma-surface-1)',
   },
   topbar: {
@@ -156,7 +156,7 @@ export function MobileTopbar() {
           open={open}
           onClose={() => setOpen(false)}
           title="KROMA"
-          side="left"
+          side="start"
           width="xs"
           fullBelow={640}
           pad={0}

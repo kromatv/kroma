@@ -35,7 +35,7 @@ const sDefinition = styles({
   list: { m: 0, p: MEMBER_INSET, listStyleType: 'none' },
   listItem: { display: 'block' },
   italic: { fontStyle: 'italic' },
-  episode: { row: true, align: 'center', gap: 16, flex: true, minW: 0, py: 10, pl: 14 },
+  episode: { row: true, align: 'center', gap: 16, flex: true, minW: 0, py: 10, ps: 14 },
   tag: { w: 62, shrink: 0, fontVariant: ['tabular-nums'] },
 });
 

@@ -28,7 +28,7 @@ const ARC_TRANSITION = style({
 });
 
 const FILL_TRANSITION = style({
-  transitionProperty: 'right',
+  transitionProperty: 'left, right',
   transitionDuration: `${motion.duration.base}ms`,
   transitionTimingFunction: ease.out.css,
 });
@@ -61,9 +61,9 @@ export function ProgressArc({
 }
 
 /** The fill of a <Progress> track, easing to `value` (0..1). `style` paints it
- *  and pins it to the track's left edge; the trailing inset is this component's. */
+ *  and pins it to the track's start edge; the trailing inset is this component's. */
 export function ProgressFill({ value, style: fillStyle }: Readonly<ProgressFillProps>) {
   const trailing = `${(1 - value) * 100}%` as const;
 
-  return <View style={[fillStyle, FILL_TRANSITION, { right: trailing }]} />;
+  return <View style={[fillStyle, FILL_TRANSITION, { end: trailing }]} />;
 }

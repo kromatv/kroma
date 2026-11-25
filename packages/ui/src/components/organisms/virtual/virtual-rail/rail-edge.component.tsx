@@ -126,8 +126,8 @@ const sDefinition = styles({
   inert: { pointerEvents: 'none' },
   // Pulled out by FOCUS_BLEED and padded back in, so the strip covers the clip
   // edge while the button stays on the row.
-  edgeStart: { left: -FOCUS_BLEED, align: 'flex-start', pl: FOCUS_BLEED + EDGE_INSET },
-  edgeEnd: { right: -FOCUS_BLEED, align: 'flex-end', pr: FOCUS_BLEED + EDGE_INSET },
+  edgeStart: { start: -FOCUS_BLEED, align: 'flex-start', ps: FOCUS_BLEED + EDGE_INSET },
+  edgeEnd: { end: -FOCUS_BLEED, align: 'flex-end', pe: FOCUS_BLEED + EDGE_INSET },
   arrow: {
     w: 44,
     h: 44,

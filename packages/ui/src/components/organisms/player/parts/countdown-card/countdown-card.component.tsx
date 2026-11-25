@@ -91,7 +91,7 @@ export function CountdownCard({
         <Img src={art ?? null} background={ART_FILL} fill />
         <Box fill style={[s.vignette, gradient(VIGNETTE)]} />
         {secondsLeft == null ? null : (
-          <Box absolute left={px(14)} bottom={px(14)} w={ring} h={ring} center>
+          <Box absolute start={px(14)} bottom={px(14)} w={ring} h={ring} center>
             <Box absolute>
               <ProgressRing
                 value={total > 0 ? clamp01(secondsLeft / total) : 0}

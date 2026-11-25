@@ -27,7 +27,7 @@ export function SecurityCard({
           {t('modulePermissions.title')}
         </Text>
         {groups.length > 0 ? (
-          <Box mr={-12}>
+          <Box me={-12}>
             <Button
               variant="ghost"
               size="sm"

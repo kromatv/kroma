@@ -129,6 +129,7 @@ export function ChromeSurface({
   return (
     <Box
       fill
+      dir="ltr"
       onLayout={(event) => {
         const { width: laidOutWidth, height: laidOutHeight } = event.nativeEvent.layout;
         setBounds((current) =>

@@ -55,7 +55,7 @@ function Footer({ id, sha256 }: Readonly<{ id: string; sha256: string | null }>)
   return (
     <Row gap={8} mt="auto">
       {sha256 ? <ModuleChecksum sha256={sha256} /> : null}
-      <Box shrink={0} ml="auto">
+      <Box shrink={0} ms="auto">
         <Button
           variant="ghost"
           size="sm"

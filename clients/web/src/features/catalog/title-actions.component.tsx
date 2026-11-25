@@ -93,7 +93,7 @@ export function TitleActions(props: Props) {
   const { admin, library } = usePermits();
   const { busy, reprocess } = useReprocess(props);
   return (
-    <Box row align="center" gap={8} ml="auto">
+    <Box row align="center" gap={8} ms="auto">
       {admin && props.kind === 'item' ? (
         <Button
           variant="glass"

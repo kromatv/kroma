@@ -193,7 +193,7 @@ const sDefinition = styles({
   // A box on a text line sits on the baseline, which puts it a couple of points
   // high against the letters beside it; the drop lands it on their optical
   // centre, on the first line of a wrapped item as much as on a short one.
-  task: { mr: space[2], mb: -TASK_DROP },
+  task: { me: space[2], mb: -TASK_DROP },
 });
 
 export {

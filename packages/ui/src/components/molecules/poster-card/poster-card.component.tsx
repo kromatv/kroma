@@ -73,8 +73,8 @@ function PosterCard({
         {watched ? <WatchedBadge /> : null}
         <Box
           absolute
-          left={0}
-          right={0}
+          start={0}
+          end={0}
           bottom={0}
           px={14}
           pt={48}
@@ -92,7 +92,7 @@ function PosterCard({
           </Text>
         </Box>
         <CardProgress value={progress} />
-        {selected ? <Box absolute top={0} left={0} right={0} bottom={0} style={s.ring} /> : null}
+        {selected ? <Box absolute top={0} start={0} end={0} bottom={0} style={s.ring} /> : null}
       </Box>
     </Focusable>
   );

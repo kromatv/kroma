@@ -31,9 +31,9 @@ export const clipStyles = styles({
   clip: {
     absolute: true,
     top: -FOCUS_BLEED,
-    right: -FOCUS_BLEED,
+    end: -FOCUS_BLEED,
     bottom: -FOCUS_BLEED,
-    left: -FOCUS_BLEED,
+    start: -FOCUS_BLEED,
     p: FOCUS_BLEED,
     overflow: 'hidden',
     pointerEvents: 'box-none',
@@ -50,12 +50,12 @@ export const clipStyles = styles({
   column: {
     absolute: true,
     top: 0,
-    right: -FOCUS_BLEED,
+    end: -FOCUS_BLEED,
     bottom: -FOCUS_BLEED,
-    left: -FOCUS_BLEED,
-    pr: FOCUS_BLEED,
+    start: -FOCUS_BLEED,
+    pe: FOCUS_BLEED,
     pb: FOCUS_BLEED,
-    pl: FOCUS_BLEED,
+    ps: FOCUS_BLEED,
     overflow: 'hidden',
   },
 });

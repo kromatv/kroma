@@ -143,7 +143,7 @@ function Tally() {
   );
 }
 
-const HINT = { fontSize: 11.5, marginLeft: 3 } as const;
-const TALLY = { fontSize: 11.5, marginLeft: 'auto' } as const;
+const HINT = { fontSize: 11.5, marginStart: 3 } as const;
+const TALLY = { fontSize: 11.5, marginStart: 'auto' } as const;
 
 export { CommandPalette, entriesOf, isPage, useEscapeKey };

@@ -21,14 +21,14 @@ const COVERS = GPU_MASKS && !PAGE_MASKS;
 const COVER_CLIP: ViewStyle = {
   position: 'absolute',
   top: 0,
-  right: 0,
+  end: 0,
   bottom: 0,
-  left: 0,
+  start: 0,
   overflow: 'hidden',
   zIndex: 10,
 };
 const MASKED = GPU_MASKS;
-const PROBE: ViewStyle = { position: 'absolute', top: 0, left: 0, width: 0, height: 0 };
+const PROBE: ViewStyle = { position: 'absolute', top: 0, start: 0, width: 0, height: 0 };
 const OPAQUE = '#000';
 const REMEASURE_MS = 120;
 const ROOM = 24;
@@ -52,15 +52,15 @@ function withRoom(box: ViewStyle | undefined, face: StyleProp<ViewStyle>) {
       ...grown,
       marginTop: pad(b.marginTop ?? b.marginVertical ?? b.margin) - ROOM,
       marginBottom: pad(b.marginBottom ?? b.marginVertical ?? b.margin) - ROOM,
-      marginLeft: pad(b.marginLeft ?? b.marginHorizontal ?? b.margin) - ROOM,
-      marginRight: pad(b.marginRight ?? b.marginHorizontal ?? b.margin) - ROOM,
+      marginStart: pad(b.marginStart ?? b.marginHorizontal ?? b.margin) - ROOM,
+      marginEnd: pad(b.marginEnd ?? b.marginHorizontal ?? b.margin) - ROOM,
     },
     face: {
       ...f,
       paddingTop: pad(f.paddingTop ?? f.paddingVertical ?? f.padding) + ROOM,
       paddingBottom: pad(f.paddingBottom ?? f.paddingVertical ?? f.padding) + ROOM,
-      paddingLeft: pad(f.paddingLeft ?? f.paddingHorizontal ?? f.padding) + ROOM,
-      paddingRight: pad(f.paddingRight ?? f.paddingHorizontal ?? f.padding) + ROOM,
+      paddingStart: pad(f.paddingStart ?? f.paddingHorizontal ?? f.padding) + ROOM,
+      paddingEnd: pad(f.paddingEnd ?? f.paddingHorizontal ?? f.padding) + ROOM,
     },
   };
 }
@@ -178,8 +178,8 @@ export function ScrollMask({
               style={{
                 position: 'absolute',
                 top: 0,
-                left: 0,
-                right: 0,
+                start: 0,
+                end: 0,
                 height: inset + RAMP,
                 transform: [{ translateY: Animated.add(position.offset, -frame.top) }],
               }}

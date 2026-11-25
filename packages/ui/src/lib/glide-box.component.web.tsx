@@ -3,6 +3,7 @@ import { View, type ViewStyle } from 'react-native';
 import { sharedStyle, useStyleScope } from '#ui/core';
 import { ease } from './ease';
 import type { GlideBoxProps, GlideRect } from './glide-box-types';
+import { MEASURED_ORIGIN } from './measured-origin';
 
 function travelOf(slideX: boolean): string {
   return slideX ? 'transform, width, opacity' : 'left, top, width, height, opacity';
@@ -39,6 +40,7 @@ export function GlideBox({ rect, durationMs, slideX = false, style }: Readonly<G
     <View
       style={[
         style,
+        MEASURED_ORIGIN,
         motion,
         place,
         { top: box.y, width: box.width, height: box.height, opacity: rect ? 1 : 0 },

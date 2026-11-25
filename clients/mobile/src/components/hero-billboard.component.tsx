@@ -154,9 +154,9 @@ const sDefinition = styles({
   wrap: { self: 'center', mt: spacing.sm },
   content: {
     absolute: true,
-    right: spacing.md,
+    end: spacing.md,
     bottom: spacing.md,
-    left: spacing.md,
+    start: spacing.md,
     align: 'center',
     gap: 8,
   },

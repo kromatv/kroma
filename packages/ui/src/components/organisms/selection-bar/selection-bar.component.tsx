@@ -139,8 +139,8 @@ const sDefinition = styles({
     border: 'borderStrong',
   },
   raised: { shadow: 'pop' },
-  middle: { row: true, align: 'center', gap: 4, shrink: 1, minW: 0, pr: 8 },
-  stacked: { shrink: 1, minW: 0, pr: 8 },
+  middle: { row: true, align: 'center', gap: 4, shrink: 1, minW: 0, pe: 8 },
+  stacked: { shrink: 1, minW: 0, pe: 8 },
 });
 
 /**

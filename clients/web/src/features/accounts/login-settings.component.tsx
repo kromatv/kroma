@@ -26,7 +26,7 @@ import { CapabilityChip } from '#web/shared/ui/capability-chip.component';
 // and a scroll container, none of which the kit's vocabulary can spell.
 
 const sDefinition = styles({
-  gear: { position: 'absolute', right: 16, top: 'max(1rem, env(safe-area-inset-top))', zIndex: 20 },
+  gear: { position: 'absolute', end: 16, top: 'max(1rem, env(safe-area-inset-top))', zIndex: 20 },
   layer: {
     position: 'fixed',
     inset: 0,
@@ -61,7 +61,7 @@ function InfoRow({ label, value }: Readonly<{ label: string; value: ReactNode }>
       <Text variant="meta" color="textMuted" shrink={0}>
         {label}
       </Text>
-      <Text variant="meta" lines={1} minW={0} shrink={1} textAlign="right" style={s.value}>
+      <Text variant="meta" lines={1} minW={0} shrink={1} textAlign="end" style={s.value}>
         {value}
       </Text>
     </Row>

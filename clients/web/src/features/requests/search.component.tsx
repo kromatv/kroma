@@ -31,7 +31,7 @@ const TYPES: {
   { value: 'tv', labelKey: 'discover.shows' },
 ];
 
-const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
+const GUTTER = { paddingStart: 'var(--gutter-web)', paddingEnd: 'var(--gutter-web)' } as const;
 
 const sDefinition = styles({
   searchBox: { width: '100%', maxWidth: 672 },
@@ -41,8 +41,8 @@ const sDefinition = styles({
   washClip: { fill: true, overflow: 'hidden', pointerEvents: 'none' },
   wash: {
     position: 'absolute',
-    left: 0,
-    right: 0,
+    start: 0,
+    end: 0,
     top: -80,
     height: 288,
     backgroundImage:

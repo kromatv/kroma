@@ -226,7 +226,7 @@ const sDefinition = styles({
     border: 'border',
   },
   cardUnread: { border: 'accent/25' },
-  row: { row: true, align: 'flex-start', gap: 12, p: spacing.md, pr: 44 },
+  row: { row: true, align: 'flex-start', gap: 12, p: spacing.md, pe: 44 },
   rowPressed: { bg: 'surface2' },
   dot: { w: 6, h: 6, bg: 'accent', radius: cornerRadius.indicator },
   tile: { w: 48, h: 60, radius: radius.md, shrink: 0 },
@@ -238,5 +238,5 @@ const sDefinition = styles({
   meta: { row: true, wrap: true, align: 'center', gap: 8, mt: spacing.sm },
   time: { ...type.small, color: 'textDim' },
   repeat: { ...type.small, color: 'accentText' },
-  more: { absolute: true, top: 6, right: 4 },
+  more: { absolute: true, top: 6, end: 4 },
 });

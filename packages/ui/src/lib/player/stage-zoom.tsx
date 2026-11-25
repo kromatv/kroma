@@ -29,8 +29,8 @@ const ANDROID = Platform.OS === 'android';
 // on the same value as the shrink.
 const CORNER_MASK = style({
   position: 'absolute',
-  left: -CARD_RADIUS,
-  right: -CARD_RADIUS,
+  start: -CARD_RADIUS,
+  end: -CARD_RADIUS,
   top: -CARD_RADIUS,
   bottom: -CARD_RADIUS,
   borderWidth: CARD_RADIUS,

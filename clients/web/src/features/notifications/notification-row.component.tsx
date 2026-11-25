@@ -121,7 +121,7 @@ export function NotificationEntry({
             }
           />
         </ListRow.Root>
-        <Box absolute right={6} top={0} bottom={0} justify="center">
+        <Box absolute end={6} top={0} bottom={0} justify="center">
           {archived ? (
             <RestoreButton title={one.title} id={one.id} />
           ) : (
@@ -175,6 +175,6 @@ function RestoreButton({ title, id }: Readonly<{ title: string; id: Notification
 // Room at the right for the toggle laid over the row, so a long title ellipses
 // before it reaches the button rather than running under it.
 const sDefinition = styles({
-  rowPad: { pl: 8, pr: 46 },
+  rowPad: { ps: 8, pe: 46 },
   tabular: { fontVariantNumeric: 'tabular-nums' },
 });

@@ -84,7 +84,7 @@ describe('the docked bar', () => {
     show(248);
 
     const bar = screen.getByRole('complementary', { name: 'Playing on Salon' });
-    expect(bar.style.left).toBe('248px');
+    expect(bar.style.insetInlineStart).toBe('248px');
   });
 
   it('stops the television and goes back to local playback', () => {

@@ -41,6 +41,7 @@ interface DrawerRootProps {
   /** The sheet's accessible name, and the title of the header the Root draws
    *  when no <Drawer.Header> was composed. */
   title: string;
+  /** The edge it slides in from, `end` by default: the right in a left-to-right language. */
   side?: DrawerSide;
   /** The sheet's step on the kit's width ladder, named for the densest thing it
    *  holds rather than measured in pixels. See {@link SURFACE_WIDTH}. */
@@ -64,7 +65,7 @@ function Root({
   open,
   onClose,
   title,
-  side = 'right',
+  side = 'end',
   width = 'md',
   fullBelow = 0,
   floating = false,
@@ -198,9 +199,9 @@ function edgeOf(side: DrawerSide, inset: number, scope: StyleScope): ViewStyle {
   if (inset) {
     return resolveStyles(sDefinition, scope).card;
   }
-  return side === 'right'
-    ? resolveStyles(sDefinition, scope).panelRight
-    : resolveStyles(sDefinition, scope).panelLeft;
+  return side === 'end'
+    ? resolveStyles(sDefinition, scope).panelEnd
+    : resolveStyles(sDefinition, scope).panelStart;
 }
 
 function defaultHeader(title: string): ReactNode {
@@ -223,8 +224,8 @@ const sDefinition = styles({
   scrim: { bg: 'overlay' },
   scrimActive: { pointerEvents: 'auto' },
   scrimInert: { pointerEvents: 'none' },
-  panelRight: { borderLeftWidth: 1, borderColor: 'borderStrong', h: '100%' },
-  panelLeft: { borderRightWidth: 1, borderColor: 'borderStrong', h: '100%' },
+  panelEnd: { borderStartWidth: 1, borderColor: 'borderStrong', h: '100%' },
+  panelStart: { borderEndWidth: 1, borderColor: 'borderStrong', h: '100%' },
   card: { border: 'borderStrong', radius: 'xl', overflow: 'hidden', h: '100%' },
 });
 

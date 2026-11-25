@@ -45,7 +45,7 @@ function Panel({ onClose, children }: Readonly<{ onClose: () => void; children: 
 
   useEscapeKey(onClose);
   return (
-    <Box absolute top="100%" right={0} mt={6} w={344} z={2} style={s.panel} bg="surface2">
+    <Box absolute top="100%" end={0} mt={6} w={344} z={2} style={s.panel} bg="surface2">
       <Box px={12} pt={11} pb={9}>
         <Text variant="overline" color="accent">
           History

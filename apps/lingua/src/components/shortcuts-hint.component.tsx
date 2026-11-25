@@ -8,7 +8,7 @@ function Shortcut({ label, children }: Readonly<{ label: string; children: React
   return (
     <Row gap={3} align="center">
       {children}
-      <Text variant="meta" color="textDim" ml={4}>
+      <Text variant="meta" color="textDim" ms={4}>
         {label}
       </Text>
     </Row>

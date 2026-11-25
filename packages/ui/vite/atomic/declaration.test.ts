@@ -20,8 +20,8 @@ describe('compileDeclaration', () => {
 
     expect(leaf.values).toEqual({
       flexDirection: 'row',
-      paddingLeft: 8,
-      paddingRight: 8,
+      paddingStart: 8,
+      paddingEnd: 8,
       backgroundColor: 'var(--kroma-accent)',
       borderRadius: 'var(--radius-sm)',
     });
@@ -29,6 +29,22 @@ describe('compileDeclaration', () => {
       expect.stringContaining('{background-color:var(--kroma-accent);}'),
     );
     expect(leaf.states).toBeUndefined();
+  });
+
+  it('lets a side override the axis it sits on', () => {
+    const leaf = compileDeclaration({ px: 20, ps: 4 });
+
+    expect(leaf.values).toEqual({ paddingStart: 4, paddingEnd: 20 });
+  });
+
+  it('writes a side a rule per writing direction, both reading one step variable', () => {
+    const leaf = compileDeclaration({ ps: { base: 8, md: 12 } });
+
+    const value = String(leaf.values.paddingStart);
+    expect(css(leaf).filter((rule) => rule.endsWith(`:${value};}`))).toEqual([
+      expect.stringContaining(`{padding-left:${value};}`),
+      expect.stringContaining(`{padding-right:${value};}`),
+    ]);
   });
 
   it('emits the classes and rules the browser runtime would have minted', () => {
@@ -94,10 +110,10 @@ describe('compileDeclaration', () => {
     const leaf = compileDeclaration({ px: { base: 8, md: 12 }, gap: { base: 4, lg: 8 } });
 
     const gap = reads(leaf, 'gap');
-    const padding = reads(leaf, 'paddingLeft');
+    const padding = reads(leaf, 'paddingStart');
 
     expect(leaf.values.gap).toBe(`var(${gap.variable},4px)`);
-    expect(leaf.values.paddingLeft).toBe(`var(${padding.variable},8px)`);
+    expect(leaf.values.paddingStart).toBe(`var(${padding.variable},8px)`);
     expect(css(leaf)).toContain(`[data-kroma-bp~="lg"]{${gap.variable}:8px;}`);
     expect(css(leaf)).toContain(`[data-kroma-bp~="md"]{${padding.variable}:12px;}`);
   });
@@ -119,13 +135,13 @@ describe('compileDeclaration', () => {
     const flat = compileDeclaration({ px: 8 });
 
     expect(Object.keys(responsive.values)).toEqual(Object.keys(flat.values));
-    expect(responsive.values.paddingLeft).not.toBe(flat.values.paddingLeft);
+    expect(responsive.values.paddingStart).not.toBe(flat.values.paddingStart);
   });
 
   it('states a step inside an interaction coat the same way', () => {
     const leaf = compileDeclaration({ bg: 'accent', _hover: { px: { base: 2, md: 4 } } });
 
-    expect(leaf.states?.hover?.paddingLeft).toMatch(/^var\(--k[\w-]{6},2px\)$/);
+    expect(leaf.states?.hover?.paddingStart).toMatch(/^var\(--k[\w-]{6},2px\)$/);
     expect(leaf.rules.filter((rule) => rule.css.startsWith('[data-kroma-bp'))).toHaveLength(4);
   });
 

@@ -26,13 +26,13 @@ export function Demo({ size }: Readonly<{ size?: 'sm' | 'tv' }>) {
         />
         <Text variant="body">Select all</Text>
       </Box>
-      <Box row align="center" gap={10} ml={22}>
+      <Box row align="center" gap={10} ms={22}>
         <Checkbox size={size} label="Subtitles" checked={subs} onCheckedChange={setSubs} />
         <Text variant="body" color="textMuted">
           Subtitles
         </Text>
       </Box>
-      <Box row align="center" gap={10} ml={22}>
+      <Box row align="center" gap={10} ms={22}>
         <Checkbox size={size} label="Audio tracks" checked={audio} onCheckedChange={setAudio} />
         <Text variant="body" color="textMuted">
           Audio tracks

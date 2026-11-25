@@ -23,10 +23,10 @@ function Screen({
 }
 
 export const POSITIONS: ToastPosition[] = [
-  'top-left',
+  'top-start',
   'top-center',
-  'top-right',
-  'bottom-left',
+  'top-end',
+  'bottom-start',
   'bottom-center',
-  'bottom-right',
+  'bottom-end',
 ];

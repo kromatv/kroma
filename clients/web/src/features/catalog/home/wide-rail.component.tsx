@@ -38,8 +38,8 @@ const sDefinition = styles({
   },
   lifted: { transform: [{ translateY: motion.focusLift }] },
   art: { aspect: 16 / 9, radius: 'xl', overflow: 'hidden' },
-  caption: { position: 'absolute', left: 14, right: 14, bottom: 14 },
-  progress: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  caption: { position: 'absolute', start: 14, end: 14, bottom: 14 },
+  progress: { position: 'absolute', start: 0, end: 0, bottom: 0 },
 });
 
 interface WideFaceProps {

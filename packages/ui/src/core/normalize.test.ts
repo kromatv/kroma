@@ -8,8 +8,8 @@ describe('normalize', () => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingLeft: 18,
-      paddingRight: 18,
+      paddingStart: 18,
+      paddingEnd: 18,
       borderRadius: 'var(--radius-pill)',
     });
   });
@@ -17,9 +17,9 @@ describe('normalize', () => {
   it('expands an edge shorthand into all four sides, so a later layer can beat it', () => {
     expect(normalize({ p: 12 }, 0)).toEqual({
       paddingTop: 12,
-      paddingRight: 12,
+      paddingEnd: 12,
       paddingBottom: 12,
-      paddingLeft: 12,
+      paddingStart: 12,
     });
   });
 
@@ -75,8 +75,8 @@ describe('split', () => {
 
   it('normalises the state layers too', () => {
     expect(split({ _press: { px: 4 } }, 0)?.states.press).toEqual({
-      paddingLeft: 4,
-      paddingRight: 4,
+      paddingStart: 4,
+      paddingEnd: 4,
     });
   });
 
@@ -159,8 +159,8 @@ describe('split', () => {
 
     expect(out?.rest).toEqual({
       backgroundColor: 'var(--kroma-accent)',
-      paddingLeft: 12,
-      paddingRight: 12,
+      paddingStart: 12,
+      paddingEnd: 12,
     });
     expect(out?.declared).toEqual(['hover', 'press']);
     expect(out?.states.hover).toEqual({ backgroundColor: 'var(--kroma-accent-hover)' });
@@ -182,7 +182,7 @@ describe('split', () => {
   it('keeps a value stated per breakpoint as one', () => {
     const out = split({ px: { base: 8, md: 12 } }, 0);
 
-    expect(out?.rest).toEqual({ paddingLeft: 8, paddingRight: 8 });
+    expect(out?.rest).toEqual({ paddingStart: 8, paddingEnd: 8 });
     expect(out?.declared).toEqual([]);
   });
 });

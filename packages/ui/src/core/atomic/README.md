@@ -239,13 +239,13 @@ merges onto its host the same way, so every `asChild` host paints as classes.
 What stays inline is what changes continuously: a progress bar's fill, a
 virtual list's row offsets and height, an anchored popup's measured box, a
 storyboard frame's sheet offset, and the values an `Animated` node drives.
-That set is the guard's whole allow-list (`width`, `height`, the four edges,
-`maxHeight`, `minWidth`, `paddingTop`, `transform`, `opacity`, `borderRadius`
-and the background image, position and size), and on a dev server it names,
-with its values, any other property that reaches an element inline. Every
-route of the web client audits clean under it; the boot intro is the one
-deliberate exception, a framework-free scene that renders before the kit's
-sheet exists.
+That set is the guard's whole allow-list (`width`, `height`, the four edges
+and `start` and `end`, `maxHeight`, `minWidth`, `paddingTop`, `transform`,
+`opacity`, `borderRadius` and the background image, position and size), and on
+a dev server it names, with its values, any other property that reaches an
+element inline. Every route of the web client audits clean under it; the boot
+intro is the one deliberate exception, a framework-free scene that renders
+before the kit's sheet exists.
 
 A test reads a control's paint with `declared(el, property)` from
 `@kromatv/ui/testing`, which follows the classes into the stylesheets, and asks
@@ -259,7 +259,7 @@ entry. `<Box row gap={12} px={64} style={extra}>` is written, in the build
 output only, as a module constant the element wears ahead of its own style:
 
 ```tsx
-const __kromaBox0 = __kromaStatic({ flexDirection: 'row', gap: 12, paddingLeft: 64, paddingRight: 64 });
+const __kromaBox0 = __kromaStatic({ flexDirection: 'row', gap: 12, paddingStart: 64, paddingEnd: 64 });
 <Box style={[__kromaBox0, extra]}>
 ```
 

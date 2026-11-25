@@ -46,6 +46,13 @@ describe('splitBoxLayers', () => {
     expect(StyleSheet.flatten(face)).toEqual({ borderRadius: 24, flexGrow: 1 });
   });
 
+  it('grows the face of a box pinned open from its start to its end', () => {
+    const { box, face } = splitBoxLayers({ position: 'absolute', start: 0, end: 0, opacity: 1 });
+
+    expect(box).toEqual({ position: 'absolute', start: 0, end: 0 });
+    expect(StyleSheet.flatten(face)).toEqual({ opacity: 1, flexGrow: 1 });
+  });
+
   it('does not grow the face of a box pinned by one inset per axis', () => {
     const { face } = splitBoxLayers({ position: 'absolute', top: 12, left: 12, borderRadius: 8 });
 

@@ -17,8 +17,8 @@ describe('styles', () => {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-      paddingLeft: 8,
-      paddingRight: 8,
+      paddingStart: 8,
+      paddingEnd: 8,
       borderRadius: 'var(--radius-sm)',
     });
   });
@@ -70,8 +70,8 @@ describe('styles', () => {
 describe('style', () => {
   it('is the single-value form', () => {
     expect(flat(style({ px: 12, bg: 'surface2' }))).toEqual({
-      paddingLeft: 12,
-      paddingRight: 12,
+      paddingStart: 12,
+      paddingEnd: 12,
       backgroundColor: 'var(--kroma-surface-2)',
     });
   });

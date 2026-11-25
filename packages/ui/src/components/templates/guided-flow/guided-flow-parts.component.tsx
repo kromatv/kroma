@@ -72,7 +72,7 @@ function Next(props: Readonly<GuidedFlowMoveProps>) {
 function Actions({ children }: Readonly<{ children?: ReactNode }>) {
   useGuidedFlowPart('Actions');
   return (
-    <Box row align="center" gap={8} ml="auto">
+    <Box row align="center" gap={8} ms="auto">
       {children}
     </Box>
   );

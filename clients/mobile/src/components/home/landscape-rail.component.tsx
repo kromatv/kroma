@@ -74,9 +74,9 @@ const sDefinition = styles({
   detail: { ...type.small, mt: 1 },
   progressTrack: {
     absolute: true,
-    right: 6,
+    end: 6,
     bottom: 6,
-    left: 6,
+    start: 6,
     h: 3,
     bg: 'text/30',
     radius: cornerRadius.track,

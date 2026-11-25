@@ -80,7 +80,7 @@ export function CandidateCard({ candidate, busy, disabled, onPick }: Readonly<Ca
         {current ? (
           <Box
             absolute
-            left={8}
+            start={8}
             top={8}
             row
             align="center"
@@ -126,7 +126,7 @@ export function CandidateCard({ candidate, busy, disabled, onPick }: Readonly<Ca
               label={t('rematch.confidence', { score: percent })}
             />
           </Box>
-          <Text variant="overline" color={tone} w={PERCENT_W} textAlign="right" lines={1}>
+          <Text variant="overline" color={tone} w={PERCENT_W} textAlign="end" lines={1}>
             {t('rematch.confidenceValue', { score: percent })}
           </Text>
         </Box>

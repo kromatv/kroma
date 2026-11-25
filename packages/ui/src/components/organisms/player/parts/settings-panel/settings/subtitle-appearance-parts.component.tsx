@@ -216,7 +216,7 @@ export function Meter({ value }: Readonly<{ value: number }>) {
 const sDefinition = styles({
   meterValue: {
     minW: 52,
-    textAlign: 'right',
+    textAlign: 'end',
     text: 'sectionTv',
     fontVariant: ['tabular-nums'],
   },

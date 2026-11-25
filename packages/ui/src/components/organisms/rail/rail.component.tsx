@@ -34,8 +34,8 @@ interface RailTitleProps {
 
 /** The row's heading, inset to the same gutter its first tile starts at. */
 
-const insetOf = (paddingLeft: number, scope: StyleScope) =>
-  sharedStyle(`rail:inset:${paddingLeft}`, { paddingLeft }, scope);
+const insetOf = (paddingStart: number, scope: StyleScope) =>
+  sharedStyle(`rail:inset:${paddingStart}`, { paddingStart }, scope);
 function Title({ variant = 'h2', style, children }: Readonly<RailTitleProps>) {
   const scope = useStyleScope();
 

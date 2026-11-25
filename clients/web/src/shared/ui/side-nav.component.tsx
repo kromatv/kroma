@@ -24,8 +24,8 @@ function Header({ children }: Readonly<{ children: ReactNode }>) {
       align="center"
       between
       gap={8}
-      pl={SIDE_NAV_BAND_X}
-      pr={SIDE_NAV_GUTTER}
+      ps={SIDE_NAV_BAND_X}
+      pe={SIDE_NAV_GUTTER}
       pt={24}
       pb={16}
     >
@@ -105,7 +105,7 @@ function Label({ children }: Readonly<{ children: ReactNode }>) {
 
 function Trailing({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <Box row align="center" gap={6} shrink={0} ml="auto">
+    <Box row align="center" gap={6} shrink={0} ms="auto">
       {children}
     </Box>
   );

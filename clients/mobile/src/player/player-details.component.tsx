@@ -166,8 +166,8 @@ const definition = styles({
   divider: {
     h: StyleSheet.hairlineWidth,
     bg: 'border',
-    ml: spacing.md + spacing.lg + spacing.sm + spacing.xs,
-    mr: spacing.md,
+    ms: spacing.md + spacing.lg + spacing.sm + spacing.xs,
+    me: spacing.md,
   },
   tools: { row: true, mt: spacing.sm, gap: spacing.sm },
   tool: {

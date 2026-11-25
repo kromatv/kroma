@@ -86,6 +86,7 @@ it('loads all custom rules through the real config and preserves runtime exclusi
         'export function render(compact: boolean) { return compact; }',
         'no-boolean-flag-param',
       ],
+      ['side.ts', 'const style = { paddingLeft: 8 };', 'no-physical-side'],
       [
         'schema.ts',
         "import { z } from 'zod';\nexport const Name = z.string().min(1);",

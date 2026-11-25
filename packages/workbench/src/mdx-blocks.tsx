@@ -75,7 +75,7 @@ const sDefinition = styles({
     mb: BLOCK,
     gap: space[3],
     py: space[2],
-    pr: space[3],
+    pe: space[3],
     bg: 'surface1',
     radius: 'sm',
   },

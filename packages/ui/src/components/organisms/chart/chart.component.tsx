@@ -214,7 +214,7 @@ function Root({
 
   return (
     <ChartContext value={state}>
-      <Box onLayout={width === undefined ? measure(setMeasured) : undefined}>
+      <Box onLayout={width === undefined ? measure(setMeasured) : undefined} dir="ltr">
         <Row align="flex-start">
           {left}
           <Box>

@@ -15,7 +15,7 @@ function Hint({ label, children }: Readonly<{ label: string; children: ReactNode
   return (
     <Row gap={3} align="center">
       {children}
-      <Text variant="meta" color="textDim" ml={3}>
+      <Text variant="meta" color="textDim" ms={3}>
         {label}
       </Text>
     </Row>

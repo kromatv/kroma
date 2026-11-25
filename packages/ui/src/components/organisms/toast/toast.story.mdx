@@ -12,7 +12,7 @@ export const story = defineStory({
     message: 'iPhone connected',
     detail: 'maxime',
     tone: 'success',
-    position: 'top-right',
+    position: 'top-end',
   },
   controls: { tone: ['plain', 'success', 'accent'], position: POSITIONS },
   render: ({ message, detail, tone, position }) => (
@@ -29,7 +29,7 @@ Transient notices, the shadcn/sonner shape: one `<Toaster/>` mounted by the shel
 
 ```tsx
 // once, in the view that fills the screen
-<Toaster position="top-right" />
+<Toaster position="top-end" />
 
 // anywhere
 toast({ message: 'iPhone connected', detail: 'maxime', icon: 'cast', tone: 'success' })
@@ -39,9 +39,9 @@ toast({ message: 'Link copied', position: 'bottom-center' })
 ```
 
 <Scene name="A remote joins">
-  What a television shows when somebody picks up its remote, and why the default is top-right: a notice about the status cluster belongs beside it, not over the row the viewer is browsing.
+  What a television shows when somebody picks up its remote, and why the default is `top-end`: a notice about the status cluster belongs beside it, not over the row the viewer is browsing.
 
-  <Screen position="top-right">
+  <Screen position="top-end">
     <Button
       label="Connect"
       onPress={() =>
@@ -106,7 +106,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })
         label="Three at the top"
         onPress={() => {
           for (const step of ['First', 'Second', 'Third']) {
-            toast({ message: step, position: 'top-left', duration: 8000 });
+            toast({ message: step, position: 'top-start', duration: 8000 });
           }
         }}
       />
@@ -116,7 +116,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })
         label="Three at the bottom"
         onPress={() => {
           for (const step of ['First', 'Second', 'Third']) {
-            toast({ message: step, position: 'bottom-right', duration: 8000 });
+            toast({ message: step, position: 'bottom-end', duration: 8000 });
           }
         }}
       />
@@ -127,7 +127,7 @@ toast({ message: 'Link copied', position: 'bottom-center' })
 <Do>
 - Say what happened, in one line a viewer can read at three metres.
 - Use `detail` for who or what it concerns, never for a second sentence.
-- Leave `position` at `top-right` on a television: notices belong beside the status cluster they are usually about.
+- Leave `position` at `top-end` on a television: notices belong beside the status cluster they are usually about.
 - Pass a phone's safe-area insets as `inset={{ top, bottom }}` when the shell draws edge to edge, or mount the host inside its safe frame.
 </Do>
 

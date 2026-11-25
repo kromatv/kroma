@@ -18,7 +18,7 @@ The fade every tile lays over its artwork so the caption on it survives bright k
 <Box aspect={16 / 9} radius="xl" overflow="hidden">
   <Img src={art} background={tintGradient(tint)} radius={16} fill />
   <ArtScrim variant="soft" radius="xl" />
-  <Box absolute left={18} right={18} bottom={16}>
+  <Box absolute start={18} end={18} bottom={16}>
     <Text>{title}</Text>
   </Box>
 </Box>

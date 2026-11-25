@@ -43,9 +43,9 @@ function List({ pitch, height, children }: Readonly<RailListProps>) {
   const tiles = Children.toArray(children);
   const style = { height: height + RING_ROOM * 2 };
   // The list translates the whole content and parks the focused tile at the
-  // content's origin, so the left inset keeps it off the screen edge; the right
+  // content's origin, so the start inset keeps it off the screen edge; the end
   // one stops the last tile sitting flush against the other edge.
-  const contentStyle = { paddingLeft: inset, paddingRight: inset, paddingVertical: RING_ROOM };
+  const contentStyle = { paddingStart: inset, paddingEnd: inset, paddingVertical: RING_ROOM };
   return (
     <VirtualRail
       data={tiles}

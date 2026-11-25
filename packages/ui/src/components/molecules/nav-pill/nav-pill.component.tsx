@@ -42,7 +42,7 @@ function Backdrop({ amount = 16 }: Readonly<{ amount?: number }>) {
   // items inside it.
   return (
     <Frost amount={amount}>
-      <Box absolute top={0} right={0} bottom={0} left={0} radius="pill" />
+      <Box absolute top={0} end={0} bottom={0} start={0} radius="pill" />
     </Frost>
   );
 }

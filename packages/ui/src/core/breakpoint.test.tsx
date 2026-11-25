@@ -81,9 +81,9 @@ describe('the mobile-first cascade', () => {
   const px = { base: 16, md: 40, lg: 64 };
 
   it('holds `base` until the next breakpoint the value names', () => {
-    expect(boxStyle({ px }, 0).paddingLeft).toBe(16);
-    expect(boxStyle({ px }, 1).paddingLeft).toBe(40);
-    expect(boxStyle({ px }, 2).paddingLeft).toBe(64);
+    expect(boxStyle({ px }, 0).paddingStart).toBe(16);
+    expect(boxStyle({ px }, 1).paddingStart).toBe(40);
+    expect(boxStyle({ px }, 2).paddingStart).toBe(64);
   });
 
   it('inherits a missing middle step from below, never from above', () => {
@@ -160,7 +160,7 @@ describe('the zero-cost path', () => {
     at(breakpoint.lg);
     const wide = rail().root;
     expect(wide).not.toBe(narrow);
-    expect(flat(wide).paddingLeft).toBe(64);
+    expect(flat(wide).paddingStart).toBe(64);
     at(breakpoint.tv);
     expect(rail().root).toBe(wide);
   });
@@ -176,9 +176,9 @@ describe('the zero-cost path', () => {
   it('re-resolves a responsive `styles()` set at the step it names', () => {
     const fluid = styles({ page: { px: { base: 20, lg: 56 } } });
     at(0);
-    expect(flat(fluid.page).paddingLeft).toBe(20);
+    expect(flat(fluid.page).paddingStart).toBe(20);
     at(breakpoint.lg);
-    expect(flat(fluid.page).paddingLeft).toBe(56);
+    expect(flat(fluid.page).paddingStart).toBe(56);
   });
 });
 
@@ -226,9 +226,9 @@ describe('<Box> and <Text> follow the width', () => {
 describe('the type surface', () => {
   it('rejects an unknown breakpoint and a nonsense value inside the object', () => {
     // @ts-expect-error `xl` is not a breakpoint
-    expect(boxStyle({ px: { base: 16, xl: 40 } }, 0).paddingLeft).toBe(16);
+    expect(boxStyle({ px: { base: 16, xl: 40 } }, 0).paddingStart).toBe(16);
     // @ts-expect-error a padding is not a boolean
-    expect(boxStyle({ px: { base: true } }, 0).paddingLeft).toBe(true);
+    expect(boxStyle({ px: { base: true } }, 0).paddingStart).toBe(true);
     // @ts-expect-error `base` is mandatory
     expect(boxStyle({ gap: { md: 8 } }, 1).gap).toBe(8);
   });

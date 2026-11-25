@@ -8,12 +8,13 @@ import { type ReactNode, useEffect, useState } from 'react';
 
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
+import { useDirection } from '#ui/lib/direction';
 import { ease } from '#ui/lib/ease';
 import { GlideView } from '#ui/lib/glide-view.component';
 
 const SLIDE_MS = motion.duration.slow;
 
-type DrawerSide = 'left' | 'right';
+type DrawerSide = 'start' | 'end';
 
 /** Where the slide is between mounted and shown: `mounted` keeps the panel in
  *  the tree for the exit, `shown` drives the transform, one frame late on enter
@@ -66,12 +67,10 @@ function SlidePanel({ shown, side, width, inset, children }: Readonly<SlidePanel
   const scope = useStyleScope();
 
   const s = useStyles(sDefinition);
+  const onRight = (side === 'end') !== (useDirection() === 'rtl');
 
-  const holder = [
-    side === 'right' ? s.holderRight : s.holderLeft,
-    inset ? frame(inset, scope) : null,
-  ];
-  const away = (width + 2 * inset) * 1.05 * (side === 'right' ? 1 : -1);
+  const holder = [side === 'end' ? s.holderEnd : s.holderStart, inset ? frame(inset, scope) : null];
+  const away = (width + 2 * inset) * 1.05 * (onRight ? 1 : -1);
   return (
     <GlideView x={shown ? 0 : away} ms={SLIDE_MS} easing={ease.out} style={holder}>
       {children}
@@ -93,8 +92,8 @@ const frame = (inset: number, scope: StyleScope) =>
   sharedStyle(`drawer:frame:${inset}`, { padding: inset, pointerEvents: 'box-none' }, scope);
 
 const sDefinition = styles({
-  holderRight: { absolute: true, top: 0, bottom: 0, right: 0, maxW: '100%' },
-  holderLeft: { absolute: true, top: 0, bottom: 0, left: 0, maxW: '100%' },
+  holderEnd: { absolute: true, top: 0, bottom: 0, end: 0, maxW: '100%' },
+  holderStart: { absolute: true, top: 0, bottom: 0, start: 0, maxW: '100%' },
 });
 
 export type { DrawerSide };

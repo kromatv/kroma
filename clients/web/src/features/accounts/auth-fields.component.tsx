@@ -33,8 +33,8 @@ const avatarPicker = svFor<{ root: StyleDecl; caption: StyleDecl }>()({
     root: { w: TILE, h: TILE, radius: 'xl', overflow: 'hidden' },
     caption: {
       absolute: true,
-      left: 0,
-      right: 0,
+      start: 0,
+      end: 0,
       bottom: 0,
       py: 4,
       bg: 'black/55',

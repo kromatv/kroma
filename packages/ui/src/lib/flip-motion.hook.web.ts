@@ -1,5 +1,6 @@
 import type { StyleProp, ViewStyle } from 'react-native';
 import { sharedStyle, useStyleScope } from '#ui/core';
+import { useDirection } from './direction';
 import { ease } from './ease';
 
 /** The two moving faces of a two-state control: a fill that fades in, a thumb that slides. */
@@ -12,7 +13,8 @@ export interface FlipMotion {
 export function useFlipMotion(on: boolean, travel: number, durationMs: number): FlipMotion {
   const scope = useStyleScope();
   const timing = { transitionDuration: `${durationMs}ms`, transitionTimingFunction: ease.out.css };
-  const x = on ? travel : 0;
+  const forward = useDirection() === 'rtl' ? -travel : travel;
+  const x = on ? forward : 0;
   return {
     fill: sharedStyle(
       `flip:fill:${durationMs}:${on}`,

@@ -57,8 +57,11 @@ export function LocaleProvider({
       applied.current = next;
       setOverride(next);
       client?.setLocale(next);
+      if (syncDocumentLanguage) {
+        setDocumentLanguage(next);
+      }
     },
-    [client],
+    [client, syncDocumentLanguage],
   );
 
   // On mount: hand the device locale to the client's Accept-Language, unless the

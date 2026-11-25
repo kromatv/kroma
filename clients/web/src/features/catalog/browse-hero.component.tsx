@@ -97,16 +97,16 @@ const bleed = (gutter: number, scope: StyleScope) =>
   sharedStyle(
     `bleed:${gutter}`,
     {
-      marginLeft: -gutter,
-      marginRight: -gutter,
-      paddingLeft: gutter,
-      paddingRight: gutter,
+      marginStart: -gutter,
+      marginEnd: -gutter,
+      paddingStart: gutter,
+      paddingEnd: gutter,
     },
     scope,
   );
 
 const creditAt = (gutter: number, scope: StyleScope) =>
-  sharedStyle(`credit:${gutter}`, { right: gutter }, scope);
+  sharedStyle(`credit:${gutter}`, { end: gutter }, scope);
 
 export interface BrowseHeroProps {
   heading: string;

@@ -98,7 +98,7 @@ function KindColumn({ column }: Readonly<{ column: MostWatchedColumn }>) {
           position={HEAD_CROP}
           fill
         />
-        <Box absolute left={14} bottom={12}>
+        <Box absolute start={14} bottom={12}>
           <Pill ink="text" bg="overlay" variant="overline">
             {t(kindLabelKey(column.kind))}
           </Pill>

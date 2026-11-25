@@ -102,7 +102,7 @@ const sDefinition = styles({
   panel: {
     pointerEvents: 'none',
     top: 24,
-    right: 24,
+    end: 24,
     z: 999,
     minW: 260,
     gap: 4,

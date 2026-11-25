@@ -37,7 +37,7 @@ const BREATH_MS = motion.duration.slow * 3;
 const BUFFERED_OPACITY = 0.32;
 const WAITING_OPACITY = 0.22;
 
-const FULL_WIDTH = style({ right: 0 });
+const FULL_WIDTH = style({ end: 0 });
 
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) {
@@ -114,7 +114,7 @@ function layerStyle(color: ColorValue, corner: 'pill' | 0, scope: StyleScope, op
       absolute: true,
       top: 0,
       bottom: 0,
-      left: 0,
+      start: 0,
       bg: color,
       radius: corner,
       opacity,

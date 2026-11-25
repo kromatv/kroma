@@ -5,21 +5,21 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { useTDefault } from '#ui/services/i18n';
 
-const revealAt = (right: number, scope: StyleScope) =>
-  sharedStyle(`text-field:reveal:${right}`, { right }, scope);
+const revealAt = (end: number, scope: StyleScope) =>
+  sharedStyle(`text-field:reveal:${end}`, { end }, scope);
 
 function RevealButton({
   revealed,
   onToggle,
-  right,
-}: Readonly<{ revealed: boolean; onToggle: () => void; right: number }>) {
+  end,
+}: Readonly<{ revealed: boolean; onToggle: () => void; end: number }>) {
   const scope = useStyleScope();
 
   const s = useStyles(sDefinition);
   const t = useTDefault();
 
   return (
-    <Box absolute style={[s.revealSlot, revealAt(right, scope)]}>
+    <Box absolute style={[s.revealSlot, revealAt(end, scope)]}>
       <Focusable
         label={revealed ? t('common.hidePassword') : t('common.showPassword')}
         ring="inside"

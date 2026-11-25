@@ -49,7 +49,7 @@ export function NotificationBell() {
           <Box
             absolute
             top={-2}
-            right={-2}
+            end={-2}
             minW={18}
             h={18}
             px={4}

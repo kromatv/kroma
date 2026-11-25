@@ -181,7 +181,7 @@ const sDefinition = styles({
   identityPressed: { opacity: 0.85 },
   editBadge: {
     absolute: true,
-    right: -2,
+    end: -2,
     bottom: -2,
     center: true,
     w: 28,

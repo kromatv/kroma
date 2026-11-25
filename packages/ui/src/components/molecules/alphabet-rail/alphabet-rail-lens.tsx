@@ -52,7 +52,7 @@ function Bubble({ letter, y }: Readonly<{ letter: string; y: number }>) {
 }
 
 const sDefinition = styles({
-  bubble: { right: ROW_W + PAD * 2 + 18, w: BUBBLE, h: BUBBLE },
+  bubble: { end: ROW_W + PAD * 2 + 18, w: BUBBLE, h: BUBBLE },
   lens: { absolute: true, radius: 'pill', bg: 'accent' },
 });
 

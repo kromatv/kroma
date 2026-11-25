@@ -10,7 +10,7 @@ export function SaveState({ status }: Readonly<{ status: SaveStatus }>) {
   }
   const failed = status.kind === 'failed';
   return (
-    <Row gap={6} align="flex-start" accessibilityLiveRegion="polite" ml="auto">
+    <Row gap={6} align="flex-start" accessibilityLiveRegion="polite" ms="auto">
       <Icon
         name={failed ? 'alert-circle' : 'check'}
         size={15}

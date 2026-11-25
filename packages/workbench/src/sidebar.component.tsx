@@ -209,11 +209,11 @@ function Section({
 
 const sDefinition = styles({
   scroll: { flex: true },
-  list: { pb: 32, pr: 10 },
+  list: { pb: 32, pe: 10 },
   // A drawer floats over the canvas and carries the elevation that says so; a
   // column is part of the page and is only ruled off from it.
-  border: { borderRightWidth: 1, borderRightColor: 'border' },
-  drawer: { borderRightWidth: 1, borderRightColor: 'borderStrong', shadow: 'pop' },
+  border: { borderEndWidth: 1, borderEndColor: 'border' },
+  drawer: { borderEndWidth: 1, borderEndColor: 'borderStrong', shadow: 'pop' },
 });
 
 export { Sidebar };

@@ -81,11 +81,11 @@ const sDefinition = styles({
   // touch areas.
   headerActions: { row: true, align: 'center', gap: 6 },
   dlGlyph: { center: true, w: 26, h: 26 },
-  dlArrow: { absolute: true, top: 0, right: 0, bottom: 0, left: 0, center: true },
+  dlArrow: { absolute: true, top: 0, end: 0, bottom: 0, start: 0, center: true },
   dlCount: {
     absolute: true,
     top: -5,
-    right: -8,
+    end: -8,
     center: true,
     h: 15,
     minW: 15,

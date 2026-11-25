@@ -8,6 +8,7 @@ declare module 'react-native' {
     /** Rendered as `data-*` attributes. */
     dataSet?: Record<string, string | number | undefined> | undefined;
     tabIndex?: number | undefined;
+    dir?: 'ltr' | 'rtl' | undefined;
     /** Physical-keyboard key handling; react-native-web forwards it to the
      *  element, and DOM events bubble to it from any focused child. */
     onKeyDown?: ((event: KeyboardBubble) => void) | undefined;

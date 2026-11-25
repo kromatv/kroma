@@ -33,7 +33,7 @@ export const page = styles({
     backdropFilter: 'blur(3px)',
     WebkitBackdropFilter: 'blur(3px)',
   },
-  gutter: { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' },
+  gutter: { paddingStart: 'var(--gutter-web)', paddingEnd: 'var(--gutter-web)' },
   screen: { minHeight: '100vh', display: 'flex' },
   radial: { backgroundImage: PAGE_RADIAL },
 });

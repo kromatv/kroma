@@ -10,13 +10,13 @@ const sDefinition = styles({
     alignItems: 'center',
     m: 0,
     pt: 8,
-    pr: 32,
+    pe: 32,
     pb: 8,
-    pl: 12,
+    ps: 12,
     borderWidth: 0,
     bg: 'transparent',
     radius: 'xs',
-    textAlign: 'left',
+    textAlign: 'start',
     cursor: 'pointer',
     outlineStyle: 'none',
     userSelect: 'none',
@@ -73,7 +73,7 @@ const SearchOption = memo(function SearchOption({
         {option}
       </Text>
       {selected ? (
-        <Box absolute right={10}>
+        <Box absolute end={10}>
           <Icon name="check" size={14} thickness={2.4} color="accentText" />
         </Box>
       ) : null}

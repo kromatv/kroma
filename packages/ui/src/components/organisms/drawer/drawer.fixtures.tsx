@@ -20,7 +20,7 @@ export function Demo({
     <Box>
       <Button
         variant="glass"
-        label={`Open ${props.side ?? 'right'} drawer`}
+        label={`Open ${props.side ?? 'end'} drawer`}
         onPress={() => setOpen(true)}
       />
       <Drawer.Root {...props} open={open} onClose={close}>

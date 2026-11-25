@@ -59,8 +59,8 @@ export function ResumePrompt({
     <Box
       absolute
       bottom={lift}
-      left={px(GUTTER)}
-      right={px(GUTTER)}
+      start={px(GUTTER)}
+      end={px(GUTTER)}
       align="flex-end"
       z={30}
       pointerEvents={shown ? 'box-none' : 'none'}

@@ -50,5 +50,5 @@ export function AlphabetRail({
 }
 
 const sDefinition = styles({
-  dock: { absolute: true, right: 6, justify: 'center', align: 'flex-end' },
+  dock: { absolute: true, end: 6, justify: 'center', align: 'flex-end' },
 });

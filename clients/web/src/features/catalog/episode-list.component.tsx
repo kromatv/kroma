@@ -23,7 +23,7 @@ import type { TitleSeason } from '#web/shared/lib/title-seasons';
 
 // The page gutter is a fluid CSS custom property and `overflow-x` names one
 // axis, so both stay plain elements around kit content.
-const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
+const GUTTER = { paddingStart: 'var(--gutter-web)', paddingEnd: 'var(--gutter-web)' } as const;
 
 const SEASON_WIDTH = 132;
 

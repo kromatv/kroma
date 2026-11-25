@@ -40,9 +40,9 @@ export interface CompiledRule {
   readonly css: string;
 }
 
-/** One longhand's class and the declarations behind it, without the selector. */
+/** The declarations a longhand's classes carry, without their selectors, one
+ *  class per line: a logical side compiles to a class per writing direction. */
 export interface Carrier {
-  readonly cls: string;
   readonly body: string;
 }
 
@@ -52,26 +52,31 @@ export function rulesOf(longhands: Record<string, unknown>): CompiledRule[] {
   return ordered.flatMap(([css, group]) => css.map((rule) => ({ group, css: rule })));
 }
 
+function bodyOf(cls: unknown, rules: readonly string[] | undefined): string | null {
+  const css = rules?.length === 1 ? rules[0] : undefined;
+  const head = `.${String(cls)}{`;
+  if (typeof cls !== 'string' || css === undefined || !css.startsWith(head) || !css.endsWith('}')) {
+    return null;
+  }
+  return css.slice(head.length, -1);
+}
+
 /**
- * The one rule a single longhand compiles to, and the class that carries it.
- * Null for a property the compiler does not write as one rule of its own: a
- * shadow the preprocessor folds into another property, a value it splits in
- * two.
+ * What a single longhand compiles to, when each of its classes carries one rule
+ * of its own. Null for a property the compiler does not write that way: a
+ * shadow the preprocessor folds into another property, a value it writes as
+ * several rules.
  */
 export function carrierOf(property: string, value: unknown): Carrier | null {
   const [style, ordered] = atomic(preprocess({ [property]: value }, SHADOWS));
-  const cls = style[property];
-  const group = ordered[0];
-  if (typeof cls !== 'string' || ordered.length !== 1 || group === undefined) {
+  const classes = Object.entries(style)
+    .filter(([key]) => !key.startsWith('$$'))
+    .flatMap(([, cls]) => (Array.isArray(cls) ? cls : [cls]));
+  if (classes.length === 0 || classes.length !== ordered.length) {
     return null;
   }
-  const [rules] = group;
-  const css = rules.length === 1 ? (rules[0] as string) : '';
-  const head = `.${cls}{`;
-  if (!css.startsWith(head) || !css.endsWith('}')) {
-    return null;
-  }
-  return { cls, body: css.slice(head.length, -1) };
+  const bodies = classes.map((cls, at) => bodyOf(cls, ordered[at]?.[0]));
+  return bodies.every((body) => body !== null) ? { body: bodies.join('\n') } : null;
 }
 
 /** A value as the renderer writes it into a declaration: `12` is `12px` on a

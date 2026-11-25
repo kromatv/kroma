@@ -67,15 +67,15 @@ interface SettingsPanelProps {
 }
 
 const veilDefinition = styles({
-  box: { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 41 },
+  box: { position: 'absolute', top: 0, bottom: 0, start: 0, zIndex: 41 },
   live: { pointerEvents: 'auto' },
   inert: { pointerEvents: 'none' },
 });
 
 const SCROLL = style({ flex: true });
 
-const veilTo = (right: number | string, scope: StyleScope) =>
-  sharedStyle(`settings:veil:${right}`, { right }, scope);
+const veilTo = (end: number | string, scope: StyleScope) =>
+  sharedStyle(`settings:veil:${end}`, { end }, scope);
 
 const panelWidth = (width: number | string, scope: StyleScope) =>
   sharedStyle(`settings:panel:${width}`, { width, maxWidth: PANEL_MAX }, scope);

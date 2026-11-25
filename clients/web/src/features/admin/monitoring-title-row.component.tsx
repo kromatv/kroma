@@ -84,7 +84,7 @@ export function LibraryRow({
           />
         </Box>
       )}
-      <Box w={COLUMN.follow} shrink={0} align="center" pr={8}>
+      <Box w={COLUMN.follow} shrink={0} align="center" pe={8}>
         <FollowToggle
           state={row.monitored ? 'on' : 'off'}
           name={row.title}

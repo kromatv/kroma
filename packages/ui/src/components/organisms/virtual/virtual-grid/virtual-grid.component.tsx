@@ -45,8 +45,8 @@ import type { VirtualGridProps } from './virtual-grid-props';
 const boxesDefinition = styles({
   noPointer: { pointerEvents: 'none' },
   viewport: { flex: true, minHeight: 0 },
-  row: { position: 'absolute', left: 0 },
-  header: { position: 'absolute', left: 0, top: 0 },
+  row: { position: 'absolute', start: 0 },
+  header: { position: 'absolute', start: 0, top: 0 },
 });
 // Every row is placed at its own offset down the strip, so only the mounted
 // ones have to exist and they still land where the whole list would put them.

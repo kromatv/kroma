@@ -8,9 +8,9 @@ const RAMP = 80;
 const FILL: ViewStyle = {
   position: 'absolute',
   top: 0,
-  right: 0,
+  end: 0,
   bottom: 0,
-  left: 0,
+  start: 0,
   pointerEvents: 'none',
 };
 
@@ -50,8 +50,8 @@ export function TopFadeBand({
   const band: ViewStyle = {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    start: 0,
+    end: 0,
     height: inset + RAMP,
     overflow: 'hidden',
     pointerEvents: 'none',
@@ -76,8 +76,8 @@ export function TopFadeBand({
             style={{
               position: 'absolute',
               top: -offset,
-              left: 0,
-              right: 0,
+              start: 0,
+              end: 0,
               height: height + offset,
               backgroundColor: colors.bg,
             }}

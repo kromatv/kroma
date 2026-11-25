@@ -4,7 +4,10 @@ import * as ReactNativeWeb from 'react-native-web';
 
 const TextAncestorContext = ReactNativeWeb.unstable_TextAncestorContext ?? createContext(false);
 
-type Resolver = (styles: unknown) => [string, Record<string, unknown> | undefined];
+type Resolver = (
+  styles: unknown,
+  options: { writingDirection: 'ltr' | 'rtl' },
+) => [string, Record<string, unknown> | undefined];
 
 const resolve = StyleSheet as unknown as Resolver;
 
@@ -84,6 +87,7 @@ interface StaticTextProps {
 /** The `<div>` a react-native-web Text renders, for a string that needs nothing
  *  else from it. Inside another Text it is that Text's span, as before. */
 export function StaticText({ style, lines, children, testID }: Readonly<StaticTextProps>) {
+  const { direction } = ReactNativeWeb.useLocaleContext();
   if (useContext(TextAncestorContext)) {
     return (
       <Text numberOfLines={lines} style={style} testID={testID}>
@@ -92,13 +96,16 @@ export function StaticText({ style, lines, children, testID }: Readonly<StaticTe
     );
   }
   const many = lines != null && lines > 1;
-  const [className, inline] = resolve([
-    many && clamp(lines),
-    reset.text$raw,
-    lines === 1 && reset.oneLine,
-    many && reset.multiLine,
-    style,
-  ]);
+  const [className, inline] = resolve(
+    [
+      many && clamp(lines),
+      reset.text$raw,
+      lines === 1 && reset.oneLine,
+      many && reset.multiLine,
+      style,
+    ],
+    { writingDirection: direction },
+  );
   return (
     <div dir="auto" className={className} style={inline} data-testid={testID}>
       {children}

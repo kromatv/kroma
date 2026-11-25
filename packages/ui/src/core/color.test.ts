@@ -93,6 +93,12 @@ describe('COLOR_KEYS', () => {
     }
   });
 
+  it('covers the border of a start and an end edge', () => {
+    for (const key of ['borderStartColor', 'borderEndColor']) {
+      expect(COLOR_KEYS.has(key)).toBe(true);
+    }
+  });
+
   it('covers the caret of an entry, which a browser otherwise draws in the text’s ink', () => {
     expect(COLOR_KEYS.has('caretColor')).toBe(true);
   });

@@ -37,7 +37,7 @@ function StepRow({ step, last }: Readonly<{ step: PlayStep; last: boolean }>) {
 
   const look = LOOK[step.status];
   return (
-    <Box gap={5} py={9} pl={step.depth * INDENT} style={last ? undefined : RULE}>
+    <Box gap={5} py={9} ps={step.depth * INDENT} style={last ? undefined : RULE}>
       <Box row align="center" gap={9}>
         <Box w={16} h={16} center shrink={0}>
           {step.status === 'running' ? (
@@ -64,7 +64,7 @@ function Failure({ message, indent }: Readonly<{ message: string; indent: number
   const s = useStyles(sDefinition);
 
   return (
-    <Box ml={indent} px={10} py={8} radius="md" bg="surface2">
+    <Box ms={indent} px={10} py={8} radius="md" bg="surface2">
       <Text variant="meta" color="danger" style={s.message}>
         {message}
       </Text>

@@ -62,7 +62,7 @@ function Shell() {
     <ConfirmHost>
       <CommandMenuProvider>
         <Outlet />
-        <Toaster position="bottom-right" />
+        <Toaster position="bottom-end" />
       </CommandMenuProvider>
     </ConfirmHost>
   );

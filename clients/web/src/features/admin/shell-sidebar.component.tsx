@@ -38,8 +38,8 @@ import { SIDE_NAV_FRAME, SIDE_NAV_GUTTER } from '#web/shared/ui/side-nav-style';
 
 const sDefinition = styles({
   navFill: { bg: 'bg' },
-  railEdge: { borderRightWidth: 1, borderRightColor: 'border' },
-  drawerHead: { pl: 24, pr: 16, pb: 16, ...safeAreaTop(24) },
+  railEdge: { borderEndWidth: 1, borderEndColor: 'border' },
+  drawerHead: { ps: 24, pe: 16, pb: 16, ...safeAreaTop(24) },
 });
 
 const serverCard = sv({
@@ -219,7 +219,7 @@ export function AdminMobileTopbar() {
         open={open}
         onClose={() => setOpen(false)}
         title="KROMA"
-        side="left"
+        side="start"
         width="xs"
         fullBelow={640}
         pad={0}

@@ -248,9 +248,9 @@ const LINK_FACE: Record<CopyState, { label: string; glyph: IconName; ink: ColorT
 };
 
 const sDefinition = styles({
-  // `right: 0` keeps the scrim inside the canvas column, which must never scroll
+  // `end: 0` keeps the scrim inside the canvas column, which must never scroll
   // sideways.
-  scrim: { absolute: true, top: 0, right: 0, left: 0, z: 1 },
+  scrim: { absolute: true, top: 0, end: 0, start: 0, z: 1 },
 });
 
 export type { Choice, ToolbarLens };

@@ -60,7 +60,7 @@ const COLUMN_GRAB = space[3];
 // The two insets that pin a face along the seam's own length; the free axis is
 // left to the container's centring, so one shape serves both orientations.
 const span = (upright: boolean) =>
-  upright ? ({ top: 0, bottom: 0 } as const) : ({ left: 0, right: 0 } as const);
+  upright ? ({ top: 0, bottom: 0 } as const) : ({ start: 0, end: 0 } as const);
 
 // react-native-web paints a real cursor; React Native's own `CursorValue` knows
 // `auto` and `pointer` and nothing else, so the two resize cursors are stated
@@ -72,7 +72,7 @@ const CURSORDefinition = styles({
 
 function grabBox(column: boolean, upright: boolean) {
   if (column) {
-    return { absolute: true, top: 0, bottom: 0, right: 0, w: COLUMN_GRAB } as const;
+    return { absolute: true, top: 0, bottom: 0, end: 0, w: COLUMN_GRAB } as const;
   }
   return upright ? { w: HANDLE_THICKNESS } : { h: HANDLE_THICKNESS };
 }
@@ -208,7 +208,7 @@ function Seam({
       >
         {({ slots }) =>
           column ? (
-            <Box absolute top={space[2]} bottom={space[2]} right={0} w={RULE} style={slots.rule} />
+            <Box absolute top={space[2]} bottom={space[2]} end={0} w={RULE} style={slots.rule} />
           ) : (
             <Box
               absolute

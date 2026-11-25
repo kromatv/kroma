@@ -3,6 +3,7 @@ import { sharedStyle, style, useStyleScope } from '#ui/core';
 // tech: each segment is a radio carrying `checked`, and on a physical keyboard
 // the arrow keys move the selection the way a native radio group does.
 
+import type { TextDirection } from '@kromatv/i18n';
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   Animated,
@@ -15,8 +16,10 @@ import {
 import { Box } from '#ui/components/atoms/box';
 
 import type { Radius } from '#ui/core/tokens/layout';
+import { useDirection } from '#ui/lib/direction';
 import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope.component';
+import { MEASURED_ORIGIN } from '#ui/lib/measured-origin';
 import { partsOf } from '#ui/lib/parts';
 import { RingScope } from '#ui/lib/ring-scope.component';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
@@ -32,6 +35,13 @@ import { Hint, Item, Label } from './segment-group-item';
 // react-native-web's host for a segment is the element itself, which focuses;
 // React Native's own View type stops short of saying so.
 type SegmentHost = View & { focus?: () => void };
+
+type Steps = Readonly<Record<string, -1 | 1>>;
+
+const ACROSS: Readonly<Record<TextDirection, Steps>> = {
+  ltr: { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -1, ArrowDown: 1 },
+  rtl: { ArrowLeft: 1, ArrowRight: -1, ArrowUp: -1, ArrowDown: 1 },
+};
 
 interface RootProps<T extends string> {
   value: T;
@@ -61,6 +71,7 @@ function Root<T extends string>({
   style: placement,
 }: Readonly<RootProps<T>>) {
   const scope = useStyleScope();
+  const steps = ACROSS[useDirection()];
 
   const entryDefaults = useEntryDefaults();
   const shell = size ?? entryDefaults.size;
@@ -154,11 +165,9 @@ function Root<T extends string>({
       // A physical keyboard moves the selection with the arrows, the way a
       // native radio group does; the D-pad already walks the FocusRegion.
       onKeyDown={(event) => {
-        const key = event.nativeEvent.key;
-        if (key === 'ArrowLeft' || key === 'ArrowUp') {
-          move(-1);
-        } else if (key === 'ArrowRight' || key === 'ArrowDown') {
-          move(1);
+        const step = steps[event.nativeEvent.key];
+        if (step !== undefined) {
+          move(step);
         }
       }}
       style={placement}
@@ -212,6 +221,7 @@ function Thumb({ at, radius }: Readonly<{ at: Box2D | null; radius: Radius }>) {
     <Animated.View
       style={[
         THUMB,
+        MEASURED_ORIGIN,
         sharedStyle(`segment:thumb:${radius}`, { radius }, scope),
         { transform: [{ translateX: x }], width },
       ]}
@@ -223,7 +233,6 @@ const THUMB = style({
   position: 'absolute',
   top: GROUP_PAD,
   bottom: GROUP_PAD,
-  left: 0,
   pointerEvents: 'none',
   bg: 'accentSoft',
 });

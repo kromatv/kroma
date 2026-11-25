@@ -204,7 +204,7 @@ function Handle({ open, onPress }: Readonly<{ open: boolean; onPress: () => void
 
 const sDefinition = styles({
   scroll: { flex: true },
-  side: { borderLeftWidth: 1, borderLeftColor: 'border' },
+  side: { borderStartWidth: 1, borderStartColor: 'border' },
   sideBody: { p: 16, pb: 56 },
   dockBody: { px: 20, py: 18, pb: 32 },
   // Fills the height of the tab row beside it.

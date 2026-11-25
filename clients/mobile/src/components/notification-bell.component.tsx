@@ -46,7 +46,7 @@ const sDefinition = styles({
   badge: {
     absolute: true,
     top: -5,
-    right: -7,
+    end: -7,
     center: true,
     h: 16,
     minW: 16,

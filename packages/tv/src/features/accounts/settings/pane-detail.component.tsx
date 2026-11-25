@@ -39,7 +39,7 @@ export function PaneDetail({
 }
 
 const sDefinition = styles({
-  pane: { flex: true, pl: 72, pr: 120, pt: 136 },
+  pane: { flex: true, ps: 72, pe: 120, pt: 136 },
   rows: { gap: 12, maxW: 920 },
   description: { maxW: 720 },
 });

@@ -43,7 +43,7 @@ export function CreditsCard({
   const t = useT();
   const px = scaler(scale);
   return (
-    <Box absolute right={px(40)} bottom={px(56)} z={38} maxW="100%">
+    <Box absolute end={px(40)} bottom={px(56)} z={38} maxW="100%">
       <CountdownCard
         art={item.posterUrl}
         eyebrow={t('player.nextEpisode')}

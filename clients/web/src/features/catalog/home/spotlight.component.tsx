@@ -31,7 +31,7 @@ const sDefinition = styles({
     borderWidth: 1,
     borderColor: 'white/10',
   },
-  art: { position: 'absolute', top: 0, right: 0, bottom: 0, left: { base: 0, md: '32%' } },
+  art: { position: 'absolute', top: 0, end: 0, bottom: 0, start: { base: 0, md: '32%' } },
   scrim: {
     backgroundImage: {
       base: 'linear-gradient(0deg, var(--kroma-bg) 8%, color-mix(in srgb, var(--kroma-bg) 55%, transparent) 46%, transparent 78%)',

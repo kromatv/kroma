@@ -182,7 +182,7 @@ function SeasonCard({
           <SeasonProgress season={season} />
           <Icon name={open ? 'chevron-up' : 'chevron-down'} size={18} color="textMuted" />
         </Focusable>
-        <Box pl={8}>
+        <Box ps={8}>
           <ModuleSlot
             name="monitoring.search"
             kind="show"
@@ -288,7 +288,7 @@ function SeasonProgress({ season }: Readonly<{ season: LedgerSeason }>) {
   const held = Math.min(season.onDisk, season.requested);
   return (
     <Box w={132} gap={6} shrink={0}>
-      <Text variant="meta" color="textDim" textAlign="right">
+      <Text variant="meta" color="textDim" textAlign="end">
         {t('monitoring.seasonHeld', { onDisk: held, monitored: season.requested })}
       </Text>
       <Progress

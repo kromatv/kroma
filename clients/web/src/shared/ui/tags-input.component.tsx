@@ -17,8 +17,8 @@ const ENTRY_MIN = 96;
 
 const sDefinition = styles({
   shell: { flexWrap: 'wrap', rowGap: 0 },
-  head: { pl: 0 },
-  tag: { pl: 0, py: 6 },
+  head: { ps: 0 },
+  tag: { ps: 0, py: 6 },
 });
 
 /** A list of short names typed into one entry. Each becomes a tag when a
@@ -53,7 +53,7 @@ export function TagsInput({
   const entry = useRef<TextInput>(null);
   const entered = useRef(false);
   const led = Boolean(icon) || value.length > 0;
-  const inset = sharedStyle(`tags-input:inset:${metrics.py}`, { pl: metrics.py }, scope);
+  const inset = sharedStyle(`tags-input:inset:${metrics.py}`, { ps: metrics.py }, scope);
 
   const add = (names: readonly string[]) => {
     const next = withTags(value, names);
@@ -112,7 +112,7 @@ export function TagsInput({
         placeholder={placeholder}
         textStyle={textStyle}
         minW={ENTRY_MIN}
-        {...(led ? { pl: 0 } : null)}
+        {...(led ? { ps: 0 } : null)}
       />
     </InputGroup.Root>
   );

@@ -117,8 +117,8 @@ const sDefinition = styles({
   bleed: { mx: -space[3], my: -space[2] },
   cellPlain: { py: space[3], justify: 'center', overflow: 'hidden' },
   bleedPlain: { my: -space[3] },
-  cellGutter: { py: space[3], pr: space[3], justify: 'center', overflow: 'hidden' },
-  bleedGutter: { my: -space[3], mr: -space[3] },
+  cellGutter: { py: space[3], pe: space[3], justify: 'center', overflow: 'hidden' },
+  bleedGutter: { my: -space[3], me: -space[3] },
   end: { align: 'flex-end' },
 });
 

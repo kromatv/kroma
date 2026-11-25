@@ -27,7 +27,7 @@ function Lens({ rect, chase, tone }: Readonly<LensProps>) {
 }
 
 const sDefinition = styles({
-  lens: { absolute: true, left: 0, radius: 'pill', willChange: 'transform' },
+  lens: { absolute: true, radius: 'pill', willChange: 'transform' },
 });
 
 const fillDefinition = styles({ accent: { bg: 'accentSoft' }, neutral: { bg: 'tint/12' } });

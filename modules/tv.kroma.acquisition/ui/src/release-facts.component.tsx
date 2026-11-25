@@ -15,14 +15,14 @@ export function ReleaseFacts({ release }: Readonly<{ release: ScoredReleaseView 
   return (
     <Row wrap gapX={8} gapY={6} align="center" minW={0}>
       {target ? (
-        <Row radius="sm" bg="tint/8" px={6} py={1} mr={2}>
+        <Row radius="sm" bg="tint/8" px={6} py={1} me={2}>
           <Text variant="meta" font="mono" color="text">
             {target}
           </Text>
         </Row>
       ) : null}
       {release.quality ? (
-        <Text variant="label" color={qualityRefused ? 'dangerHover' : 'text'} mr={4}>
+        <Text variant="label" color={qualityRefused ? 'dangerHover' : 'text'} me={4}>
           {label(release.quality)}
         </Text>
       ) : null}

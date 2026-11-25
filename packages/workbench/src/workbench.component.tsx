@@ -273,7 +273,7 @@ function NavDrawer({ onClose, children }: Readonly<{ onClose: () => void; childr
     // `z` above the toolbar's 30 and below the palette's 40. The tree hangs
     // directly off this row: a wrapper box between them collapses it, because a
     // column stretches its children on the cross axis only.
-    <Box absolute top={0} right={0} bottom={0} left={0} row z={35}>
+    <Box absolute top={0} end={0} bottom={0} start={0} row z={35}>
       {children}
       <Focusable label="Close component list" ring={false} onPress={onClose} style={s.scrim} />
     </Box>

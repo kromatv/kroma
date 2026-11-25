@@ -28,7 +28,7 @@ const percent = (fraction: number) => `${fraction * 100}%` as const;
 
 function placedStyle(placed: CropPlacement, rotation: number): ViewStyle {
   return {
-    left: percent(placed.left),
+    start: percent(placed.left),
     top: percent(placed.top),
     width: percent(placed.width),
     height: percent(placed.height),
@@ -140,6 +140,7 @@ function Frame({ label = 'Crop', style }: Readonly<CropperFrameProps>) {
         <Box
           ref={surface}
           fill
+          dir="ltr"
           {...handlers}
           {...GESTURE_SURFACE}
           onLayout={measure}

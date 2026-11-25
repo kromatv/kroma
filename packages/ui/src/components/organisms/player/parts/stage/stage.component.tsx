@@ -98,7 +98,7 @@ function stageBoxes(
     ? {
         position: 'absolute',
         overflow: 'hidden',
-        left: pct(card.picture.x),
+        start: pct(card.picture.x),
         top: pct(card.picture.y),
         width: pct(card.picture.width),
         height: pct(card.picture.height),
@@ -112,7 +112,7 @@ function stageBoxes(
     const onCard: ViewStyle = {
       position: 'absolute',
       overflow: 'hidden',
-      left: pct(card.rect.x),
+      start: pct(card.rect.x),
       top: pct(card.rect.y),
       width: pct(card.rect.w),
       height: pct(card.rect.h),
@@ -230,7 +230,7 @@ function Stage({
       {hasPlane ? (
         <Box
           absolute
-          left={`${card.rect.x * 100}%`}
+          start={`${card.rect.x * 100}%`}
           top={`${card.rect.y * 100}%`}
           w={`${card.rect.w * 100}%`}
           h={`${card.rect.h * 100}%`}

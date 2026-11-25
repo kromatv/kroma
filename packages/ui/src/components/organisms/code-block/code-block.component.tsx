@@ -67,7 +67,7 @@ function CodeBlock({ code, numbers, maxHeight = 320 }: Readonly<CodeBlockProps>)
   // not shove its code sideways one digit at a time.
   const digits = String(rows.length).length;
   return (
-    <Box bg="surface2" radius="xl" style={[s.frame, { maxHeight }]}>
+    <Box bg="surface2" radius="xl" dir="ltr" style={[s.frame, { maxHeight }]}>
       {available ? (
         <RingScope placement="inside">
           <Box absolute style={s.copySlot}>
@@ -130,10 +130,10 @@ const sDefinition = styles({
   // which would put the lines side by side.
   codeCol: { grow: 1, shrink: 0, flexDirection: 'column' },
   // Clearance for the copy button floating over the top-right corner.
-  bodyCopy: { pr: 44 },
+  bodyCopy: { pe: 44 },
   // The gutter is a fixed column, so the separator is what tells you the
   // numbers are parked rather than scrolled off with the code.
-  gutterCol: { pr: 12, mr: 12, borderRightWidth: 1, borderRightColor: 'border' },
+  gutterCol: { pe: 12, me: 12, borderEndWidth: 1, borderEndColor: 'border' },
   line: { ...LINE },
   gutter: {
     font: 'mono',
@@ -141,7 +141,7 @@ const sDefinition = styles({
     lineHeight: LINE.lineHeight,
     opacity: 0.6,
   },
-  copySlot: { top: 6, right: 6, z: 1 },
+  copySlot: { top: 6, end: 6, z: 1 },
 });
 
 export type { CodeBlockProps };

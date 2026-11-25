@@ -275,7 +275,7 @@ function Stars({ rating }: Readonly<{ rating: number }>) {
       {[0, 1, 2, 3, 4].map((i) => (
         <Icon key={i} name={starGlyph(outOfFive - i)} size={11} color={starInk(outOfFive - i)} />
       ))}
-      <Text variant="meta" color="textDim" ml={4}>
+      <Text variant="meta" color="textDim" ms={4}>
         {rating.toFixed(1)}
       </Text>
     </Row>

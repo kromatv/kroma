@@ -269,7 +269,7 @@ export function BrowseScreen<T extends Browsable>({
               <EmptyState.Title>{t('search.noResults')}</EmptyState.Title>
             </EmptyState.Root>
           ) : (
-            <Box pr={showRail ? RAIL_RESERVE : undefined}>
+            <Box pe={showRail ? RAIL_RESERVE : undefined}>
               <div ref={gridWrap}>{renderGrid(view)}</div>
             </Box>
           )}

@@ -119,6 +119,7 @@ function Root({
       <Box
         ref={ref}
         nativeID={PLAYER_ROOT_ID}
+        dir="ltr"
         fill
         z={60}
         // Transparent ONLY over a hardware plane, which is behind the page and
@@ -179,8 +180,8 @@ function Root({
               {/* top bar */}
               <Box
                 absolute
-                left={0}
-                right={0}
+                start={0}
+                end={0}
                 top={0}
                 z={20}
                 opacity={chromeShown ? 1 : 0}

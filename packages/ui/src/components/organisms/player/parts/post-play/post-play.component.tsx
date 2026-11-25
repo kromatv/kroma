@@ -93,7 +93,7 @@ const copyOf = (tier: (typeof TIERS)[keyof typeof TIERS], scope: StyleScope) =>
     `post-play:copy:${tier.copy}`,
     {
       position: 'absolute',
-      left: tier.gutter,
+      start: tier.gutter,
       bottom: tier.foot,
       maxWidth: tier.copy,
     },
@@ -130,7 +130,7 @@ export function PostPlay({ item, finished, stageWidth, onPlay, onHome }: Readonl
         <Box fill style={[s.inert, layers.ceiling]} />
       </Animated.View>
 
-      <Box absolute left={tier.gutter} top={tier.head} right={tier.gutter}>
+      <Box absolute start={tier.gutter} top={tier.head} end={tier.gutter}>
         <Text lines={1} variant={tier.meta} color="text/50">
           {t('player.finishedWatching', { title: finished })}
         </Text>

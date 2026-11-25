@@ -61,5 +61,5 @@ export function TitleBar({
 }
 
 const sDefinition = styles({
-  close: { ml: 'auto' },
+  close: { ms: 'auto' },
 });

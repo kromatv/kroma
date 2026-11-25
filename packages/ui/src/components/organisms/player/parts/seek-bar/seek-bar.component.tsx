@@ -218,7 +218,7 @@ export function SeekBar({
       : previewCentre(offsetAt(previewSec * 1000, segs, trackWidth), trackWidth, previewHalf);
 
   return (
-    <Box mb={labels === 'above' ? px(20) : 0}>
+    <Box mb={labels === 'above' ? px(20) : 0} dir="ltr">
       {labels === 'above' ? (
         <SeekBarLabels
           elapsed={elapsed}
@@ -258,7 +258,7 @@ export function SeekBar({
           <Box
             absolute
             bottom={px(36)}
-            left={0}
+            start={0}
             z={6}
             align="center"
             gap={px(8)}
@@ -304,13 +304,13 @@ export function SeekBar({
                       fill
                       radius="pill"
                       bg={seekBar(scope.theme).buffered}
-                      style={{ right: `${(1 - buffed) * 100}%` }}
+                      style={{ end: `${(1 - buffed) * 100}%` }}
                     />
                   )}
                   <Box
                     fill
                     radius="pill"
-                    style={[playedFill(scope.theme), { right: `${(1 - played) * 100}%` }]}
+                    style={[playedFill(scope.theme), { end: `${(1 - played) * 100}%` }]}
                   />
                 </Box>
               );
@@ -321,7 +321,7 @@ export function SeekBar({
             <Box
               absolute
               top="50%"
-              left={0}
+              start={0}
               w={px(16)}
               h={px(16)}
               radius="circle"
