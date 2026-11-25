@@ -17,7 +17,6 @@
   "about.memory": "Memory",
   "about.memoryFree": "{free} GB free of {total} GB",
   "about.memorySize": "{gb} GB",
-  "about.motto": "Built to be owned, not rented.",
   "about.platform": "Platform",
   "about.privacyBody": "The app collects nothing. There is no account with us, no analytics and no tracking: it talks to the server you configure, and shows only what that server serves. Your server can be asked to be counted among the KROMA installs running in the world, anonymously, and is not unless its owner switches that on.",
   "about.privacyRead": "Read the full policy",

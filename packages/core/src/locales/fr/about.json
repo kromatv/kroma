@@ -17,7 +17,6 @@
   "about.memory": "Mémoire",
   "about.memoryFree": "{free} Go libres sur {total} Go",
   "about.memorySize": "{gb} Go",
-  "about.motto": "Conçu pour être possédé, pas loué.",
   "about.platform": "Plateforme",
   "about.privacyBody": "L'application ne collecte rien : aucun compte KROMA à créer, aucune mesure d'audience, aucun traçage. Elle échange uniquement avec le serveur que vous configurez et n'affiche que ce qu'il envoie. Votre serveur peut figurer, de façon anonyme, dans le décompte des installations KROMA dans le monde, mais seulement si son propriétaire l'active.",
   "about.privacyRead": "Lire la politique complète",

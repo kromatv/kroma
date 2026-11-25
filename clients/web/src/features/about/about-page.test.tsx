@@ -3,7 +3,6 @@
 import { I18nProvider } from '@kromatv/ui';
 import { KitProvider } from '@kromatv/ui/kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
@@ -12,13 +11,6 @@ import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 const clipboard = vi.hoisted(() => ({ copy: vi.fn(async () => true) }));
 
 vi.mock('#web/shared/lib/copy-text', () => ({ copyText: clipboard.copy }));
-vi.mock('#web/shared/ui/route-link.component', () => ({
-  RouteLink: ({ to, children, ...props }: Readonly<{ to: string; children?: ReactNode }>) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
-  ),
-}));
 
 import { AboutHero } from './about-hero.component';
 import { AppCard, ServerCard } from './build-cards.component';

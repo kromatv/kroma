@@ -13,19 +13,21 @@ const CARD = 320;
  * collects, and the open source code it ships. */
 export function AboutPage() {
   return (
-    <PageFrame pt={20}>
-      <Box w="100%" maxW={COLUMN} self="center" gap={20}>
+    <PageFrame>
+      <Box w="100%" maxW={COLUMN} self="center" gap={40}>
         <AboutHero info={buildInfo} />
-        <Box row wrap gap={20}>
-          <Box flex minW={CARD}>
-            <ServerCard />
+        <Box gap={20}>
+          <Box row wrap gap={20}>
+            <Box flex minW={CARD}>
+              <ServerCard />
+            </Box>
+            <Box flex minW={CARD}>
+              <AppCard info={buildInfo} />
+            </Box>
           </Box>
-          <Box flex minW={CARD}>
-            <AppCard info={buildInfo} />
-          </Box>
+          <PrivacyCard />
+          <LicensesCard />
         </Box>
-        <PrivacyCard />
-        <LicensesCard />
       </Box>
     </PageFrame>
   );
