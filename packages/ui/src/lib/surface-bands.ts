@@ -14,6 +14,9 @@ interface SurfaceBands {
   /** Everything that claimed no band, which a Root hands to the panel it draws
    *  for itself. */
   loose: ReactNode[];
+  /** How many children claimed no band beside a panel the caller wrote. A Root
+   *  draws a panel of its own only when it was given none, so these are not drawn. */
+  unplaced: number;
 }
 
 /**
@@ -31,12 +34,8 @@ function surfaceBands(children: ReactNode, parts: Readonly<SurfaceParts>): Surfa
   const header = find(parts.header);
   const panel = find(parts.panel);
   const footer = find(parts.footer);
-  return {
-    header,
-    panel,
-    footer,
-    loose: kids.filter((node) => node !== header && node !== panel && node !== footer),
-  };
+  const loose = kids.filter((node) => node !== header && node !== panel && node !== footer);
+  return { header, panel, footer, loose, unplaced: panel ? loose.length : 0 };
 }
 
 function isEmptyBand(node: ReactNode, parts: Readonly<SurfaceParts>): boolean {

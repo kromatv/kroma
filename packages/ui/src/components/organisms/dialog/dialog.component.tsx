@@ -16,6 +16,7 @@ import { useModalPortalRepair } from '#ui/lib/modal-portal.hook';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host.component';
 import { namingProps } from '#ui/lib/naming-props';
 import { ScopeCarrier } from '#ui/lib/scope-carrier.component';
+import { PlacedBands } from '#ui/lib/surface-band.component';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
 import { dialogPad, SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
@@ -135,6 +136,7 @@ function DialogSurface({
     panel: panelPart,
     footer: footerPart,
     loose,
+    unplaced,
   } = surfaceBands(children, { header: Header, panel: Panel, footer: Footer });
   const header =
     headerPart ?? defaultHeader({ showsTitle, title, description, titleId, descriptionId });
@@ -171,9 +173,11 @@ function DialogSurface({
         {...naming}
       >
         <ShellContext value={shell}>
-          {header}
-          {panelPart ?? <Panel>{loose}</Panel>}
-          {footerPart}
+          <PlacedBands surface="Dialog" unplaced={unplaced}>
+            {header}
+            {panelPart ?? <Panel>{loose}</Panel>}
+            {footerPart}
+          </PlacedBands>
         </ShellContext>
       </Box>
     </Box>

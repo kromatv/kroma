@@ -378,7 +378,8 @@
         "**/*.config.ts",
         "**/*.config.mjs",
         "**/vite/**",
-        "apps/lingua/src/server/log.ts"
+        "apps/lingua/src/server/log.ts",
+        "packages/ui/src/lib/dev-warning.ts"
       ],
       "rules": {
         "no-console": "off"

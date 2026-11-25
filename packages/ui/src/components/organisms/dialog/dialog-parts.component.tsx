@@ -8,6 +8,7 @@ import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 
 import { useStyles } from '#ui/core/styles';
+import { SurfaceBand } from '#ui/lib/surface-band.component';
 import { DIALOG_PAD } from '#ui/lib/surface-shell';
 
 interface Shell {
@@ -46,9 +47,11 @@ const bandOf = (pad: number, top: number, bottom: number, gap: number, scope: St
 function Header({ children }: Readonly<{ children: ReactNode }>) {
   const { pad } = useShell();
   return (
-    <Box shrink={0} gap={8} px={pad} pt={pad} pb={band(pad)}>
-      {children}
-    </Box>
+    <SurfaceBand part="Dialog.Header">
+      <Box shrink={0} gap={8} px={pad} pt={pad} pb={band(pad)}>
+        {children}
+      </Box>
+    </SurfaceBand>
   );
 }
 
@@ -65,18 +68,20 @@ function Panel({ children }: Readonly<{ children: ReactNode }>) {
   // control flush with its edge loses the side of its ring that stands outside.
   const room = pad > 0 ? RING_ROOM : 0;
   return (
-    <ScrollView
-      style={s.panel}
-      contentContainerStyle={bandOf(
-        pad,
-        hasHeader ? room : pad,
-        hasFooter ? room : pad,
-        gap,
-        scope,
-      )}
-    >
-      {children}
-    </ScrollView>
+    <SurfaceBand part="Dialog.Panel">
+      <ScrollView
+        style={s.panel}
+        contentContainerStyle={bandOf(
+          pad,
+          hasHeader ? room : pad,
+          hasFooter ? room : pad,
+          gap,
+          scope,
+        )}
+      >
+        {children}
+      </ScrollView>
+    </SurfaceBand>
   );
 }
 
@@ -84,9 +89,11 @@ function Panel({ children }: Readonly<{ children: ReactNode }>) {
 function Footer({ children }: Readonly<{ children: ReactNode }>) {
   const { pad } = useShell();
   return (
-    <Box shrink={0} px={pad} pt={band(pad)} pb={pad}>
-      {children}
-    </Box>
+    <SurfaceBand part="Dialog.Footer">
+      <Box shrink={0} px={pad} pt={band(pad)} pb={pad}>
+        {children}
+      </Box>
+    </SurfaceBand>
   );
 }
 

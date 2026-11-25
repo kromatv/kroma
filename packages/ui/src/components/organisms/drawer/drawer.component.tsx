@@ -20,6 +20,7 @@ import { FocusScope, useLockFocusBehind } from '#ui/lib/focus-scope.component';
 import { useModalPortalRepair } from '#ui/lib/modal-portal.hook';
 import { useOverlay, useOverlayHost } from '#ui/lib/overlay-host.component';
 import { ScopeCarrier } from '#ui/lib/scope-carrier.component';
+import { PlacedBands } from '#ui/lib/surface-band.component';
 import { useScrollLock } from '#ui/lib/scroll-lock';
 import { surfaceBands } from '#ui/lib/surface-bands';
 import { SURFACE_WIDTH, type SurfaceWidth, surfaceGutter } from '#ui/lib/surface-shell';
@@ -150,6 +151,7 @@ function DrawerSurface({
     panel: panelPart,
     footer: footerPart,
     loose,
+    unplaced,
   } = surfaceBands(children, { header: Header, panel: Panel, footer: Footer });
 
   const panel = (
@@ -173,9 +175,11 @@ function DrawerSurface({
           dataSet={FOCUS_SCOPE}
         >
           <ShellContext value={shell}>
-            {headerPart ?? defaultHeader(title)}
-            {panelPart ?? <Panel>{loose}</Panel>}
-            {footerPart}
+            <PlacedBands surface="Drawer" unplaced={unplaced}>
+              {headerPart ?? defaultHeader(title)}
+              {panelPart ?? <Panel>{loose}</Panel>}
+              {footerPart}
+            </PlacedBands>
           </ShellContext>
         </Box>
       </SlidePanel>
