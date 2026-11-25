@@ -10,6 +10,7 @@ import {
 } from './control-props';
 import type {
   ActionArgs,
+  AnyReason,
   Bound,
   ChangeDetails,
   ChangeSource,
@@ -43,12 +44,12 @@ export type Control = {
 };
 
 /** The same control, as the code that knows its definition holds it. */
-export type ControlHandle<S, O, A extends ActionArgs> = Omit<
+export type ControlHandle<S, O, A extends ActionArgs, R extends string = AnyReason> = Omit<
   Control,
   'definition' | 'actions' | 'state' | 'options'
 > & {
-  readonly definition: ControlDefinition<S, O, A>;
-  readonly actions: Setters<S> & Bound<A>;
+  readonly definition: ControlDefinition<S, O, A, R>;
+  readonly actions: Setters<S, R> & Bound<A>;
   readonly state: () => Readonly<S>;
   readonly options: () => Readonly<O>;
 };
@@ -128,11 +129,15 @@ function apply(patch: object, change: Change, reason: string): boolean {
   return changed;
 }
 
+function reasonOf(why: unknown): string {
+  const reason = typeof why === 'object' && why !== null ? propOf(why, 'reason') : why;
+  return typeof reason === 'string' ? reason : 'set';
+}
+
 function bind(definition: AnyDefinition, change: Change, now: () => Bag): AnyActions {
   const actions: Record<string, (...args: readonly unknown[]) => boolean> = {};
   for (const { key, setter } of definition.keys) {
-    actions[setter] = (next, reason) =>
-      change(key, next, typeof reason === 'string' ? reason : 'set');
+    actions[setter] = (next, why) => change(key, next, reasonOf(why));
   }
   for (const [name, action] of Object.entries(definition.actions)) {
     actions[name] = (...args) => apply(action(now(), ...args), change, name);
@@ -165,11 +170,16 @@ function createChange({ definition, store, engine }: Wiring, self: () => Control
  * actions. Given an engine, it is listed there while attached and every change
  * that takes effect is reported to it.
  */
-export function createControl<S extends object, O extends object, A extends ActionArgs>(
-  definition: ControlDefinition<S, O, A>,
+export function createControl<
+  S extends object,
+  O extends object,
+  A extends ActionArgs,
+  R extends string,
+>(
+  definition: ControlDefinition<S, O, A, R>,
   first: PropsOf<S, O>,
   engine: ControlEngine | null,
-): ControlHandle<S, O, A>;
+): ControlHandle<S, O, A, R>;
 export function createControl(
   definition: AnyDefinition,
   first: object,

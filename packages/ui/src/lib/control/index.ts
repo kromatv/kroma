@@ -8,6 +8,7 @@ export type {
   ControlDefinition,
   ControlOf,
   ControlProps,
+  ReasonOf,
 } from './control-types';
-export { defineControl } from './define-control';
+export { defineControl, typed } from './define-control';
 export { useControl } from './use-control.hook';

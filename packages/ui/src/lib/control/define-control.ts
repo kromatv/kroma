@@ -2,6 +2,7 @@ import type { Bag } from './control-props';
 import type {
   ActionArgs,
   Actions,
+  AnyReason,
   ControlDefinition,
   ControlShape,
   StateKey,
@@ -19,9 +20,17 @@ type Loose = {
   state: object;
   options?: object;
   actions?: Readonly<Record<string, AnyAction>>;
+  reasons?: readonly string[];
 };
 
 const NOTHING = Object.freeze({});
+const NO_REASONS: readonly string[] = Object.freeze([]);
+
+/**
+ * A value a state key or an option starts from, when its type is wider than
+ * the value shows: `typed<number | null>(null)`, `typed<readonly string[]>([])`.
+ */
+export const typed = <T>(value: T): T => value;
 
 const capital = (key: string) => key.charAt(0).toUpperCase() + key.slice(1);
 
@@ -57,15 +66,26 @@ function clash(control: string, names: readonly string[]): void {
  * A component built on it with `useControl` takes `value`, `defaultValue`,
  * `onValueChange(next, details)`, `step` and `max`, and gets `value`, `step`,
  * `max`, `setValue(next)`, `increment()` and `jump(to)`.
+ *
+ * `reasons` lists why a setter of the control changes a key, and types both
+ * ends: `reasons: ['trigger', 'escape', 'back']` lets the component call
+ * `setOpen(false, 'back')` and no other, and the app's `details.reason` is one
+ * of them, an action's name, or `set`.
  */
 export function defineControl<
   S extends object,
   O extends object = object,
   A extends ActionArgs = ActionArgs,
+  R extends string = AnyReason,
 >(
   name: string,
-  parts: { readonly state: S; readonly options?: O; readonly actions?: Actions<S, O, A> },
-): ControlDefinition<S, O, A>;
+  parts: {
+    readonly state: S;
+    readonly options?: O;
+    readonly actions?: Actions<S, O, A>;
+    readonly reasons?: readonly R[];
+  },
+): ControlDefinition<S, O, A, R>;
 export function defineControl(name: string, parts: Loose): AnyDefinition {
   const options = parts.options ?? NOTHING;
   const actions = parts.actions ?? NOTHING;
@@ -86,6 +106,7 @@ export function defineControl(name: string, parts: Loose): AnyDefinition {
     keys,
     keyOf: new Map(keys.map((entry) => [entry.key, entry])),
     optionKeys: optionNames.map((key) => ({ key, from: key })),
+    reasons: parts.reasons ?? NO_REASONS,
     owned: new Set([...read, ...optionNames]),
   };
 }
