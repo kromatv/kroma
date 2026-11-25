@@ -14,6 +14,12 @@ export function useDirection(): TextDirection {
   return use(DirectionContext);
 }
 
+/** `distance` along the x axis towards the end of the line: to the right left
+ *  to right, to the left right to left. For a slide a transform computes. */
+export function useTowardsEnd(distance: number): number {
+  return useDirection() === 'rtl' ? -distance : distance;
+}
+
 const DIRECTED: Readonly<Record<TextDirection, ViewStyle>> = StyleSheet.create({
   ltr: { direction: 'ltr' },
   rtl: { direction: 'rtl' },

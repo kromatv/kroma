@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DirectionContext, useDirection } from './direction';
+import { DirectionContext, useDirection, useTowardsEnd } from './direction';
 import { DirectionRoot } from './direction-root.component';
 
 afterEach(cleanup);
@@ -25,6 +25,28 @@ describe('useDirection', () => {
     );
 
     expect(screen.getByTestId('probe').textContent).toBe('rtl');
+  });
+});
+
+function Distance() {
+  return <span data-testid="distance">{useTowardsEnd(12)}</span>;
+}
+
+describe('useTowardsEnd', () => {
+  it('keeps a distance to the right in a layout that runs left to right', () => {
+    render(<Distance />);
+
+    expect(screen.getByTestId('distance').textContent).toBe('12');
+  });
+
+  it('turns a distance to the left in a layout that runs right to left', () => {
+    render(
+      <DirectionContext value="rtl">
+        <Distance />
+      </DirectionContext>,
+    );
+
+    expect(screen.getByTestId('distance').textContent).toBe('-12');
   });
 });
 
