@@ -3,7 +3,7 @@ import { Text } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { NotificationMatrix } from '#web/features/accounts/account/notification-matrix.component';
 import { PushCard } from '#web/features/accounts/account/push-card.component';
-import { SettingCard } from '#web/features/accounts/account/setting-card.component';
+import { SettingCard } from '#web/shared/ui/setting-card.component';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 import { DeliveryLog } from '#web/shared/ui/delivery-log.component';
 

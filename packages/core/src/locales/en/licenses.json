@@ -1,0 +1,16 @@
+{
+  "licenses.body": "KROMA is built on open source software. Here is every package the server and this app ship, with its license.",
+  "licenses.count": "{count} packages",
+  "licenses.count_one": "{count} package",
+  "licenses.failed": "The server's licenses could not be loaded, so only this app's are listed.",
+  "licenses.matches": "{shown} of {count}",
+  "licenses.noText": "This package ships no license text. Its source states the terms.",
+  "licenses.none": "No package matches this search.",
+  "licenses.search": "Search packages",
+  "licenses.server": "Server",
+  "licenses.showAll": "Show all {count}",
+  "licenses.source": "Source",
+  "licenses.title": "Open source licenses",
+  "licenses.unknown": "License not stated",
+  "licenses.web": "Web"
+}

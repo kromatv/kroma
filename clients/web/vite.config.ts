@@ -1,5 +1,6 @@
 import { kroma } from '@kromatv/bundler';
 import { standaloneScript } from '@kromatv/bundler/standalone-script';
+import { thirdPartyNotices } from '@kromatv/bundler/third-party-notices';
 import { kromaModule } from '@kromatv/module-sdk/vite';
 import { defineConfig } from 'vite';
 import { swScript } from './sw.build.ts';
@@ -15,6 +16,7 @@ export default defineConfig({
     }),
     kromaModule(),
     standaloneScript(swScript),
+    thirdPartyNotices({ title: 'KROMA web: third-party notices' }),
   ],
   environments: {
     client: {

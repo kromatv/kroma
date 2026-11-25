@@ -2,7 +2,7 @@ import type { AccountPatch } from '@kromatv/client/accounts';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Field, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { SettingCard } from '#web/features/accounts/account/setting-card.component';
+import { SettingCard } from '#web/shared/ui/setting-card.component';
 import { StatusText, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 

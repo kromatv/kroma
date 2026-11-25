@@ -5,7 +5,7 @@ import { useT } from '@kromatv/ui';
 import { Button } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PasswordDialog } from '#web/features/accounts/account/password-dialog.component';
-import { SettingCard } from '#web/features/accounts/account/setting-card.component';
+import { SettingCard } from '#web/shared/ui/setting-card.component';
 
 export function SecurityCard() {
   const t = useT();

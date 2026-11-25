@@ -4,7 +4,7 @@ import { useT } from '@kromatv/ui';
 import { Button, Callout, Switch, Text } from '@kromatv/ui/kit';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useSyncExternalStore } from 'react';
-import { SettingCard } from '#web/features/accounts/account/setting-card.component';
+import { SettingCard } from '#web/shared/ui/setting-card.component';
 import { pushBlocker, webPush } from '#web/shared/lib/push';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 

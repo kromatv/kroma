@@ -1,5 +1,5 @@
-//! The server's own status: the public health and status probes, the log tail
-//! and a manual rescan.
+//! The server's own status: the public health and status probes, the log tail,
+//! a manual rescan and the licenses of the crates it was built with.
 
 use std::net::SocketAddr;
 
@@ -28,6 +28,7 @@ pub fn routes() -> Router<SharedState> {
     Router::new()
         .route("/logs", get(logs))
         .route("/scan", post(rescan))
+        .route("/licenses", get(licenses))
 }
 
 /// `GET /api/health`. Public, so the human-readable server name is attached for
@@ -90,6 +91,18 @@ pub async fn rescan(
             "scan job not registered",
         )),
     }
+}
+
+/// `GET /api/licenses`: every third-party crate the server links, its license
+/// and its notice texts, collected by `build.rs` with `kroma-notices`.
+pub async fn licenses() -> impl IntoResponse {
+    (
+        [
+            (header::CONTENT_TYPE, "application/json"),
+            (header::CACHE_CONTROL, "private, max-age=86400"),
+        ],
+        include_str!(concat!(env!("OUT_DIR"), "/third-party-licenses.json")),
+    )
 }
 
 /// `GET /api/status` → live scan/enrichment snapshot.

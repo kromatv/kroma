@@ -1,6 +1,6 @@
 import { LOCALES, localeLabel } from '@kromatv/core';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
-import { ChoiceList, Field, GuidedFlow, Text } from '@kromatv/ui/kit';
+import { ChoiceList, GuidedFlow, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import {
   type LanguageChoice,
@@ -9,6 +9,7 @@ import {
   preferredCodes,
 } from '#web/features/setup/language-choices';
 import { nativeLanguageName } from '#web/features/setup/native-language-name';
+import { SearchField } from '#web/shared/ui/search-field.component';
 
 const SEARCH_FROM = 8;
 
@@ -53,14 +54,7 @@ function LanguageSearch({
 }: Readonly<{ typed: string; onType: (typed: string) => void }>) {
   const t = useT();
   return (
-    <Field.Root size="md" label={t('setup.languageSearch')} hideLabel>
-      <Field.Input
-        icon="search"
-        placeholder={t('setup.languageSearch')}
-        value={typed}
-        onValueChange={onType}
-      />
-    </Field.Root>
+    <SearchField size="md" label={t('setup.languageSearch')} value={typed} onValueChange={onType} />
   );
 }
 

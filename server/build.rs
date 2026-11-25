@@ -5,18 +5,7 @@ fn main() {
         "cargo:rustc-env=KROMA_BUILD_TARGET={}",
         std::env::var("TARGET").unwrap_or_default()
     );
-    // env!("KROMA_GIT_HASH") for the admin "Version installée" row and for the
-    // anonymous heartbeat. The build supplies it where it can: a release
-    // compiles inside a container over a bind-mounted checkout, which git
-    // refuses to read as a repository nobody in there owns, so asking git at
-    // this point answered "unknown" for every published build.
-    let commit = from_env("KROMA_GIT_HASH")
-        .or_else(|| {
-            watch_head();
-            output("git", &["rev-parse", "--short", "HEAD"])
-        })
-        .unwrap_or_else(|| "unknown".to_owned());
-    println!("cargo:rustc-env=KROMA_GIT_HASH={commit}");
+    println!("cargo:rustc-env=KROMA_GIT_HASH={}", commit());
 
     // `date -u` exists on the Linux/macOS build hosts; anything else falls back
     // to "unknown".
@@ -33,6 +22,22 @@ fn main() {
     println!("cargo:rerun-if-env-changed=KROMA_GIT_HASH");
     println!("cargo:rerun-if-env-changed=KROMA_VERSION");
     println!("cargo:rerun-if-env-changed=KROMA_BUILD");
+
+    kroma_notices::emit("third-party-licenses.json");
+}
+
+// env!("KROMA_GIT_HASH") for the admin "Version installée" row and for the
+// anonymous heartbeat. The build supplies it where it can: a release compiles
+// inside a container over a bind-mounted checkout, which git refuses to read as
+// a repository nobody in there owns, so asking git at this point answered
+// "unknown" for every published build.
+fn commit() -> String {
+    from_env("KROMA_GIT_HASH")
+        .or_else(|| {
+            watch_head();
+            output("git", &["rev-parse", "--short", "HEAD"])
+        })
+        .unwrap_or_else(|| "unknown".to_owned())
 }
 
 fn watch_head() {

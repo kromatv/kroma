@@ -188,6 +188,8 @@ mod it_playback;
 #[cfg(test)]
 mod it_playback_faults;
 #[cfg(test)]
+mod it_licenses;
+#[cfg(test)]
 mod it_releases;
 #[cfg(test)]
 mod it_rematch;
