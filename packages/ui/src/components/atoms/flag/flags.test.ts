@@ -1,4 +1,4 @@
-import { FLAGGED_LOCALES, flagRegion } from '@kromatv/core';
+import { FLAGGED_LOCALES, flagRegion } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
 import { flagSvg, isFlagRegion } from './flags';
 

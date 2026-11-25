@@ -1,4 +1,4 @@
-import { BR, CN, DE, ES, FR, JP, KR, US, VN } from 'country-flag-icons/string/3x2';
+import { BR, CN, DE, ES, FR, JP, KR, US, VN } from 'country-flag-icons/string/1x1';
 
 const FLAG_SVG = { BR, CN, DE, ES, FR, JP, KR, US, VN } as const satisfies Record<string, string>;
 
@@ -13,7 +13,7 @@ export function isFlagRegion(region: string | null): region is FlagRegion {
 /** Every country the kit draws the flag of. */
 export const FLAG_SVG_REGIONS: readonly FlagRegion[] = Object.keys(FLAG_SVG).filter(isFlagRegion);
 
-/** The flag of `region` as an SVG document, 3:2. */
+/** The flag of `region` as an SVG document, square. */
 export function flagSvg(region: FlagRegion): string {
   return FLAG_SVG[region];
 }

@@ -77,7 +77,7 @@ export function SiteHeader() {
             >
               <IconMenu2 size={20} stroke={1.75} aria-hidden />
             </summary>
-            <div className="absolute right-0 top-11 w-60 rounded-2xl border border-border-strong bg-surface-1 p-2 shadow-pop">
+            <div className="absolute right-0 top-11 max-h-[calc(100dvh-4rem)] w-60 overflow-y-auto overscroll-contain rounded-2xl border border-border-strong bg-surface-1 p-2 shadow-pop">
               <nav className="flex flex-col">
                 {nav.map((l) =>
                   l.kind === 'route' ? (
@@ -106,9 +106,9 @@ export function SiteHeader() {
                 >
                   <IconBrandGithub size={18} stroke={1.75} aria-hidden /> GitHub
                 </a>
-                <div className="mt-1 flex items-center gap-2 border-t border-border px-3 pt-3">
-                  <LangSwitcher />
-                  <ThemeSwitcher />
+                <div className="mt-1 flex flex-col gap-2 border-t border-border px-1 pt-3">
+                  <LangSwitcher placement="inline" />
+                  <ThemeSwitcher className="self-start" />
                 </div>
               </nav>
             </div>

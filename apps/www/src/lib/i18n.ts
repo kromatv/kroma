@@ -18,11 +18,6 @@ export type Lang = (typeof locales)[number];
 
 export { baseLocale as defaultLocale, getLocale, locales };
 
-/** The short label the language switcher shows: `FR`, `PT-BR`. */
-export function localeShort(lang: Lang): string {
-  return lang.toUpperCase();
-}
-
 // Paraglide's URL helpers parse absolute URLs, so a bare path needs an origin
 // to be handed to them; it is discarded again, only the pathname is read back.
 const ORIGIN = 'https://kroma.tv';

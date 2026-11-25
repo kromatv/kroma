@@ -1,10 +1,10 @@
 import {
-  flagRegion,
   groupLocales,
   type LocaleChoice,
   type LocaleGroups,
   suggestedLocales,
 } from '@kromatv/core';
+import { flagRegion } from '@kromatv/i18n';
 import { useState } from 'react';
 import { Badge } from '#ui/components/atoms/badge';
 import { Box } from '#ui/components/atoms/box';
@@ -16,20 +16,20 @@ import type { ControlSize } from '#ui/lib/field-shell';
 import { useTDefault } from '#ui/services/i18n';
 import { type LanguagePickerState, useLanguagePicker } from './language-picker-context';
 
-const MARK: Record<ControlSize, number> = { sm: 14, md: 16, tv: 22 };
+const MARK: Record<ControlSize, number> = { sm: 16, md: 20, tv: 28 };
 const CHECK: Record<ControlSize, number> = { sm: 16, md: 18, tv: 24 };
 
 /** The flag that stands for a language, or the neutral language glyph in the
  *  same box where no flag does. */
 function Mark({ code, size }: Readonly<{ code: string; size: ControlSize }>) {
-  const height = MARK[size];
+  const side = MARK[size];
   const region = flagRegion(code);
   if (isFlagRegion(region)) {
-    return <Flag region={region} height={height} />;
+    return <Flag region={region} size={side} />;
   }
   return (
-    <Box w={height * 1.5} h={height} radius="xs" bg="tint/8" center shrink={0}>
-      <Icon name="language" size={Math.round(height * 0.8)} color="textMuted" />
+    <Box w={side} h={side} radius="xs" bg="tint/8" center shrink={0}>
+      <Icon name="language" size={Math.round(side * 0.75)} color="textMuted" />
     </Box>
   );
 }
