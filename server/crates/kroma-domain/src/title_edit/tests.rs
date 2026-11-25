@@ -37,7 +37,9 @@ fn written(
 fn an_edit_left_blank_follows_the_provider_in_every_field() {
     let edit = TitleEdit {
         title: Some("   ".into()),
+        original_title: Some(" ".into()),
         sort_title: Some(" ".into()),
+        tagline: Some("  ".into()),
         overview: Some(String::new()),
         year: None,
         released: Some(" ".into()),
@@ -53,7 +55,9 @@ fn an_edit_left_blank_follows_the_provider_in_every_field() {
 fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
     let edit = TitleEdit {
         title: Some("  Heat ".into()),
+        original_title: Some(" Heat ".into()),
         sort_title: Some(" Heat ".into()),
+        tagline: Some(" A Los Angeles crime saga ".into()),
         overview: Some(" Two men. ".into()),
         year: Some(1995),
         released: Some(" 1995-12-15 ".into()),
@@ -63,7 +67,9 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
     let tidied = edit.tidied();
 
     assert_eq!(tidied.title.as_deref(), Some("Heat"));
+    assert_eq!(tidied.original_title.as_deref(), Some("Heat"));
     assert_eq!(tidied.sort_title.as_deref(), Some("Heat"));
+    assert_eq!(tidied.tagline.as_deref(), Some("A Los Angeles crime saga"));
     assert_eq!(tidied.overview.as_deref(), Some("Two men."));
     assert_eq!(tidied.year, Some(1995));
     assert_eq!(tidied.released.as_deref(), Some("1995-12-15"));
@@ -74,7 +80,9 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
 fn an_edit_fits_up_to_each_limit_and_no_further() {
     let at_limit = TitleEdit {
         title: Some("a".repeat(TITLE_MAX)),
+        original_title: Some("a".repeat(TITLE_MAX)),
         sort_title: Some("a".repeat(TITLE_MAX)),
+        tagline: Some("é".repeat(TAGLINE_MAX)),
         overview: Some("é".repeat(OVERVIEW_MAX)),
         year: Some(*YEARS.end()),
         released: Some("2200-12-31".into()),
@@ -86,6 +94,14 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
     };
     let long_sort_title = TitleEdit {
         sort_title: Some("a".repeat(TITLE_MAX + 1)),
+        ..Default::default()
+    };
+    let long_original_title = TitleEdit {
+        original_title: Some("a".repeat(TITLE_MAX + 1)),
+        ..Default::default()
+    };
+    let long_tagline = TitleEdit {
+        tagline: Some("a".repeat(TAGLINE_MAX + 1)),
         ..Default::default()
     };
     let too_many_genres = TitleEdit {
@@ -104,6 +120,8 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
     assert!(at_limit.fits());
     assert!(!long_title.fits());
     assert!(!long_sort_title.fits());
+    assert!(!long_original_title.fits());
+    assert!(!long_tagline.fits());
     assert!(!too_many_genres.fits());
     assert!(!long_genre.fits());
     assert!(!early.fits());
@@ -113,7 +131,9 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
 fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
     let long = TitleEdit {
         title: Some(format!(" {}", "a".repeat(TITLE_MAX + 5))),
+        original_title: Some("a".repeat(TITLE_MAX + 1)),
         sort_title: Some("a".repeat(TITLE_MAX + 1)),
+        tagline: Some("a".repeat(TAGLINE_MAX + 1)),
         overview: Some("é".repeat(OVERVIEW_MAX + 1)),
         year: Some(*YEARS.end() + 1),
         released: Some("1995-02-30".into()),
@@ -125,8 +145,16 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
     assert!(clipped.fits());
     assert_eq!(clipped.title.map(|t| t.chars().count()), Some(TITLE_MAX));
     assert_eq!(
+        clipped.original_title.map(|t| t.chars().count()),
+        Some(TITLE_MAX)
+    );
+    assert_eq!(
         clipped.sort_title.map(|t| t.chars().count()),
         Some(TITLE_MAX)
+    );
+    assert_eq!(
+        clipped.tagline.map(|t| t.chars().count()),
+        Some(TAGLINE_MAX)
     );
     assert_eq!(
         clipped.overview.map(|t| t.chars().count()),
@@ -145,7 +173,9 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
     };
     let file = TitleEdit {
         title: Some("heat".into()),
+        original_title: Some("Heat".into()),
         sort_title: Some("Heat, the".into()),
+        tagline: Some("A Los Angeles crime saga".into()),
         overview: Some("Two men.".into()),
         year: Some(1995),
         released: Some("1995-12-15".into()),
@@ -155,7 +185,9 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
     let shown = hand.over(file);
 
     assert_eq!(shown.title.as_deref(), Some("Heat"));
+    assert_eq!(shown.original_title.as_deref(), Some("Heat"));
     assert_eq!(shown.sort_title.as_deref(), Some("Heat, the"));
+    assert_eq!(shown.tagline.as_deref(), Some("A Los Angeles crime saga"));
     assert_eq!(shown.overview.as_deref(), Some("Two men."));
     assert_eq!(shown.year, Some(1995));
     assert_eq!(shown.released.as_deref(), Some("1995-12-15"));
@@ -335,5 +367,47 @@ fn a_sort_title_goes_on_the_record_and_leaves_the_name_shown() {
     assert_eq!(
         unmatched.expect("a blank record").sort_title.as_deref(),
         Some("Lord of the Rings, The")
+    );
+}
+
+#[test]
+fn an_original_title_goes_on_the_record_beside_the_name_shown() {
+    let edit = TitleEdit {
+        original_title: Some("Sen to Chihiro no kamikakushi".into()),
+        ..Default::default()
+    };
+
+    let (title, _, metadata) = written(&edit, Some(fetched()));
+    let (_, _, unmatched) = written(&edit, None);
+
+    let meta = metadata.expect("the fetched record");
+    assert_eq!(title, "heat.1995");
+    assert_eq!(meta.title.as_deref(), Some("Heat"));
+    assert_eq!(
+        meta.original_title.as_deref(),
+        Some("Sen to Chihiro no kamikakushi")
+    );
+    assert_eq!(
+        unmatched.expect("a blank record").original_title.as_deref(),
+        Some("Sen to Chihiro no kamikakushi")
+    );
+}
+
+#[test]
+fn a_tagline_goes_on_the_record_above_the_summary_it_leaves() {
+    let edit = TitleEdit {
+        tagline: Some("A Los Angeles crime saga".into()),
+        ..Default::default()
+    };
+
+    let (_, _, metadata) = written(&edit, Some(fetched()));
+    let (_, _, unmatched) = written(&edit, None);
+
+    let meta = metadata.expect("the fetched record");
+    assert_eq!(meta.tagline.as_deref(), Some("A Los Angeles crime saga"));
+    assert_eq!(meta.overview.as_deref(), Some("A thief and a detective."));
+    assert_eq!(
+        unmatched.expect("a blank record").tagline.as_deref(),
+        Some("A Los Angeles crime saga")
     );
 }

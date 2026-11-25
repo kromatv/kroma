@@ -5,6 +5,8 @@ import {
   Box,
   Button,
   CONTROL,
+  classes,
+  color,
   DataField,
   IconButton,
   styles,
@@ -20,6 +22,13 @@ const sDefinition = styles({
   rule: { borderTopWidth: 1, borderTopColor: 'white/8' },
   link: { color: 'inherit', textDecorationLine: 'underline', textUnderlineOffset: 2, radius: 'xs' },
   bold: { fontWeight: '600' },
+  title: {
+    textShadow: [
+      `0 0 2px ${color('black/55')}`,
+      `0 2px 8px ${color('black/55')}`,
+      `0 8px 30px ${color('black/60')}`,
+    ].join(', '),
+  },
 });
 
 function DirectorLink({ person, label }: Readonly<{ person: CrewMember; label: string }>) {
@@ -144,5 +153,32 @@ export function HeroFields({ audio, subtitles }: Readonly<{ audio?: string; subt
         </DataField.Root>
       ) : null}
     </Box>
+  );
+}
+
+const sameName = (a: string, b: string) =>
+  a.trim().localeCompare(b.trim(), undefined, { sensitivity: 'accent' }) === 0;
+
+/** The hero's title, with the title in its original language under it when the
+ * two differ by more than their case. */
+export function HeroTitle({
+  title,
+  originalTitle,
+}: Readonly<{ title: string; originalTitle: string | null | undefined }>) {
+  const s = useStyles(sDefinition);
+  const other = originalTitle && !sameName(originalTitle, title) ? originalTitle : null;
+  return (
+    <>
+      <h1 className={classes(s.title)}>
+        <Text variant="h1" mb={other ? 6 : 16}>
+          {title}
+        </Text>
+      </h1>
+      {other ? (
+        <Text variant="label" color="white/72" mb={16}>
+          {other}
+        </Text>
+      ) : null}
+    </>
   );
 }

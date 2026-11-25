@@ -65,6 +65,7 @@ describe('buildTitleView: discover source (not owned)', () => {
     const v = build({ source: 'discover', detail: baseDetail as never }, requester);
     expect(v.kind).toBe('movie');
     expect(v.inLibrary).toBe(false);
+    expect(v.originalTitle).toBeNull();
     expect(v.runtimeMin).toBe(120);
     // Relative art is resolved against the API base; absolute passes through.
     expect(v.poster).toBe('http://localhost:4040/api/p.jpg');

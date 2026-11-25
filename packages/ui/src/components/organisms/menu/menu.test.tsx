@@ -110,11 +110,17 @@ describe('<Menu>', () => {
     const trigger = screen.getByLabelText('Row actions');
     fireEvent.click(trigger);
     fireEvent.keyDown(trigger, { key: 'Escape' });
-    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'escape' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ reason: 'escape' }),
+    );
 
     fireEvent.click(trigger);
     fireEvent.click(screen.getByLabelText('Close'));
-    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'outside' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ reason: 'outside' }),
+    );
   });
 
   it('opens in a dialog under a D-pad, and Back says so', () => {
@@ -137,7 +143,10 @@ describe('<Menu>', () => {
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });
-    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'back' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ reason: 'back' }),
+    );
   });
 
   it('fires the dialog row a press lands on, and closes first there too', () => {

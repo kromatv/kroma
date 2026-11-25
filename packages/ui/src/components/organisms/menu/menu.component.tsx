@@ -8,21 +8,20 @@ import {
   type ReactElement,
   type ReactNode,
   type RefObject,
-  useCallback,
   useMemo,
   useRef,
 } from 'react';
 import type { View } from 'react-native';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
+import { useControl } from '#ui/lib/control';
 import { useGroupSlot } from '#ui/lib/group-shape';
 import type { SurfacePresentation } from '#ui/lib/surface-presentation.hook';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 import {
   MenuContext,
   type MenuDismissReason,
   type MenuOpenDetails,
-  type MenuOpenReason,
   type MenuState,
+  menuControl,
   useMenu,
 } from './menu-context';
 import { Header, Item, labelOf, type MenuItemProps, Separator } from './menu-item';
@@ -36,6 +35,8 @@ interface MenuRootProps {
   label?: string;
   open?: boolean;
   defaultOpen?: boolean;
+  /** `details.reason` says what opened or closed it; `details.cancel()` keeps
+   *  it as it was. */
   onOpenChange?: (open: boolean, details: MenuOpenDetails) => void;
   /** Which trigger edge the panel hugs. `end` for a right-pinned row action. */
   align?: 'start' | 'end';
@@ -60,14 +61,12 @@ function isEntry(node: ReactNode): node is ReactElement {
 
 function Root({
   label,
-  open: openProp,
-  defaultOpen,
-  onOpenChange,
   align = 'end',
   presentation = 'auto',
   children,
+  ...props
 }: Readonly<MenuRootProps>) {
-  const [open, setOpenState] = useControllable(openProp, defaultOpen ?? false);
+  const [{ open, setOpen, trigger }] = useControl(menuControl, props);
   const anchor = useRef<View>(null);
 
   const kids = Children.toArray(children);
@@ -85,19 +84,11 @@ function Root({
       : [],
   );
 
-  const setOpen = useCallback(
-    (next: boolean, reason: MenuOpenReason) => {
-      setOpenState(next);
-      onOpenChange?.(next, { reason });
-    },
-    [setOpenState, onOpenChange],
-  );
-
   const dismiss = (reason: MenuDismissReason) => setOpen(false, reason);
 
   const state = useMemo<MenuState>(
-    () => ({ open, label, anchor, setOpen }),
-    [open, label, setOpen],
+    () => ({ open, label, anchor, setOpen, trigger }),
+    [open, label, setOpen, trigger],
   );
 
   return (
@@ -140,7 +131,7 @@ function Trigger({
   label,
   ...button
 }: Readonly<MenuTriggerProps>) {
-  const { open, label: menuLabel, anchor, setOpen } = useMenu('Trigger');
+  const { open, label: menuLabel, anchor, trigger } = useMenu('Trigger');
   // Standalone, the kebab is a quiet 32px dot. Welded into a <ButtonGroup> it
   // must stand the group's own control height, or a 32px square hangs off a
   // 40px neighbour; leaving diameter unset lets <IconButton> take the group's.
@@ -149,7 +140,7 @@ function Trigger({
   const bind: MenuTriggerBind = {
     ref: anchor,
     expanded: open,
-    onPress: () => setOpen(true, 'trigger'),
+    onPress: trigger,
   };
   if (render) {
     return render(bind, { open });
@@ -180,12 +171,12 @@ function TriggerButton({
 
 const Menu = { Root, Trigger, Header, Item, Separator };
 
+export type { MenuOpenReason } from './menu-context';
 export type { MenuTone } from './menu-item';
 export type {
   MenuDismissReason,
   MenuItemProps,
   MenuOpenDetails,
-  MenuOpenReason,
   MenuPresentation,
   MenuRootProps,
   MenuTriggerBind,

@@ -20,9 +20,9 @@ import type { LayoutChangeEvent, PointerEvent } from 'react-native';
 import { Box, Row } from '#ui/components/atoms/box';
 import type { ColorValue } from '#ui/core';
 import { SERIES_COLORS } from '#ui/core/tokens';
+import { type ChangeDetails, defineControl, typed, useControl } from '#ui/lib/control';
 import { partsOf } from '#ui/lib/parts';
 import { Svg } from '#ui/lib/svg.component';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 import { ChartContext, type ChartMark, type ChartSeries, type ChartState } from './chart-context';
 import { Area, Bar, type ChartBarProps, type ChartTraceProps, Line } from './chart-marks.component';
 import {
@@ -111,6 +111,10 @@ function topsOf(series: readonly ChartSeries[]): (number | null)[][] {
   );
 }
 
+const chartControl = defineControl('chart', {
+  state: { active: typed<number | null>(null) },
+});
+
 interface ChartRootProps {
   /** The samples, oldest first. */
   data: readonly ChartPoint[];
@@ -136,7 +140,8 @@ interface ChartRootProps {
   /** The sample the readout is on, as an index into `data`. */
   active?: number | null;
   defaultActive?: number | null;
-  onActiveChange?: (index: number | null) => void;
+  /** `details.cancel()` keeps the readout where it was. */
+  onActiveChange?: (index: number | null, details: ChangeDetails) => void;
   /** The grid, the marks, the scales, the key and the readout. Only a DIRECT
    *  child takes part: the Root sorts them to know what belongs where. */
   children?: ReactNode;
@@ -151,17 +156,11 @@ function Root({
   max,
   format = round,
   label,
-  active: activeProp,
-  defaultActive,
-  onActiveChange,
   children,
+  ...props
 }: Readonly<ChartRootProps>) {
   const [measured, setMeasured] = useState(0);
-  const [active, setActive] = useControllable<number | null>(
-    activeProp,
-    defaultActive ?? null,
-    onActiveChange,
-  );
+  const [{ active, setActive }] = useControl(chartControl, props);
 
   const kids = Children.toArray(children);
   const marks = kids.filter(isMark);

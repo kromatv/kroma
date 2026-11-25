@@ -2,11 +2,21 @@ import { useEffect, useEffectEvent } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { OtpField, useOtpSlot } from '#ui/components/molecules/otp-field';
 import type { ColorValue } from '#ui/core';
+import { type ChangeDetails, type ControlOf, defineControl, useControl } from '#ui/lib/control';
 import { webWindow } from '#ui/lib/dom';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 
 const DOT = 18;
 const DOT_GAP = 18;
+
+const pinFieldControl = defineControl('pin-field', {
+  state: { value: '' },
+  options: { maxLength: 4, disabled: false },
+  actions: {
+    append: ({ value, maxLength, disabled }, digit: string) =>
+      disabled || !/^\d$/.test(digit) ? {} : { value: (value + digit).slice(0, maxLength) },
+    erase: ({ value, disabled }) => (disabled ? {} : { value: value.slice(0, -1) }),
+  },
+});
 
 interface PinFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   /** How many digits make a code. The dots row is exactly this wide. */
@@ -14,7 +24,8 @@ interface PinFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   /** Present: you own the buffer (controlled). Absent: the field runs itself. */
   value?: string;
   defaultValue?: string;
-  onValueChange?: (next: string) => void;
+  /** Told before the code changes; `details.cancel()` keeps it as it was. */
+  onValueChange?: (next: string, details: ChangeDetails) => void;
   /** Fired once, the instant the last digit lands. The TV PIN screen submits
    *  from here: a completed code validates with no OK press. */
   onComplete?: (code: string) => void;
@@ -35,19 +46,15 @@ interface PinFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
  *  the off-screen entry <OtpField> types into, as a focused TextInput summons the
  *  platform keyboard, so a hardware keyboard is read window-wide instead. */
 function PinField({
-  maxLength = 4,
-  value: valueProp,
-  defaultValue = '',
-  onValueChange,
   onComplete,
-  disabled = false,
   invalid = false,
   label,
   physicalKeyboard = false,
-  ...box
+  ...props
 }: Readonly<PinFieldProps>) {
-  const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
-  useDigitKeys(physicalKeyboard, { value, maxLength, disabled, setValue });
+  const [pin, box] = useControl(pinFieldControl, props);
+  const { value, maxLength, disabled, setValue } = pin;
+  useDigitKeys(physicalKeyboard, pin);
 
   return (
     <OtpField.Root
@@ -92,27 +99,14 @@ function dotEdge(filled: boolean, invalid: boolean): ColorValue {
   return invalid ? 'danger' : 'tint/25';
 }
 
-interface Buffer {
-  value: string;
-  maxLength: number;
-  disabled: boolean;
-  setValue: (next: string) => void;
-}
-
 // Digits are not remote keys, so this cannot collide with D-pad navigation.
 // An effect event reads the live buffer, so the listener subscribes once.
-function useDigitKeys(enabled: boolean, buffer: Buffer): void {
+function useDigitKeys(enabled: boolean, pin: ControlOf<typeof pinFieldControl>): void {
   const onKey = useEffectEvent((event: KeyboardEvent) => {
-    const { value, maxLength, disabled, setValue } = buffer;
-    if (disabled) {
-      return;
-    }
-    if (/^\d$/.test(event.key)) {
-      if (value.length < maxLength) {
-        setValue(value + event.key);
-      }
-    } else if (event.key === 'Delete' || event.key === 'Backspace') {
-      setValue(value.slice(0, -1));
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      pin.erase();
+    } else {
+      pin.append(event.key);
     }
   });
   useEffect(() => {

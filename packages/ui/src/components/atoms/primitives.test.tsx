@@ -301,7 +301,10 @@ describe('TextArea', () => {
     // a form.
     expect(css(entry).minHeight).toBe('72px');
     fireEvent.change(entry, { target: { value: 'the server reboots at nine' } });
-    expect(onChange).toHaveBeenCalledWith('the server reboots at nine');
+    expect(onChange).toHaveBeenCalledWith(
+      'the server reboots at nine',
+      expect.objectContaining({ source: 'user' }),
+    );
   });
 
   it('renders a display with a caret, not an input, where there is no keyboard', () => {

@@ -7,6 +7,7 @@ import { Button } from '#ui/components/atoms/button';
 import { ButtonGroup } from '#ui/components/molecules/button-group';
 import { Select } from '#ui/components/molecules/select';
 import { KitProvider } from '#ui/configure';
+import { act as call, screenText, snapshot } from '#ui/lib/inspect';
 import { declared, onScreen } from '#ui/testing';
 import { Field } from './field.component';
 
@@ -49,7 +50,10 @@ describe('the value the Root holds', () => {
     const entry = screen.getByLabelText('Name') as HTMLInputElement;
     expect(entry.value).toBe('Living room');
     fireEvent.change(entry, { target: { value: 'Kitchen' } });
-    expect(onValueChange).toHaveBeenCalledWith('Kitchen');
+    expect(onValueChange).toHaveBeenCalledWith(
+      'Kitchen',
+      expect.objectContaining({ reason: 'set', source: 'user' }),
+    );
   });
 
   it('gives way to a part that declares its own', () => {
@@ -63,8 +67,42 @@ describe('the value the Root holds', () => {
     const entry = screen.getByLabelText('Name') as HTMLInputElement;
     expect(entry.value).toBe('Kitchen');
     fireEvent.change(entry, { target: { value: 'Cellar' } });
-    expect(onValueChange).toHaveBeenCalledWith('Cellar');
+    expect(onValueChange).toHaveBeenCalledWith('Cellar', expect.anything());
     expect(root).not.toHaveBeenCalled();
+  });
+});
+
+describe('the value under a developer tool', () => {
+  it('is held once, by the entry the Root renders', () => {
+    render(<Field.Root label="Name" defaultValue="Living room" />);
+
+    const read = snapshot().map(({ kind, state }) => ({ kind, state }));
+
+    expect(read).toEqual([{ kind: 'text-field', state: { value: 'Living room' } }]);
+  });
+
+  it('reaches the owner of the Root when a call sets it', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', false);
+    const onValueChange = vi.fn();
+    render(<Field.Root label="Name" value="Living room" onValueChange={onValueChange} />);
+
+    await call({ steps: [{ ref: 'c1', action: 'setValue', args: ['Kitchen'] }] });
+
+    expect(onValueChange).toHaveBeenCalledWith(
+      'Kitchen',
+      expect.objectContaining({ reason: 'set', source: 'tool' }),
+    );
+  });
+
+  it('never reads out a password the Root holds', () => {
+    render(
+      <Field.Root label="Password" defaultValue="hunter2">
+        <Field.Input type="password" />
+      </Field.Root>,
+    );
+
+    expect(snapshot()[0]?.state).toEqual({ value: '[secret]' });
+    expect(screenText()).not.toContain('hunter2');
   });
 });
 

@@ -7,11 +7,15 @@
   "titleInfo.hint": "What you write here shows instead of the text from the .nfo or TMDB, in every language. A field left empty keeps the text shown in grey.",
   "titleInfo.loadFailed": "Could not load the info.",
   "titleInfo.name": "Title",
+  "titleInfo.originalTitle": "Original title",
+  "titleInfo.originalTitleHint": "The title in its original language, such as Das Boot. It shows under the title.",
   "titleInfo.released": "Release date",
   "titleInfo.releasedHint": "Just the year, as 1995, or the day, as 1995-12-15.",
   "titleInfo.saveFailed": "Could not save the info.",
   "titleInfo.sortTitle": "Sort title",
   "titleInfo.sortTitleHint": "The title is sorted under this name, such as Lord of the Rings, The. The title shown stays the same.",
   "titleInfo.summary": "Summary",
+  "titleInfo.tagline": "Tagline",
+  "titleInfo.taglineHint": "A short line shown above the summary.",
   "titleInfo.title": "Info"
 }

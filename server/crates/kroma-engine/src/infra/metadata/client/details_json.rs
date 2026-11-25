@@ -15,6 +15,10 @@ pub(super) struct Details {
     #[serde(default)]
     pub(super) name: Option<String>, // shows
     #[serde(default)]
+    pub(super) original_title: Option<String>,
+    #[serde(default)]
+    pub(super) original_name: Option<String>,
+    #[serde(default)]
     pub(super) overview: Option<String>,
     #[serde(default)]
     pub(super) tagline: Option<String>,

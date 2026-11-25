@@ -7,6 +7,7 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
     <title>Heat</title>
     <originaltitle>Heat</originaltitle>
     <sorttitle>Heat (1995)</sorttitle>
+    <tagline> A Los Angeles crime saga </tagline>
     <plot>A thief &amp; a detective. <![CDATA[Two men.]]></plot>
     <premiered>1995-12-15</premiered>
     <year>1990</year>
@@ -19,7 +20,7 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 </movie>"#;
 
 #[test]
-fn a_film_s_file_gives_its_names_summary_release_date_genres_and_ids() {
+fn a_film_s_file_gives_its_names_tagline_summary_release_date_genres_and_ids() {
     let Contents {
         edit,
         tmdb,
@@ -28,6 +29,7 @@ fn a_film_s_file_gives_its_names_summary_release_date_genres_and_ids() {
 
     assert_eq!(edit.title.as_deref(), Some("Heat"));
     assert_eq!(edit.sort_title.as_deref(), Some("Heat (1995)"));
+    assert_eq!(edit.tagline.as_deref(), Some("A Los Angeles crime saga"));
     assert_eq!(
         edit.overview.as_deref(),
         Some("A thief & a detective. Two men.")
@@ -38,6 +40,20 @@ fn a_film_s_file_gives_its_names_summary_release_date_genres_and_ids() {
     assert_eq!(tmdb, Some(949));
     assert_eq!(elsewhere.imdb.as_deref(), Some("tt0113277"));
     assert_eq!(elsewhere.tvdb, None);
+}
+
+#[test]
+fn a_file_gives_the_title_in_the_language_it_was_made_in() {
+    let text = "<movie><title>Spirited Away</title>\
+        <originaltitle> Sen to Chihiro no kamikakushi </originaltitle></movie>";
+
+    let Contents { edit, .. } = parsed(text, MOVIE);
+
+    assert_eq!(edit.title.as_deref(), Some("Spirited Away"));
+    assert_eq!(
+        edit.original_title.as_deref(),
+        Some("Sen to Chihiro no kamikakushi")
+    );
 }
 
 #[test]

@@ -426,7 +426,9 @@ function Counter({ style, ...props }: Readonly<CounterProps>) {
   other, and the app's `details.reason` is one of them, an action's name, or
   `set` for a setter given none, which is what a developer tool's call carries.
   `ReasonOf<typeof menuControl>` is that union, for the component's own
-  `onOpenChange`.
+  `onOpenChange`. A control that lists none takes any reason, which is what
+  lets it pass on another control's; `reasons: []` says its setters give none,
+  and the union is then its actions and `set`.
 - **`typed` widens a starting value** the compiler would read too narrowly:
   `state: { active: typed<number | null>(null) }`,
   `options: { steps: typed<readonly string[]>([]) }`.
@@ -449,8 +451,6 @@ reads them there and calls their setters and actions by name
 ([`docs/inspecting-a-screen.md`](../../../../docs/inspecting-a-screen.md)). It
 tries an action on the state before anything is written, so an action reads its
 arguments and nothing else: no ref, no clock, no module value.
-`useControllable` is the hook this replaces; a component still on it moves when
-it is next touched.
 
 ---
 

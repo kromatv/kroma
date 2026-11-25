@@ -205,7 +205,9 @@ mod tests {
         let pool = seeded_pool();
         let rewritten = TitleEdit {
             title: Some("The Shining (extended)".into()),
+            original_title: None,
             sort_title: None,
+            tagline: None,
             year: Some(1981),
             overview: Some("A winter at the hotel.".into()),
             genres: Some(vec!["Drama".into()]),

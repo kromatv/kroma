@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { act } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { activeTheme } from '#ui/core';
 
+import type { ChangeDetails } from '#ui/lib/control';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
-import { declared, wearsRing } from '#ui/testing';
+import { act as call, screenText, snapshot } from '#ui/lib/inspect';
+import { declared, onScreen, wearsRing } from '#ui/testing';
 import { TextField } from './text-field.component';
 
 afterEach(cleanup);
@@ -81,5 +83,81 @@ describe('the ink of a field nobody has filled in', () => {
     const input = container.querySelector('input') as HTMLInputElement;
 
     expect(declared(input, '--placeholder-text-color')).toBe('var(--kroma-text-muted)');
+  });
+});
+
+const entry = () => screen.getByLabelText<HTMLInputElement>('Nom');
+
+const type = (text: string) => fireEvent.change(entry(), { target: { value: text } });
+
+const refuse = (_next: string, details: ChangeDetails) => details.cancel();
+
+const read = () => snapshot().map(({ kind, state, actions }) => ({ kind, state, actions }));
+
+describe('the value of a field', () => {
+  it('takes what is typed when nobody owns it', () => {
+    render(<TextField label="Nom" defaultValue="Salon" physicalKeyboard />);
+
+    type('Cuisine');
+
+    expect(entry().value).toBe('Cuisine');
+  });
+
+  it('asks the owner and waits for the prop when it is controlled', () => {
+    const onValueChange = vi.fn();
+    render(<TextField label="Nom" value="Salon" onValueChange={onValueChange} physicalKeyboard />);
+
+    type('Cuisine');
+
+    expect(onValueChange).toHaveBeenCalledWith(
+      'Cuisine',
+      expect.objectContaining({ reason: 'set', source: 'user' }),
+    );
+    expect(entry().value).toBe('Salon');
+  });
+
+  it('keeps what it held when the app cancels the change', () => {
+    render(<TextField label="Nom" defaultValue="Salon" onValueChange={refuse} physicalKeyboard />);
+
+    type('Cuisine');
+
+    expect(entry().value).toBe('Salon');
+  });
+});
+
+describe('a field under a developer tool', () => {
+  it('is read with its value and its setter', () => {
+    render(onScreen(<TextField label="Nom" defaultValue="Salon" />));
+
+    expect(read()).toEqual([
+      { kind: 'text-field', state: { value: 'Salon' }, actions: ['setValue'] },
+    ]);
+  });
+
+  it('takes the value a call sets', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', false);
+    render(onScreen(<TextField label="Nom" physicalKeyboard />));
+
+    const report = await call({ steps: [{ ref: 'c1', action: 'setValue', args: ['Cuisine'] }] });
+
+    expect(report.ok).toBe(true);
+    expect(entry().value).toBe('Cuisine');
+  });
+
+  it('refuses a call while it is read-only', async () => {
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', false);
+    render(onScreen(<TextField label="Nom" defaultValue="Salon" readOnly physicalKeyboard />));
+
+    const report = await call({ steps: [{ ref: 'c1', action: 'setValue', args: ['Cuisine'] }] });
+
+    expect(report.error?.message).toBe('c1.setValue: the text-field is disabled.');
+    expect(entry().value).toBe('Salon');
+  });
+
+  it('never reads out a password', () => {
+    render(onScreen(<TextField label="Mot de passe" type="password" defaultValue="hunter2" />));
+
+    expect(read()[0]?.state).toEqual({ value: '[secret]' });
+    expect(screenText()).not.toContain('hunter2');
   });
 });

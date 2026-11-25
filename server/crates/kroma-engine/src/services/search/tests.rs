@@ -493,6 +493,22 @@ fn the_title_tmdb_knows_finds_a_file_named_nothing_like_it() {
 }
 
 #[test]
+fn a_title_is_found_by_the_name_it_was_made_under() {
+    let e = SearchEngine::new().unwrap();
+    let movies = vec![movie(
+        "1",
+        "Spirited.Away.2001",
+        Some(Metadata {
+            original_title: Some("Sen to Chihiro no kamikakushi".into()),
+            ..meta("Spirited Away", "A girl in a bathhouse", &[], &[])
+        }),
+    )];
+    e.rebuild(&movies, &[], &[]).unwrap();
+
+    assert_eq!(top_id(&e, "chihiro").as_deref(), Some("1"));
+}
+
+#[test]
 fn without_the_analyzer_a_query_is_still_split_and_lowercased() {
     let bare = tantivy::Index::create_in_ram(tantivy::schema::Schema::builder().build());
     assert_eq!(

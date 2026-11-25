@@ -5,7 +5,8 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { mediaItem } from '#web/shared/lib/cast.fixture';
-import type { TitleSeason, TitleView } from '#web/shared/lib/title-view';
+import type { TitleSeason } from '#web/shared/lib/title-seasons';
+import type { TitleView } from '#web/shared/lib/title-view';
 import { build } from '#web/shared/lib/title-view.fixture';
 import { useTitleRequest } from './use-title-request.hook';
 

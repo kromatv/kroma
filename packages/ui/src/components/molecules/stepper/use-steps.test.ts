@@ -104,7 +104,10 @@ describe('useSteps', () => {
 
     act(() => result.current.next());
 
-    expect(onValueChange).toHaveBeenCalledWith('library', { reason: 'next' });
+    expect(onValueChange).toHaveBeenCalledWith(
+      'library',
+      expect.objectContaining({ reason: 'next' }),
+    );
     expect(result.current.value).toBe('account');
   });
 
@@ -126,7 +129,10 @@ describe('useSteps', () => {
 
     act(() => result.current.reset());
 
-    expect(onValueChange).toHaveBeenCalledWith('account', { reason: 'reset' });
+    expect(onValueChange).toHaveBeenCalledWith(
+      'account',
+      expect.objectContaining({ reason: 'reset' }),
+    );
     expect(result.current.value).toBe('account');
   });
 });
