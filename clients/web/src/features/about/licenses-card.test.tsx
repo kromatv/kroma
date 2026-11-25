@@ -13,7 +13,6 @@ import { LicensesCard } from './licenses-card.component';
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
-  vi.restoreAllMocks();
 });
 
 const SERVER: Licenses = {
@@ -83,14 +82,16 @@ describe('LicensesCard', () => {
     expect(screen.getByText('Apache License text')).toBeTruthy();
   });
 
-  it("opens a package's source in a new tab", async () => {
+  it('links a package to its source, in a new tab', async () => {
     await mount(answer(json(SERVER), json(WEB)));
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
 
     fireEvent.click(screen.getByLabelText('serde'));
-    fireEvent.click(screen.getByLabelText('Source'));
 
-    expect(open).toHaveBeenCalledWith('https://github.com/serde-rs/serde', '_blank', 'noopener');
+    const link = screen.getByLabelText('Source');
+    expect([link.getAttribute('href'), link.getAttribute('target')]).toEqual([
+      'https://github.com/serde-rs/serde',
+      '_blank',
+    ]);
   });
 
   it('keeps one package open at a time', async () => {

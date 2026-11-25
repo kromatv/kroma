@@ -7,7 +7,7 @@ import {
 } from '@kromatv/core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { bundledLicenses } from '#web/features/accounts/account/bundled-licenses';
+import { bundledLicenses } from '#web/features/about/bundled-licenses';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const build = (

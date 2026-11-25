@@ -719,7 +719,6 @@
     "clients/web/src/features/accounts/account/push-card.component.tsx": 1,
     "clients/web/src/features/accounts/account/session-row.component.tsx": 1,
     "clients/web/src/features/accounts/account/sessions-card.component.tsx": 1,
-    "clients/web/src/features/accounts/account/setting-card.component.tsx": 1,
     "clients/web/src/features/accounts/auth-fields.component.tsx": 1,
     "clients/web/src/features/accounts/auth-forms.component.tsx": 2,
     "clients/web/src/features/accounts/auth-gate.component.tsx": 1,

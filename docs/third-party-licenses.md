@@ -1,9 +1,10 @@
 # Third-party licenses
 
 Every build lists the third-party code it ships, with each license text, and
-the web client shows that list under Account, About. Nothing here is written by
-hand: the lists come out of the build, so a dependency added or removed shows
-up, or goes away, on the next one.
+the web client shows that list on its About page (`/about`, under More in the
+sidebar and in the command menu). Nothing here is written by hand: the lists
+come out of the build, so a dependency added or removed shows up, or goes away,
+on the next one.
 
 ## Where each list comes from
 

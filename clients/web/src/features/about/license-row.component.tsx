@@ -3,7 +3,7 @@ import type { MessageKey } from '@kromatv/i18n';
 import { useT } from '@kromatv/ui';
 import { Box, Button, Icon, ListRow, Text } from '@kromatv/ui/kit';
 import type { CSSProperties } from 'react';
-import { Linking } from 'react-native';
+import { OutsideLink } from '#web/shared/ui/outside-link.component';
 
 const SURFACE: Record<LicenseSurface, MessageKey> = {
   server: 'licenses.server',
@@ -16,13 +16,9 @@ function SourceLink({ href }: Readonly<{ href: string }>) {
   const t = useT();
   return (
     <Box row>
-      <Button
-        variant="ghost"
-        size="sm"
-        icon="external-link"
-        label={t('licenses.source')}
-        onPress={() => void Linking.openURL(href)}
-      />
+      <Button variant="ghost" size="sm" icon="external-link" label={t('licenses.source')} asChild>
+        <OutsideLink to={href} />
+      </Button>
     </Box>
   );
 }

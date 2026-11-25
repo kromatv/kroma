@@ -196,6 +196,9 @@ function MoreLinks() {
       </SideNav.Item>
       <AdminLink />
       <WhatsNewLink />
+      <SideNav.Item to="/about" icon="info-circle">
+        <SideNav.Label>{t('about.title')}</SideNav.Label>
+      </SideNav.Item>
     </SideNav.Group>
   );
 }

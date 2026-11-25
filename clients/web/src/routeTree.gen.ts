@@ -20,6 +20,7 @@ import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppSplatRouteImport } from './routes/_app.$'
 import { Route as AppPlayerRouteImport } from './routes/_app._player'
+import { Route as AppAboutRouteImport } from './routes/_app.about'
 import { Route as AppAccountRouteImport } from './routes/_app.account'
 import { Route as AppConnectRouteImport } from './routes/_app.connect'
 import { Route as AppInviteRouteImport } from './routes/_app.invite'
@@ -117,6 +118,11 @@ const AppSplatRoute = AppSplatRouteImport.update({
 } as any)
 const AppPlayerRoute = AppPlayerRouteImport.update({
   id: '/_player',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAboutRoute = AppAboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => AppRoute,
 } as any)
 const AppAccountRoute = AppAccountRouteImport.update({
@@ -357,6 +363,7 @@ export interface FileRoutesByFullPath {
   '/sso': typeof SsoRoute
   '/verify-email': typeof VerifyEmailRoute
   '/$': typeof AppSplatRoute
+  '/about': typeof AppAboutRoute
   '/account': typeof AppAccountRoute
   '/connect': typeof AppConnectRoute
   '/invite': typeof AppInviteRoute
@@ -412,6 +419,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof VerifyEmailRoute
   '/$': typeof AppSplatRoute
   '/': typeof AppIndexRoute
+  '/about': typeof AppAboutRoute
   '/account': typeof AppAccountRoute
   '/connect': typeof AppConnectRoute
   '/invite': typeof AppInviteRoute
@@ -470,6 +478,7 @@ export interface FileRoutesById {
   '/verify-email': typeof VerifyEmailRoute
   '/_app/$': typeof AppSplatRoute
   '/_app/_player': typeof AppPlayerRouteWithChildren
+  '/_app/about': typeof AppAboutRoute
   '/_app/account': typeof AppAccountRoute
   '/_app/connect': typeof AppConnectRoute
   '/_app/invite': typeof AppInviteRoute
@@ -529,6 +538,7 @@ export interface FileRouteTypes {
     | '/sso'
     | '/verify-email'
     | '/$'
+    | '/about'
     | '/account'
     | '/connect'
     | '/invite'
@@ -584,6 +594,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/$'
     | '/'
+    | '/about'
     | '/account'
     | '/connect'
     | '/invite'
@@ -641,6 +652,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/_app/$'
     | '/_app/_player'
+    | '/_app/about'
     | '/_app/account'
     | '/_app/connect'
     | '/_app/invite'
@@ -777,6 +789,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppPlayerRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/about': {
+      id: '/_app/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AppAboutRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/account': {
@@ -1114,6 +1133,7 @@ const AppPlayerRouteWithChildren = AppPlayerRoute._addFileChildren(
 interface AppRouteChildren {
   AppSplatRoute: typeof AppSplatRoute
   AppPlayerRoute: typeof AppPlayerRouteWithChildren
+  AppAboutRoute: typeof AppAboutRoute
   AppAccountRoute: typeof AppAccountRoute
   AppConnectRoute: typeof AppConnectRoute
   AppInviteRoute: typeof AppInviteRoute
@@ -1137,6 +1157,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppSplatRoute: AppSplatRoute,
   AppPlayerRoute: AppPlayerRouteWithChildren,
+  AppAboutRoute: AppAboutRoute,
   AppAccountRoute: AppAccountRoute,
   AppConnectRoute: AppConnectRoute,
   AppInviteRoute: AppInviteRoute,

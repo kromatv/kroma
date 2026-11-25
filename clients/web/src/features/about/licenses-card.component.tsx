@@ -2,9 +2,9 @@ import { matchingPackages, type ShippedPackage } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
 import { Field, ListRow, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { LicenseRow } from '#web/features/accounts/account/license-row.component';
-import { SettingCard } from '#web/features/accounts/account/setting-card.component';
-import { useShippedPackages } from '#web/features/accounts/account/use-shipped-packages.hook';
+import { LicenseRow } from '#web/features/about/license-row.component';
+import { SettingCard } from '#web/shared/ui/setting-card.component';
+import { useShippedPackages } from '#web/features/about/use-shipped-packages.hook';
 
 const SHOWN_AT_FIRST = 50;
 

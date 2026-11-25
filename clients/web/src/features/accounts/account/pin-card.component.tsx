@@ -5,7 +5,7 @@ import { useT } from '@kromatv/ui';
 import { Button, Row, Switch } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { PinDialog, type PinTask } from '#web/features/accounts/account/pin-dialog.component';
-import { SettingCard } from '#web/features/accounts/account/setting-card.component';
+import { SettingCard } from '#web/shared/ui/setting-card.component';
 import { useAuth } from '#web/shared/lib/auth';
 
 /** The profile lock. `asked` opens the new PIN dialog at once, as a link to

@@ -40,6 +40,12 @@ export function useCatalogCommands(): void {
         keywords: 'changelog release notes',
         to: '/whats-new',
       },
+      !kids && {
+        label: t('about.title'),
+        icon: 'info-circle',
+        keywords: 'version licenses licences open source privacy',
+        to: '/about',
+      },
     ],
     { group: t('nav.more') },
   );
