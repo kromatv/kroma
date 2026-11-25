@@ -6,7 +6,7 @@ use rusqlite::types::Value as SqlValue;
 use crate::rows::parse_metadata;
 use crate::Pool;
 
-use super::{CAT_CTE, DIRECTING_JOBS_SQL, genres_in};
+use super::{CAT_CTE, DIRECTING_JOBS_SQL, list_in};
 
 // Caps a single `find_titles` call so tool results re-entering the model's
 // context stay bounded.
@@ -43,71 +43,79 @@ pub struct TitleFilter {
 /// faithful to the model types, and the name, year and genres are the ones a
 /// title shows.
 pub fn find_titles(pool: &Pool, filter: &TitleFilter) -> Result<Vec<TitleBrief>> {
-    let mut sql = String::from(CAT_CTE);
-    sql.push_str("SELECT id,title,year,kind,metadata,genres FROM cat WHERE 1=1");
-    let mut p: Vec<SqlValue> = Vec::new();
-
-    if let Some(g) = clean(&filter.genre) {
-        sql.push_str(" AND EXISTS (SELECT 1 FROM json_each(cat.genres) g WHERE g.value = ? COLLATE NOCASE)");
-        p.push(SqlValue::Text(g));
-    }
-    if let Some(d) = clean(&filter.director) {
-        sql.push_str(&format!(
-            " AND EXISTS (SELECT 1 FROM json_each(cat.metadata,'$.crew') c \
-              WHERE json_extract(c.value,'$.name') = ? COLLATE NOCASE \
-              AND json_extract(c.value,'$.job') IN {DIRECTING_JOBS_SQL})"
-        ));
-        p.push(SqlValue::Text(d));
-    }
-    if let Some(a) = clean(&filter.actor) {
-        sql.push_str(" AND EXISTS (SELECT 1 FROM json_each(cat.metadata,'$.cast') c WHERE json_extract(c.value,'$.name') = ? COLLATE NOCASE)");
-        p.push(SqlValue::Text(a));
-    }
-    if let Some(k) = clean(&filter.keyword) {
-        sql.push_str(" AND (cat.title LIKE ? COLLATE NOCASE OR IFNULL(cat.overview,'') LIKE ? COLLATE NOCASE)");
-        let like = format!("%{k}%");
-        p.push(SqlValue::Text(like.clone()));
-        p.push(SqlValue::Text(like));
-    }
-    if let Some(k) = clean(&filter.kind) {
-        sql.push_str(" AND cat.kind = ?");
-        p.push(SqlValue::Text(normalize_kind(&k)));
-    }
-    if let Some(y) = filter.year_min {
-        sql.push_str(" AND cat.year >= ?");
-        p.push(SqlValue::Integer(y as i64));
-    }
-    if let Some(y) = filter.year_max {
-        sql.push_str(" AND cat.year <= ?");
-        p.push(SqlValue::Integer(y as i64));
-    }
-    if let Some(r) = filter.min_rating {
-        sql.push_str(" AND CAST(json_extract(cat.metadata,'$.rating') AS REAL) >= ?");
-        p.push(SqlValue::Real(r as f64));
-    }
-
-    sql.push(' ');
-    sql.push_str(order_clause(filter.sort.as_deref()));
+    let wheres = Wheres::of(filter);
+    let order = order_clause(filter.sort.as_deref());
     let lim = filter.limit.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT);
-    sql.push_str(&format!(" LIMIT {lim}"));
-
+    let sql = format!(
+        "{CAT_CTE}SELECT id,title,year,kind,metadata,genres FROM cat WHERE 1=1{} {order} LIMIT {lim}",
+        wheres.sql
+    );
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&sql)?;
     let rows = stmt
-        .query_map(rusqlite::params_from_iter(p.iter()), |r| {
-            let meta = parse_metadata(r.get::<_, Option<String>>(4)?);
-            Ok(TitleBrief {
-                id: r.get(0)?,
-                title: r.get(1)?,
-                year: r.get(2)?,
-                kind: r.get(3)?,
-                rating: meta.and_then(|m| m.rating),
-                genres: genres_in(r.get(5)?),
-            })
-        })?
+        .query_map(rusqlite::params_from_iter(wheres.params.iter()), brief)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(rows)
 }
+
+fn brief(r: &rusqlite::Row<'_>) -> rusqlite::Result<TitleBrief> {
+    let meta = parse_metadata(r.get::<_, Option<String>>(4)?);
+    Ok(TitleBrief {
+        id: r.get(0)?,
+        title: r.get(1)?,
+        year: r.get(2)?,
+        kind: r.get(3)?,
+        rating: meta.and_then(|m| m.rating),
+        genres: list_in(r.get(5)?),
+    })
+}
+
+#[derive(Default)]
+struct Wheres {
+    sql: String,
+    params: Vec<SqlValue>,
+}
+
+impl Wheres {
+    fn of(filter: &TitleFilter) -> Self {
+        let mut wheres = Self::default();
+        let text = |value: &Option<String>| clean(value).map(SqlValue::Text);
+        let directed = format!(
+            " AND EXISTS (SELECT 1 FROM json_each(cat.metadata,'$.crew') c \
+              WHERE cat.directors IS NULL AND json_extract(c.value,'$.name') = ? COLLATE NOCASE \
+              AND json_extract(c.value,'$.job') IN {DIRECTING_JOBS_SQL} \
+              UNION ALL SELECT 1 FROM json_each(cat.directors) d WHERE d.value = ? COLLATE NOCASE)"
+        );
+        wheres.bind(text(&filter.genre), GENRE, 1);
+        wheres.bind(text(&filter.director), &directed, 2);
+        wheres.bind(text(&filter.actor), ACTOR, 1);
+        let like = clean(&filter.keyword).map(|k| SqlValue::Text(format!("%{k}%")));
+        wheres.bind(like, KEYWORD, 2);
+        let kind = clean(&filter.kind).map(|k| SqlValue::Text(normalize_kind(&k)));
+        wheres.bind(kind, " AND cat.kind = ?", 1);
+        let year = |y: Option<u32>| y.map(|y| SqlValue::Integer(i64::from(y)));
+        wheres.bind(year(filter.year_min), " AND cat.year >= ?", 1);
+        wheres.bind(year(filter.year_max), " AND cat.year <= ?", 1);
+        let rating = filter.min_rating.map(|r| SqlValue::Real(f64::from(r)));
+        wheres.bind(rating, MIN_RATING, 1);
+        wheres
+    }
+
+    fn bind(&mut self, value: Option<SqlValue>, clause: &str, uses: usize) {
+        if let Some(value) = value {
+            self.sql.push_str(clause);
+            self.params.extend(std::iter::repeat_n(value, uses));
+        }
+    }
+}
+
+const GENRE: &str =
+    " AND EXISTS (SELECT 1 FROM json_each(cat.genres) g WHERE g.value = ? COLLATE NOCASE)";
+const ACTOR: &str = " AND EXISTS (SELECT 1 FROM json_each(cat.metadata,'$.cast') c \
+     WHERE json_extract(c.value,'$.name') = ? COLLATE NOCASE)";
+const KEYWORD: &str =
+    " AND (cat.title LIKE ? COLLATE NOCASE OR IFNULL(cat.overview,'') LIKE ? COLLATE NOCASE)";
+const MIN_RATING: &str = " AND CAST(json_extract(cat.metadata,'$.rating') AS REAL) >= ?";
 
 // `ORDER BY` for the requested sort. Unrated titles sink last under `rating`
 // (SQLite sorts NULL last under `DESC`).

@@ -166,8 +166,8 @@ Series/
   `<title>`, its `<plot>` and its `<aired>`, the day it was first shown. A file
   that describes several episodes gives the first.
 - KROMA reads `<title>`, `<originaltitle>`, `<sorttitle>`, `<tagline>`,
-  `<plot>`, `<premiered>` or `<year>`, and each `<genre>`. The file must be
-  UTF-8, as these programs write it.
+  `<plot>`, `<premiered>` or `<year>`, each `<genre>` and each `<director>`.
+  The file must be UTF-8, as these programs write it.
 - A file that gives the title's TMDB number, in `<uniqueid type="tmdb">` or
   `<tmdbid>`, or that ends with a link to its themoviedb.org page, makes KROMA
   recognize the title by that number instead of by its name. A match you fix

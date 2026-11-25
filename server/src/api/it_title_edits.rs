@@ -14,6 +14,7 @@ fn heat() -> Value {
         "overview": "A thief and a detective.",
         "released": "1995-12-15",
         "genres": ["Crime", " "],
+        "directors": ["Michael Mann"],
     })
 }
 
@@ -53,6 +54,8 @@ async fn what_an_admin_writes_about_a_film_is_what_its_page_shows_after_a_refres
         json!("A thief and a detective.")
     );
     assert_eq!(shown["metadata"]["genres"], json!(["Crime"]));
+    assert_eq!(shown["metadata"]["crew"][0]["name"], json!("Michael Mann"));
+    assert_eq!(shown["metadata"]["crew"][0]["job"], json!("Director"));
 }
 
 #[tokio::test]

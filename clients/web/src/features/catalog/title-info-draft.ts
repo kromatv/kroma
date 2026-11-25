@@ -1,7 +1,8 @@
 import type { TitleEdit } from '@kromatv/client/media';
 
 /** A title's hand-written fields as a form holds them: plain text, with the
- * genres on one line and the year or the full release date in one field. */
+ * genres and the directors each on one line and the year or the full release
+ * date in one field. */
 export interface TitleDraft {
   title: string;
   originalTitle: string;
@@ -10,6 +11,7 @@ export interface TitleDraft {
   overview: string;
   released: string;
   genres: string;
+  directors: string;
 }
 
 const shown = (text: string | null) => text ?? '';
@@ -24,10 +26,19 @@ export function draftOf(edit: TitleEdit): TitleDraft {
     overview: shown(edit.overview),
     released: edit.released ?? (edit.year === null ? '' : String(edit.year)),
     genres: (edit.genres ?? []).join(', '),
+    directors: (edit.directors ?? []).join(', '),
   };
 }
 
 const kept = (text: string) => text.trim() || null;
+
+function listOf(line: string): string[] | null {
+  const names = line
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean);
+  return names.length > 0 ? names : null;
+}
 
 function dateOf(text: string): Pick<TitleEdit, 'year' | 'released'> {
   const date = text.trim();
@@ -44,10 +55,6 @@ function dateOf(text: string): Pick<TitleEdit, 'year' | 'released'> {
  * provider. A full date goes as the release date, and the server takes the
  * year from it. */
 export function editOf(draft: TitleDraft): TitleEdit {
-  const genres = draft.genres
-    .split(',')
-    .map((genre) => genre.trim())
-    .filter(Boolean);
   return {
     title: kept(draft.title),
     originalTitle: kept(draft.originalTitle),
@@ -55,6 +62,7 @@ export function editOf(draft: TitleDraft): TitleEdit {
     tagline: kept(draft.tagline),
     overview: kept(draft.overview),
     ...dateOf(draft.released),
-    genres: genres.length > 0 ? genres : null,
+    genres: listOf(draft.genres),
+    directors: listOf(draft.directors),
   };
 }

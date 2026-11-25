@@ -2,6 +2,8 @@
   "titleInfo.action": "Edit info",
   "titleInfo.aired": "Air date",
   "titleInfo.airedHint": "The day it was first shown, as 2008-01-20.",
+  "titleInfo.directors": "Directors",
+  "titleInfo.directorsHint": "Separate names with commas. They show after Directed by.",
   "titleInfo.genres": "Genres",
   "titleInfo.genresHint": "Separate genres with commas.",
   "titleInfo.hint": "What you write here shows instead of the text from the .nfo or TMDB, in every language. A field left empty keeps the text shown in grey.",

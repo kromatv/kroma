@@ -13,6 +13,8 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
     <year>1990</year>
     <genre>Crime</genre>
     <genre>Drama</genre>
+    <director>Michael Mann</director>
+    <director> </director>
     <uniqueid type="imdb">tt0113277</uniqueid>
     <uniqueid type="tmdb" default="true">949</uniqueid>
     <actor><name>Al Pacino</name><role>Vincent</role></actor>
@@ -20,7 +22,7 @@ const HEAT: &str = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 </movie>"#;
 
 #[test]
-fn a_film_s_file_gives_its_names_tagline_summary_release_date_genres_and_ids() {
+fn a_film_s_file_gives_its_names_tagline_summary_date_genres_directors_and_ids() {
     let Contents {
         edit,
         tmdb,
@@ -37,6 +39,7 @@ fn a_film_s_file_gives_its_names_tagline_summary_release_date_genres_and_ids() {
     assert_eq!(edit.year, Some(1995));
     assert_eq!(edit.released.as_deref(), Some("1995-12-15"));
     assert_eq!(edit.genres, Some(vec!["Crime".into(), "Drama".into()]));
+    assert_eq!(edit.directors, Some(vec!["Michael Mann".into()]));
     assert_eq!(tmdb, Some(949));
     assert_eq!(elsewhere.imdb.as_deref(), Some("tt0113277"));
     assert_eq!(elsewhere.tvdb, None);

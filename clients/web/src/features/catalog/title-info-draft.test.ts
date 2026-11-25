@@ -10,6 +10,7 @@ const NOTHING = {
   year: null,
   released: null,
   genres: null,
+  directors: null,
 };
 
 it('shows nothing in the form for a title that follows the provider', () => {
@@ -21,6 +22,7 @@ it('shows nothing in the form for a title that follows the provider', () => {
     overview: '',
     released: '',
     genres: '',
+    directors: '',
   });
 });
 
@@ -34,6 +36,7 @@ it('puts the genres on one line, and reads them back one by one', () => {
     year: 1995,
     released: null,
     genres: ['Crime', 'Drama'],
+    directors: ['Michael Mann', 'Jane Doe'],
   };
 
   const draft = draftOf(edit);
@@ -46,6 +49,7 @@ it('puts the genres on one line, and reads them back one by one', () => {
     overview: 'Two men.',
     released: '1995',
     genres: 'Crime, Drama',
+    directors: 'Michael Mann, Jane Doe',
   });
   expect(editOf(draft)).toEqual(edit);
 });
@@ -68,6 +72,7 @@ it('hands every field left blank back to the provider', () => {
     overview: '',
     released: ' ',
     genres: ' , ,',
+    directors: ', ',
   };
 
   expect(editOf(draft)).toEqual(NOTHING);
@@ -82,6 +87,7 @@ it('keeps each field trimmed', () => {
     overview: ' Two men. ',
     released: ' 1995 ',
     genres: ' Crime ,Drama ',
+    directors: ' Michael Mann ',
   };
 
   expect(editOf(draft)).toEqual({
@@ -93,5 +99,6 @@ it('keeps each field trimmed', () => {
     year: 1995,
     released: null,
     genres: ['Crime', 'Drama'],
+    directors: ['Michael Mann'],
   });
 });

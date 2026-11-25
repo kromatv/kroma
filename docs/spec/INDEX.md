@@ -3,7 +3,7 @@
 
 # Requirement index
 
-838 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+839 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -567,6 +567,7 @@
 - **LIB-93** (SHIPPED) - When a person's search for a film's or a show's match finds nothing at <sub>[README.md](library/README.md)</sub>
 - **LIB-94** (SHIPPED) - A film or a show shows its original title, the one it was made under, <sub>[README.md](library/README.md)</sub>
 - **LIB-95** (SHIPPED) - A film or a show shows its tagline above its summary. It comes from the <sub>[README.md](library/README.md)</sub>
+- **LIB-96** (SHIPPED) - A film or a show shows the directors a person writes, or its `.nfo` <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 

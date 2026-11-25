@@ -1,4 +1,5 @@
 use super::*;
+use crate::metadata::CrewMember;
 
 fn fetched() -> Metadata {
     Metadata {
@@ -44,6 +45,7 @@ fn an_edit_left_blank_follows_the_provider_in_every_field() {
         year: None,
         released: Some(" ".into()),
         genres: Some(vec![" ".into()]),
+        directors: Some(vec!["".into(), "  ".into()]),
     };
 
     let tidied = edit.tidied();
@@ -62,6 +64,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
         year: Some(1995),
         released: Some(" 1995-12-15 ".into()),
         genres: Some(vec![" Crime".into(), "".into(), "Drama ".into()]),
+        directors: Some(vec![" Michael Mann ".into(), " ".into()]),
     };
 
     let tidied = edit.tidied();
@@ -74,6 +77,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
     assert_eq!(tidied.year, Some(1995));
     assert_eq!(tidied.released.as_deref(), Some("1995-12-15"));
     assert_eq!(tidied.genres, Some(vec!["Crime".into(), "Drama".into()]));
+    assert_eq!(tidied.directors, Some(vec!["Michael Mann".into()]));
 }
 
 #[test]
@@ -87,6 +91,7 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         year: Some(*YEARS.end()),
         released: Some("2200-12-31".into()),
         genres: Some(vec!["g".repeat(GENRE_MAX); GENRES_MAX]),
+        directors: Some(vec!["d".repeat(PERSON_MAX); DIRECTORS_MAX]),
     };
     let long_title = TitleEdit {
         title: Some("a".repeat(TITLE_MAX + 1)),
@@ -112,6 +117,14 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         genres: Some(vec!["g".repeat(GENRE_MAX + 1)]),
         ..Default::default()
     };
+    let too_many_directors = TitleEdit {
+        directors: Some(vec!["d".into(); DIRECTORS_MAX + 1]),
+        ..Default::default()
+    };
+    let long_director = TitleEdit {
+        directors: Some(vec!["d".repeat(PERSON_MAX + 1)]),
+        ..Default::default()
+    };
     let early = TitleEdit {
         year: Some(*YEARS.start() - 1),
         ..Default::default()
@@ -124,6 +137,8 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
     assert!(!long_tagline.fits());
     assert!(!too_many_genres.fits());
     assert!(!long_genre.fits());
+    assert!(!too_many_directors.fits());
+    assert!(!long_director.fits());
     assert!(!early.fits());
 }
 
@@ -138,6 +153,7 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         year: Some(*YEARS.end() + 1),
         released: Some("1995-02-30".into()),
         genres: Some(vec!["g".repeat(GENRE_MAX + 1); GENRES_MAX + 1]),
+        directors: Some(vec!["d".repeat(PERSON_MAX + 1); DIRECTORS_MAX + 1]),
     };
 
     let clipped = long.clipped();
@@ -163,6 +179,10 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
     assert_eq!(clipped.year, None);
     assert_eq!(clipped.released, None);
     assert_eq!(clipped.genres.map(|g| g.len()), Some(GENRES_MAX));
+    assert_eq!(
+        clipped.directors.map(|d| (d.len(), d[0].chars().count())),
+        Some((DIRECTORS_MAX, PERSON_MAX))
+    );
 }
 
 #[test]
@@ -180,6 +200,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
         year: Some(1995),
         released: Some("1995-12-15".into()),
         genres: Some(vec!["Crime".into()]),
+        directors: Some(vec!["Michael Mann".into()]),
     };
 
     let shown = hand.over(file);
@@ -192,6 +213,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
     assert_eq!(shown.year, Some(1995));
     assert_eq!(shown.released.as_deref(), Some("1995-12-15"));
     assert_eq!(shown.genres, Some(vec!["Crime".into()]));
+    assert_eq!(shown.directors, Some(vec!["Michael Mann".into()]));
 }
 
 #[test]
@@ -410,4 +432,66 @@ fn a_tagline_goes_on_the_record_above_the_summary_it_leaves() {
         unmatched.expect("a blank record").tagline.as_deref(),
         Some("A Los Angeles crime saga")
     );
+}
+
+#[test]
+fn directors_written_replace_the_provider_s_and_keep_the_profiles_it_named() {
+    let mann = CrewMember {
+        name: "Michael Mann".into(),
+        tmdb_id: Some(638),
+        job: "Director".into(),
+        profile_url: Some("/p/mann.jpg".into()),
+    };
+    let spinotti = CrewMember {
+        name: "Dante Spinotti".into(),
+        tmdb_id: Some(1),
+        job: "Director of Photography".into(),
+        profile_url: None,
+    };
+    let creator = CrewMember {
+        name: "Someone Else".into(),
+        tmdb_id: Some(2),
+        job: "Creator".into(),
+        profile_url: None,
+    };
+    let fetched = Metadata {
+        crew: vec![creator, mann, spinotti],
+        ..fetched()
+    };
+    let edit = TitleEdit {
+        directors: Some(vec!["michael mann".into(), "Jane Doe".into()]),
+        ..Default::default()
+    };
+
+    let (_, _, metadata) = written(&edit, Some(fetched));
+
+    let crew = metadata.expect("the fetched record").crew;
+    let names: Vec<(&str, &str, Option<u64>)> = crew
+        .iter()
+        .map(|c| (c.name.as_str(), c.job.as_str(), c.tmdb_id))
+        .collect();
+    assert_eq!(
+        names,
+        vec![
+            ("Michael Mann", "Director", Some(638)),
+            ("Jane Doe", "Director", None),
+            ("Dante Spinotti", "Director of Photography", Some(1)),
+        ]
+    );
+    assert_eq!(crew[0].profile_url.as_deref(), Some("/p/mann.jpg"));
+}
+
+#[test]
+fn directors_written_for_a_title_never_matched_give_it_a_record() {
+    let edit = TitleEdit {
+        directors: Some(vec!["Jane Doe".into()]),
+        ..Default::default()
+    };
+
+    let (_, _, unmatched) = written(&edit, None);
+
+    let crew = unmatched.expect("a blank record").crew;
+    assert_eq!(crew.len(), 1);
+    assert_eq!(crew[0].name, "Jane Doe");
+    assert_eq!(crew[0].job, "Director");
 }

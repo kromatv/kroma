@@ -24,6 +24,7 @@ const WRITTEN = {
   year: 1995,
   released: null,
   genres: ['Crime'],
+  directors: null,
 };
 
 afterEach(() => {
@@ -40,6 +41,7 @@ const NOTHING_WRITTEN = {
   year: null,
   released: null,
   genres: null,
+  directors: null,
 };
 
 const SHOWN = {
@@ -49,6 +51,7 @@ const SHOWN = {
   year: 2020,
   overview: 'A return to nature in songs and dance.',
   genres: ['Drama', 'Music'],
+  directors: [{ name: 'Barbara Kusa' }, { name: 'Lotte Lenya' }],
   poster: null,
   backdrop: null,
 };
@@ -88,6 +91,7 @@ it('shows what was written and saves what changed', async () => {
   expect(await screen.findByDisplayValue('Heat')).toBeTruthy();
   type('Summary', ' A thief and a detective. ');
   type('Genres', 'Crime, Drama');
+  type('Directors', ' Michael Mann , ');
   type('Release date', '1987-0x3-01');
   type('Sort title', ' Heat, the ');
   type('Original title', ' Heat ');
@@ -105,6 +109,7 @@ it('shows what was written and saves what changed', async () => {
     year: null,
     released: '1987-03-01',
     genres: ['Crime', 'Drama'],
+    directors: ['Michael Mann'],
   });
 });
 
@@ -132,6 +137,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
   expect(screen.queryByLabelText('Original title')).toBeNull();
   expect(screen.queryByLabelText('Tagline')).toBeNull();
   expect(screen.queryByLabelText('Genres')).toBeNull();
+  expect(screen.queryByLabelText('Directors')).toBeNull();
   type('Air date', '2008-01-20');
   type('Summary', 'A teacher turns to crime.');
   save();
@@ -147,6 +153,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
     year: null,
     released: '2008-01-20',
     genres: null,
+    directors: null,
   });
 });
 
@@ -180,6 +187,7 @@ it('shows in grey what the page shows where nothing was written', async () => {
   expect(screen.getByPlaceholderText('Songs for a lost paradise.')).toBeTruthy();
   expect(screen.getByPlaceholderText('A return to nature in songs and dance.')).toBeTruthy();
   expect(screen.getByPlaceholderText('Drama, Music')).toBeTruthy();
+  expect(screen.getByPlaceholderText('Barbara Kusa, Lotte Lenya')).toBeTruthy();
 });
 
 it('names the title once and closes from its own header', async () => {

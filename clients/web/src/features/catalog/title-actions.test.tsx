@@ -38,6 +38,7 @@ const SHOWN = {
   title: 'Heat',
   originalTitle: null,
   tagline: null,
+  directors: [],
   year: 1995,
   overview: null,
   genres: ['Crime'],

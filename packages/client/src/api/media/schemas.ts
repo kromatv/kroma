@@ -63,17 +63,21 @@ export const TitleEdit = z.object({
   year: z.number().int().nullable(),
   released: z.string().nullable().default(null),
   genres: z.array(z.string()).nullable(),
+  directors: z.array(z.string()).nullable().default(null),
 });
 export type TitleEdit = z.infer<typeof TitleEdit>;
 
 /** What a {@link TitleEdit} can hold, as the server checks it: characters in a
- * name, a tagline, a summary and one genre, how many genres, and the years. */
+ * name, a tagline, a summary, one genre and one director's name, how many
+ * genres and directors, and the years. */
 export const TITLE_EDIT_LIMITS = {
   title: 300,
   tagline: 300,
   overview: 10_000,
   genre: 60,
   genres: 20,
+  person: 100,
+  directors: 20,
   years: [1800, 2200],
 } as const;
 

@@ -307,6 +307,13 @@ its original title too.
 provider, the `.nfo` file's `<tagline>` (LIB-84) comes before it, and what a person writes
 (LIB-83) comes before both, the same in every language.
 
+**LIB-96** (SHIPPED) - A film or a show shows the directors a person writes, or its `.nfo`
+file names in `<director>` (LIB-84), in place of the provider's directors, and of a show's
+creators. What a person writes comes before the file. A name the provider also gave keeps
+the provider's person, so it still leads to their page with their picture. A person's page,
+and the catalogue filtered by director, find the title under the directors it shows and no
+longer under the ones they replace.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 
