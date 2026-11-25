@@ -26,6 +26,9 @@ export type PluralRule = (locale: string, count: number) => PluralCategory;
 /** One language a reader can be offered. */
 export interface OfferedLocale<L extends string> {
   readonly code: L;
+  /** The language's name for itself, `Français`, known before any of its
+   *  messages load. */
+  readonly name: string;
   /** The message holding the language's name for itself. */
   readonly labelKey: `lang.${L}`;
   /** `beta` while the translation is unfinished and reads in its fallback

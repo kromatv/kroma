@@ -7,13 +7,19 @@ import { landPlugin } from './vite/land.ts';
 import { llmsPlugin } from './vite/llms.ts';
 import { mdxPlugin } from './vite/mdx.ts';
 import { modulesPlugin } from './vite/modules.ts';
+import { BASE_LOCALE, LOCALES } from './src/lib/locales.ts';
 import { ogPlugin } from './vite/og.tsx';
 import { releasesPlugin } from './vite/releases.ts';
 
-const NOT_FOUND = {
-  prerender: { enabled: true, autoSubfolderIndex: false },
-  sitemap: { exclude: true },
-};
+function notFound(prefix: string) {
+  return {
+    path: `${prefix}/404`,
+    prerender: { enabled: true, autoSubfolderIndex: false },
+    sitemap: { exclude: true },
+  };
+}
+
+const PREFIXED = LOCALES.filter((locale) => locale !== BASE_LOCALE);
 
 // Prerender once per canonical path: a hash link or a trailing slash is the
 // same page, and a duplicate would also be listed twice in the sitemap.
@@ -43,11 +49,7 @@ export default defineConfig({
     kroma({
       alias: { '#site': './src' },
       start: {
-        pages: [
-          { path: '/404', ...NOT_FOUND },
-          { path: '/fr/404', ...NOT_FOUND },
-          { path: '/ko/404', ...NOT_FOUND },
-        ],
+        pages: ['', ...PREFIXED.map((locale) => `/${locale}`)].map(notFound),
         prerender: {
           enabled: true,
           crawlLinks: true,
@@ -74,9 +76,8 @@ export default defineConfig({
         {
           pattern: '/:path(.*)?',
           localized: [
-            ['fr', '/fr/:path(.*)?'],
-            ['ko', '/ko/:path(.*)?'],
-            ['en', '/:path(.*)?'],
+            ...PREFIXED.map((locale): [string, string] => [locale, `/${locale}/:path(.*)?`]),
+            [BASE_LOCALE, '/:path(.*)?'],
           ],
         },
       ],

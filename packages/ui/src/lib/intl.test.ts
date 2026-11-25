@@ -88,6 +88,10 @@ describe('formatBytes', () => {
     expect(formatBytes(1024 ** 6, 'fr')).toBe('1024 Po');
     expect(formatBytes(1024 ** 6, 'en')).toBe('1024 PB');
   });
+
+  it('writes the English units for a language that has none of its own', () => {
+    expect(formatBytes(1024 ** 3, 'ko')).toBe('1.0 GB');
+  });
 });
 
 describe('formatMbps', () => {

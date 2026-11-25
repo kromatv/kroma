@@ -140,11 +140,11 @@ mod tests {
 
     #[test]
     fn the_first_entry_of_a_header_that_is_offered_is_the_locale_detected() {
-        let header = Some("de;q=0.9, en-US;q=0.8, fr;q=0.5");
+        let header = Some("xx;q=0.9, en-US;q=0.8, fr;q=0.5");
 
         assert_eq!(detect_locale(None, header), "en");
         assert_eq!(detect_locale(Some("fr_FR"), header), "fr");
-        assert_eq!(detect_locale(None, Some("de")), DEFAULT_LOCALE);
+        assert_eq!(detect_locale(None, Some("xx")), DEFAULT_LOCALE);
         assert_eq!(detect_locale(None, None), DEFAULT_LOCALE);
     }
 
