@@ -30,6 +30,7 @@
     "./kit/*": "./src/components/*/index.ts",
     "./atomic": "./src/core/atomic/index.ts",
     "./intl": "./src/lib/intl.ts",
+    "./inspect": "./src/lib/inspect/index.ts",
     "./device-store": "./src/lib/device-store.ts",
     "./remote-keys": "./src/lib/remote-keys.ts",
     "./ssr": "./src/ssr.ts",
