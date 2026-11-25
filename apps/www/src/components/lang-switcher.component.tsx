@@ -36,7 +36,7 @@ export function LangSwitcher({ className }: Readonly<{ className?: string }>) {
                 : 'text-muted hover:text-text focus-visible:text-text',
             ].join(' ')}
           >
-            {localeShort[l]}
+            {localeShort(l)}
           </a>
         );
       })}

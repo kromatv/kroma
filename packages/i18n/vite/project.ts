@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { z } from 'zod';
-import { type Project, STAGES } from '../src/project.ts';
+import { isOffered, type Project, STAGES } from '../src/project.ts';
 
 /** The policy file, at the top of the catalog folder beside the locales. */
 export const PROJECT_FILE = 'i18n.json';
@@ -38,4 +38,14 @@ export function readProject(dir: string): Project {
   } catch (error) {
     throw new Error(`${path} is not a valid i18n project`, { cause: error });
   }
+}
+
+/** The languages a catalog folder offers its readers, the source first, then
+ *  every locale the project has taken past `draft`. */
+export function offeredLocales(dir: string): string[] {
+  const project = readProject(dir);
+  const named = Object.keys(project.locales ?? {}).filter(
+    (code) => code !== project.source && isOffered(project, code),
+  );
+  return [project.source, ...named];
 }

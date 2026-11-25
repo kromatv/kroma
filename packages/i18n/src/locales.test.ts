@@ -18,12 +18,12 @@ describe('createLocales', () => {
     expect(locales.normalizeLocale('Deutsch')).toBeNull();
   });
 
-  it('exposes the codes, the default and a label key per locale', () => {
+  it('exposes the codes, the default, and the name and label key of each locale', () => {
     expect(locales.DEFAULT_LOCALE).toBe('en');
     expect([...locales.SUPPORTED_LOCALES]).toEqual(['en', 'fr']);
     expect(locales.LOCALES).toEqual([
-      { code: 'en', labelKey: 'lang.en', stage: 'stable' },
-      { code: 'fr', labelKey: 'lang.fr', stage: 'stable' },
+      { code: 'en', name: 'English', labelKey: 'lang.en', stage: 'stable' },
+      { code: 'fr', name: 'Français', labelKey: 'lang.fr', stage: 'stable' },
     ]);
   });
 

@@ -7,6 +7,7 @@ const t = ((key: string, vars?: { name: string }) =>
 
 const offered = (stage: OfferedLocale<Locale>['stage']): OfferedLocale<Locale> => ({
   code: 'en',
+  name: 'English',
   labelKey: 'lang.en',
   stage,
 });

@@ -14,6 +14,19 @@ function subtags(tag: string): string[] {
   return tag.toLowerCase().split(/[-_]/);
 }
 
+function offered<L extends string>(
+  names: Readonly<Record<L, string>>,
+  codes: readonly L[],
+  beta: readonly L[],
+): OfferedLocale<L>[] {
+  return codes.map((code) => ({
+    code,
+    name: names[code],
+    labelKey: labelKey(code),
+    stage: beta.includes(code) ? 'beta' : 'stable',
+  }));
+}
+
 /** The locales a product offers its readers, knowable without loading a single
  *  message: `createLocales({ fr: 'Français', en: 'English' }, 'fr')`. The value
  *  of each entry is the endonym `normalizeLocale` accepts next to a BCP 47 tag,
@@ -82,11 +95,7 @@ export function createLocales<
     return defaultLocale;
   };
 
-  const LOCALES = codes.map((code): OfferedLocale<L> => ({
-    code,
-    labelKey: labelKey(code),
-    stage: beta.includes(code) ? 'beta' : 'stable',
-  }));
+  const LOCALES = offered(names, codes, beta);
 
   return {
     detectLocale,
