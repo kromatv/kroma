@@ -97,28 +97,16 @@ describe('the order of a long list', () => {
 });
 
 describe('the search of a long list', () => {
-  it('finds a language by its own name whatever the accents and the case', () => {
+  it.each([
+    ['its own name whatever the accents and the case', 'ESPANOL', 'Español, Spanish'],
+    ['its name in the language on screen', 'japan', '日本語, Japanese'],
+    ['its code', 'PT', 'Português, Portuguese'],
+  ])('finds a language by %s', (_by, query, row) => {
     open();
 
-    search('ESPANOL');
+    search(query);
 
-    expect(rows()).toEqual(['Español, Spanish']);
-  });
-
-  it('finds a language by its name in the language on screen', () => {
-    open();
-
-    search('japan');
-
-    expect(rows()).toEqual(['日本語, Japanese']);
-  });
-
-  it('finds a language by its code', () => {
-    open();
-
-    search('PT');
-
-    expect(rows()).toEqual(['Português, Portuguese']);
+    expect(rows()).toEqual([row]);
   });
 
   it('says so when it finds nothing', () => {
