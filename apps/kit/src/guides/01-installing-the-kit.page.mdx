@@ -13,9 +13,9 @@ emits nothing, and the `exports` map points at `.ts` and `.tsx` files, so the
 app's own bundler compiles the kit along with the app.
 
 That is not a shortcut taken to save a build step. A platform split in this kit is
-two files, `focus-nav.ts` beside `focus-nav.web.ts`, and which of the pair wins is
-a resolver's decision. A published bundle would have made that decision once, at
-publish time, for every target at once.
+two files, `focus-nav.hook.ts` beside `focus-nav.hook.web.ts`, and which of the
+pair wins is a resolver's decision. A published bundle would have made that
+decision once, at publish time, for every target at once.
 
 <Figure caption="What the bundle reading this page can say about its own wiring. Each line is measured now, in this build. The stylesheet is read off the document, the faces are asked of the font set, the glyph count is whatever the icon pass kept.">
   <WiringCheck />
@@ -33,17 +33,23 @@ nothing errors at all.
 | `react` | `>=18` | the app's copy, deduped |
 | `react-dom` | `>=18` | required, though only a browser target loads it |
 | `react-native` | `*` | an alias everywhere here, see below |
-| `expo-video` | `~58.0.12` | optional; only `<Player>` reaches for it |
+| `expo-video` | `~58.0.12` | optional; `<Player>`, the intro film and a theme's audio reach for it |
+| `expo-image` | `~58.0.16` | optional; behind `expoImageBackend`, for a shell that registers it |
+| `expo` | `^58.0.16` | optional; the iOS halves of the focus card and its shield |
+| `@testing-library/react` | `>=16` | optional; only `@kromatv/ui/testing` loads it |
 
 What the package installs for itself needs no help: `@kromatv/core`,
-`@tabler/icons-react-native` (with `@tabler/icons-react` for the browser
-targets), `react-native-svg` and `@kromatv/spatial-nav`.
+`@kromatv/client`, `@kromatv/i18n` and `@kromatv/spatial-nav` from this
+repository, then `@tabler/icons-react-native` (with `@tabler/icons-react` for
+the browser targets), `react-native-svg`,
+`@react-native-masked-view/masked-view`, `zod`, and the two `@lezer` packages
+that colour a code sample.
 
 ## The doors in
 
 | Specifier | Behind it |
 | --- | --- |
-| `@kromatv/ui/kit` | every component, flat: `Button`, `ListRow`, `Rail`, and what an app boots with: `configureKit`, `ThemeProvider`, `OverlayHost` |
+| `@kromatv/ui/kit` | every component, flat: `Button`, `ListRow`, `Rail`, and what an app boots with: `configureKit`, `KitProvider`, `ThemeProvider`, `OverlayHost` |
 | `@kromatv/ui/kit/atoms/button` | one component, for a package that wants one |
 | `@kromatv/ui` | the services half: `<Player>`, the service hooks, and `CastProvider` / `I18nProvider` / `LocaleProvider` |
 | `@kromatv/ui/tokens` | the raw values, as TypeScript |
@@ -93,7 +99,7 @@ export default defineConfig({
 - **The Tabler swap** lands the icons on DOM `<svg>` rather than react-native-svg,
   which keeps that runtime out of the browser bundles.
 
-An SSR target has one more thing to say. react-native-web and three packages
+An SSR target has one more thing to say. react-native-web and two packages
 around it must not be externalised, or Node's CJS interop hands the server a
 `createPrefixer` that is `undefined`. `RNW_SSR_NO_EXTERNAL` is that list, kept
 beside the aliases that cause it.
@@ -246,24 +252,26 @@ bundle stops before it is built.
 
 ## Wiring it at runtime
 
-Everything above is the build. The app's own half is one call and two hosts,
-each answer overriding a default the kit already has. This is the mobile
-client's root:
+Everything above is the build. The app's own half is one config and one
+provider. `configureKit` freezes the answers, `KitProvider` applies them to the
+tree under it, and each answer overrides a default the kit already has. This is
+the shape of a phone shell's root:
 
 ```tsx
-import { configureKit, OverlayHost, readMode, ThemeProvider } from '@kromatv/ui/kit';
+import { configureKit, KitProvider, OverlayHost, readMode, ThemeProvider } from '@kromatv/ui/kit';
 
-configureKit({
+const kit = configureKit({
   formFactor: 'phone',      // how far the reader sits, and what they type with
   ground: readMode(),       // the stored ground: dark, light or system
-  theme: mobileTheme(),     // the app's vocabulary: ramp, corners, spacing
   image: expoImageBackend,  // which decoder draws artwork
   frost: BlurView,          // what a frosted surface blurs with
 });
 
-<ThemeProvider theme={theme}>
-  <OverlayHost>{children}</OverlayHost>
-</ThemeProvider>
+<KitProvider config={kit}>
+  <ThemeProvider theme={theme}>
+    <OverlayHost>{children}</OverlayHost>
+  </ThemeProvider>
+</KitProvider>
 ```
 
 - **`formFactor`** is `tv`, `phone` or `browser`, and everything that follows
@@ -274,11 +282,11 @@ configureKit({
   `surfaces` override one half for a shell that is not quite one of the three.
 - **`image`** and **`frost`** are inversions. A shell that registers neither
   gets React Native's own `Image` and a flat wash instead of glass.
-- Every underlying setter (`setEntryDefaults`, `setImageBackend`,
-  `registerFrost`, `setTheme`, `applyMode`, `setSurfacePresentation`) is still
-  exported, for the rare change made after the first render rather than before
-  it.
-- **`ThemeProvider`** is a switch rather than a scope. One per app, and a swap
+- **`KitProvider`** nested under another inherits every answer it does not
+  give, so a part of the app that differs in one thing says that one thing:
+  `<KitProvider config={{ entry: { physicalKeyboard: true } }}>` around a form a
+  keyboard types into keeps the image decoder and the frost of the root.
+- **`ThemeProvider`** given a `theme` opens a scope of its own, and a swap
   remounts the subtree under it, so place it below whatever state must survive one.
 - **`OverlayHost`** is where a dialog or a drawer actually renders. React Native
   has no portal, and the one thing it offers instead cannot be used on a
@@ -297,4 +305,5 @@ configureKit({
       `@kromatv/ui/css`, and `kromaUI()` sits before `tailwindcss()`.
 - [ ] A native target loads `KIT_FONTS` and gates its first screen on them.
 - [ ] Both bundlers, TypeScript and the test runner have been told about `#ui`.
-- [ ] The app states its form factor in `configureKit` before the first render.
+- [ ] The app hands `configureKit`'s answers, its form factor among them, to one
+      `KitProvider` at its root.
