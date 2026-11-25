@@ -21,6 +21,7 @@ use axum::{Json, Router};
 
 use crate::api::error::lerr;
 use crate::api::managed_title::{not_found, Managed};
+use crate::api::title_edit_suggestions;
 use crate::api::util::{blocking, query};
 use crate::db;
 use crate::db::title_edits::Title;
@@ -33,12 +34,15 @@ use crate::state::SharedState;
 const MAX_EDIT_BYTES: usize = 64 * 1024;
 
 pub fn routes() -> Router<SharedState> {
-    Router::new().route(
-        "/edits/{kind}/{id}",
-        get(written)
-            .put(write)
-            .layer(DefaultBodyLimit::max(MAX_EDIT_BYTES)),
-    )
+    Router::new()
+        .route(
+            "/edits/{kind}/{id}",
+            get(written)
+                .put(write)
+                .layer(DefaultBodyLimit::max(MAX_EDIT_BYTES)),
+        )
+        .route("/edits/people", get(title_edit_suggestions::people))
+        .route("/edits/studios", get(title_edit_suggestions::studios))
 }
 
 async fn written(

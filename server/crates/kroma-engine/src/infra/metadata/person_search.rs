@@ -1,12 +1,16 @@
-//! Who TMDB knows under a name, for a person written for a title that the
-//! provider credits nobody under (LIB-99).
+//! Who TMDB knows under a name: the person written for a title that the
+//! provider credits nobody under (LIB-99), and the people it offers for a name
+//! being typed.
 
 use anyhow::{anyhow, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::domain::slug::{slug_eq, slugify};
 
 use super::client::{api, tmdb_json, IMG};
+use super::MOST_OFFERED;
+
+const KNOWN_FOR_TITLES: usize = 3;
 
 /// One person TMDB knows: their id, and their portrait at the size a cast
 /// shows it.
@@ -24,8 +28,7 @@ pub fn named(api_key: &str, name: &str) -> Result<Option<Person>> {
         ("query", name.to_string()),
         ("include_adult", "false".to_string()),
     ];
-    let url = format!("{}/search/person", api());
-    let page: Page = tmdb_json("metadata.person", &url, api_key, &params)
+    let page = searched(api_key, &params)
         .map_err(|()| anyhow!("TMDB could not be asked who {name} is"))?;
     let want = slugify(name);
     let same = page
@@ -35,6 +38,44 @@ pub fn named(api_key: &str, name: &str) -> Result<Option<Person>> {
     Ok(same
         .max_by(|a, b| a.popularity.total_cmp(&b.popularity))
         .map(Hit::person))
+}
+
+/// One person TMDB offers for a name being typed: their portrait at the size a
+/// cast shows it, the work they are known for (`Acting`, `Directing`) and up to
+/// three of their titles.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TmdbPerson {
+    pub tmdb_id: u64,
+    pub name: String,
+    pub photo_url: Option<String>,
+    pub department: Option<String>,
+    pub known_for: Vec<String>,
+}
+
+/// The first ten people TMDB offers for `query`, in its order, asked in
+/// `language`, adult performers left out. An error when TMDB could not be
+/// asked. Blocking.
+pub fn people(api_key: &str, language: &str, query: &str) -> Result<Vec<TmdbPerson>> {
+    let params = [
+        ("query", query.to_string()),
+        ("include_adult", "false".to_string()),
+        ("language", language.to_string()),
+    ];
+    let page = searched(api_key, &params)
+        .map_err(|()| anyhow!("TMDB could not be asked who answers to {query}"))?;
+    Ok(page
+        .results
+        .into_iter()
+        .filter(|hit| !hit.adult)
+        .take(MOST_OFFERED)
+        .map(Hit::offered)
+        .collect())
+}
+
+fn searched(api_key: &str, params: &[(&str, String)]) -> Result<Page, ()> {
+    let url = format!("{}/search/person", api());
+    tmdb_json("metadata.person", &url, api_key, params)
 }
 
 #[derive(Debug, Deserialize)]
@@ -52,16 +93,58 @@ struct Hit {
     popularity: f64,
     #[serde(default)]
     profile_path: Option<String>,
+    #[serde(default)]
+    adult: bool,
+    #[serde(default)]
+    known_for_department: Option<String>,
+    #[serde(default)]
+    known_for: Vec<Work>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Work {
+    #[serde(default)]
+    title: Option<String>,
+    #[serde(default)]
+    name: Option<String>,
 }
 
 impl Hit {
     fn person(self) -> Person {
-        let path = self.profile_path.filter(|path| !path.is_empty());
         Person {
             tmdb_id: self.id,
-            profile_url: path.map(|path| format!("{IMG}/w342{path}")),
+            profile_url: portrait(self.profile_path),
         }
     }
+
+    fn offered(self) -> TmdbPerson {
+        TmdbPerson {
+            tmdb_id: self.id,
+            photo_url: portrait(self.profile_path),
+            department: written(self.known_for_department),
+            known_for: self
+                .known_for
+                .into_iter()
+                .filter_map(Work::titled)
+                .take(KNOWN_FOR_TITLES)
+                .collect(),
+            name: self.name,
+        }
+    }
+}
+
+impl Work {
+    fn titled(self) -> Option<String> {
+        written(self.title).or_else(|| written(self.name))
+    }
+}
+
+fn portrait(path: Option<String>) -> Option<String> {
+    written(path).map(|path| format!("{IMG}/w342{path}"))
+}
+
+fn written(text: Option<String>) -> Option<String> {
+    text.filter(|text| !text.is_empty())
 }
 
 #[cfg(test)]
