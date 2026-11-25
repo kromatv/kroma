@@ -165,7 +165,7 @@ export function formatClock(date: Date): string {
 /** A byte size in the locale's units: `1,5 Go` in French, `1.5 GB` in English.
  *  Zero and negatives render as the smallest unit rather than empty. */
 export function formatBytes(language: Language, bytes: number): string {
-  const counted = bytes > 0 ? bytes : 0;
+  const counted = Math.max(bytes || 0, 0);
   // Clamped at both ends: a fractional byte count logs negative, and an
   // unclamped index would divide by 1024 to the minus one and read a
   // half-byte transfer rate back as 512.
