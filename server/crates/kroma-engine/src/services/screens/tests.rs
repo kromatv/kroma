@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use serde_json::json;
+
 use super::*;
 
 const SALON: &str = "tv-salon-01";
@@ -164,4 +166,24 @@ fn a_reply_for_no_open_request_is_ignored() {
     screens.hello(from("alice", 1), device(SALON));
 
     assert!(!screens.answer(from("alice", 1), reply("not-a-request")));
+}
+
+#[test]
+fn a_row_keeps_the_focus_a_device_marks() {
+    let said = json!({ "depth": 0, "name": "Button", "props": {}, "box": null, "focused": true });
+
+    let row: ScreenRow = serde_json::from_value(said.clone()).unwrap();
+
+    assert!(row.focused);
+    assert_eq!(serde_json::to_value(&row).unwrap(), said);
+}
+
+#[test]
+fn a_row_without_the_focus_travels_without_the_key() {
+    let said = json!({ "depth": 0, "name": "Text", "props": {}, "box": null });
+
+    let row: ScreenRow = serde_json::from_value(said.clone()).unwrap();
+
+    assert!(!row.focused);
+    assert_eq!(serde_json::to_value(&row).unwrap(), said);
 }

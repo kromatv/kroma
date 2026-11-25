@@ -30,7 +30,7 @@ fn screen() -> Value {
                 "props": { "open": true, "title": "Réglages", "size": 2.5, "icon": null },
                 "box": { "x": 0.5, "y": 8.0, "width": 1920.0, "height": 1080.0 },
             },
-            { "depth": 1, "name": "Dialog.Footer", "props": {}, "box": null },
+            { "depth": 1, "name": "Dialog.Footer", "props": {}, "box": null, "focused": true },
         ],
     })
 }

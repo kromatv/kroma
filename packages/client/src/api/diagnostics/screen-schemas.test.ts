@@ -16,6 +16,13 @@ describe('a screen on the wire', () => {
     expect(Screen.parse(SCREEN)).toEqual(SCREEN);
   });
 
+  it('reads the row that holds the focus and refuses a focus that is not a boolean', () => {
+    const focused = { ...ROW, focused: true };
+
+    expect(ScreenRow.parse(focused)).toEqual(focused);
+    expect(ScreenRow.safeParse({ ...ROW, focused: 'yes' }).success).toBe(false);
+  });
+
   it('refuses a nested prop, a negative depth and an empty name', () => {
     expect(ScreenRow.safeParse({ ...ROW, props: { style: { a: 1 } } }).success).toBe(false);
     expect(ScreenRow.safeParse({ ...ROW, depth: -1 }).success).toBe(false);

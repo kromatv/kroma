@@ -3,7 +3,13 @@ import type { PropSummary } from './prop-summary';
 import type { KitNode, ScreenTree } from './screen-tree';
 
 /** One mounted kit component, `depth` levels under the top of the screen. */
-export type ScreenRow = { depth: number; name: string; props: PropSummary; box: HostBox | null };
+export type ScreenRow = {
+  depth: number;
+  name: string;
+  props: PropSummary;
+  box: HostBox | null;
+  focused?: true;
+};
 
 /** A screen as rows in document order: a parent comes before its children, and
  *  a row's children are the rows after it one level deeper. */
@@ -49,6 +55,14 @@ function pushChildren(pending: Pending[], { node, depth }: Pending): void {
   }
 }
 
+function rowOf({ node, depth }: Pending): ScreenRow {
+  const row: ScreenRow = { depth, name: node.name, props: node.props, box: node.box };
+  if (node.focused) {
+    row.focused = true;
+  }
+  return row;
+}
+
 /** Flattens a screen tree into rows, without recursion, and stops at
  *  {@link MAX_SCREEN_ROWS} rows or {@link MAX_SCREEN_BYTES} bytes, saying so in
  *  `truncated`. */
@@ -61,8 +75,7 @@ export function screenRows(tree: ScreenTree): ScreenRows {
   });
   let bytes = 0;
   for (let next = pending.pop(); next; next = pending.pop()) {
-    const { node, depth } = next;
-    const row: ScreenRow = { depth, name: node.name, props: node.props, box: node.box };
+    const row = rowOf(next);
     bytes += jsonBytes(row) + 1;
     if (rows.length === MAX_SCREEN_ROWS || bytes > MAX_SCREEN_BYTES) {
       return { fibers: tree.fibers, truncated: true, rows };

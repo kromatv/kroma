@@ -43,12 +43,14 @@ export const ScreenBox = z.object({
 export type ScreenBox = z.infer<typeof ScreenBox>;
 
 /** One mounted kit component, `depth` levels under the top of the screen, with
- * its public name, a bounded summary of its props, and its box. */
+ * its public name, a bounded summary of its props, its box, and `focused` on
+ * the one that holds the focus. */
 export const ScreenRow = z.object({
   depth: z.number().int().nonnegative(),
   name: z.string().nonempty().max(128),
   props: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
   box: ScreenBox.nullable(),
+  focused: z.boolean().optional(),
 });
 export type ScreenRow = z.infer<typeof ScreenRow>;
 

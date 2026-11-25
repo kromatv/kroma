@@ -14,7 +14,7 @@ keeps open while it is signed in.
 
 ```ts
 { fibers: number; nodes: KitNode[] }
-// KitNode = { name, props, box, children: KitNode[] }
+// KitNode = { name, props, box, focused?, children: KitNode[] }
 ```
 
 - `fibers` is how many React fibers the walk read.
@@ -31,6 +31,12 @@ keeps open while it is signed in.
   `[secret]`.
 - `box` is `{ x, y, width, height }` in the viewport's pixels, measured from the
   component's first host element, or `null` when it has none.
+- `focused` is `true` on the kit component that holds the focus: the nearest
+  kit component around the element the remote or the keyboard is on. That is
+  usually the `Focusable` inside a control, so the node above it says which
+  control it is (`Button`, `MediaCard`). No other node has the key, and none
+  has it when nothing holds the focus. A control records its element as it
+  takes the focus and forgets it as it loses it, so a render does nothing more.
 
 `screenRows(tree)` from the same entry flattens it for the wire: rows in
 document order, a parent before its children, each with its `depth`. It keeps at
@@ -46,6 +52,13 @@ when it stopped early:
     { "depth": 1, "name": "PerfProvider", "props": { "children": "[element]", "debug": true }, "box": { "x": 0, "y": 0, "width": 1920, "height": 0 } }
   ]
 }
+```
+
+The row of the component that holds the focus carries `focused`, and no other
+row has the key:
+
+```json
+{ "depth": 16, "name": "Focusable", "props": { "autoFocus": true, "label": "Play" }, "box": { "x": 61, "y": 586, "width": 155, "height": 71 }, "focused": true }
 ```
 
 ## In a browser
