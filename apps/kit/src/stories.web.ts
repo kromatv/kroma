@@ -11,7 +11,7 @@
 // them, so they are behind a dynamic import and arrive with the first story.
 //
 // The pages stay eager: an article's own title, summary and width are ordinary
-// ESM exports of the `.page.mdx`, and there are seven of them.
+// ESM exports of the `.page.mdx`, and there are only a handful of them.
 
 import { STORY_CODE } from 'virtual:kroma-story-code';
 import { discoverPagesVite, indexVite, withPageHistory } from '@kromatv/workbench';

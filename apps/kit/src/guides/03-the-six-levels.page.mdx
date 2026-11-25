@@ -77,7 +77,8 @@ That is the whole of it here. Composing a component owns the rest.
 
 ```
 atoms/button/
-  button.tsx                        the component, its variants, its props
+  button.component.tsx              the component and its props
+  button-variants.ts                its variants, declared once
   button.story.mdx                  its documentation, and what the workbench shows
   button.detail-actions.demo.tsx    a worked example; the file IS the code sample
   index.ts                          re-export, so importers write './button'
@@ -97,9 +98,9 @@ import { Button } from '@kromatv/ui/kit/atoms/button';          // 2. one compon
 import { colors } from '#ui/core/tokens';                     // 3. inside the kit only
 ```
 
-1. `@kromatv/ui/kit` re-exports all four component levels flat. App code should use
-   this and never learn which level something is at. The levels are for the people
-   editing the kit.
+1. `@kromatv/ui/kit` re-exports all four component levels flat, and `common/`, the
+   helpers that draw nothing. App code should use this and never learn which level
+   something is at. The levels are for the people editing the kit.
 2. `@kromatv/ui/kit/<level>/<name>` is one component, for a package that wants
    `Button` and nothing else. It is a single wildcard in `package.json`, so no
    list is maintained: add a folder and it is importable.
