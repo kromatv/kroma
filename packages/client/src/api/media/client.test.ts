@@ -159,6 +159,7 @@ describe('the media endpoints', () => {
           released: '1995-12-15',
           genres: ['Crime'],
           directors: ['Michael Mann'],
+          contentRating: 'FR-12',
         }),
       method: 'PUT',
       path: '/edits/item/i%201',
@@ -172,6 +173,7 @@ describe('the media endpoints', () => {
         released: '1995-12-15',
         genres: ['Crime'],
         directors: ['Michael Mann'],
+        contentRating: 'FR-12',
       },
     },
   ])('$name', checkEndpoint);

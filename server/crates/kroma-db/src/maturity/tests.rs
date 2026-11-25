@@ -1,5 +1,8 @@
 use super::*;
+use crate::metadata_core::{ITEM, SHOW};
 use crate::testing::{TempPool, temp_pool};
+use crate::title_edits::{self, Title};
+use kroma_domain::title_edit::TitleEdit;
 
 fn seeded() -> TempPool {
     let pool = temp_pool("maturity");
@@ -146,4 +149,29 @@ fn the_whole_catalogue_is_every_film_and_every_show_and_no_episode() {
 
     found.sort();
     assert_eq!(found, ids(&["m1", "m2", "m3", "s1"]));
+}
+
+#[test]
+fn an_age_rating_written_for_a_title_holds_it_and_its_episodes_in_place_of_the_provider_s() {
+    let pool = seeded();
+    let rated = |kind, id, text: &str| {
+        let edit = TitleEdit {
+            content_rating: Some(text.into()),
+            ..TitleEdit::default()
+        };
+        title_edits::write(&pool, Title { kind, id }, &edit).unwrap();
+    };
+    rated(ITEM, "m3", "FR-12");
+    rated(SHOW, "s1", "US-TV-MA");
+
+    let items = items_access(&pool, &ids(&["m3", "e1"])).unwrap();
+    let every = every_title_access(&pool).unwrap();
+
+    assert_eq!(items["m3"].ratings, ratings(&[("FR", "12")]));
+    assert_eq!(items["e1"].ratings, ratings(&[("US", "TV-MA")]));
+    assert_eq!(every["s1"].ratings, ratings(&[("US", "TV-MA")]));
+    assert_eq!(
+        every["m1"].ratings,
+        ratings(&[("FR", "12"), ("US", "PG-13")])
+    );
 }

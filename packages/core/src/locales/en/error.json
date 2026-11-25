@@ -38,5 +38,6 @@
   "error.unauthorizedBody": "Your session has ended. Sign in again to keep watching.",
   "error.unauthorizedTitle": "Sign-in required",
   "error.userNotFound": "User not found",
-  "error.ratingsCountryUnknown": "KROMA doesn't know this country's age ratings"
+  "error.ratingsCountryUnknown": "KROMA doesn't know this country's age ratings",
+  "error.ageRatingUnknown": "KROMA doesn't know this age rating. Write it as 12, PG-13 or FR-12."
 }

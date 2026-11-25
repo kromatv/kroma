@@ -2,6 +2,8 @@
   "titleInfo.action": "Modifier les informations",
   "titleInfo.aired": "Date de diffusion",
   "titleInfo.airedHint": "Le jour de sa première diffusion, comme 2008-01-20.",
+  "titleInfo.contentRating": "Classification",
+  "titleInfo.contentRatingHint": "Par exemple 12, PG-13 ou FR-12. C'est elle qui compte pour les profils limités par âge.",
   "titleInfo.directors": "Réalisation",
   "titleInfo.directorsHint": "Séparez les noms par des virgules. Ils s'affichent après Réalisé par.",
   "titleInfo.genres": "Genres",

@@ -129,3 +129,40 @@ fn every_country_with_a_rating_system_is_offered_once_in_code_order() {
     assert!(offered.contains(&"FR") && offered.contains(&"US"));
     assert!(offered.windows(2).all(|pair| pair[0] < pair[1]));
 }
+
+#[test]
+fn a_label_written_with_its_country_is_that_country_s_alone() {
+    let dashed = written_ratings("FR-12");
+    let slashed = written_ratings(" fr/12 ");
+    let coloned = written_ratings("de:16");
+    let quebec = written_ratings("CA-QC-13+");
+
+    assert_eq!(dashed, ratings(&[("FR", "12")]));
+    assert_eq!(slashed, dashed);
+    assert_eq!(coloned, ratings(&[("DE", "16")]));
+    assert_eq!(quebec, ratings(&[("CA-QC", "13+")]));
+}
+
+#[test]
+fn a_label_written_alone_stands_in_every_country_whose_system_has_it() {
+    let twelve = written_ratings("12");
+    let rated = written_ratings("Rated pg-13");
+
+    assert_eq!(twelve.get("FR").map(String::as_str), Some("12"));
+    assert_eq!(twelve.get("DE").map(String::as_str), Some("12"));
+    assert!(!twelve.contains_key("US"));
+    assert_eq!(rated.get("US").map(String::as_str), Some("PG-13"));
+    assert_eq!(
+        reader_rating(&twelve, "FR", "US"),
+        shown("12", "FR", false)
+    );
+}
+
+#[test]
+fn a_label_no_system_has_or_one_that_only_says_not_rated_stands_for_nothing() {
+    assert!(written_ratings("FSK 16").is_empty());
+    assert!(written_ratings("NR").is_empty());
+    assert!(written_ratings("").is_empty());
+    assert!(written_ratings("XX-12").is_empty());
+    assert!(written_ratings("FR-NR").is_empty());
+}

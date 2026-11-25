@@ -11,6 +11,7 @@ const NOTHING = {
   released: null,
   genres: null,
   directors: null,
+  contentRating: null,
 };
 
 it('shows nothing in the form for a title that follows the provider', () => {
@@ -23,6 +24,7 @@ it('shows nothing in the form for a title that follows the provider', () => {
     released: '',
     genres: '',
     directors: '',
+    contentRating: '',
   });
 });
 
@@ -37,6 +39,7 @@ it('puts the genres on one line, and reads them back one by one', () => {
     released: null,
     genres: ['Crime', 'Drama'],
     directors: ['Michael Mann', 'Jane Doe'],
+    contentRating: 'FR-12',
   };
 
   const draft = draftOf(edit);
@@ -50,6 +53,7 @@ it('puts the genres on one line, and reads them back one by one', () => {
     released: '1995',
     genres: 'Crime, Drama',
     directors: 'Michael Mann, Jane Doe',
+    contentRating: 'FR-12',
   });
   expect(editOf(draft)).toEqual(edit);
 });
@@ -73,6 +77,7 @@ it('hands every field left blank back to the provider', () => {
     released: ' ',
     genres: ' , ,',
     directors: ', ',
+    contentRating: ' ',
   };
 
   expect(editOf(draft)).toEqual(NOTHING);
@@ -88,6 +93,7 @@ it('keeps each field trimmed', () => {
     released: ' 1995 ',
     genres: ' Crime ,Drama ',
     directors: ' Michael Mann ',
+    contentRating: ' 12 ',
   };
 
   expect(editOf(draft)).toEqual({
@@ -100,5 +106,6 @@ it('keeps each field trimmed', () => {
     released: null,
     genres: ['Crime', 'Drama'],
     directors: ['Michael Mann'],
+    contentRating: '12',
   });
 });

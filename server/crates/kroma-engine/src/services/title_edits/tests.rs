@@ -62,7 +62,7 @@ fn a_name_is_kept_trimmed_and_search_finds_the_title_under_it() {
 
     let sent = events.try_recv().expect("an event");
     let hits = state.search.search("Home movies", 5);
-    assert_eq!(edit, Edit::Kept(named("Home movies")));
+    assert_eq!(edit, Edit::Kept(Box::new(named("Home movies"))));
     assert_eq!(hits.first().map(|h| h.id.as_str()), Some("m1"));
     assert!(sent.payload_for("anyone").unwrap().contains("\"m1\""));
 }
@@ -79,7 +79,7 @@ fn an_edit_left_empty_hands_a_show_back_to_the_provider() {
 
     let edit = write(&state, show, named("   ")).unwrap();
 
-    assert_eq!(edit, Edit::Kept(TitleEdit::default()));
+    assert_eq!(edit, Edit::Kept(Box::default()));
     assert!(db::title_edits::written(
         &state.db,
         Title {

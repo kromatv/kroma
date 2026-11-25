@@ -4,12 +4,14 @@
 //! `ShowUpdated` event.
 //!
 //! - `GET` → `{ title, originalTitle, sortTitle, tagline, overview, year,
-//!   released, genres, directors }`, each null where the title follows the
-//!   provider. `released` is a day, `yyyy-mm-dd`.
+//!   released, genres, directors, contentRating }`, each null where the title
+//!   follows the provider. `released` is a day, `yyyy-mm-dd`;
+//!   `contentRating` is an age rating, with its country or not ("FR-12",
+//!   "12", "Rated PG-13").
 //! - `PUT` with the same body → the edit as kept: trimmed, with each empty
 //!   field handed back to the provider and the year taken from `released`.
-//!   400 when a field is longer than a title holds, the year is out of range
-//!   or `released` is no day.
+//!   400 when a field is longer than a title holds, the year is out of range,
+//!   `released` is no day or no country's system has `contentRating`.
 
 use axum::extract::{DefaultBodyLimit, State};
 use axum::http::StatusCode;
@@ -23,6 +25,7 @@ use crate::api::util::{blocking, query};
 use crate::db;
 use crate::db::title_edits::Title;
 use crate::i18n;
+use crate::model::User;
 use crate::model::title_edit::TitleEdit;
 use crate::services::title_edits::{self, Edit};
 use crate::state::SharedState;
@@ -60,12 +63,13 @@ async fn write(
 ) -> Result<Json<TitleEdit>, Response> {
     let title = move || title_edits::write(&state, Title { kind, id: &id }, edit);
     match blocking(title).await? {
-        Edit::Kept(edit) => Ok(Json(edit)),
-        Edit::DoesNotFit => Err(lerr(
-            i18n::user_locale(&user),
-            StatusCode::BAD_REQUEST,
-            "error.titleEditTooLong",
-        )),
+        Edit::Kept(edit) => Ok(Json(*edit)),
+        Edit::DoesNotFit => Err(refused(&user, "error.titleEditTooLong")),
+        Edit::UnknownRating => Err(refused(&user, "error.ageRatingUnknown")),
         Edit::NoSuchTitle => Err(not_found(&user)),
     }
+}
+
+fn refused(user: &User, code: &str) -> Response {
+    lerr(i18n::user_locale(user), StatusCode::BAD_REQUEST, code)
 }

@@ -37,6 +37,7 @@ const FIT: Readonly<Record<keyof TitleDraft, (text: string) => string>> = {
   released: (text) => text.replace(/[^\d-]/g, '').slice(0, 10),
   genres: upTo(TITLE_EDIT_LIMITS.genres * (TITLE_EDIT_LIMITS.genre + 2)),
   directors: upTo(TITLE_EDIT_LIMITS.directors * (TITLE_EDIT_LIMITS.person + 2)),
+  contentRating: upTo(TITLE_EDIT_LIMITS.contentRating),
 };
 
 function Failure({ text }: Readonly<{ text: string | null }>) {
@@ -90,10 +91,18 @@ function placeholdersOf(shown: TitleShown | undefined): Placeholders {
     released: shown.year === null ? undefined : String(shown.year),
     genres: shown.genres.join(', ') || undefined,
     directors: shown.directors.map((person) => person.name).join(', ') || undefined,
+    contentRating: shown.ageRating?.label,
   };
 }
 
-type Hinted = 'originalTitle' | 'sortTitle' | 'tagline' | 'released' | 'genres' | 'directors';
+type Hinted =
+  | 'originalTitle'
+  | 'sortTitle'
+  | 'tagline'
+  | 'released'
+  | 'contentRating'
+  | 'genres'
+  | 'directors';
 
 type Fields = Readonly<{ draft: TitleDraft; change: Change; placeholders: Placeholders }>;
 
@@ -142,6 +151,7 @@ function TitleFields(fields: Fields) {
       <HintedField field="originalTitle" {...fields} />
       <HintedField field="sortTitle" {...fields} />
       <HintedField field="released" {...fields} />
+      <HintedField field="contentRating" {...fields} />
       <HintedField field="tagline" {...fields} />
       <SummaryField {...fields} />
       <HintedField field="genres" {...fields} />
@@ -231,10 +241,10 @@ function useInfoForm(props: Props, onDone: () => void) {
   return { draft, busy, submit, error, body };
 }
 
-/** The name, original title, sort title, release date, tagline, summary,
- * genres and directors a person who manages the library writes by hand for a
- * film or a show, and the name, air date and summary for an episode (`kind:
- * 'episode'`). Each empty field shows in grey what the page shows instead
+/** The name, original title, sort title, release date, age rating, tagline,
+ * summary, genres and directors a person who manages the library writes by
+ * hand for a film or a show, and the name, air date and summary for an
+ * episode (`kind: 'episode'`). Each empty field shows in grey what the page shows instead
  * (`shown`). Open with `await TitleInfoDialog.call({ kind, id, title, shown
  * })`; it resolves on dismiss and once the edit is saved. */
 export const TitleInfoDialog = createCallable<Props>((props) => {

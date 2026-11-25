@@ -56,6 +56,6 @@ pub use section::*;
 pub mod setup;
 
 pub mod ratings;
-pub use ratings::{AgeRating, CountryRatings};
+pub use ratings::{AgeRating, CountryRatings, written_ratings};
 pub use ratings::{Ceiling, MaturityLevel, Weighed};
 pub use ratings::TitleRule;

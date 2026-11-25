@@ -22,7 +22,6 @@ mod lists;
 
 pub use crate::services::viewer::{ShowRatings, Viewer};
 pub use lists::{keep_discovered, keep_items, keep_section_item, keep_sections, keep_shows};
-use lists::{ratings_of_shows, shows_behind};
 
 /// The session's account with everything that keeps a title from it. Rejects
 /// exactly as [`AuthUser`] does.
@@ -132,7 +131,8 @@ pub async fn visible_item_ids(
 
 /// The item behind `item_id` when the caller may see it, `None` both for an
 /// unknown id and for one kept from the caller. The media byte routes hold
-/// every request to this, so a changed grant or ceiling bites at once.
+/// every request to this, so a changed grant, ceiling or written age rating
+/// bites at once.
 pub async fn item_in_scope(
     state: &SharedState,
     viewer: &Viewer,
@@ -142,10 +142,10 @@ pub async fn item_in_scope(
         .await
         .ok()
         .flatten()?;
-    let shows = ratings_of_shows(state, viewer, shows_behind([&item]))
+    let seen = visible_item_ids(state, viewer, vec![item.id.clone()])
         .await
         .ok()?;
-    viewer.sees_item(&item, &shows).then_some(item)
+    seen.contains(&item.id).then_some(item)
 }
 
 /// The film and show ids the caller may see, when anything beyond its

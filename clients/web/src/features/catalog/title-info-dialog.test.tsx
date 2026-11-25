@@ -25,6 +25,7 @@ const WRITTEN = {
   released: null,
   genres: ['Crime'],
   directors: null,
+  contentRating: null,
 };
 
 afterEach(() => {
@@ -42,6 +43,7 @@ const NOTHING_WRITTEN = {
   released: null,
   genres: null,
   directors: null,
+  contentRating: null,
 };
 
 const SHOWN = {
@@ -52,6 +54,7 @@ const SHOWN = {
   overview: 'A return to nature in songs and dance.',
   genres: ['Drama', 'Music'],
   directors: [{ name: 'Barbara Kusa' }, { name: 'Lotte Lenya' }],
+  ageRating: { label: 'TP' },
   poster: null,
   backdrop: null,
 };
@@ -96,6 +99,7 @@ it('shows what was written and saves what changed', async () => {
   type('Sort title', ' Heat, the ');
   type('Original title', ' Heat ');
   type('Tagline', ' A Los Angeles crime saga ');
+  type('Age rating', ' Rated R ');
   save();
 
   await closed;
@@ -110,6 +114,7 @@ it('shows what was written and saves what changed', async () => {
     released: '1987-03-01',
     genres: ['Crime', 'Drama'],
     directors: ['Michael Mann'],
+    contentRating: 'Rated R',
   });
 });
 
@@ -138,6 +143,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
   expect(screen.queryByLabelText('Tagline')).toBeNull();
   expect(screen.queryByLabelText('Genres')).toBeNull();
   expect(screen.queryByLabelText('Directors')).toBeNull();
+  expect(screen.queryByLabelText('Age rating')).toBeNull();
   type('Air date', '2008-01-20');
   type('Summary', 'A teacher turns to crime.');
   save();
@@ -154,6 +160,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
     released: '2008-01-20',
     genres: null,
     directors: null,
+    contentRating: null,
   });
 });
 
@@ -188,6 +195,7 @@ it('shows in grey what the page shows where nothing was written', async () => {
   expect(screen.getByPlaceholderText('A return to nature in songs and dance.')).toBeTruthy();
   expect(screen.getByPlaceholderText('Drama, Music')).toBeTruthy();
   expect(screen.getByPlaceholderText('Barbara Kusa, Lotte Lenya')).toBeTruthy();
+  expect(screen.getByPlaceholderText('TP')).toBeTruthy();
 });
 
 it('names the title once and closes from its own header', async () => {

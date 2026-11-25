@@ -34,6 +34,7 @@ fn a_title_is_found_and_counted_by_the_name_year_and_genres_written_for_it() {
         genres: Some(vec!["Drama".into()]),
         released: None,
         directors: None,
+        content_rating: None,
     };
     edited(&pool, ITEM, "m3", rewritten);
     let regenred = TitleEdit {

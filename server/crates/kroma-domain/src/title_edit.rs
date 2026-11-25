@@ -5,10 +5,12 @@
 //! a sort title files the title under another name (LIB-88), an original
 //! title names it in the language it was made in (LIB-94), a tagline stands
 //! above its summary (LIB-95), and the names written as its directors stand in
-//! for the provider's (LIB-96).
+//! for the provider's (LIB-96), and an age rating written stands for every
+//! country's, the one a profile's ceiling weighs too (LIB-97).
 
 mod crew;
 mod day;
+mod rating;
 
 use serde::{Deserialize, Serialize};
 
@@ -58,6 +60,9 @@ pub struct TitleEdit {
     /// The people who directed the title, or created the show.
     #[serde(default)]
     pub directors: Option<Vec<String>>,
+    /// The age rating, as [`crate::ratings::written_ratings`] reads it.
+    #[serde(default, rename = "contentRating")]
+    pub content_rating: Option<String>,
 }
 
 /// The parts of a title a [`TitleEdit`] writes onto.
@@ -147,6 +152,7 @@ impl TitleEdit {
             released,
             genres: listed(self.genres),
             directors: listed(self.directors),
+            content_rating: kept(self.content_rating),
         }
     }
 
@@ -169,13 +175,14 @@ impl TitleEdit {
             released,
             genres: self.genres.or(below.genres),
             directors: self.directors.or(below.directors),
+            content_rating: self.content_rating.or(below.content_rating),
         }
     }
 
     /// The same edit tidied and cut to what a title can hold: a name or a
     /// summary that runs long is cut short, the genres and the directors past
-    /// the limit are dropped, and a year outside [`YEARS`] or a date that is
-    /// no day is left out.
+    /// the limit are dropped, and a year outside [`YEARS`], a date that is
+    /// no day or an age rating no system has is left out.
     pub fn clipped(self) -> Self {
         let tidied = self.tidied();
         Self {
@@ -188,6 +195,7 @@ impl TitleEdit {
             released: tidied.released.filter(|date| year_of_day(date).is_some()),
             genres: clip_list(tidied.genres, GENRES_MAX, GENRE_MAX),
             directors: clip_list(tidied.directors, DIRECTORS_MAX, PERSON_MAX),
+            content_rating: tidied.content_rating.filter(|text| rating::known(text)),
         }
     }
 
@@ -206,6 +214,7 @@ impl TitleEdit {
                 .is_none_or(|d| year_of_day(d).is_some())
             && list_fits(&self.genres, GENRES_MAX, GENRE_MAX)
             && list_fits(&self.directors, DIRECTORS_MAX, PERSON_MAX)
+            && self.content_rating.as_deref().is_none_or(rating::known)
     }
 
     fn texts_fit(&self) -> bool {
@@ -243,6 +252,8 @@ impl TitleEdit {
     /// provider's release date when the two disagree, so the date never
     /// contradicts the year shown. Directors written replace the provider's
     /// directors and creators, and keep the profile of each one it named too.
+    /// An age rating written replaces every country's, and the badge shows
+    /// it in the country the provider's was shown in when it has one there.
     pub fn onto_metadata(&self, meta: &mut Metadata) {
         put(&mut meta.title, &self.title);
         put(&mut meta.original_title, &self.original_title);
@@ -256,6 +267,9 @@ impl TitleEdit {
         }
         if let Some(directors) = &self.directors {
             crew::directed_by(&mut meta.crew, directors);
+        }
+        if let Some(text) = &self.content_rating {
+            rating::rated(meta, text);
         }
     }
 
