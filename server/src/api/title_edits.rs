@@ -4,10 +4,10 @@
 //! `ShowUpdated` event.
 //!
 //! - `GET` → `{ title, originalTitle, sortTitle, tagline, overview, year,
-//!   released, genres, directors, contentRating }`, each null where the title
-//!   follows the provider. `released` is a day, `yyyy-mm-dd`;
+//!   released, genres, directors, contentRating, cast }`, each null where the
+//!   title follows the provider. `released` is a day, `yyyy-mm-dd`;
 //!   `contentRating` is an age rating, with its country or not ("FR-12",
-//!   "12", "Rated PG-13").
+//!   "12", "Rated PG-13"); `cast` is `[{ name, role }]`, in credit order.
 //! - `PUT` with the same body → the edit as kept: trimmed, with each empty
 //!   field handed back to the provider and the year taken from `released`.
 //!   400 when a field is longer than a title holds, the year is out of range,

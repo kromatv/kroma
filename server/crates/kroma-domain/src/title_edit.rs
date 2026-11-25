@@ -4,18 +4,23 @@
 //! following the provider. A release date written gives the year (LIB-87),
 //! a sort title files the title under another name (LIB-88), an original
 //! title names it in the language it was made in (LIB-94), a tagline stands
-//! above its summary (LIB-95), and the names written as its directors stand in
-//! for the provider's (LIB-96), and an age rating written stands for every
-//! country's, the one a profile's ceiling weighs too (LIB-97).
+//! above its summary (LIB-95), the names written as its directors stand in for
+//! the provider's (LIB-96), an age rating written stands for every country's,
+//! the one a profile's ceiling weighs too (LIB-97), and the cast written, with
+//! the part each one plays, stands for the provider's (LIB-98).
 
+mod cast;
 mod crew;
 mod day;
 mod rating;
+mod text;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{MediaItem, Metadata, Show};
+pub use cast::Actor;
 use day::{year_of, year_of_day};
+use text::{clip_list, cut, kept, list_fits, listed, put};
 
 /// The longest name a person can write for a title, in characters.
 pub const TITLE_MAX: usize = 300;
@@ -29,8 +34,13 @@ pub const GENRES_MAX: usize = 20;
 pub const GENRE_MAX: usize = 60;
 /// How many directors a person can give a title.
 pub const DIRECTORS_MAX: usize = 20;
-/// The longest name a person can write for one director, in characters.
+/// The longest name a person can write for one director or actor, in
+/// characters.
 pub const PERSON_MAX: usize = 100;
+/// How many actors a person can give a title.
+pub const CAST_MAX: usize = 50;
+/// The longest part a person can write for one actor, in characters.
+pub const ROLE_MAX: usize = 100;
 /// The years a title can be given.
 pub const YEARS: std::ops::RangeInclusive<u32> = 1800..=2200;
 
@@ -63,6 +73,9 @@ pub struct TitleEdit {
     /// The age rating, as [`crate::ratings::written_ratings`] reads it.
     #[serde(default, rename = "contentRating")]
     pub content_rating: Option<String>,
+    /// The people who play in the title, in the order they are credited.
+    #[serde(default)]
+    pub cast: Option<Vec<Actor>>,
 }
 
 /// The parts of a title a [`TitleEdit`] writes onto.
@@ -94,48 +107,6 @@ macro_rules! editable {
 
 editable!(MediaItem, Show);
 
-fn kept(text: Option<String>) -> Option<String> {
-    text.map(|t| t.trim().to_string()).filter(|t| !t.is_empty())
-}
-
-fn listed(names: Option<Vec<String>>) -> Option<Vec<String>> {
-    let names: Vec<String> = names
-        .into_iter()
-        .flatten()
-        .filter_map(|name| kept(Some(name)))
-        .collect();
-    (!names.is_empty()).then_some(names)
-}
-
-fn clip_list(names: Option<Vec<String>>, count: usize, each: usize) -> Option<Vec<String>> {
-    names.map(|names| {
-        let kept = names.into_iter().take(count);
-        kept.map(|name| cut(name, each)).collect()
-    })
-}
-
-fn list_fits(names: &Option<Vec<String>>, count: usize, each: usize) -> bool {
-    let names = names.as_deref().unwrap_or_default();
-    names.len() <= count && names.iter().all(|name| name.chars().count() <= each)
-}
-
-fn put(to: &mut Option<String>, written: &Option<String>) {
-    if written.is_some() {
-        to.clone_from(written);
-    }
-}
-
-fn cut(text: String, max: usize) -> String {
-    if text.chars().count() <= max {
-        return text;
-    }
-    text.chars()
-        .take(max)
-        .collect::<String>()
-        .trim_end()
-        .to_string()
-}
-
 impl TitleEdit {
     /// The same edit with surrounding spaces trimmed, every field that is
     /// left empty handed back to the provider, and the year taken from the
@@ -153,6 +124,7 @@ impl TitleEdit {
             genres: listed(self.genres),
             directors: listed(self.directors),
             content_rating: kept(self.content_rating),
+            cast: cast::listed(self.cast),
         }
     }
 
@@ -176,13 +148,14 @@ impl TitleEdit {
             genres: self.genres.or(below.genres),
             directors: self.directors.or(below.directors),
             content_rating: self.content_rating.or(below.content_rating),
+            cast: self.cast.or(below.cast),
         }
     }
 
     /// The same edit tidied and cut to what a title can hold: a name or a
-    /// summary that runs long is cut short, the genres and the directors past
-    /// the limit are dropped, and a year outside [`YEARS`], a date that is
-    /// no day or an age rating no system has is left out.
+    /// summary that runs long is cut short, the genres, the directors and the
+    /// cast past the limit are dropped, and a year outside [`YEARS`], a date
+    /// that is no day or an age rating no system has is left out.
     pub fn clipped(self) -> Self {
         let tidied = self.tidied();
         Self {
@@ -196,6 +169,7 @@ impl TitleEdit {
             genres: clip_list(tidied.genres, GENRES_MAX, GENRE_MAX),
             directors: clip_list(tidied.directors, DIRECTORS_MAX, PERSON_MAX),
             content_rating: tidied.content_rating.filter(|text| rating::known(text)),
+            cast: cast::clipped(tidied.cast),
         }
     }
 
@@ -215,6 +189,7 @@ impl TitleEdit {
             && list_fits(&self.genres, GENRES_MAX, GENRE_MAX)
             && list_fits(&self.directors, DIRECTORS_MAX, PERSON_MAX)
             && self.content_rating.as_deref().is_none_or(rating::known)
+            && cast::fits(self.cast.as_deref())
     }
 
     fn texts_fit(&self) -> bool {
@@ -254,6 +229,8 @@ impl TitleEdit {
     /// directors and creators, and keep the profile of each one it named too.
     /// An age rating written replaces every country's, and the badge shows
     /// it in the country the provider's was shown in when it has one there.
+    /// The cast written replaces the provider's, and keeps the profile of each
+    /// actor it named too, with their part unless another is written.
     pub fn onto_metadata(&self, meta: &mut Metadata) {
         put(&mut meta.title, &self.title);
         put(&mut meta.original_title, &self.original_title);
@@ -270,6 +247,9 @@ impl TitleEdit {
         }
         if let Some(text) = &self.content_rating {
             rating::rated(meta, text);
+        }
+        if let Some(cast) = &self.cast {
+            cast::played_by(&mut meta.cast, cast);
         }
     }
 

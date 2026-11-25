@@ -2,7 +2,7 @@ use super::*;
 use crate::catalog_query::test_support::*;
 use crate::metadata_core::{ITEM, SHOW};
 use crate::title_edits::{self, Title};
-use kroma_domain::title_edit::TitleEdit;
+use kroma_domain::title_edit::{Actor, TitleEdit};
 
 fn edited(pool: &Pool, kind: &str, id: &str, edit: TitleEdit) {
     title_edits::write(pool, Title { kind, id }, &edit).unwrap();
@@ -35,6 +35,7 @@ fn a_title_is_found_and_counted_by_the_name_year_and_genres_written_for_it() {
         released: None,
         directors: None,
         content_rating: None,
+        cast: None,
     };
     edited(&pool, ITEM, "m3", rewritten);
     let regenred = TitleEdit {
@@ -97,6 +98,33 @@ fn a_title_is_found_and_counted_by_the_directors_written_for_it() {
     assert_eq!(directors[0], ("Jane Doe".to_string(), 2));
     assert!(directors.contains(&("Denis Villeneuve".to_string(), 1)));
     assert!(directors.contains(&("Ari Aster".to_string(), 1)));
+}
+
+#[test]
+fn a_title_is_found_and_counted_by_the_cast_written_for_it() {
+    let pool = seeded_pool();
+    let jane = Actor {
+        name: "Jane Doe".into(),
+        role: Some("A pilot".into()),
+    };
+    let played = TitleEdit {
+        cast: Some(vec![jane]),
+        ..Default::default()
+    };
+    edited(&pool, ITEM, "m1", played);
+    let with = |actor: &str| TitleFilter {
+        actor: Some(actor.into()),
+        ..Default::default()
+    };
+
+    let dune = get_title(&pool, "Dune").unwrap().unwrap();
+    let actors = people_counts(&pool, "actor", 50).unwrap();
+
+    assert_eq!(dune.cast, ["Jane Doe"]);
+    assert_eq!(found(&pool, with("jane doe")), ["Dune"]);
+    assert!(found(&pool, with("Timothée Chalamet")).is_empty());
+    assert!(actors.contains(&("Jane Doe".to_string(), 1)));
+    assert!(!actors.iter().any(|(name, _)| name == "Timothée Chalamet"));
 }
 
 #[test]

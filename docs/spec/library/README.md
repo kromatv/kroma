@@ -322,6 +322,14 @@ rating of every country whose system has it. What a person writes comes before t
 rating no country's system has, or one that means no rating, is refused when written and not
 read from the file.
 
+**LIB-98** (SHIPPED) - A film or a show shows the cast a person writes, or its `.nfo` file
+lists in `<actor>` (LIB-84), in place of the provider's: each actor's name and the part they
+play, in the order `<order>` gives. What a person writes comes before the file. A name the
+provider also gave keeps the provider's person, so it still leads to their page with their
+picture, and keeps the provider's part when none is written. A person's page, and the
+catalogue filtered by actor, find the title under the cast it shows and no longer under the
+actors it replaces.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

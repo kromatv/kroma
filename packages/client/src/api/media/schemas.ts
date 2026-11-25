@@ -51,6 +51,14 @@ export type ChosenArt = z.infer<typeof ChosenArt>;
 export const ArtShown = z.object({ url: z.string() });
 export type ArtShown = z.infer<typeof ArtShown>;
 
+/** One person in a title's cast as it is written: their name and the part
+ * they play. */
+export const Actor = z.object({
+  name: z.string(),
+  role: z.string().nullable().default(null),
+});
+export type Actor = z.infer<typeof Actor>;
+
 /** `GET` and `PUT /api/edits/{kind}/{id}`: what was written by hand about a
  * film or a show. Each field comes before the provider's in every language,
  * and a null one follows the provider. */
@@ -65,13 +73,15 @@ export const TitleEdit = z.object({
   genres: z.array(z.string()).nullable(),
   directors: z.array(z.string()).nullable().default(null),
   contentRating: z.string().nullable().default(null),
+  cast: z.array(Actor).nullable().default(null),
 });
 export type TitleEdit = z.infer<typeof TitleEdit>;
 
 /** What a {@link TitleEdit} can hold, as the server checks it: characters in a
- * name, a tagline, a summary, one genre and one director's name, how many
- * genres and directors, and the years. An age rating is held to the labels
- * the server knows, and `contentRating` only bounds what a field takes. */
+ * name, a tagline, a summary, one genre, one person's name and one part, how
+ * many genres, directors and actors, and the years. An age rating is held to
+ * the labels the server knows, and `contentRating` only bounds what a field
+ * takes. */
 export const TITLE_EDIT_LIMITS = {
   title: 300,
   tagline: 300,
@@ -80,6 +90,8 @@ export const TITLE_EDIT_LIMITS = {
   genres: 20,
   person: 100,
   directors: 20,
+  cast: 50,
+  role: 100,
   contentRating: 40,
   years: [1800, 2200],
 } as const;

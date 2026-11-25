@@ -49,6 +49,7 @@ const SHOWN = {
   originalTitle: null,
   tagline: null,
   directors: [],
+  cast: [],
   ageRating: null,
   year: 1995,
   overview: null,

@@ -17,8 +17,8 @@ export interface TitleDraft {
 
 const shown = (text: string | null) => text ?? '';
 
-/** The form's text for what was written about a title. */
-export function draftOf(edit: TitleEdit): TitleDraft {
+/** The form's text for what was written about a title, but its cast. */
+export function draftOf(edit: Omit<TitleEdit, 'cast'>): TitleDraft {
   return {
     title: shown(edit.title),
     originalTitle: shown(edit.originalTitle),
@@ -53,10 +53,10 @@ function dateOf(text: string): Pick<TitleEdit, 'year' | 'released'> {
   return { year: null, released: date };
 }
 
-/** The edit a form asks for, with each field left empty handed back to the
- * provider. A full date goes as the release date, and the server takes the
- * year from it. */
-export function editOf(draft: TitleDraft): TitleEdit {
+/** The edit a form asks for, but its cast, with each field left empty handed
+ * back to the provider. A full date goes as the release date, and the server
+ * takes the year from it. */
+export function editOf(draft: TitleDraft): Omit<TitleEdit, 'cast'> {
   return {
     title: kept(draft.title),
     originalTitle: kept(draft.originalTitle),

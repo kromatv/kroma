@@ -160,6 +160,7 @@ describe('the media endpoints', () => {
           genres: ['Crime'],
           directors: ['Michael Mann'],
           contentRating: 'FR-12',
+          cast: [{ name: 'Al Pacino', role: 'Vincent Hanna' }],
         }),
       method: 'PUT',
       path: '/edits/item/i%201',
@@ -174,6 +175,7 @@ describe('the media endpoints', () => {
         genres: ['Crime'],
         directors: ['Michael Mann'],
         contentRating: 'FR-12',
+        cast: [{ name: 'Al Pacino', role: 'Vincent Hanna' }],
       },
     },
   ])('$name', checkEndpoint);

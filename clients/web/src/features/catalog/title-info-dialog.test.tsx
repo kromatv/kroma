@@ -26,6 +26,7 @@ const WRITTEN = {
   genres: ['Crime'],
   directors: null,
   contentRating: null,
+  cast: null,
 };
 
 afterEach(() => {
@@ -44,6 +45,7 @@ const NOTHING_WRITTEN = {
   genres: null,
   directors: null,
   contentRating: null,
+  cast: null,
 };
 
 const SHOWN = {
@@ -54,6 +56,10 @@ const SHOWN = {
   overview: 'A return to nature in songs and dance.',
   genres: ['Drama', 'Music'],
   directors: [{ name: 'Barbara Kusa' }, { name: 'Lotte Lenya' }],
+  cast: [
+    { name: 'Lotte Lenya', character: 'Jenny' },
+    { name: 'Kurt Weill', character: null },
+  ],
   ageRating: { label: 'TP' },
   poster: null,
   backdrop: null,
@@ -115,6 +121,7 @@ it('shows what was written and saves what changed', async () => {
     genres: ['Crime', 'Drama'],
     directors: ['Michael Mann'],
     contentRating: 'Rated R',
+    cast: null,
   });
 });
 
@@ -161,6 +168,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
     genres: null,
     directors: null,
     contentRating: null,
+    cast: null,
   });
 });
 
@@ -209,4 +217,56 @@ it('names the title once and closes from its own header', async () => {
 
   await closed;
   expect(edits.put).not.toHaveBeenCalled();
+});
+
+it('starts the cast from the one the page shows and leaves it to the provider until it changes', async () => {
+  edits.get.mockResolvedValue(NOTHING_WRITTEN);
+  edits.put.mockImplementation((_kind, _id, edit) => Promise.resolve(edit));
+  const closed = open('item', 'm1', SHOWN);
+
+  expect(await screen.findByDisplayValue('Jenny')).toBeTruthy();
+  expect(screen.getByLabelText('Actor 2')).toHaveProperty('value', 'Kurt Weill');
+  save();
+
+  await closed;
+  expect(edits.put).toHaveBeenCalledWith('item', 'm1', expect.objectContaining({ cast: null }));
+});
+
+it('writes the cast in credit order once a row changes, is added or is removed', async () => {
+  edits.get.mockResolvedValue({ ...NOTHING_WRITTEN, cast: [{ name: 'Al Pacino', role: null }] });
+  edits.put.mockImplementation((_kind, _id, edit) => Promise.resolve(edit));
+  const closed = open('item', 'm1', SHOWN);
+
+  await screen.findByDisplayValue('Al Pacino');
+  type("Actor 1's role", ' Vincent Hanna ');
+  inputHost.clearPressGuard();
+  fireEvent.click(screen.getByRole('button', { name: 'Add an actor' }));
+  type('Actor 2', 'Robert De Niro');
+  inputHost.clearPressGuard();
+  fireEvent.click(screen.getByRole('button', { name: 'Add an actor' }));
+  inputHost.clearPressGuard();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove actor 3' }));
+  save();
+
+  await closed;
+  expect(edits.put).toHaveBeenCalledWith(
+    'item',
+    'm1',
+    expect.objectContaining({
+      cast: [
+        { name: 'Al Pacino', role: 'Vincent Hanna' },
+        { name: 'Robert De Niro', role: null },
+      ],
+    }),
+  );
+});
+
+it('asks an episode for no cast', async () => {
+  edits.get.mockResolvedValue(WRITTEN);
+  void open('episode', 'e1');
+
+  await screen.findByDisplayValue('Heat');
+
+  expect(screen.queryByText('Cast')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Add an actor' })).toBeNull();
 });

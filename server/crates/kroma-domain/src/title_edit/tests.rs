@@ -48,6 +48,10 @@ fn an_edit_left_blank_follows_the_provider_in_every_field() {
         genres: Some(vec![" ".into()]),
         directors: Some(vec!["".into(), "  ".into()]),
         content_rating: Some(" ".into()),
+        cast: Some(vec![Actor {
+            name: " ".into(),
+            role: None,
+        }]),
     };
 
     let tidied = edit.tidied();
@@ -68,6 +72,7 @@ fn tidying_trims_each_field_and_keeps_the_genres_that_say_something() {
         genres: Some(vec![" Crime".into(), "".into(), "Drama ".into()]),
         directors: Some(vec![" Michael Mann ".into(), " ".into()]),
         content_rating: Some(" R ".into()),
+        cast: None,
     };
 
     let tidied = edit.tidied();
@@ -97,6 +102,7 @@ fn an_edit_fits_up_to_each_limit_and_no_further() {
         genres: Some(vec!["g".repeat(GENRE_MAX); GENRES_MAX]),
         directors: Some(vec!["d".repeat(PERSON_MAX); DIRECTORS_MAX]),
         content_rating: Some("FR-12".into()),
+        cast: None,
     };
     let long_title = TitleEdit {
         title: Some("a".repeat(TITLE_MAX + 1)),
@@ -165,6 +171,7 @@ fn clipping_cuts_what_runs_long_and_leaves_out_a_year_no_title_has() {
         genres: Some(vec!["g".repeat(GENRE_MAX + 1); GENRES_MAX + 1]),
         directors: Some(vec!["d".repeat(PERSON_MAX + 1); DIRECTORS_MAX + 1]),
         content_rating: Some("Not Rated".into()),
+        cast: None,
     };
 
     let clipped = long.clipped();
@@ -214,6 +221,7 @@ fn an_edit_over_another_keeps_its_own_fields_and_fills_the_rest() {
         genres: Some(vec!["Crime".into()]),
         directors: Some(vec!["Michael Mann".into()]),
         content_rating: Some("Rated R".into()),
+        cast: None,
     };
 
     let shown = hand.over(file);

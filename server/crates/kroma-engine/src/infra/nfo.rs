@@ -1,8 +1,8 @@
 //! The `.nfo` file Kodi, Jellyfin and Plex keep beside a title's files, read
 //! for its name, original title, sort title, tagline, summary, release date,
-//! year, genres, directors and age rating, and the TMDB, IMDb and TheTVDB ids
-//! it names, and the one beside an episode's file, read for its name, summary
-//! and air date (`docs/reference/nfo-files.md`).
+//! year, genres, directors, age rating and cast, and the TMDB, IMDb and
+//! TheTVDB ids it names, and the one beside an episode's file, read for its
+//! name, summary and air date (`docs/reference/nfo-files.md`).
 
 use std::fs::File;
 use std::io::Read;
@@ -12,7 +12,7 @@ use std::time::UNIX_EPOCH;
 use roxmltree::{Document, Node};
 
 use crate::db::imports::Elsewhere;
-use crate::model::title_edit::TitleEdit;
+use crate::model::title_edit::{Actor, TitleEdit};
 
 /// The largest `.nfo` file read, in bytes.
 pub const MAX_BYTES: u64 = 1 << 20;
@@ -105,6 +105,7 @@ fn described(document: &str, root: &str) -> Option<Contents> {
         genres: Some(texts(el, "genre").collect()),
         directors: Some(texts(el, "director").collect()),
         content_rating: texts(el, "mpaa").next(),
+        cast: Some(actors(el)),
     };
     Some(Contents {
         edit: edit.clipped(),
@@ -180,6 +181,25 @@ fn imdb_in(text: &str) -> Option<String> {
 fn year_of(el: Node<'_, '_>) -> Option<u32> {
     let premiered = texts(el, "premiered").find_map(|date| date.trim().get(..4)?.parse().ok());
     premiered.or_else(|| texts(el, "year").find_map(|year| year.trim().parse().ok()))
+}
+
+fn actors(el: Node<'_, '_>) -> Vec<Actor> {
+    let mut cast: Vec<(u32, Actor)> = el
+        .children()
+        .filter(|child| child.has_tag_name("actor"))
+        .filter_map(credited)
+        .collect();
+    cast.sort_by_key(|(order, _)| *order);
+    cast.into_iter().map(|(_, actor)| actor).collect()
+}
+
+fn credited(actor: Node<'_, '_>) -> Option<(u32, Actor)> {
+    let order = texts(actor, "order").find_map(|order| order.trim().parse().ok());
+    let played = Actor {
+        name: texts(actor, "name").next()?,
+        role: texts(actor, "role").next(),
+    };
+    Some((order.unwrap_or(u32::MAX), played))
 }
 
 fn texts<'a>(el: Node<'a, 'a>, name: &'a str) -> impl Iterator<Item = String> + 'a {
