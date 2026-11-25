@@ -29,7 +29,7 @@ fn wrote(pool: &Pool, (kind, id): (&str, &str), edit: TitleEdit) {
 
 fn directed(names: &[&str]) -> TitleEdit {
     TitleEdit {
-        directors: Some(names.iter().map(|name| name.to_string()).collect()),
+        directors: Some(names.iter().map(ToString::to_string).collect()),
         ..Default::default()
     }
 }
