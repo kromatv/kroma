@@ -29,7 +29,7 @@ export type Actions<S, O, A extends ActionArgs> = {
 
 /** Any reason, which is what a setter may give when its control declares
  *  none. Written so an editor still completes the reasons it knows. */
-export type AnyReason = string & NonNullable<unknown>;
+export type AnyReason = string & {};
 
 /** Every reason a change of this control can carry: one per action, `set` for
  *  a setter called without one, and the reasons the control declared. */
