@@ -25,7 +25,7 @@ export type { DividerProps } from './divider';
 export { Divider } from './divider';
 export type { ExpandableTextProps } from './expandable-text';
 export { ExpandableText } from './expandable-text';
-export type { FlagProps, FlagRegion } from './flag';
+export type { FlagProps } from './flag';
 export { Flag, isFlagRegion } from './flag';
 export type {
   Delegate,

@@ -21,7 +21,7 @@ The interface language, for a list of ten languages or forty. A segmented contro
 
 **Searched where there is a keyboard.** Over eight languages, a field above the list matches either name or the code, whatever the case and the accents (`espanol`, `ESP` and `es` all find Español). A television has no keyboard, so there the list sits in a dialog the remote walks, opened on the picked row. Only the list scrolls; the title and the search stay put.
 
-**Flags are drawn, never emoji**, from `country-flag-icons`, and one table in `@kromatv/i18n` (`flagRegion`), which kroma.tv reads too, says which flag stands for which locale: English wears the United States', as the catalog spells American. A locale with a region subtag wears that region's flag; one with no flag in the table, such as Arabic, which no one country speaks for, wears the neutral language glyph in the same box rather than a wrong flag.
+**Flags are drawn, never emoji**, from `country-flag-icons`, and the flag of a locale is the country CLDR finds it most likely written in (`flagRegion` in `@kromatv/i18n`, which kroma.tv reads too): English wears the United States', as the catalog spells American, and Portuguese Brazil's. A locale with a region subtag wears that region's flag; one no one country speaks for, such as Arabic, wears the neutral language glyph in the same box rather than a wrong flag.
 
 ```tsx
 <LanguagePicker.Root locales={LOCALES} label="Interface language" value={locale} onValueChange={setLocale}>

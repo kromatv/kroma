@@ -26,7 +26,7 @@ export {
   parseCatalogPath,
   sourcesByFile,
 } from './layout';
-export { FLAGGED_LOCALES, flagRegion } from './locale-flag';
+export { flagRegion } from './locale-flag';
 export {
   createLocales,
   deviceLanguageTags,

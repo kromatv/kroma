@@ -1,24 +1,36 @@
-import { FLAGGED_LOCALES, flagRegion } from '@kromatv/i18n';
 import { describe, expect, it } from 'vitest';
-import { flagSvg, isFlagRegion } from './flags';
+import { fetchFlagSvg, flagSvgNow } from '#ui/lib/flag-svg';
+import { isFlagRegion } from './flags';
 
-describe('the flags the kit draws', () => {
-  it('include one for every language the core table gives a flag to', () => {
-    const undrawn = FLAGGED_LOCALES.filter((code) => !isFlagRegion(flagRegion(code)));
-
-    expect(undrawn).toEqual([]);
+describe('isFlagRegion', () => {
+  it('takes any uppercase ISO 3166 code', () => {
+    expect(isFlagRegion('FR')).toBe(true);
+    expect(isFlagRegion('NP')).toBe(true);
   });
 
-  it('leave out a region they hold no vectors for', () => {
-    expect(isFlagRegion('CA')).toBe(false);
+  it('refuses what is not one', () => {
     expect(isFlagRegion(null)).toBe(false);
-  });
-
-  it('do not take an object key for a region', () => {
+    expect(isFlagRegion('fr')).toBe(false);
     expect(isFlagRegion('constructor')).toBe(false);
   });
+});
 
-  it('are SVG documents', () => {
-    expect(flagSvg('FR')).toMatch(/^<svg[\s>]/);
+describe('the flags a browser fetches', () => {
+  it('arrive as SVG documents, and are at hand from then on', async () => {
+    const svg = await fetchFlagSvg('CH');
+
+    expect(svg).toMatch(/^<svg[\s>]/);
+    expect(flagSvgNow('CH')).toBe(svg);
+  });
+
+  it('fetch each flag once, however many ask', async () => {
+    const [first, second] = await Promise.all([fetchFlagSvg('NP'), fetchFlagSvg('NP')]);
+
+    expect(first).toBe(second);
+  });
+
+  it('come back empty for a code with no flag', async () => {
+    expect(await fetchFlagSvg('ZZ')).toBeUndefined();
+    expect(await fetchFlagSvg('index')).toBeUndefined();
   });
 });

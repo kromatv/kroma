@@ -1,9 +1,10 @@
 import { Box } from '#ui/components/atoms/box';
 import { SvgXml } from '#ui/lib/svg.component';
-import { type FlagRegion, flagSvg } from './flags';
+import { useFlagSvg } from './use-flag-svg.hook';
 
 interface FlagProps {
-  region: FlagRegion;
+  /** Uppercase ISO 3166. A browser fetches each flag the first time it is drawn. */
+  region: string;
   /** In px, the side of the square. Defaults to 16. */
   size?: number;
 }
@@ -12,9 +13,10 @@ interface FlagProps {
  *  field still reads on a white ground. It says nothing to assistive tech: the
  *  words beside it name the thing. */
 function Flag({ region, size = 16 }: Readonly<FlagProps>) {
+  const svg = useFlagSvg(region);
   return (
-    <Box w={size} h={size} radius="xs" overflow="hidden" shrink={0} aria-hidden>
-      <SvgXml xml={flagSvg(region)} width="100%" height="100%" />
+    <Box w={size} h={size} radius="xs" bg="tint/8" overflow="hidden" shrink={0} aria-hidden>
+      {svg === undefined ? null : <SvgXml xml={svg} width="100%" height="100%" />}
       <Box fill radius="xs" border="tint/16" pointerEvents="none" />
     </Box>
   );
