@@ -13,6 +13,7 @@
   "common.detecting": "Détection en cours…",
   "common.detection": "Détection : {source}",
   "common.done": "OK",
+  "common.hidePassword": "Masquer le mot de passe",
   "common.increase": "Augmenter",
   "common.language": "Langue",
   "common.languageBeta": "{name} (bêta)",
@@ -24,6 +25,7 @@
   "common.save": "Enregistrer",
   "common.saved": "Enregistré",
   "common.saving": "Enregistrement…",
+  "common.showPassword": "Afficher le mot de passe",
   "common.space": "Espace",
   "common.unsaved": "Modifications non enregistrées"
 }

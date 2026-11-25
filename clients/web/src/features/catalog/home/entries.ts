@@ -35,7 +35,7 @@ export function entryFacts(t: Translate, entry: HomeEntry): string[] {
   const span =
     entry.type === 'show'
       ? t('content.seasonCount', { count: entry.show.seasonCount })
-      : formatRuntime(entry.item.durationMs);
+      : formatRuntime(t, entry.item.durationMs);
   const genres = genreLabels(t, entryMetadata(entry)).slice(0, 2);
   return [year ? String(year) : null, span || null, ...genres].filter(
     (fact): fact is string => fact !== null,

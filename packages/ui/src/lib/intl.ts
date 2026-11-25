@@ -172,6 +172,16 @@ export function formatBytes(bytes: number, locale: Locale): string {
   return `${decimal(v, locale, v >= 100 || i <= 1 ? 0 : 1)} ${units[i] ?? smallest}`;
 }
 
+const GIGABYTE_STEP = 3;
+
+/** A size already counted in gigabytes, such as a budget a reader picks, in
+ *  the locale's unit and without a forced decimal: `40 Go` in French, `40 GB`
+ *  in English. {@link formatBytes} is for a measured byte count. */
+export function formatGigabytes(gigabytes: number, locale: Locale): string {
+  const units = convention(BYTE_UNITS, locale) ?? BYTES;
+  return `${formatCount(gigabytes, locale)} ${units[GIGABYTE_STEP] ?? BYTES[GIGABYTE_STEP]}`;
+}
+
 /** A throughput figure, one decimal, no unit: the caller supplies `Mb/s`. */
 export function formatMbps(n: number, locale: Locale): string {
   return decimal(n || 0, locale, 1);
@@ -192,9 +202,9 @@ export function formatTimecodeMs(ms: number): string {
   return formatTimecode((ms || 0) / 1000);
 }
 
-/** Hours with one decimal for a chart axis: `14,3 h`. */
-export function formatHours(ms: number, locale: Locale): string {
-  return `${decimal((ms || 0) / 3_600_000, locale, 1)} h`;
+/** Hours with one decimal for a chart axis, the unit from the catalog: `14,3 h`. */
+export function formatHours(t: Translate, locale: Locale, ms: number): string {
+  return t('format.hours', { hours: decimal((ms || 0) / 3_600_000, locale, 1) });
 }
 
 /** Watch time from milliseconds, to the minute: `4 h 29 min` / `65 min`. */

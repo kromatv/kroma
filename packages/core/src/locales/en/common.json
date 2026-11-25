@@ -13,6 +13,7 @@
   "common.detecting": "Detecting…",
   "common.detection": "Detection: {source}",
   "common.done": "Done",
+  "common.hidePassword": "Hide password",
   "common.increase": "Increase",
   "common.language": "Language",
   "common.languageBeta": "{name} (beta)",
@@ -24,6 +25,7 @@
   "common.save": "Save",
   "common.saved": "Saved",
   "common.saving": "Saving…",
+  "common.showPassword": "Show password",
   "common.space": "Space",
   "common.unsaved": "Unsaved changes"
 }

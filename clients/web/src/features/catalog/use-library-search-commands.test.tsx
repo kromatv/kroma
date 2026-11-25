@@ -127,7 +127,7 @@ describe('useLibrarySearchCommands', () => {
 
     expect(titles()[0]).toMatchObject({
       image: 'item-poster',
-      subtitle: 'content.film · 2021 · 2h46',
+      subtitle: 'content.film · 2021 · format.runtimeHours',
     });
   });
 

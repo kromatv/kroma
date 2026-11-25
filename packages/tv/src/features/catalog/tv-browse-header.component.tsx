@@ -36,7 +36,7 @@ const SORT_LABEL_KEY: Record<SortMode, MessageKey> = {
 };
 
 function entryLine(t: Translate, e: CatalogEntry, seasons: string | null): string {
-  const mid = e.kind === 'movie' ? formatRuntime(e.item.durationMs) : seasons;
+  const mid = e.kind === 'movie' ? formatRuntime(t, e.item.durationMs) : seasons;
   const genres = genreLabels(t, e.item.metadata).slice(0, 2);
   return [e.item.year ? String(e.item.year) : null, mid, ...genres].filter(Boolean).join(' · ');
 }

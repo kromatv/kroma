@@ -1,4 +1,5 @@
 import { createTranslator } from '@kromatv/core';
+import type { Translate, TVars } from '@kromatv/i18n';
 import { describe, expect, it, vi } from 'vitest';
 import {
   decimal,
@@ -7,6 +8,7 @@ import {
   formatCount,
   formatDuration,
   formatElapsed,
+  formatGigabytes,
   formatHours,
   formatMbps,
   formatTimecode,
@@ -16,6 +18,7 @@ import {
 
 const fr = createTranslator('fr');
 const en = createTranslator('en');
+const words: Translate = (key: string, vars?: TVars) => `${key}:${String(vars?.hours)}`;
 const NOW = Date.parse('2024-06-15T12:00:00Z');
 
 describe('decimal', () => {
@@ -94,6 +97,19 @@ describe('formatBytes', () => {
   });
 });
 
+describe('formatGigabytes', () => {
+  it('writes a size picked in gigabytes with the locale unit and no forced decimal', () => {
+    expect(formatGigabytes(40, 'fr')).toBe('40 Go');
+    expect(formatGigabytes(40, 'en')).toBe('40 GB');
+    expect(formatGigabytes(256, 'ko')).toBe('256 GB');
+  });
+
+  it('keeps a fraction with the locale separator', () => {
+    expect(formatGigabytes(1.5, 'fr')).toBe('1,5 Go');
+    expect(formatGigabytes(1.5, 'en')).toBe('1.5 GB');
+  });
+});
+
 describe('formatMbps', () => {
   it('gives one decimal in the locale, and reads a NaN as zero', () => {
     expect(formatMbps(5, 'fr')).toBe('5,0');
@@ -128,9 +144,13 @@ describe('formatTimecode', () => {
 
 describe('formatHours', () => {
   it('gives one decimal in the locale', () => {
-    expect(formatHours(14.3 * 3_600_000, 'fr')).toBe('14,3 h');
-    expect(formatHours(14.3 * 3_600_000, 'en')).toBe('14.3 h');
-    expect(formatHours(0, 'fr')).toBe('0,0 h');
+    expect(formatHours(fr, 'fr', 14.3 * 3_600_000)).toBe('14,3 h');
+    expect(formatHours(en, 'en', 14.3 * 3_600_000)).toBe('14.3 h');
+    expect(formatHours(fr, 'fr', 0)).toBe('0,0 h');
+  });
+
+  it('takes its unit from the catalog of the language on screen', () => {
+    expect(formatHours(words, 'en', 1.5 * 3_600_000)).toBe('format.hours:1.5');
   });
 });
 

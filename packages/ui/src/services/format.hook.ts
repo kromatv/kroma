@@ -5,7 +5,7 @@
 //
 // Standing alone rather than throwing outside an <I18nProvider>: five of these
 // never touch a catalog, and a byte size is exactly what a kit component or an
-// error boundary rendered above the provider wants to show. The other three
+// error boundary rendered above the provider wants to show. The other four
 // read one, so above a provider they answer in the default locale, the same
 // fallback `useTDefault` documents. That is the whole contract, and the test
 // beside this file holds it in place.
@@ -69,7 +69,7 @@ function formatFor(locale: Locale, t: Translate): Format {
     stamp: (at) => formatStamp(locale, at),
     uptime: (seconds) => formatUptime(t, seconds),
     duration: (ms) => formatDuration(t, ms),
-    hours: (ms) => formatHours(ms, locale),
+    hours: (ms) => formatHours(t, locale, ms),
     mbps: (n) => formatMbps(n, locale),
     timecode: formatTimecodeMs,
   };

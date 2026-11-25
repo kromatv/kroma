@@ -156,11 +156,11 @@ function metaLine(t: ReturnType<typeof useT>, view: TitleView): string {
   if (view.playable) {
     return [
       view.year ? String(view.year) : null,
-      formatRuntime(view.playable.durationMs),
+      formatRuntime(t, view.playable.durationMs),
       langName(t, view.playable.audio?.language),
     ]
       .filter(Boolean)
       .join(' · ');
   }
-  return tmdbMetaLine(view.year, view.runtimeMin);
+  return tmdbMetaLine(t, view.year, view.runtimeMin);
 }

@@ -40,14 +40,18 @@ const resume = (itemId: string, positionMs: number, durationMs: number): Continu
 
 describe('featuredMetaLine', () => {
   it('reads a year, a runtime and no more than two genres', () => {
-    expect(featuredMetaLine(t, movie())).toBe('1995 · 2h57 · genre.action · genre.thriller');
+    expect(featuredMetaLine(t, movie())).toBe(
+      '1995 · format.runtimeHours · genre.action · genre.thriller',
+    );
   });
 
   it('leaves the age rating to its badge, for a film and for a series', () => {
     const film = movie({ metadata: meta({ certification: 'PG-13' }) });
     const series = show({ metadata: meta({ genres: ['Drama'], certification: 'TV-MA' }) });
 
-    expect(featuredMetaLine(t, film)).toBe('1995 · 2h57 · genre.action · genre.thriller');
+    expect(featuredMetaLine(t, film)).toBe(
+      '1995 · format.runtimeHours · genre.action · genre.thriller',
+    );
     expect(featuredMetaLine(t, series)).toBe('2022 · genre.drama');
   });
 

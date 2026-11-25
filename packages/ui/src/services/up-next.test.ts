@@ -64,7 +64,7 @@ describe('the cards', () => {
     const { result } = renderHook(() => useUpNext(client, t, MOVIE, [EPISODE]));
     const card = result.current.data.nextEpisodes[0];
     expect(card?.title).toBe('Good News About Hell');
-    expect(card?.subtitle).toBe('S1 E1 · 53min');
+    expect(card?.subtitle).toBe('S1 E1 · format.runtimeMinutes');
   });
 
   it('falls back to the show title for an episode that has no name of its own', () => {

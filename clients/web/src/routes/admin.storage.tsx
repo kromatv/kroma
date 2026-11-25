@@ -9,7 +9,6 @@ import {
   ListRow,
   Progress,
   Section,
-  Select,
   StatCard,
   Surface,
   styles,
@@ -19,12 +18,16 @@ import {
 } from '@kromatv/ui/kit';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import { CacheLimitSelect } from '#web/features/admin/cache-limit-select.component';
 import { PageHeader, usePoll } from '#web/features/admin/shell';
 import { useAuth } from '#web/shared/lib/auth';
 
 export const Route = createFileRoute('/admin/storage')({
   component: StoragePage,
 });
+
+const IMAGE_CACHE_SIZES = ['40 Go', '80 Go', '120 Go', '256 Go'];
+const TRANSCODE_CACHE_SIZES = ['10 Go', '20 Go', '50 Go', '100 Go'];
 
 function StoragePage() {
   const confirm = useConfirm();
@@ -168,10 +171,10 @@ function StoragePage() {
             title={t('admin.cacheLimit')}
             desc={t('admin.cacheLimitDesc')}
             right={
-              <LimitSelect
+              <CacheLimitSelect
                 label={t('admin.cacheLimit')}
                 value={data?.cache.limit ?? '80 Go'}
-                options={['40 Go', '80 Go', '120 Go', '256 Go', t('opt.unlimited')]}
+                sizes={IMAGE_CACHE_SIZES}
                 onChange={(v) => client.admin.updateSettings({ cacheLimit: v }).then(reload)}
               />
             }
@@ -180,10 +183,10 @@ function StoragePage() {
             title={t('admin.transcodeCacheLimit')}
             desc={t('admin.transcodeCacheLimitDesc')}
             right={
-              <LimitSelect
+              <CacheLimitSelect
                 label={t('admin.transcodeCacheLimit')}
                 value={data?.cache.transcodeLimit ?? '20 Go'}
-                options={['10 Go', '20 Go', '50 Go', '100 Go', t('opt.unlimited')]}
+                sizes={TRANSCODE_CACHE_SIZES}
                 onChange={(v) =>
                   client.admin.updateSettings({ transcodeCacheLimit: v }).then(reload)
                 }
@@ -219,28 +222,6 @@ function StoragePage() {
         </ListRow.Group>
       </Section.Root>
     </>
-  );
-}
-
-function LimitSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: Readonly<{
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (v: string) => void;
-}>) {
-  const all = options.includes(value) ? options : [value, ...options];
-  return (
-    <Select.Root label={label} value={value} onValueChange={onChange}>
-      <Select.Trigger />
-      {all.map((o) => (
-        <Select.Item key={o} value={o} label={o} />
-      ))}
-    </Select.Root>
   );
 }
 

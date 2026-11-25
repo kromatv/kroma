@@ -88,7 +88,7 @@ export function Hero({ entry }: Readonly<{ entry: HeroEntry }>) {
   const badges = heroBadges(media.video);
   const line =
     entry.type === 'movie'
-      ? metaLine(entry.movie)
+      ? metaLine(t, entry.movie)
       : [entry.show.year, t('content.seasonCount', { count: entry.show.seasonCount })]
           .filter(Boolean)
           .join(' · ');

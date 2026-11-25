@@ -8,6 +8,7 @@ import { activeTheme } from '#ui/core';
 import type { ChangeDetails } from '#ui/lib/control';
 import { FocusRegion, FocusScope } from '#ui/lib/focus-scope.component';
 import { act as call, screenText, snapshot } from '#ui/lib/inspect';
+import { I18nProvider } from '#ui/services/i18n';
 import { declared, onScreen, wearsRing } from '#ui/testing';
 import { TextField } from './text-field.component';
 
@@ -41,6 +42,18 @@ describe('TextField', () => {
     passwordField();
 
     expect(wearsRing(screen.getByLabelText('Show password'))).toBe(false);
+  });
+
+  it('names its reveal button in the language on screen', () => {
+    render(
+      <I18nProvider locale="fr">
+        <TextField label="Mot de passe" type="password" value="hunter2" onValueChange={() => {}} />
+      </I18nProvider>,
+    );
+
+    fireEvent.click(screen.getByLabelText('Afficher le mot de passe'));
+
+    expect(screen.getByLabelText('Masquer le mot de passe')).toBeTruthy();
   });
 });
 

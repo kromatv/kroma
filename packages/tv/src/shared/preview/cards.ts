@@ -3,13 +3,14 @@
 
 import type { KromaClient } from '@kromatv/client';
 import type { ContinueItem, MediaCard, MediaItem } from '@kromatv/client/media';
-import { metaLine } from '@kromatv/core';
+import { createTranslator, metaLine } from '@kromatv/core';
 import type { DeepLink } from '#tv/shared/preview/types';
 
 const RECENT_SECTION = 'Ajout récent';
 const RESUME_SECTION = 'Reprendre la lecture';
 const RECENT_BADGE = 'Nouveauté';
 const RESUME_BADGE = 'Reprendre';
+const FRENCH = createTranslator('fr');
 const MAX_TILES = 20;
 
 type PreviewTitle = MediaCard & Partial<Pick<MediaItem, 'showId' | 'showTitle'>>;
@@ -55,7 +56,7 @@ function titleFor(m: PreviewTitle): string {
 
 function subtitleFor(m: PreviewTitle): string {
   const type = m.kind === 'episode' || m.showId ? 'Série' : 'Film';
-  const meta = metaLine(m);
+  const meta = metaLine(FRENCH, m);
   return meta ? `${type} · ${meta}` : type;
 }
 

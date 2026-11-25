@@ -89,7 +89,7 @@ function DiscoverScreen({ kind, tmdbId }: Readonly<{ kind: TmdbKind; tmdbId: num
 
   const span = detail.seasons.length
     ? t('content.seasonCount', { count: detail.seasons.length })
-    : formatRuntime((detail.runtimeMin ?? 0) * 60_000);
+    : formatRuntime(t, (detail.runtimeMin ?? 0) * 60_000);
   const kindLabel = t(detail.kind === 'show' ? 'discover.kindShow' : 'discover.kindMovie');
 
   return (

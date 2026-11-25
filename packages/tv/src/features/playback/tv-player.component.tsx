@@ -100,7 +100,7 @@ export function TvPlayer() {
     [up.byId, moves],
   );
 
-  const subtitle = playerSubtitle(item);
+  const subtitle = playerSubtitle(t, item);
   useNowPlaying({
     client,
     item,

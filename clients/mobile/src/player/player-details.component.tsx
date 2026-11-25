@@ -35,7 +35,7 @@ export function PlayerDetails({
   const episode = item.showTitle
     ? [episodeTag(item), item.metadata?.title ?? item.title].filter(Boolean).join(' · ')
     : null;
-  const meta = [item.year, formatRuntime(item.durationMs), qualityBadge(item)]
+  const meta = [item.year, formatRuntime(t, item.durationMs), qualityBadge(item)]
     .filter(Boolean)
     .join(' · ');
   return (

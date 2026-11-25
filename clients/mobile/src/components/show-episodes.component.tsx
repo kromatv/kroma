@@ -128,7 +128,8 @@ export function EpisodeRow({
   const client = useClient();
   const router = useRouter();
   const { play } = usePlay();
-  const runtime = formatRuntime(episode.durationMs);
+  const t = useT();
+  const runtime = formatRuntime(t, episode.durationMs);
   const total = progress?.durationMs ?? episode.durationMs ?? 0;
   const frac = progress && total > 0 ? Math.min(1, progress.positionMs / total) : 0;
   const overview = episode.metadata?.overview;

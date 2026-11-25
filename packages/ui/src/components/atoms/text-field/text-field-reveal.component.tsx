@@ -3,6 +3,7 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
+import { useTDefault } from '#ui/services/i18n';
 
 const revealAt = (right: number, scope: StyleScope) =>
   sharedStyle(`text-field:reveal:${right}`, { right }, scope);
@@ -15,11 +16,12 @@ function RevealButton({
   const scope = useStyleScope();
 
   const s = useStyles(sDefinition);
+  const t = useTDefault();
 
   return (
     <Box absolute style={[s.revealSlot, revealAt(right, scope)]}>
       <Focusable
-        label={revealed ? 'Hide password' : 'Show password'}
+        label={revealed ? t('common.hidePassword') : t('common.showPassword')}
         ring="inside"
         onPress={onToggle}
         style={s.reveal}

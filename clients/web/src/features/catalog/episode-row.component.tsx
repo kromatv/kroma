@@ -65,7 +65,7 @@ export function EpisodeRow({
 
   const t = useT();
   const [g1, g2] = posterColors(episode.id);
-  const runtime = formatRuntime(episode.durationMs);
+  const runtime = formatRuntime(t, episode.durationMs);
   const synopsis = episode.metadata?.overview;
   const still = webRuntime.client.media.artwork.backdropFor(episode);
   const num =
@@ -221,7 +221,7 @@ function MissingText({
   } else if (listed) {
     facts.push(t('requests.noDate'));
   }
-  const runtime = formatRuntime(runtimeMinOf(listed) * 60_000);
+  const runtime = formatRuntime(t, runtimeMinOf(listed) * 60_000);
   if (runtime) {
     facts.push(runtime);
   }
