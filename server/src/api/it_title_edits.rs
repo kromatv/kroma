@@ -10,6 +10,7 @@ fn heat() -> Value {
         "title": " Heat (director's cut) ",
         "originalTitle": "Heat",
         "sortTitle": "Heat 2",
+        "tagline": "A Los Angeles crime saga",
         "overview": "A thief and a detective.",
         "released": "1995-12-15",
         "genres": ["Crime", " "],
@@ -43,6 +44,10 @@ async fn what_an_admin_writes_about_a_film_is_what_its_page_shows_after_a_refres
     assert_eq!(shown["metadata"]["releaseDate"], json!("1995-12-15"));
     assert_eq!(shown["metadata"]["originalTitle"], json!("Heat"));
     assert_eq!(shown["metadata"]["sortTitle"], json!("Heat 2"));
+    assert_eq!(
+        shown["metadata"]["tagline"],
+        json!("A Los Angeles crime saga")
+    );
     assert_eq!(
         shown["metadata"]["overview"],
         json!("A thief and a detective.")

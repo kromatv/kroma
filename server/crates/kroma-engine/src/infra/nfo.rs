@@ -1,7 +1,7 @@
 //! The `.nfo` file Kodi, Jellyfin and Plex keep beside a title's files, read
-//! for its name, original title, sort title, summary, release date, year and
-//! genres, and the TMDB, IMDb and TheTVDB ids it names, and the one beside an
-//! episode's file, read for its name, summary and air date
+//! for its name, original title, sort title, tagline, summary, release date,
+//! year and genres, and the TMDB, IMDb and TheTVDB ids it names, and the one
+//! beside an episode's file, read for its name, summary and air date
 //! (`docs/reference/nfo-files.md`).
 
 use std::fs::File;
@@ -98,6 +98,7 @@ fn described(document: &str, root: &str) -> Option<Contents> {
         title: texts(el, "title").next(),
         original_title: texts(el, "originaltitle").next(),
         sort_title: texts(el, "sorttitle").next(),
+        tagline: texts(el, "tagline").next(),
         overview: texts(el, "plot").next(),
         year: year_of(el),
         released: texts(el, "premiered").next(),

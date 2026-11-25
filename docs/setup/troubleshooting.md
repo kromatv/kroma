@@ -107,7 +107,8 @@ A home video or a film TMDB does not know has no match to fix. Open it, choose
 release date, write the year alone, as `1995`, or the day, as `1995-12-15`. A
 sort title files the title under another name, such as
 `Lord of the Rings, The`, and leaves the title shown as it is. An original
-title, such as `Das Boot`, shows under the title when the two differ. What you
+title, such as `Das Boot`, shows under the title when the two differ, and a
+tagline shows above the summary. What you
 write there shows in every language and stays through a rescan. Clear a field to go
 back to TMDB's text. **Movies** and **Series** sort and filter by what you
 write, and a year you write replaces TMDB's release date when the two differ.

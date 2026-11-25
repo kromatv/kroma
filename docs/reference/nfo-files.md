@@ -43,7 +43,7 @@ An XML document saved as UTF-8 (K, P). Its root is `<movie>` for a film and
 | `<genre>` | One genre a tag, repeated for each | K, J, P | read |
 | `<sorttitle>` | The name the title sorts under; the name shown stays `<title>` | K, J, P | read |
 | `<originaltitle>` | The title in its own language | K, J, P | read; shown under the title when the two differ |
-| `<tagline>` | The tagline | K, J, P | not read |
+| `<tagline>` | The tagline | K, J, P | read; shown above the summary |
 | `<uniqueid type="tmdb">` | The title's TMDB id. A file may hold one `<uniqueid>` for each provider, `type` naming it | K, J, P | read, whatever the case of `type`; the title is matched to that id |
 | `<tmdbid>` | The title's TMDB id, on a tag of its own | J | read when there is no `<uniqueid type="tmdb">` |
 | `<uniqueid type="imdb">`, `<uniqueid type="tvdb">` | The title's id on IMDb, as `tt` and at least seven digits, or on TheTVDB | K, J, P | read, whatever the case of `type`; used when the file names no TMDB id |
