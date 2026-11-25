@@ -216,11 +216,10 @@ carry the rows without `control`, and have no route for a call yet.
 
 ## As WebMCP tools
 
-In a browser that exposes [WebMCP](https://developer.chrome.com/docs/ai/webmcp)
-(`document.modelContext`), the first `KitProvider` on a page also registers the
-reader and `act` there as three tools. Chrome DevTools, an extension or an agent
-the browser runs can then call them by name, without evaluating anything in the
-page:
+In a browser that exposes WebMCP (`document.modelContext`), the first
+`KitProvider` on a page also registers the reader and `act` there as three
+tools. Chrome DevTools, an extension or an agent the browser runs can then call
+them by name, without evaluating anything in the page:
 
 | Tool | Takes | Answers with |
 | --- | --- | --- |
