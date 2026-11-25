@@ -417,8 +417,19 @@ function Counter({ style, ...props }: Readonly<CounterProps>) {
 - **An action is a pure function.** It reads the state and the options as they
   are now and answers with the keys it changes. Arguments after the first are
   the action's own, and the component calls it without the first: `jump(4)`.
-- **Every key has a setter**, `setValue(next, reason?)`. A dismissal passes its
-  reason there: `setOpen(false, 'back')`.
+- **Every key has a setter**, `setValue(next, why?)`. A dismissal passes its
+  reason there: `setOpen(false, 'back')`. A setter handed the details of another
+  change keeps that change's reason, so a wrapper writes
+  `<Inner onValueChange={setValue} />`.
+- **`reasons` lists why a setter changes a key**, and types both ends.
+  `reasons: ['trigger', 'escape', 'back']` lets the component give those and no
+  other, and the app's `details.reason` is one of them, an action's name, or
+  `set` for a setter given none, which is what a developer tool's call carries.
+  `ReasonOf<typeof menuControl>` is that union, for the component's own
+  `onOpenChange`.
+- **`typed` widens a starting value** the compiler would read too narrowly:
+  `state: { active: typed<number | null>(null) }`,
+  `options: { steps: typed<readonly string[]>([]) }`.
 - **Every change takes one path.** A value the control already holds is
   ignored. Otherwise `on<Key>Change(next, details)` runs, with the action's name
   as `details.reason` and who acted as `details.source`; `details.cancel()` keeps

@@ -77,6 +77,16 @@ describe('a control that runs itself', () => {
     expect(onValueChange).toHaveBeenCalledWith(3, expect.objectContaining({ reason: 'drag' }));
   });
 
+  it('keeps the reason of the change its setter passes on', () => {
+    const onValueChange = vi.fn();
+    const outer = createControl(counter, { onValueChange }, null);
+    const inner = createControl(counter, { value: 0, onValueChange: outer.actions.setValue }, null);
+
+    inner.actions.jump(3);
+
+    expect(onValueChange).toHaveBeenCalledWith(3, expect.objectContaining({ reason: 'jump' }));
+  });
+
   it('keeps its value when the app cancels the change', () => {
     const control = createControl(counter, { onValueChange: refuse }, null);
 

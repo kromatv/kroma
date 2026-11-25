@@ -26,11 +26,12 @@ export function useControl<
   S extends object,
   O extends object,
   A extends ActionArgs,
-  P extends PropsOf<S, O, Reasons<A>>,
+  R extends string,
+  P extends PropsOf<S, O, Reasons<A, R>>,
 >(
-  definition: ControlDefinition<S, O, A>,
+  definition: ControlDefinition<S, O, A, R>,
   props: P,
-): readonly [control: ControlView<S, O, A>, rest: Omit<P, keyof PropsOf<S, O>>];
+): readonly [control: ControlView<S, O, A, R>, rest: Omit<P, keyof PropsOf<S, O>>];
 export function useControl(definition: AnyDefinition, props: object): readonly [object, object] {
   const engine = useControlEngine();
   const [control] = useState(() => createControl(definition, props, engine));
