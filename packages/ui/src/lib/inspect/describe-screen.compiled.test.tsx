@@ -162,4 +162,14 @@ describe('the global a developer tool calls', () => {
 
     expect(tree).toEqual(describeScreen());
   });
+
+  it('answers the same screen as text, a component a line', async () => {
+    render(onScreen(<Button label="Lire" autoFocus onPress={vi.fn()} />));
+
+    const reader: unknown = Reflect.get(globalThis, '__KROMA_UI__');
+    const call: unknown = reader && Reflect.get(reader, 'screenText');
+    const text: unknown = await act(() => (typeof call === 'function' ? call() : null));
+
+    expect(text).toMatch(/^ +Button {2}.*label="Lire".*\n +Focusable \(focused\) {2}/m);
+  });
 });
