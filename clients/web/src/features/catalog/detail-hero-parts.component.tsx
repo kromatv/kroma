@@ -164,7 +164,7 @@ const sameName = (a: string, b: string) =>
 export function HeroTitle({
   title,
   originalTitle,
-}: Readonly<{ title: string; originalTitle?: string | null | undefined }>) {
+}: Readonly<{ title: string; originalTitle: string | null | undefined }>) {
   const s = useStyles(sDefinition);
   const other = originalTitle && !sameName(originalTitle, title) ? originalTitle : null;
   return (
