@@ -25,7 +25,7 @@ fn written(cast: &[&str], directors: &[&str]) -> TitleEdit {
     };
     TitleEdit {
         cast: Some(cast.iter().map(actor).collect()),
-        directors: Some(directors.iter().map(|name| name.to_string()).collect()),
+        directors: Some(directors.iter().map(ToString::to_string).collect()),
         ..Default::default()
     }
 }
