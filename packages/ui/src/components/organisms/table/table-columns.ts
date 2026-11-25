@@ -7,13 +7,13 @@ interface TableColumn {
   /** The name this column answers to in the Root's `sort`. Without one it is
    *  not a sort control. */
   column?: string;
-  /** Fixed px, the cell's 12 of padding either side included. A column stating
-   *  one neither grows nor shrinks, and clips what does not fit. */
+  /** Fixed px, the cell's 12 of padding either side included, kept whatever
+   *  the room. A heading written as a string that needs more widens it. */
   width?: number;
   /** Share of the width the fixed columns leave, defaulting to 1. */
   flex?: number;
   /** The px a `flex` column stops shrinking at, and the floor a resize stops
-   *  any column at. */
+   *  any column at. Neither falls below what a string heading needs. */
   min?: number;
   /** Drawn from this breakpoint up, and absent below it: not narrowed, not
    *  clipped, and not read out. */
@@ -22,11 +22,16 @@ interface TableColumn {
   align?: 'start' | 'end';
 }
 
+interface GridColumn extends TableColumn {
+  heading: number;
+}
+
 interface TableGrid {
-  columns: readonly TableColumn[];
+  columns: readonly GridColumn[];
   boxes: readonly ViewStyle[];
   step: number;
   minWidth: number;
+  fit: (at: number, width: number) => void;
 }
 
 const GridContext = createContext<TableGrid | null>(null);
@@ -39,25 +44,37 @@ const NO_COLUMNS: readonly TableColumn[] = [];
 
 const FILL = style({ flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 });
 
-function columnBox(column: TableColumn, scope: StyleScope): ViewStyle {
+function fitHeadings(
+  columns: readonly TableColumn[],
+  headings: readonly number[],
+): readonly GridColumn[] {
+  return Array.from({ length: Math.max(columns.length, headings.length) }, (_, at) => ({
+    ...columns[at],
+    heading: headings[at] ?? 0,
+  }));
+}
+
+function columnBox(column: GridColumn, scope: StyleScope): ViewStyle {
   if (column.width !== undefined) {
+    const width = Math.max(column.width, column.heading);
     return sharedStyle(
-      `table:column:${column.width}`,
+      `table:column:${width}`,
       {
-        width: column.width,
+        width,
         flexGrow: 0,
         flexShrink: 0,
       },
       scope,
     );
   }
+  const minWidth = Math.max(column.min ?? 0, column.heading);
   return sharedStyle(
-    `table:column:${column.flex ?? 1}:${column.min ?? 0}`,
+    `table:column:${column.flex ?? 1}:${minWidth}`,
     {
       flexGrow: column.flex ?? 1,
       flexShrink: 1,
       flexBasis: 0,
-      minWidth: column.min ?? 0,
+      minWidth,
     },
     scope,
   );
@@ -90,22 +107,23 @@ function lastDrawn(columns: readonly TableColumn[], count: number, step: number)
   return -1;
 }
 
-function minWidthOf(columns: readonly TableColumn[], step: number): number {
+function minWidthOf(columns: readonly GridColumn[], step: number): number {
   let total = 0;
   for (const column of columns) {
     if (drawn(column, step)) {
-      total += column.width ?? column.min ?? 0;
+      total += Math.max(column.width ?? column.min ?? 0, column.heading);
     }
   }
   return total;
 }
 
-export type { TableColumn, TableGrid };
+export type { GridColumn, TableColumn, TableGrid };
 export {
   breakpointMask,
   columnBox,
   drawn,
   FILL,
+  fitHeadings,
   GridContext,
   lastDrawn,
   minWidthOf,

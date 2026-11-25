@@ -66,7 +66,7 @@ export function NotificationCard({
       <NotificationTile event={event} src={src} />
       <Box minW={0} flex={1}>
         <Box row align="flex-start" gap={8}>
-          <Text variant="label" color={titleTone} lines={1} minW={0} flex={1}>
+          <Text variant="label" color={titleTone} lines={2} minW={0} flex={1}>
             {title}
           </Text>
           {repeat}

@@ -59,7 +59,7 @@ Rows of the same shape, read down a column as much as across a row. There is no 
 </Table.Root>
 ```
 
-`columns` declares one entry per column, in the order the cells are written, and the Root publishes each entry's box for every row to apply to its nth cell. That is what makes a column a column: Yoga has no grid and cannot align two rows any other way. A column states a fixed `width`, or a `flex` share of what the fixed ones leave with a `min` it stops shrinking at. `from` drops it below a breakpoint, `align` sends its content to the other end, and `column` is the name it answers to in the sort. Left out entirely, every cell takes an equal share, which is what a two-column table of labels and readouts wants.
+`columns` declares one entry per column, in the order the cells are written, and the Root publishes each entry's box for every row to apply to its nth cell. That is what makes a column a column: Yoga has no grid and cannot align two rows any other way. A column states a fixed `width`, or a `flex` share of what the fixed ones leave with a `min` it stops shrinking at. Neither makes a column narrower than its heading: a heading written as a string is measured on one line, and a column it outgrows widens to it in the header and in every row, so the longest translation of a heading is never cut. `from` drops it below a breakpoint, `align` sends its content to the other end, and `column` is the name it answers to in the sort. Left out entirely, every cell takes an equal share, which is what a two-column table of labels and readouts wants.
 
 ```tsx
 columns={[
@@ -149,7 +149,7 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 <Scene name="Columns the reader resizes">
   `resizable` puts a seam at the trailing edge of every heading but the last, the same seam `<Resizable>` draws between panels. Drag it and the boundary follows the pointer: the column before it grows, the one after it gives the width up, and the columns beyond move only once that one reaches its floor. A seam only ever shares out the width the table already has, so dragging one never makes the table wider.
 
-  The seam is a D-pad stop too. Press it to take the arrow keys, move it, press it again to give them back. Press it twice, or hold it, and every column goes back to the width it was declared with. A column stops at its `min`, or at 56 points where it states none. A cell never paints past its column: text truncates, and anything that cannot, a chip or a badge, is clipped. So give a column that holds one a `min` as wide as what it holds, as the State column here does. Pass `autoSaveId` and the widths come back on the next visit, one layout for each set of columns the window draws.
+  The seam is a D-pad stop too. Press it to take the arrow keys, move it, press it again to give them back. Press it twice, or hold it, and every column goes back to the width it was declared with. A column stops at its `min`, or at 56 points where it states none, and never short of its heading. A cell never paints past its column: text truncates, and anything that cannot, a chip or a badge, is clipped. So give a column that holds one a `min` as wide as what it holds, as the State column here does. Pass `autoSaveId` and the widths come back on the next visit, one layout for each set of columns the window draws.
 
   {story.take(({ variant }) => <Resizing variant={variant} />)}
 </Scene>
@@ -251,6 +251,7 @@ The whole heading is the control, so it is one D-pad stop with a hit area the si
 - Use `variant="plain"` where the table sits in a column of text: it has no frame to be inset from, so it lines up with the paragraph above it.
 - Order the rows yourself, in the same render that reports the sort. The table draws the sort; it never applies one.
 - Declare `columns` wherever a column has to hold its width: without one, a cell is as wide as its share of the row and nothing else.
+- Write a heading as a string, and size the column for its values rather than for its heading in one language: the table measures the heading and widens the column wherever a translation needs more.
 - Name a `column` only where sorting by it means something: one without a name is not a control and takes no stop.
 - Give a `flex` column a `min`, so a long title stops shrinking rather than squeezing to nothing.
 - Pass `autoSaveId` with `resizable` wherever a reader comes back to the same table: widths they set once should still be there.

@@ -20,7 +20,7 @@ describe('Table.Column', () => {
   it('names its column to assistive tech without becoming a control', () => {
     head(<Table.Column>Release</Table.Column>);
 
-    expect(screen.getByRole('columnheader').textContent).toBe('Release');
+    expect(screen.getByRole('columnheader', { name: 'Release' })).toBeTruthy();
     expect(screen.queryByRole('button')).toBeNull();
   });
 

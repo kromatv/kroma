@@ -15,6 +15,8 @@ const styleHost = createStyleTestHost();
 
 const PAGE: PageView = { page: 1, perPage: 10, total: 3, pageCount: 1 };
 
+const HIDDEN = 'script, style, [aria-hidden="true"] *';
+
 const RELEASE = 'downloads.colRelease';
 const ADDED = 'downloads.colAdded';
 
@@ -45,13 +47,7 @@ function Queue() {
   );
 }
 
-function heading(label: string): HTMLElement {
-  const found = screen.getAllByRole('columnheader').find((cell) => cell.textContent === label);
-  if (!found) {
-    throw new Error(`no column headed ${label}`);
-  }
-  return found;
-}
+const heading = (label: string) => screen.getByRole('columnheader', { name: label });
 
 const announced = (label: string) => heading(label).getAttribute('aria-sort');
 
@@ -117,7 +113,11 @@ describe('the downloads heading band', () => {
     styleHost.pinDesignWidth(480);
     styleHost.render(<Queue />);
 
-    expect(screen.getAllByRole('columnheader').map((cell) => cell.textContent)).toEqual([
+    expect(
+      screen
+        .getAllByRole('columnheader')
+        .map((cell) => within(cell).queryByText(/./, { ignore: HIDDEN })?.textContent ?? ''),
+    ).toEqual([
       RELEASE,
       'downloads.colProgress',
       'downloads.colSpeed',

@@ -11,10 +11,23 @@ const { clearPressGuard, render } = createInputTestHost();
 
 const CELL = 300;
 
+const LETTER = 8;
+
+function widthOf(node: HTMLElement): number {
+  return node.closest('[aria-hidden="true"]') ? (node.textContent ?? '').length * LETTER : CELL;
+}
+
 beforeAll(() => {
-  for (const side of ['offsetWidth', 'offsetHeight'] as const) {
-    Object.defineProperty(HTMLElement.prototype, side, { configurable: true, get: () => CELL });
-  }
+  Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+    configurable: true,
+    get(this: HTMLElement) {
+      return widthOf(this);
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+    configurable: true,
+    get: () => CELL,
+  });
   window.ResizeObserver = class {
     constructor(private readonly report: ResizeObserverCallback) {}
     observe(node: Element) {
@@ -32,15 +45,17 @@ afterEach(() => {
 
 const COLUMNS: readonly TableColumn[] = [{ column: 'title' }, { column: 'player' }, {}];
 
-async function show(props: Partial<TableRootProps> = {}) {
+const NAMES = ['Title', 'Player', 'When'] as const;
+
+async function show(props: Partial<TableRootProps> = {}, names: readonly string[] = NAMES) {
   render(
     onScreen(
       <Table.Root label="History" columns={COLUMNS} resizable {...props}>
         <Table.Header>
           <Table.Row>
-            <Table.Cell>Title</Table.Cell>
-            <Table.Cell>Player</Table.Cell>
-            <Table.Cell>When</Table.Cell>
+            {names.map((name) => (
+              <Table.Cell key={name}>{name}</Table.Cell>
+            ))}
           </Table.Row>
         </Table.Header>
         <Table.Body>
@@ -127,6 +142,14 @@ describe('<Table resizable>', () => {
     drag('Title', 400);
 
     expect(share('Player')).toBe('27');
+  });
+
+  it('stops where the column it takes from reaches what its heading needs', async () => {
+    await show({}, ['Title', 'Player of the late show', 'When']);
+
+    drag('Title', 400);
+
+    expect(share('Player of the late show')).toBe('21');
   });
 
   it('takes the arrow keys once a seam is pressed, and moves on them', async () => {
