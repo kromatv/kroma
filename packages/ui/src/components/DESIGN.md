@@ -64,7 +64,7 @@ input device, never a boolean spelled as a string.
 | `Detail` | The technical particular behind the hint: an error's cause, a code. | Distinct from `Hint`. `Hint` helps a user act; `Detail` is what they paste into a bug report. |
 | `Actions` | The controls a surface offers: pinned to the end of a header or of a field's label row, or under an empty state. | Always plural, even when it holds one button. It is a region, and `Action` beside `Actions` is a name one letter from another name. |
 | `Input` / `Textarea` | The text entry a field owns. | Named for the entry, not the field. |
-| `Value` | The thing being reported: a selection inside a trigger, a readout beside its `Label`. | Reports, never controls. `Select.Value` and `DataField.Value` are the same role. |
+| `Value` | The thing being reported: a selection inside a trigger, a readout beside its `Label`. | Reports, never controls. `Select.Value` and `DataField.Value` are the same role. `Combobox.Value` gives the name it is written for the face the entry draws while it holds that name. |
 | `Tag` | One of the names a field holds, drawn in its well with a way to take it out. | Its place comes from the value, never from where it is written: a written `Tag` only gives its name a face. Not `Chip`, which names a look, and not `Value`, which reports and never controls. |
 | `Media` | The mark that stands for the thing: a glyph, a poster, an avatar, an illustration. | A leaf: `name` for a glyph the kit can size, children for media it cannot. shadcn's `EmptyMedia` is the same idea. |
 | `Icon` | A glyph that is an affordance on a control. | A prop (`<Button icon>`), never a part. Where the mark is the subject rather than an affordance, it is `Media`. |

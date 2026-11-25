@@ -1,26 +1,30 @@
-import { Fragment, type ReactElement, type ReactNode, useMemo, useState } from 'react';
-import { type EnclosingField, useEnclosingField } from '#ui/components/molecules/field';
-import { useControl } from '#ui/lib/control';
-import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
-import { partsOf } from '#ui/lib/parts';
-import { useStableCallback } from '#ui/lib/stable-callback.hook';
+import { Fragment, type ReactElement, type ReactNode, useMemo } from 'react';
 import {
-  type SurfacePresentation,
-  useSurfacePresentation,
-} from '#ui/lib/surface-presentation.hook';
+  type EnclosedEntry,
+  useEnclosedEntry,
+} from '#ui/components/organisms/suggestions/enclosed-entry.hook';
+import { useSuggestingField } from '#ui/components/organisms/suggestions/suggesting-field.hook';
+import { SuggestingContext } from '#ui/components/organisms/suggestions/suggestion-context';
+import {
+  suggestionList,
+  surfaceEntry,
+} from '#ui/components/organisms/suggestions/suggestion-surface';
+import type { Suggestion } from '#ui/components/organisms/suggestions/suggestions-of';
+import { useControl } from '#ui/lib/control';
+import type { ControlSize } from '#ui/lib/field-shell';
+import { partsOf } from '#ui/lib/parts';
+import type { SurfacePresentation } from '#ui/lib/surface-presentation.hook';
 import { useTDefault } from '#ui/services/i18n';
 import { TagFieldContext, type TagFieldDetails, type TagFieldState } from './tag-field-context';
 import { tagFieldControl } from './tag-field-control';
 import { TagFieldDialog } from './tag-field-dialog.component';
-import { Item, type TagFieldItemProps } from './tag-field-item';
-import { tagMetrics } from './tag-field-metrics';
+import { FreeRow, Item } from './tag-field-item.component';
 import { TagFieldPanel } from './tag-field-panel.component';
 import { Empty, Hint, Media } from './tag-field-parts.component';
-import { suggestionsOf } from './tag-field-suggestions';
-import type { TagFieldSurfaceProps } from './tag-field-surface';
 import { Tag } from './tag-field-tag.component';
 
 export type { TagFieldDetails, TagFieldReason } from './tag-field-context';
+export type { TagFieldItemProps } from './tag-field-item.component';
 export type { TagFieldMediaProps } from './tag-field-parts.component';
 export type { TagFieldTagProps } from './tag-field-tag.component';
 
@@ -70,31 +74,13 @@ interface TagFieldRootProps {
   children?: ReactNode;
 }
 
-interface Enclosed {
-  label: string;
-  invalid: boolean;
-  size: ControlSize | undefined;
-  onFocusChange: (focused: boolean) => void;
-}
+type ResolvedProps = EnclosedEntry<TagFieldRootProps>;
 
-type ResolvedProps = Omit<TagFieldRootProps, keyof Enclosed> & Enclosed;
+const FREE_KEY = 'tag-field:free';
 
-const IGNORE_FOCUS = () => undefined;
+const LIST_PARTS = { Item, Media, Empty };
 
-function labelOf(props: Readonly<TagFieldRootProps>, field: EnclosingField | null): string {
-  return props.label ?? field?.label ?? props.placeholder ?? '';
-}
-
-function useEnclosed(props: Readonly<TagFieldRootProps>): ResolvedProps {
-  const field = useEnclosingField();
-  return {
-    ...props,
-    label: labelOf(props, field),
-    invalid: props.invalid ?? field?.invalid ?? false,
-    size: props.size ?? field?.size,
-    onFocusChange: field?.setFocused ?? IGNORE_FOCUS,
-  };
-}
+type Words = (name: string) => string;
 
 function useTagFieldControl(props: Readonly<ResolvedProps>) {
   const { onValueChange } = props;
@@ -106,16 +92,6 @@ function useTagFieldControl(props: Readonly<ResolvedProps>) {
   return control;
 }
 
-function useFaces() {
-  const [faces, setFaces] = useState<ReadonlyMap<string, ReactNode>>(() => new Map());
-  const remember = useStableCallback((name: string, face: ReactNode) => {
-    if (face !== null && faces.get(name) !== face) {
-      setFaces((held) => new Map(held).set(name, face));
-    }
-  });
-  return { faces, remember };
-}
-
 function drawnTags(children: ReactNode, value: readonly string[]): ReactElement[] {
   const written = new Map(partsOf(children, Tag).map((tag) => [tag.props.value, tag]));
   return value.map((name) => (
@@ -123,58 +99,40 @@ function drawnTags(children: ReactNode, value: readonly string[]): ReactElement[
   ));
 }
 
-function useFieldState(props: Readonly<ResolvedProps>) {
-  const control = useTagFieldControl(props);
-  const { faces, remember } = useFaces();
-  const presentation = useSurfacePresentation(props.presentation);
-  const entry = useEntryDefaults();
-  const metrics = tagMetrics(props.size ?? entry.size);
-  const pick = useStableCallback((name: string, face: ReactNode) => {
-    remember(name, face);
-    control.add(name);
-  });
-  const { query, remove } = control;
-  const disabled = props.disabled ?? false;
-  const field = useMemo<TagFieldState>(
-    () => ({ label: props.label, query, metrics, presentation, disabled, faces, pick, remove }),
-    [props.label, query, metrics, presentation, disabled, faces, pick, remove],
-  );
-  return { control, field, pick };
+function freeRow(name: string | null, words: Words): Suggestion | null {
+  if (name === null) {
+    return null;
+  }
+  const node = <FreeRow key={FREE_KEY} name={name} label={words(name)} />;
+  return { key: FREE_KEY, name, face: null, disabled: false, node };
 }
 
 function useSurface(props: Readonly<ResolvedProps>) {
   const t = useTDefault();
-  const { control, field, pick } = useFieldState(props);
-  const items = partsOf<TagFieldItemProps>(props.children, Item);
-  const suggested = suggestionsOf(items, {
+  const control = useTagFieldControl(props);
+  const { query, add, remove } = control;
+  const { field, faces, metrics } = useSuggestingField({ ...props, query, take: add });
+  const { presentation } = field;
+  const { disabled } = props;
+  const state = useMemo<TagFieldState>(
+    () => ({ metrics, presentation, disabled, faces, remove }),
+    [metrics, presentation, disabled, faces, remove],
+  );
+  const list = suggestionList(props.children, LIST_PARTS, {
+    ...props,
     value: control.value,
-    query: control.query,
-    filter: props.filter ?? true,
-    nameOf: (item) => item.props.value,
+    query,
   });
   const words = props.addLabel ?? ((name: string) => t('tagField.add', { name }));
-  const surface: TagFieldSurfaceProps = {
-    control,
-    label: props.label,
-    placeholder: props.placeholder,
-    tags: drawnTags(props.children, control.value),
-    suggested,
-    empty: emptyOf(props.children),
-    loading: props.loading ?? false,
-    freeLabel: suggested.free === null ? null : words(suggested.free),
-    full: control.value.length >= control.max,
-    disabled: field.disabled,
-    invalid: props.invalid,
-    metrics: field.metrics,
-    onFocusChange: props.onFocusChange,
-    pick,
-  };
-  return { field, surface };
-}
-
-function emptyOf(children: ReactNode): ReactNode {
-  const written = partsOf(children, Empty);
-  return written.length > 0 ? written : null;
+  const entry = surfaceEntry(control, {
+    text: query,
+    closed: control.value.length >= control.max,
+    onNone: () => false,
+  });
+  const trailing = freeRow(list.suggested.free, words);
+  const surface = { field, metrics, look: props, entry, list: { ...list, trailing } };
+  const tags = drawnTags(props.children, control.value);
+  return { state, field, drawn: { surface, control, full: entry.closed, tags } };
 }
 
 /** Owns the names, what is typed after them and whether the suggestions are
@@ -184,19 +142,21 @@ function emptyOf(children: ReactNode): ReactNode {
  *  inside a <Field.Root>, which draws the label row and the <Field.Hint> and
  *  lends it its label, its error and its size. */
 function Root(props: Readonly<TagFieldRootProps>) {
-  const { field, surface } = useSurface(useEnclosed(props));
+  const { state, field, drawn } = useSurface(useEnclosedEntry(props));
   return (
-    <TagFieldContext value={field}>
-      {field.presentation === 'dialog' ? (
-        <TagFieldDialog {...surface} />
-      ) : (
-        <TagFieldPanel {...surface} />
-      )}
+    <TagFieldContext value={state}>
+      <SuggestingContext value={field}>
+        {field.presentation === 'dialog' ? (
+          <TagFieldDialog {...drawn} />
+        ) : (
+          <TagFieldPanel {...drawn} />
+        )}
+      </SuggestingContext>
     </TagFieldContext>
   );
 }
 
 const TagField = { Root, Tag, Item, Media, Hint, Empty };
 
-export type { TagFieldItemProps, TagFieldRootProps };
+export type { TagFieldRootProps };
 export { TagField };

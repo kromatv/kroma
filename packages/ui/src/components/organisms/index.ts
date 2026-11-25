@@ -17,6 +17,15 @@ export { Chart } from './chart';
 export type { CodeBlockProps } from './code-block';
 export { CodeBlock } from './code-block';
 export type {
+  ComboboxDetails,
+  ComboboxItemProps,
+  ComboboxMediaProps,
+  ComboboxReason,
+  ComboboxRootProps,
+  ComboboxValueProps,
+} from './combobox';
+export { Combobox } from './combobox';
+export type {
   CommandAction,
   CommandActionsProps,
   CommandBoost,

@@ -1,21 +1,7 @@
+import { holds } from '#ui/components/organisms/suggestions/suggestions-of';
 import { defineControl, typed } from '#ui/lib/control';
 
 const NONE: readonly string[] = [];
-
-const MARKS = /\p{M}/gu;
-const SPACES = /\s+/g;
-
-/** A name as two names are compared: no case, no accents, no outer or doubled
- *  spaces. */
-function foldName(name: string): string {
-  return name.normalize('NFD').replace(MARKS, '').replace(SPACES, ' ').trim().toLowerCase();
-}
-
-/** Whether `names` already holds `name`, compared folded. */
-function holds(names: readonly string[], name: string): boolean {
-  const folded = foldName(name);
-  return names.some((held) => foldName(held) === folded);
-}
 
 function withNames(
   value: readonly string[],
@@ -68,4 +54,4 @@ const tagFieldControl = defineControl('tag-field', {
   reasons: ['trigger', 'picked', 'outside', 'escape', 'back'],
 });
 
-export { foldName, holds, NONE, tagFieldControl };
+export { NONE, tagFieldControl };

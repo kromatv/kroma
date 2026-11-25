@@ -2,25 +2,24 @@ import { type ReactNode, useMemo } from 'react';
 import { Pressable } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
-import { Icon } from '#ui/components/atoms/icon';
 import { Spinner } from '#ui/components/atoms/spinner';
 import { Text } from '#ui/components/atoms/text';
-import { styles, sv, useSv } from '#ui/core';
+import { styles, sv, useStyleScope, useSv } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { CONTROL } from '#ui/lib/field-shell';
 import { sortParts } from '#ui/lib/parts';
 import { matchText, textRuns } from '#ui/lib/text-match';
 import { useTDefault } from '#ui/services/i18n';
-import { MediaPlaceContext, useTagField, useTagFieldRow } from './tag-field-context';
-import { Hint, Media } from './tag-field-parts.component';
+import { ROW_INSET, rowMediaCorner } from './entry-metrics';
+import {
+  MediaPlaceContext,
+  type SuggestingField,
+  useSuggesting,
+  useSuggestionRow,
+} from './suggestion-context';
+import type { SuggestionItemShape } from './suggestions-of';
 
-interface TagFieldItemProps {
-  /** The name a press adds, and the words the row draws. */
-  value: string;
-  disabled?: boolean;
-  /** Its <TagField.Media> and <TagField.Hint>, which must be DIRECT children. */
-  children?: ReactNode;
-}
+const TEXT_INSET = 10;
 
 const rowVariants = sv({
   slots: {
@@ -28,7 +27,7 @@ const rowVariants = sv({
       row: true,
       align: 'center',
       gap: 12,
-      px: 10,
+      pe: TEXT_INSET,
       py: 6,
       minH: 44,
       radius: CONTROL.sm.radius,
@@ -38,8 +37,9 @@ const rowVariants = sv({
   },
   variants: {
     active: { true: { root: { bg: 'tint/8' } } },
+    led: { true: { root: { ps: ROW_INSET } }, false: { root: { ps: TEXT_INSET } } },
   },
-  defaults: { active: false },
+  defaults: { active: false, led: false },
 });
 
 type SuggestionRowProps = Readonly<{
@@ -52,8 +52,8 @@ type SuggestionRowProps = Readonly<{
 
 function PanelRow({ label, lead, disabled = false, onPress, children }: SuggestionRowProps) {
   const s = useStyles(sDefinition);
-  const row = useTagFieldRow();
-  const slots = useSv(rowVariants)({ active: row.active });
+  const row = useSuggestionRow();
+  const slots = useSv(rowVariants)({ active: row.active, led: lead !== null });
   const picked = () => {
     onPress();
     row.onPicked();
@@ -80,7 +80,7 @@ function PanelRow({ label, lead, disabled = false, onPress, children }: Suggesti
 }
 
 function DialogRow({ label, lead, disabled = false, onPress, children }: SuggestionRowProps) {
-  const row = useTagFieldRow();
+  const row = useSuggestionRow();
   return (
     <Focusable
       label={label}
@@ -91,7 +91,7 @@ function DialogRow({ label, lead, disabled = false, onPress, children }: Suggest
         row.onPicked();
       }}
       sv={rowVariants}
-      vars={{ active: false }}
+      vars={{ active: false, led: lead !== null }}
     >
       {lead}
       <Box flex minW={0} gap={2}>
@@ -101,10 +101,11 @@ function DialogRow({ label, lead, disabled = false, onPress, children }: Suggest
   );
 }
 
-/** A row of the list, in the presentation the field is in. */
-function SuggestionRow(props: Readonly<SuggestionRowProps>) {
-  const { presentation } = useTagField('Item');
-  return presentation === 'dialog' ? <DialogRow {...props} /> : <PanelRow {...props} />;
+/** A row of a list of suggestions, in the presentation its field is in: an
+ *  option driven from the entry, or a stop of the dialog. `lead` is the mark
+ *  at its head, or null for none. */
+function SuggestionRow({ field, ...props }: SuggestionRowProps & { field: SuggestingField }) {
+  return field.presentation === 'dialog' ? <DialogRow {...props} /> : <PanelRow {...props} />;
 }
 
 function Marked({ text, query }: Readonly<{ text: string; query: string }>) {
@@ -124,53 +125,39 @@ function Marked({ text, query }: Readonly<{ text: string; query: string }>) {
   );
 }
 
-/** The <TagField.Media> an item was written with, which its tag wears once
- *  it is added. */
-function faceOf(props: Readonly<TagFieldItemProps>): ReactNode {
-  const [media] = sortParts(props.children, Media);
-  return media.length > 0 ? media : null;
+interface ItemParts {
+  part: string;
+  Media: unknown;
+  Hint: unknown;
 }
 
 /** One suggestion: a name the list offers, with the letters the query found
- *  marked. A press adds it, and its <TagField.Media> follows it into the tag
- *  unless a <TagField.Tag> for that name says otherwise. */
-function Item({ value, disabled, children }: Readonly<TagFieldItemProps>) {
-  const field = useTagField('Item');
-  const [, hints] = sortParts(children, Media, Hint);
-  const face = faceOf({ value, children });
-  const size = field.metrics.rowMedia;
-  const place = useMemo(() => ({ name: value, size }), [value, size]);
-  const lead = <MediaPlaceContext value={place}>{face}</MediaPlaceContext>;
+ *  marked. A press picks it, and its `Media` goes with it. `parts` names the
+ *  field's own `Item`, `Media` and `Hint`. */
+function SuggestionItem({
+  value,
+  disabled,
+  children,
+  parts,
+}: Readonly<SuggestionItemShape & { parts: ItemParts }>) {
+  const field = useSuggesting(parts.part);
+  const [media, hints] = sortParts(children, parts.Media, parts.Hint);
+  const face = media.length > 0 ? media : null;
+  const corner = rowMediaCorner(useStyleScope());
+  const place = useMemo(
+    () => ({ name: value, size: field.rowMedia, corner }),
+    [value, field.rowMedia, corner],
+  );
   return (
     <SuggestionRow
+      field={field}
       label={value}
-      lead={lead}
+      lead={face === null ? null : <MediaPlaceContext value={place}>{face}</MediaPlaceContext>}
       disabled={disabled}
       onPress={() => field.pick(value, face)}
     >
       <Marked text={value} query={field.query} />
       {hints}
-    </SuggestionRow>
-  );
-}
-
-/** The row that adds what is typed, as it is typed. */
-function FreeRow({ name, label }: Readonly<{ name: string; label: string }>) {
-  const field = useTagField('Root');
-  const size = field.metrics.rowMedia;
-  return (
-    <SuggestionRow
-      label={label}
-      lead={
-        <Box w={size} h={size} center radius="circle" bg="tint/8">
-          <Icon name="plus" size={Math.round(size * 0.5)} color="textMuted" />
-        </Box>
-      }
-      onPress={() => field.pick(name, null)}
-    >
-      <Text variant="body" lines={1} color="text">
-        {label}
-      </Text>
     </SuggestionRow>
   );
 }
@@ -193,5 +180,5 @@ const sDefinition = styles({
   disabled: { opacity: 0.4 },
 });
 
-export type { TagFieldItemProps };
-export { faceOf, FreeRow, Item, LoadingRow };
+export type { ItemParts };
+export { LoadingRow, SuggestionItem, SuggestionRow };

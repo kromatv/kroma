@@ -5,12 +5,13 @@ import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
 import { IconButton } from '#ui/components/atoms/icon-button';
 import { Text } from '#ui/components/atoms/text';
+import { markCorner } from '#ui/components/organisms/suggestions/entry-metrics';
+import { MediaPlaceContext } from '#ui/components/organisms/suggestions/suggestion-context';
 import { sharedStyle, sv, useStyleScope, useSv } from '#ui/core';
 import { nestedRadius, type Radius } from '#ui/core/tokens';
 import { sortParts } from '#ui/lib/parts';
 import { useTDefault } from '#ui/services/i18n';
-import { MediaPlaceContext, type TagFieldState, useTagField } from './tag-field-context';
-import { tagCorner } from './tag-field-metrics';
+import { type TagFieldState, useTagField } from './tag-field-context';
 import { Media } from './tag-field-parts.component';
 
 interface TagFieldTagProps {
@@ -44,8 +45,8 @@ interface TagLook {
 
 function useTagBox({ field, face }: Readonly<TagLook>) {
   const scope = useStyleScope();
-  const { tag, tagMedia, gap, fontSize } = field.metrics;
-  const corner = tagCorner(field.metrics, scope);
+  const { mark: tag, markMedia: tagMedia, gap, fontSize } = field.metrics;
+  const corner = markCorner(field.metrics, scope);
   const removal = tag - 2 * REMOVAL_INSET;
   const ps = face === null ? gap + REMOVAL_INSET : (tag - tagMedia) / 2;
   const key = `tag-field:tag:${tag}:${ps}:${gap}:${corner}`;
@@ -63,7 +64,7 @@ type FaceProps = Readonly<{ look: TagLook; ink: StyleProp<TextStyle>; corner: Ra
 
 function TagFace({ look, ink, corner }: FaceProps) {
   const slots = useSv(tagVariants)({ stop: false });
-  const size = look.field.metrics.tagMedia;
+  const size = look.field.metrics.markMedia;
   const place = useMemo(() => ({ name: look.value, size, corner }), [look.value, size, corner]);
   return (
     <>
