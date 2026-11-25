@@ -7,7 +7,7 @@ import { Icon, type IconName, type IconProps } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { type ColorValue, type StyleDecl, svFor } from '#ui/core';
 import { formatCount } from '#ui/lib/intl';
-import { useLocaleDefault } from '#ui/services/i18n';
+import { useLocaleDefault, useTDefault } from '#ui/services/i18n';
 
 /**
  * The whole design, including every state it can be in.
@@ -148,7 +148,7 @@ function Chip({
   onPress,
   ...focusProps
 }: Readonly<ChipProps>) {
-  const locale = useLocaleDefault();
+  const language = { locale: useLocaleDefault(), t: useTDefault() };
   const toggles = onPress !== undefined && selected === undefined;
   const pressedClaim = pressed ?? (toggles ? active : undefined);
   return (
@@ -172,7 +172,7 @@ function Chip({
             </Text>
           )}
           {count === undefined ? null : (
-            <Text style={state.slots.count}>{formatCount(count, locale)}</Text>
+            <Text style={state.slots.count}>{formatCount(language, count)}</Text>
           )}
           {children}
         </>

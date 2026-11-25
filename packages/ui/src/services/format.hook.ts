@@ -3,12 +3,12 @@
 // because this is where the locale context is, and it is what every shell and
 // every module already reaches for when it wants `useT`.
 //
-// Standing alone rather than throwing outside an <I18nProvider>: five of these
-// never touch a catalog, and a byte size is exactly what a kit component or an
-// error boundary rendered above the provider wants to show. The other four
-// read one, so above a provider they answer in the default locale, the same
-// fallback `useTDefault` documents. That is the whole contract, and the test
-// beside this file holds it in place.
+// Standing alone rather than throwing outside an <I18nProvider>: a byte size is
+// exactly what a kit component or an error boundary rendered above the provider
+// wants to show. Its unit comes from a catalog like every word here, so above a
+// provider these answer in the default locale, the same fallback `useTDefault`
+// documents. That is the whole contract, and the test beside this file holds it
+// in place.
 
 import type { Locale, Translate } from '@kromatv/i18n';
 import {
@@ -21,6 +21,7 @@ import {
   formatStamp,
   formatTimecodeMs,
   formatUptime,
+  type Language,
 } from '#ui/lib/intl';
 import { useLocaleDefault, useTDefault } from './i18n';
 
@@ -62,15 +63,16 @@ function formatFor(locale: Locale, t: Translate): Format {
   if (cached) {
     return cached;
   }
+  const language: Language = { locale, t };
   const bound: Format = {
-    bytes: (bytes) => formatBytes(bytes, locale),
-    decimal: (n, digits) => decimal(n, locale, digits),
-    elapsed: (at) => formatElapsed(t, locale, at),
+    bytes: (bytes) => formatBytes(language, bytes),
+    decimal: (n, digits) => decimal(language, n, digits),
+    elapsed: (at) => formatElapsed(language, at),
     stamp: (at) => formatStamp(locale, at),
     uptime: (seconds) => formatUptime(t, seconds),
     duration: (ms) => formatDuration(t, ms),
-    hours: (ms) => formatHours(t, locale, ms),
-    mbps: (n) => formatMbps(n, locale),
+    hours: (ms) => formatHours(language, ms),
+    mbps: (n) => formatMbps(language, n),
     timecode: formatTimecodeMs,
   };
   BOUND.set(t, bound);

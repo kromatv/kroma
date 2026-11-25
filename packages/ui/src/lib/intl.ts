@@ -1,16 +1,24 @@
 // Locale-aware rendering of values, next door to i18n.ts which renders
-// messages. The split is what varies with the language: a separator or a unit
-// symbol is a convention this file can hold, so those functions take a Locale
-// and stay callable outside React. Anything with words in it takes a Translate
-// instead and reads them from the catalogs, because the words belong to
-// whoever writes the language, not to this file.
+// messages. What `Intl` cannot write, a unit symbol or a separator on an engine
+// without it, is the language's own and comes from its catalogs.
 
 import type { Locale, Translate } from '@kromatv/i18n';
 
-const BYTES = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'] as const;
-const BYTE_UNITS: Partial<Record<string, readonly string[]>> = {
-  fr: ['o', 'Ko', 'Mo', 'Go', 'To', 'Po'],
-};
+/** The reader's language as a formatter needs it: the tag `Intl` formats in,
+ *  and the translator whose catalogs write what `Intl` does not. */
+export interface Language {
+  readonly locale: Locale;
+  readonly t: Translate;
+}
+
+const SIZES = [
+  'format.size.bytes',
+  'format.size.kilobytes',
+  'format.size.megabytes',
+  'format.size.gigabytes',
+  'format.size.terabytes',
+  'format.size.petabytes',
+] as const;
 
 const DATES = new Map<Locale, Intl.DateTimeFormat | null>();
 const RELATIVE = new Map<Locale, Intl.RelativeTimeFormat | null>();
@@ -32,31 +40,18 @@ function relativeFormat(locale: Locale): Intl.RelativeTimeFormat | null {
   RELATIVE.set(locale, made);
   return made;
 }
-const DECIMAL_SEPARATOR: Partial<Record<string, string>> = {
-  de: ',',
-  es: ',',
-  fr: ',',
-  pt: ',',
-  vi: ',',
-};
-const GROUP_SEPARATOR: Partial<Record<string, string>> = {
-  de: '.',
-  es: '.',
-  fr: '\u202F',
-  pt: '.',
-  vi: '.',
-};
 
-function convention<T>(table: Partial<Record<string, T>>, locale: Locale): T | undefined {
-  return table[locale] ?? table[locale.split('-')[0] ?? locale];
+const NUMBER_SAMPLE = /^12(\D?)345(\D)6$/u;
+
+interface Separators {
+  readonly groupSeparator: string;
+  readonly decimalSeparator: string;
 }
 
-function decimalSeparator(locale: Locale): string {
-  return convention(DECIMAL_SEPARATOR, locale) ?? '.';
-}
-
-function groupSeparator(locale: Locale): string {
-  return convention(GROUP_SEPARATOR, locale) ?? ',';
+function separators(t: Translate): Separators {
+  const [, groupSeparator = ',', decimalSeparator = '.'] =
+    NUMBER_SAMPLE.exec(t('format.numberSample')) ?? [];
+  return { groupSeparator, decimalSeparator };
 }
 
 function built<T>(make: () => T): T | null {
@@ -89,25 +84,25 @@ function numberFormat(locale: Locale, digits: number): Intl.NumberFormat | null 
 
 const COUNTS = new Map<Locale, Intl.NumberFormat | null>();
 
-function groupDigits(n: number, locale: Locale): string {
+function groupDigits(n: number, { groupSeparator, decimalSeparator }: Separators): string {
   const [whole = '', fraction] = String(Math.abs(n)).split('.');
   const head = whole.length % 3 || 3;
   const groups = [whole.slice(0, head)];
   for (let at = head; at < whole.length; at += 3) {
     groups.push(whole.slice(at, at + 3));
   }
-  const tail = fraction ? `${decimalSeparator(locale)}${fraction.slice(0, 3)}` : '';
-  return `${n < 0 ? '-' : ''}${groups.join(groupSeparator(locale))}${tail}`;
+  const tail = fraction ? `${decimalSeparator}${fraction.slice(0, 3)}` : '';
+  return `${n < 0 ? '-' : ''}${groups.join(groupSeparator)}${tail}`;
 }
 
 /** A count with the locale's grouping: `1 064` in French, `1,064` in English. */
-export function formatCount(n: number, locale: Locale): string {
+export function formatCount({ locale, t }: Language, n: number): string {
   let made = COUNTS.get(locale);
   if (made === undefined) {
     made = built(() => new Intl.NumberFormat(locale));
     COUNTS.set(locale, made);
   }
-  return made?.format(n) ?? groupDigits(n, locale);
+  return made?.format(n) ?? groupDigits(n, separators(t));
 }
 
 // `dateStyle` is Chromium 76, and the legacy television tier runs engines older
@@ -144,10 +139,10 @@ function pad(n: number): string {
 /** A fixed-point number with the locale's decimal separator: `1,5` in French,
  *  `1.5` in English. Grouping is off: these sit in tabular columns beside a
  *  unit, where a thousands separator reads as a second number. */
-export function decimal(n: number, locale: Locale, digits = 1): string {
+export function decimal({ locale, t }: Language, n: number, digits = 1): string {
   return (
     numberFormat(locale, digits)?.format(n) ??
-    n.toFixed(digits).replace('.', decimalSeparator(locale))
+    n.toFixed(digits).replace('.', separators(t).decimalSeparator)
   );
 }
 
@@ -169,34 +164,28 @@ export function formatClock(date: Date): string {
 
 /** A byte size in the locale's units: `1,5 Go` in French, `1.5 GB` in English.
  *  Zero and negatives render as the smallest unit rather than empty. */
-export function formatBytes(bytes: number, locale: Locale): string {
-  const units = convention(BYTE_UNITS, locale) ?? BYTES;
-  const smallest = units[0] ?? BYTES[0];
-  if (!bytes || bytes < 0) {
-    return `0 ${smallest}`;
-  }
+export function formatBytes(language: Language, bytes: number): string {
+  const counted = Math.max(bytes || 0, 0);
   // Clamped at both ends: a fractional byte count logs negative, and an
   // unclamped index would divide by 1024 to the minus one and read a
   // half-byte transfer rate back as 512.
-  const step = Math.floor(Math.log(bytes) / Math.log(1024));
-  const i = Math.max(0, Math.min(units.length - 1, step));
-  const v = bytes / 1024 ** i;
-  return `${decimal(v, locale, v >= 100 || i <= 1 ? 0 : 1)} ${units[i] ?? smallest}`;
+  const step = Math.floor(Math.log(counted) / Math.log(1024));
+  const i = Math.max(0, Math.min(SIZES.length - 1, step));
+  const v = counted / 1024 ** i;
+  const size = decimal(language, v, v >= 100 || i <= 1 ? 0 : 1);
+  return language.t(SIZES[i] ?? SIZES[0], { size });
 }
-
-const GIGABYTE_STEP = 3;
 
 /** A size already counted in gigabytes, such as a budget a reader picks, in
  *  the locale's unit and without a forced decimal: `40 Go` in French, `40 GB`
  *  in English. {@link formatBytes} is for a measured byte count. */
-export function formatGigabytes(gigabytes: number, locale: Locale): string {
-  const units = convention(BYTE_UNITS, locale) ?? BYTES;
-  return `${formatCount(gigabytes, locale)} ${units[GIGABYTE_STEP] ?? BYTES[GIGABYTE_STEP]}`;
+export function formatGigabytes(language: Language, gigabytes: number): string {
+  return language.t('format.size.gigabytes', { size: formatCount(language, gigabytes) });
 }
 
 /** A throughput figure, one decimal, no unit: the caller supplies `Mb/s`. */
-export function formatMbps(n: number, locale: Locale): string {
-  return decimal(n || 0, locale, 1);
+export function formatMbps(language: Language, n: number): string {
+  return decimal(language, n || 0, 1);
 }
 
 /** A scrub-bar timecode, `1:04:07` or `4:07`, with no leading hours under one
@@ -215,8 +204,8 @@ export function formatTimecodeMs(ms: number): string {
 }
 
 /** Hours with one decimal for a chart axis, the unit from the catalog: `14,3 h`. */
-export function formatHours(t: Translate, locale: Locale, ms: number): string {
-  return t('format.hours', { hours: decimal((ms || 0) / 3_600_000, locale, 1) });
+export function formatHours(language: Language, ms: number): string {
+  return language.t('format.hours', { hours: decimal(language, (ms || 0) / 3_600_000, 1) });
 }
 
 /** Watch time from milliseconds, to the minute: `4 h 29 min` / `65 min`. */
@@ -244,17 +233,6 @@ export function formatUptime(t: Translate, seconds: number): string {
   return t('format.uptimeMinutes', { minutes });
 }
 
-/** How long ago a timestamp was, in words, from an ISO string or epoch
- *  milliseconds: `il y a 5 min`, `hier`,
- *  `jamais` for a null. Beyond a month it becomes a short absolute date, since
- *  "il y a 74 j" is no longer something anyone counts. Takes `now` so a caller
- *  can pin it; tests should.
- *
- *  The ladder itself is `Intl.RelativeTimeFormat`, which already knows every
- *  language's wording and gives French "avant-hier" for free. Only the three
- *  cases it has no notion of are catalog keys: no timestamp at all, one it
- *  cannot read, and "just now" (it renders zero as the current unit, "this
- *  minute", rather than an elapsed one). */
 const STAMPS = new Map<Locale, Intl.DateTimeFormat | null>();
 
 // Same shape as `dateFormat`: built once per locale, and a runtime that refuses
@@ -291,9 +269,19 @@ export function formatStamp(locale: Locale, at: string | number | null | undefin
   );
 }
 
+/** How long ago a timestamp was, in words, from an ISO string or epoch
+ *  milliseconds: `il y a 5 min`, `hier`,
+ *  `jamais` for a null. Beyond a month it becomes a short absolute date, since
+ *  "il y a 74 j" is no longer something anyone counts. Takes `now` so a caller
+ *  can pin it; tests should.
+ *
+ *  The ladder itself is `Intl.RelativeTimeFormat`, which already knows every
+ *  language's wording and gives French "avant-hier" for free. Only the three
+ *  cases it has no notion of are catalog keys: no timestamp at all, one it
+ *  cannot read, and "just now" (it renders zero as the current unit, "this
+ *  minute", rather than an elapsed one). */
 export function formatElapsed(
-  t: Translate,
-  locale: Locale,
+  { locale, t }: Language,
   at: string | number | null | undefined,
   now: number = Date.now(),
 ): string {

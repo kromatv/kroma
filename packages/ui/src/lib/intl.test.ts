@@ -2,6 +2,7 @@ import { createTranslator } from '@kromatv/core';
 import type { Translate, TVars } from '@kromatv/i18n';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  type Language,
   decimal,
   formatBytes,
   formatClock,
@@ -19,27 +20,31 @@ import {
 const fr = createTranslator('fr');
 const en = createTranslator('en');
 const words: Translate = (key: string, vars?: TVars) => `${key}:${String(vars?.hours)}`;
+const french: Language = { locale: 'fr', t: fr };
+const english: Language = { locale: 'en', t: en };
+const korean: Language = { locale: 'ko', t: createTranslator('ko') };
+const german: Language = { locale: 'de', t: createTranslator('de') };
 const NOW = Date.parse('2024-06-15T12:00:00Z');
 
 describe('decimal', () => {
   it('separates with a comma in French and a period in English', () => {
-    expect(decimal(1.5, 'fr')).toBe('1,5');
-    expect(decimal(1.5, 'en')).toBe('1.5');
-    expect(decimal(2, 'fr')).toBe('2,0');
+    expect(decimal(french, 1.5)).toBe('1,5');
+    expect(decimal(english, 1.5)).toBe('1.5');
+    expect(decimal(french, 2)).toBe('2,0');
   });
 
   it('honors a requested digit count, rounding', () => {
-    expect(decimal(Math.PI, 'fr', 2)).toBe('3,14');
-    expect(decimal(Math.PI, 'fr', 0)).toBe('3');
-    expect(decimal(Math.E, 'en', 3)).toBe('2.718');
+    expect(decimal(french, Math.PI, 2)).toBe('3,14');
+    expect(decimal(french, Math.PI, 0)).toBe('3');
+    expect(decimal(english, Math.E, 3)).toBe('2.718');
   });
 });
 
 describe('formatCount', () => {
   it('groups thousands the way toLocaleString does', () => {
     for (const n of [0, 7, 1064, 1234567]) {
-      for (const locale of ['fr', 'en'] as const) {
-        expect(formatCount(n, locale)).toBe(n.toLocaleString(locale));
+      for (const language of [french, english]) {
+        expect(formatCount(language, n)).toBe(n.toLocaleString(language.locale));
       }
     }
   });
@@ -59,63 +64,64 @@ describe('formatClock', () => {
 
 describe('formatBytes', () => {
   it('returns the smallest unit for zero and negatives', () => {
-    expect(formatBytes(0, 'fr')).toBe('0 o');
-    expect(formatBytes(-100, 'fr')).toBe('0 o');
-    expect(formatBytes(0, 'en')).toBe('0 B');
+    expect(formatBytes(french, 0)).toBe('0 o');
+    expect(formatBytes(french, -100)).toBe('0 o');
+    expect(formatBytes(english, 0)).toBe('0 B');
   });
 
   it('rounds a fractional byte count up rather than reading it as 512', () => {
-    expect(formatBytes(0.5, 'fr')).toBe('1 o');
-    expect(formatBytes(0.5, 'en')).toBe('1 B');
+    expect(formatBytes(french, 0.5)).toBe('1 o');
+    expect(formatBytes(english, 0.5)).toBe('1 B');
   });
 
   it('keeps bytes and kilobytes at zero decimals', () => {
-    expect(formatBytes(500, 'fr')).toBe('500 o');
-    expect(formatBytes(1024, 'fr')).toBe('1 Ko');
-    expect(formatBytes(1536, 'fr')).toBe('2 Ko');
-    expect(formatBytes(1536, 'en')).toBe('2 KB');
+    expect(formatBytes(french, 500)).toBe('500 o');
+    expect(formatBytes(french, 1024)).toBe('1 Ko');
+    expect(formatBytes(french, 1536)).toBe('2 Ko');
+    expect(formatBytes(english, 1536)).toBe('2 KB');
   });
 
   it('shows one decimal from megabytes up, below a mantissa of 100', () => {
-    expect(formatBytes(1024 ** 2, 'fr')).toBe('1,0 Mo');
-    expect(formatBytes(5 * 1024 ** 2, 'en')).toBe('5.0 MB');
-    expect(formatBytes(1024 ** 3, 'en')).toBe('1.0 GB');
-    expect(formatBytes(1024 ** 5, 'fr')).toBe('1,0 Po');
+    expect(formatBytes(french, 1024 ** 2)).toBe('1,0 Mo');
+    expect(formatBytes(english, 5 * 1024 ** 2)).toBe('5.0 MB');
+    expect(formatBytes(english, 1024 ** 3)).toBe('1.0 GB');
+    expect(formatBytes(french, 1024 ** 5)).toBe('1,0 Po');
   });
 
   it('drops the decimal once the mantissa reaches 100', () => {
-    expect(formatBytes(150 * 1024 ** 2, 'fr')).toBe('150 Mo');
+    expect(formatBytes(french, 150 * 1024 ** 2)).toBe('150 Mo');
   });
 
   it('caps the unit at petabytes for huge inputs', () => {
-    expect(formatBytes(1024 ** 6, 'fr')).toBe('1024 Po');
-    expect(formatBytes(1024 ** 6, 'en')).toBe('1024 PB');
+    expect(formatBytes(french, 1024 ** 6)).toBe('1024 Po');
+    expect(formatBytes(english, 1024 ** 6)).toBe('1024 PB');
   });
 
-  it('writes the English units for a language that has none of its own', () => {
-    expect(formatBytes(1024 ** 3, 'ko')).toBe('1.0 GB');
+  it('writes the units the language catalog gives', () => {
+    expect(formatBytes(korean, 1024 ** 3)).toBe('1.0 GB');
+    expect(formatBytes(german, 1.5 * 1024 ** 3)).toBe('1,5 GB');
   });
 });
 
 describe('formatGigabytes', () => {
   it('writes a size picked in gigabytes with the locale unit and no forced decimal', () => {
-    expect(formatGigabytes(40, 'fr')).toBe('40 Go');
-    expect(formatGigabytes(40, 'en')).toBe('40 GB');
-    expect(formatGigabytes(256, 'ko')).toBe('256 GB');
+    expect(formatGigabytes(french, 40)).toBe('40 Go');
+    expect(formatGigabytes(english, 40)).toBe('40 GB');
+    expect(formatGigabytes(korean, 256)).toBe('256 GB');
   });
 
   it('keeps a fraction with the locale separator', () => {
-    expect(formatGigabytes(1.5, 'fr')).toBe('1,5 Go');
-    expect(formatGigabytes(1.5, 'en')).toBe('1.5 GB');
+    expect(formatGigabytes(french, 1.5)).toBe('1,5 Go');
+    expect(formatGigabytes(english, 1.5)).toBe('1.5 GB');
   });
 });
 
 describe('formatMbps', () => {
   it('gives one decimal in the locale, and reads a NaN as zero', () => {
-    expect(formatMbps(5, 'fr')).toBe('5,0');
-    expect(formatMbps(12.34, 'fr')).toBe('12,3');
-    expect(formatMbps(12.34, 'en')).toBe('12.3');
-    expect(formatMbps(Number.NaN, 'en')).toBe('0.0');
+    expect(formatMbps(french, 5)).toBe('5,0');
+    expect(formatMbps(french, 12.34)).toBe('12,3');
+    expect(formatMbps(english, 12.34)).toBe('12.3');
+    expect(formatMbps(english, Number.NaN)).toBe('0.0');
   });
 });
 
@@ -144,13 +150,13 @@ describe('formatTimecode', () => {
 
 describe('formatHours', () => {
   it('gives one decimal in the locale', () => {
-    expect(formatHours(fr, 'fr', 14.3 * 3_600_000)).toBe('14,3 h');
-    expect(formatHours(en, 'en', 14.3 * 3_600_000)).toBe('14.3 h');
-    expect(formatHours(fr, 'fr', 0)).toBe('0,0 h');
+    expect(formatHours(french, 14.3 * 3_600_000)).toBe('14,3 h');
+    expect(formatHours(english, 14.3 * 3_600_000)).toBe('14.3 h');
+    expect(formatHours(french, 0)).toBe('0,0 h');
   });
 
   it('takes its unit from the catalog of the language on screen', () => {
-    expect(formatHours(words, 'en', 1.5 * 3_600_000)).toBe('format.hours:1.5');
+    expect(formatHours({ locale: 'en', t: words }, 1.5 * 3_600_000)).toBe('format.hours:1.5');
   });
 });
 
@@ -180,42 +186,42 @@ describe('formatUptime', () => {
 
 describe('formatElapsed', () => {
   it('handles a missing or unparseable timestamp', () => {
-    expect(formatElapsed(fr, 'fr', null, NOW)).toBe('jamais');
-    expect(formatElapsed(en, 'en', undefined, NOW)).toBe('never');
-    expect(formatElapsed(fr, 'fr', 'not-a-date', NOW)).toBe('-');
+    expect(formatElapsed(french, null, NOW)).toBe('jamais');
+    expect(formatElapsed(english, undefined, NOW)).toBe('never');
+    expect(formatElapsed(french, 'not-a-date', NOW)).toBe('-');
   });
 
   // French puts a no-break space before the unit, which is what stops "5 min"
   // wrapping across two lines. Intl knows that; the keys this replaced did not.
   it('reads a French relative label from an ISO timestamp', () => {
-    expect(formatElapsed(fr, 'fr', '2024-06-15T11:59:30Z', NOW)).toBe("à l'instant");
-    expect(formatElapsed(fr, 'fr', '2024-06-15T11:55:00Z', NOW)).toBe('il y a 5\u00a0min');
-    expect(formatElapsed(fr, 'fr', '2024-06-15T09:00:00Z', NOW)).toBe('il y a 3\u00a0h');
-    expect(formatElapsed(fr, 'fr', '2024-06-14T11:00:00Z', NOW)).toBe('hier');
-    expect(formatElapsed(fr, 'fr', '2024-06-12T12:00:00Z', NOW)).toBe('il y a 3\u00a0j');
+    expect(formatElapsed(french, '2024-06-15T11:59:30Z', NOW)).toBe("à l'instant");
+    expect(formatElapsed(french, '2024-06-15T11:55:00Z', NOW)).toBe('il y a 5\u00a0min');
+    expect(formatElapsed(french, '2024-06-15T09:00:00Z', NOW)).toBe('il y a 3\u00a0h');
+    expect(formatElapsed(french, '2024-06-14T11:00:00Z', NOW)).toBe('hier');
+    expect(formatElapsed(french, '2024-06-12T12:00:00Z', NOW)).toBe('il y a 3\u00a0j');
   });
 
   it('says avant-hier in French, which no hand-written ladder here ever did', () => {
-    expect(formatElapsed(fr, 'fr', '2024-06-13T11:00:00Z', NOW)).toBe('avant-hier');
+    expect(formatElapsed(french, '2024-06-13T11:00:00Z', NOW)).toBe('avant-hier');
   });
 
   it('reads an English relative label from the same timestamps', () => {
-    expect(formatElapsed(en, 'en', '2024-06-15T11:59:30Z', NOW)).toBe('just now');
-    expect(formatElapsed(en, 'en', '2024-06-15T11:55:00Z', NOW)).toBe('5 min. ago');
-    expect(formatElapsed(en, 'en', '2024-06-15T09:00:00Z', NOW)).toBe('3 hr. ago');
-    expect(formatElapsed(en, 'en', '2024-06-14T11:00:00Z', NOW)).toBe('yesterday');
-    expect(formatElapsed(en, 'en', '2024-06-12T12:00:00Z', NOW)).toBe('3 days ago');
+    expect(formatElapsed(english, '2024-06-15T11:59:30Z', NOW)).toBe('just now');
+    expect(formatElapsed(english, '2024-06-15T11:55:00Z', NOW)).toBe('5 min. ago');
+    expect(formatElapsed(english, '2024-06-15T09:00:00Z', NOW)).toBe('3 hr. ago');
+    expect(formatElapsed(english, '2024-06-14T11:00:00Z', NOW)).toBe('yesterday');
+    expect(formatElapsed(english, '2024-06-12T12:00:00Z', NOW)).toBe('3 days ago');
   });
 
   it('reads epoch milliseconds as readily as an ISO string', () => {
     const iso = '2024-06-15T11:55:00Z';
 
-    expect(formatElapsed(fr, 'fr', Date.parse(iso), NOW)).toBe(formatElapsed(fr, 'fr', iso, NOW));
+    expect(formatElapsed(french, Date.parse(iso), NOW)).toBe(formatElapsed(french, iso, NOW));
   });
 
   it('falls back to an absolute date past a month, ordered for the locale', () => {
-    expect(formatElapsed(fr, 'fr', '2024-05-06T12:00:00Z', NOW)).toBe('06/05/2024');
-    expect(formatElapsed(en, 'en', '2024-05-06T12:00:00Z', NOW)).toBe('5/6/24');
+    expect(formatElapsed(french, '2024-05-06T12:00:00Z', NOW)).toBe('06/05/2024');
+    expect(formatElapsed(english, '2024-05-06T12:00:00Z', NOW)).toBe('5/6/24');
   });
 });
 
@@ -245,13 +251,13 @@ const withBroken = async (
 describe('an engine without the Intl constructors', () => {
   it('gives the absolute date when there is no relative formatter', async () => {
     await withBroken('RelativeTimeFormat', ({ formatElapsed: elapsed }) => {
-      expect(elapsed(fr, 'fr', '2024-06-15T11:55:00Z', NOW)).toBe('15/06/2024');
+      expect(elapsed(french, '2024-06-15T11:55:00Z', NOW)).toBe('15/06/2024');
     });
   });
 
   it('falls back to plain ISO when no date formatter builds', async () => {
     await withBroken('DateTimeFormat', ({ formatElapsed: elapsed, formatStamp: stamp }) => {
-      expect(elapsed(fr, 'fr', '2024-05-06T12:00:00Z', NOW)).toBe('2024-05-06');
+      expect(elapsed(french, '2024-05-06T12:00:00Z', NOW)).toBe('2024-05-06');
       expect(stamp('fr', '2024-05-06T12:00:00Z')).toBe('2024-05-06 12:00');
     });
   });
@@ -263,10 +269,40 @@ describe('an engine without the Intl constructors', () => {
       const intl = await import('./intl');
 
       expect(intl.formatClock(new Date(2024, 5, 15, 20, 5))).toBe('20:05');
-      expect(intl.decimal(1.25, 'fr', 1)).toBe('1,3');
-      expect(intl.decimal(1.5, 'en')).toBe('1.5');
-      expect(intl.formatCount(1234567, 'fr')).toBe((1234567).toLocaleString('fr'));
-      expect(intl.formatCount(1064, 'en')).toBe('1,064');
+      expect(intl.decimal(french, 1.25, 1)).toBe('1,3');
+      expect(intl.decimal(english, 1.5)).toBe('1.5');
+      expect(intl.formatCount(french, 1234567)).toBe((1234567).toLocaleString('fr'));
+      expect(intl.formatCount(english, 1064)).toBe('1,064');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('takes the separators and the units from the language catalog', async () => {
+    vi.resetModules();
+    vi.stubGlobal('Intl', undefined);
+    try {
+      const intl = await import('./intl');
+
+      expect(intl.formatBytes(french, 1.5 * 1024 ** 3)).toBe('1,5 Go');
+      expect(intl.formatCount(french, 1234.5)).toBe('1\u202F234,5');
+      expect(intl.formatBytes(german, 1.5 * 1024 ** 3)).toBe('1,5 GB');
+      expect(intl.formatCount(german, 1234.5)).toBe('1.234,5');
+      expect(intl.formatGigabytes(german, 1500)).toBe('1.500 GB');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('writes the plain separators for a catalog that gives no sample', async () => {
+    vi.resetModules();
+    vi.stubGlobal('Intl', undefined);
+    try {
+      const intl = await import('./intl');
+      const silent: Language = { locale: 'fr', t: words };
+
+      expect(intl.formatCount(silent, 1234.5)).toBe('1,234.5');
+      expect(intl.decimal(silent, 1.5)).toBe('1.5');
     } finally {
       vi.unstubAllGlobals();
     }

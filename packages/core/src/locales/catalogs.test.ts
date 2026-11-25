@@ -70,4 +70,18 @@ describe('the discovered catalogs', () => {
 
     expect(dangling).toEqual([]);
   });
+
+  it('write a number sample the formatters can read both separators from', () => {
+    const samples = files.flatMap(({ locale, catalog }) => {
+      const sample = catalog['format.numberSample'];
+      return sample === undefined ? [] : [{ locale, sample }];
+    });
+    const unreadable = samples.filter(({ sample }) => {
+      const [, group, decimal] = /^12(\D?)345(\D)6$/u.exec(sample) ?? [];
+      return group === decimal;
+    });
+
+    expect(samples.length).toBeGreaterThan(0);
+    expect(unreadable).toEqual([]);
+  });
 });
