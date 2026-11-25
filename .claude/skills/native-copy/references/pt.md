@@ -1,9 +1,12 @@
 # Brazilian Portuguese
 
-What Brazilian software says, and how. Read it before you write a pt-BR string.
-There is no `pt` catalog: pt-BR carries every message itself, so write Brazil's
-Portuguese, never Portugal's (*ecrã*, *ficheiro*, *utilizador*, *telemóvel*,
-*transferir*, *registar* are all wrong here).
+What Brazilian software says, and how. Read it before you write a `pt` string.
+`pt` is Brazilian Portuguese, as it is in CLDR, FormatJS and Apple's
+localizations, so write Brazil's Portuguese, never Portugal's (*ecrã*,
+*ficheiro*, *utilizador*, *telemóvel*, *transferir*, *registar* are all wrong
+here). A reader whose system says `pt-BR` or `pt-PT` is matched to `pt`. A
+`pt-PT` catalog, when there is one, holds only what Portugal says differently
+and reads everything else from `pt`.
 
 ## Register
 
@@ -562,7 +565,7 @@ message takes four keys:
   the general form covers it).
 
 `_zero` is honoured at zero in every language, and `fill` and the check accept
-it for pt-BR.
+it for `pt`.
 
 The website (`www`) is the exception: its plurals are `_one` and `_other` only,
 chosen by `Intl.PluralRules`, which puts 0 under `one` in Portuguese. There is

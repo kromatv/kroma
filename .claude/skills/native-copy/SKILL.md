@@ -15,7 +15,7 @@ the specification of what must be said. It is never the draft.
 Load the reference of the language before you write a word:
 [`fr`](references/fr.md), [`de`](references/de.md), [`es`](references/es.md),
 [`ja`](references/ja.md), [`ko`](references/ko.md),
-[`pt-BR`](references/pt-BR.md), [`vi`](references/vi.md),
+[`pt`](references/pt.md), [`vi`](references/vi.md),
 [`zh-Hans`](references/zh-Hans.md). When a language has none, write it
 first, from what the platforms publish in that language, and add it in the same
 change.
