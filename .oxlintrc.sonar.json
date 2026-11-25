@@ -355,6 +355,12 @@
       }
     },
     {
+      "files": ["packages/i18n-tools/src/git-base.ts"],
+      "rules": {
+        "sonarjs/no-os-command-from-path": "off"
+      }
+    },
+    {
       "files": ["packages/installer/src/discovery/local-network.ts"],
       "rules": {
         "sonarjs/no-hardcoded-ip": "off"

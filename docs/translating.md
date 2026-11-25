@@ -223,10 +223,16 @@ its code in that list. Its URLs, its 404 page, the language switcher and the
 ## Modules
 
 A module's messages are in `modules/<id>/locales/<code>.json`. `todo` and `fill`
-cover them under the module's id, next to `core`. Adding a language file to a
-module changes its bundle, so bump `version` in its `module.json` in the same
-commit: CI refuses a bundle whose bytes changed under the same version. A module outside this repository uses the same commands as
-`bunx kroma i18n`.
+cover them under the module's id, next to `core`. CI refuses a module bundle
+whose bytes changed under the same version, so a command that writes a module's
+messages also moves the patch of `version` in its `module.json`, and says so:
+`tv.kroma.torrents 0.7.17 -> 0.7.18`. It does that once per branch. A version
+already past the one on `main` stays, and a lock moves nothing, since no bundle
+carries one. Commit `module.json` with the messages.
+
+A module outside this repository uses the same commands as `bunx kroma i18n`.
+Outside git, or with neither `origin/main` nor `main` to compare with, they bump
+nothing, so bump `version` by hand there.
 
 ## When the source changes
 

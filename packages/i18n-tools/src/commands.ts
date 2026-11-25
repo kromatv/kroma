@@ -10,6 +10,7 @@ import { type CatalogSet, keepsPolicy, localesOf, readFiles } from './set.ts';
 import { inspectWorkspace } from './status.ts';
 import { type TodoEntry, todo } from './todo.ts';
 import { writeTypes } from './types.ts';
+import type { BaseFile } from './version-bump.ts';
 
 /** Where a command writes what it has to say. */
 export type Print = (text: string) => void;
@@ -22,6 +23,9 @@ export interface Context {
   /** How the caller is spelled in a hint: `bun run i18n`, `kroma i18n`. */
   readonly bin: string;
   readonly print: Print;
+  /** Where a module's version on the base branch is read, to bump it once
+   *  per branch: git when left out. */
+  readonly atBase?: BaseFile;
 }
 
 const SHOWN_KEYS = 30;

@@ -11,8 +11,10 @@ import {
   todoCommand,
   types,
 } from './commands.ts';
+import { gitBase } from './git-base.ts';
 import { newCommand, removeCommand, renameCommand, unusedCommand } from './key-commands.ts';
 import { noteCommand, translateCommand } from './translate-command.ts';
+import { bumpVersions, shippedCatalogs } from './version-bump.ts';
 
 type Command = (context: Context, args: string[]) => number | Promise<number>;
 
@@ -68,7 +70,8 @@ export function usage(bin: string): string {
   types                      write the key types`;
 }
 
-/** Run one command, `status` when none is named. Returns the exit code, and
+/** Run one command, `status` when none is named, and bump the version of
+ *  every module whose bundled messages it wrote. Returns the exit code, and
  *  throws what the command could not do. */
 export async function run(argv: readonly string[], context: Context): Promise<number> {
   const [name = 'status', ...rest] = argv;
@@ -80,5 +83,12 @@ export async function run(argv: readonly string[], context: Context): Promise<nu
   if (!command) {
     throw new Error(`unknown command '${name}'\n\n${usage(context.bin)}`);
   }
-  return command(context, rest);
+  const shipped = shippedCatalogs(context.sets);
+  try {
+    return await command(context, rest);
+  } finally {
+    for (const line of bumpVersions(shipped, context.atBase ?? gitBase)) {
+      context.print(line);
+    }
+  }
 }
