@@ -1,8 +1,9 @@
 import { matchingPackages, type ShippedPackage } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Field, ListRow, Text } from '@kromatv/ui/kit';
+import { ListRow, Text } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { LicenseRow } from '#web/features/about/license-row.component';
+import { SearchField } from '#web/shared/ui/search-field.component';
 import { SettingCard } from '#web/shared/ui/setting-card.component';
 import { useShippedPackages } from '#web/features/about/use-shipped-packages.hook';
 
@@ -46,24 +47,6 @@ function PackageList({ matches, pending }: Readonly<PackageListProps>) {
   );
 }
 
-function PackageSearch({
-  value,
-  onValueChange,
-}: Readonly<{ value: string; onValueChange: (value: string) => void }>) {
-  const t = useT();
-  return (
-    <Field.Root label={t('licenses.search')} hideLabel>
-      <Field.Input
-        type="search"
-        icon="search"
-        placeholder={t('licenses.search')}
-        value={value}
-        onValueChange={onValueChange}
-      />
-    </Field.Root>
-  );
-}
-
 function Tally({ query, shown, total }: Readonly<{ query: string; shown: number; total: number }>) {
   const t = useT();
   return (
@@ -92,7 +75,7 @@ export function LicensesCard() {
         pending ? null : <Tally query={query} shown={matches.length} total={packages.length} />
       }
     >
-      <PackageSearch value={query} onValueChange={setQuery} />
+      <SearchField label={t('licenses.search')} value={query} onValueChange={setQuery} />
       {serverFailed ? (
         <Text variant="meta" color="danger">
           {t('licenses.failed')}
