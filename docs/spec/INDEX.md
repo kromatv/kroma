@@ -3,7 +3,7 @@
 
 # Requirement index
 
-818 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+835 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -554,6 +554,17 @@
 - **LIB-80** (SHIPPED) - In a show source, a name the `SxxEyy` and `NxNN` forms miss still <sub>[README.md](library/README.md)</sub>
 - **LIB-81** (SHIPPED) - In a show source, a file whose name carries no episode number is left <sub>[README.md](library/README.md)</sub>
 - **LIB-82** (SHIPPED) - A title's text is shown in the reader's language one field at a time. <sub>[README.md](library/README.md)</sub>
+- **LIB-83** (SHIPPED) - A person who manages the library can write a film's or a show's name, <sub>[README.md](library/README.md)</sub>
+- **LIB-84** (SHIPPED) - A film or a show takes its name, summary, year and genres from the <sub>[README.md](library/README.md)</sub>
+- **LIB-85** (SHIPPED) - **A match named in the `.nfo` file.** A film's or a show's `.nfo` file <sub>[README.md](library/README.md)</sub>
+- **LIB-86** (SHIPPED) - The catalogue sorts and filters a title by the name, year and genres it <sub>[README.md](library/README.md)</sub>
+- **LIB-87** (SHIPPED) - A person can write the day a title came out in place of its year <sub>[README.md](library/README.md)</sub>
+- **LIB-88** (SHIPPED) - A person can write a sort title for a title (LIB-83), and a `.nfo` <sub>[README.md](library/README.md)</sub>
+- **LIB-89** (SHIPPED) - An episode takes its name, summary and air date from the `.nfo` file <sub>[README.md](library/README.md)</sub>
+- **LIB-90** (SHIPPED) - A person who manages the library can write an episode's name, air date <sub>[README.md](library/README.md)</sub>
+- **LIB-91** (SHIPPED) - The backdrops behind the sign-in screen, the notification that new <sub>[README.md](library/README.md)</sub>
+- **LIB-92** (SHIPPED) - A film's or a show's `.nfo` file (LIB-84) that names no provider id, <sub>[README.md](library/README.md)</sub>
+- **LIB-93** (SHIPPED) - When a person's search for a film's or a show's match finds nothing at <sub>[README.md](library/README.md)</sub>
 
 ## MEDIA - [media](media/)
 
@@ -607,6 +618,12 @@
 - **MEDIA-48** (SHIPPED) - The poster kept beside a title's files comes before a fetched
 - **MEDIA-49** (SHIPPED) - The backdrop kept beside a matched title's files comes before a
 - **MEDIA-50** (SHIPPED) - A person who manages the library can upload a poster for a film
+- **MEDIA-51** (SHIPPED) - The logo kept beside a matched title's files, the title's name
+- **MEDIA-52** (SHIPPED) - The thumbnail kept beside an episode's file comes before the
+- **MEDIA-53** (SHIPPED) - A show's page draws its seasons as a row of posters, the one on
+- **MEDIA-54** (SHIPPED) - A person who manages the library can upload a logo for a matched
+- **MEDIA-55** (SHIPPED) - A person who manages the library can upload a thumbnail for an
+- **MEDIA-56** (SHIPPED) - A person who manages the library can upload a poster for a season
 
 ## MOD - [modules](modules/)
 

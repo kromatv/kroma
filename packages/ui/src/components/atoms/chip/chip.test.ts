@@ -75,8 +75,7 @@ describe('chip design', () => {
 
     it('leaves the idle wash alone when off, needing no compound rule', () => {
       // `active` is declared after `variant`, so an empty `false` option cannot
-      // stomp the fill each variant chose. Before, the order was reversed and a
-      // compound had to put the accent back.
+      // stomp the fill each variant chose.
       expect(chipVariants({ variant: 'surface', active: false }).root.backgroundColor).toBe(
         'var(--kroma-surface-2)',
       );

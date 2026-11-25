@@ -94,21 +94,23 @@ pub fn get_item(pool: &Pool, id: &str) -> Result<Option<MediaItem>> {
 }
 
 /// Catalogue snapshot for the search index: no per-row file or
-/// representative-video lookups, so a full reindex is two table scans.
+/// representative-video lookups, so a full reindex is two table scans. What
+/// was written by hand about a title is laid over it.
 pub fn index_snapshot(pool: &Pool) -> Result<(Vec<MediaItem>, Vec<Show>)> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!(
         "SELECT {ITEM_COLS} FROM items WHERE absent_since IS NULL"
     ))?;
-    let items: Vec<MediaItem> = stmt
+    let mut items: Vec<MediaItem> = stmt
         .query_map([], row_to_item)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     let mut stmt = conn.prepare(&format!(
         "SELECT id,title,year,library,added_at,metadata FROM shows s WHERE {PRESENT_SHOW}"
     ))?;
-    let shows: Vec<Show> = stmt
+    let mut shows: Vec<Show> = stmt
         .query_map([], row_to_show_bare)?
         .collect::<rusqlite::Result<Vec<_>>>()?;
+    crate::title_edits::lay_over(&conn, &mut items, &mut shows)?;
     Ok((items, shows))
 }
 

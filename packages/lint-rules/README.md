@@ -78,6 +78,16 @@ an import of `#ui/lib/platform`, a read of `Platform.OS` / `select` / `isTV` /
 excluded.
 Run `bun run --cwd packages/lint-rules rules no-platform-branch` for repair steps.
 
+### no-constructed-context-value
+
+Reject a context value built during render on the React 19 form, `<Ctx value={...}>`,
+where `react/jsx-no-constructed-context-values` cannot tell `Ctx` is a context: a
+`partContext` binding, or an identifier ending in `Context` or `Ctx` that the file
+does not create with `createContext`. A value is built when it is an object, array,
+function, class, `new` or JSX, directly or through a `const` in the component, or
+a call other than `useMemo` / `useCallback` or a template literal in the attribute.
+Run `bun run --cwd packages/lint-rules rules no-constructed-context-value` for repair steps.
+
 ### no-comment-banners
 
 Reject comment lines framed with hyphens/equals and decorative separators.

@@ -46,6 +46,13 @@ const WHY: Record<Rule, string> = {
     'a context value is read PAST an unchanged element, so a fresh one re-renders every consumer in the subtree even when React would otherwise have bailed out.',
 };
 
+interface Tag {
+  type?: string;
+  name?: string;
+  object?: { name?: string };
+  property?: { name?: string };
+}
+
 interface Node {
   type: string;
   loc?: { start?: { line?: number } };
@@ -60,8 +67,8 @@ interface Node {
     property?: { name?: string };
   };
   arguments?: Node[];
-  name?: { type?: string; name?: string; object?: { name?: string }; property?: { name?: string } };
-  openingElement?: { attributes?: Node[] };
+  name?: Tag;
+  openingElement?: { attributes?: Node[]; name?: Tag };
 }
 
 const lineOf = (node: Node): number => node.loc?.start?.line ?? 0;
@@ -117,12 +124,31 @@ function identityMemo(node: Node): boolean {
   return fn?.type === 'ArrowFunctionExpression' && fn.body?.type === 'Identifier';
 }
 
-function providerValue(node: Node): Node | null {
-  const name = node.openingElement
-    ? ((node as { openingElement?: { name?: { property?: { name?: string } } } }).openingElement
-        ?.name?.property?.name ?? null)
-    : null;
-  if (name !== 'Provider') {
+const CONTEXT_NAME = /(Context|Ctx)$/;
+const CONTEXT_BINDING =
+  /^[ \t]*(?:export )?(?:const|let) \[?(\w+)(?:[^\w;=][^;=]*)?=\s*(?:React\.)?(?:createContext|partContext)\b/gm;
+
+function contextsIn(code: string): string[] {
+  return Array.from(code.matchAll(CONTEXT_BINDING), (match) => match[1] ?? '');
+}
+
+const namesContext = (name: string, contexts: ReadonlySet<string>): boolean =>
+  CONTEXT_NAME.test(name) || contexts.has(name);
+
+const PROVIDER_TAGS: Record<string, (tag: Tag, contexts: ReadonlySet<string>) => boolean> = {
+  JSXMemberExpression: (tag) => tag.property?.name === 'Provider',
+  JSXIdentifier: (tag, contexts) => namesContext(tag.name ?? '', contexts),
+};
+
+function providerTag(tag: Tag, contexts: ReadonlySet<string>): boolean {
+  return Object.entries(PROVIDER_TAGS).some(
+    ([type, reads]) => type === tag.type && reads(tag, contexts),
+  );
+}
+
+function providerValue(node: Node, contexts: ReadonlySet<string>): Node | null {
+  const tag = node.openingElement?.name;
+  if (!tag || !providerTag(tag, contexts)) {
     return null;
   }
   for (const attr of node.openingElement?.attributes ?? []) {
@@ -138,7 +164,12 @@ function providerValue(node: Node): Node | null {
   return null;
 }
 
-function collector(into: Finding[], file: string, forked = true) {
+interface FileFacts {
+  forked: boolean;
+  contexts: ReadonlySet<string>;
+}
+
+function collector(into: Finding[], file: string, { forked, contexts }: FileFacts) {
   const driven: number[] = [];
   const native: number[] = [];
   const layout = new Set<string>();
@@ -190,7 +221,7 @@ function collector(into: Finding[], file: string, forked = true) {
       },
       JSXElement(path: BabelPath) {
         const node = path.node as unknown as Node;
-        const attr = providerValue(node);
+        const attr = providerValue(node, contexts);
         if (attr) {
           into.push({
             rule: 'unstable-provider',
@@ -228,8 +259,23 @@ async function scanText(
 ): Promise<Finding[]> {
   const found: Finding[] = [];
   const forked = !web || forkedForWeb(resolve(name), code);
-  await at.core.transformAsync(code, at.parse(resolve(name), [collector(found, name, forked)]));
+  const contexts = new Set(contextsIn(code));
+  await at.core.transformAsync(
+    code,
+    at.parse(resolve(name), [collector(found, name, { forked, contexts })]),
+  );
   return found;
+}
+
+function readTree(dir: string, options?: SourceOptions): { file: string; code: string }[] {
+  try {
+    return [...sourceFiles(dir, options)].map((file) => ({
+      file,
+      code: readFileSync(file, 'utf8'),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 /** Every perf fault the source carries, in the trees it is handed. Paths are
@@ -240,29 +286,26 @@ async function scanTrees(
   trees: readonly Tree[],
   options?: SourceOptions,
 ): Promise<Finding[]> {
-  const out: Finding[] = [];
-  for (const entry of trees) {
+  const read = trees.map((entry) => {
     const tree = typeof entry === 'string' ? entry : entry.at;
     // `js-fallback-animation` only means anything where the tree renders through
     // react-native-web. On a tree that is only ever native - a phone - asking for
     // the native driver is simply correct, and reporting it would be crying wolf.
     const web = typeof entry === 'string' ? false : (entry.web ?? false);
-    const dir = resolve(root, tree);
-    let files: string[] = [];
-    try {
-      files = [...sourceFiles(dir, options)];
-    } catch {
-      continue;
-    }
-    for (const file of files) {
+    return { web, sources: readTree(resolve(root, tree), options) };
+  });
+  const contexts = new Set(
+    read.flatMap(({ sources }) => sources.flatMap(({ code }) => contextsIn(code))),
+  );
+  const out: Finding[] = [];
+  for (const { web, sources } of read) {
+    for (const { file, code } of sources) {
+      const forked = !web || forkedForWeb(file, code);
       const found: Finding[] = [];
       try {
-        const code = readFileSync(file, 'utf8');
         await at.core.transformAsync(
           code,
-          at.parse(file, [
-            collector(found, relative(root, file), !web || forkedForWeb(file, code)),
-          ]),
+          at.parse(file, [collector(found, relative(root, file), { forked, contexts })]),
         );
       } catch {
         continue;

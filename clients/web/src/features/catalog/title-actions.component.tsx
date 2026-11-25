@@ -6,13 +6,17 @@ import { useState } from 'react';
 
 import { ArtworkDialog } from '#web/features/catalog/artwork-dialog.component';
 import { RematchDialog } from '#web/features/catalog/rematch-dialog.component';
+import { TitleInfoDialog } from '#web/features/catalog/title-info-dialog.component';
+import type { TitleShown } from '#web/features/catalog/title-shown';
 import { useAuth } from '#web/shared/lib/auth';
+import { useLater } from '#web/shared/lib/use-later.hook';
 import { MediaInfoModal } from '#web/shared/ui/media-info-modal.component';
 
 type Props = Readonly<{
   kind: 'item' | 'show';
   id: string;
   title: string;
+  shown: TitleShown;
   onChanged: () => void;
 }>;
 
@@ -25,39 +29,50 @@ function usePermits() {
 function useReprocess({ kind, id, onChanged }: Props) {
   const { client } = useAuth();
   const [busy, setBusy] = useState(false);
+  const later = useLater();
   const reprocess = () => {
     setBusy(true);
     client.pipeline
       .reprocessSubject(kind, kind === 'show' ? ShowId.parse(id) : ItemId.parse(id))
       .then(onChanged)
       .catch(() => {})
-      .finally(() => setTimeout(() => setBusy(false), 1500));
+      .finally(() => later(() => setBusy(false), 1500));
   };
   return { busy, reprocess };
 }
 
 async function rematch({ kind, id, title, onChanged }: Props) {
-  const applied = await RematchDialog.call({
+  const outcome = await RematchDialog.call({
     kind: kind === 'show' ? 'show' : 'movie',
     id,
     title,
   });
-  if (applied) {
+  if (outcome === 'applied') {
     onChanged();
+  }
+  if (outcome === 'edit') {
+    await TitleInfoDialog.call({ kind, id, title });
   }
 }
 
 function LibraryActions(props: Props) {
   const t = useT();
-  const { kind, id, title } = props;
+  const { kind, id, title, shown } = props;
   return (
     <>
       <Button
         variant="glass"
         size="sm"
+        icon="pencil"
+        label={t('titleInfo.action')}
+        onPress={() => void TitleInfoDialog.call({ kind, id, title, shown })}
+      />
+      <Button
+        variant="glass"
+        size="sm"
         icon="photo"
         label={t('artwork.action')}
-        onPress={() => void ArtworkDialog.call({ kind, id, title })}
+        onPress={() => void ArtworkDialog.call({ kind, id, title, shown })}
       />
       <Button
         variant="glass"
@@ -71,7 +86,7 @@ function LibraryActions(props: Props) {
 }
 
 /** The buttons on a title's page for the people who look after the library:
- * its media details, its artwork, its match and a reprocess. Each shows for the
+ * its media details, its text, its artwork, its match and a reprocess. Each shows for the
  * permission it needs, and `onChanged` runs once a change is under way. */
 export function TitleActions(props: Props) {
   const t = useT();

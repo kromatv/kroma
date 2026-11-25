@@ -13,6 +13,7 @@ pub use crate::domain::cast_wake::*;
 pub use crate::domain::crash::*;
 pub use crate::domain::import;
 pub use crate::domain::imports;
+pub use crate::domain::title_edit;
 pub use crate::domain::jobs::*;
 pub use crate::domain::library::*;
 pub use crate::domain::media::*;

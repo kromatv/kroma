@@ -29,7 +29,7 @@ function PortalHost({
   container,
   children,
 }: Readonly<{ container: Element | null; children: ReactNode }>) {
-  return <Container.Provider value={container}>{children}</Container.Provider>;
+  return <Container value={container}>{children}</Container>;
 }
 
 export { Portal, PortalHost };

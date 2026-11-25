@@ -244,6 +244,14 @@
       "broke": 1,
       "changed": 1
     },
+    "text_beside": {
+      "broke": 43,
+      "changed": 43
+    },
+    "title_edits": {
+      "broke": 36,
+      "changed": 36
+    },
     "tmdb_pin": {
       "broke": 1,
       "changed": 1
@@ -281,5 +289,5 @@
       "changed": 1
     }
   },
-  "version": 35
+  "version": 43
 }

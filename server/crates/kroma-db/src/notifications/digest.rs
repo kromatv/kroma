@@ -4,6 +4,8 @@ use rusqlite::{params, Connection};
 
 use kroma_domain::User;
 
+use crate::art_beside::kept_url;
+
 /// Every account, for audience resolution: a household-sized table, scanned and
 /// filtered in Rust rather than queried with `LIKE` on the permissions JSON.
 /// Returns the full [`User`] since callers need both `permissions` (to filter)
@@ -47,6 +49,25 @@ pub struct AddedTitle {
     pub poster_url: Option<String>,
 }
 
+const ADDED_SQL: &str = concat!(
+    "SELECT i.id, i.kind, COALESCE(ti.title, i.title), i.show_id, \
+            COALESCE(ts.title, i.show_title), i.season, i.episode, i.added_at, \
+            COALESCE(",
+    kept_url!("show", "i.show_id", "poster"),
+    ", mcs.poster_url, json_extract(sh.metadata,'$.posterUrl'), ",
+    kept_url!("item", "i.id", "poster"),
+    ", mci.poster_url, json_extract(i.metadata,'$.posterUrl')) \
+       FROM items i \
+       LEFT JOIN shows sh ON sh.id = i.show_id \
+       LEFT JOIN title_shown ti ON ti.subject_kind = 'item' AND ti.subject_id = i.id \
+       LEFT JOIN title_shown ts ON ts.subject_kind = 'show' AND ts.subject_id = i.show_id \
+       LEFT JOIN metadata_core mcs \
+         ON mcs.subject_kind = 'show' AND mcs.subject_id = i.show_id \
+       LEFT JOIN metadata_core mci \
+         ON mci.subject_kind = 'item' AND mci.subject_id = i.id \
+      WHERE i.added_at > ?1 ORDER BY i.added_at DESC LIMIT ?2"
+);
+
 /// Everything added to the catalogue strictly after `since` (ISO-8601, compared
 /// lexicographically). `limit` bounds a first import or big re-scan from loading
 /// the whole catalogue, since the digest only reports a count and a sample title.
@@ -55,18 +76,7 @@ pub fn items_added_since(
     since: &str,
     limit: usize,
 ) -> rusqlite::Result<Vec<AddedTitle>> {
-    let mut stmt = conn.prepare(
-        "SELECT i.id, i.kind, i.title, i.show_id, i.show_title, i.season, i.episode, i.added_at, \
-                COALESCE(mcs.poster_url, json_extract(sh.metadata,'$.posterUrl'), \
-                         mci.poster_url, json_extract(i.metadata,'$.posterUrl')) \
-           FROM items i \
-           LEFT JOIN shows sh ON sh.id = i.show_id \
-           LEFT JOIN metadata_core mcs \
-             ON mcs.subject_kind = 'show' AND mcs.subject_id = i.show_id \
-           LEFT JOIN metadata_core mci \
-             ON mci.subject_kind = 'item' AND mci.subject_id = i.id \
-          WHERE i.added_at > ?1 ORDER BY i.added_at DESC LIMIT ?2",
-    )?;
+    let mut stmt = conn.prepare(ADDED_SQL)?;
     let rows = stmt.query_map(params![since, limit as i64], |r| {
         Ok(AddedTitle {
             id: r.get(0)?,
@@ -91,8 +101,22 @@ pub fn newest_added_at(conn: &Connection) -> rusqlite::Result<Option<String>> {
 
 #[cfg(test)]
 mod tests {
+    use kroma_domain::title_edit::TitleEdit;
+
     use super::*;
+    use crate::art_beside::POSTER;
+    use crate::metadata_core::{ITEM, SHOW};
     use crate::notifications::test_support::*;
+    use crate::testing::keep_beside;
+    use crate::title_edits::{self, Title};
+
+    fn name(pool: &crate::Pool, kind: &str, id: &str, title: &str) {
+        let edit = TitleEdit {
+            title: Some(title.into()),
+            ..Default::default()
+        };
+        title_edits::write(pool, Title { kind, id }, &edit).unwrap();
+    }
 
     #[test]
     fn an_addition_carries_the_poster_the_notification_will_show() {
@@ -128,6 +152,43 @@ mod tests {
         assert_eq!(poster("m2").as_deref(), Some("/blob/m2.webp"));
         // An episode has a still of its own, never a poster: the show's answers.
         assert_eq!(poster("e1").as_deref(), Some("/blob/shw.webp"));
+    }
+
+    #[test]
+    fn an_addition_carries_the_name_written_for_it_and_the_poster_kept_beside_it() {
+        let (p, _, _) = pool();
+        let conn = p.get().unwrap();
+        conn.execute_batch(
+            "INSERT INTO libraries (id,name,kind,path,added_at) \
+               VALUES ('lib','Films','movies','/x','2020-01-01T00:00:00Z'); \
+             INSERT INTO shows (id,library,title,added_at) \
+               VALUES ('shw','lib','the.office','2020-01-01T00:00:00Z'); \
+             INSERT INTO items (id,kind,title,container,library,added_at) \
+               VALUES ('m1','movie','summer.trip','mkv','lib','2026-01-02T00:00:00Z'); \
+             INSERT INTO items (id,kind,title,container,library,show_id,show_title,season,episode,added_at) \
+               VALUES ('e1','episode','Ep 4','mkv','lib','shw','the.office',1,4,'2026-01-04T00:00:00Z'); \
+             INSERT INTO metadata_core (subject_kind,subject_id,poster_url,updated_at) \
+               VALUES ('item','m1','/core/m1.webp',0);",
+        )
+        .unwrap();
+        name(&p, ITEM, "m1", "Summer Trip");
+        name(&p, SHOW, "shw", "The Office");
+        keep_beside(&p, &[(ITEM, "m1", POSTER), (SHOW, "shw", POSTER)]);
+
+        let added = items_added_since(&conn, "2026-01-01", 10).unwrap();
+
+        let film = added.iter().find(|a| a.id == "m1").unwrap();
+        assert_eq!(film.title, "Summer Trip");
+        assert_eq!(
+            film.poster_url.as_deref(),
+            Some("/api/images/beside-m1-poster.webp")
+        );
+        let episode = added.iter().find(|a| a.id == "e1").unwrap();
+        assert_eq!(episode.show_title.as_deref(), Some("The Office"));
+        assert_eq!(
+            episode.poster_url.as_deref(),
+            Some("/api/images/beside-shw-poster.webp")
+        );
     }
 
     #[test]

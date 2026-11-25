@@ -1,12 +1,3 @@
-// <PinField>: the 10-foot spelling of <OtpField>, one dot per digit.
-//
-// Same mechanism, different face: the Root below is <OtpField.Root>, and the
-// dots are faces reading `useOtpSlot()`. What is its own is the capture: a
-// television cannot mount the off-screen entry <OtpField> types into, because a
-// focused TextInput summons the platform keyboard over the screen, so a
-// hardware keyboard is read window-wide instead and the remote's keypad feeds
-// `onValueChange`.
-
 import { useEffect, useEffectEvent } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { OtpField, useOtpSlot } from '#ui/components/molecules/otp-field';
@@ -40,6 +31,9 @@ interface PinFieldProps extends Omit<BoxProps, 'children' | 'onChange'> {
   physicalKeyboard?: boolean;
 }
 
+/** The 10-foot spelling of <OtpField>, one dot per digit. A television cannot mount
+ *  the off-screen entry <OtpField> types into, as a focused TextInput summons the
+ *  platform keyboard, so a hardware keyboard is read window-wide instead. */
 function PinField({
   maxLength = 4,
   value: valueProp,

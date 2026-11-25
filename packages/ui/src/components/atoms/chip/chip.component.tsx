@@ -1,8 +1,4 @@
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
-// <Chip>: the pill filter / selector (language codes, audio formats, genres,
-// recent searches). Focusable, so the same component is a click target in the
-// browser and a D-pad stop on a TV.
-
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
@@ -135,6 +131,8 @@ interface ChipProps extends Omit<FocusableProps, 'children' | 'style' | 'label'>
   style?: StyleProp<ViewStyle>;
 }
 
+/** The pill filter or selector: language codes, audio formats, genres, recent
+ *  searches. A click target in the browser and a D-pad stop on a TV. */
 function Chip({
   active = false,
   size = 'sm',

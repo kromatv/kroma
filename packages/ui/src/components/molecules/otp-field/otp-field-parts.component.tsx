@@ -31,7 +31,7 @@ function Group({ children, ...box }: Readonly<OtpGroupProps>) {
     // slots, so nothing here may take the tap that belongs to it.
     <Box row align="center" gap={SLOT_GAP} pointerEvents="none" {...box}>
       {Children.map(children, (child, at) => (
-        <OtpSlotIndexContext.Provider value={start + at}>{child}</OtpSlotIndexContext.Provider>
+        <OtpSlotIndexContext value={start + at}>{child}</OtpSlotIndexContext>
       ))}
     </Box>
   );

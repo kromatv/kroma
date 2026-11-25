@@ -101,6 +101,18 @@ the film, choose **Fix the match**, search for the right title, then select
 To avoid it, name the folder with the title and the year:
 `Blade Runner 2049 (2017)`.
 
+A home video or a film TMDB does not know has no match to fix. Open it, choose
+**Edit info**, and write its title, release date, summary and genres. When
+**Fix the match** finds nothing, its **Edit info** button opens the same form. For the
+release date, write the year alone, as `1995`, or the day, as `1995-12-15`. A
+sort title files the title under another name, such as
+`Lord of the Rings, The`, and leaves the title shown as it is. What you write
+there shows in every language and stays through a rescan. Clear a field to go
+back to TMDB's text. **Movies** and **Series** sort and filter by what you
+write, and a year you write replaces TMDB's release date when the two differ.
+To write an episode's name, air date or summary, open its series and choose
+**Edit info** on the episode's row.
+
 ## A TV or app does not find the server
 
 The apps search your home network for a server on port `4040`. The search

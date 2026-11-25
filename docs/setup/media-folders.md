@@ -76,9 +76,9 @@ folder beside the video works too. Subtitles inside the video file need nothing.
 The player finds a new subtitle file at once. The subtitle filter of the Films
 and Series pages counts it after the next library scan.
 
-### Posters and backdrops
+### Posters, backdrops, logos and thumbnails
 
-KROMA finds a poster and a backdrop on the internet for every title it
+KROMA finds a poster, a backdrop and a logo on the internet for every title it
 recognizes. A picture you put in the title's folder comes before them, and gives
 a title KROMA does not recognize a poster instead of the plain placeholder:
 
@@ -93,7 +93,9 @@ Series/
     poster.jpg
     backdrop.jpg
     Season 01/
+      poster.jpg
       School Plays - S01E01.mkv
+      School Plays - S01E01-thumb.jpg
 ```
 
 - For a film's poster, name the picture `poster`, `folder`, `cover`, `default`
@@ -102,20 +104,75 @@ Series/
   `Summer Trip (2019)-poster.jpg`.
 - For a film's backdrop, name it `backdrop`, `fanart`, `background` or `art`,
   or after the video file in a shared folder: `Summer Trip (2019)-fanart.jpg`.
+- For a logo, the title's name drawn as a picture, name it `logo` or
+  `clearlogo`, or after the video file in a shared folder:
+  `Summer Trip (2019)-logo.png`.
 - For a series, put the pictures in the series folder, the one above the season
   folders, with the same names, or `show` for the poster. When two series share
   one folder, neither takes the pictures in it.
+- For a season's poster, name the picture `poster`, `folder`, `cover` or
+  `default` in the season folder, or after the season in the series folder:
+  `season01-poster.jpg`, and `season-specials-poster.jpg` for the specials. A
+  season with no picture in the folders takes its poster from the internet, else
+  the series poster.
+- For an episode's thumbnail, name the picture after the episode's video file,
+  followed by `-thumb` or alone: `School Plays - S01E01-thumb.jpg`. It shows
+  even on an episode KROMA does not recognize.
 - KROMA reads `.jpg`, `.jpeg`, `.png` and `.webp` pictures, and passes over one
   it cannot open.
-- A backdrop shows only on a title KROMA recognizes.
+- A backdrop or a logo shows only on a title KROMA recognizes.
 - KROMA notices a picture you add, change or remove the way it notices a new
   video file. An app can take up to a day to show the change on a screen it has
   already opened.
 
 To change one title's picture without touching its folder, open the title and
-choose **Edit artwork**. A poster or a backdrop you upload there comes before
-the picture in the folder and the one from the internet, and **Restore the
-automatic picture** brings them back. It takes the right to manage the library.
+choose **Edit artwork**. A poster, a backdrop or a logo you upload there comes
+before the picture in the folder and the one from the internet, and **Restore the
+automatic picture** brings them back. On a series page, the **Edit thumbnail**
+button of an episode does the same for that episode's thumbnail, and **Edit
+season poster**, above the episodes, for the poster of the season shown. A
+poster, a backdrop or a thumbnail opens first in a frame of its shape, 2:3 or
+16:9: drag it, zoom or turn it, then choose **Use this picture**. A logo is sent
+as it is, so its transparency stays. It takes the right to manage the library.
+
+### Titles and summaries from .nfo files
+
+A title can take its name, year, summary and genres from an `.nfo` file, the
+one Kodi, Jellyfin and Plex read:
+
+```
+Films/
+  Summer Trip (2019)/
+    Summer Trip (2019).mkv
+    Summer Trip (2019).nfo
+Series/
+  School Plays/
+    tvshow.nfo
+    Season 01/
+      School Plays - S01E01.mkv
+      School Plays - S01E01.nfo
+```
+
+- For a film, name the file after the video file, or `movie.nfo` in the film's
+  own folder.
+- For a series, put `tvshow.nfo` in the series folder, the one above the season
+  folders.
+- For an episode, name the file after the episode's video file. KROMA reads its
+  `<title>`, its `<plot>` and its `<aired>`, the day it was first shown. A file
+  that describes several episodes gives the first.
+- KROMA reads `<title>`, `<sorttitle>`, `<plot>`, `<premiered>` or `<year>`,
+  and each `<genre>`. The file must be UTF-8, as these programs write it.
+- A file that gives the title's TMDB number, in `<uniqueid type="tmdb">` or
+  `<tmdbid>`, or that ends with a link to its themoviedb.org page, makes KROMA
+  recognize the title by that number instead of by its name. A match you fix
+  with **Fix the match** comes before the file.
+- A file that gives only the title's IMDb or TheTVDB number, in
+  `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>` or `<tvdbid>`,
+  or that ends with a link to its imdb.com page, makes KROMA ask TMDB once which
+  title the number belongs to, then recognize the title by the answer.
+- The file's text shows instead of the text from the internet, even once KROMA
+  recognizes the title. What you write with **Edit info** comes before the file.
+- KROMA reads a file you add or change at the next library scan.
 
 ### File types
 

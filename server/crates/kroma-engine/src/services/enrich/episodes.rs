@@ -11,33 +11,7 @@ use crate::infra::metadata;
 use crate::model::{ListedEpisode, MediaItem, Metadata};
 
 use super::lang::{primary_lang, season_by_locale};
-
-pub(super) fn blank_metadata() -> Metadata {
-    Metadata {
-        provider: "tmdb",
-        tmdb_id: 0,
-        imdb_id: None,
-        title: None,
-        tagline: None,
-        overview: None,
-        release_date: None,
-        genres: Vec::new(),
-        tmdb_genre_ids: Vec::new(),
-        rating: None,
-        certification: None,
-        poster_url: None,
-        backdrop_url: None,
-        logo_url: None,
-        theme_url: None,
-        cast: Vec::new(),
-        crew: Vec::new(),
-        keywords: Vec::new(),
-        tvdb_id: None,
-        tmdb_url: String::new(),
-        ratings: Default::default(),
-        age_rating: None,
-    }
-}
+use super::seasons::Known;
 
 // The per-episode still travels in `backdrop_url`, where `backdropFor` finds it.
 pub(super) fn episode_metadata(art: &metadata::EpisodeArt) -> Metadata {
@@ -47,7 +21,7 @@ pub(super) fn episode_metadata(art: &metadata::EpisodeArt) -> Metadata {
         release_date: art.air_date.clone(),
         rating: art.rating,
         backdrop_url: art.still_url.clone(),
-        ..blank_metadata()
+        ..Metadata::blank()
     }
 }
 
@@ -65,33 +39,17 @@ pub(super) fn enrich_episodes(
     let Ok(Some(detail)) = db::get_show(pool, show_id) else {
         return;
     };
-    let casts = db::season_casts(pool, show_id).unwrap_or_default();
-    let gaps = db::season_gaps(pool, show_id).unwrap_or_default();
+    let known = Known {
+        pool,
+        data_dir,
+        show_id,
+        langs,
+        casts: db::season_casts(pool, show_id).unwrap_or_default(),
+        gaps: db::season_gaps(pool, show_id).unwrap_or_default(),
+    };
     for season in &detail.seasons {
-        let missing: Vec<&MediaItem> = season
-            .episodes
-            .iter()
-            .filter(|e| still_gone(data_dir, e))
-            .collect();
-        let needs_cast = match casts.get(&season.number) {
-            None => true,
-            Some(cast) => art_gone(data_dir, cast.iter().map(|m| m.profile_url.as_deref())),
-        };
-        let needs_guide = db::episode_guide_stale(pool, show_id, season.number).unwrap_or(true)
-            || gaps.get(&season.number).is_some_and(|listed| {
-                art_gone(data_dir, listed.iter().map(|e| e.still_url.as_deref()))
-            });
-        // Stills and a cast list say nothing about languages, so on their own
-        // they let a language added since, or a payload that grew a field, pass
-        // straight over every episode in a season that already has its artwork.
-        let ep_ids: Vec<&str> = season.episodes.iter().map(|e| e.id.as_str()).collect();
-        let stale_text =
-            db::translations::any_stale(pool, "episode", &ep_ids, langs).unwrap_or(true);
-        let cast_id = format!("{show_id}:{}", season.number);
-        let stale_cast = !db::translations::stale_langs(pool, "season_cast", &cast_id, langs)
-            .unwrap_or_default()
-            .is_empty();
-        if missing.is_empty() && !needs_cast && !needs_guide && !stale_text && !stale_cast {
+        let needs = known.needs(season);
+        if !needs.any {
             continue;
         }
         let per_lang = season_by_locale(api_key, langs, tv_id, season.number);
@@ -101,7 +59,7 @@ pub(super) fn enrich_episodes(
         let primary_key = primary_lang(&per_lang, language);
         let data = &per_lang[&primary_key];
 
-        store_episode_stills(pool, data_dir, bus, &missing, data);
+        store_episode_stills(pool, data_dir, bus, &needs.missing, data);
         store_episode_translations(pool, &per_lang, &season.episodes);
         store_episode_guide(pool, data_dir, show_id, season.number, &per_lang, data);
         store_season_cast(
@@ -109,10 +67,11 @@ pub(super) fn enrich_episodes(
             data_dir,
             show_id,
             season.number,
-            needs_cast,
+            needs.cast,
             &per_lang,
             data,
         );
+        known.store_posters(season.number, &per_lang);
     }
 }
 
@@ -250,7 +209,7 @@ pub(super) fn store_season_cast(
             data_dir,
             Metadata {
                 cast: data.cast.clone(),
-                ..blank_metadata()
+                ..Metadata::blank()
             },
         );
         if let Err(e) = db::set_season_cast(pool, show_id, season_number, &carrier.cast) {

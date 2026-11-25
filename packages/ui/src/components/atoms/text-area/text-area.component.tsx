@@ -12,7 +12,7 @@ import {
 // <TextArea>: the multi-line entry. A real TextInput where there is a physical
 // keyboard, a non-focusable display plus caret on a television.
 
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { type StyleProp, TextInput, type TextStyle } from 'react-native';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -20,6 +20,7 @@ import { Text } from '#ui/components/atoms/text';
 import { useStyles } from '#ui/core/styles';
 import { Caret } from '#ui/lib/caret.component';
 import { useContentHeight } from '#ui/lib/content-height.hook';
+import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import {
   CONTROL,
   type ControlSize,
@@ -105,13 +106,13 @@ function TextArea({
   const fontSize = useEntryFontSize(metrics.fontSize);
   const theme = useTheme();
   const [value, setValue] = useControllable(valueProp, defaultValue, onValueChange);
-  const [focused, setFocused] = useState(false);
+  const within = useFocusWithin(onFocus, onBlur);
   const input = useRef<TextInput>(null);
 
   const min = lines(rows);
   const max = lines(maxRows);
   const height = useContentHeight(min, max);
-  const shell = fieldShell(metrics, { flat, focused, invalid }, scope);
+  const shell = fieldShell(metrics, { flat, focused: within.focused, invalid }, scope);
 
   return (
     <Box
@@ -134,14 +135,8 @@ function TextArea({
           multiline
           value={value}
           onChangeText={setValue}
-          onFocus={() => {
-            setFocused(true);
-            onFocus?.();
-          }}
-          onBlur={() => {
-            setFocused(false);
-            onBlur?.();
-          }}
+          onFocus={within.onFocus}
+          onBlur={within.onBlur}
           placeholder={placeholder}
           placeholderTextColor={color(PLACEHOLDER, activeTheme(scope.theme))}
           accessibilityLabel={label}

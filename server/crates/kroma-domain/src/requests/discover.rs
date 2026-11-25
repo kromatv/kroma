@@ -48,6 +48,7 @@ pub struct DiscoverSeason {
     pub name: Option<String>,
     pub episode_count: u32,
     pub air_date: Option<String>,
+    pub poster_url: Option<String>,
     pub available: bool,
     pub episodes_available: u32,
     pub requested: bool,

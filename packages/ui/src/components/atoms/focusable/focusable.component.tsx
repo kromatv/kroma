@@ -12,7 +12,6 @@ import {
   useCallback,
   useImperativeHandle,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -87,7 +86,7 @@ function Focusable<R extends AnySv = AnySv>({
   value,
   ref,
 }: Readonly<FocusableProps<R>>) {
-  const { probe, mirror, source } = useFocusServices();
+  const { probe, mirror, source, holder } = useFocusServices();
   const { inputHeld, pressGuardActive } = useInputGate();
   const { markFocusSettled } = useFocusEntry();
   const perf = usePerfSampler();
@@ -99,9 +98,10 @@ function Focusable<R extends AnySv = AnySv>({
   const focused = (controlled ? controlledFocus : selfFocused) && !dormant;
   const scoped = useInsideFocusScope();
 
-  const stateProps = useMemo<A11yState>(
-    () => claimProps({ checked, selected, expanded, pressed, busy }, value, current),
-    [checked, selected, expanded, pressed, busy, value, current],
+  const stateProps: A11yState = claimProps(
+    { checked, selected, expanded, pressed, busy },
+    value,
+    current,
   );
 
   const webKeys = useKeyPress(
@@ -114,19 +114,19 @@ function Focusable<R extends AnySv = AnySv>({
 
   const lift = useFocusLift();
   const [hovered, setHovered] = useState(false);
-  const hoverIn = useCallback(() => {
+  const hoverIn = () => {
     setHovered(true);
     onHoverIn?.();
-  }, [onHoverIn]);
+  };
   // The navigator path renders a plain view rather than a <Pressable>, so it has
   // no onPressIn and leans on the pointer events react-native-web forwards.
   const [pointerPressed, setPointerPressed] = useState(false);
-  const pointerDown = useCallback(() => setPointerPressed(true), []);
-  const pointerUp = useCallback(() => setPointerPressed(false), []);
-  const hoverOut = useCallback(() => {
+  const pointerDown = () => setPointerPressed(true);
+  const pointerUp = () => setPointerPressed(false);
+  const hoverOut = () => {
     setHovered(false);
     setPointerPressed(false);
-  }, []);
+  };
   const keyedFocus = useFocusVisibleBy(focused, source.focusHidden);
   const focusVisible = keyedFocus && (hovered || !source.pointerDriving());
   const { ringToken, showRing, part, corner } = useRingOwner({ ring, visible: focusVisible });
@@ -147,12 +147,13 @@ function Focusable<R extends AnySv = AnySv>({
   const reveal = useRevealOnFocusBy(box, source.pointerDriving);
   const report = useFocusReport();
 
-  const handleFocus = useCallback(() => {
+  const handleFocus = () => {
     // Everything between this control and the screen rises with it; a control
     // lifted inside a row is still under the NEXT row without this.
     lift?.(true);
     // Where the ring landed, for the reading-order walk Tab does.
     probe.noteFocus(box.current);
+    holder.hold(box.current);
     perf?.markFocus();
     // The screen now has a focus owner, so a control that mounts later must not
     // take it away.
@@ -161,33 +162,34 @@ function Focusable<R extends AnySv = AnySv>({
     reveal();
     report?.();
     onFocus?.();
-  }, [lift, onFocus, reveal, report, perf, markFocusSettled, probe]);
+  };
 
-  const handleBlur = useCallback(() => {
+  const handleBlur = () => {
     lift?.(false);
+    holder.drop(box.current);
     setSelfFocused(false);
     onBlur?.();
-  }, [lift, onBlur]);
+  };
 
   // The OK guard lives here, not in the navigator: on native, Select reaches a
   // focused control through the platform rather than the navigator, so this is
   // the only choke point that can swallow the tail of the press that opened
   // the screen.
-  const press = useCallback(() => {
+  const press = () => {
     if (disabled || inputHeld() || pressGuardActive()) {
       return;
     }
     onPress?.();
-  }, [disabled, onPress, inputHeld, pressGuardActive]);
+  };
   useLayoutEffect(() => {
     pressRef.current = press;
   });
-  const longPress = useCallback(() => {
+  const longPress = () => {
     if (disabled || inputHeld() || pressGuardActive()) {
       return;
     }
     onLongPress?.();
-  }, [disabled, onLongPress, inputHeld, pressGuardActive]);
+  };
 
   const { entry, isEntry, pointerPress } = useEntryFocus(autoFocus, press);
   useImperativeHandle(focusHandle, () => ({ focus: () => entry.current?.focus() }), [entry]);

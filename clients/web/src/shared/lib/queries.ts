@@ -11,7 +11,7 @@ import type {
   UpNext,
 } from '@kromatv/client/media';
 import type { QueryClient } from '@kromatv/client/query';
-import { genreSlugs } from '@kromatv/core';
+import { genreSlugs, tmdbIdOf } from '@kromatv/core';
 import { queryOptions } from '@tanstack/react-query';
 import {
   type MovieCardView,
@@ -97,7 +97,7 @@ export function createQueries(client: QueryClient) {
           const c = client;
           const [detail, shows] = await Promise.all([c.media.show(id), c.media.showCards()]);
           const show = detail.show;
-          const tmdbId = show.metadata?.tmdbId ?? null;
+          const tmdbId = tmdbIdOf(show.metadata?.tmdbId);
           // The discover overlay (season availability + request state) is fetched
           // only for an enriched show and degrades to null for viewers without
           // `requests.create` (a 403 the server returns before any TMDB call).

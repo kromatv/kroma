@@ -78,12 +78,12 @@ export function FrostSource({
   );
 
   return (
-    <FrostLayerContext.Provider value={engine}>
+    <FrostLayerContext value={engine}>
       <View ref={frame} style={style}>
         <div style={ready ? GONE : FILL}>{backdrop}</div>
         <canvas ref={canvas} style={ready ? FILL : HIDDEN} />
         {children}
       </View>
-    </FrostLayerContext.Provider>
+    </FrostLayerContext>
   );
 }

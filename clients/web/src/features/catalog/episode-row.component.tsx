@@ -1,13 +1,10 @@
 import {
   activeTheme,
   Box,
-  backdropBlur,
   CheckboxFace,
   color,
   Focusable,
   IconButton,
-  styles,
-  sv,
   Text,
   useStyleScope,
   useStyles,
@@ -17,8 +14,8 @@ import {
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 // One line of a season: an owned, playable episode, or a gap the viewer can
-// request. The whole row is the control, so the trailing report / watched
-// buttons are actions inside it rather than a second stop beside it.
+// request. The whole row is the control, so the trailing edit / report /
+// watched buttons are actions inside it rather than a second stop beside it.
 
 import type { MediaItem } from '@kromatv/client/media';
 import {
@@ -31,41 +28,20 @@ import {
 import { useLocale, useT } from '@kromatv/ui';
 
 import { IconPlayerPlayFilled } from '@tabler/icons-react';
+import { EpisodeEditButtons } from '#web/features/catalog/episode-edit-buttons.component';
+import {
+  episodeRow,
+  episodeRowStyles,
+  missingRow,
+  ROW_GAP,
+  STILL_W,
+} from '#web/features/catalog/episode-row-styles';
 import { ReportDialog } from '#web/features/catalog/report-dialog.component';
 
 import { wash } from '#web/shared/lib/art-styles';
 import type { SeasonGap } from '#web/shared/lib/title-view';
 import { Image } from '#web/shared/ui';
 import { RequestStatusChip } from '#web/shared/ui/request-status-chip.component';
-
-const ROW_GAP = { base: 12, md: 20 } as const;
-const STILL_W = { base: 128, md: 200 } as const;
-const sDefinition = styles({
-  bold: { fontWeight: '700' },
-  dimmed: { opacity: 0.6 },
-  frost: backdropBlur(2),
-  lift: { ...backdropBlur(2), transform: [{ scale: 1.1 }] },
-  scrim: {
-    backgroundImage: `linear-gradient(170deg, ${color('black/5')}, ${color('black/45')})`,
-  },
-});
-
-const episodeRow = sv({
-  base: {
-    row: true,
-    align: 'center',
-    gap: ROW_GAP,
-    radius: 'xl',
-    p: 14,
-    bg: 'white/2.5',
-    border: 'white/5',
-    _hover: { bg: 'white/6' },
-  },
-  variants: {
-    watched: { true: { border: 'accent/30' }, false: {} },
-  },
-  defaults: { watched: false },
-});
 
 export function EpisodeRow({
   episode,
@@ -85,7 +61,7 @@ export function EpisodeRow({
   const scope = useStyleScope();
   useThemeVersion();
 
-  const s = useStyles(sDefinition);
+  const s = useStyles(episodeRowStyles);
 
   const t = useT();
   const [g1, g2] = posterColors(episode.id);
@@ -146,6 +122,7 @@ export function EpisodeRow({
             ) : null}
           </Box>
 
+          <EpisodeEditButtons episode={episode} title={reportLabel} />
           <IconButton
             icon="flag"
             label={t('report.action')}
@@ -169,23 +146,6 @@ export function EpisodeRow({
     </Focusable>
   );
 }
-
-const missingRow = sv({
-  base: {
-    row: true,
-    align: 'center',
-    gap: ROW_GAP,
-    radius: 'xl',
-    p: 14,
-    bg: 'white/1.5',
-    border: 'white/5',
-    _hover: { bg: 'white/5' },
-  },
-  variants: {
-    selected: { true: { border: 'accent/45', bg: 'accentWash/8' }, false: {} },
-  },
-  defaults: { selected: false },
-});
 
 /** A gap in the season the viewer can ask for. The whole row is the toggle, so
  * picking three episodes is three presses and one request from the bar below;
@@ -247,7 +207,7 @@ function MissingText({
   listed,
   color: tone,
 }: Readonly<{ label: string; listed: SeasonGap | null; color: 'text' | 'white/70' }>) {
-  const s = useStyles(sDefinition);
+  const s = useStyles(episodeRowStyles);
 
   const t = useT();
   const locale = useLocale();
@@ -289,7 +249,7 @@ function MissingText({
 function MissingStill({ episode, still }: Readonly<{ episode: number; still: string | null }>) {
   const webRuntime = useWebRuntime();
 
-  const s = useStyles(sDefinition);
+  const s = useStyles(episodeRowStyles);
 
   const src = webRuntime.client.media.artwork.resolve(still);
   return (

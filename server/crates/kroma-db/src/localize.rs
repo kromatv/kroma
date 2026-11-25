@@ -24,12 +24,14 @@ use layer::Ask;
 mod items;
 mod layer;
 mod shows;
+mod splash;
 
 #[cfg(test)]
 mod test_support;
 
 pub use items::*;
 pub use shows::*;
+pub use splash::*;
 
 /// Overlay `locale` onto one show's metadata blob, which is where the generated
 /// poster and card routes read a show's art from, with the pictures kept beside

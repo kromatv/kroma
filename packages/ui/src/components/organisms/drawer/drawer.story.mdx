@@ -93,9 +93,9 @@ Reach for the parts when the sheet needs a header of its own:
 </Drawer.Root>
 ```
 
-A part counts only as a **direct child** of the Root. A header assembled by a
-component of your own is wrapped at the call site
-(`<Drawer.Header><MyHeader /></Drawer.Header>`) rather than returning
+A part counts only as a **direct child** of the Root, and a fragment around it
+changes nothing. A header assembled by a component of your own is wrapped at the
+call site (`<Drawer.Header><MyHeader /></Drawer.Header>`) rather than returning
 `<Drawer.Header>` from inside.
 
 ```tsx

@@ -7,6 +7,7 @@ use kroma_domain::{MediaItem, Metadata};
 
 use super::shows::{representative_video, row_to_show_bare};
 use super::{OptionalExtension, Season, ShowDetail};
+use crate::art_beside::season_of;
 use crate::{
     attach_files_batch, parse_metadata, row_to_item, season_casts, season_gaps, Pool, ITEM_COLS,
 };
@@ -18,6 +19,21 @@ pub fn show_title(pool: &Pool, id: &str) -> Result<Option<String>> {
             r.get(0)
         })
         .optional()?)
+}
+
+/// Whether an episode of the season a [`season_id`](crate::art_beside::season_id)
+/// names is on disk.
+pub fn season_on_disk(pool: &Pool, id: &str) -> Result<bool> {
+    let Some((show, number)) = season_of(id) else {
+        return Ok(false);
+    };
+    let conn = pool.get()?;
+    Ok(conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM items \
+         WHERE show_id = ?1 AND season = ?2 AND absent_since IS NULL)",
+        params![show, number],
+        |r| r.get(0),
+    )?)
 }
 
 /// `metadata.posterUrl`, when enrichment found one.
@@ -69,8 +85,7 @@ pub fn get_show(pool: &Pool, id: &str) -> Result<Option<ShowDetail>> {
             None => seasons.push(Season {
                 number: n,
                 episodes: vec![ep],
-                cast: Vec::new(),
-                missing: Vec::new(),
+                ..Season::default()
             }),
         }
     }

@@ -18,6 +18,7 @@ import { useAuth } from '#web/shared/lib/auth';
 import { useMyList } from '#web/shared/lib/mylist';
 
 import type { SimilarTarget, TitleView } from '#web/shared/lib/title-view';
+import { useBack } from '#web/shared/lib/use-back.hook';
 import { useWatched } from '#web/shared/lib/watched';
 import { page } from '#web/shared/ui';
 import { RouteLink } from '#web/shared/ui/route-link.component';
@@ -34,6 +35,8 @@ const sDefinition = styles({
     animationTimingFunction: 'ease',
   },
 });
+
+const SECTION = { movie: '/movies', show: '/shows' } as const;
 
 type ProgressEntry = { itemId: string; positionMs: number; durationMs?: number | null };
 
@@ -125,6 +128,7 @@ function TitleBody({
           kind={view.kind === 'show' ? 'show' : 'item'}
           id={localId}
           title={view.title}
+          shown={view}
         />
       ) : null}
 
@@ -190,10 +194,7 @@ export function TitleDetail({
 
   const owned = view.localId != null && view.playable != null;
   const localId = view.localId;
-  let backTo: '/' | '/shows' | '/search' = '/search';
-  if (owned) {
-    backTo = view.kind === 'show' ? '/shows' : '/';
-  }
+  const back = useBack(owned ? SECTION[view.kind] : '/search');
 
   const { data: epProgress = {} } = useQuery({
     ...webRuntime.queries.userQueries.progress(),
@@ -238,7 +239,7 @@ export function TitleDetail({
         toggleList={toggleList}
         onPlay={play}
         onRequest={onRequestClick}
-        back={<RouteLink to={backTo} />}
+        onBack={back}
       />
 
       <TitleBody

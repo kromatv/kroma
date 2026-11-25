@@ -1,23 +1,12 @@
 import { sharedStyle, styles, sv, useStyleScope, useSv } from '#ui/core';
 
-// <Switch>: the on/off primitive. A television has no gestures, so this is
-// not a draggable thumb: it is a Focusable that toggles on Select, and the
-// track fills amber (rather than relying on thumb position alone) so the
-// state reads from three metres.
-//
-// The flip animates on the kit's usual split (see <VirtualRail>): a CSS
-// transition on the browser targets, `Animated` with the real native driver
-// elsewhere. Only compositor-friendly properties move: the thumb is a
-// `translateX` and the amber is a fill layer crossfading over the off-track,
-// since neither driver can animate a background colour natively.
-
 import { Animated, type StyleProp, View, type ViewStyle } from 'react-native';
 import { Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
 
 import { useStyles } from '#ui/core/styles';
 import { motion } from '#ui/core/tokens';
+import { type ChangeDetails, defineControl, useControl } from '#ui/lib/control';
 import { useFlipMotion } from '#ui/lib/flip-motion.hook';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 
 const FLIP_MS = motion.duration.fast;
 
@@ -69,6 +58,11 @@ const switchVariants = sv({
 
 type SwitchSize = keyof typeof track;
 
+const switchControl = defineControl('switch', {
+  state: { checked: false },
+  actions: { toggle: ({ checked }) => ({ checked: !checked }) },
+});
+
 interface SwitchProps extends Omit<
   FocusableProps,
   'children' | 'onPress' | 'style' | 'role' | 'checked'
@@ -77,28 +71,23 @@ interface SwitchProps extends Omit<
    *  from `defaultChecked` and reports through `onCheckedChange`. */
   checked?: boolean;
   defaultChecked?: boolean;
-  onCheckedChange?: (next: boolean) => void;
+  /** `details.cancel()` keeps the switch as it was. */
+  onCheckedChange?: (next: boolean, details: ChangeDetails) => void;
   size?: SwitchSize;
   style?: StyleProp<ViewStyle>;
 }
 
-function Switch({
-  checked: checkedProp,
-  defaultChecked = false,
-  onCheckedChange,
-  size = 'sm',
-  disabled = false,
-  style,
-  ...focusProps
-}: Readonly<SwitchProps>) {
-  const [checked, setChecked] = useControllable(checkedProp, defaultChecked, onCheckedChange);
+/** The on/off primitive. A television has no gestures, so it is a Focusable that
+ *  toggles on Select rather than a draggable thumb, and the track fills amber so
+ *  the state reads from three metres. */
+function Switch({ size = 'sm', style, ...props }: Readonly<SwitchProps>) {
+  const [{ checked, toggle }, focusProps] = useControl(switchControl, props);
   return (
     <Focusable
       {...focusProps}
       role="switch"
       checked={checked}
-      disabled={disabled}
-      onPress={() => setChecked(!checked)}
+      onPress={toggle}
       sv={switchVariants}
       vars={{ size, checked }}
       style={style}
@@ -131,6 +120,10 @@ function SwitchFace({ checked, size = 'sm', style }: Readonly<SwitchFaceProps>) 
   );
 }
 
+// The flip animates on the kit's usual split (see <VirtualRail>): a CSS
+// transition on the browser targets, `Animated` with the native driver
+// elsewhere. Only the thumb's `translateX` and a fill layer crossfading over the
+// off-track move, since neither driver can animate a background colour natively.
 // The thumb keeps one face, light in both states: the track is the state
 // signal, and a thumb that changed colour mid-slide read as two things
 // happening. One value drives both the fill and the slide, so neither can

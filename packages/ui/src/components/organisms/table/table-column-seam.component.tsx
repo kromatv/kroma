@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { Seam } from '#ui/components/organisms/resizable/resizable-seam.component';
 import type { ColumnResize } from './table-layout';
 
@@ -10,10 +9,7 @@ interface ColumnSeamProps {
 
 function ColumnSeam({ at, label, resize }: Readonly<ColumnSeamProps>) {
   const { drag } = resize;
-  const onDrag = useCallback(
-    (delta: number, committed: boolean) => drag(at, delta, committed),
-    [drag, at],
-  );
+  const onDrag = (delta: number, committed: boolean) => drag(at, delta, committed);
   return (
     <Seam
       variant="column"

@@ -11,6 +11,10 @@ export type ShowId = z.infer<typeof ShowId>;
  * either kind. The wire carries the bare id and the kind beside it. */
 export type SubjectId = ItemId | ShowId;
 
+/** A show's season as its chosen art names it: `{show id}:{number}`. */
+export const SeasonId = brandedId('SeasonId');
+export type SeasonId = z.infer<typeof SeasonId>;
+
 export const MediaFileId = brandedId('MediaFileId');
 export type MediaFileId = z.infer<typeof MediaFileId>;
 

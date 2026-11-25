@@ -1,9 +1,3 @@
-// <StatCard>: one number that matters, on a card - the dashboard's sessions
-// count, a module's disk usage. Label above, display-size value, optional unit.
-//
-// The same pair as <DataField>, raised onto a <Surface>: same part names, so a
-// readout reads the same whether it is on a card or loose in a column.
-
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Surface, type SurfaceProps } from '#ui/components/atoms/surface';
@@ -62,7 +56,8 @@ function Value({ unit, color = 'text', children }: Readonly<StatCardValueProps>)
 const GAP = 10;
 
 /**
- * One number that matters, on a card.
+ * One number that matters, on a card. The same pair as <DataField> raised onto a
+ * <Surface>, with the same part names, so a readout reads the same either way.
  *
  * ```tsx
  * <StatCard.Root>

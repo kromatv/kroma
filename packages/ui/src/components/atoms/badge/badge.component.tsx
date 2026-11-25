@@ -1,8 +1,5 @@
 import { sv, useSv, type Variant } from '#ui/core';
 import { typeSpec as textRoles } from '#ui/core/tokens';
-// <Badge>: the small quality / status pill (4K, HDR, H.265, FR, Disponible).
-// Text only, never emoji.
-
 import type { ReactNode } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
@@ -60,6 +57,8 @@ interface BadgeProps {
   children?: ReactNode;
 }
 
+/** The small quality or status pill: 4K, HDR, H.265, FR, Disponible. Text only,
+ *  never emoji. */
 function Badge({ tone = '4K', size = 'sm', children }: Readonly<BadgeProps>) {
   const badgeVariantsScoped = useSv(badgeVariants);
 

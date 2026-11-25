@@ -123,7 +123,7 @@ function Root({
   );
 
   return (
-    <Context.Provider value={ctx}>
+    <Context value={ctx}>
       <FocusRegion>
         <Row role="navigation" accessibilityLabel={label} gap={gap} style={[HAND, style]}>
           {children ?? (
@@ -135,7 +135,7 @@ function Root({
           )}
         </Row>
       </FocusRegion>
-    </Context.Provider>
+    </Context>
   );
 }
 

@@ -1,4 +1,4 @@
-import { use, useCallback, useSyncExternalStore } from 'react';
+import { use, useSyncExternalStore } from 'react';
 import { breakpointIndex, breakpointStep } from './breakpoint';
 import { BreakpointIndexContext, useStyleScope } from './style-context';
 import { BREAKPOINTS, type BreakpointName } from './tokens';
@@ -14,9 +14,6 @@ export function useBreakpointIndex(): number {
 }
 export function useBreakpointStep(mask: number): number {
   const { breakpoints } = useStyleScope();
-  const read = useCallback(
-    () => breakpointStep(mask, breakpointIndex(breakpoints)),
-    [breakpoints, mask],
-  );
+  const read = () => breakpointStep(mask, breakpointIndex(breakpoints));
   return useSyncExternalStore(breakpoints?.subscribe ?? EMPTY_SUBSCRIBE, read, read);
 }

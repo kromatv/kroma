@@ -1,12 +1,4 @@
-// <Callout>: the toned block a screen drops in beside its content to say one
-// thing - a failure, a warning, a result worth pointing at.
-//
-// It is NOT a toast: a toast arrives and leaves, a callout is part of the page
-// and stays as long as what it reports is true. It is not an <EmptyState>
-// either: that stands in for content that is missing, this sits next to content
-// that is there.
-
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Icon, type IconName } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
@@ -19,6 +11,7 @@ import {
   useEntryDefaults,
 } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
+import { sortParts } from '#ui/lib/parts';
 
 type CalloutTone = 'neutral' | 'accent' | 'success' | 'danger';
 
@@ -67,30 +60,6 @@ interface Context {
 
 const [CalloutContext, useCallout] = partContext<Context>('Callout.Root');
 
-interface Sorted {
-  leading: ReactNode[];
-  message: ReactNode[];
-  trailing: ReactNode[];
-}
-
-// Yoga has no `order` and there is no `:has()` selector, so the Root sorts its
-// direct children into the three slots once - the same shape <ListRow> takes.
-function sort(children: ReactNode): Sorted {
-  const at: Sorted = { leading: [], message: [], trailing: [] };
-  for (const child of Children.toArray(children)) {
-    const part = isValidElement(child) ? child.type : null;
-    if (part === Media) {
-      at.leading.push(child);
-    } else if (part === Actions) {
-      at.trailing.push(child);
-    } else {
-      at.message.push(child);
-    }
-  }
-  return at;
-}
-
-// A written part always wins the slot; the sugar only fills one nobody claimed.
 function slot(written: readonly ReactNode[], sugar: ReactNode): ReactNode {
   return written.length > 0 ? written : sugar;
 }
@@ -117,16 +86,16 @@ function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootPr
   const entryDefaults = useEntryDefaults();
   const step = size ?? entryDefaults.size;
   const metrics = CONTROL[step];
-  const at = useMemo(() => sort(children), [children]);
+  const [media, actions, message] = useMemo(() => sortParts(children, Media, Actions), [children]);
   const context = useMemo<Context>(
     () => ({ shape: SHAPE[step], paint: TONE[tone], metrics }),
     [step, tone, metrics],
   );
 
-  const leading = slot(at.leading, icon === undefined ? null : <Media name={icon} />);
+  const leading = slot(media, icon === undefined ? null : <Media name={icon} />);
 
   return (
-    <CalloutContext.Provider value={context}>
+    <CalloutContext value={context}>
       <Box
         row
         align="center"
@@ -142,11 +111,11 @@ function Root({ tone = 'neutral', size, icon, children }: Readonly<CalloutRootPr
         {/* minW 0: without it a long message pushes the actions off the block
             instead of wrapping, which is the one thing a message must not do. */}
         <Box flex minW={0} gap={4}>
-          {at.message}
+          {message}
         </Box>
-        {at.trailing}
+        {actions}
       </Box>
-    </CalloutContext.Provider>
+    </CalloutContext>
   );
 }
 
@@ -198,6 +167,8 @@ const sDefinition = styles({ title: { fontWeight: '600' } });
 
 /**
  * A toned block carrying one message, and sometimes the action that answers it.
+ * It is not a toast: it is part of the page and stays as long as what it reports
+ * is true. Nor an <EmptyState>: it sits next to content that is there.
  *
  * ```tsx
  * <Callout.Root tone="danger">

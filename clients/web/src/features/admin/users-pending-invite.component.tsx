@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useAuth } from '#web/shared/lib/auth';
 import { copyText } from '#web/shared/lib/copy-text';
 import { invitationLink } from '#web/shared/lib/invitation-link';
+import { useLater } from '#web/shared/lib/use-later.hook';
 import { InvitationMailDialog } from '#web/shared/ui/invitation-mail.component';
 
 const sDefinition = styles({
@@ -15,10 +16,11 @@ const COPIED_MS = 1500;
 
 function useCopiedLink(inv: Invite) {
   const [copied, setCopied] = useState(false);
+  const later = useLater();
   const copy = async () => {
     if (await copyText(invitationLink({ url: null, token: inv.token }))) {
       setCopied(true);
-      setTimeout(() => setCopied(false), COPIED_MS);
+      later(() => setCopied(false), COPIED_MS);
     }
   };
   return { copied, copy };

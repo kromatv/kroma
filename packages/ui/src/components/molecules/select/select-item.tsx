@@ -3,7 +3,7 @@ import { styles, sv, useSv } from '#ui/core';
 // the pointer's anchored listbox. Which one it renders is the surface's
 // decision, handed down through the row context.
 
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { Pressable, type StyleProp, type TextStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { CheckboxFace } from '#ui/components/atoms/checkbox';
@@ -13,6 +13,7 @@ import { Text } from '#ui/components/atoms/text';
 
 import { useStyles } from '#ui/core/styles';
 import { CONTROL } from '#ui/lib/field-shell';
+import { sortParts } from '#ui/lib/parts';
 import {
   SelectItemContext,
   type SelectOption,
@@ -55,23 +56,6 @@ interface SelectItemProps {
   disabled?: boolean;
 }
 
-interface Sorted {
-  media: ReactNode[];
-  body: ReactNode[];
-}
-
-function sort(children: ReactNode): Sorted {
-  const at: Sorted = { media: [], body: [] };
-  for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Media) {
-      at.media.push(child);
-    } else {
-      at.body.push(child);
-    }
-  }
-  return at;
-}
-
 function textOf(body: readonly ReactNode[]): string | undefined {
   if (body.length !== 1) {
     return undefined;
@@ -89,9 +73,10 @@ function textOf(body: readonly ReactNode[]): string | undefined {
 /** The descriptor a <Select.Item> declares: what names it in the trigger, and
  *  what the listbox keyboard types ahead over. */
 function optionOf(props: Readonly<SelectItemProps>): SelectOption {
+  const [, body] = sortParts(props.children, Media);
   return {
     value: props.value,
-    label: props.label ?? textOf(sort(props.children).body) ?? props.value,
+    label: props.label ?? textOf(body) ?? props.value,
     note: props.note,
     disabled: props.disabled,
   };
@@ -100,7 +85,7 @@ function optionOf(props: Readonly<SelectItemProps>): SelectOption {
 /** The head a <Select.Item> declares: a written <Select.Media>, else the `icon`
  *  sugar. The Root keys these by value, so the trigger draws the pick's. */
 function mediaOf(props: Readonly<SelectItemProps>): ReactNode {
-  const { media } = sort(props.children);
+  const [media] = sortParts(props.children, Media);
   if (media.length > 0) {
     return media;
   }
@@ -121,7 +106,7 @@ function Item(props: Readonly<SelectItemProps>) {
   const option = optionOf(props);
   const chosen = values.includes(value);
   const state = useMemo(() => ({ value, chosen }), [value, chosen]);
-  const body = sort(children).body;
+  const [, body] = sortParts(children, Media);
   const composed = body.length > 0 && textOf(body) === undefined;
   const content = (ink: StyleProp<TextStyle>) => (
     <>
@@ -133,7 +118,7 @@ function Item(props: Readonly<SelectItemProps>) {
   if (row.presentation === 'panel') {
     const slots = optionVariantsScoped({ chosen });
     return (
-      <SelectItemContext.Provider value={state}>
+      <SelectItemContext value={state}>
         <Pressable
           nativeID={row.nativeID}
           role="option"
@@ -163,12 +148,12 @@ function Item(props: Readonly<SelectItemProps>) {
         >
           {content(slots.ink)}
         </Pressable>
-      </SelectItemContext.Provider>
+      </SelectItemContext>
     );
   }
 
   return (
-    <SelectItemContext.Provider value={state}>
+    <SelectItemContext value={state}>
       <Focusable
         role="option"
         selected={chosen}
@@ -181,7 +166,7 @@ function Item(props: Readonly<SelectItemProps>) {
       >
         {(focus) => content(focus.slots.ink)}
       </Focusable>
-    </SelectItemContext.Provider>
+    </SelectItemContext>
   );
 }
 

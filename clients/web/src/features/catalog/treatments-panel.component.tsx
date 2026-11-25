@@ -32,8 +32,10 @@ import {
 } from '@tabler/icons-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { TitleActions } from '#web/features/catalog/title-actions.component';
+import type { TitleShown } from '#web/features/catalog/title-shown';
 
 import { useAuth } from '#web/shared/lib/auth';
+import { useLater } from '#web/shared/lib/use-later.hook';
 
 type Kind = 'item' | 'show';
 
@@ -54,7 +56,8 @@ export function TreatmentsPanel({
   kind,
   id,
   title,
-}: Readonly<{ kind: Kind; id: string; title: string }>) {
+  shown,
+}: Readonly<{ kind: Kind; id: string; title: string; shown: TitleShown }>) {
   const webRuntime = useWebRuntime();
 
   const scope = useStyleScope();
@@ -65,6 +68,7 @@ export function TreatmentsPanel({
   const t = useT();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const later = useLater();
   const subjectId = kind === 'show' ? ShowId.parse(id) : ItemId.parse(id);
   const admin = !!user && hasPermission(user, 'settings.manage');
   const canManageLibrary = !!user && hasPermission(user, 'library.manage');
@@ -95,7 +99,7 @@ export function TreatmentsPanel({
   }
 
   const refresh = () => {
-    setTimeout(() => queryClient.invalidateQueries({ queryKey }), 1500);
+    later(() => queryClient.invalidateQueries({ queryKey }), 1500);
   };
 
   return (
@@ -138,7 +142,7 @@ export function TreatmentsPanel({
             </span>
           );
         })}
-        <TitleActions kind={kind} id={id} title={title} onChanged={refresh} />
+        <TitleActions kind={kind} id={id} title={title} shown={shown} onChanged={refresh} />
       </Box>
     </section>
   );

@@ -85,3 +85,21 @@ fn a_poster_put_beside_a_show_changes_the_signature() {
 
     assert_ne!(signed(root.path()), before);
 }
+
+#[test]
+fn an_nfo_put_beside_a_show_or_edited_changes_the_signature() {
+    let root = kroma_testing::temp_dir("watch-nfo");
+    put(root.path(), "Show/Season 1/Show S01E01.mkv", b"one");
+    let before = signed(root.path());
+
+    put(root.path(), "Show/tvshow.nfo", b"<tvshow/>");
+    let put_beside = signed(root.path());
+    let nfo = std::fs::File::options()
+        .write(true)
+        .open(root.path().join("Show/tvshow.nfo"))
+        .unwrap();
+    nfo.set_modified(std::time::UNIX_EPOCH).unwrap();
+
+    assert_ne!(put_beside, before);
+    assert_ne!(signed(root.path()), put_beside);
+}

@@ -1,0 +1,17 @@
+{
+  "titleInfo.action": "Edit info",
+  "titleInfo.aired": "Air date",
+  "titleInfo.airedHint": "The day it was first shown, as 2008-01-20.",
+  "titleInfo.genres": "Genres",
+  "titleInfo.genresHint": "Separate genres with commas.",
+  "titleInfo.hint": "What you write here shows instead of the text from the .nfo or TMDB, in every language. A field left empty keeps the text shown in grey.",
+  "titleInfo.loadFailed": "Could not load the info.",
+  "titleInfo.name": "Title",
+  "titleInfo.released": "Release date",
+  "titleInfo.releasedHint": "Just the year, as 1995, or the day, as 1995-12-15.",
+  "titleInfo.saveFailed": "Could not save the info.",
+  "titleInfo.sortTitle": "Sort title",
+  "titleInfo.sortTitleHint": "The title is sorted under this name, such as Lord of the Rings, The. The title shown stays the same.",
+  "titleInfo.summary": "Summary",
+  "titleInfo.title": "Info"
+}

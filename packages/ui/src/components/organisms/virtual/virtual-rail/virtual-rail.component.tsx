@@ -12,7 +12,7 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 // data up to the furthest the selection has reached.
 
 import { NavigatorView } from '@kromatv/spatial-nav/react';
-import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactElement, useEffect, useRef, useState } from 'react';
 import {
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -81,7 +81,7 @@ function VirtualRail<T>({
   const keyed = useKeyGrace(scoped);
 
   const count = data.length;
-  const contentInset = useMemo(() => horizontalInset(contentStyle), [contentStyle]);
+  const contentInset = horizontalInset(contentStyle);
   const [width, setWidth] = useState(0);
   // Everything below counts in PITCHES. Derived rather than state: a pitch cached
   // at layout goes stale when `itemWidth` changes without a resize, and an
@@ -91,7 +91,7 @@ function VirtualRail<T>({
 
   // Bounded by the data at render rather than here, because the data can arrive
   // after the row has already reached past it.
-  const grow = useCallback((index: number) => setReach((prev) => Math.max(prev, index)), []);
+  const grow = (index: number) => setReach((prev) => Math.max(prev, index));
 
   // Stable, so the tiles never rebuild when the row grows: one function,
   // always seeing the current pitch and count. Not `useEffectEvent`, whose new
@@ -123,50 +123,41 @@ function VirtualRail<T>({
     setOffset(at.current);
   });
 
-  const onRailScroll = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const x = Math.round(event.nativeEvent.contentOffset.x);
-      at.current = x;
-      setOffset(x);
-      grow(Math.ceil((x + measured.current) / pitch) + OVERSCAN);
-      if (x >= maxOffset(count, pitch, measured.current) - OVERSCAN * pitch) {
-        onEndReached?.();
-      }
-    },
-    [count, grow, onEndReached, pitch],
-  );
+  const onRailScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = Math.round(event.nativeEvent.contentOffset.x);
+    at.current = x;
+    setOffset(x);
+    grow(Math.ceil((x + measured.current) / pitch) + OVERSCAN);
+    if (x >= maxOffset(count, pitch, measured.current) - OVERSCAN * pitch) {
+      onEndReached?.();
+    }
+  };
 
   // A screenful less a tile, so the row overlaps itself by one. In PITCHES:
   // paging by the authored width left the row a fraction of a tile out of step.
-  const page = useCallback(
-    (direction: 1 | -1) => {
-      const by = direction * Math.max(pitch, measured.current - pitch);
-      const furthest = maxOffset(count, pitch, measured.current);
-      const target = Math.round(Math.min(furthest, Math.max(0, at.current + by)));
-      // Mounted before the move, or the scroll runs into an unrendered gap.
-      grow(Math.ceil((target + measured.current) / pitch) + OVERSCAN);
-      if (scoped) {
-        at.current = target;
-        setOffset(target);
-        return;
-      }
-      scroller.current?.scrollTo({ x: target, animated: true });
-    },
-    [count, grow, pitch, scoped],
-  );
+  const page = (direction: 1 | -1) => {
+    const by = direction * Math.max(pitch, measured.current - pitch);
+    const furthest = maxOffset(count, pitch, measured.current);
+    const target = Math.round(Math.min(furthest, Math.max(0, at.current + by)));
+    // Mounted before the move, or the scroll runs into an unrendered gap.
+    grow(Math.ceil((target + measured.current) / pitch) + OVERSCAN);
+    if (scoped) {
+      at.current = target;
+      setOffset(target);
+      return;
+    }
+    scroller.current?.scrollTo({ x: target, animated: true });
+  };
 
-  const onLayout = useCallback(
-    (e: LayoutChangeEvent) => {
-      // The CONTENT strip, not the outer view `onLayout` measures: the tiles are
-      // laid out inside `contentStyle`'s horizontal padding, and the width the
-      // pitch divides has to be the same box.
-      const next = Math.max(0, e.nativeEvent.layout.width - contentInset);
-      measured.current = next;
-      setWidth((prev) => (prev === next ? prev : next));
-      grow(Math.ceil(next / itemWidth) + OVERSCAN);
-    },
-    [grow, itemWidth, contentInset],
-  );
+  const onLayout = (e: LayoutChangeEvent) => {
+    // The CONTENT strip, not the outer view `onLayout` measures: the tiles are
+    // laid out inside `contentStyle`'s horizontal padding, and the width the
+    // pitch divides has to be the same box.
+    const next = Math.max(0, e.nativeEvent.layout.width - contentInset);
+    measured.current = next;
+    setWidth((prev) => (prev === next ? prev : next));
+    grow(Math.ceil(next / itemWidth) + OVERSCAN);
+  };
 
   // A new pitch puts the row off its own grid, and nothing else will put it back:
   // `edgeScrollOffset` leaves an offset alone while it sits inside the margin.

@@ -67,7 +67,7 @@ export function ConfirmHost({ children }: Readonly<{ children?: ReactNode }>) {
   };
 
   return (
-    <Context.Provider value={confirm}>
+    <Context value={confirm}>
       {children}
       {current ? (
         <ConfirmDialog
@@ -82,6 +82,6 @@ export function ConfirmHost({ children }: Readonly<{ children?: ReactNode }>) {
           onConfirm={() => answer(true)}
         />
       ) : null}
-    </Context.Provider>
+    </Context>
   );
 }

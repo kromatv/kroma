@@ -1,26 +1,11 @@
-// The floating section switcher: a capsule of icon + label items whose amber
-// lens travels to the current section. Shared by the TV top nav and the phone
-// tab bar; on glass it is also a slider that previews under the finger.
-//
-// Yoga has no `order` and the capsule's fill depends on whether it is wearing a
-// backdrop, so the Root sorts its direct children once and publishes the size
-// and the label policy the items honour through context.
-
-import {
-  Children,
-  isValidElement,
-  type ReactNode,
-  useEffect,
-  useEffectEvent,
-  useRef,
-  useState,
-} from 'react';
+import { type ReactNode, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { PanResponder, type StyleProp, type View, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
 import { RING_ROOM } from '#ui/core';
 import { HAND } from '#ui/lib/cursor';
 import { panHandlers } from '#ui/lib/pan-gestures';
+import { sortParts } from '#ui/lib/parts';
 import {
   type LensRect,
   NavPillContext,
@@ -82,23 +67,6 @@ interface NavPillRootProps {
   style?: StyleProp<ViewStyle>;
 }
 
-interface Sorted {
-  backdrop: ReactNode[];
-  items: ReactNode[];
-}
-
-function sort(children: ReactNode): Sorted {
-  const at: Sorted = { backdrop: [], items: [] };
-  for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Backdrop) {
-      at.backdrop.push(child);
-    } else {
-      at.items.push(child);
-    }
-  }
-  return at;
-}
-
 function Root({
   label,
   size = 'tv',
@@ -110,7 +78,10 @@ function Root({
   style,
 }: Readonly<NavPillRootProps>) {
   const labelPolicy = labels ?? (size === 'tv' ? 'all' : 'active');
-  const at = sort(children);
+  // Yoga has no `order` and the capsule's fill depends on whether it wears a
+  // backdrop, so the Root sorts its direct children once and publishes the size
+  // and the label policy the items honour through context.
+  const [backdrop, items] = sortParts(children, Backdrop);
   const [lens, setLens] = useState<{ id: string; rect: LensRect } | null>(null);
   const claim = (id: string, rect: LensRect) => {
     setLens((prev) =>
@@ -241,7 +212,7 @@ function Root({
   };
 
   return (
-    <NavPillContext.Provider value={context}>
+    <NavPillContext value={context}>
       <Box
         ref={capsule}
         {...(slide ? panHandlers(pan) : null)}
@@ -254,19 +225,21 @@ function Root({
         p={PAD[size]}
         radius="pill"
         border="borderStrong"
-        bg={at.backdrop.length > 0 ? BACKDROP_FILL : PILL_FILL}
+        bg={backdrop.length > 0 ? BACKDROP_FILL : PILL_FILL}
         style={[HAND, style]}
       >
-        {at.backdrop}
+        {backdrop}
         <Lens rect={hover?.rect ?? lens?.rect ?? null} chase={hover !== null} tone={tone} />
-        {at.items}
+        {items}
       </Box>
-    </NavPillContext.Provider>
+    </NavPillContext>
   );
 }
 
 /**
- * The floating section switcher.
+ * The floating section switcher: a capsule of icon and label items whose amber lens
+ * travels to the current section. Shared by the TV top nav and the phone tab bar; on
+ * glass it is also a slider that previews under the finger.
  *
  * ```tsx
  * <NavPill.Root size="tv">

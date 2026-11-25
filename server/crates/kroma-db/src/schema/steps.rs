@@ -58,4 +58,12 @@ pub(super) const STEPS: &[Step] = &[
     sql_step!("0033_external_subtitle_languages"),
     sql_step!("0034_art_beside"),
     sql_step!("0035_art_chosen"),
+    sql_step!("0036_title_edits"),
+    sql_step!("0037_text_beside"),
+    sql_step!("0038_text_beside_tmdb"),
+    sql_step!("0039_title_shown"),
+    sql_step!("0040_nfo_before_tmdb"),
+    sql_step!("0041_text_beside_premiered"),
+    sql_step!("0042_text_beside_sorttitle"),
+    sql_step!("0043_text_beside_elsewhere"),
 ];

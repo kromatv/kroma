@@ -1,5 +1,5 @@
 import type { TmdbKind } from '@kromatv/client/discovery';
-import { playableTrailer, TRAILER_LABEL } from '@kromatv/core';
+import { playableTrailer, tmdbIdOf, TRAILER_LABEL } from '@kromatv/core';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useT } from '#mobile/lib/i18n';
@@ -16,10 +16,11 @@ interface TrailerLink {
  * label says how the trailer reaches the viewer. */
 export function useTrailerLink(
   kind: TmdbKind,
-  tmdbId: number | null | undefined,
+  reported: number | null | undefined,
   title: string,
 ): TrailerLink | null {
   const t = useT();
+  const tmdbId = tmdbIdOf(reported);
   const client = useClient();
   const router = useRouter();
   const { data } = useQuery({

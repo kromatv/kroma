@@ -12,12 +12,12 @@
 //! catalogue while the walk still runs.
 
 mod batches;
+mod beside;
 mod changed_shows;
 mod found;
 mod ids;
 mod index;
 mod live;
-mod pictures_beside;
 mod subtitles_beside;
 mod unread;
 pub mod walk;
@@ -34,7 +34,7 @@ use crate::services::settings::LibraryDef;
 use batches::{BatchSink, BatchSize, Batches};
 use found::{Found, LibraryWalk};
 use live::{seed_demo, sync_walk, Walked};
-use pictures_beside::pictures_beside;
+use beside::{nfos_beside, pictures_beside, subjects};
 use subtitles_beside::languages_beside;
 use unread::read_library;
 
@@ -62,6 +62,8 @@ pub struct ScanData {
     pub external_subtitle_languages: HashMap<String, Vec<String>>,
     /// The posters and backdrops kept beside every scanned title's files.
     pub art_beside: Vec<crate::db::art_beside::Picture>,
+    /// The `.nfo` file kept beside each scanned title's files, not read yet.
+    pub nfo_beside: Vec<crate::db::text_beside::Nfo>,
     /// Shows whose episode set this scan moved, against what the database held
     /// before the scan wrote anything. Empty until a sync fills it, so a caller
     /// that never asks enriches no show on episodes alone.
@@ -100,13 +102,19 @@ fn scan_in_batches<S>(
         data.libraries.push(library);
     }
 
-    data.external_subtitle_languages =
-        languages_beside(&found.items, found.beside.subtitles.take());
-    data.art_beside = pictures_beside(&found.items, &found.shows, found.beside.pictures.take());
+    note_beside(&mut data, &found);
     data.shows = found.shows.into_values().collect();
     data.items = found.items.into_values().collect();
     data.mtimes = found.mtimes;
     Ok(data)
+}
+
+fn note_beside(data: &mut ScanData, found: &Found) {
+    data.external_subtitle_languages =
+        languages_beside(&found.items, found.beside.subtitles.take());
+    let titles = subjects(&found.items, &found.shows);
+    data.art_beside = pictures_beside(&titles, found.beside.pictures.take());
+    data.nfo_beside = nfos_beside(&titles, found.beside.nfos.take());
 }
 
 /// Current time as an RFC3339 / ISO8601 string (UTC). Re-exported from kroma-primitives.

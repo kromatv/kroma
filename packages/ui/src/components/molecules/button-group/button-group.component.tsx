@@ -86,7 +86,7 @@ function Root({
       style={[HAND, style]}
     >
       {items.map((child, index) => (
-        <GroupSlotContext.Provider
+        <GroupSlotContext
           key={slotKey(child, index)}
           value={groupSlot(
             orientation,
@@ -96,7 +96,7 @@ function Root({
           )}
         >
           {child}
-        </GroupSlotContext.Provider>
+        </GroupSlotContext>
       ))}
     </Box>
   );

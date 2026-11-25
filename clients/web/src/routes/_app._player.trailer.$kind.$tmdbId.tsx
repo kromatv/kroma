@@ -2,10 +2,11 @@ import { TmdbKind } from '@kromatv/client/discovery';
 import { playableTrailer } from '@kromatv/core';
 import { Box, styles, useStyles } from '@kromatv/ui/kit';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, redirect, useRouter } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { TrailerPlayer } from '#web/features/playback/trailer-player.component';
 import { isAuthed } from '#web/shared/lib/api';
+import { useBack } from '#web/shared/lib/use-back.hook';
 import { useWebRuntime } from '#web/shared/lib/web-runtime';
 
 const sDefinition = styles({ black: { position: 'fixed', inset: 0, bg: 'black' } });
@@ -38,17 +39,10 @@ function TrailerPage() {
   const { client } = useWebRuntime();
   const { kind, tmdbId } = Route.useParams();
   const { title } = Route.useSearch();
-  const router = useRouter();
+  const close = useBack('/');
   const tmdbKind = TmdbKind.parse(kind);
   const { data } = useSuspenseQuery(client.query.trailers.list(tmdbKind, Number(tmdbId)));
   const trailer = playableTrailer(data);
-  const close = () => {
-    if (router.history.canGoBack()) {
-      router.history.back();
-    } else {
-      void router.navigate({ to: '/', replace: true });
-    }
-  };
   useEffect(() => {
     if (!trailer) {
       close();

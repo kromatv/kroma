@@ -44,6 +44,7 @@ mod profiling;
 mod recommend;
 mod releases;
 mod chosen_art;
+mod managed_title;
 mod rematch;
 mod remote_art;
 mod reports;
@@ -57,6 +58,7 @@ mod sso;
 mod stream;
 mod suggest;
 mod themes;
+mod title_edits;
 mod trailers;
 mod util;
 mod visibility;
@@ -127,6 +129,8 @@ mod it_invites;
 mod it_library_visibility;
 #[cfg(test)]
 mod it_chosen_art;
+#[cfg(test)]
+mod it_title_edits;
 #[cfg(test)]
 mod it_posters_beside;
 #[cfg(test)]
@@ -201,6 +205,8 @@ mod it_reset;
 mod it_reset_faults;
 #[cfg(test)]
 mod it_saved_titles;
+#[cfg(test)]
+mod it_screens;
 #[cfg(test)]
 mod it_search;
 #[cfg(test)]

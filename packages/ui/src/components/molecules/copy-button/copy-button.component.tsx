@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { Button, type ButtonSize, type ButtonVariant } from '#ui/components/atoms/button';
 import type { IconName } from '#ui/components/atoms/icon';
 import { IconButton } from '#ui/components/atoms/icon-button';
@@ -22,8 +21,7 @@ export interface CopyButtonProps {
 const GLYPH_FACE = 30;
 const GLYPH = 16;
 
-// Indexed rather than nested ternaries: three states, one lookup, and the
-// failure is SAID rather than left looking like the press did nothing.
+// The failure is SAID rather than left looking like the press did nothing.
 const GLYPH_OF: Record<CopyState, IconName> = {
   idle: 'copy',
   copied: 'check',
@@ -43,7 +41,7 @@ export function CopyButton({
   iconOnly = false,
 }: Readonly<CopyButtonProps>) {
   const { available, state, copy } = useCopy();
-  const onPress = useCallback(() => copy(value), [copy, value]);
+  const onPress = () => copy(value);
 
   if (!available) {
     return null;

@@ -21,6 +21,7 @@ pub(super) struct Found {
 pub(super) struct Beside {
     pub subtitles: Noted,
     pub pictures: Noted,
+    pub nfos: Noted,
 }
 
 #[derive(Clone, Default)]

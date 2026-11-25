@@ -1,18 +1,11 @@
-import {
-  Children,
-  isValidElement,
-  type ReactElement,
-  type ReactNode,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { isValidElement, type ReactNode, useMemo, useRef, useState } from 'react';
 import { Animated, type LayoutChangeEvent, type View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { styles, useStyles } from '#ui/core';
 import { BOTTOM_DOCK } from '#ui/lib/bottom-dock';
 import { type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope.component';
+import { partsOf, sortParts } from '#ui/lib/parts';
 import { useFadeRise } from '#ui/lib/use-fade-rise.hook';
 import { Actions } from './selection-bar-actions.component';
 import { Announce } from './selection-bar-announce.component';
@@ -59,21 +52,8 @@ function spoken(node: ReactNode): string {
 }
 
 function sort(children: ReactNode): Sorted {
-  const at: Sorted = { clear: [], middle: [], actions: [], status: '' };
-  for (const child of Children.toArray(children)) {
-    const part = isValidElement(child) ? child.type : null;
-    if (part === Clear) {
-      at.clear.push(child);
-    } else if (part === Actions) {
-      at.actions.push(child);
-    } else {
-      at.middle.push(child);
-    }
-    if (part === Status) {
-      at.status = spoken(child as ReactElement);
-    }
-  }
-  return at;
+  const [clear, actions, middle] = sortParts(children, Clear, Actions);
+  return { clear, middle, actions, status: spoken(partsOf(middle, Status).at(-1)) };
 }
 
 interface Held {
@@ -115,7 +95,7 @@ function Root({
   const measure = (event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width);
 
   return (
-    <SelectionBarContext.Provider value={context}>
+    <SelectionBarContext value={context}>
       <Announce text={shown ? at.status : ''} />
       {fade.mounted ? (
         <Box
@@ -139,7 +119,7 @@ function Root({
           </Animated.View>
         </Box>
       ) : null}
-    </SelectionBarContext.Provider>
+    </SelectionBarContext>
   );
 }
 

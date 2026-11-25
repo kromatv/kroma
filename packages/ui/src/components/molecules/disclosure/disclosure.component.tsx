@@ -1,12 +1,4 @@
-// <Disclosure>: a collapsible section with a divider header ("Advanced"). The
-// trigger is a button announcing `expanded`, so assistive tech hears the state
-// the chevron shows.
-//
-// Yoga has no `order`, so the Root sorts its direct children once - the same
-// shape <Rail> and <Callout> take - and publishes the open state through
-// context, which is what lets the panel be written anywhere inside the root.
-
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
@@ -15,22 +7,25 @@ import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
+import { type ChangeDetails, type ControlOf, defineControl, useControl } from '#ui/lib/control';
 import { partContext } from '#ui/lib/part-context';
-import { useControllable } from '#ui/lib/use-controllable.hook';
+import { sortParts } from '#ui/lib/parts';
 
-interface DisclosureState {
-  open: boolean;
-  toggle: () => void;
-}
+const disclosureControl = defineControl('disclosure', {
+  state: { open: false },
+  actions: { toggle: ({ open }) => ({ open: !open }) },
+});
 
-const [DisclosureContext, useDisclosure] = partContext<DisclosureState>('Disclosure.Root');
+const [DisclosureContext, useDisclosure] =
+  partContext<ControlOf<typeof disclosureControl>>('Disclosure.Root');
 
 interface DisclosureRootProps {
   /** Present: you own the state (controlled). Absent: the disclosure runs
    *  itself from `defaultOpen` and reports through `onOpenChange`. */
   open?: boolean;
   defaultOpen?: boolean;
-  onOpenChange?: (next: boolean) => void;
+  /** `details.cancel()` keeps the section as it was. */
+  onOpenChange?: (next: boolean, details: ChangeDetails) => void;
   style?: StyleProp<ViewStyle>;
   /** A `<Disclosure.Trigger>` and a `<Disclosure.Panel>` must be DIRECT
    *  children to take their slot; given a panel, it IS the body and stray
@@ -38,52 +33,22 @@ interface DisclosureRootProps {
   children?: ReactNode;
 }
 
-interface Sorted {
-  trigger: ReactNode[];
-  panel: ReactNode[];
-  loose: ReactNode[];
-}
-
-function sort(children: ReactNode): Sorted {
-  const at: Sorted = { trigger: [], panel: [], loose: [] };
-  for (const child of Children.toArray(children)) {
-    const part = isValidElement(child) ? child.type : null;
-    if (part === Trigger) {
-      at.trigger.push(child);
-    } else if (part === Panel) {
-      at.panel.push(child);
-    } else {
-      at.loose.push(child);
-    }
-  }
-  return at;
-}
-
-// A written part always wins the slot; the sugar only fills one nobody claimed.
 function slot(written: readonly ReactNode[], sugar: ReactNode): ReactNode {
   return written.length > 0 ? written : sugar;
 }
 
-function Root({
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
-  style,
-  children,
-}: Readonly<DisclosureRootProps>) {
-  const [open, setOpen] = useControllable(openProp, defaultOpen, onOpenChange);
-  const state = useMemo<DisclosureState>(
-    () => ({ open, toggle: () => setOpen(!open) }),
-    [open, setOpen],
-  );
-  const at = useMemo(() => sort(children), [children]);
+function Root({ style, children, ...props }: Readonly<DisclosureRootProps>) {
+  const [control] = useControl(disclosureControl, props);
+  // Yoga has no `order`, so the Root sorts its direct children once and publishes
+  // the open state through context, which lets the panel be written anywhere.
+  const [trigger, panel, loose] = useMemo(() => sortParts(children, Trigger, Panel), [children]);
   return (
-    <DisclosureContext.Provider value={state}>
+    <DisclosureContext value={control}>
       <Box style={style}>
-        {at.trigger}
-        {slot(at.panel, <Panel>{at.loose}</Panel>)}
+        {trigger}
+        {slot(panel, <Panel>{loose}</Panel>)}
       </Box>
-    </DisclosureContext.Provider>
+    </DisclosureContext>
   );
 }
 

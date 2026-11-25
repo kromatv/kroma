@@ -57,7 +57,7 @@ function PanelEntry({
     }),
     [nativeID, index, active, keyed, onActivate, onFire],
   );
-  return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
+  return <MenuRowContext value={row}>{entry}</MenuRowContext>;
 }
 
 function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<MenuSurfaceProps>) {
@@ -97,7 +97,7 @@ function MenuPanel({ onDismiss, label, entries, rows, align, anchor }: Readonly<
     [baseId, onDismiss, rows],
   );
 
-  const fireAt = useCallback((index: number) => fire(index, false), [fire]);
+  const fireAt = (index: number) => fire(index, false);
 
   const { onKeyDown } = useListKeys({
     count: rows.length,

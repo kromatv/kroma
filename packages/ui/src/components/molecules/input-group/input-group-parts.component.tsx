@@ -1,12 +1,4 @@
-import {
-  Children,
-  isValidElement,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import { Children, isValidElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { Pressable, type StyleProp, type TextInput, type ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Button, type ButtonProps } from '#ui/components/atoms/button';
@@ -72,8 +64,7 @@ function GroupInput(props: Readonly<Omit<TextFieldProps, 'size'>>) {
   const { registerFocus } = group;
   const own = useRef<TextInput>(null);
   const entry = props.entryRef ?? own;
-  const focus = useCallback(() => entry.current?.focus(), [entry]);
-  useEffect(() => registerFocus(focus), [registerFocus, focus]);
+  useEffect(() => registerFocus(() => entry.current?.focus()), [registerFocus, entry]);
   return (
     <TextField {...shellProps(group)} {...props} {...shellWiring(group, props)} entryRef={entry} />
   );
@@ -104,7 +95,7 @@ function AddonSlotProvider({
   children,
 }: Readonly<{ align: AddonAlign; edge: boolean; children: ReactNode }>) {
   const value = useMemo(() => ({ align, edge }), [align, edge]);
-  return <AddonContext.Provider value={value}>{children}</AddonContext.Provider>;
+  return <AddonContext value={value}>{children}</AddonContext>;
 }
 
 function Addon({
@@ -191,18 +182,16 @@ function useInShell(part: string): { box: number; radius: Radius; pull: ViewStyl
 
   const { metrics } = useInputGroup(part);
   const slot = useAddonSlot();
-  return useMemo(() => {
-    const by = -(metrics.py - INSET);
-    const edge = slot?.edge ? slot.align : null;
-    return {
-      box: metrics.height - INSET * 2,
-      radius: nestedRadius(controlRadius(metrics, scope), INSET),
-      pull: {
-        ...(edge === 'inline-start' ? { marginLeft: by } : null),
-        ...(edge === 'inline-end' ? { marginRight: by } : null),
-      },
-    };
-  }, [metrics, slot, scope]);
+  const by = -(metrics.py - INSET);
+  const edge = slot?.edge ? slot.align : null;
+  return {
+    box: metrics.height - INSET * 2,
+    radius: nestedRadius(controlRadius(metrics, scope), INSET),
+    pull: {
+      ...(edge === 'inline-start' ? { marginLeft: by } : null),
+      ...(edge === 'inline-end' ? { marginRight: by } : null),
+    },
+  };
 }
 
 /** A labelled button that lives inside the shell. */

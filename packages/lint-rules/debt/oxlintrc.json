@@ -377,7 +377,6 @@
         "packages/ui/src/components/molecules/nav-pill/nav-pill.component.tsx",
         "packages/ui/src/components/molecules/otp-field/otp-field.component.tsx",
         "packages/ui/src/components/molecules/pagination/paging.ts",
-        "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx",
         "packages/ui/src/components/organisms/chart/chart-path.ts",
         "packages/ui/src/components/organisms/chart/chart.component.tsx",
         "packages/ui/src/components/organisms/command/command-list.ts",
@@ -945,7 +944,6 @@
         "clients/web/src/modules/module-route-outlet.component.tsx",
         "clients/web/src/modules/remotes.ts",
         "clients/web/src/routes/__root.tsx",
-        "clients/web/src/routes/_app._player.trailer.$kind.$tmdbId.tsx",
         "clients/web/src/routes/_app.genres.$id.tsx",
         "clients/web/src/routes/_app.genres.index.tsx",
         "clients/web/src/routes/_app.my-list.tsx",
@@ -1416,7 +1414,6 @@
         "packages/ui/src/components/organisms/menu/menu.fixtures.tsx",
         "packages/ui/src/components/organisms/nearby-tv-list/nearby-tv-list.component.tsx",
         "packages/ui/src/components/organisms/perf-hud/perf-hud.component.tsx",
-        "packages/ui/src/components/organisms/player/hooks/use-drag-track.hook.ts",
         "packages/ui/src/components/organisms/player/hooks/use-player-credits.hook.ts",
         "packages/ui/src/components/organisms/player/hooks/use-player-ending.hook.ts",
         "packages/ui/src/components/organisms/player/hooks/use-player-nav.hook.ts",
@@ -1632,7 +1629,6 @@
         "clients/web/src/features/admin/network-rules.ts",
         "clients/web/src/features/catalog/browse-screen.component.tsx",
         "clients/web/src/features/catalog/use-saved-titles.hook.ts",
-        "clients/web/src/features/catalog/use-title-request.hook.ts",
         "clients/web/src/features/notifications/notification-row.component.tsx",
         "clients/web/src/features/playback/media-events.ts",
         "clients/web/src/features/playback/video-engine.test.ts",
@@ -2421,6 +2417,21 @@
     },
     {
       "files": [
+        "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.component.tsx",
+        "packages/ui/src/components/molecules/button-group/button-group.component.tsx",
+        "packages/ui/src/components/molecules/nav-pill/nav-pill.component.tsx",
+        "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx",
+        "packages/ui/src/components/molecules/select/select-options.component.tsx",
+        "packages/ui/src/components/organisms/chart/chart.component.tsx",
+        "packages/ui/src/lib/part-context.test.tsx",
+        "packages/ui/src/lib/scroll-mask.native.test.tsx"
+      ],
+      "rules": {
+        "kroma/no-constructed-context-value": "off"
+      }
+    },
+    {
+      "files": [
         "apps/www/src/routes/download_.archive.tsx",
         "clients/mobile/src/app/\\(app\\)/\\(tabs\\)/_layout.tsx",
         "clients/mobile/src/components/catalogue-screen.component.tsx",
@@ -2572,14 +2583,6 @@
       "files": [
         "apps/kit/src/stories.smoke.test.tsx",
         "packages/module-sdk/src/scope.tsx",
-        "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.component.tsx",
-        "packages/ui/src/components/molecules/button-group/button-group.component.tsx",
-        "packages/ui/src/components/molecules/nav-pill/nav-pill.component.tsx",
-        "packages/ui/src/components/molecules/segment-group/segment-group.component.tsx",
-        "packages/ui/src/components/molecules/select/select-options.component.tsx",
-        "packages/ui/src/components/organisms/chart/chart.component.tsx",
-        "packages/ui/src/lib/part-context.test.tsx",
-        "packages/ui/src/lib/scroll-mask.native.test.tsx",
         "packages/workbench/src/story-mdx.test.tsx"
       ],
       "rules": {
@@ -4404,7 +4407,6 @@
         "packages/ui/src/components/atoms/veil/veil.test.tsx",
         "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail-lens.native.test.tsx",
         "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail-lens.test.tsx",
-        "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.component.tsx",
         "packages/ui/src/components/molecules/alphabet-rail/alphabet-rail.test.tsx",
         "packages/ui/src/components/molecules/alphabet-rail/use-letter-scrub.native.test.ts",
         "packages/ui/src/components/molecules/alphabet-rail/use-letter-scrub.test.ts",

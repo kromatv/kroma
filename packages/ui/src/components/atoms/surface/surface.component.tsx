@@ -1,13 +1,6 @@
 import { useSv } from '#ui/core/recipe';
 import { useStyleScope } from '#ui/core/style-context';
 import { useBreakpointStep } from '#ui/core/use-breakpoint.hook';
-// <Surface>: a raised panel.
-//
-// Screens kept spelling out `bg="surface1" radius="lg" border="border" p={20}`,
-// which is three token lookups and a magic number every time a card is needed.
-// Naming the combinations makes the elevation ladder a design decision the kit
-// owns rather than something each screen re-derives.
-
 import type { ReactNode } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Frost } from '#ui/components/atoms/frost';
@@ -61,6 +54,7 @@ interface SurfaceProps extends Omit<BoxProps, 'bg' | 'children'> {
   children?: ReactNode;
 }
 
+/** A raised panel. */
 function Surface({
   tone = 'plain',
   pad = 'md',

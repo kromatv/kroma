@@ -1,9 +1,5 @@
 import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 
-// The indeterminate busy ring: a rotating arc over a faint track, both drawn
-// with borders instead of SVG, so it costs no per-frame path work. `useLoop`
-// keeps the rotation off the JS thread on every platform.
-
 import { Animated, View } from 'react-native';
 
 import { useStyles } from '#ui/core/styles';
@@ -51,11 +47,14 @@ const arcOf = (arc: number, paint: string, scope: StyleScope) =>
     scope,
   );
 
+/** The indeterminate busy ring: a rotating arc over a faint track, drawn with
+ *  borders instead of SVG so it costs no per-frame path work. */
 function Spinner({ size = 28, thickness, color, label }: Readonly<SpinnerProps>) {
   const scope = useStyleScope();
 
   const s = useStyles(sDefinition);
 
+  // Off the JS thread on every platform.
   const spin = useLoop('spin', SPIN_MS);
   const arc = thickness ?? Math.max(MIN_THICKNESS, Math.round(size / 10));
   const paint = color ?? 'accent';

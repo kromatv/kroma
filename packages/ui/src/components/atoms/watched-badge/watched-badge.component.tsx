@@ -1,7 +1,4 @@
 import { activeTheme, color, styles, useStyleScope } from '#ui/core';
-
-// <WatchedBadge>: the one mark that says a title has been watched.
-
 import { Box } from '#ui/components/atoms/box';
 import { Icon } from '#ui/components/atoms/icon';
 
@@ -22,9 +19,10 @@ interface WatchedBadgeProps {
 }
 
 /**
- * A folded corner, the shape the media servers KROMA's viewers arrive from use
- * for this. It changes the tile's silhouette, so it reads before its colour does
- * and survives artwork it happens to match.
+ * The one mark that says a title has been watched: a folded corner, the shape
+ * the media servers KROMA's viewers arrive from use for this. It changes the
+ * tile's silhouette, so it reads before its colour does and survives artwork it
+ * happens to match.
  *
  * It pins ITSELF flush into the corner: a fold that floats inside the tile reads
  * as a sticker. The surface only has to clip, which every art box already does,

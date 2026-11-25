@@ -1,10 +1,4 @@
-// <Button>: the action primitive.
-//
-// It is a <Focusable>, so the same component is a mouse button in the browser
-// and a D-pad target on a TV, with the amber ring and the design's 1.04 press
-// scale already wired. The design itself lives in button-variants.ts.
-
-import { type ReactNode, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { delegateOf, Focusable, type FocusableProps } from '#ui/components/atoms/focusable';
@@ -56,6 +50,9 @@ interface ButtonProps extends Omit<
   focusScale?: number;
 }
 
+/** The action primitive: a <Focusable>, so it is a mouse button in the browser and
+ *  a D-pad target on a TV, with the amber ring and the design's 1.04 press scale
+ *  already wired. The design itself lives in button-variants.ts. */
 function Button({
   variant = 'primary',
   size,
@@ -83,7 +80,7 @@ function Button({
   const frost = useFrostCoat([s.root, style], {
     on: FROSTED.has(variant) || (disabled && !UNFILLED.has(variant)),
   });
-  const box = useMemo(() => [frost.style, group.style, style], [frost.style, group.style, style]);
+  const box = [frost.style, group.style, style];
   return (
     <Focusable
       {...focusProps}

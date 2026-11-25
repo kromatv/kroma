@@ -79,6 +79,111 @@ des sous-titres forcés, et `.sdh` pour des sous-titres pour sourds et
 malentendants. Un dossier `Subs` à côté de la vidéo fonctionne aussi. Les
 sous-titres intégrés au fichier vidéo ne demandent rien.
 
+### Affiches, fonds, logos et vignettes
+
+KROMA trouve sur Internet une affiche, un fond et un logo pour chaque titre qu'il
+reconnaît. Une image placée dans le dossier du titre passe avant eux, et donne
+une affiche à un titre que KROMA ne reconnaît pas, à la place de l'image par
+défaut :
+
+```
+Films/
+  Summer Trip (2019)/
+    Summer Trip (2019).mkv
+    poster.jpg
+    fanart.jpg
+Series/
+  School Plays/
+    poster.jpg
+    backdrop.jpg
+    Season 01/
+      poster.jpg
+      School Plays - S01E01.mkv
+      School Plays - S01E01-thumb.jpg
+```
+
+- Pour l'affiche d'un film, nommez l'image `poster`, `folder`, `cover`,
+  `default` ou `movie`, dans le dossier du film. Dans un dossier qui contient
+  plusieurs films, donnez-lui plutôt le nom de la vidéo : `Summer Trip (2019).jpg`
+  ou `Summer Trip (2019)-poster.jpg`.
+- Pour le fond d'un film, nommez-la `backdrop`, `fanart`, `background` ou `art`,
+  ou, dans un dossier partagé, du nom de la vidéo :
+  `Summer Trip (2019)-fanart.jpg`.
+- Pour le logo, le nom du titre dessiné en image, nommez-la `logo` ou
+  `clearlogo`, ou, dans un dossier partagé, du nom de la vidéo :
+  `Summer Trip (2019)-logo.png`.
+- Pour une série, placez les images dans le dossier de la série, au-dessus des
+  dossiers de saison, avec les mêmes noms, ou `show` pour l'affiche. Quand deux
+  séries partagent un dossier, aucune ne prend les images qu'il contient.
+- Pour l'affiche d'une saison, nommez l'image `poster`, `folder`, `cover` ou
+  `default` dans le dossier de la saison, ou du nom de la saison dans le dossier
+  de la série : `season01-poster.jpg`, et `season-specials-poster.jpg` pour les
+  épisodes spéciaux. Sans image dans les dossiers, une saison prend l'affiche
+  trouvée sur Internet, sinon celle de la série.
+- Pour la vignette d'un épisode, donnez à l'image le nom de la vidéo de
+  l'épisode, suivi ou non de `-thumb` : `School Plays - S01E01-thumb.jpg`. Elle
+  s'affiche même sur un épisode que KROMA ne reconnaît pas.
+- KROMA lit les images `.jpg`, `.jpeg`, `.png` et `.webp`, et ignore celles qu'il
+  ne peut pas ouvrir.
+- Un fond ou un logo ne s'affiche que sur un titre que KROMA reconnaît.
+- KROMA remarque une image ajoutée, modifiée ou supprimée comme il remarque une
+  nouvelle vidéo. Une application peut mettre jusqu'à un jour à montrer le
+  changement sur un écran déjà ouvert.
+
+Pour changer l'image d'un titre sans toucher à son dossier, ouvrez le titre et
+choisissez **Modifier les visuels**. Une affiche, un fond ou un logo envoyé à cet
+endroit passe avant l'image du dossier et celle d'Internet, et **Rétablir l'image
+automatique** les fait revenir. Sur la page d'une série, le bouton **Modifier la
+vignette** d'un épisode fait de même pour la vignette de cet épisode, et
+**Modifier l'affiche de la saison**, au-dessus des épisodes, pour l'affiche de
+la saison à l'écran. Une affiche, un fond ou une vignette s'ouvre d'abord dans
+un cadre à sa forme, 2:3 ou 16:9 : déplacez l'image, zoomez ou tournez-la, puis
+choisissez **Utiliser cette image**. Un logo part tel quel et garde sa
+transparence. Il faut le droit de gérer la bibliothèque.
+
+### Titres et résumés des fichiers .nfo
+
+Un titre peut prendre son nom, son année, son résumé et ses genres dans un
+fichier `.nfo`, celui que lisent Kodi, Jellyfin et Plex :
+
+```
+Films/
+  Summer Trip (2019)/
+    Summer Trip (2019).mkv
+    Summer Trip (2019).nfo
+Series/
+  School Plays/
+    tvshow.nfo
+    Season 01/
+      School Plays - S01E01.mkv
+      School Plays - S01E01.nfo
+```
+
+- Pour un film, donnez au fichier le nom de la vidéo, ou appelez-le `movie.nfo`
+  dans le dossier du film.
+- Pour une série, placez `tvshow.nfo` dans le dossier de la série, au-dessus des
+  dossiers de saison.
+- Pour un épisode, donnez au fichier le nom de la vidéo de l'épisode. KROMA lit
+  son `<title>`, son `<plot>` et son `<aired>`, le jour de sa première
+  diffusion. Un fichier qui décrit plusieurs épisodes donne le premier.
+- KROMA lit `<title>`, `<sorttitle>`, `<plot>`, `<premiered>` ou `<year>`, et
+  chaque `<genre>`. Le fichier doit être en UTF-8, comme ces logiciels
+  l'écrivent.
+- Si le fichier donne le numéro TMDB du titre, dans `<uniqueid type="tmdb">` ou
+  `<tmdbid>`, ou s'il se termine par le lien de sa page sur themoviedb.org,
+  KROMA reconnaît le titre à ce numéro plutôt qu'à son nom. Une fiche corrigée
+  avec **Corriger la fiche** passe avant le fichier.
+- Si le fichier ne donne que le numéro IMDb ou TheTVDB du titre, dans
+  `<uniqueid type="imdb">`, `<uniqueid type="tvdb">`, `<imdbid>` ou
+  `<tvdbid>`, ou s'il se termine par le lien de sa page sur imdb.com, KROMA
+  demande une fois à TMDB à quel titre correspond ce numéro, puis s'en sert
+  pour reconnaître le titre.
+- Le texte du fichier s'affiche à la place de celui trouvé sur Internet, même
+  quand KROMA reconnaît le titre. Ce que vous écrivez avec **Modifier les
+  informations** passe avant le fichier.
+- KROMA lit un fichier ajouté ou modifié à la prochaine analyse de la
+  bibliothèque.
+
 ### Types de fichiers
 
 KROMA analyse les fichiers `.mkv`, `.mp4`, `.m4v`, `.mov`, `.webm`, `.avi` et

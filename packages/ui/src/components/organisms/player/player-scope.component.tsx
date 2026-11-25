@@ -10,9 +10,9 @@ const PlayerSlotContext = createContext(false);
  *  in, and the focus mirror the chrome's own focus needs. */
 function PlayerScope({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <PlayerSlotContext.Provider value={true}>
+    <PlayerSlotContext value={true}>
       <ControlledFocusMirror>{children}</ControlledFocusMirror>
-    </PlayerSlotContext.Provider>
+    </PlayerSlotContext>
   );
 }
 

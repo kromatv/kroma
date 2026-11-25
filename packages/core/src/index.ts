@@ -45,4 +45,5 @@ export * from './stream-rescue';
 export * from './subtitle-stage';
 export * from './subtitles';
 export * from './synopsis';
+export * from './tmdb-id';
 export * from './trailer';

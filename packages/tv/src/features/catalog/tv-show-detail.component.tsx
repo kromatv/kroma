@@ -1,13 +1,11 @@
 import type { ShowDetail } from '@kromatv/client/media';
-import { ageRatingOf, episodeTag, qualityBadgeForVideo } from '@kromatv/core';
+import { ageRatingOf, episodeTag, qualityBadgeForVideo, tmdbIdOf } from '@kromatv/core';
 import { useT, useThemeAudio } from '@kromatv/ui';
 import {
   Box,
   Button,
-  Chip,
   FocusRegion,
   FocusSlot,
-  Rail,
   Row,
   styles,
   Text,
@@ -28,6 +26,7 @@ import {
   ThemeButton,
   WatchedButton,
 } from '#tv/features/catalog/detail/parts.component';
+import { SeasonRow } from '#tv/features/catalog/detail/season-row.component';
 import { LeadActions } from '#tv/features/catalog/detail/trailer-button.component';
 import { useShowDetail } from '#tv/features/catalog/detail/use-show-detail.hook';
 
@@ -84,7 +83,7 @@ export function TvShowDetail() {
       // takes it as a prop (see TvDetailScaffold).
       actions={
         <FocusRegion style={s.actionRow}>
-          <LeadActions trailer={{ kind: 'tv', tmdbId: meta?.tmdbId, title: show.title }}>
+          <LeadActions trailer={{ kind: 'tv', tmdbId: tmdbIdOf(meta?.tmdbId), title: show.title }}>
             <Button
               size="lg"
               autoFocus
@@ -148,25 +147,15 @@ export function TvShowDetail() {
           above it. A slot claims its position at first render regardless. */}
       <FocusSlot>
         {detail && detail.seasons.length > 1 ? (
-          <Box row align="center" gap={18} mt={30}>
-            <Text style={s.seasonLabel} color="textMuted">
-              {t('content.seasonsHeader')}
-            </Text>
-            <Rail.Root inset={12} gap={10}>
-              {detail.seasons.map((entry) => (
-                <Chip
-                  key={entry.number}
-                  variant="surface"
-                  focusScale={1.05}
-                  active={entry.number === activeSeason?.number}
-                  pressed={entry.number === activeSeason?.number}
-                  label={t('content.season', { number: entry.number })}
-                  onPress={() => setSeason(entry.number)}
-                  style={s.seasonChip}
-                />
-              ))}
-            </Rail.Root>
-          </Box>
+          <SeasonRow
+            seasons={detail.seasons}
+            current={activeSeason?.number}
+            posterFor={(season, w) =>
+              client.media.artwork.resolve(season.posterUrl, w) ??
+              client.media.artwork.showPosterFor(show, w)
+            }
+            onPick={setSeason}
+          />
         ) : null}
       </FocusSlot>
 
@@ -223,8 +212,6 @@ function fetchedMetadata(detail: ShowDetail | null) {
 
 const sDefinition = styles({
   status: { mt: 24, fontWeight: '400' },
-  seasonLabel: { fontSize: textRoles.label.size, fontWeight: '700', letterSpacing: 0.6 },
-  seasonChip: { py: 9, px: 20, borderWidth: 0 },
   episodesLabel: {
     fontSize: textRoles.label.size,
     fontWeight: '700',

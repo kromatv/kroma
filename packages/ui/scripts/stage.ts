@@ -162,8 +162,8 @@ const manifest = {
   },
   peerDependencies: {
     '@testing-library/react': '>=16',
-    react: '>=18',
-    'react-dom': '>=18',
+    react: '>=19.2',
+    'react-dom': '>=19.2',
     'react-native-web': '>=0.21',
     '@tabler/icons-react': '>=3',
     'react-native': '*',

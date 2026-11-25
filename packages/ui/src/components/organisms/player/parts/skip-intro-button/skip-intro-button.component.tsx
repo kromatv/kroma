@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Box } from '#ui/components/atoms/box';
 import { Button } from '#ui/components/atoms/button';
 import type { FocusHandle } from '#ui/components/atoms/focusable';
 import { GUTTER, scaler } from '#ui/components/organisms/player/lib/metrics';
 import { sv, useSv } from '#ui/core';
+import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import { useT } from '#ui/services/i18n';
 
 // The scrim variant carries a 1px border and primary none; pinning the border on
@@ -43,7 +44,7 @@ export function SkipIntroButton({
   onBlur,
 }: Readonly<SkipIntroButtonProps>) {
   const skipPillScoped = useSv(skipPill);
-  const [focused, setFocused] = useState(false);
+  const within = useFocusWithin(onFocus, onBlur);
   const handle = useRef<FocusHandle>(null);
   useEffect(() => {
     if (visible) {
@@ -61,20 +62,14 @@ export function SkipIntroButton({
   return (
     <Box absolute bottom={lift} right={px(GUTTER)} z={30}>
       <Button
-        variant={focused ? 'primary' : 'scrim'}
+        variant={within.focused ? 'primary' : 'scrim'}
         focusHandle={handle}
-        onFocus={() => {
-          setFocused(true);
-          onFocus?.();
-        }}
-        onBlur={() => {
-          setFocused(false);
-          onBlur?.();
-        }}
+        onFocus={within.onFocus}
+        onBlur={within.onBlur}
         onPress={onSkip}
         label={t('player.skipIntro')}
         iconRight="chevron-right"
-        style={skipPillScoped(undefined, { focus: focused }).root}
+        style={skipPillScoped(undefined, { focus: within.focused }).root}
       />
     </Box>
   );

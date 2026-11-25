@@ -1,7 +1,7 @@
 // The D-pad presentation of <Menu>'s items: a <Dialog>, for the same reason
 // <Select> uses one (the remote is confined to the options).
 
-import { type ReactElement, type RefObject, useCallback, useMemo } from 'react';
+import { type ReactElement, type RefObject, useMemo } from 'react';
 import type { View } from 'react-native';
 import { Dialog } from '#ui/components/organisms/dialog';
 import { FocusColumn } from '#ui/lib/focus-scope.component';
@@ -59,7 +59,7 @@ function DialogEntry({ entry, spec, first, onFire }: Readonly<DialogEntryProps>)
     }),
     [spec, first, onFire],
   );
-  return <MenuRowContext.Provider value={row}>{entry}</MenuRowContext.Provider>;
+  return <MenuRowContext value={row}>{entry}</MenuRowContext>;
 }
 
 export function MenuSurfaceDialog({
@@ -70,16 +70,13 @@ export function MenuSurfaceDialog({
   rows,
 }: Readonly<MenuSurfaceProps>) {
   const pointerDriving = usePointerDriving();
-  const fire = useCallback(
-    (spec: MenuRowSpec) => {
-      if (spec.disabled) {
-        return;
-      }
-      onDismiss('select');
-      spec.select?.();
-    },
-    [onDismiss],
-  );
+  const fire = (spec: MenuRowSpec) => {
+    if (spec.disabled) {
+      return;
+    }
+    onDismiss('select');
+    spec.select?.();
+  };
   const opening = rows.find((row) => !row.disabled)?.at;
   return (
     <Dialog.Root

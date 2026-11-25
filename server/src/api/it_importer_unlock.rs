@@ -5,7 +5,7 @@ use crate::api::test_support::{
     IMPORTER, TestApp, importer_answering, on_disk, seed_session, send,
 };
 
-const PIN: &str = "4821";
+const PIN: &str = "4821903716552038";
 
 fn unlock_url() -> String {
     format!("/api/admin/importers/{IMPORTER}/unlock")

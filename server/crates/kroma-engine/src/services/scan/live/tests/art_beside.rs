@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use super::walk;
-use crate::db::art_beside::{poster_of, source_of, BACKDROP};
+use crate::db::art_beside::{poster_of, source_of, BACKDROP, STILL};
 use crate::db::metadata_core::{ITEM, SHOW};
 use crate::infra::image::{beside_name, PUBLIC_PREFIX};
 use crate::model::{Kind, MediaItem};
@@ -66,4 +66,53 @@ fn a_walk_records_the_poster_in_a_show_s_folder() {
     let show = first(&state, Kind::Episode).show_id.unwrap();
 
     assert!(poster_of(&state.db, SHOW, &show).unwrap().is_some());
+}
+
+#[test]
+fn a_walk_records_the_thumbnail_beside_an_episode_as_its_still() {
+    let state = test_state();
+    let root = kroma_testing::temp_dir("live-art-beside-episode");
+    put(
+        root.path(),
+        &[
+            "Andor/Season 01/Andor S01E01.mkv",
+            "Andor/Season 01/Andor S01E01-thumb.jpg",
+        ],
+    );
+    let thumb = root.path().join("Andor/Season 01/Andor S01E01-thumb.jpg");
+
+    walk(&state, root.path());
+    let mut episode = first(&state, Kind::Episode);
+    crate::db::localize::overlay_each(&state.db, [&mut episode], "en").unwrap();
+
+    let still = format!("{PUBLIC_PREFIX}{}", beside_name(&thumb).unwrap());
+    let meta = episode.metadata.unwrap();
+    assert_eq!(meta.backdrop_url, Some(still.clone()));
+    assert_eq!(source_of(&state.db, &still).unwrap().unwrap().role, STILL);
+}
+
+#[test]
+fn a_walk_records_the_poster_in_a_season_s_folder() {
+    let state = test_state();
+    let root = kroma_testing::temp_dir("live-art-beside-season");
+    put(
+        root.path(),
+        &[
+            "Andor/Season 01/Andor S01E01.mkv",
+            "Andor/Season 02/Andor S02E01.mkv",
+            "Andor/Season 02/poster.jpg",
+        ],
+    );
+
+    walk(&state, root.path());
+    let show = first(&state, Kind::Episode).show_id.unwrap();
+    let mut detail = crate::db::get_show(&state.db, &show).unwrap().unwrap();
+    crate::db::localize::overlay_show_detail(&state.db, &mut detail, "en").unwrap();
+
+    assert_eq!(detail.seasons[0].poster_url, None);
+    assert!(detail.seasons[1]
+        .poster_url
+        .as_ref()
+        .is_some_and(|url| url.starts_with(PUBLIC_PREFIX)));
+    assert_eq!(poster_of(&state.db, SHOW, &show).unwrap(), None);
 }

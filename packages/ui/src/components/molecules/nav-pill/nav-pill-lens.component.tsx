@@ -1,6 +1,3 @@
-// The amber lens that travels to the item under it. Owned by the Root: it is
-// one box crossing the whole capsule, so no item can draw it.
-
 import { styles, useStyles } from '#ui/core';
 import { GlideBox } from '#ui/lib/glide-box.component';
 import type { LensRect, NavPillTone } from './nav-pill-context';
@@ -14,6 +11,8 @@ interface LensProps {
   tone: NavPillTone;
 }
 
+/** The amber lens that travels to the item under it. The Root owns it: it is one
+ *  box crossing the whole capsule, so no item can draw it. */
 function Lens({ rect, chase, tone }: Readonly<LensProps>) {
   const s = useStyles(sDefinition);
   const fill = useStyles(fillDefinition);

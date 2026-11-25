@@ -39,6 +39,20 @@ export function SettingsView(props: Readonly<SettingsViewProps>) {
   return <SettingsViewInner {...props} />;
 }
 
+const SAVED_MS = 1500;
+
+function useSavedNotice() {
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!saved) {
+      return undefined;
+    }
+    const timer = setTimeout(() => setSaved(false), SAVED_MS);
+    return () => clearTimeout(timer);
+  }, [saved]);
+  return { saved, markSaved: () => setSaved(true) };
+}
+
 function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<SettingsViewProps>) {
   const t = useT();
   const { client } = useAdminHost();
@@ -49,7 +63,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
     view: typeof view;
     attempt: number;
   } | null>(null);
-  const [saved, setSaved] = useState(false);
+  const { saved, markSaved } = useSavedNotice();
 
   // One fetch, reused as the retry: a view that failed offers to ask again
   // rather than stranding the page on an empty panel.
@@ -70,10 +84,7 @@ function SettingsViewInner({ view, titleKey, subtitleKey, embedded }: Readonly<S
     setGroups((gs) => (gs ? applySetting(gs, key, value) : gs));
     client.admin
       .updateSettings({ [key]: value })
-      .then(() => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
-      })
+      .then(markSaved)
       .catch(() => undefined);
   });
 

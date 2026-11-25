@@ -146,7 +146,7 @@ function UpNextSheetBase({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const items = useMemo(() => [...data.nextEpisodes, ...data.recommendations], [data]);
+  const items = [...data.nextEpisodes, ...data.recommendations];
   const sections = useMemo(() => buildSections(data, t), [data, t]);
 
   // Seeded from the stage so the first frame is already parked: a height that

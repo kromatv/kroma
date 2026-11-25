@@ -1,7 +1,9 @@
-//! The poster and the backdrop an admin chose for a title. They come before the
-//! pictures kept beside its files, which come before fetched art.
+//! The poster, the backdrop and the logo an admin chose for a title, and the
+//! thumbnail of an episode. They come before the pictures kept beside its
+//! files, which come before fetched art.
 
-use crate::art_beside::Urls;
+use std::collections::HashMap;
+
 use crate::{params, Connection, Pool, Result};
 
 /// One picture of a title: the `kind` title `id`, and the role the picture has
@@ -40,20 +42,14 @@ pub fn clear(pool: &Pool, slot: Slot<'_>) -> Result<()> {
     Ok(())
 }
 
-/// What an admin chose for the `kind` title `id`.
-pub fn chosen(pool: &Pool, kind: &str, id: &str) -> Result<Urls> {
+/// What an admin chose for the `kind` title `id`: the URL of each picture, by
+/// its role.
+pub fn chosen(pool: &Pool, kind: &str, id: &str) -> Result<HashMap<String, String>> {
     let conn = pool.get()?;
     let mut stmt = conn
         .prepare("SELECT role, url FROM art_chosen WHERE subject_kind = ?1 AND subject_id = ?2")?;
-    let mut rows = stmt.query_map(params![kind, id], |r| {
-        Ok((r.get::<_, String>(0)?, r.get(1)?))
-    })?;
-    let urls = rows.try_fold(Urls::default(), |mut urls, row| {
-        let (role, url): (String, String) = row?;
-        urls.set(&role, url);
-        Ok::<_, rusqlite::Error>(urls)
-    })?;
-    Ok(urls)
+    let rows = stmt.query_map(params![kind, id], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    Ok(rows.collect::<rusqlite::Result<_>>()?)
 }
 
 /// The URL of every chosen picture.

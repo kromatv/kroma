@@ -1,19 +1,4 @@
-// <ChoiceList>: a list whose rows ARE the control. Pick one (radio) or pick
-// several (checkbox), each row optionally carrying its own actions.
-//
-// Composed, in Radix's shape: a Root that owns the value and the semantics,
-// Items that read it through context, and named parts for the pieces a row is
-// made of. The reason is the same reason Radix gives - a row is not a fixed
-// arrangement of label + hint, and a props-only API answers every new demand
-// with another prop until the component is a switchboard. Here the caller
-// writes the row.
-//
-// `ChoiceList.Item` composes <ListRow>, so the WHOLE row is the target: one
-// D-pad stop per row rather than two, and a pointer hit area the size of the
-// thing a reader is aiming at. The indicator is drawn as a face and the ROW
-// carries `radio`/`checkbox` with its state to assistive tech.
-
-import { Children, isValidElement, type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { CheckboxFace, type CheckboxSize } from '#ui/components/atoms/checkbox';
@@ -26,6 +11,7 @@ import { styles } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import type { ControlSize } from '#ui/lib/field-shell';
 import { partContext } from '#ui/lib/part-context';
+import { sortParts } from '#ui/lib/parts';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
 
 const FACE: Record<ControlSize, CheckboxSize> = { sm: 'sm', md: 'sm', tv: 'tv' };
@@ -100,7 +86,7 @@ function Root(props: Readonly<ChoiceRootProps>) {
   );
 
   return (
-    <Context.Provider value={ctx}>
+    <Context value={ctx}>
       <Box
         gap={gap}
         // `radiogroup` is the one-of-N contract; a set of checkboxes is a
@@ -111,7 +97,7 @@ function Root(props: Readonly<ChoiceRootProps>) {
       >
         {children}
       </Box>
-    </Context.Provider>
+    </Context>
   );
 }
 
@@ -126,23 +112,14 @@ interface ItemProps {
   actions?: ReactNode;
 }
 
-function isMedia(child: ReactNode): boolean {
-  return isValidElement(child) && child.type === Media;
-}
-
-function splitMedia(children: ReactNode) {
-  const all = Children.toArray(children);
-  return { media: all.find(isMedia), rest: all.filter((child) => !isMedia(child)) };
-}
-
 function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
   const s = useStyles(sDefinition);
   const { mode, size, ground, picked, toggle } = useChoice('Item');
   const on = picked(value);
   const item = useMemo(() => ({ value, on }), [value, on]);
-  const { media, rest } = splitMedia(children);
+  const [[media], rest] = sortParts(children, Media);
   return (
-    <ItemContext.Provider value={item}>
+    <ItemContext value={item}>
       <ListRow.Root
         size={size}
         ground={ground}
@@ -160,7 +137,7 @@ function Item({ value, disabled, children, actions }: Readonly<ItemProps>) {
           {media ? <Indicator /> : null}
         </ListRow.Trailing>
       </ListRow.Root>
-    </ItemContext.Provider>
+    </ItemContext>
   );
 }
 
@@ -221,6 +198,9 @@ const sDefinition = styles({
   chosen: { bg: 'accentSoft', border: 'accent' },
 });
 
+/** A list whose rows ARE the control: pick one (radio) or several (checkbox). Each
+ *  Item composes <ListRow>, so the whole row is one D-pad stop, and the ROW carries
+ *  `radio`/`checkbox` with its state to assistive tech. */
 const ChoiceList = { Root, Item, Media, Indicator, Label, Hint };
 
 export type {

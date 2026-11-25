@@ -18,6 +18,10 @@ pub struct Metadata {
     #[serde(rename = "imdbId", skip_serializing_if = "Option::is_none")]
     pub imdb_id: Option<String>,
     pub title: Option<String>,
+    /// The name the title sorts under, when it is not the one shown. Only a
+    /// person or a `.nfo` file gives one.
+    #[serde(rename = "sortTitle", default, skip_serializing_if = "Option::is_none")]
+    pub sort_title: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tagline: Option<String>,
     pub overview: Option<String>,
@@ -151,6 +155,39 @@ pub struct PersonDetail {
     pub tmdb_url: String,
 }
 
+impl Metadata {
+    /// A record that says nothing yet, for a title the provider never
+    /// described but that has something to show: an episode's still, a summary
+    /// written by hand.
+    pub fn blank() -> Self {
+        Self {
+            provider: default_provider(),
+            tmdb_id: 0,
+            imdb_id: None,
+            title: None,
+            sort_title: None,
+            tagline: None,
+            overview: None,
+            release_date: None,
+            genres: Vec::new(),
+            tmdb_genre_ids: Vec::new(),
+            rating: None,
+            certification: None,
+            poster_url: None,
+            backdrop_url: None,
+            logo_url: None,
+            theme_url: None,
+            cast: Vec::new(),
+            crew: Vec::new(),
+            keywords: Vec::new(),
+            tvdb_id: None,
+            tmdb_url: String::new(),
+            ratings: Default::default(),
+            age_rating: None,
+        }
+    }
+}
+
 fn default_provider() -> &'static str {
     "tmdb"
 }
@@ -254,6 +291,7 @@ mod tests {
             tmdb_id: 603,
             imdb_id: None,
             title: Some("The Matrix".into()),
+            sort_title: None,
             tagline: None,
             overview: None,
             release_date: None,

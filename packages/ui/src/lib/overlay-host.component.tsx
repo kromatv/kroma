@@ -55,7 +55,7 @@ export function OverlayHost({ children }: Readonly<{ children: ReactNode }>) {
   }, []);
 
   return (
-    <OverlayMount.Provider value={mount}>
+    <OverlayMount value={mount}>
       {children}
       {slots.size > 0 ? (
         // `box-none`: the layer itself catches nothing, so a dialog's own scrim
@@ -69,7 +69,7 @@ export function OverlayHost({ children }: Readonly<{ children: ReactNode }>) {
           ))}
         </Box>
       ) : null}
-    </OverlayMount.Provider>
+    </OverlayMount>
   );
 }
 

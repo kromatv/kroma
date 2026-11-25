@@ -140,6 +140,34 @@ describe('the media endpoints', () => {
       method: 'DELETE',
       path: '/art/item/i%201/backdrop',
     },
+    {
+      name: 'titleEdits.get',
+      call: (c) => c.media.titleEdits.get('show', show),
+      method: 'GET',
+      path: '/edits/show/s1',
+    },
+    {
+      name: 'titleEdits.put',
+      call: (c) =>
+        c.media.titleEdits.put('item', spaced, {
+          title: 'Heat',
+          sortTitle: null,
+          overview: null,
+          year: null,
+          released: '1995-12-15',
+          genres: ['Crime'],
+        }),
+      method: 'PUT',
+      path: '/edits/item/i%201',
+      body: {
+        title: 'Heat',
+        sortTitle: null,
+        overview: null,
+        year: null,
+        released: '1995-12-15',
+        genres: ['Crime'],
+      },
+    },
   ])('$name', checkEndpoint);
 });
 

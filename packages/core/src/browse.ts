@@ -12,8 +12,15 @@ export interface Sortable {
   year: number | null;
   addedAt: string;
   metadata?:
-    | (Pick<Metadata, 'rating' | 'releaseDate' | 'genres'> & { backdropUrl?: string | null })
+    | (Pick<Metadata, 'rating' | 'releaseDate' | 'genres' | 'sortTitle'> & {
+        backdropUrl?: string | null;
+      })
     | null;
+}
+
+/** The name a title sorts and files under: its sort title, else the one shown. */
+export function sortName(item: Sortable): string {
+  return item.metadata?.sortTitle || item.title;
 }
 
 export type SortMode = 'added' | 'release' | 'title' | 'rating';
@@ -51,7 +58,7 @@ function releaseValue(item: Sortable): number | null {
 
 // Every comparator falls through to a deterministic tiebreak: legacy webOS
 // (Chromium 53) predates guaranteed stable sort. Missing values sort last.
-const byTitle = (a: Sortable, b: Sortable): number => a.title.localeCompare(b.title);
+const byTitle = (a: Sortable, b: Sortable): number => sortName(a).localeCompare(sortName(b));
 
 function byRelease(a: Sortable, b: Sortable): number {
   const av = releaseValue(a);
@@ -173,7 +180,7 @@ export function letterMarks(items: readonly Sortable[]): LetterMark[] {
   const marks: LetterMark[] = [];
   const seen = new Set<string>();
   items.forEach((item, index) => {
-    const letter = titleLetter(item.title);
+    const letter = titleLetter(sortName(item));
     if (seen.has(letter)) {
       return;
     }

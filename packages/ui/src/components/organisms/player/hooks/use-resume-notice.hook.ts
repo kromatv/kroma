@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export const RESUME_WINDOW = 6;
 
@@ -79,7 +79,7 @@ export function useResumeNotice(opts: {
     shown,
     secondsLeft: phase === 'counting' ? secondsLeft : null,
     total: RESUME_WINDOW,
-    dismiss: useCallback(() => setPhase('gone'), []),
-    holdOpen: useCallback(() => setPhase((p) => (p === 'counting' ? 'kept' : p)), []),
+    dismiss: () => setPhase('gone'),
+    holdOpen: () => setPhase((p) => (p === 'counting' ? 'kept' : p)),
   };
 }

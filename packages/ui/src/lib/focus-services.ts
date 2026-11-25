@@ -1,4 +1,5 @@
 import { createFocusProbe } from './focus-here';
+import { createFocusHolder } from './focus-holder';
 import { createFocusMirror } from './focus-mirror';
 import { createRemoteTransport } from './focus-remote';
 import { createInputGate } from './input-gate';
@@ -13,6 +14,6 @@ export function createFocusServices(
   const probe = createFocusProbe();
   const mirror = createFocusMirror(source.pointerDriving);
   const remote = createRemoteTransport({ enabled, probe, mirror });
-  return { enabled, input, source, probe, mirror, remote };
+  return { enabled, input, source, probe, mirror, remote, holder: createFocusHolder() };
 }
 export type FocusServices = ReturnType<typeof createFocusServices>;

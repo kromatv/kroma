@@ -1,37 +1,41 @@
-//! `/api/art/{kind}/{id}`: the poster and the backdrop an admin chose for a
-//! film (`item`) or a show (`show`), behind `library.manage`. A change reaches
-//! clients through the `ItemUpdated` / `ShowUpdated` event.
+//! `/api/art/{kind}/{id}`: the poster, the backdrop and the logo an admin chose
+//! for a film (`item`) or a show (`show`), the thumbnail (`still`) of an
+//! episode (`item`) and the poster of a season (`season`, id `{show}:{number}`),
+//! behind `library.manage`. A change reaches clients through the `ItemUpdated` /
+//! `ShowUpdated` event, a season's through its show's.
 //!
-//! - `GET /api/art/{kind}/{id}` → `{ poster, backdrop }`, the URL of each
-//!   picture an admin chose, or null.
-//! - `POST /api/art/{kind}/{id}/{role}` (raw `image/*` body, `role` is `poster`
-//!   or `backdrop`) → `{ url }`, where the title's picture is served now.
+//! - `GET /api/art/{kind}/{id}` → `{ poster, backdrop, logo, still }`, the URL
+//!   of each picture an admin chose, or null.
+//! - `POST /api/art/{kind}/{id}/{role}` (raw `image/*` body, `role` is `poster`,
+//!   `backdrop`, `logo` or `still`, and only `poster` for a season) → `{ url }`,
+//!   where the title's picture is served now.
 //! - `DELETE /api/art/{kind}/{id}/{role}` → 204, and the title shows the
 //!   picture beside its files again, or its fetched one.
 
 use axum::body::Bytes;
-use axum::extract::{DefaultBodyLimit, FromRequestParts, Path, State};
+use axum::extract::{DefaultBodyLimit, FromRequestParts, State};
 use axum::http::request::Parts;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use serde_json::json;
+use serde_json::{json, Map, Value};
 
 use crate::api::error::lerr;
-use crate::api::extract::AuthUser;
-use crate::api::permission::require;
+use crate::api::managed_title::{not_found, Managed};
 use crate::api::util::{blocking, query};
 use crate::db;
-use crate::db::art_beside::{BACKDROP, POSTER};
+use crate::db::art_beside::{BACKDROP, LOGO, POSTER, SEASON, STILL};
 use crate::db::art_chosen::Slot;
 use crate::db::metadata_core::{ITEM, SHOW};
 use crate::i18n;
-use crate::model::{Permission, User};
+use crate::model::User;
 use crate::services::art_chosen::{self, Choice};
 use crate::state::SharedState;
 
 const MAX_PICTURE_BYTES: usize = 32 * 1024 * 1024;
+const ROLES: [&str; 4] = [POSTER, BACKDROP, LOGO, STILL];
+const KINDS: [&str; 3] = [ITEM, SHOW, SEASON];
 
 pub fn routes() -> Router<SharedState> {
     Router::new().route("/art/{kind}/{id}", get(chosen)).route(
@@ -58,42 +62,37 @@ impl Target {
     }
 }
 
-fn not_found(user: &User) -> Response {
-    lerr(
-        i18n::user_locale(user),
-        StatusCode::NOT_FOUND,
-        "error.itemNotFound",
-    )
+struct Pictured(Managed);
+
+impl FromRequestParts<SharedState> for Pictured {
+    type Rejection = Response;
+
+    async fn from_request_parts(parts: &mut Parts, state: &SharedState) -> Result<Self, Response> {
+        Managed::among(parts, state, &KINDS).await.map(Self)
+    }
 }
 
-fn kind_of(user: &User, kind: &str) -> Result<&'static str, Response> {
-    [ITEM, SHOW]
-        .into_iter()
-        .find(|k| *k == kind)
-        .ok_or_else(|| not_found(user))
-}
-
-fn target_of(user: &User, (kind, id, role): (String, String, String)) -> Result<Target, Response> {
-    let kind = kind_of(user, &kind)?;
-    let role = [POSTER, BACKDROP]
-        .into_iter()
-        .find(|r| *r == role)
-        .ok_or_else(|| not_found(user))?;
-    Ok(Target { kind, id, role })
+fn roles_of(kind: &str) -> &'static [&'static str] {
+    if kind == SEASON {
+        &[POSTER]
+    } else {
+        &ROLES
+    }
 }
 
 async fn chosen(
     State(state): State<SharedState>,
-    AuthUser(user): AuthUser,
-    Path((kind, id)): Path<(String, String)>,
+    Pictured(Managed { kind, id, .. }): Pictured,
 ) -> Result<Response, Response> {
-    require(&user, Permission::LibraryManage)?;
-    let kind = kind_of(&user, &kind)?;
-    let urls = query(&state.db, move |pool| {
+    let mut urls = query(&state.db, move |pool| {
         db::art_chosen::chosen(&pool, kind, &id)
     })
     .await?;
-    Ok(Json(json!({ "poster": urls.poster, "backdrop": urls.backdrop })).into_response())
+    let chosen: Map<String, Value> = ROLES
+        .into_iter()
+        .map(|role| (role.to_string(), urls.remove(role).into()))
+        .collect();
+    Ok(Json(chosen).into_response())
 }
 
 struct Asked {
@@ -105,13 +104,23 @@ impl FromRequestParts<SharedState> for Asked {
     type Rejection = Response;
 
     async fn from_request_parts(parts: &mut Parts, state: &SharedState) -> Result<Self, Response> {
-        let AuthUser(user) = AuthUser::from_request_parts(parts, state).await?;
-        require(&user, Permission::LibraryManage)?;
-        let Path(path) = Path::<(String, String, String)>::from_request_parts(parts, state)
-            .await
-            .map_err(IntoResponse::into_response)?;
-        let target = target_of(&user, path)?;
-        Ok(Self { user, target })
+        let Pictured(Managed {
+            user,
+            kind,
+            id,
+            path,
+        }) = Pictured::from_request_parts(parts, state).await?;
+        let role = roles_of(kind)
+            .iter()
+            .copied()
+            .find(|role| path.get("role").is_some_and(|asked| asked == role));
+        let Some(role) = role else {
+            return Err(not_found(&user));
+        };
+        Ok(Self {
+            user,
+            target: Target { kind, id, role },
+        })
     }
 }
 

@@ -18,8 +18,8 @@ use super::{
     accounts, admin, cast, chosen_art, diagnostics, direct, discover, handoff, home, images,
     inbound, invites, mail, media, metadata, modules, monitoring, notifications, online_subs,
     origin, passkeys, people, pin, playback, plugin, profiling, recommend, releases, rematch,
-    remote_art, reports, requests, search, server_status, sso, stream, suggest, themes, trailers,
-    ws,
+    remote_art, reports, requests, search, server_status, sso, stream, suggest, themes,
+    title_edits, trailers, ws,
 };
 use crate::api::error::json_error;
 use crate::api::extract::bearer_from_headers;
@@ -166,6 +166,7 @@ fn content_routes(state: &SharedState) -> Router<SharedState> {
         .merge(trailers::routes())
         .merge(rematch::routes())
         .merge(chosen_art::routes())
+        .merge(title_edits::routes())
         .merge(accounts::kept_from_kids(state, monitoring::routes()))
         .merge(accounts::kept_from_kids(state, requests::routes()))
         .merge(reports::routes())

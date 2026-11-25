@@ -1,7 +1,8 @@
 //! Overlaying a locale onto a show, its seasons and its episodes.
 
 use super::layer::Ask;
-use super::{apply, overlay_season_cast};
+use super::overlay_season_cast;
+use crate::art_beside::{season_id, Art, SEASON};
 use crate::{metadata_core, translations, Pool};
 use anyhow::Result;
 
@@ -30,30 +31,41 @@ pub fn overlay_shows(pool: &Pool, shows: &mut [Show], locale: &str) -> Result<()
 /// keyed `"{show_id}:{season}"`).
 pub fn overlay_show_detail(pool: &Pool, detail: &mut ShowDetail, locale: &str) -> Result<()> {
     let conn = pool.get()?;
-    Ask {
+    let ask = Ask {
         conn: &conn,
         locale,
-    }
-    .layer(metadata_core::SHOW, &[detail.show.id.as_str()])?
-    .on_show(&mut detail.show);
+    };
+    ask.layer(metadata_core::SHOW, &[detail.show.id.as_str()])?
+        .on_show(&mut detail.show);
     let ep_ids: Vec<&str> = detail
         .seasons
         .iter()
         .flat_map(|s| s.episodes.iter())
         .map(|e| e.id.as_str())
         .collect();
-    let ep_tr = translations::resolve_many(&conn, "episode", &ep_ids, locale)?;
+    let episodes = ask.episodes(&ep_ids)?;
     for season in &mut detail.seasons {
         for ep in &mut season.episodes {
-            if let Some(t) = ep_tr.get(&ep.id) {
-                apply(ep.metadata.as_mut(), t);
-                if let Some(title) = &t.title {
-                    ep.title = title.clone();
-                }
-            }
+            episodes.on_episode(ep);
         }
         overlay_season_cast(&conn, &detail.show.id, season, locale)?;
         overlay_listed(&conn, &detail.show.id, season, locale)?;
+    }
+    season_posters(&ask, detail)
+}
+
+fn season_posters(ask: &Ask, detail: &mut ShowDetail) -> Result<()> {
+    let ids: Vec<String> = detail
+        .seasons
+        .iter()
+        .map(|season| season_id(&detail.show.id, season.number))
+        .collect();
+    let keys: Vec<&str> = ids.iter().map(String::as_str).collect();
+    let art = Art::load(ask.conn, SEASON, &keys)?;
+    let fetched = translations::resolve_many(ask.conn, SEASON, &keys, ask.locale)?;
+    for (season, id) in detail.seasons.iter_mut().zip(&ids) {
+        let fetched = fetched.get(id).and_then(|t| t.poster_url.clone());
+        season.poster_url = art.poster(id).or(fetched);
     }
     Ok(())
 }
@@ -90,154 +102,4 @@ fn overlay_listed(
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::localize::overlay_section_items;
-    use crate::localize::test_support::*;
-    use crate::translations::TransData;
-
-    use kroma_domain::{CastMember, Kind, ListedEpisode, Season, SectionItem};
-
-    #[test]
-    fn overlay_shows_and_section_items() {
-        let p = pool();
-        translations::put(
-            &p,
-            metadata_core::SHOW,
-            "s1",
-            "fr",
-            translations::TMDB,
-            &td("Serie FR", vec![]),
-        )
-        .unwrap();
-        translations::put(
-            &p,
-            metadata_core::ITEM,
-            "m1",
-            "fr",
-            translations::TMDB,
-            &td("Film FR", vec![]),
-        )
-        .unwrap();
-
-        let mut shows = vec![show("s1")];
-        overlay_shows(&p, &mut shows, "fr").unwrap();
-        assert_eq!(
-            shows[0].metadata.as_ref().unwrap().title.as_deref(),
-            Some("Serie FR")
-        );
-
-        let mut section = vec![
-            SectionItem::Movie {
-                item: Box::new(item("m1", Kind::Movie)),
-            },
-            SectionItem::Show {
-                show: Box::new(show("s1")),
-            },
-        ];
-        overlay_section_items(&p, &mut section, "fr").unwrap();
-        match &section[0] {
-            SectionItem::Movie { item } => assert_eq!(
-                item.metadata.as_ref().unwrap().title.as_deref(),
-                Some("Film FR")
-            ),
-            _ => panic!("expected movie"),
-        }
-        match &section[1] {
-            SectionItem::Show { show } => assert_eq!(
-                show.metadata.as_ref().unwrap().title.as_deref(),
-                Some("Serie FR")
-            ),
-            _ => panic!("expected show"),
-        }
-    }
-
-    #[test]
-    fn overlay_show_detail_covers_show_episodes_and_season_cast() {
-        let p = pool();
-        translations::put(
-            &p,
-            metadata_core::SHOW,
-            "s1",
-            "fr",
-            translations::TMDB,
-            &td("Serie FR", vec![]),
-        )
-        .unwrap();
-        translations::put(
-            &p,
-            "episode_guide",
-            "s1:1:2",
-            "fr",
-            translations::TMDB,
-            &td("Listé FR", vec![]),
-        )
-        .unwrap();
-        translations::put(
-            &p,
-            "episode",
-            "e1",
-            "fr",
-            translations::TMDB,
-            &td("Ep FR", vec![]),
-        )
-        .unwrap();
-        translations::put(
-            &p,
-            "season_cast",
-            "s1:1",
-            "fr",
-            translations::TMDB,
-            &TransData {
-                characters: vec![Some("Perso Saison".into())],
-                ..Default::default()
-            },
-        )
-        .unwrap();
-
-        let mut detail = ShowDetail {
-            show: show("s1"),
-            seasons: vec![Season {
-                number: 1,
-                episodes: vec![item("e1", Kind::Episode)],
-                cast: vec![CastMember {
-                    name: "A".into(),
-                    tmdb_id: None,
-                    character: Some("orig".into()),
-                    profile_url: None,
-                }],
-                missing: vec![ListedEpisode {
-                    episode: 2,
-                    title: Some("Listed".into()),
-                    overview: Some("Original".into()),
-                    air_date: None,
-                    still_url: None,
-                }],
-            }],
-        };
-        overlay_show_detail(&p, &mut detail, "fr").unwrap();
-
-        assert_eq!(
-            detail.show.metadata.as_ref().unwrap().title.as_deref(),
-            Some("Serie FR")
-        );
-        assert_eq!(
-            detail.seasons[0].episodes[0]
-                .metadata
-                .as_ref()
-                .unwrap()
-                .title
-                .as_deref(),
-            Some("Ep FR")
-        );
-        assert_eq!(
-            detail.seasons[0].cast[0].character.as_deref(),
-            Some("Perso Saison")
-        );
-        assert_eq!(detail.seasons[0].missing[0].title.as_deref(), Some("Listé FR"));
-        assert_eq!(
-            detail.seasons[0].missing[0].overview.as_deref(),
-            Some("Original")
-        );
-    }
-}
+mod tests;

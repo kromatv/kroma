@@ -3,7 +3,7 @@ import { sharedStyle, style, useStyleScope } from '#ui/core';
 // tech: each segment is a radio carrying `checked`, and on a physical keyboard
 // the arrow keys move the selection the way a native radio group does.
 
-import { Children, isValidElement, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -17,6 +17,7 @@ import { Box } from '#ui/components/atoms/box';
 import type { Radius } from '#ui/core/tokens/layout';
 import { CONTROL, type ControlSize, useEntryDefaults } from '#ui/lib/field-shell';
 import { FocusRegion } from '#ui/lib/focus-scope.component';
+import { partsOf } from '#ui/lib/parts';
 import { RingScope } from '#ui/lib/ring-scope.component';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
 import {
@@ -71,11 +72,7 @@ function Root<T extends string>({
   // forget what was measured.
   const order: string[] = [];
   const off = new Set<string>();
-  for (const child of Children.toArray(children)) {
-    if (!isValidElement(child) || child.type !== Item) {
-      continue;
-    }
-    const item = child.props as { value: string; disabled?: boolean };
+  for (const { props: item } of partsOf(children, Item)) {
     order.push(item.value);
     if (item.disabled) {
       off.add(item.value);
@@ -171,7 +168,7 @@ function Root<T extends string>({
     </Box>
   );
   return (
-    <Context.Provider value={ctx}>
+    <Context value={ctx}>
       <RingScope placement="inside">
         {stretch ? (
           <FocusRegion>{group}</FocusRegion>
@@ -181,7 +178,7 @@ function Root<T extends string>({
           </ScrollView>
         )}
       </RingScope>
-    </Context.Provider>
+    </Context>
   );
 }
 

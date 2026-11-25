@@ -2,9 +2,6 @@ import type { ViewStyle } from 'react-native';
 import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { fontSizes as textSizes } from '#ui/core/tokens';
-// <MediaCard>: the 16:9 landscape rail tile of the 10-foot home. Focusable, so
-// the same source is a D-pad stop on a TV and a click target in a browser.
-
 import { ArtScrim } from '#ui/components/atoms/art-scrim';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -13,10 +10,9 @@ import { Text } from '#ui/components/atoms/text';
 import { WatchedBadge } from '#ui/components/atoms/watched-badge';
 import { CardProgress } from '#ui/lib/card-progress.component';
 
-/** The fill behind artwork, so a tile is never blank while the art loads. */
-
 const frameOf = (width: number | string, scope: StyleScope) =>
   sharedStyle(`media-card:${width}`, { width, flexShrink: 0, radius: 'xl' }, scope);
+/** The fill behind artwork, so a tile is never blank while the art loads. */
 function tintGradient(tint: readonly [string, string]): string {
   // `to bottom`, not a tilt: a tilted gradient's iso-lines run diagonally, so it
   // reads as a wedge across the card's width rather than as a fade.
@@ -52,6 +48,8 @@ interface MediaCardProps {
   autoFocus?: boolean;
 }
 
+/** The 16:9 landscape rail tile of the 10-foot home: a D-pad stop on a TV and a
+ *  click target in a browser. */
 function MediaCard({
   title,
   overline,

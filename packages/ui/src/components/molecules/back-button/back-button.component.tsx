@@ -1,11 +1,3 @@
-// The shared way back: a chevron <IconButton>, scrimmed so it can float over
-// artwork. `label` is the accessibility name and defaults to plain English; an
-// app with an <I18nProvider> passes `label={t('common.back')}`.
-//
-// With `text`, it names its destination and grows into a labelled control: an
-// icon disc cannot hold words (<IconButton> is a fixed square), so that form is
-// a <Button> wearing the same variant.
-
 import { Button } from '#ui/components/atoms/button';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
 
@@ -16,6 +8,9 @@ interface BackButtonProps extends Omit<IconButtonProps, 'icon'> {
   text?: string;
 }
 
+/** The shared way back: a chevron <IconButton>, scrimmed to float over artwork.
+ *  `label` is the accessible name and defaults to plain English. With `text` it is a
+ *  <Button> in the same variant, since an icon disc cannot hold words. */
 function BackButton({
   diameter = 44,
   glyph,

@@ -1,7 +1,3 @@
-// <TableSkeleton>: the list/table placeholder - a bordered panel of evenly
-// spaced rows, each an icon well + a long bar + two short cells. A fixed-length
-// placeholder that never reorders, so an index key is correct.
-
 import { Box } from '#ui/components/atoms/box';
 import { Skeleton } from './skeleton.component';
 
@@ -9,6 +5,8 @@ interface TableSkeletonProps {
   rows?: number;
 }
 
+/** The list or table placeholder: a bordered panel of evenly spaced rows, each an
+ *  icon well, a long bar and two short cells. */
 function TableSkeleton({ rows = 8 }: Readonly<TableSkeletonProps>) {
   return (
     <Box gap={8} p={12} radius="xl" border="borderStrong" bg="surface1" aria-hidden>

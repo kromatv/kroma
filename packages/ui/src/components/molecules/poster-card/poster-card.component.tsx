@@ -1,11 +1,6 @@
 import { type StyleScope, color, sharedStyle, styles, useStyleScope } from '#ui/core';
 import { useStyles } from '#ui/core/styles';
 import { typeSpec as textRoles, fontSizes as textSizes } from '#ui/core/tokens';
-// <PosterCard>: the 2:3 portrait tile of the browse grids (Films, Series).
-//
-// The same anatomy as <MediaCard> at a different aspect and type scale. It fills
-// its grid cell rather than declaring a width, so the grid owns the column maths.
-
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Img } from '#ui/components/atoms/img';
@@ -26,6 +21,8 @@ interface PosterCardProps {
   /** Resume / series-completion position, 0..1, or null for no bar. */
   progress?: number | null;
   watched?: boolean;
+  /** Picked among its row, as a season among a show's: ringed in the accent colour. */
+  selected?: boolean;
   /** An explicit tile width. Omit inside a <Grid>, whose cell already sets the
    *  column width; a VIRTUALISED grid has no cell to fill (its rows are laid out
    *  from the item size it was given), so there the tile states its own. */
@@ -39,6 +36,8 @@ interface PosterCardProps {
 
 const frameOf = (width: number | string, scope: StyleScope) =>
   sharedStyle(`poster-card:${width}`, { width, radius: 'xl' }, scope);
+/** The 2:3 portrait tile of the browse grids (Films, Series). It fills its grid cell
+ *  rather than declaring a width, so the grid owns the column maths. */
 function PosterCard({
   title,
   overline,
@@ -46,6 +45,7 @@ function PosterCard({
   tint,
   progress = null,
   watched = false,
+  selected = false,
   width,
   onPress,
   onLongPress,
@@ -64,6 +64,7 @@ function PosterCard({
       onFocus={onFocus}
       autoFocus={autoFocus}
       label={title}
+      selected={selected}
       focusScale={1.05}
       style={[frameOf(width ?? '100%', scope), tintFill(tint, scope)]}
     >
@@ -91,6 +92,7 @@ function PosterCard({
           </Text>
         </Box>
         <CardProgress value={progress} />
+        {selected ? <Box absolute top={0} left={0} right={0} bottom={0} style={s.ring} /> : null}
       </Box>
     </Focusable>
   );
@@ -101,6 +103,7 @@ const BAND = `linear-gradient(to bottom, ${color('black/0')}, ${color('black/70'
 const rampDefinition = styles({ band: gradient(BAND) });
 
 const sDefinition = styles({
+  ring: { borderWidth: 3, border: 'accent', radius: 'xl' },
   overline: {
     font: 'ui',
     fontWeight: '700',

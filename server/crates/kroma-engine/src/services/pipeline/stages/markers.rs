@@ -128,8 +128,7 @@ mod tests {
         Season {
             number: 1,
             episodes,
-            cast: Vec::new(),
-            missing: Vec::new(),
+            ..Season::default()
         }
     }
 

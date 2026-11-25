@@ -188,6 +188,10 @@ holding but cannot place.
 title or episode, and binds the file to it. The binding is remembered against the file, so a
 later rescan does not undo it.
 
+**LIB-93** (SHIPPED) - When a person's search for a film's or a show's match finds nothing at
+the provider, the screen offers to write the title's info by hand (LIB-83) instead, so a
+title the provider does not know is never left without a way forward.
+
 **LIB-34** (AGREED) - **Rename on disk.** A name fixed to the convention above matches
 automatically on the next rescan and leaves the Unmatched view. Neither repair is privileged
 over the other.
@@ -199,6 +203,19 @@ match a person made by hand in KROMA (LIB-33).
 
 Neither Plex nor Jellyfin records which matches a person fixed, so there is no fixed set to
 bring. Every identity comes over, and the ones somebody fixed come with them.
+
+**LIB-85** (SHIPPED) - **A match named in the `.nfo` file.** A film's or a show's `.nfo` file
+(LIB-84) that names the title's provider id, as Kodi, Jellyfin and Plex write it, matches the
+title to that id ahead of KROMA's own reading of the name, behind a match made by hand (LIB-33)
+and one an import brought (LIB-78). A title already matched to another id by its name is
+matched again to the file's at the next scan.
+
+**LIB-92** (SHIPPED) - A film's or a show's `.nfo` file (LIB-84) that names no provider id,
+only the title's IMDb or TheTVDB id as Kodi, Jellyfin and Plex write them, matches the title
+to the record the provider gives for that id. The provider is asked once, and its answer holds
+until the file changes. Such a file comes behind a provider id that the file or an import
+names (LIB-85, LIB-78), and one the provider knows nothing about leaves the title to be
+matched by its name.
 
 **Matches two things.**
 
@@ -236,6 +253,49 @@ and playable, just thin on metadata.
 A title, tagline, summary, genre list or character name that language lacks is shown in
 English where English has it, so a film with a French title and no French summary shows the
 French title over the English summary. Artwork is never borrowed this way.
+
+**LIB-83** (SHIPPED) - A person who manages the library can write a film's or a show's name,
+summary, year and genres by hand, whether the provider matched it or not. Each field they
+write is shown in place of the provider's, in every language, until they clear it. A field
+they leave empty keeps following the provider. A rescan, a refresh or a re-match keeps what
+they wrote (LIB-44), search finds the name they wrote, and a backup carries it.
+
+**LIB-84** (SHIPPED) - A film or a show takes its name, summary, year and genres from the
+`.nfo` file kept beside it, the file Kodi, Jellyfin and Plex read: one named after a film's
+video or `movie.nfo` in a folder that holds that film alone, and `tvshow.nfo` in a show's
+folder. The file comes before the provider's text, in every language and whether or not the
+provider matched the title, as a local file does in Jellyfin and Kodi. What a person wrote by
+hand (LIB-83) comes before the file, field by field. A file added or changed is read at the
+next scan, and one that is not such a document is passed over.
+
+**LIB-86** (SHIPPED) - The catalogue sorts and filters a title by the name, year and genres it
+shows: what a person wrote by hand (LIB-83), else its `.nfo` file (LIB-84), else the provider's.
+A year written in place of the provider's also replaces a release date that falls in another
+year, so a title sorted by release lands where its year says.
+
+**LIB-87** (SHIPPED) - A person can write the day a title came out in place of its year
+(LIB-83), and a `.nfo` file's premiere date gives it too (LIB-84). The year shown is the date's,
+as Plex and Kodi take a film's year from its release date, and the date replaces the
+provider's. A year written alone stays possible for a title whose day nobody knows.
+
+**LIB-88** (SHIPPED) - A person can write a sort title for a title (LIB-83), and a `.nfo`
+file's `<sorttitle>` gives one too (LIB-84). The catalogue sorts the title, and files it under
+a letter, by that name, while the name shown stays the same, as in Plex, Jellyfin and Kodi.
+
+**LIB-89** (SHIPPED) - An episode takes its name, summary and air date from the `.nfo` file
+named after its video, as Kodi, Jellyfin and Plex read it. The file comes before the provider's
+text, in every language and whether or not the provider recognized the episode, as a film's
+does (LIB-84). A file that describes several episodes gives the first.
+
+**LIB-90** (SHIPPED) - A person who manages the library can write an episode's name, air date
+and summary by hand, from the episode's row on its show's page. What they write comes before the
+episode's `.nfo` file (LIB-89) and the provider's text, field by field and in every language, and
+a rescan or a refresh keeps it, as for a film (LIB-83).
+
+**LIB-91** (SHIPPED) - The backdrops behind the sign-in screen, the notification that new
+titles arrived and the most-watched panel of the dashboard name a title by what a person wrote
+or its `.nfo` file says (LIB-83, LIB-84), before the scanned or fetched name. They show the
+poster or the backdrop kept for it (MEDIA-48 to MEDIA-50) before the fetched one.
 
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.

@@ -8,6 +8,7 @@
   "rematch.groupOther": "Other results",
   "rematch.loadFailed": "Could not load TMDB suggestions.",
   "rematch.noResults": "No TMDB results for this search.",
+  "rematch.noResultsHint": "You can write its name, year and summary yourself.",
   "rematch.parsedAs": "Detected as {title}",
   "rematch.reset": "Restore automatic matching",
   "rematch.search": "Search",

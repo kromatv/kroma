@@ -199,6 +199,34 @@ episode, a **thumb**. These are media too, and are treated with the same discipl
   or a show, and a backdrop for a matched one. Each comes before the picture kept beside the
   title's files and the fetched one, until the person removes it. A metadata refresh keeps it
   (LIB-44), and a backup carries it.
+- **MEDIA-51** (SHIPPED) - The logo kept beside a matched title's files, the title's name
+  drawn as a picture, comes before a fetched one. For a film, that is a picture named after
+  one of its video files followed by `-logo` or `-clearlogo`, or one named `logo` or
+  `clearlogo` in a folder that holds no other title's video. For a show, it is one of those
+  two names in the show's folder, under the same rule as its poster (MEDIA-48).
+- **MEDIA-52** (SHIPPED) - The thumbnail kept beside an episode's file comes before the
+  fetched still, and stands in for it when there is none, even on an episode KROMA did not
+  recognize. It is a picture named after the episode's video file followed by `-thumb`, or
+  named after it alone, with the poster's formats and case rule (MEDIA-48).
+- **MEDIA-53** (SHIPPED) - A show's page draws its seasons as a row of posters, the one on
+  screen picked. A season's poster is the one kept beside its files, else the one fetched for
+  it in the reader's language (LIB-82), else the show's. The one beside its files is a
+  picture named `poster`, `folder`, `cover`, `default` or after the season, `Season01`, in
+  the season's folder when it holds no other season's episode, else one named
+  `season01-poster` in the show's folder (MEDIA-48), with `season-specials-poster` for the
+  specials.
+- **MEDIA-54** (SHIPPED) - A person who manages the library can upload a logo for a matched
+  film or show, as for its poster and its backdrop (MEDIA-50). It comes before the logo kept
+  beside the title's files (MEDIA-51) and the fetched one until the person removes it, and a
+  metadata refresh keeps it.
+- **MEDIA-55** (SHIPPED) - A person who manages the library can upload a thumbnail for an
+  episode from its row on the show's page. It comes before the thumbnail kept beside the
+  episode's file (MEDIA-52) and the fetched still, even on an episode KROMA did not
+  recognize, until the person removes it, and a metadata refresh keeps it.
+- **MEDIA-56** (SHIPPED) - A person who manages the library can upload a poster for a season
+  with an episode on disk, from the show's page. It comes before the poster kept beside the
+  season's files and the fetched one (MEDIA-53) until the person removes it, and a metadata
+  refresh keeps it.
 - **MEDIA-34** (AGREED) - KROMA derives a fixed set of sizes per image, a small grid
   thumbnail through a full-bleed backdrop, so a client requests a size and never the original.
   The original is retained as the master.

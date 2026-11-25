@@ -93,7 +93,7 @@ function Root({
     [setOpenState, onOpenChange],
   );
 
-  const dismiss = useCallback((reason: MenuDismissReason) => setOpen(false, reason), [setOpen]);
+  const dismiss = (reason: MenuDismissReason) => setOpen(false, reason);
 
   const state = useMemo<MenuState>(
     () => ({ open, label, anchor, setOpen }),
@@ -101,7 +101,7 @@ function Root({
   );
 
   return (
-    <MenuContext.Provider value={state}>
+    <MenuContext value={state}>
       {kids.filter((node) => !isEntry(node))}
       <MenuSurface
         open={open}
@@ -113,7 +113,7 @@ function Root({
         anchor={anchor}
         onDismiss={dismiss}
       />
-    </MenuContext.Provider>
+    </MenuContext>
   );
 }
 

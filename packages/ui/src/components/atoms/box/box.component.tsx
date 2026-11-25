@@ -1,15 +1,6 @@
 import { useStyleScope } from '#ui/core/style-context';
 import type { StyleScope } from '#ui/core/style-scope';
 
-// <Box>: the layout primitive.
-//
-// A React Native <View> that takes the design's vocabulary directly, so a screen
-// reads as layout instead of as a StyleSheet lookup table:
-//
-//   <Box row center gap={12} px={64} py={24} bg="surface1" radius="lg" flex>
-//
-// `style` is still there and always wins, for the genuinely one-off cases.
-
 import type { ReactNode, Ref } from 'react';
 import { type StyleProp, View, type ViewProps, type ViewStyle } from 'react-native';
 import { type BoxStyleProps, splitShorthand, styles, useBreakpointStep } from '#ui/core';
@@ -43,6 +34,9 @@ const HITDefinition = styles({
   'box-only': { pointerEvents: 'box-only' },
 });
 
+/** The layout primitive: a React Native <View> that takes the design's vocabulary
+ *  directly, so a screen reads as layout instead of as a StyleSheet lookup table.
+ *  `style` always wins, for the genuinely one-off cases. */
 function Box({ children, asChild, style, ref, pointerEvents, ...props }: Readonly<BoxProps>) {
   const HIT = useStyles(HITDefinition);
   const scope = useStyleScope();

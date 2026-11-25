@@ -1,4 +1,4 @@
-// Metro's babel transformer, wrapped for the two rewrites Metro cannot do on
+// Metro's babel transformer, wrapped for the three rewrites Metro cannot do on
 // its own. A `.mdx` file is compiled to a React component before babel ever
 // sees it:
 //
@@ -7,6 +7,8 @@
 // and the kit's `WEB` platform constant is collapsed to a literal (see
 // inline-platform.cjs), so Metro's own constant folding deletes web-only
 // branches from a release bundle the way it already deletes `Platform.OS` ones.
+// Last, every component the kit's doors export is given its public name, by the
+// same door walk the browser build runs (packages/ui/vite/names).
 //
 // Vite spells that `@mdx-js/rollup`; `babelTransformerPath` is Metro's
 // equivalent hook, which is why a story's `.docs.mdx` renders on a television
@@ -32,7 +34,11 @@ const { readFileSync } = require('node:fs');
 const path = require('node:path');
 const { inlinePlatformConst } = require('./inline-platform.cjs');
 
+const REPO_ROOT = path.join(__dirname, '..', '..', '..');
+
 let loading;
+
+let walked;
 
 function upstream() {
   const at = process.env[UPSTREAM];
@@ -52,6 +58,25 @@ function compiler() {
   return loading;
 }
 
+function kitNames() {
+  if (process.env.KROMA_NAMES === '0') {
+    return null;
+  }
+  if (!walked) {
+    const { appendNames, namesHash, walkKit } = require('@kromatv/ui/vite');
+    const walk = walkKit(REPO_ROOT);
+    walked = { appendNames, walk, hash: namesHash(walk) };
+  }
+  return walked;
+}
+
+function withNames(source, filename, projectRoot) {
+  const kit = kitNames();
+  const file = path.resolve(projectRoot ?? '', filename);
+  const named = kit?.walk.names.get(file);
+  return named ? kit.appendNames(source, file, named).code : source;
+}
+
 async function transform({ src, filename, options, plugins }) {
   let source = src;
   if (filename.endsWith('.mdx')) {
@@ -59,6 +84,7 @@ async function transform({ src, filename, options, plugins }) {
     source = await compileMdx(src, filename);
   }
   source = inlinePlatformConst(source, options.platform);
+  source = withNames(source, filename, options.projectRoot);
   return upstream().transform({ src: source, filename, options, plugins });
 }
 
@@ -73,6 +99,8 @@ function getCacheKey() {
     .update(readFileSync(__filename))
     .update(readFileSync(path.join(__dirname, 'mdx.mjs')))
     .update(readFileSync(path.join(__dirname, 'story-scenes.mjs')))
+    .update(readFileSync(path.join(REPO_ROOT, 'packages/ui/vite/names/append.ts')))
+    .update(kitNames()?.hash ?? 'unnamed')
     .digest('hex');
   return `${inherited}$${own}`;
 }

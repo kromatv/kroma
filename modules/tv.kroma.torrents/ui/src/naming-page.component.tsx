@@ -88,6 +88,20 @@ const sDefinition = styles({
   moveRule: { borderBottomWidth: 1, borderBottomColor: 'tint/4' },
 });
 
+const SAVED_MS = 2500;
+
+function useSavedFlag(): [boolean, (saved: boolean) => void] {
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    if (!saved) {
+      return undefined;
+    }
+    const timer = setTimeout(() => setSaved(false), SAVED_MS);
+    return () => clearTimeout(timer);
+  }, [saved]);
+  return [saved, setSaved];
+}
+
 export default function NamingPage() {
   const t = useT();
   const torrents = useTorrentsApi();
@@ -97,7 +111,7 @@ export default function NamingPage() {
   const [failed, setFailed] = useState(false);
   const [sample, setSample] = useState<{ movie: string; episode: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useSavedFlag();
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -111,6 +125,7 @@ export default function NamingPage() {
   }, [torrents]);
 
   const debounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(debounce.current), []);
   const refreshSample = useCallback(
     (next: NamingTemplatesView) => {
       clearTimeout(debounce.current);
@@ -157,10 +172,7 @@ export default function NamingPage() {
     setSaveError(null);
     torrents
       .saveNaming(tpl)
-      .then(() => {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2500);
-      })
+      .then(() => setSaved(true))
       .catch((e) => setSaveError(apiErrorText(e, t('naming.saveFailed'))))
       .finally(() => setSaving(false));
   };

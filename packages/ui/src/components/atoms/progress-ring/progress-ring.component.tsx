@@ -1,8 +1,3 @@
-// <ProgressRing>: a thin circular progress arc (0..1), starting at 12 o'clock
-// and filling clockwise. Used where a bar would not fit (the AI-suggestions rail
-// while the server is still generating it). The arc eases to a new value;
-// `indeterminate` spins a fixed arc instead and ignores `value`.
-
 import { Animated, View } from 'react-native';
 import { clamp01 } from '#ui/components/atoms/progress';
 import { activeTheme, color, style, useStyleScope } from '#ui/core';
@@ -33,6 +28,9 @@ interface ProgressRingProps extends RingProps {
 // React Native's transform vocabulary, on both platforms.
 const startAtTwelve = style({ transform: [{ rotate: RING_ROTATION }] });
 
+/** A thin circular progress arc (0..1), from 12 o'clock clockwise, for where a bar
+ *  would not fit. The arc eases to a new value; `indeterminate` spins a fixed arc
+ *  instead and ignores `value`. */
 function ProgressRing({
   indeterminate = false,
   eased = true,

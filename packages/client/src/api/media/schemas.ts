@@ -24,24 +24,55 @@ export const MatchCandidate = z.object({
 });
 export type MatchCandidate = z.infer<typeof MatchCandidate>;
 
-/** Whose chosen art: a film (`item`) or a show. */
-export const ArtKind = z.enum(['item', 'show']);
+/** What a person who manages the library writes by hand about: a film or an
+ * episode (`item`), or a show. */
+export const TitleKind = z.enum(['item', 'show']);
+export type TitleKind = z.infer<typeof TitleKind>;
+
+/** Whose chosen art: a film or an episode (`item`), a show, or a show's season,
+ * which takes only a poster. */
+export const ArtKind = z.enum(['item', 'show', 'season']);
 export type ArtKind = z.infer<typeof ArtKind>;
 
-/** Which of a title's pictures an admin chooses. */
-export const ArtRole = z.enum(['poster', 'backdrop']);
+/** Which of a title's pictures an admin chooses: `still` is an episode's thumbnail. */
+export const ArtRole = z.enum(['poster', 'backdrop', 'logo', 'still']);
 export type ArtRole = z.infer<typeof ArtRole>;
 
 /** `GET /api/art/{kind}/{id}`: the URL of each picture an admin chose. */
 export const ChosenArt = z.object({
   poster: z.string().nullable(),
   backdrop: z.string().nullable(),
+  logo: z.string().nullish(),
+  still: z.string().nullish(),
 });
 export type ChosenArt = z.infer<typeof ChosenArt>;
 
 /** `POST /api/art/{kind}/{id}/{role}`: where the chosen picture is served. */
 export const ArtShown = z.object({ url: z.string() });
 export type ArtShown = z.infer<typeof ArtShown>;
+
+/** `GET` and `PUT /api/edits/{kind}/{id}`: what was written by hand about a
+ * film or a show. Each field comes before the provider's in every language,
+ * and a null one follows the provider. */
+export const TitleEdit = z.object({
+  title: z.string().nullable(),
+  sortTitle: z.string().nullable().default(null),
+  overview: z.string().nullable(),
+  year: z.number().int().nullable(),
+  released: z.string().nullable().default(null),
+  genres: z.array(z.string()).nullable(),
+});
+export type TitleEdit = z.infer<typeof TitleEdit>;
+
+/** What a {@link TitleEdit} can hold, as the server checks it: characters in a
+ * name, a summary and one genre, how many genres, and the years. */
+export const TITLE_EDIT_LIMITS = {
+  title: 300,
+  overview: 10_000,
+  genre: 60,
+  genres: 20,
+  years: [1800, 2200],
+} as const;
 
 /** Route vocabulary for a rematch: the catalog's split, not TMDB's `tv`. */
 export const RematchKind = z.enum(['movie', 'show']);
@@ -130,6 +161,7 @@ export type ListedEpisode = z.infer<typeof ListedEpisode>;
 export const Season = z.object({
   number: z.number(),
   episodes: z.array(MediaItem),
+  posterUrl: z.string().nullish(),
   cast: z.array(CastMember).nullish(),
   missing: z.array(ListedEpisode).nullish(),
 });

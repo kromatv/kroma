@@ -94,9 +94,9 @@ function Root({ size, children }: Readonly<TimelineRootProps>) {
   return (
     <Box>
       {items.map((child, at) => (
-        <TimelineContext.Provider key={child.key ?? at} value={rail[at] as Context}>
+        <TimelineContext key={child.key ?? at} value={rail[at] as Context}>
           {child}
-        </TimelineContext.Provider>
+        </TimelineContext>
       ))}
     </Box>
   );

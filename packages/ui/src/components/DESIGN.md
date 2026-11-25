@@ -124,6 +124,9 @@ screen reader or steals a D-pad stop.
   contents walks its direct children once, sorts them, and publishes what it
   learned through context: a position (`first`/`middle`/`last`), a padding, the
   layout the shell takes. `<ButtonGroup>` and `<InputGroup>` are both this.
+  Where a Root only places its parts, `sortParts` (`#ui/lib/parts`) is that
+  walk: `const [header, body] = sortParts(children, Header)` hands back the
+  headers, then every other child.
 - **What it publishes may be a face rather than a measurement.**
   `<Select.Root>` keys each item's `<Select.Media>` by that item's value, so
   `<Select.Value>` draws the pick's mark out of the context rather than out of a
@@ -132,7 +135,13 @@ screen reader or steals a D-pad stop.
 
 The corollary is real API, and it must be documented on the component. A part must
 be a direct child to be sorted, and only a part that reads the context takes part
-in the shape.
+in the shape. A fragment is no wrapper: the walk opens it (`directChildren`), so
+a part written inside one is still direct. A part returned by a component of the
+caller's own is not, because the Root cannot see what that component will draw.
+A band of `<Dialog.Root>` or `<Drawer.Root>` written that way says so in
+development (`SurfaceBand`, `PlacedBands`): it lands in the panel the Root
+draws, or nowhere when the caller wrote the panel too, and the warning names
+the band and its Root.
 
 ---
 
@@ -366,15 +375,67 @@ Giving the pairs `value`/`defaultValue`/`onValueChange`,
 
 - **Never `onChange`.** In React DOM `value` + `onChange` means a form input with
   its own semantics, and reusing it invites `e.target.value`.
-- **Controlled-ness is per prop and fixed at mount.** `useControllable`
-  (`#ui/lib/use-controllable`) pins the mode on first render for exactly the reason
-  React warns about an input flipping between the two.
+- **Controlled-ness is per prop and fixed at mount.** A control pins the mode on
+  first render for exactly the reason React warns about an input flipping between
+  the two.
 - **Value first, details second.** `(next, details)` keeps the 95% call site as
   `onValueChange={setPicked}`; a details-only object costs every call site a
   destructure.
 - **A dismissal carries its reason.** One `onOpenChange(open, details)` with
   `reason` beats four separate outside/escape/focus handlers, and this kit has a
   reason the web does not: `reason: 'back'`, the remote's Back button.
+
+### One declaration per control
+
+A component does not write that signature by hand. It declares its state once
+with `defineControl` and runs it with `useControl` (`#ui/lib/control`):
+
+```tsx
+const counterControl = defineControl('counter', {
+  state: { value: 0 },
+  options: { step: 1, max: 10 },
+  actions: {
+    increment: ({ value, step, max }) => ({ value: Math.min(max, value + step) }),
+    jump: (_now, to: number) => ({ value: to }),
+  },
+});
+
+function Counter({ style, ...props }: Readonly<CounterProps>) {
+  const [{ value, increment }, rest] = useControl(counterControl, props);
+  return (
+    <Button {...rest} onPress={increment} style={style}>
+      {value}
+    </Button>
+  );
+}
+```
+
+- **`state` is the three props of each key.** `value: 0` reads `value`,
+  `defaultValue` and `onValueChange`, and starts from `0` when neither is given.
+- **`options` are props the control reads and never changes**, each with its
+  default. The component gets them resolved.
+- **An action is a pure function.** It reads the state and the options as they
+  are now and answers with the keys it changes. Arguments after the first are
+  the action's own, and the component calls it without the first: `jump(4)`.
+- **Every key has a setter**, `setValue(next, reason?)`. A dismissal passes its
+  reason there: `setOpen(false, 'back')`.
+- **Every change takes one path.** A value the control already holds is
+  ignored. Otherwise `on<Key>Change(next, details)` runs, with the action's name
+  as `details.reason` and who acted as `details.source`; `details.cancel()` keeps
+  the value as it was. An action or a setter answers `false` when nothing
+  changed.
+- **`rest` is the props the control did not read**, for the component to pass on.
+- **The props stay written in the component's interface.** The workbench reads a
+  prop's type and its doc line where it is declared, and the compiler checks the
+  three against the definition. `ControlProps<typeof counterControl>` is the same
+  props derived, for code the workbench does not document.
+- **A compound's Root publishes its control to its parts**:
+  `partContext<ControlOf<typeof counterControl>>('Counter.Root')`.
+
+A mounted control joins the engine of its `KitProvider`, which lists the
+controls on screen and hears every change that took effect. `useControllable`
+is the hook this replaces; a component still on it moves when it is next
+touched.
 
 ---
 
@@ -478,6 +539,15 @@ where it is.
 **Renaming.** Rename in one commit across the whole tree; there are no deprecation
 shims. Every call site is in this repo, `bun run typecheck` is the gate, and a shim
 that outlives the migration is a second API nobody is maintaining.
+
+**Its name.** Nobody writes a `displayName`. The build (`kroma-names` in
+`kromaUI()`, and the same door walk in the Metro transformer) follows the kit's
+two doors, `@kromatv/ui` and `@kromatv/ui/kit`, to the file that declares each
+export: a PascalCase component is named as the door exports it, and each part of
+an exported namespace `Namespace.Key`. That is what React DevTools and
+`componentName()` (`#ui/lib/component-names`) read in a minified build, and
+only what a door exports is named. `kit-names.compiled.test.tsx` holds every
+door export to it.
 
 ---
 

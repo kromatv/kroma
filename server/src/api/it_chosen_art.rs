@@ -2,9 +2,11 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::api::test_support::{
-    demo_item_id, get, raw, seed_playable_item, seed_session, test_app, upload, TestApp,
+    demo_item_id, demo_show_id, get, raw, seed_playable_item, seed_session, test_app, upload,
+    TestApp,
 };
 use crate::db;
+use crate::db::art_beside::POSTER;
 use crate::db::metadata_core::ITEM;
 use crate::model::Permission;
 
@@ -18,8 +20,8 @@ async fn fetched(t: &TestApp, uri: &str) -> (StatusCode, String) {
 }
 
 fn chosen_poster(t: &TestApp, film: &str) -> String {
-    let urls = db::art_chosen::chosen(&t.state.db, ITEM, film).expect("read the chosen art");
-    urls.poster.expect("a chosen poster")
+    let mut urls = db::art_chosen::chosen(&t.state.db, ITEM, film).expect("read the chosen art");
+    urls.remove(POSTER).expect("a chosen poster")
 }
 
 #[tokio::test]
@@ -72,6 +74,122 @@ async fn a_backdrop_an_admin_uploads_replaces_the_fetched_one_and_can_be_reset()
 }
 
 #[tokio::test]
+async fn a_logo_an_admin_uploads_replaces_the_fetched_one() {
+    let t = test_app();
+    let film = demo_item_id("Blade Runner 2049");
+    let fetched_art = json!({
+        "tmdbId": 1, "genres": [], "tmdbUrl": "",
+        "logoUrl": "/api/images/feedfeedfeedfeed.webp",
+    });
+    let meta = serde_json::from_value(fetched_art).expect("metadata literal");
+    db::set_item_metadata(&t.state.db, &film, &meta).expect("set item metadata");
+
+    let status = upload(
+        &t.app,
+        &format!("/api/art/item/{film}/logo"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+
+    let (_, chosen) = get(&t.app, &format!("/api/art/item/{film}"), Some(&t.token)).await;
+    let (_, shown) = get(&t.app, &format!("/api/items/{film}"), Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        chosen["logo"]
+            .as_str()
+            .is_some_and(|url| url.starts_with("/api/images/chosen-"))
+    );
+    assert_eq!(shown["metadata"]["logoUrl"], chosen["logo"]);
+}
+
+#[tokio::test]
+async fn a_thumbnail_an_admin_uploads_shows_on_the_episode() {
+    let t = test_app();
+    let show = format!("/api/shows/{}", demo_show_id("The Office"));
+    let (_, before) = get(&t.app, &show, Some(&t.token)).await;
+    let episode = before["seasons"][0]["episodes"][0]["id"]
+        .as_str()
+        .expect("an episode")
+        .to_string();
+
+    let status = upload(
+        &t.app,
+        &format!("/api/art/item/{episode}/still"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+
+    let (_, chosen) = get(&t.app, &format!("/api/art/item/{episode}"), Some(&t.token)).await;
+    let (_, after) = get(&t.app, &show, Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(chosen["backdrop"], json!(null));
+    assert!(
+        chosen["still"]
+            .as_str()
+            .is_some_and(|url| url.starts_with("/api/images/chosen-"))
+    );
+    assert_eq!(
+        after["seasons"][0]["episodes"][0]["metadata"]["backdropUrl"],
+        chosen["still"]
+    );
+}
+
+async fn first_season(t: &TestApp) -> (String, String) {
+    let id = demo_show_id("The Office");
+    let show = format!("/api/shows/{id}");
+    let (_, detail) = get(&t.app, &show, Some(&t.token)).await;
+    let number = detail["seasons"][0]["number"].as_u64().expect("a season");
+    (show, format!("/api/art/season/{id}:{number}"))
+}
+
+#[tokio::test]
+async fn a_season_poster_an_admin_uploads_shows_on_the_season() {
+    let t = test_app();
+    let (show, art) = first_season(&t).await;
+
+    let status = upload(&t.app, &format!("{art}/poster"), &t.token, PNG.to_vec()).await;
+
+    let (_, chosen) = get(&t.app, &art, Some(&t.token)).await;
+    let (_, after) = get(&t.app, &show, Some(&t.token)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        chosen["poster"]
+            .as_str()
+            .is_some_and(|url| url.starts_with("/api/images/chosen-"))
+    );
+    assert_eq!(after["seasons"][0]["posterUrl"], chosen["poster"]);
+}
+
+#[tokio::test]
+async fn a_season_takes_only_a_poster_and_only_with_an_episode_on_disk() {
+    let t = test_app();
+    let (_, art) = first_season(&t).await;
+    let show = demo_show_id("The Office");
+
+    let backdrop = upload(&t.app, &format!("{art}/backdrop"), &t.token, PNG.to_vec()).await;
+    let away = upload(
+        &t.app,
+        &format!("/api/art/season/{show}:99/poster"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+    let unnumbered = upload(
+        &t.app,
+        &format!("/api/art/season/{show}/poster"),
+        &t.token,
+        PNG.to_vec(),
+    )
+    .await;
+
+    assert_eq!(backdrop, StatusCode::NOT_FOUND);
+    assert_eq!(away, StatusCode::NOT_FOUND);
+    assert_eq!(unnumbered, StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
 async fn a_member_who_cannot_manage_the_library_cannot_choose_art() {
     let t = test_app();
     let film = seed_playable_item(&t.state, "Heat", b"film");
@@ -97,9 +215,9 @@ async fn a_picture_for_no_known_title_or_role_is_not_found() {
     let t = test_app();
     let film = seed_playable_item(&t.state, "Heat", b"film");
 
-    let logo = upload(
+    let banner = upload(
         &t.app,
-        &format!("/api/art/item/{film}/logo"),
+        &format!("/api/art/item/{film}/banner"),
         &t.token,
         PNG.to_vec(),
     )
@@ -113,7 +231,7 @@ async fn a_picture_for_no_known_title_or_role_is_not_found() {
     )
     .await;
 
-    assert_eq!(logo, StatusCode::NOT_FOUND);
+    assert_eq!(banner, StatusCode::NOT_FOUND);
     assert_eq!(ghost, StatusCode::NOT_FOUND);
     assert_eq!(person, StatusCode::NOT_FOUND);
 }

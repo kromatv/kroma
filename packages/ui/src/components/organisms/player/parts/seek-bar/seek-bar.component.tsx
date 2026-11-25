@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { type GestureResponderEvent, PanResponder, type PointerEvent, View } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -24,6 +24,7 @@ import {
 import { useStyles } from '#ui/core/styles';
 import { gradient } from '#ui/lib/css';
 import { suppressSelection } from '#ui/lib/drag-select';
+import { useFocusWithin } from '#ui/lib/focus-within.hook';
 import { usePointerDriving } from '#ui/lib/input-source';
 import { formatTimecode } from '#ui/lib/intl';
 import { useT } from '#ui/services/i18n';
@@ -97,11 +98,11 @@ export function SeekBar({
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const [focused, setFocused] = useState(false);
+  const within = useFocusWithin(onFocus, onBlur);
   const px = scaler(scale);
   // Built per scale, not per tick: this bar re-renders ~4 Hz and is not memoized,
   // so a fresh array would miss the style cache four times a second.
-  const sized = useMemo(() => scaled(scale, scope), [scale, scope]);
+  const sized = scaled(scale, scope);
   // The track measures itself rather than reading a DOM rect, so the same drag
   // maths runs on a TV; PanResponder is the one gesture API both renderers have.
   const track = useDragTrack();
@@ -115,13 +116,10 @@ export function SeekBar({
 
   // The segments are the track's coordinate system (see lib/seek-track), so
   // everything below is measured against them rather than against `cur / dur`.
-  const segs = useMemo(
-    () =>
-      chapters.length > 0
-        ? chapters
-        : [{ startMs: 0, endMs: dur * 1000, title: '', kind: 'chapter' as const }],
-    [chapters, dur],
-  );
+  const segs =
+    chapters.length > 0
+      ? chapters
+      : [{ startMs: 0, endMs: dur * 1000, title: '', kind: 'chapter' as const }];
 
   const secAtOffset = (offset: number | null): number | null => {
     if (offset == null || dur <= 0 || track.width <= 0) {
@@ -207,7 +205,7 @@ export function SeekBar({
   let previewSec: number | null = null;
   if (hoverSec != null) {
     previewSec = hoverSec;
-  } else if (focused && !pointerDriving()) {
+  } else if (within.focused && !pointerDriving()) {
     previewSec = shown;
   }
   const previewTile = previewSec != null ? tileAt(previewSec) : null;
@@ -239,14 +237,8 @@ export function SeekBar({
         label={t('player.seekBar')}
         value={{ min: 0, max: Math.round(dur), now: Math.round(shown), text: elapsed }}
         onPress={onActivate}
-        onFocus={() => {
-          setFocused(true);
-          onFocus();
-        }}
-        onBlur={() => {
-          setFocused(false);
-          onBlur();
-        }}
+        onFocus={within.onFocus}
+        onBlur={within.onBlur}
         onKey={(direction) => {
           if (direction !== 'left' && direction !== 'right') {
             return false;
@@ -257,7 +249,7 @@ export function SeekBar({
         style={[
           s.bar,
           { gap: px(4), height: px(18), paddingHorizontal: px(2) },
-          seekTrackScoped(undefined, { focus: focused }).root,
+          seekTrackScoped(undefined, { focus: within.focused }).root,
         ]}
       >
         {/* The varying offset rides the transform via `style`, never a shorthand

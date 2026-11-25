@@ -1,17 +1,3 @@
-// <ExpandableText>: a paragraph clamped to a few lines with a "more"
-// affordance that expands it in place on a press.
-//
-// A clamped <Text> reports its clamped geometry, so whether it overflows at
-// all can't be read off the visible copy: it's measured against a hidden,
-// unclamped ghost rendered behind it, by height (`onLayout`), since
-// react-native-web never fires `onTextLayout`. Those two measurements are also
-// what make the expansion animatable: they ARE the from and to.
-//
-// `moreLabel` is a prop, not a translation call: the kit knows no app's
-// i18n, so the host names the affordance the same way it names a Focusable.
-// A television build simply renders it clamped: the press is a pointer's or
-// a thumb's gesture, and a D-pad synopsis wants a screen of its own.
-
 import { useEffect, useState } from 'react';
 import { Pressable } from 'react-native';
 import { Text, type TextProps } from '#ui/components/atoms/text';
@@ -40,6 +26,9 @@ interface ExpandableTextProps extends Pick<TextProps, 'variant' | 'color' | 'sty
   animate?: boolean;
 }
 
+/** A paragraph clamped to a few lines with a "more" affordance that expands it in
+ *  place on a press. A television build renders it clamped: the press is a
+ *  pointer's or a thumb's gesture, and a D-pad synopsis wants a screen of its own. */
 function ExpandableText({
   children,
   lines = 3,
@@ -52,6 +41,10 @@ function ExpandableText({
   const s = useStyles(sDefinition);
 
   const [expanded, setExpanded] = useState(false);
+  // A clamped <Text> reports its clamped geometry, so overflow is measured
+  // against a hidden, unclamped ghost by height (`onLayout`), since
+  // react-native-web never fires `onTextLayout`. The two measurements are also
+  // the from and to of the expansion.
   // Overflow = the ghost is taller than the clamped copy, with a pixel of
   // slack for sub-pixel line metrics.
   const [shown, setShown] = useState(0);

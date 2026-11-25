@@ -6,7 +6,7 @@ use rusqlite::types::Value as SqlValue;
 use crate::rows::parse_metadata;
 use crate::Pool;
 
-use super::{CAT_CTE, DIRECTING_JOBS_SQL};
+use super::{CAT_CTE, DIRECTING_JOBS_SQL, genres_in};
 
 // Caps a single `find_titles` call so tool results re-entering the model's
 // context stay bounded.
@@ -39,15 +39,16 @@ pub struct TitleFilter {
 }
 
 /// List titles matching `filter`, ordered + capped. The heavy lifting is in
-/// SQL; genres/rating are pulled from the parsed metadata so the struct stays
-/// faithful to the model types.
+/// SQL; the rating is pulled from the parsed metadata so the struct stays
+/// faithful to the model types, and the name, year and genres are the ones a
+/// title shows.
 pub fn find_titles(pool: &Pool, filter: &TitleFilter) -> Result<Vec<TitleBrief>> {
     let mut sql = String::from(CAT_CTE);
-    sql.push_str("SELECT id,title,year,kind,metadata FROM cat WHERE 1=1");
+    sql.push_str("SELECT id,title,year,kind,metadata,genres FROM cat WHERE 1=1");
     let mut p: Vec<SqlValue> = Vec::new();
 
     if let Some(g) = clean(&filter.genre) {
-        sql.push_str(" AND EXISTS (SELECT 1 FROM json_each(cat.metadata,'$.genres') g WHERE g.value = ? COLLATE NOCASE)");
+        sql.push_str(" AND EXISTS (SELECT 1 FROM json_each(cat.genres) g WHERE g.value = ? COLLATE NOCASE)");
         p.push(SqlValue::Text(g));
     }
     if let Some(d) = clean(&filter.director) {
@@ -63,7 +64,7 @@ pub fn find_titles(pool: &Pool, filter: &TitleFilter) -> Result<Vec<TitleBrief>>
         p.push(SqlValue::Text(a));
     }
     if let Some(k) = clean(&filter.keyword) {
-        sql.push_str(" AND (cat.title LIKE ? COLLATE NOCASE OR IFNULL(json_extract(cat.metadata,'$.overview'),'') LIKE ? COLLATE NOCASE)");
+        sql.push_str(" AND (cat.title LIKE ? COLLATE NOCASE OR IFNULL(cat.overview,'') LIKE ? COLLATE NOCASE)");
         let like = format!("%{k}%");
         p.push(SqlValue::Text(like.clone()));
         p.push(SqlValue::Text(like));
@@ -100,8 +101,8 @@ pub fn find_titles(pool: &Pool, filter: &TitleFilter) -> Result<Vec<TitleBrief>>
                 title: r.get(1)?,
                 year: r.get(2)?,
                 kind: r.get(3)?,
-                rating: meta.as_ref().and_then(|m| m.rating),
-                genres: meta.map(|m| m.genres).unwrap_or_default(),
+                rating: meta.and_then(|m| m.rating),
+                genres: genres_in(r.get(5)?),
             })
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;

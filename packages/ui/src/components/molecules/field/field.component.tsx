@@ -6,7 +6,7 @@
 // context. `Field.Input` and `Field.Textarea` are the doors to <TextField> and
 // <TextArea>, which is why neither atom is exported.
 
-import { Children, isValidElement, type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { Box, type BoxProps } from '#ui/components/atoms/box';
 import { Text } from '#ui/components/atoms/text';
 import { TextArea, type TextAreaProps } from '#ui/components/atoms/text-area';
@@ -14,6 +14,7 @@ import { TextField, type TextFieldProps } from '#ui/components/atoms/text-field'
 import type { ControlSize } from '#ui/lib/field-shell';
 import { useGroupShape } from '#ui/lib/group-shape';
 import { partContext } from '#ui/lib/part-context';
+import { sortParts } from '#ui/lib/parts';
 import { useControllable } from '#ui/lib/use-controllable.hook';
 
 interface FieldContext {
@@ -69,33 +70,21 @@ function Root({
     () => ({ label, invalid, error: message, size, value, setValue, setFocused }),
     [label, invalid, message, size, value, setValue],
   );
-  const at = useMemo(() => sort(children), [children]);
+  const [note, control] = sortParts(children, Hint);
   const group = useGroupShape(focused);
   return (
-    <Context.Provider value={field}>
+    <Context value={field}>
       <Box gap={8} {...box} style={[group, box.style]}>
         {hideLabel ? null : (
           <Text variant="meta" color="textMuted">
             {label}
           </Text>
         )}
-        {at.control.length > 0 ? at.control : <Input />}
-        {at.note.length > 0 ? at.note : <Hint />}
+        {control.length > 0 ? control : <Input />}
+        {note.length > 0 ? note : <Hint />}
       </Box>
-    </Context.Provider>
+    </Context>
   );
-}
-
-function sort(children: ReactNode): { control: ReactNode[]; note: ReactNode[] } {
-  const at: { control: ReactNode[]; note: ReactNode[] } = { control: [], note: [] };
-  for (const child of Children.toArray(children)) {
-    if (isValidElement(child) && child.type === Hint) {
-      at.note.push(child);
-    } else {
-      at.control.push(child);
-    }
-  }
-  return at;
 }
 
 interface FocusHandlers {
@@ -114,14 +103,14 @@ function useEntry(part: string, own: Readonly<EntryValue>, focus?: FocusHandlers
   const field = useField(part);
   const { setFocused } = field;
   const { onFocus: ownFocus, onBlur: ownBlur } = focus ?? {};
-  const onFocus = useCallback(() => {
+  const onFocus = () => {
     setFocused(true);
     ownFocus?.();
-  }, [setFocused, ownFocus]);
-  const onBlur = useCallback(() => {
+  };
+  const onBlur = () => {
     setFocused(false);
     ownBlur?.();
-  }, [setFocused, ownBlur]);
+  };
   const owned =
     own.value !== undefined || own.defaultValue !== undefined || own.onValueChange !== undefined;
   return {

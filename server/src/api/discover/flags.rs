@@ -105,37 +105,7 @@ pub fn flag_detail(
 
     // Season flags: available = every listed episode is on disk; requested =
     // covered by the newest open request (None = whole show).
-    let mut seasons: Vec<DiscoverSeason> = Vec::with_capacity(d.seasons.len());
-    if d.kind == RequestKind::Show && !d.seasons.is_empty() {
-        let present = match &local_id {
-            Some(show_id) => db::episodes_present(conn, show_id)?,
-            None => Vec::new(),
-        };
-        let mut per_season: HashMap<u32, u32> = HashMap::new();
-        for (s, _e) in present {
-            *per_season.entry(s).or_default() += 1;
-        }
-        let open_request = db::find_open_request(conn, RequestKind::Show, d.tmdb_id)?;
-        let requested_seasons: Option<Vec<u32>> = open_request.as_ref().map(|r| {
-            r.seasons
-                .clone()
-                .unwrap_or_else(|| d.seasons.iter().map(|s| s.season).collect())
-        });
-        for s in &d.seasons {
-            let have = per_season.get(&s.season).copied().unwrap_or(0);
-            seasons.push(DiscoverSeason {
-                season: s.season,
-                name: s.name.clone(),
-                episode_count: s.episode_count,
-                air_date: s.air_date.clone(),
-                available: s.episode_count > 0 && have >= s.episode_count,
-                episodes_available: have,
-                requested: requested_seasons
-                    .as_ref()
-                    .is_some_and(|list| list.contains(&s.season)),
-            });
-        }
-    }
+    let seasons = flag_seasons(conn, &d, local_id.as_deref())?;
 
     let air_status = d.status.clone();
     let next_air_date = match d.kind {
@@ -168,6 +138,49 @@ pub fn flag_detail(
         air_status,
         next_air_date,
     })
+}
+
+fn flag_seasons(
+    conn: &Connection,
+    d: &discover::DiscoverRawDetail,
+    local_id: Option<&str>,
+) -> anyhow::Result<Vec<DiscoverSeason>> {
+    if d.kind != RequestKind::Show || d.seasons.is_empty() {
+        return Ok(Vec::new());
+    }
+    let per_season = episodes_per_season(conn, local_id)?;
+    let open_request = db::find_open_request(conn, RequestKind::Show, d.tmdb_id)?;
+    let requested: Option<Vec<u32>> = open_request.map(|r| {
+        r.seasons
+            .unwrap_or_else(|| d.seasons.iter().map(|s| s.season).collect())
+    });
+    let flag = |s: &discover::RawSeason| {
+        let have = per_season.get(&s.season).copied().unwrap_or(0);
+        DiscoverSeason {
+            season: s.season,
+            name: s.name.clone(),
+            episode_count: s.episode_count,
+            air_date: s.air_date.clone(),
+            poster_url: s.poster_url.clone(),
+            available: s.episode_count > 0 && have >= s.episode_count,
+            episodes_available: have,
+            requested: requested.as_ref().is_some_and(|list| list.contains(&s.season)),
+        }
+    };
+    Ok(d.seasons.iter().map(flag).collect())
+}
+
+fn episodes_per_season(
+    conn: &Connection,
+    local_id: Option<&str>,
+) -> anyhow::Result<HashMap<u32, u32>> {
+    let mut per_season: HashMap<u32, u32> = HashMap::new();
+    if let Some(show_id) = local_id {
+        for (season, _) in db::episodes_present(conn, show_id)? {
+            *per_season.entry(season).or_default() += 1;
+        }
+    }
+    Ok(per_season)
 }
 
 #[cfg(test)]

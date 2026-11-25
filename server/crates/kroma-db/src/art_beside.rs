@@ -1,5 +1,6 @@
-//! The pictures a scan found beside each title's files, and the poster and the
-//! backdrop they put in front of fetched art, behind the ones an admin chose.
+//! The pictures a scan found beside each title's files, and the poster, the
+//! backdrop and the logo they put in front of fetched art, behind the ones an
+//! admin chose.
 
 use std::collections::{HashMap, HashSet};
 
@@ -8,18 +9,42 @@ use rusqlite::{params, OptionalExtension};
 use kroma_domain::Metadata;
 
 use crate::chunked::query_by_subject_ids;
+use crate::scanned::{self, Rewrite};
 use crate::{Connection, Pool, Result};
 
 /// The role of a picture kept as a title's poster.
 pub const POSTER: &str = "poster";
 /// The role of a picture kept as a title's backdrop.
 pub const BACKDROP: &str = "backdrop";
+/// The role of a picture kept as a title's logo.
+pub const LOGO: &str = "logo";
+/// The role of a picture kept as an episode's still, which travels as its
+/// backdrop.
+pub const STILL: &str = "still";
+/// The subject kind of a picture kept as a season's, under [`season_id`].
+pub const SEASON: &str = "season";
+
+/// The SQL that reads the URL kept for one picture of a title, the one an
+/// admin chose before the one beside its files, or NULL:
+/// `kept_url!("show", "i.show_id", "poster")`.
+macro_rules! kept_url {
+    ($kind:literal, $id:literal, $role:literal) => {
+        concat!(
+            "(SELECT k.url FROM art_kept k WHERE k.subject_kind = '",
+            $kind,
+            "' AND k.subject_id = ",
+            $id,
+            " AND k.role = '",
+            $role,
+            "' ORDER BY k.precedence DESC LIMIT 1)"
+        )
+    };
+}
+pub(crate) use kept_url;
 
 const INSERT: &str = "INSERT OR REPLACE INTO art_beside \
                       (subject_kind, subject_id, role, library, picture, url) \
                       VALUES (?1, ?2, ?3, ?4, ?5, ?6)";
-const CLEAR: &str = "DELETE FROM art_beside \
-                     WHERE library NOT IN (SELECT value FROM json_each(?1))";
 
 /// One picture a scan found beside a title's files: whose it is, what it is to
 /// that title, where it is on disk, and the URL it is served under.
@@ -33,6 +58,17 @@ pub struct Picture {
     pub url: String,
 }
 
+/// The id a season's picture is kept under: its show's id and its number.
+pub fn season_id(show: &str, number: u32) -> String {
+    format!("{show}:{number}")
+}
+
+/// The show and the number a [`season_id`] names, or None for any other id.
+pub fn season_of(id: &str) -> Option<(&str, u32)> {
+    let (show, number) = id.rsplit_once(':')?;
+    Some((show, number.parse().ok()?))
+}
+
 /// Where on disk the picture served under a URL is, and its role.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Source {
@@ -44,25 +80,22 @@ pub struct Source {
 /// whose folders a scan could not all read, keep what they held as well.
 /// Returns how many pictures were written.
 pub fn replace(pool: &Pool, pictures: &[Picture], kept: &HashSet<String>) -> Result<usize> {
-    let mut conn = pool.get()?;
-    let tx = conn.transaction()?;
-    tx.execute(CLEAR, [serde_json::to_string(kept)?])?;
-    let mut written = 0;
-    {
-        let mut insert = tx.prepare(INSERT)?;
-        for p in pictures {
-            written += insert.execute(params![
-                p.subject_kind,
-                p.subject_id,
-                p.role,
-                p.library,
-                p.path,
-                p.url
-            ])?;
-        }
-    }
-    tx.commit()?;
-    Ok(written)
+    let rows = pictures.iter().map(|p| {
+        (
+            p.subject_kind,
+            &p.subject_id,
+            p.role,
+            &p.library,
+            &p.path,
+            &p.url,
+        )
+    });
+    let table = Rewrite {
+        table: "art_beside",
+        insert: INSERT,
+        kept,
+    };
+    scanned::rewrite(pool, table, rows)
 }
 
 /// The picture served under `url`, when a scan found one.
@@ -106,18 +139,20 @@ pub fn poster_of(pool: &Pool, kind: &str, id: &str) -> Result<Option<String>> {
     Ok(url)
 }
 
-/// The poster and the backdrop of one title.
+/// The poster, the backdrop and the logo of one title.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Urls {
     pub poster: Option<String>,
     pub backdrop: Option<String>,
+    pub logo: Option<String>,
 }
 
 impl Urls {
     pub(crate) fn set(&mut self, role: &str, url: String) {
         match role {
             POSTER => self.poster = Some(url),
-            BACKDROP => self.backdrop = Some(url),
+            BACKDROP | STILL => self.backdrop = Some(url),
+            LOGO => self.logo = Some(url),
             _ => {}
         }
     }
@@ -158,6 +193,24 @@ impl Art {
         if urls.backdrop.is_some() {
             meta.backdrop_url.clone_from(&urls.backdrop);
         }
+        if urls.logo.is_some() {
+            meta.logo_url.clone_from(&urls.logo);
+        }
+    }
+
+    pub(crate) fn paint_still(&self, id: &str, meta: &mut Option<Metadata>) {
+        let still = self.0.get(id).and_then(|urls| urls.backdrop.as_ref());
+        if let Some(still) = still {
+            meta.get_or_insert_with(Metadata::blank).backdrop_url = Some(still.clone());
+        }
+    }
+
+    pub(crate) fn urls(&self, id: &str) -> Option<&Urls> {
+        self.0.get(id)
+    }
+
+    pub(crate) fn poster(&self, id: &str) -> Option<String> {
+        self.0.get(id).and_then(|urls| urls.poster.clone())
     }
 
     pub(crate) fn paint_poster(&self, id: &str, meta: Option<&mut Metadata>) {

@@ -17,9 +17,9 @@ export function useMirroredFocus(
     },
     [setBox],
   );
-  const focus = useCallback(() => {
+  const focus = () => {
     mirror.mirrorFocus(host.current);
     onFocus();
-  }, [onFocus, mirror]);
+  };
   return { ref, focus };
 }

@@ -1,5 +1,4 @@
 import { hashString } from '@kromatv/core';
-import { useMemo } from 'react';
 import type { DimensionValue } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Focusable } from '#ui/components/atoms/focusable';
@@ -66,7 +65,7 @@ const VIGNETTE = style(
 function Face({ item }: Readonly<{ item: UpNextItem }>) {
   const s = useStyles(sDefinition);
 
-  const placeholder = useMemo(() => placeholderGradient(item.id), [item.id]);
+  const placeholder = placeholderGradient(item.id);
   return (
     <>
       {/* Eager: the sheet slides in on a transform, and a lazily loaded image

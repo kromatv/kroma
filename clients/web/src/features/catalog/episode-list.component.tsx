@@ -6,8 +6,9 @@ import { useWebRuntime } from '#web/shared/lib/web-runtime';
 // bar below turns the ticks into one request.
 
 import type { CastMember, ItemId, MediaItem, SubjectId } from '@kromatv/client/media';
+import { posterColors } from '@kromatv/core';
 import { useT } from '@kromatv/ui';
-import { Box, Chip, classes, ringRoomBlock, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Box, classes, PosterCard, ringRoomBlock, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { CastRail } from '#web/features/catalog/detail.component';
@@ -15,6 +16,7 @@ import { EpisodeRow, MissingEpisodeRow } from '#web/features/catalog/episode-row
 import { epKey } from '#web/features/catalog/episode-selection';
 import { RequestBar, SeasonAsk } from '#web/features/catalog/request-bar.component';
 import { SeasonRequestCard } from '#web/features/catalog/season-card.component';
+import { SeasonPosterButton } from '#web/features/catalog/season-poster-button.component';
 import { EPISODES_ANCHOR } from '#web/shared/lib/show-search';
 
 import type { TitleSeason } from '#web/shared/lib/title-view';
@@ -23,13 +25,15 @@ import type { TitleSeason } from '#web/shared/lib/title-view';
 // axis, so both stay plain elements around kit content.
 const GUTTER = { paddingLeft: 'var(--gutter-web)', paddingRight: 'var(--gutter-web)' } as const;
 
+const SEASON_WIDTH = 132;
+
 const sDefinition = styles({
   gutter: GUTTER,
-  chipScroller: {
+  seasonScroller: {
     ...GUTTER,
     ...ringRoomBlock(),
     display: 'flex',
-    gap: 8,
+    gap: 16,
     overflowX: 'auto',
     scrollbarWidth: 'none',
   },
@@ -45,12 +49,15 @@ function SeasonSwitcher({
 
   const t = useT();
   return (
-    <div className={classes(s.chipScroller)}>
+    <div className={classes(s.seasonScroller)}>
       {seasons.map((one) => (
-        <Chip
+        <PosterCard
           key={one.number}
-          active={one.number === current}
-          label={t('content.season', { number: one.number })}
+          width={SEASON_WIDTH}
+          title={t('content.season', { number: one.number })}
+          art={one.poster}
+          tint={posterColors(String(one.number))}
+          selected={one.number === current}
           onPress={() => onPick(one.number)}
         />
       ))}
@@ -131,16 +138,19 @@ export function SeasonSection({
           <h2>
             <Text variant="h2">{t('content.episodes')}</Text>
           </h2>
-          {canRequest ? (
-            <SeasonAsk
-              season={current.number}
-              seasonPickable={seasonPickable}
-              allPickable={hasOpen}
-              busy={requestBusy}
-              onRequestSeason={() => onRequestSeason(current.number)}
-              onRequestAll={onRequestAll}
-            />
-          ) : null}
+          <Box row gap={8} align="center">
+            <SeasonPosterButton season={current} />
+            {canRequest ? (
+              <SeasonAsk
+                season={current.number}
+                seasonPickable={seasonPickable}
+                allPickable={hasOpen}
+                busy={requestBusy}
+                onRequestSeason={() => onRequestSeason(current.number)}
+                onRequestAll={onRequestAll}
+              />
+            ) : null}
+          </Box>
         </Box>
       </div>
 
