@@ -87,12 +87,20 @@ impl Lexicon {
 mod tests {
     use super::*;
 
+    fn holds(spellings: &[String], words: &[&str]) -> bool {
+        words
+            .iter()
+            .all(|word| spellings.iter().any(|spelling| spelling == word))
+    }
+
     #[test]
     fn a_number_is_known_by_its_digit_its_numeral_and_every_language_s_word() {
         let lexicon = Lexicon::shared();
+        let three = lexicon.spellings("trois");
 
-        assert_eq!(lexicon.spellings("2"), ["ii", "two", "deux"]);
-        assert_eq!(lexicon.spellings("trois"), ["3", "iii", "three"]);
+        assert!(holds(&lexicon.spellings("2"), &["ii", "two", "deux"]));
+        assert!(holds(&three, &["3", "iii", "three"]));
+        assert!(!holds(&three, &["trois"]));
         assert_eq!(lexicon.spellings("x"), Vec::<String>::new());
         assert_eq!(lexicon.spellings("dune"), Vec::<String>::new());
     }

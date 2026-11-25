@@ -46,6 +46,7 @@ export default defineConfig({
         pages: [
           { path: '/404', ...NOT_FOUND },
           { path: '/fr/404', ...NOT_FOUND },
+          { path: '/ko/404', ...NOT_FOUND },
         ],
         prerender: {
           enabled: true,
@@ -74,6 +75,7 @@ export default defineConfig({
           pattern: '/:path(.*)?',
           localized: [
             ['fr', '/fr/:path(.*)?'],
+            ['ko', '/ko/:path(.*)?'],
             ['en', '/:path(.*)?'],
           ],
         },

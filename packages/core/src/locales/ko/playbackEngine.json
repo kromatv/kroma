@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "자동",
+  "playbackEngine.autoNote": "기기가 지원하면 파일을 그대로 재생하고, 그렇지 않으면 서버를 거칩니다",
+  "playbackEngine.avplay": "Samsung 플레이어",
+  "playbackEngine.avplayNote": "Tizen TV에 내장된 디코더",
+  "playbackEngine.mpv": "mpv 플레이어",
+  "playbackEngine.mpvNote": "데스크톱 앱의 기본 플레이어",
+  "playbackEngine.remux": "서버 리먹스",
+  "playbackEngine.remuxNote": "화면을 다시 인코딩하지 않고 서버가 파일을 실시간으로 다시 포장합니다",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "분할 스트림용 JavaScript 플레이어",
+  "playbackEngine.title": "재생 엔진",
+  "playbackEngine.vlc": "VLC 플레이어",
+  "playbackEngine.vlcNote": "칩이 거부하는 형식을 위한 내장 소프트웨어 디코더",
+  "playbackEngine.webview": "브라우저 플레이어",
+  "playbackEngine.webviewNote": "라이브러리 없이 브라우저 자체 video 요소 사용"
+}

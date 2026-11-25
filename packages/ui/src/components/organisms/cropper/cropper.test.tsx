@@ -191,7 +191,10 @@ describe('Cropper', () => {
 
     press('Zoom in');
 
-    expect(changed).toHaveBeenCalledWith({ zoom: 2.25, x: 0, y: 0, rotation: 0 });
+    expect(changed).toHaveBeenCalledWith(
+      { zoom: 2.25, x: 0, y: 0, rotation: 0 },
+      expect.objectContaining({ reason: 'zoomBy' }),
+    );
     expect(cropper().transform.zoom).toBe(2);
   });
 

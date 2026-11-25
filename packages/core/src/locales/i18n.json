@@ -2,6 +2,7 @@
   "$schema": "../../../i18n/schema/project.schema.json",
   "source": "en",
   "locales": {
-    "fr": { "stage": "stable" }
+    "fr": { "stage": "stable" },
+    "ko": { "stage": "beta" }
   }
 }

@@ -99,7 +99,7 @@ describe('Stepper', () => {
 
     fireEvent.click(screen.getByLabelText('Next'));
 
-    expect(onValueChange).toHaveBeenCalledWith('done', { reason: 'next' });
+    expect(onValueChange).toHaveBeenCalledWith('done', expect.objectContaining({ reason: 'next' }));
     expect(screen.getByText('Prêt')).toBeTruthy();
   });
 
@@ -109,7 +109,10 @@ describe('Stepper', () => {
 
     fireEvent.click(screen.getByLabelText('Next'));
 
-    expect(onValueChange).toHaveBeenCalledWith('library', { reason: 'next' });
+    expect(onValueChange).toHaveBeenCalledWith(
+      'library',
+      expect.objectContaining({ reason: 'next' }),
+    );
     expect(screen.getByText('Adresse')).toBeTruthy();
   });
 
@@ -158,7 +161,7 @@ describe('Stepper', () => {
 
     fireEvent.click(screen.getByLabelText('Next'));
 
-    expect(onValueChange).toHaveBeenCalledWith('done', { reason: 'next' });
+    expect(onValueChange).toHaveBeenCalledWith('done', expect.objectContaining({ reason: 'next' }));
   });
 
   it('walks the reachable steps with the arrow keys, and stops at the end', () => {

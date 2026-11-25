@@ -14,7 +14,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleAllowMixedLocalizations": true,
-        "CFBundleLocalizations": ["en", "fr"],
+        "CFBundleLocalizations": ["en", "fr", "ko"],
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true,
           "NSAllowsLocalNetworking": true
@@ -34,7 +34,7 @@
         "@kromatv/react-native-tv",
         {
           "package": "tv.kroma.app",
-          "locales": ["fr", "en"],
+          "locales": ["fr", "en", "ko"],
           "tvos": {
             "androidTVRequired": true,
             "showVerboseWarnings": false,

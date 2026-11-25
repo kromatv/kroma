@@ -1,0 +1,9 @@
+{
+  "compat.clientOutdated": "이 앱은 버전 {client}이고, 서버 {server}에서 더 이상 지원하지 않습니다. 계속하려면 앱을 업데이트하세요.",
+  "compat.clientOutdatedTitle": "앱 업데이트가 필요합니다",
+  "compat.howToUpdateMobile": "App Store 또는 Google Play에서 KROMA를 업데이트하세요.",
+  "compat.howToUpdateTv": "TV의 앱 스토어에서 또는 설치한 곳에서 KROMA를 업데이트하세요.",
+  "compat.howToUpdateWeb": "페이지를 새로 고침하세요. 계속 표시되면 웹 앱이 서버와 별도로 설치된 것이므로 업데이트가 필요합니다.",
+  "compat.reload": "새로 고침",
+  "compat.serverOutdated": "서버(v{server})가 이 앱(v{client})에 필요한 버전보다 오래되었습니다. 문제를 피하려면 서버를 업데이트하세요."
+}

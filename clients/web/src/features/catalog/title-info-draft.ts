@@ -6,18 +6,22 @@ export interface TitleDraft {
   title: string;
   originalTitle: string;
   sortTitle: string;
+  tagline: string;
   overview: string;
   released: string;
   genres: string;
 }
 
+const shown = (text: string | null) => text ?? '';
+
 /** The form's text for what was written about a title. */
 export function draftOf(edit: TitleEdit): TitleDraft {
   return {
-    title: edit.title ?? '',
-    originalTitle: edit.originalTitle ?? '',
-    sortTitle: edit.sortTitle ?? '',
-    overview: edit.overview ?? '',
+    title: shown(edit.title),
+    originalTitle: shown(edit.originalTitle),
+    sortTitle: shown(edit.sortTitle),
+    tagline: shown(edit.tagline),
+    overview: shown(edit.overview),
     released: edit.released ?? (edit.year === null ? '' : String(edit.year)),
     genres: (edit.genres ?? []).join(', '),
   };
@@ -48,6 +52,7 @@ export function editOf(draft: TitleDraft): TitleEdit {
     title: kept(draft.title),
     originalTitle: kept(draft.originalTitle),
     sortTitle: kept(draft.sortTitle),
+    tagline: kept(draft.tagline),
     overview: kept(draft.overview),
     ...dateOf(draft.released),
     genres: genres.length > 0 ? genres : null,

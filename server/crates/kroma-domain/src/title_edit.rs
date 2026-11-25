@@ -2,8 +2,9 @@
 //! (LIB-83), and what the `.nfo` file beside it says (LIB-84). Each field comes
 //! before the provider's, in every language, and a field left `None` keeps
 //! following the provider. A release date written gives the year (LIB-87),
-//! a sort title files the title under another name (LIB-88), and an original
-//! title names it in the language it was made in (LIB-94).
+//! a sort title files the title under another name (LIB-88), an original
+//! title names it in the language it was made in (LIB-94), and a tagline
+//! stands above its summary (LIB-95).
 
 use serde::{Deserialize, Serialize};
 
@@ -11,6 +12,8 @@ use crate::{MediaItem, Metadata, Show};
 
 /// The longest name a person can write for a title, in characters.
 pub const TITLE_MAX: usize = 300;
+/// The longest tagline a person can write for a title, in characters.
+pub const TAGLINE_MAX: usize = 300;
 /// The longest summary a person can write for a title, in characters.
 pub const OVERVIEW_MAX: usize = 10_000;
 /// How many genres a person can give a title.
@@ -31,6 +34,9 @@ pub struct TitleEdit {
     /// The name the title sorts under, leaving the one shown as it is.
     #[serde(default, rename = "sortTitle")]
     pub sort_title: Option<String>,
+    /// The short line that stands above the summary.
+    #[serde(default)]
+    pub tagline: Option<String>,
     #[serde(default)]
     pub overview: Option<String>,
     #[serde(default)]
@@ -111,6 +117,12 @@ fn year_of_day(date: &str) -> Option<u32> {
     (real && YEARS.contains(&year)).then_some(year)
 }
 
+fn put(to: &mut Option<String>, written: &Option<String>) {
+    if written.is_some() {
+        to.clone_from(written);
+    }
+}
+
 fn cut(text: String, max: usize) -> String {
     if text.chars().count() <= max {
         return text;
@@ -138,6 +150,7 @@ impl TitleEdit {
             title: kept(self.title),
             original_title: kept(self.original_title),
             sort_title: kept(self.sort_title),
+            tagline: kept(self.tagline),
             overview: kept(self.overview),
             year: released.as_deref().and_then(year_of_day).or(self.year),
             released,
@@ -158,6 +171,7 @@ impl TitleEdit {
             title: self.title.or(below.title),
             original_title: self.original_title.or(below.original_title),
             sort_title: self.sort_title.or(below.sort_title),
+            tagline: self.tagline.or(below.tagline),
             overview: self.overview.or(below.overview),
             year,
             released,
@@ -179,6 +193,7 @@ impl TitleEdit {
             title: tidied.title.map(|title| cut(title, TITLE_MAX)),
             original_title: tidied.original_title.map(|title| cut(title, TITLE_MAX)),
             sort_title: tidied.sort_title.map(|title| cut(title, TITLE_MAX)),
+            tagline: tidied.tagline.map(|text| cut(text, TAGLINE_MAX)),
             overview: tidied.overview.map(|text| cut(text, OVERVIEW_MAX)),
             year: tidied.year.filter(|year| YEARS.contains(year)),
             released: tidied.released.filter(|date| year_of_day(date).is_some()),
@@ -194,13 +209,7 @@ impl TitleEdit {
     /// Whether each field fits what a title can hold.
     pub fn fits(&self) -> bool {
         let genres = self.genres.as_deref().unwrap_or_default();
-        let short = |text: &Option<String>, max: usize| {
-            text.as_deref().is_none_or(|t| t.chars().count() <= max)
-        };
-        short(&self.title, TITLE_MAX)
-            && short(&self.original_title, TITLE_MAX)
-            && short(&self.sort_title, TITLE_MAX)
-            && short(&self.overview, OVERVIEW_MAX)
+        self.texts_fit()
             && self.year.is_none_or(|y| YEARS.contains(&y))
             && self
                 .released
@@ -210,10 +219,21 @@ impl TitleEdit {
             && genres.iter().all(|g| g.chars().count() <= GENRE_MAX)
     }
 
+    fn texts_fit(&self) -> bool {
+        let short = |text: &Option<String>, max: usize| {
+            text.as_deref().is_none_or(|t| t.chars().count() <= max)
+        };
+        short(&self.title, TITLE_MAX)
+            && short(&self.original_title, TITLE_MAX)
+            && short(&self.sort_title, TITLE_MAX)
+            && short(&self.tagline, TAGLINE_MAX)
+            && short(&self.overview, OVERVIEW_MAX)
+    }
+
     /// Put each field that was written in place of the provider's. A summary,
-    /// genres, a release date, a sort title or an original title written for
-    /// a title the provider never described give it a [`Metadata::blank`]
-    /// record to carry them.
+    /// a tagline, genres, a release date, a sort title or an original title
+    /// written for a title the provider never described give it a
+    /// [`Metadata::blank`] record to carry them.
     pub fn onto(&self, title: &mut impl Editable) {
         let to = title.written();
         if let Some(title) = &self.title {
@@ -235,19 +255,12 @@ impl TitleEdit {
     /// provider's release date when the two disagree, so the date never
     /// contradicts the year shown.
     pub fn onto_metadata(&self, meta: &mut Metadata) {
-        if self.title.is_some() {
-            meta.title.clone_from(&self.title);
-        }
-        if self.original_title.is_some() {
-            meta.original_title.clone_from(&self.original_title);
-        }
-        if self.sort_title.is_some() {
-            meta.sort_title.clone_from(&self.sort_title);
-        }
+        put(&mut meta.title, &self.title);
+        put(&mut meta.original_title, &self.original_title);
+        put(&mut meta.sort_title, &self.sort_title);
         self.date_onto(meta);
-        if self.overview.is_some() {
-            meta.overview.clone_from(&self.overview);
-        }
+        put(&mut meta.tagline, &self.tagline);
+        put(&mut meta.overview, &self.overview);
         if let Some(genres) = &self.genres {
             meta.genres.clone_from(genres);
             meta.tmdb_genre_ids.clear();
@@ -256,6 +269,7 @@ impl TitleEdit {
 
     fn describes(&self) -> bool {
         self.overview.is_some()
+            || self.tagline.is_some()
             || self.genres.is_some()
             || self.released.is_some()
             || self.sort_title.is_some()

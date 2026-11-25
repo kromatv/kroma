@@ -1,0 +1,301 @@
+import { VolumeDemo } from './control-demos.component';
+import { Figure } from './figure.component';
+
+export const title = 'The control engine';
+export const summary = 'How a component holds a value: one declaration, one hook, one path for every change, and a developer tool that can read and change it.';
+export const width = 'wide';
+
+Every kit component that holds something an app can also own, a value, an open
+state, a layout, holds it in a control. A control is declared once and run by one
+hook, and every change it makes takes one path, whoever asked for it: a person
+through the component, the app through a prop, or a developer tool from outside
+the page. The tool is why it exists. It reads what each control holds and changes
+it the way a keystroke would, with no DOM marker and no `testID`, in a production
+build as well as in development.
+
+## The whole thing in one example
+
+You declare a kind of control once:
+
+```ts
+import { defineControl } from '@kromatv/ui/control';
+
+const volumeControl = defineControl('volume', {
+  state: { value: 4 },
+  options: { step: 1, max: 10 },
+  actions: {
+    louder: ({ value, step, max }) => ({ value: Math.min(max, value + step) }),
+    quieter: ({ value, step }) => ({ value: Math.max(0, value - step) }),
+    mute: () => ({ value: 0 }),
+  },
+});
+```
+
+A component runs it from its own props:
+
+```tsx
+import { type ControlProps, useControl } from '@kromatv/ui/control';
+
+function Volume(props: ControlProps<typeof volumeControl>) {
+  const [{ value, max, louder, quieter, mute }] = useControl(volumeControl, props);
+  return (
+    <Box row gap={space[3]}>
+      <Button label="Quieter" onPress={quieter} />
+      <Text variant="title">{`${value} / ${max}`}</Text>
+      <Button label="Louder" onPress={louder} />
+      <Button label="Mute" onPress={mute} />
+    </Box>
+  );
+}
+```
+
+The app gets the props it expects of any kit control, typed from the declaration:
+
+```tsx
+<Volume defaultValue={6} max={11} onValueChange={(next) => save(next)} />
+```
+
+And a tool, from the page's console, reads what the volume holds and calls it
+by the ref the reading gave it:
+
+```js
+await __KROMA_UI__.snapshot();
+await __KROMA_UI__.act({ steps: [{ ref: 'c1', action: 'louder' }] });
+```
+
+<Figure caption="This volume is declared in this page, as the samples above declare it, and what it shows is what each side gets. Its own buttons are a person: the app hears source 'user'. A Run is a tool's call: the app hears source 'tool' through the same callback, and the reading follows. The second call names an action the volume does not have, and the answer lists the ones it does.">
+  <VolumeDemo />
+</Figure>
+
+## What a declaration says
+
+| Entry | Becomes |
+| --- | --- |
+| `state: { value: 4 }` | Three props, `value`, `defaultValue` and `onValueChange(next, details)`, and a setter, `setValue(next, why?)`. `4` is where the key starts when the app gives neither prop. |
+| `options: { step: 1, max: 10 }` | One prop each, with that default. An action reads them and nothing changes them. |
+| `actions` | One function each. An action gets the state and the options as they are now, then its own arguments, and answers with the keys it changes. |
+| `reasons` | The reasons a setter may give, which types `details.reason` at both ends. See below. |
+
+A key's type is the type of the value it starts from. When the value says less
+than the type, `typed` says the rest: `typed<number | null>(null)`,
+`typed<readonly string[]>([])`.
+
+`ControlProps<typeof volumeControl>` is those props as a type, which is all an
+app component needs. A kit component still writes the three props of each key in
+its own interface, because the workbench's Props tab shows a declaration as it is
+written. `useControl` does not compile when their types disagree.
+
+The name is the control's kind. It is what a tool reads in `kind`, and what an
+error calls the control: `the volume has no such action`. Two entries with one
+name, a state key and an action both called `open`, throw when the module loads,
+not when a tool first calls one.
+
+## What `useControl` hands back
+
+`useControl(definition, props)` answers with a pair.
+
+- **The control**: the state, the resolved options, a setter per key and a
+  function per action, in one object. It stays the same object from render to
+  render while nothing in it moved, so it can go straight into a context value or
+  a dependency list.
+- **The rest**: the props the control did not read, for the component to pass on.
+  `Switch` spreads them onto its `Focusable`.
+
+A setter or an action answers `true` when the control took the value or asked
+the app for it, and `false` when the key already held it or the app refused.
+
+A key whose prop is present at mount is the app's for the life of the component.
+The control asks through `on<Key>Change` and waits for the prop to move. A key
+whose prop is absent is the control's own, from `default<Key>`. Which one it is
+is decided once, per key, for the reason React warns about an input that flips
+between the two.
+
+## One path for every change
+
+A setter, an action and a tool's call all end in the same steps:
+
+1. The next value is worked out: the setter's argument, or the keys the action
+   answered with.
+2. A value the key already holds stops there. Nothing is called, and the answer
+   is `false`.
+3. The app's `on<Key>Change(next, details)` runs, before anything is written.
+4. If it called `details.cancel()`, the key keeps its value and the answer is
+   `false`.
+5. A key the control owns takes the value. A key the app owns waits for the
+   app's prop.
+6. The engine hears the change.
+
+`details` is the same whoever asked:
+
+| Field | Says |
+| --- | --- |
+| `reason` | Why: the action's name, the reason a setter was given, or `set`. |
+| `source` | `user` for a person, `tool` for a developer tool's call. |
+| `canceled` | Whether `cancel()` was called. |
+| `cancel()` | Refuses the change. |
+
+So an app that must not let a tool flip a switch says so in the callback it
+already has:
+
+```tsx
+<Switch
+  defaultChecked
+  onCheckedChange={(next, details) => {
+    if (details.source === 'tool') {
+      details.cancel();
+    }
+  }}
+/>
+```
+
+## Reasons
+
+A change an action makes carries the action's name, and a setter called without
+a reason carries `set`. A component that changes a key for a reason no action
+names declares the reason:
+
+```ts
+const menuControl = defineControl('menu', {
+  state: { open: false },
+  actions: { trigger: () => ({ open: true }) },
+  reasons: ['select', 'outside', 'escape', 'back'],
+});
+```
+
+The Menu calls `setOpen(false, 'back')` when the remote's Back button closes it,
+and a reason missing from the list does not compile. The app's `details.reason`
+is typed from the same list: `ReasonOf<typeof menuControl>` is `trigger`, `set`,
+`select`, `outside`, `escape` or `back`.
+
+A control that declares no reasons lets a setter give any string. That is what
+lets one control pass on the change of another. A setter also takes the details
+of a change in place of a reason, and keeps the reason they carry. A PinField
+hands the OtpField it renders `onValueChange={setValue}`, and the app hears the
+OtpField's `type`.
+
+## A compound publishes its control
+
+A compound runs one control, in its Root, and hands it to its parts through
+context. `ControlOf<typeof definition>` is the type of what `useControl` answered,
+so the context needs no interface written by hand:
+
+```ts
+type MenuState = Pick<ControlOf<typeof menuControl>, 'open' | 'setOpen' | 'trigger'>;
+```
+
+A part calls the Root's setters and actions and never keeps a copy of the state.
+A tool sees one control for the whole compound, under the Root's name:
+`Disclosure.Root`, `Command.Root`.
+
+## One engine for each app
+
+The root `KitProvider` holds a control engine, and every control under it joins
+it while it is mounted. A nested `KitProvider` shares its parent's. Outside any
+`KitProvider` a control still runs, and no tool can see it.
+
+A tool reads the engine, and the app can read it too, through
+`useControlEngine()`:
+
+| Member | Does |
+| --- | --- |
+| `controls()` | The controls mounted now. |
+| `observe(listener)` | Hears every change that took effect: the control, the key, the value before and after, and the details. It answers the function that stops listening. |
+| `ref(control)` | The control's short name, `c4`, its own for as long as it lives. |
+| `as('tool', run)` | Runs `run` with every change in it signed `tool`. It is what `act` uses. |
+
+A record of every change in the app is one effect:
+
+```tsx
+const engine = useControlEngine();
+
+useEffect(
+  () => engine?.observe(({ control, key, next, details }) => {
+    record(control.definition.name, key, next, details.reason, details.source);
+  }),
+  [engine],
+);
+```
+
+## What a tool reads
+
+`globalThis.__KROMA_UI__` is on every page that mounts a `KitProvider`, in a
+production build too. It loads the reader on its first call, so a page that never
+calls it does not load it.
+
+- `screenText()` is the screen as text, by component name. A component that runs
+  a control has its ref after its name, `Switch [c1]`, and its state and actions
+  on the same line.
+- `snapshot()` is the controls alone, in document order, as JSON: `ref`, `name`,
+  `kind`, `state`, `actions`, `box`, and `focused` on the one that has the focus.
+
+Two things are left out on purpose. What was typed into a field that hides it, a
+password, a PIN or a one-time code, reads `[secret]`. And `actions` lists only
+what a call may ask now: nothing while the component is disabled, and an action
+without arguments only when it would change something, so a muted volume does
+not offer `mute`.
+
+## What a tool calls
+
+`act({ steps })` runs its steps in order. A step names a control by its `ref`, one
+of its setters or actions, and the arguments that takes:
+
+```js
+await __KROMA_UI__.act({
+  steps: [
+    { ref: 'c1', action: 'louder' },
+    { ref: 'c4', action: 'setOpen', args: [false] },
+  ],
+});
+```
+
+A step takes the path every change takes, signed `tool`, so the app's callback
+can tell it from a person and refuse it. Each step waits for React to commit
+before the next one runs. The answer says what each step did, `changed`,
+`unchanged` or `canceled`, and how every control the steps named reads
+afterwards, which is where to look for a key the app owns.
+
+An action is a pure function, so a step is tried on the state as it is first,
+and a step that cannot run writes nothing. The call stops there with `ok: false`
+and an `error` that says what to send instead:
+`c1.press: the volume has no such action. It takes: setValue, louder, quieter, mute.`
+The steps before it stay done. A disabled component refuses every call, a setter
+refuses a value of another kind than its key holds, and a call is at most 50
+steps. The whole table is in `docs/inspecting-a-screen.md`.
+
+## What an action may not do
+
+A tool tries an action before it runs it, and the list of what a control offers
+runs each action that takes no argument to see whether it would change anything.
+So an action is a pure function of what it is given.
+
+- It reads `now` and its own arguments, and nothing else: no ref, no prop, no
+  variable outside it.
+- It answers with state keys only. An option is the app's to change.
+- It does no work: no request, no timer, no callback, no `setState`. That belongs
+  in the component, once the action answered `true`, or in the app's
+  `on<Key>Change`.
+- It answers at once. A value that has to be fetched is fetched by the component,
+  which then calls a setter.
+
+## Which components run one
+
+Switch, Checkbox, Disclosure, TextField, TextArea, OtpField, PinField, Command,
+Menu, Select, Stepper, Chart, Cropper and Resizable. A `Field.Root` hands its
+value to the entry it renders, which holds it, so a field lists one control and it
+is the entry's. A PinField lists two, its own and the OtpField's.
+
+## The checklist
+
+Before a component that holds something is done:
+
+- [ ] Its control is declared once, at module scope, and named for what it is.
+- [ ] The Root, or the leaf, calls `useControl` once, and the parts read the
+      control from context.
+- [ ] Every way the value moves goes through a setter or an action. No `useState`
+      holds a second copy.
+- [ ] Each action is pure and answers with state keys only.
+- [ ] A change made for a reason no action names passes that reason, and the
+      declaration lists it in `reasons`.
+- [ ] A disabled component is given `disabled`, so a tool's call is refused too.
+- [ ] A test drives it once through `act`, and the app's callback hears
+      `source: 'tool'`.

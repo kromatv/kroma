@@ -122,7 +122,8 @@ formulaire. Pour la date de sortie,
 écrivez l'année seule, comme `1995`, ou le jour, comme `1995-12-15`. Un titre
 de tri classe le film sous un autre nom, comme `Seigneur des anneaux, Le`, sans
 changer le titre affiché. Un titre original, comme `Das Boot`, s'affiche sous
-le titre quand les deux diffèrent. Ce que vous écrivez s'affiche dans toutes
+le titre quand les deux diffèrent, et un slogan s'affiche au-dessus du
+résumé. Ce que vous écrivez s'affiche dans toutes
 les langues et reste après une nouvelle analyse. Videz un champ pour reprendre le texte de
 TMDB. **Films** et **Séries** trient et filtrent d'après
 ce que vous écrivez, et l'année que vous indiquez remplace la date de sortie de

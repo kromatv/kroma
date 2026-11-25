@@ -8,6 +8,7 @@ const FIELDS = ['button', 'input', 'optgroup', 'select', 'textarea'];
 
 export const RESET: readonly SheetEntry[] = [
   rule(['*', '*::before', '*::after'], { boxSizing: 'border-box' }),
+  rule('html:lang(ko)', { wordBreak: 'keep-all' }),
   rule('a', { color: 'inherit', textDecoration: 'none' }),
   rule(FLOW, { margin: 0 }),
   rule(['ul', 'ol'], { padding: 0, listStyle: 'none' }),

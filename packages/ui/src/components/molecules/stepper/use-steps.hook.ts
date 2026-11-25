@@ -1,12 +1,51 @@
 import { useState } from 'react';
+import {
+  type ChangeDetails,
+  defineControl,
+  type ReasonOf,
+  typed,
+  useControl,
+} from '#ui/lib/control';
 import { useStableCallback } from '#ui/lib/stable-callback.hook';
-import { useControllable } from '#ui/lib/use-controllable.hook';
 
-type StepReason = 'next' | 'previous' | 'goTo' | 'reset';
+type Seats = { readonly steps: readonly string[]; readonly disabled: readonly string[] };
 
-interface StepperValueDetails {
-  reason: StepReason;
+type Seated = Seats & { readonly value: string };
+
+const seatOf = (steps: readonly string[], value: string) => Math.max(0, steps.indexOf(value));
+
+function seek({ steps, disabled }: Seats, from: number, delta: 1 | -1): number {
+  for (let at = from + delta; at >= 0 && at < steps.length; at += delta) {
+    const key = steps[at];
+    if (key !== undefined && !disabled.includes(key)) {
+      return at;
+    }
+  }
+  return -1;
 }
+
+function moveTo(now: Seated, at: number): { value?: string } {
+  const key = now.steps[at];
+  return key === undefined || key === now.steps[seatOf(now.steps, now.value)] ? {} : { value: key };
+}
+
+const stepFrom = (now: Seated, delta: 1 | -1) =>
+  moveTo(now, seek(now, seatOf(now.steps, now.value), delta));
+
+const stepsControl = defineControl('steps', {
+  state: { value: '' },
+  options: { steps: typed<readonly string[]>([]), disabled: typed<readonly string[]>([]) },
+  actions: {
+    next: (now) => stepFrom(now, 1),
+    previous: (now) => stepFrom(now, -1),
+    goTo: (now, step: string) =>
+      now.disabled.includes(step) ? {} : moveTo(now, now.steps.indexOf(step)),
+    reset: (now) => moveTo(now, 0),
+  },
+  reasons: [],
+});
+
+type StepperValueDetails = ChangeDetails<ReasonOf<typeof stepsControl>>;
 
 interface StepperFlowOptions {
   value?: string;
@@ -47,54 +86,38 @@ interface StepperFlow {
 /** The wizard state machine, with no component around it: hand it the step ids
  *  in order. */
 function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): StepperFlow {
-  const { value, defaultValue, onValueChange, complete, open, disabled } = options;
-  const [held, setHeld] = useControllable(value, defaultValue ?? steps[0] ?? '');
-  const seat = steps.indexOf(held);
-  const index = seat === -1 ? 0 : seat;
+  const { value, complete, open, disabled = [] } = options;
+  const start = options.defaultValue ?? steps[0] ?? '';
+  const [visited, setVisited] = useState(() => seatOf(steps, value ?? start));
+  const onValueChange = (next: string, details: StepperValueDetails) => {
+    options.onValueChange?.(next, details);
+    if (!details.canceled) {
+      setVisited((far) => (details.reason === 'reset' ? 0 : Math.max(far, steps.indexOf(next))));
+    }
+  };
+  const [flow] = useControl(stepsControl, {
+    value,
+    defaultValue: start,
+    onValueChange,
+    steps,
+    disabled,
+  });
+  const index = seatOf(steps, flow.value);
   const current = steps[index] ?? '';
-
-  const [visited, setVisited] = useState(index);
   const reached = Math.max(visited, index);
   if (index > visited) {
     setVisited(index);
   }
 
-  const off = new Set(disabled);
   const done = complete ? new Set(complete) : null;
   const ajar = new Set(open);
-
-  const seek = (from: number, delta: 1 | -1) => {
-    for (let at = from + delta; at >= 0 && at < steps.length; at += delta) {
-      const key = steps[at];
-      if (key !== undefined && !off.has(key)) {
-        return at;
-      }
-    }
-    return -1;
-  };
-
-  const land = useStableCallback((at: number, reason: StepReason) => {
-    const key = steps[at];
-    if (key === undefined || key === current) {
-      return;
-    }
-    setVisited((far) => Math.max(far, at));
-    setHeld(key);
-    onValueChange?.(key, { reason });
-  });
-
-  const next = useStableCallback(() => land(seek(index, 1), 'next'));
-  const previous = useStableCallback(() => land(seek(index, -1), 'previous'));
-
-  const goTo = useStableCallback((step: string) => {
-    if (!off.has(step)) {
-      land(steps.indexOf(step), 'goTo');
-    }
-  });
+  const off = new Set(disabled);
 
   const reset = useStableCallback(() => {
-    setVisited(0);
-    land(0, 'reset');
+    if (index === 0) {
+      setVisited(0);
+    }
+    flow.reset();
   });
 
   // Plain callbacks, not stable ones: both are read while a part renders, and a
@@ -125,11 +148,11 @@ function useSteps(steps: readonly string[], options: StepperFlowOptions = {}): S
     count: steps.length,
     first: index === 0,
     last: index === steps.length - 1,
-    canGoNext: seek(index, 1) !== -1,
-    canGoPrevious: seek(index, -1) !== -1,
-    next,
-    previous,
-    goTo,
+    canGoNext: seek(flow, index, 1) !== -1,
+    canGoPrevious: seek(flow, index, -1) !== -1,
+    next: flow.next,
+    previous: flow.previous,
+    goTo: flow.goTo,
     reset,
     complete: isComplete,
     reachable: isReachable,

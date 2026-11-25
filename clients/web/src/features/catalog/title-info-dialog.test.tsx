@@ -19,6 +19,7 @@ const WRITTEN = {
   title: 'Heat',
   originalTitle: null,
   sortTitle: null,
+  tagline: null,
   overview: null,
   year: 1995,
   released: null,
@@ -34,6 +35,7 @@ const NOTHING_WRITTEN = {
   title: null,
   originalTitle: null,
   sortTitle: null,
+  tagline: null,
   overview: null,
   year: null,
   released: null,
@@ -43,6 +45,7 @@ const NOTHING_WRITTEN = {
 const SHOWN = {
   title: 'Sehnsucht Nach Youkali',
   originalTitle: 'Sehnsucht nach Youkali',
+  tagline: 'Songs for a lost paradise.',
   year: 2020,
   overview: 'A return to nature in songs and dance.',
   genres: ['Drama', 'Music'],
@@ -88,6 +91,7 @@ it('shows what was written and saves what changed', async () => {
   type('Release date', '1987-0x3-01');
   type('Sort title', ' Heat, the ');
   type('Original title', ' Heat ');
+  type('Tagline', ' A Los Angeles crime saga ');
   save();
 
   await closed;
@@ -96,6 +100,7 @@ it('shows what was written and saves what changed', async () => {
     title: 'Heat',
     originalTitle: 'Heat',
     sortTitle: 'Heat, the',
+    tagline: 'A Los Angeles crime saga',
     overview: 'A thief and a detective.',
     year: null,
     released: '1987-03-01',
@@ -125,6 +130,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
   expect(await screen.findByDisplayValue('Pilot')).toBeTruthy();
   expect(screen.queryByLabelText('Sort title')).toBeNull();
   expect(screen.queryByLabelText('Original title')).toBeNull();
+  expect(screen.queryByLabelText('Tagline')).toBeNull();
   expect(screen.queryByLabelText('Genres')).toBeNull();
   type('Air date', '2008-01-20');
   type('Summary', 'A teacher turns to crime.');
@@ -136,6 +142,7 @@ it('asks an episode for its name, air date and summary, and saves them on the it
     title: 'Pilot',
     originalTitle: null,
     sortTitle: null,
+    tagline: null,
     overview: 'A teacher turns to crime.',
     year: null,
     released: '2008-01-20',
@@ -170,6 +177,7 @@ it('shows in grey what the page shows where nothing was written', async () => {
 
   expect(screen.getByPlaceholderText('Sehnsucht nach Youkali')).toBeTruthy();
   expect(screen.getByPlaceholderText('2020')).toBeTruthy();
+  expect(screen.getByPlaceholderText('Songs for a lost paradise.')).toBeTruthy();
   expect(screen.getByPlaceholderText('A return to nature in songs and dance.')).toBeTruthy();
   expect(screen.getByPlaceholderText('Drama, Music')).toBeTruthy();
 });

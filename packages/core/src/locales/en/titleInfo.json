@@ -15,5 +15,7 @@
   "titleInfo.sortTitle": "Sort title",
   "titleInfo.sortTitleHint": "The title is sorted under this name, such as Lord of the Rings, The. The title shown stays the same.",
   "titleInfo.summary": "Summary",
+  "titleInfo.tagline": "Tagline",
+  "titleInfo.taglineHint": "A short line shown above the summary.",
   "titleInfo.title": "Info"
 }

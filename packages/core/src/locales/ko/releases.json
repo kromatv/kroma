@@ -1,0 +1,13 @@
+{
+  "releases.action": "조치 필요",
+  "releases.current": "현재",
+  "releases.empty": "아직 릴리스 노트가 없습니다.",
+  "releases.fixCount": "수정 {count}건",
+  "releases.fixed": "수정됨",
+  "releases.highlightCount": "새 기능 {count}개",
+  "releases.owner": "서버 소유자용",
+  "releases.subtitle": "버전별로 KROMA에서 달라진 내용입니다.",
+  "releases.title": "새로운 기능",
+  "releases.upToDate": "최신 상태",
+  "releases.version": "KROMA {version}"
+}

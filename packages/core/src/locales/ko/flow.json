@@ -1,0 +1,8 @@
+{
+  "flow.continue": "계속",
+  "flow.next": "다음",
+  "flow.previous": "이전",
+  "flow.step": "{count}단계 중 {position}단계",
+  "flow.stepDone": "{step}, 완료",
+  "flow.stepNamed": "{count}단계 중 {position}단계: {name}"
+}

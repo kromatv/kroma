@@ -18,8 +18,8 @@ export type Lang = (typeof locales)[number];
 
 export { baseLocale as defaultLocale, getLocale, locales };
 
-export const localeNames: Record<Lang, string> = { en: 'English', fr: 'Français' };
-export const localeShort: Record<Lang, string> = { en: 'EN', fr: 'FR' };
+export const localeNames: Record<Lang, string> = { en: 'English', fr: 'Français', ko: '한국어' };
+export const localeShort: Record<Lang, string> = { en: 'EN', fr: 'FR', ko: 'KO' };
 
 // Paraglide's URL helpers parse absolute URLs, so a bare path needs an origin
 // to be handed to them; it is discarded again, only the pathname is read back.

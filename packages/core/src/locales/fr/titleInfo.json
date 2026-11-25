@@ -15,5 +15,7 @@
   "titleInfo.sortTitle": "Titre de tri",
   "titleInfo.sortTitleHint": "Le titre est classé sous ce nom, par exemple Seigneur des anneaux, Le. Le titre affiché ne change pas.",
   "titleInfo.summary": "Résumé",
+  "titleInfo.tagline": "Slogan",
+  "titleInfo.taglineHint": "Une courte phrase affichée au-dessus du résumé.",
   "titleInfo.title": "Informations"
 }

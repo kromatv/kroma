@@ -1,0 +1,19 @@
+{
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "브리지를 거치지 않는 다운로드 클라이언트로 {total}이 이동했습니다.",
+  "vpnBandwidth.direction": "방향",
+  "vpnBandwidth.down": "다운로드",
+  "vpnBandwidth.empty": "아직 기록된 내용이 없습니다. 다운로드가 시작되면 수치가 쌓입니다.",
+  "vpnBandwidth.gap": "터널 밖으로 나간 트래픽은 없지만, 이 기간 중 {duration} 동안 브리지가 꺼져 있었습니다.",
+  "vpnBandwidth.inTunnel": "터널 경유",
+  "vpnBandwidth.leaked": "브리지가 밀봉되지 않은 동안 보호되지 않은 트래픽 {total}이 이동했습니다.",
+  "vpnBandwidth.noBridge": "WireGuard 브리지가 설정되어 있지 않아 이 트래픽은 어느 것도 터널을 거치지 않았습니다.",
+  "vpnBandwidth.noEngine": "다운로드 모듈이 설치되어 있지 않아 브리지를 거치는 트래픽이 없으며 측정할 것도 없습니다.",
+  "vpnBandwidth.otherClient": "다른 클라이언트",
+  "vpnBandwidth.outsideTunnel": "터널 외부",
+  "vpnBandwidth.sealed": "브리지가 기간 내내 유지되어 아래 수치는 모두 터널을 거쳤습니다.",
+  "vpnBandwidth.throughTunnel": "터널 경유 {total}",
+  "vpnBandwidth.title": "터널 대역폭",
+  "vpnBandwidth.up": "업로드",
+  "vpnBandwidth.window": "기간"
+}

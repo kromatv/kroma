@@ -146,9 +146,13 @@ describe('a kit control on a web page', () => {
     press(trigger);
     fireEvent.keyDown(trigger, { key: 'ArrowDown' });
     press(trigger);
-    expect(onValueChange).toHaveBeenCalledWith('server', {
-      item: expect.objectContaining({ value: 'server', label: 'kroma_server' }),
-    });
+    expect(onValueChange).toHaveBeenCalledWith(
+      'server',
+      expect.objectContaining({
+        reason: 'select',
+        item: expect.objectContaining({ value: 'server', label: 'kroma_server' }),
+      }),
+    );
   });
 
   it('does not reopen on the keyup of the press that picked', () => {
@@ -159,6 +163,7 @@ describe('a kit control on a web page', () => {
     render(<Source onValueChange={onValueChange} />);
     const trigger = screen.getByRole('combobox');
     press(trigger);
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
     press(trigger);
     expect(onValueChange).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('listbox')).toBeNull();
@@ -221,19 +226,31 @@ describe('the parts', () => {
     );
     const trigger = screen.getByRole('combobox');
     press(trigger);
-    expect(onOpenChange).toHaveBeenLastCalledWith(true, { reason: 'trigger' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      true,
+      expect.objectContaining({ reason: 'trigger' }),
+    );
 
     fireEvent.keyDown(trigger, { key: 'Escape' });
-    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'escape' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ reason: 'escape' }),
+    );
 
     press(trigger);
     fireEvent.keyDown(trigger, { key: 'ArrowDown' });
     fireEvent.keyDown(trigger, { key: 'Enter' });
-    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'select' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ reason: 'select' }),
+    );
 
     press(trigger);
     fireEvent.click(screen.getByLabelText('Close'));
-    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'outside' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ reason: 'outside' }),
+    );
   });
 
   it('runs itself when only a default is given', () => {
@@ -307,7 +324,10 @@ describe('the parts', () => {
     act(() => {
       document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });
-    expect(onOpenChange).toHaveBeenLastCalledWith(false, { reason: 'back' });
+    expect(onOpenChange).toHaveBeenLastCalledWith(
+      false,
+      expect.objectContaining({ reason: 'back' }),
+    );
   });
 
   it('picks the row the remote pressed in the dialog', () => {
@@ -323,9 +343,13 @@ describe('the parts', () => {
     );
     clearPressGuard();
     fireEvent.click(screen.getAllByRole('option')[1] as HTMLElement);
-    expect(onValueChange).toHaveBeenCalledWith('server', {
-      item: expect.objectContaining({ value: 'server' }),
-    });
+    expect(onValueChange).toHaveBeenCalledWith(
+      'server',
+      expect.objectContaining({
+        reason: 'select',
+        item: expect.objectContaining({ value: 'server' }),
+      }),
+    );
   });
 
   it('takes a number written as the row for its label', () => {
@@ -400,9 +424,13 @@ describe('the anchored listbox', () => {
     press(screen.getByRole('combobox'));
 
     fireEvent.click(screen.getAllByRole('option')[2] as HTMLElement);
-    expect(onValueChange).toHaveBeenCalledWith('480p', {
-      item: expect.objectContaining({ value: '480p' }),
-    });
+    expect(onValueChange).toHaveBeenCalledWith(
+      '480p',
+      expect.objectContaining({
+        reason: 'select',
+        item: expect.objectContaining({ value: '480p' }),
+      }),
+    );
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 

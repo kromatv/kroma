@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 import { Logo } from '#ui/components/atoms/logo';
 import { I18nProvider } from '#ui/services/i18n';
 
-type Locale = 'en' | 'fr';
+type Locale = 'en' | 'fr' | 'ko';
 
 export const KROMA_WORKBENCH: {
   title: string;
@@ -25,6 +25,7 @@ export const KROMA_WORKBENCH: {
     values: [
       { value: 'en', label: 'English' },
       { value: 'fr', label: 'Français' },
+      { value: 'ko', label: '한국어' },
     ],
     render: (locale, onLocaleChange, children) => (
       <I18nProvider locale={locale} onLocaleChange={onLocaleChange}>

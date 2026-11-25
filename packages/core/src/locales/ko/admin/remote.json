@@ -1,0 +1,18 @@
+{
+  "admin.remoteAccess": "원격 접속",
+  "admin.remoteAccessDesc": "로컬 네트워크 외부에서 스트리밍",
+  "admin.remoteBinaryMissing": "서버에 cloudflared 바이너리가 없습니다.",
+  "admin.remoteConnected": "연결됨",
+  "admin.remoteConnecting": "연결 중…",
+  "admin.remoteDisconnected": "중지됨",
+  "admin.remoteGetToken": "Cloudflare에서 토큰 받기",
+  "admin.remoteLogs": "커넥터 로그",
+  "admin.remoteManaged": "관리형 커넥터(Cloudflare Tunnel)",
+  "admin.remoteManagedHint": "선택 사항입니다. 서버에 터널이 아직 없다면 KROMA가 cloudflared를 실행하고 관리하여 포트 포워딩 없이 공개 HTTPS URL을 노출할 수 있습니다. 이미 터널을 운영 중이라면(공유 컨테이너, 시스템 서비스) 이 옵션은 끄고 공개 URL만 설정하세요.",
+  "admin.remoteNoLogs": "아직 로그가 없습니다.",
+  "admin.remoteSaved": "저장됨",
+  "admin.remoteSince": "연결 시점",
+  "admin.remoteToken": "터널 토큰",
+  "admin.remoteTokenHint": "Cloudflare Tunnel 커넥터 토큰을 붙여 넣으세요. 서버가 cloudflared를 실행하고 관리합니다.",
+  "admin.remoteTokenKeep": "•••••• (비워 두면 유지)"
+}

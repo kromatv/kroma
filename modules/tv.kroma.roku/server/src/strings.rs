@@ -31,9 +31,10 @@ mod tests {
     fn the_catalogs_the_console_page_reads_are_the_ones_the_server_half_resolves() {
         let codes: Vec<&str> = CATALOGS.iter().map(|(code, _)| *code).collect();
 
-        assert_eq!(codes, ["en", "fr"]);
+        assert_eq!(codes, ["en", "fr", "ko"]);
         assert_eq!(for_locale("fr").t("roku.channel.movies", &[]), "Films");
         assert_eq!(for_locale("en").t("roku.channel.movies", &[]), "Movies");
+        assert_eq!(for_locale("ko").t("roku.channel.movies", &[]), "영화");
     }
 
     #[test]

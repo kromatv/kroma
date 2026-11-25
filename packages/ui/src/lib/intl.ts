@@ -10,6 +10,7 @@ import type { Locale, Translate } from '@kromatv/i18n';
 const BYTE_UNITS: Record<Locale, readonly string[]> = {
   fr: ['o', 'Ko', 'Mo', 'Go', 'To', 'Po'],
   en: ['B', 'KB', 'MB', 'GB', 'TB', 'PB'],
+  ko: ['B', 'KB', 'MB', 'GB', 'TB', 'PB'],
 };
 
 const DATES = new Map<Locale, Intl.DateTimeFormat | null>();
@@ -32,8 +33,8 @@ function relativeFormat(locale: Locale): Intl.RelativeTimeFormat | null {
   RELATIVE.set(locale, made);
   return made;
 }
-const DECIMAL_SEPARATOR: Record<Locale, string> = { fr: ',', en: '.' };
-const GROUP_SEPARATOR: Record<Locale, string> = { fr: '\u202F', en: ',' };
+const DECIMAL_SEPARATOR: Record<Locale, string> = { fr: ',', en: '.', ko: '.' };
+const GROUP_SEPARATOR: Record<Locale, string> = { fr: '\u202F', en: ',', ko: ',' };
 
 function built<T>(make: () => T): T | null {
   try {
