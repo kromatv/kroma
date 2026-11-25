@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "Xem ở cuối màn hình TV.",
+  "handoff.checkPrompt": "Nhập mã đang hiện trên {name}",
+  "handoff.checkRequired": "TV này yêu cầu nhập mã đang hiện trên màn hình",
+  "handoff.checkTooMany": "Nhập sai mã quá nhiều lần. Hãy bắt đầu lại trên TV.",
+  "handoff.checkWrong": "Mã không đúng. Xem lại mã trên TV.",
+  "handoff.connecting": "Đang đăng nhập…",
+  "handoff.gone": "Không còn chờ",
+  "handoff.nearbyEmpty": "Không có TV nào đang chờ",
+  "handoff.nearbyEmptyHint": "Mở KROMA trên TV và để ở màn hình đăng nhập.",
+  "handoff.nearbySearching": "Đang tìm TV…",
+  "handoff.nearbySub": "Chọn TV để đăng nhập. Không cần quét mã, không cần nhập gì.",
+  "handoff.nearbyTitle": "TV trong mạng này",
+  "handoff.otherWays": "Cách kết nối khác",
+  "handoff.rowDone": "Đã đăng nhập",
+  "handoff.tooManyHere": "Có quá nhiều TV đang chờ trong mạng này",
+  "handoff.tooOften": "TV này đã gửi tín hiệu quá nhiều lần và sẽ thử lại sau ít phút.",
+  "handoff.tvBeacon": "Trên điện thoại, TV này có tên {name}",
+  "handoff.tvCheck": "Mã {check}"
+}

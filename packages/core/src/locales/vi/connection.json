@@ -1,0 +1,10 @@
+{
+  "connection.directOfferAction": "Kết nối trực tiếp",
+  "connection.directOfferDetail": "Kết nối trực tiếp không phải đi vòng qua internet. Trình duyệt sẽ xin quyền truy cập mạng nội bộ.",
+  "connection.directOfferDismiss": "Không hỏi lại",
+  "connection.directOfferFailed": "Máy chủ không phản hồi tại địa chỉ nội bộ.",
+  "connection.directOfferTitle": "Bạn đang dùng cùng mạng với máy chủ",
+  "connection.directRoute": "Kết nối trực tiếp ({host})",
+  "connection.offline": "Ngoại tuyến",
+  "connection.reconnecting": "Đang kết nối lại…"
+}

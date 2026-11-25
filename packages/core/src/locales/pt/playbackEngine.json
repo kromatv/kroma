@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "Automático",
+  "playbackEngine.autoNote": "Reproduz o arquivo como está quando o dispositivo consegue, senão passa pelo servidor",
+  "playbackEngine.avplay": "Player da Samsung",
+  "playbackEngine.avplayNote": "O decodificador integrado às TVs Tizen",
+  "playbackEngine.mpv": "Player mpv",
+  "playbackEngine.mpvNote": "O player nativo do app para computador",
+  "playbackEngine.remux": "Contêiner adaptado pelo servidor",
+  "playbackEngine.remuxNote": "O servidor adapta o contêiner do arquivo na hora, sem recodificar a imagem",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "Um player em JavaScript, para transmissões segmentadas",
+  "playbackEngine.title": "Mecanismo de reprodução",
+  "playbackEngine.vlc": "Player VLC",
+  "playbackEngine.vlcNote": "Decodificadores por software incluídos, para o que o chip recusa",
+  "playbackEngine.webview": "Player do navegador",
+  "playbackEngine.webviewNote": "O próprio elemento de vídeo do navegador, sem biblioteca"
+}

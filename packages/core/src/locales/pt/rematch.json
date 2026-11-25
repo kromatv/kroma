@@ -1,0 +1,18 @@
+{
+  "rematch.action": "Corrigir identificação",
+  "rematch.applyFailed": "Não foi possível atualizar a identificação.",
+  "rematch.confidence": "{score}% de confiança",
+  "rematch.confidenceValue": "{score}%",
+  "rematch.current": "Atual",
+  "rematch.groupLikely": "Resultados prováveis",
+  "rematch.groupOther": "Outros resultados",
+  "rematch.loadFailed": "Não foi possível carregar as sugestões do TMDB.",
+  "rematch.noResults": "Nenhum resultado no TMDB para esta busca.",
+  "rematch.noResultsHint": "Você pode preencher o nome, o ano e a sinopse manualmente.",
+  "rematch.parsedAs": "Detectado como {title}",
+  "rematch.reset": "Restaurar a identificação automática",
+  "rematch.search": "Buscar",
+  "rematch.searchPlaceholder": "Buscar outro título no TMDB",
+  "rematch.title": "Corrigir a identificação no TMDB",
+  "rematch.tmdbId": "TMDB #{id}"
+}

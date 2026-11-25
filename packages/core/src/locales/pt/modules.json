@@ -1,0 +1,14 @@
+{
+  "modules.accessDenied": "Acesso negado",
+  "modules.errorDetails": "Detalhes",
+  "modules.errorNotRunning": "O módulo está instalado, mas o processo dele não está em execução.",
+  "modules.errorNotRunningHint": "Talvez ele não tenha conseguido iniciar. Reiniciar costuma resolver.",
+  "modules.errorServerDown": "O servidor não está respondendo.",
+  "modules.errorServerDownHint": "Ele pode estar reiniciando ou parado. A página volta a funcionar quando ele voltar.",
+  "modules.errorStatus": "HTTP {status}",
+  "modules.loadFailed": "Não foi possível carregar esta página",
+  "modules.loadFailedHint": "O módulo está instalado, mas os dados dele não responderam.",
+  "modules.sectionDenied": "Você não tem permissão para acessar esta seção.",
+  "modules.unavailable": "Módulo indisponível",
+  "modules.unavailableHint": "Ele não está instalado ou foi desativado."
+}

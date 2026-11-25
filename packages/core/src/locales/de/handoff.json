@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "Der Code steht unten auf dem Bildschirm des Fernsehers.",
+  "handoff.checkPrompt": "Gib den Code ein, den {name} anzeigt",
+  "handoff.checkRequired": "Dieser Fernseher verlangt den Code auf seinem Bildschirm",
+  "handoff.checkTooMany": "Zu viele falsche Codes. Beginne am Fernseher von vorn.",
+  "handoff.checkWrong": "Falscher Code. Lies ihn noch einmal am Fernseher ab.",
+  "handoff.connecting": "Wird angemeldet…",
+  "handoff.gone": "Wartet nicht mehr",
+  "handoff.nearbyEmpty": "Kein Fernseher wartet",
+  "handoff.nearbyEmptyHint": "Öffne KROMA auf deinem Fernseher und lass den Anmeldebildschirm geöffnet.",
+  "handoff.nearbySearching": "Suche nach Fernsehern…",
+  "handoff.nearbySub": "Wähle deinen Fernseher, um ihn anzumelden. Kein Scannen, kein Tippen.",
+  "handoff.nearbyTitle": "Fernseher in diesem Netzwerk",
+  "handoff.otherWays": "Andere Verbindungswege",
+  "handoff.rowDone": "Angemeldet",
+  "handoff.tooManyHere": "In diesem Netzwerk warten bereits zu viele Fernseher",
+  "handoff.tooOften": "Dieser Fernseher hat sich zu oft gemeldet. Er versucht es gleich erneut.",
+  "handoff.tvBeacon": "Auf deinem Smartphone heißt dieser Fernseher {name}",
+  "handoff.tvCheck": "Code {check}"
+}

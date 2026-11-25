@@ -1,0 +1,13 @@
+{
+  "vocab.abbreviations": "Sr, Sra, Srta, Dr, Dra, Prof, Profa, Sto, Sta, Jr, Cel, Gen, Sgt",
+  "vocab.articles": "o, a, os, as, um, uma, uns, umas",
+  "vocab.episode": "episódio, episódios, ep",
+  "vocab.movie": "filme, filmes",
+  "vocab.numbers": "dois, três, quatro, cinco, seis, sete, oito, nove, dez",
+  "vocab.season": "temporada, temporadas",
+  "vocab.show": "série, séries, seriado, seriados",
+  "vocab.theme.christmas": "natal, natalino, natalina, papai noel",
+  "vocab.theme.heist": "assalto, roubo, assalto a banco, grande golpe",
+  "vocab.theme.summer": "verão, férias, praia, viagem de carro",
+  "vocab.theme.trueStory": "história real, fatos reais, eventos reais, cinebiografia"
+}

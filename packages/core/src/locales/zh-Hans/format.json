@@ -1,0 +1,13 @@
+{
+  "format.durationHours": "{hours} 小时 {minutes} 分钟",
+  "format.durationMinutes": "{minutes} 分钟",
+  "format.hours": "{hours} 小时",
+  "format.justNow": "刚刚",
+  "format.never": "从未",
+  "format.runtimeHours": "{hours} 小时 {minutes} 分",
+  "format.runtimeMinutes": "{minutes} 分钟",
+  "format.unknownTime": "-",
+  "format.uptimeDays": "{days} 天 {hours} 小时",
+  "format.uptimeHours": "{hours} 小时 {minutes} 分钟",
+  "format.uptimeMinutes": "{minutes} 分钟"
+}

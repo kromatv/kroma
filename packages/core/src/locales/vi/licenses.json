@@ -1,0 +1,15 @@
+{
+  "licenses.body": "KROMA được xây dựng trên phần mềm mã nguồn mở. Dưới đây là mọi gói mà máy chủ và ứng dụng này sử dụng, kèm giấy phép của từng gói.",
+  "licenses.count": "{count} gói",
+  "licenses.failed": "Không tải được giấy phép của máy chủ, nên chỉ liệt kê giấy phép của ứng dụng này.",
+  "licenses.matches": "{shown}/{count}",
+  "licenses.noText": "Gói này không kèm văn bản giấy phép. Điều khoản được nêu trong mã nguồn của gói.",
+  "licenses.none": "Không có gói nào phù hợp với tìm kiếm.",
+  "licenses.search": "Tìm gói",
+  "licenses.server": "Máy chủ",
+  "licenses.showAll": "Hiện cả {count} gói",
+  "licenses.source": "Mã nguồn",
+  "licenses.title": "Giấy phép mã nguồn mở",
+  "licenses.unknown": "Không nêu giấy phép",
+  "licenses.web": "Web"
+}

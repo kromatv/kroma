@@ -1,0 +1,19 @@
+{
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "{total} đã đi qua một trình tải xuống mà cầu nối không chuyển tải.",
+  "vpnBandwidth.direction": "Chiều",
+  "vpnBandwidth.down": "Đã tải xuống",
+  "vpnBandwidth.empty": "Chưa ghi nhận gì. Số liệu bắt đầu khi có bản tải xuống chạy.",
+  "vpnBandwidth.gap": "Không có gì đi ra ngoài đường hầm, nhưng cầu nối đã ngắt trong {duration} của khoảng thời gian này.",
+  "vpnBandwidth.inTunnel": "Qua đường hầm",
+  "vpnBandwidth.leaked": "{total} lưu lượng không được bảo vệ đã đi qua khi cầu nối chưa được khóa kín.",
+  "vpnBandwidth.noBridge": "Chưa cấu hình cầu nối WireGuard nào, nên lưu lượng này không đi qua đường hầm.",
+  "vpnBandwidth.noEngine": "Chưa cài mô-đun tải xuống nào, nên không có gì đi qua cầu nối để đo.",
+  "vpnBandwidth.otherClient": "Trình tải khác",
+  "vpnBandwidth.outsideTunnel": "Ngoài đường hầm",
+  "vpnBandwidth.sealed": "Cầu nối giữ kín suốt khoảng thời gian này, nên mọi byte bên dưới đều đã đi qua đường hầm.",
+  "vpnBandwidth.throughTunnel": "{total} qua đường hầm",
+  "vpnBandwidth.title": "Băng thông qua đường hầm",
+  "vpnBandwidth.up": "Đã tải lên",
+  "vpnBandwidth.window": "Khoảng thời gian"
+}

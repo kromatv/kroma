@@ -1,0 +1,18 @@
+{
+  "rematch.action": "修正识别",
+  "rematch.applyFailed": "无法更新识别结果。",
+  "rematch.confidence": "置信度 {score}%",
+  "rematch.confidenceValue": "{score}%",
+  "rematch.current": "当前",
+  "rematch.groupLikely": "最可能的结果",
+  "rematch.groupOther": "其他结果",
+  "rematch.loadFailed": "无法加载 TMDB 建议。",
+  "rematch.noResults": "TMDB 中没有此搜索的结果。",
+  "rematch.noResultsHint": "你可以自己填写它的名称、年份和简介。",
+  "rematch.parsedAs": "识别为：{title}",
+  "rematch.reset": "恢复自动识别",
+  "rematch.search": "搜索",
+  "rematch.searchPlaceholder": "在 TMDB 中搜索其他作品",
+  "rematch.title": "修正 TMDB 识别",
+  "rematch.tmdbId": "TMDB #{id}"
+}

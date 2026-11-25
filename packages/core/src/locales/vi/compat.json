@@ -1,0 +1,9 @@
+{
+  "compat.clientOutdated": "Ứng dụng này là phiên bản {client}, máy chủ {server} không còn hỗ trợ. Cập nhật ứng dụng để tiếp tục.",
+  "compat.clientOutdatedTitle": "Cần cập nhật ứng dụng",
+  "compat.howToUpdateMobile": "Cập nhật KROMA từ App Store hoặc Google Play.",
+  "compat.howToUpdateTv": "Cập nhật KROMA từ kho ứng dụng của TV hoặc từ nơi bạn đã cài đặt.",
+  "compat.howToUpdateWeb": "Tải lại trang. Nếu thông báo này vẫn hiện, ứng dụng web được cài riêng với máy chủ và cần được cập nhật.",
+  "compat.reload": "Tải lại",
+  "compat.serverOutdated": "Máy chủ (v{server}) cũ hơn phiên bản ứng dụng này cần (v{client}). Cập nhật máy chủ để tránh lỗi."
+}

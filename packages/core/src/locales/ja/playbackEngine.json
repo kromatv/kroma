@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "自動",
+  "playbackEngine.autoNote": "デバイスが対応していればファイルをそのまま再生し、対応していなければサーバーを経由します",
+  "playbackEngine.avplay": "Samsungプレーヤー",
+  "playbackEngine.avplayNote": "Tizenテレビに内蔵されたデコーダー",
+  "playbackEngine.mpv": "mpvプレーヤー",
+  "playbackEngine.mpvNote": "デスクトップアプリのネイティブプレーヤー",
+  "playbackEngine.remux": "サーバーでコンテナーを変換",
+  "playbackEngine.remuxNote": "映像を再エンコードせずに、サーバーがその場でファイルのコンテナーを変換します",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "セグメント化されたストリーム向けのJavaScriptプレーヤー",
+  "playbackEngine.title": "再生エンジン",
+  "playbackEngine.vlc": "VLCプレーヤー",
+  "playbackEngine.vlcNote": "チップが対応していない形式のための、内蔵ソフトウェアデコーダー",
+  "playbackEngine.webview": "ブラウザーのプレーヤー",
+  "playbackEngine.webviewNote": "ライブラリを使わない、ブラウザー標準のvideo要素"
+}

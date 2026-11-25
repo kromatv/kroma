@@ -1,0 +1,11 @@
+{
+  "profileMenu.changePin": "Cambiar PIN",
+  "profileMenu.gpuRendering": "Renderizado por GPU (reinicia la app)",
+  "profileMenu.off": "Desactivado",
+  "profileMenu.on": "Activado",
+  "profileMenu.perfHud": "Indicadores de rendimiento",
+  "profileMenu.pin": "PIN",
+  "profileMenu.quitApp": "Salir de KROMA",
+  "profileMenu.removePin": "Quitar el PIN",
+  "profileMenu.setPin": "Crear un PIN"
+}

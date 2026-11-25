@@ -1,0 +1,8 @@
+{
+  "flow.continue": "Tiếp tục",
+  "flow.next": "Tiếp",
+  "flow.previous": "Trước",
+  "flow.step": "Bước {position}/{count}",
+  "flow.stepDone": "{step}, đã xong",
+  "flow.stepNamed": "Bước {position}/{count}: {name}"
+}

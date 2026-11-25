@@ -33,13 +33,13 @@ function subLine(t: Translate, fmt: Format, el: ElementRow): { text: string; col
       .join(', ');
   if (el.overall === 'failed') {
     return {
-      text: `${t('pipeline.st.failed')} : ${names((x) => x.status === 'failed')}`,
+      text: t('pipeline.failedStages', { names: names((x) => x.status === 'failed') }),
       color: 'dangerHover',
     };
   }
   if (el.overall === 'running') {
     return {
-      text: `${t('pipeline.st.running')} : ${names((x) => x.status === 'running')}`,
+      text: t('pipeline.runningStages', { names: names((x) => x.status === 'running') }),
       color: 'text/60',
     };
   }

@@ -1,0 +1,8 @@
+{
+  "form.email": "Địa chỉ email này có vẻ không đúng.",
+  "form.mismatch": "Hai mục này không khớp.",
+  "form.number": "Chỉ nhập chữ số.",
+  "form.required": "Cần điền mục này.",
+  "form.submitFailed": "Không thể gửi. Hãy thử lại.",
+  "form.tooShort": "Nhập tối thiểu {min} ký tự."
+}

@@ -1,0 +1,18 @@
+{
+  "mediaInfo.action": "Detalhes do arquivo",
+  "mediaInfo.audio": "Áudio",
+  "mediaInfo.bit": "bits",
+  "mediaInfo.container": "Contêiner",
+  "mediaInfo.default": "Padrão",
+  "mediaInfo.duration": "Duração",
+  "mediaInfo.editionUnnamed": "Edição padrão",
+  "mediaInfo.noFile": "Nenhum arquivo para este item.",
+  "mediaInfo.noSubs": "Nenhuma",
+  "mediaInfo.size": "Tamanho",
+  "mediaInfo.subtitles": "Legendas",
+  "mediaInfo.title": "Detalhes do arquivo",
+  "mediaInfo.unknownFile": "Arquivo desconhecido",
+  "mediaInfo.unprobed": "O arquivo ainda não foi analisado.",
+  "mediaInfo.unreadable": "Não foi possível abrir este arquivo.",
+  "mediaInfo.video": "Vídeo"
+}

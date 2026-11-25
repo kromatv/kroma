@@ -109,13 +109,13 @@ export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
                 req={req}
                 busy={busy}
                 onApprove={() =>
-                  act(`« ${req.title} » ${t('requests.toastApproved')}`, () =>
+                  act(t('requests.toastApproved', { title: req.title }), () =>
                     client.requests.approve(req.id),
                   )
                 }
                 onStartDeny={() => setDenying(true)}
                 onDelete={() => {
-                  void act(`« ${req.title} » ${t('requests.toastDeleted')}`, () =>
+                  void act(t('requests.toastDeleted', { title: req.title }), () =>
                     client.requests.delete(req.id),
                   ).then((ok) => {
                     if (ok) {
@@ -137,7 +137,7 @@ export function RequestDetailPage({ id }: Readonly<{ id: RequestId }>) {
             onNote={setNote}
             onCancel={() => setDenying(false)}
             onDeny={(n) => {
-              void act(`« ${req.title} » ${t('requests.toastDenied')}`, () =>
+              void act(t('requests.toastDenied', { title: req.title }), () =>
                 client.requests.deny(req.id, n || undefined),
               ).then((ok) => {
                 if (ok) {

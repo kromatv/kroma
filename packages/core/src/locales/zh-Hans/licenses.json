@@ -1,0 +1,15 @@
+{
+  "licenses.body": "KROMA 基于开源软件构建。以下是服务器和此应用附带的所有软件包及其许可证。",
+  "licenses.count": "{count} 个软件包",
+  "licenses.failed": "无法加载服务器的许可证，因此仅列出此应用的许可证。",
+  "licenses.matches": "{shown}/{count}",
+  "licenses.noText": "此软件包未附带许可证文本，其条款见源代码。",
+  "licenses.none": "没有符合搜索条件的软件包。",
+  "licenses.search": "搜索软件包",
+  "licenses.server": "服务器",
+  "licenses.showAll": "显示全部 {count} 个",
+  "licenses.source": "源代码",
+  "licenses.title": "开源许可证",
+  "licenses.unknown": "未注明许可证",
+  "licenses.web": "网页"
+}

@@ -1,0 +1,11 @@
+{
+  "logs.allSources": "Mọi nguồn",
+  "logs.empty": "Không có dòng nhật ký nào.",
+  "logs.follow": "Theo dõi",
+  "logs.levelAll": "Tất cả",
+  "logs.levelError": "Lỗi",
+  "logs.levelInfo": "Thông tin",
+  "logs.levelWarn": "Cảnh báo",
+  "logs.searchPlaceholder": "Lọc dòng…",
+  "logs.sourceCore": "Máy chủ"
+}

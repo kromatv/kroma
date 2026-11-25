@@ -1,0 +1,17 @@
+{
+  "releases.action": "Ação necessária",
+  "releases.current": "Atual",
+  "releases.empty": "Nenhuma nota de versão ainda.",
+  "releases.fixCount": "{count} correções",
+  "releases.fixCount_zero": "{count} correções",
+  "releases.fixCount_one": "{count} correção",
+  "releases.fixed": "Corrigido",
+  "releases.highlightCount": "{count} novidades",
+  "releases.highlightCount_zero": "{count} novidades",
+  "releases.highlightCount_one": "{count} novidade",
+  "releases.owner": "Para o proprietário do servidor",
+  "releases.subtitle": "O que mudou no KROMA, versão por versão.",
+  "releases.title": "Novidades",
+  "releases.upToDate": "Atualizado",
+  "releases.version": "KROMA {version}"
+}

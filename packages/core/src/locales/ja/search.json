@@ -1,0 +1,12 @@
+{
+  "search.backHint": "‹ 戻るボタンで終了",
+  "search.empty": "リモコンで入力して、作品名、ジャンル、俳優名で検索…",
+  "search.noResults": "検索結果はありません",
+  "search.people": "人物",
+  "search.placeholder": "映画、シリーズ、ジャンル…",
+  "search.recent": "最近の検索",
+  "search.results": "検索結果",
+  "search.voice": "音声検索",
+  "search.voiceHint": "話している間に結果が表示されます",
+  "search.voiceListening": "お話しください…"
+}

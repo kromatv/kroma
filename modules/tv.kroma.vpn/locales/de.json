@@ -1,0 +1,19 @@
+{
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "{total} flossen über einen Download-Client, den die Brücke nicht abdeckt.",
+  "vpnBandwidth.direction": "Richtung",
+  "vpnBandwidth.down": "Heruntergeladen",
+  "vpnBandwidth.empty": "Noch nichts erfasst. Die Werte erscheinen, sobald ein Download läuft.",
+  "vpnBandwidth.gap": "Nichts hat den Tunnel verlassen, aber die Brücke war in diesem Zeitraum {duration} lang nicht aktiv.",
+  "vpnBandwidth.inTunnel": "Durch den Tunnel",
+  "vpnBandwidth.leaked": "Es flossen {total} ungeschützt, während die Brücke nicht dicht war.",
+  "vpnBandwidth.noBridge": "Es ist keine WireGuard-Brücke eingerichtet, daher lief nichts davon durch einen Tunnel.",
+  "vpnBandwidth.noEngine": "Es ist kein Download-Modul installiert, daher läuft nichts über die Brücke, was sich messen ließe.",
+  "vpnBandwidth.otherClient": "Anderer Client",
+  "vpnBandwidth.outsideTunnel": "Außerhalb des Tunnels",
+  "vpnBandwidth.sealed": "Die Brücke war den ganzen Zeitraum dicht: Alles unten lief durch den Tunnel.",
+  "vpnBandwidth.throughTunnel": "{total} durch den Tunnel",
+  "vpnBandwidth.title": "Bandbreite des Tunnels",
+  "vpnBandwidth.up": "Hochgeladen",
+  "vpnBandwidth.window": "Zeitraum"
+}

@@ -1,0 +1,18 @@
+{
+  "rematch.action": "Zuordnung korrigieren",
+  "rematch.applyFailed": "Die Zuordnung konnte nicht geändert werden.",
+  "rematch.confidence": "{score} % Übereinstimmung",
+  "rematch.confidenceValue": "{score} %",
+  "rematch.current": "Aktuell",
+  "rematch.groupLikely": "Wahrscheinliche Treffer",
+  "rematch.groupOther": "Weitere Ergebnisse",
+  "rematch.loadFailed": "TMDB-Vorschläge konnten nicht geladen werden.",
+  "rematch.noResults": "Keine TMDB-Ergebnisse für diese Suche.",
+  "rematch.noResultsHint": "Du kannst Titel, Jahr und Handlung selbst eintragen.",
+  "rematch.parsedAs": "Erkannt als {title}",
+  "rematch.reset": "Automatische Zuordnung wiederherstellen",
+  "rematch.search": "Suchen",
+  "rematch.searchPlaceholder": "Auf TMDB nach einem anderen Titel suchen",
+  "rematch.title": "TMDB-Zuordnung korrigieren",
+  "rematch.tmdbId": "TMDB #{id}"
+}

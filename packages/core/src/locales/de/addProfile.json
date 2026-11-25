@@ -1,0 +1,13 @@
+{
+  "addProfile.addManually": "Manuell hinzufügen",
+  "addProfile.addManuallySub": "Adresse eines entfernten Servers eingeben",
+  "addProfile.availableServers": "Verfügbare Server",
+  "addProfile.checking": "Wird geprüft…",
+  "addProfile.new": "neu",
+  "addProfile.reachable": "Online",
+  "addProfile.showCount": "{count} Serien",
+  "addProfile.showCount_one": "{count} Serie",
+  "addProfile.subtitle": "Wähle den Server und verknüpfe dann dein Profil per Schnellverbindung.",
+  "addProfile.title": "Profil hinzufügen",
+  "addProfile.unreachable": "Nicht erreichbar"
+}

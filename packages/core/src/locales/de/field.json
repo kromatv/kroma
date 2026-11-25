@@ -1,0 +1,8 @@
+{
+  "field.apiKey": "API-Schlüssel",
+  "field.categories": "Kategorien",
+  "field.name": "Name",
+  "field.password": "Passwort",
+  "field.url": "URL",
+  "field.username": "Benutzername"
+}

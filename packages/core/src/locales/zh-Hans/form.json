@@ -1,0 +1,8 @@
+{
+  "form.email": "电子邮件地址格式不正确。",
+  "form.mismatch": "两次输入不一致。",
+  "form.number": "只能输入数字。",
+  "form.required": "此项为必填项。",
+  "form.submitFailed": "提交失败，请重试。",
+  "form.tooShort": "至少 {min} 个字符。"
+}

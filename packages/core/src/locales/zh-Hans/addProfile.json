@@ -1,0 +1,12 @@
+{
+  "addProfile.addManually": "手动添加",
+  "addProfile.addManuallySub": "输入远程服务器的地址",
+  "addProfile.availableServers": "可用的服务器",
+  "addProfile.checking": "正在检查…",
+  "addProfile.new": "新",
+  "addProfile.reachable": "在线",
+  "addProfile.showCount": "{count} 部剧集",
+  "addProfile.subtitle": "选择服务器，然后通过快速连接关联个人资料。",
+  "addProfile.title": "添加个人资料",
+  "addProfile.unreachable": "无法访问"
+}

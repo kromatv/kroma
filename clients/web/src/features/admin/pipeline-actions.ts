@@ -73,7 +73,7 @@ export function pipelineActions(deps: {
     client.pipeline
       .reprocessSubject(apiKind(el), subjectId(el))
       .then(() => {
-        flash(`« ${el.title} » ${t('pipeline.toastReprocess')}`);
+        flash(t('pipeline.toastReprocess', { title: el.title }));
         reload();
       })
       .catch(() => flash(t('error.serverTitle')))
@@ -87,8 +87,7 @@ export function pipelineActions(deps: {
     client.pipeline
       .retryElement(apiKind(el), subjectId(el), stage)
       .then(() => {
-        const stageName = t(`pipeline.t.${stage}`);
-        flash(`${stageName} ${t('pipeline.toastRetry')}`);
+        flash(t('pipeline.toastRetry', { stage: t(`pipeline.t.${stage}`) }));
         reload();
       })
       .catch(() => flash(t('error.serverTitle')))

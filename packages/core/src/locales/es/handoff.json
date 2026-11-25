@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "Mira en la parte inferior de la pantalla del televisor.",
+  "handoff.checkPrompt": "Escribe el código que muestra {name}",
+  "handoff.checkRequired": "Este televisor pide el código que aparece en su pantalla",
+  "handoff.checkTooMany": "Demasiados códigos incorrectos. Vuelve a empezar en el televisor.",
+  "handoff.checkWrong": "Código incorrecto. Vuelve a leerlo en el televisor.",
+  "handoff.connecting": "Iniciando sesión…",
+  "handoff.gone": "Ya no está esperando",
+  "handoff.nearbyEmpty": "No hay ningún televisor esperando",
+  "handoff.nearbyEmptyHint": "Abre KROMA en tu televisor y déjalo en la pantalla de inicio de sesión.",
+  "handoff.nearbySearching": "Buscando televisores…",
+  "handoff.nearbySub": "Elige tu televisor para iniciar sesión en él. Sin escanear ni escribir nada.",
+  "handoff.nearbyTitle": "Televisores en esta red",
+  "handoff.otherWays": "Otras formas de conectarse",
+  "handoff.rowDone": "Sesión iniciada",
+  "handoff.tooManyHere": "Ya hay demasiados televisores esperando en esta red",
+  "handoff.tooOften": "Este televisor se ha anunciado demasiadas veces. Volverá a intentarlo en breve.",
+  "handoff.tvBeacon": "En tu teléfono, este televisor aparece como {name}",
+  "handoff.tvCheck": "Código {check}"
+}

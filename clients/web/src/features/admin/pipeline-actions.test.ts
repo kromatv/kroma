@@ -86,7 +86,7 @@ describe('acting on one element', () => {
     actions.reprocess(row('movie', 'i1'));
     await flush();
 
-    expect(flash).toHaveBeenCalledWith('« Dune » pipeline.toastReprocess');
+    expect(flash).toHaveBeenCalledWith('pipeline.toastReprocess');
     expect(reload).toHaveBeenCalledTimes(1);
     expect(setBusy.mock.calls).toEqual([[true], [false]]);
   });

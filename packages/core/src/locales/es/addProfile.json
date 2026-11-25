@@ -1,0 +1,13 @@
+{
+  "addProfile.addManually": "Añadir manualmente",
+  "addProfile.addManuallySub": "Introduce la dirección de un servidor remoto",
+  "addProfile.availableServers": "Servidores disponibles",
+  "addProfile.checking": "Comprobando…",
+  "addProfile.new": "nuevo",
+  "addProfile.reachable": "En línea",
+  "addProfile.showCount": "{count} series",
+  "addProfile.showCount_one": "{count} serie",
+  "addProfile.subtitle": "Elige el servidor y vincula tu perfil con Conexión rápida.",
+  "addProfile.title": "Añadir un perfil",
+  "addProfile.unreachable": "Sin conexión"
+}

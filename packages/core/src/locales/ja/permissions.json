@@ -1,0 +1,18 @@
+{
+  "permissions.library": "ライブラリ",
+  "permissions.libraryHint": "ライブラリ、スキャン、メタデータの管理",
+  "permissions.playback": "再生",
+  "permissions.playbackHint": "映画やシリーズの視聴と、続きからの再生",
+  "permissions.reportsManage": "報告の管理",
+  "permissions.reportsManageHint": "ユーザーから届いた問題の報告の処理",
+  "permissions.requestAuto": "自動承認",
+  "permissions.requestAutoHint": "このアカウントのリクエストは承認待ちを経ずに承認されます",
+  "permissions.requestCreate": "リクエスト",
+  "permissions.requestCreateHint": "TMDBでの検索と、映画やシリーズのリクエスト",
+  "permissions.requestManage": "リクエストの管理",
+  "permissions.requestManageHint": "リクエストの承認・却下と、ダウンロードの管理",
+  "permissions.settings": "設定",
+  "permissions.settingsHint": "サーバーの設定",
+  "permissions.users": "ユーザー",
+  "permissions.usersHint": "アカウントの管理とユーザーの招待"
+}

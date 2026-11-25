@@ -1,0 +1,18 @@
+{
+  "rematch.action": "Sửa nhận diện",
+  "rematch.applyFailed": "Không cập nhật được nhận diện.",
+  "rematch.confidence": "Độ tin cậy {score}%",
+  "rematch.confidenceValue": "{score}%",
+  "rematch.current": "Hiện tại",
+  "rematch.groupLikely": "Nhiều khả năng đúng",
+  "rematch.groupOther": "Kết quả khác",
+  "rematch.loadFailed": "Không tải được gợi ý từ TMDB.",
+  "rematch.noResults": "TMDB không có kết quả nào cho lần tìm này.",
+  "rematch.noResultsHint": "Bạn có thể tự nhập tên, năm và tóm tắt của phim.",
+  "rematch.parsedAs": "Tên đọc được: {title}",
+  "rematch.reset": "Khôi phục nhận diện tự động",
+  "rematch.search": "Tìm",
+  "rematch.searchPlaceholder": "Tìm phim khác trên TMDB",
+  "rematch.title": "Sửa nhận diện TMDB",
+  "rematch.tmdbId": "TMDB #{id}"
+}

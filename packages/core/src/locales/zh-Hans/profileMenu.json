@@ -1,0 +1,11 @@
+{
+  "profileMenu.changePin": "更改 PIN 码",
+  "profileMenu.gpuRendering": "GPU 渲染（将重启应用）",
+  "profileMenu.off": "关",
+  "profileMenu.on": "开",
+  "profileMenu.perfHud": "性能信息浮层",
+  "profileMenu.pin": "PIN 码",
+  "profileMenu.quitApp": "退出 KROMA",
+  "profileMenu.removePin": "移除 PIN 码",
+  "profileMenu.setPin": "设置 PIN 码"
+}

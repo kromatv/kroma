@@ -73,9 +73,9 @@ export function RequestsQueue() {
       .catch(() => flash(t('requests.actionFailed')));
   };
   const approve = (r: MediaRequest) =>
-    act(`« ${r.title} » ${t('requests.toastApproved')}`, () => client.requests.approve(r.id));
+    act(t('requests.toastApproved', { title: r.title }), () => client.requests.approve(r.id));
   const deny = (r: MediaRequest, note?: string) =>
-    act(`« ${r.title} » ${t('requests.toastDenied')}`, () => client.requests.deny(r.id, note));
+    act(t('requests.toastDenied', { title: r.title }), () => client.requests.deny(r.id, note));
   const open = (r: MediaRequest) => navigate({ to: '/admin/requests/$id', params: { id: r.id } });
 
   const all = data?.requests ?? [];

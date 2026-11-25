@@ -1,0 +1,18 @@
+{
+  "offline.cancelDownload": "取消下载",
+  "offline.download": "下载",
+  "offline.downloadSeason": "下载本季",
+  "offline.downloaded": "已下载",
+  "offline.downloading": "正在下载 {percent}%",
+  "offline.downloads": "下载内容",
+  "offline.empty": "还没有下载内容。在电影或剧集上使用下载按钮，即可离线观看。",
+  "offline.failed": "下载失败。服务器可能需要更新。",
+  "offline.inProgressCount": "{count} 个正在下载",
+  "offline.pause": "暂停",
+  "offline.paused": "已暂停",
+  "offline.queued": "等待中",
+  "offline.remove": "删除下载内容",
+  "offline.resume": "继续",
+  "offline.storageFree": "可用",
+  "offline.storageOther": "已用"
+}

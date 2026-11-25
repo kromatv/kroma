@@ -1,0 +1,15 @@
+{
+  "releases.action": "Acción necesaria",
+  "releases.current": "Actual",
+  "releases.empty": "Todavía no hay notas de la versión.",
+  "releases.fixCount": "{count} correcciones",
+  "releases.fixCount_one": "{count} corrección",
+  "releases.fixed": "Correcciones",
+  "releases.highlightCount": "{count} novedades",
+  "releases.highlightCount_one": "{count} novedad",
+  "releases.owner": "Para quien administra el servidor",
+  "releases.subtitle": "Qué ha cambiado en KROMA, versión a versión.",
+  "releases.title": "Novedades",
+  "releases.upToDate": "Al día",
+  "releases.version": "KROMA {version}"
+}

@@ -1,0 +1,18 @@
+{
+  "permissions.library": "Bibliothek",
+  "permissions.libraryHint": "Bibliotheken, Scans und Metadaten verwalten",
+  "permissions.playback": "Wiedergabe",
+  "permissions.playbackHint": "Filme und Serien ansehen und fortsetzen",
+  "permissions.reportsManage": "Problemmeldungen bearbeiten",
+  "permissions.reportsManageHint": "Von Benutzern gemeldete Probleme sichten",
+  "permissions.requestAuto": "Automatisch genehmigen",
+  "permissions.requestAutoHint": "Anfragen dieses Kontos werden ohne Prüfung genehmigt",
+  "permissions.requestCreate": "Anfragen",
+  "permissions.requestCreateHint": "Auf TMDB suchen und Filme oder Serien anfragen",
+  "permissions.requestManage": "Anfragen verwalten",
+  "permissions.requestManageHint": "Anfragen genehmigen oder ablehnen, Downloads verwalten",
+  "permissions.settings": "Einstellungen",
+  "permissions.settingsHint": "Den Server konfigurieren",
+  "permissions.users": "Benutzer",
+  "permissions.usersHint": "Konten verwalten und Leute einladen"
+}

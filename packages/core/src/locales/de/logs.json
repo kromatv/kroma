@@ -1,0 +1,11 @@
+{
+  "logs.allSources": "Alle Quellen",
+  "logs.empty": "Keine Protokollzeilen.",
+  "logs.follow": "Live verfolgen",
+  "logs.levelAll": "Alle",
+  "logs.levelError": "Fehler",
+  "logs.levelInfo": "Info",
+  "logs.levelWarn": "Warnungen",
+  "logs.searchPlaceholder": "Zeilen filtern…",
+  "logs.sourceCore": "Server"
+}

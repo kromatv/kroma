@@ -136,8 +136,8 @@
   "requests.targetEpisode": "에피소드",
   "requests.targetMovie": "영화",
   "requests.targetSeason": "시즌",
-  "requests.toastApproved": "승인됨",
-  "requests.toastDeleted": "삭제됨",
-  "requests.toastDenied": "거부됨",
+  "requests.toastApproved": "“{title}” 요청을 승인했습니다",
+  "requests.toastDeleted": "“{title}” 요청을 삭제했습니다",
+  "requests.toastDenied": "“{title}” 요청을 거부했습니다",
   "requests.unknownUser": "삭제된 사용자"
 }

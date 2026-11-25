@@ -1,0 +1,20 @@
+{
+  "handoff.checkHint": "请看电视屏幕底部。",
+  "handoff.checkPrompt": "输入“{name}”上显示的代码",
+  "handoff.checkRequired": "此电视要求输入屏幕上显示的代码",
+  "handoff.checkTooMany": "错误次数过多。请在电视上重新开始。",
+  "handoff.checkWrong": "代码错误。请重新核对电视上的代码。",
+  "handoff.connecting": "正在登录…",
+  "handoff.gone": "已停止等待",
+  "handoff.nearbyEmpty": "没有正在等待的电视",
+  "handoff.nearbyEmptyHint": "在电视上打开 KROMA，并停留在登录界面。",
+  "handoff.nearbySearching": "正在查找电视…",
+  "handoff.nearbySub": "选择你的电视即可登录，无需扫码，也无需输入。",
+  "handoff.nearbyTitle": "此网络中的电视",
+  "handoff.otherWays": "其他连接方式",
+  "handoff.rowDone": "已登录",
+  "handoff.tooManyHere": "此网络中正在等待的电视过多",
+  "handoff.tooOften": "此电视发送请求过于频繁，稍后会自动重试。",
+  "handoff.tvBeacon": "在手机上，此电视显示为“{name}”",
+  "handoff.tvCheck": "代码 {check}"
+}

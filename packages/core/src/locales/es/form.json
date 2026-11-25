@@ -1,0 +1,8 @@
+{
+  "form.email": "Esta dirección de correo no parece válida.",
+  "form.mismatch": "Los dos valores no coinciden.",
+  "form.number": "Solo números.",
+  "form.required": "Este campo es obligatorio.",
+  "form.submitFailed": "No se ha podido enviar. Vuelve a intentarlo.",
+  "form.tooShort": "Mínimo {min} caracteres."
+}

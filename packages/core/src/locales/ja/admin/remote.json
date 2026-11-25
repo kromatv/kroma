@@ -1,0 +1,18 @@
+{
+  "admin.remoteAccess": "リモートアクセス",
+  "admin.remoteAccessDesc": "ローカルネットワークの外からのストリーミング",
+  "admin.remoteBinaryMissing": "サーバーでcloudflaredのバイナリを利用できません。",
+  "admin.remoteConnected": "接続済み",
+  "admin.remoteConnecting": "接続中…",
+  "admin.remoteDisconnected": "停止中",
+  "admin.remoteGetToken": "Cloudflareでトークンを取得",
+  "admin.remoteLogs": "コネクターのログ",
+  "admin.remoteManaged": "KROMAが管理するコネクター（Cloudflare Tunnel）",
+  "admin.remoteManagedHint": "任意。サーバーにまだトンネルがない場合は、KROMAがcloudflaredを実行・監視して、ポートフォワーディングなしで公開HTTPS URLを提供できます。すでにトンネルを運用している場合（共有コンテナー、システムサービスなど）は、オフのまま公開URLだけを設定してください。",
+  "admin.remoteNoLogs": "ログはまだありません。",
+  "admin.remoteSaved": "保存しました",
+  "admin.remoteSince": "接続開始",
+  "admin.remoteToken": "トンネルトークン",
+  "admin.remoteTokenHint": "Cloudflare Tunnelのコネクタートークンを貼り付けてください。サーバーがcloudflaredを実行し、監視します。",
+  "admin.remoteTokenKeep": "••••••（変更しない場合は空欄）"
+}

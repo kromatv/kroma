@@ -1,0 +1,11 @@
+{
+  "pin.backHint": "按返回键回到个人资料",
+  "pin.changeSubtitle": "输入当前 PIN 码",
+  "pin.clearSubtitle": "输入 PIN 码以将其移除",
+  "pin.confirmSubtitle": "再次输入 PIN 码",
+  "pin.lockedRetry": "{seconds} 秒后重试",
+  "pin.mismatch": "两次输入的 PIN 码不一致",
+  "pin.setSubtitle": "设置 4 位数 PIN 码",
+  "pin.verifySubtitle": "受 PIN 码保护的个人资料",
+  "pin.verifying": "正在验证…"
+}

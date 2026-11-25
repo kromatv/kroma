@@ -1,0 +1,10 @@
+{
+  "passkey.authFailed": "パスキーでログインできませんでした",
+  "passkey.ceremonyExpired": "パスキーのリクエストの有効期限が切れました。もう一度お試しください。",
+  "passkey.defaultName": "パスキー",
+  "passkey.notFound": "パスキーが見つかりません",
+  "passkey.originInvalid": "パスキーには安全な接続（HTTPS）が必要です",
+  "passkey.originMissing": "リクエストの送信元（Origin）がありません",
+  "passkey.registerFailed": "パスキーを登録できませんでした",
+  "passkey.startFailed": "パスキーのリクエストを開始できませんでした"
+}

@@ -1,0 +1,15 @@
+{
+  "licenses.body": "KROMAはオープンソースソフトウェアで作られています。サーバーとこのアプリに含まれるすべてのパッケージと、そのライセンスの一覧です。",
+  "licenses.count": "{count}個のパッケージ",
+  "licenses.failed": "サーバーのライセンスを読み込めなかったため、このアプリのライセンスのみを表示しています。",
+  "licenses.matches": "{count}件中{shown}件",
+  "licenses.noText": "このパッケージにはライセンス文が含まれていません。条件はソースに記載されています。",
+  "licenses.none": "検索に一致するパッケージはありません。",
+  "licenses.search": "パッケージを検索",
+  "licenses.server": "サーバー",
+  "licenses.showAll": "すべて表示（{count}件）",
+  "licenses.source": "ソース",
+  "licenses.title": "オープンソースライセンス",
+  "licenses.unknown": "ライセンスの記載なし",
+  "licenses.web": "Web"
+}

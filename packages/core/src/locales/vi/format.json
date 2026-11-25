@@ -1,0 +1,13 @@
+{
+  "format.durationHours": "{hours} giờ {minutes} phút",
+  "format.durationMinutes": "{minutes} phút",
+  "format.hours": "{hours} giờ",
+  "format.justNow": "vừa xong",
+  "format.never": "chưa bao giờ",
+  "format.runtimeHours": "{hours} giờ {minutes} phút",
+  "format.runtimeMinutes": "{minutes} phút",
+  "format.unknownTime": "-",
+  "format.uptimeDays": "{days} ngày {hours} giờ",
+  "format.uptimeHours": "{hours} giờ {minutes} phút",
+  "format.uptimeMinutes": "{minutes} phút"
+}

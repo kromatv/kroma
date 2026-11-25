@@ -1,0 +1,13 @@
+{
+  "format.durationHours": "{hours} Std. {minutes} Min.",
+  "format.durationMinutes": "{minutes} Min.",
+  "format.hours": "{hours} Std.",
+  "format.justNow": "gerade eben",
+  "format.never": "nie",
+  "format.runtimeHours": "{hours} Std. {minutes} Min.",
+  "format.runtimeMinutes": "{minutes} Min.",
+  "format.unknownTime": "–",
+  "format.uptimeDays": "{days} Tg. {hours} Std.",
+  "format.uptimeHours": "{hours} Std. {minutes} Min.",
+  "format.uptimeMinutes": "{minutes} Min."
+}

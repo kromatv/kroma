@@ -1,0 +1,10 @@
+{
+  "passkey.authFailed": "Không thể đăng nhập bằng khóa truy cập",
+  "passkey.ceremonyExpired": "Yêu cầu khóa truy cập đã hết hạn. Hãy thử lại.",
+  "passkey.defaultName": "Khóa truy cập",
+  "passkey.notFound": "Không tìm thấy khóa truy cập",
+  "passkey.originInvalid": "Khóa truy cập cần kết nối bảo mật (HTTPS)",
+  "passkey.originMissing": "Thiếu nguồn gốc của yêu cầu",
+  "passkey.registerFailed": "Không thể đăng ký khóa truy cập",
+  "passkey.startFailed": "Không thể bắt đầu yêu cầu khóa truy cập"
+}

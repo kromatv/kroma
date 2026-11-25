@@ -1,0 +1,18 @@
+{
+  "offline.cancelDownload": "Cancelar download",
+  "offline.download": "Baixar",
+  "offline.downloadSeason": "Baixar temporada",
+  "offline.downloaded": "Baixado",
+  "offline.downloading": "Baixando {percent}%",
+  "offline.downloads": "Downloads",
+  "offline.empty": "Nenhum download ainda. Use o botão de download em um filme ou episódio para assistir off-line.",
+  "offline.failed": "Não foi possível baixar. Talvez o servidor precise de uma atualização.",
+  "offline.inProgressCount": "{count} em andamento",
+  "offline.pause": "Pausar",
+  "offline.paused": "Pausado",
+  "offline.queued": "Na fila",
+  "offline.remove": "Remover download",
+  "offline.resume": "Continuar",
+  "offline.storageFree": "Livre",
+  "offline.storageOther": "Em uso"
+}

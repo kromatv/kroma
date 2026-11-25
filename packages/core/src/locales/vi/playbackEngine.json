@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "Tự động",
+  "playbackEngine.autoNote": "Phát tệp nguyên bản khi thiết bị phát được, nếu không thì đi qua máy chủ",
+  "playbackEngine.avplay": "Trình phát Samsung",
+  "playbackEngine.avplayNote": "Bộ giải mã có sẵn trên TV Tizen",
+  "playbackEngine.mpv": "Trình phát mpv",
+  "playbackEngine.mpvNote": "Trình phát gốc của ứng dụng máy tính",
+  "playbackEngine.remux": "Máy chủ đóng gói lại",
+  "playbackEngine.remuxNote": "Máy chủ đóng gói lại tệp tức thì, không mã hóa lại hình ảnh",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "Trình phát JavaScript, dành cho luồng chia đoạn",
+  "playbackEngine.title": "Công cụ phát",
+  "playbackEngine.vlc": "Trình phát VLC",
+  "playbackEngine.vlcNote": "Bộ giải mã phần mềm đi kèm, cho những gì chip không giải mã được",
+  "playbackEngine.webview": "Trình phát của trình duyệt",
+  "playbackEngine.webviewNote": "Phần tử video sẵn có của trình duyệt, không dùng thư viện"
+}

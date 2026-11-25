@@ -1,0 +1,19 @@
+{
+  "nav.vpn": "VPN",
+  "vpnBandwidth.bypassed": "{total} passaram por um cliente de download que o túnel não cobre.",
+  "vpnBandwidth.direction": "Sentido",
+  "vpnBandwidth.down": "Baixado",
+  "vpnBandwidth.empty": "Nada foi registrado ainda. Os números começam no primeiro download.",
+  "vpnBandwidth.gap": "Nada saiu do túnel, mas ele ficou fora do ar por {duration} neste período.",
+  "vpnBandwidth.inTunnel": "Pelo túnel",
+  "vpnBandwidth.leaked": "{total} de tráfego passaram sem proteção enquanto o túnel não estava protegido.",
+  "vpnBandwidth.noBridge": "Nenhum túnel WireGuard está configurado, então nada desse tráfego passou pela VPN.",
+  "vpnBandwidth.noEngine": "Nenhum módulo de download está instalado, então nada passa pelo túnel para ser medido.",
+  "vpnBandwidth.otherClient": "Outro cliente",
+  "vpnBandwidth.outsideTunnel": "Fora do túnel",
+  "vpnBandwidth.sealed": "O túnel se manteve o período todo: todo o tráfego abaixo passou por ele.",
+  "vpnBandwidth.throughTunnel": "{total} pelo túnel",
+  "vpnBandwidth.title": "Tráfego do túnel",
+  "vpnBandwidth.up": "Enviado",
+  "vpnBandwidth.window": "Período"
+}

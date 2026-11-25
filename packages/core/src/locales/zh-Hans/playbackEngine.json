@@ -1,0 +1,17 @@
+{
+  "playbackEngine.auto": "自动",
+  "playbackEngine.autoNote": "设备支持时直接播放原文件，否则经由服务器处理",
+  "playbackEngine.avplay": "三星播放器",
+  "playbackEngine.avplayNote": "Tizen 电视内置的解码器",
+  "playbackEngine.mpv": "mpv 播放器",
+  "playbackEngine.mpvNote": "桌面应用的原生播放器",
+  "playbackEngine.remux": "服务器转封装",
+  "playbackEngine.remuxNote": "服务器实时重新封装文件，不重新编码画面",
+  "playbackEngine.shaka": "Shaka Player",
+  "playbackEngine.shakaNote": "JavaScript 播放器，用于分段流",
+  "playbackEngine.title": "播放引擎",
+  "playbackEngine.vlc": "VLC 播放器",
+  "playbackEngine.vlcNote": "内置软件解码器，用于芯片不支持的格式",
+  "playbackEngine.webview": "浏览器播放器",
+  "playbackEngine.webviewNote": "浏览器自带的视频元素，不依赖任何库"
+}

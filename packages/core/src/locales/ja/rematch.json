@@ -1,0 +1,18 @@
+{
+  "rematch.action": "照合を修正",
+  "rematch.applyFailed": "照合を更新できませんでした。",
+  "rematch.confidence": "信頼度{score}%",
+  "rematch.confidenceValue": "{score}%",
+  "rematch.current": "現在",
+  "rematch.groupLikely": "有力な候補",
+  "rematch.groupOther": "その他の結果",
+  "rematch.loadFailed": "TMDBの候補を読み込めませんでした。",
+  "rematch.noResults": "この検索に一致するTMDBの結果はありません。",
+  "rematch.noResultsHint": "タイトル、公開年、あらすじを手動で入力することもできます。",
+  "rematch.parsedAs": "{title}として検出",
+  "rematch.reset": "自動照合に戻す",
+  "rematch.search": "検索",
+  "rematch.searchPlaceholder": "TMDBで別の作品を検索",
+  "rematch.title": "TMDBとの照合を修正",
+  "rematch.tmdbId": "TMDB #{id}"
+}

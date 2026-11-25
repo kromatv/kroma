@@ -39,7 +39,7 @@ mod tests {
 
     #[test]
     fn a_locale_no_catalog_answers_falls_back_to_english_rather_than_to_the_key() {
-        assert_eq!(for_locale("de").t("roku.channel.shows", &[]), "Shows");
+        assert_eq!(for_locale("xx").t("roku.channel.shows", &[]), "Shows");
         assert_eq!(for_locale("fr_CH").t("roku.channel.shows", &[]), "Séries");
     }
 

@@ -1,0 +1,11 @@
+{
+  "logs.allSources": "Todas as origens",
+  "logs.empty": "Nenhuma linha de log.",
+  "logs.follow": "Acompanhar",
+  "logs.levelAll": "Todos",
+  "logs.levelError": "Erros",
+  "logs.levelInfo": "Informações",
+  "logs.levelWarn": "Avisos",
+  "logs.searchPlaceholder": "Filtrar linhas…",
+  "logs.sourceCore": "Servidor"
+}

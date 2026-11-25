@@ -1,0 +1,6 @@
+{
+  "time.daysAgo": "vor {n} Tg.",
+  "time.hoursAgo": "vor {n} Std.",
+  "time.justNow": "gerade eben",
+  "time.minutesAgo": "vor {n} Min."
+}

@@ -141,8 +141,8 @@
   "requests.targetEpisode": "Episode",
   "requests.targetMovie": "Film",
   "requests.targetSeason": "Season",
-  "requests.toastApproved": "approved",
-  "requests.toastDeleted": "deleted",
-  "requests.toastDenied": "denied",
+  "requests.toastApproved": "“{title}” approved",
+  "requests.toastDeleted": "“{title}” deleted",
+  "requests.toastDenied": "“{title}” denied",
   "requests.unknownUser": "Deleted user"
 }

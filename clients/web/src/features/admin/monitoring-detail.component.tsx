@@ -88,7 +88,7 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
     void run(() =>
       call().then(
         async () => {
-          say(`« ${title} » ${done}`);
+          say(done);
           await refresh();
         },
         () => say(t('monitoring.actionFailed')),
@@ -109,11 +109,13 @@ function MonitoringDetail({ kind, tmdbId }: Readonly<{ kind: RequestKind; tmdbId
   };
 
   const monitor = (body: MonitorBody) => {
-    const done = monitored ? t('monitoring.toastUpdated') : t('monitoring.toastFollowed');
+    const done = t(monitored ? 'monitoring.toastUpdated' : 'monitoring.toastFollowed', { title });
     act(done, () => client.monitoring.monitor(kind, tmdbId, body));
   };
   const unmonitor = () =>
-    act(t('monitoring.toastUnfollowed'), () => client.monitoring.unmonitor(kind, tmdbId));
+    act(t('monitoring.toastUnfollowed', { title }), () =>
+      client.monitoring.unmonitor(kind, tmdbId),
+    );
 
   if (ledger.isPending || listLoading) {
     return <MonitoringDetailSkeleton />;

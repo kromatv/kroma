@@ -1,0 +1,13 @@
+{
+  "vocab.abbreviations": "Dr, Prof, Hr, Fr, St, Nr, Mio, Mrd, bzw, ca, ggf, evtl, usw, vgl, Jh",
+  "vocab.articles": "der, die, das, ein, eine, einen",
+  "vocab.episode": "Folge, Folgen, Episode",
+  "vocab.movie": "Film, Filme",
+  "vocab.numbers": "zwei, drei, vier, fünf, sechs, sieben, acht, neun, zehn",
+  "vocab.season": "Staffel",
+  "vocab.show": "Serie, Serien",
+  "vocab.theme.christmas": "Weihnachten, weihnachtlich, Heiligabend, Weihnachtsmann, Christkind",
+  "vocab.theme.heist": "Raubüberfall, Banküberfall, Bankraub, Coup, Einbruch",
+  "vocab.theme.summer": "Sommer, Urlaub, Sommerferien, Roadtrip, Strand",
+  "vocab.theme.trueStory": "wahre Geschichte, wahren Geschichte, wahren Begebenheit, wahren Begebenheiten, Biopic"
+}

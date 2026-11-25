@@ -1,0 +1,14 @@
+{
+  "modules.accessDenied": "访问被拒绝",
+  "modules.errorDetails": "详细信息",
+  "modules.errorNotRunning": "模块已安装，但其进程未在运行。",
+  "modules.errorNotRunningHint": "它可能启动失败。重启模块通常可以解决。",
+  "modules.errorServerDown": "服务器没有响应。",
+  "modules.errorServerDownHint": "服务器可能正在重启或已停止。恢复后此页面即可正常使用。",
+  "modules.errorStatus": "HTTP {status}",
+  "modules.loadFailed": "无法加载此页面",
+  "modules.loadFailedHint": "模块已安装，但其数据没有响应。",
+  "modules.sectionDenied": "你无权访问此部分。",
+  "modules.unavailable": "模块不可用",
+  "modules.unavailableHint": "模块未安装，或已停用。"
+}

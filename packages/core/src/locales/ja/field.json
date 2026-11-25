@@ -1,0 +1,8 @@
+{
+  "field.apiKey": "APIキー",
+  "field.categories": "カテゴリ",
+  "field.name": "名前",
+  "field.password": "パスワード",
+  "field.url": "URL",
+  "field.username": "ユーザー名"
+}

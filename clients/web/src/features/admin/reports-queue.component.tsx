@@ -101,13 +101,13 @@ export function ReportsQueuePage() {
         throw e;
       });
   const resolve = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastResolved')}`, () => client.reports.resolve(r.id));
+    act(t('reports.toastResolved', { title: r.subjectTitle }), () => client.reports.resolve(r.id));
   const dismiss = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastDismissed')}`, () => client.reports.dismiss(r.id));
+    act(t('reports.toastDismissed', { title: r.subjectTitle }), () => client.reports.dismiss(r.id));
   const reopen = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastReopened')}`, () => client.reports.reopen(r.id));
+    act(t('reports.toastReopened', { title: r.subjectTitle }), () => client.reports.reopen(r.id));
   const remove = (r: Report) =>
-    act(`« ${r.subjectTitle} » ${t('reports.toastDeleted')}`, () => client.reports.delete(r.id));
+    act(t('reports.toastDeleted', { title: r.subjectTitle }), () => client.reports.delete(r.id));
 
   const openDrawer = (report: Report) =>
     ReportDrawer.call({

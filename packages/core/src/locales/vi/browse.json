@@ -1,0 +1,17 @@
+{
+  "browse.allGenres": "Tất cả",
+  "browse.anyLanguage": "Mọi ngôn ngữ",
+  "browse.audioLanguage": "Ngôn ngữ âm thanh",
+  "browse.count.movies": "{count} phim lẻ",
+  "browse.count.series": "{count} phim bộ",
+  "browse.genres": "Thể loại",
+  "browse.jumpToLetter": "Đến chữ {letter}",
+  "browse.letterNav": "Đến chữ cái",
+  "browse.library": "Thư viện",
+  "browse.sort.added": "Mới thêm",
+  "browse.sort.rating": "Điểm đánh giá",
+  "browse.sort.release": "Ngày phát hành",
+  "browse.sort.title": "Tên phim từ A đến Z",
+  "browse.sortBy": "Sắp xếp theo",
+  "browse.subtitleLanguage": "Phụ đề"
+}

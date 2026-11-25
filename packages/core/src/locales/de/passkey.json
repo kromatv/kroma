@@ -1,0 +1,10 @@
+{
+  "passkey.authFailed": "Anmeldung mit Passkey fehlgeschlagen",
+  "passkey.ceremonyExpired": "Die Passkey-Anfrage ist abgelaufen. Versuche es erneut.",
+  "passkey.defaultName": "Passkey",
+  "passkey.notFound": "Passkey nicht gefunden",
+  "passkey.originInvalid": "Passkeys erfordern eine sichere Verbindung (HTTPS)",
+  "passkey.originMissing": "Herkunft der Anfrage fehlt",
+  "passkey.registerFailed": "Der Passkey konnte nicht registriert werden",
+  "passkey.startFailed": "Die Passkey-Anfrage konnte nicht gestartet werden"
+}
