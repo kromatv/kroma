@@ -89,8 +89,6 @@
   "setup.importUserSome": "{count} thư viện",
   "setup.importUserYou": "Tài khoản của bạn",
   "setup.importUsers": "Người dùng",
-  "setup.languageNone": "Không có ngôn ngữ nào khớp. Luôn có sẵn tiếng Anh.",
-  "setup.languageSearch": "Tìm ngôn ngữ",
   "setup.languageSub": "Chọn ngôn ngữ mà KROMA dùng với bạn.",
   "setup.languageTitle": "Xin chào.",
   "setup.mediaAddMore": "Thêm thư mục khác",

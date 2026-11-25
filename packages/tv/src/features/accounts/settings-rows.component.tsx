@@ -1,5 +1,6 @@
+import { LOCALES } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
-import { type FocusHandle, ListRow, Text } from '@kromatv/ui/kit';
+import { type FocusHandle, LanguagePicker, ListRow, Text } from '@kromatv/ui/kit';
 import { type Ref, useMemo, useState } from 'react';
 import {
   type ChoiceItem,
@@ -62,6 +63,11 @@ function ChoiceRow({
   if (options.length < 2) {
     return null;
   }
+  if (item.pick === 'language') {
+    return (
+      <LanguageRow item={item} first={first} handle={handle} value={value} onValueChange={set} />
+    );
+  }
 
   const cycle = () => {
     const next = options[(options.indexOf(value) + 1) % options.length];
@@ -100,6 +106,43 @@ function ChoiceRow({
         />
       ) : null}
     </>
+  );
+}
+
+interface LanguageRowProps {
+  item: ChoiceItem;
+  first?: boolean;
+  handle?: Ref<FocusHandle>;
+  value: string;
+  onValueChange: (next: string) => void;
+}
+
+function LanguageRow({ item, first, handle, value, onValueChange }: Readonly<LanguageRowProps>) {
+  const t = useT();
+  const [picking, setPicking] = useState(false);
+  useSettingsPopup(picking);
+  return (
+    <LanguagePicker.Root
+      locales={LOCALES}
+      label={t(item.label)}
+      value={value}
+      onValueChange={onValueChange}
+      open={picking}
+      onOpenChange={setPicking}
+    >
+      <ListRow.Root
+        ground="surface"
+        icon={item.icon}
+        autoFocus={first}
+        focusHandle={handle}
+        onPress={() => setPicking(true)}
+      >
+        <ListRow.Label>{t(item.label)}</ListRow.Label>
+        <ListRow.Trailing>
+          <LanguagePicker.Value />
+        </ListRow.Trailing>
+      </ListRow.Root>
+    </LanguagePicker.Root>
   );
 }
 

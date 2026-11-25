@@ -18,6 +18,7 @@ export const localeSetting: SettingsItem = choiceItem({
   level: 'account',
   label: 'common.language',
   icon: 'language',
+  pick: 'language',
   options: () => LOCALES.map((l) => l.code),
   valueLabel: (code) => LOCALES.find((l) => l.code === code)?.labelKey ?? 'common.language',
   valueText: (t, code) => {

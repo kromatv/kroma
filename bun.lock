@@ -1096,6 +1096,7 @@
         "@react-native-masked-view/masked-view": "^0.3.2",
         "@tabler/icons-react": "^3.49.0",
         "@tabler/icons-react-native": "^3.49.0",
+        "country-flag-icons": "^1.6.20",
         "react-native-svg": "^15.16.0",
         "zod": "^4.6.7",
       },

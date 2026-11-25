@@ -2,10 +2,10 @@
 // device) plus the preferred audio and subtitle languages. Each one is saved
 // the moment it is chosen.
 
-import { LANG_NO_PREF, LOCALES, langName, langOptions, localeLabel } from '@kromatv/core';
+import { LANG_NO_PREF, LOCALES, langName, langOptions } from '@kromatv/core';
 import { prefValue } from '@kromatv/core/react';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
-import { ListRow, Select, Switch, Text } from '@kromatv/ui/kit';
+import { LanguagePicker, ListRow, Select, Switch, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
 import { RatingsCountryRow } from '#web/features/accounts/account/ratings-country-row.component';
 import { PrefRow, useSave } from '#web/features/accounts/account/ui';
@@ -68,16 +68,14 @@ export function PreferencesCard() {
         label={t('account.uiLanguage')}
         desc={t('account.uiLanguageDesc')}
         control={
-          <Select.Root
+          <LanguagePicker.Root
+            locales={LOCALES}
             label={t('account.uiLanguage')}
             value={locale}
-            onValueChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
+            onValueChange={setLocale}
           >
-            <Select.Trigger />
-            {LOCALES.map((l) => (
-              <Select.Item key={l.code} value={l.code} label={localeLabel(t, l)} />
-            ))}
-          </Select.Root>
+            <LanguagePicker.Trigger />
+          </LanguagePicker.Root>
         }
       />
       <PrefRow

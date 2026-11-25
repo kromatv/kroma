@@ -1,14 +1,14 @@
 import buildInfo from 'virtual:build-info';
 import type { Health } from '@kromatv/client/media';
-import { LOCALES, localeLabel } from '@kromatv/core';
+import { LOCALES } from '@kromatv/core';
 import { useLocale, useSetLocale, useT } from '@kromatv/ui';
 import {
   Box,
   classes,
   Divider,
   IconButton,
+  LanguagePicker,
   Row,
-  Select,
   StatusDot,
   styles,
   Text,
@@ -146,16 +146,15 @@ export function LoginSettings() {
                   <Text variant="meta" color="textMuted">
                     {t('account.uiLanguage')}
                   </Text>
-                  <Select.Root
+                  <LanguagePicker.Root
+                    locales={LOCALES}
                     label={t('account.uiLanguage')}
                     value={locale}
-                    onValueChange={(v) => setLocale(v as (typeof LOCALES)[number]['code'])}
+                    onValueChange={setLocale}
+                    size="sm"
                   >
-                    <Select.Trigger size="sm" />
-                    {LOCALES.map((l) => (
-                      <Select.Item key={l.code} value={l.code} label={localeLabel(t, l)} />
-                    ))}
-                  </Select.Root>
+                    <LanguagePicker.Trigger />
+                  </LanguagePicker.Root>
                 </Row>
 
                 <Divider spacing={6} />

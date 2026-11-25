@@ -70,6 +70,13 @@ export {
 export type { KromaIntroProps } from './kroma-intro';
 export { KromaIntro } from './kroma-intro';
 export type {
+  LanguagePickerDetails,
+  LanguagePickerReason,
+  LanguagePickerRootProps,
+  LanguagePickerTriggerProps,
+} from './language-picker';
+export { LanguagePicker } from './language-picker';
+export type {
   MenuDismissReason,
   MenuItemProps,
   MenuOpenDetails,

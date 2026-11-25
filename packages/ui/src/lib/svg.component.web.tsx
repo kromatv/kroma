@@ -29,11 +29,12 @@ export const G: El<SVGGElement> = (props) => <g {...props} />;
 
 /** Render a raw SVG document string.
  *
- * The QR code is generated as SVG markup by qrcode-generator, and both worlds
- * need a way to display a document they did not build element by element:
- * react-native-svg parses it, and the browser simply is an SVG parser. The
- * markup is app-generated from a trusted server URL plus a server-issued code,
- * never user input. */
+ * The QR code is generated as SVG markup by qrcode-generator and a flag comes
+ * as one from country-flag-icons, and both worlds need a way to display a
+ * document they did not build element by element: react-native-svg parses it,
+ * and the browser simply is an SVG parser. The markup is either app-generated
+ * from a trusted server URL plus a server-issued code or bundled at build
+ * time, never user input. */
 
 const sDefinition = styles({ box: { display: 'flex' } });
 

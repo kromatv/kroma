@@ -1,0 +1,22 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Every } from './flag.fixtures';
+
+export const story = defineStory({
+  group: 'Display',
+  args: { height: 16 },
+  controls: { height: { min: 10, max: 48, step: 2 } },
+  render: (args) => <Every {...args} />,
+});
+
+A country's flag, for the one place a flag says something words do not: which language a row is in, before the reader can read it. Drawn from vectors at 3:2 (`country-flag-icons`, MIT), never an emoji, which some televisions draw as two letters and Windows does not draw at all. A hairline edge keeps a white field readable on a white ground, and the flag says nothing to assistive tech, since the words beside it name the thing.
+
+The kit draws only the flags a language uses. `isFlagRegion` says whether it draws one, so a caller holding a region it does not draw shows something neutral instead.
+
+```tsx
+const region = flagRegion(locale);
+{isFlagRegion(region) ? <Flag region={region} height={16} /> : <Icon name="language" />}
+```
+
+<Dont>
+- Use a flag to stand for a language no one country speaks for, or as decoration.
+</Dont>

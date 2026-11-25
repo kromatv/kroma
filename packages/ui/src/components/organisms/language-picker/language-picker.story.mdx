@@ -1,0 +1,62 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Box } from '#ui/components/atoms/box';
+import { InPlace, Offered, Settings } from './language-picker.fixtures';
+
+export const story = defineStory({
+  group: 'Input',
+  width: 420,
+  args: { size: 'md' },
+  controls: { size: ['sm', 'md', 'tv'] },
+  render: (args) => (
+    <Box gap={16}>
+      <Settings {...args} />
+      <Offered {...args} />
+    </Box>
+  ),
+});
+
+The interface language, for a list of ten languages or forty. A segmented control stops working at four, and a select of names stops working once a reader cannot read the names on screen, so every row says a language three ways: its **flag**, its **own name** written in it (with `lang`, so a screen reader speaks it and Han characters take the right glyphs), and its **name in the language on screen** beside it. A language still being translated wears a **Beta** tag, and the one picked a tick. The whole row is the control.
+
+**Ordered to be found.** A long list leads with **Suggested**: the language picked, then each one the device asks for, matched the way a browser's language is (`pt-BR` finds `pt`, `zh-CN` finds `zh-Hans`). Then **all languages**, sorted by the name the reader knows them by, as their language sorts. The suggestions are frozen when the list is drawn, so a pick does not make its row jump.
+
+**Searched where there is a keyboard.** Over eight languages, a field above the list matches either name or the code, whatever the case and the accents (`espanol`, `ESP` and `es` all find Español). A television has no keyboard, so there the list sits in a dialog the remote walks, opened on the picked row. Only the list scrolls; the title and the search stay put.
+
+**Flags are drawn, never emoji**, from `country-flag-icons`, and one table in `@kromatv/core` (`flagRegion`) says which flag stands for which locale: English wears the United States', as the catalog spells American. A locale with a region subtag wears that region's flag; one with no flag in the table, such as Arabic, which no one country speaks for, wears the neutral language glyph in the same box rather than a wrong flag.
+
+```tsx
+<LanguagePicker.Root locales={LOCALES} label="Interface language" value={locale} onValueChange={setLocale}>
+  <LanguagePicker.Trigger />
+</LanguagePicker.Root>
+
+// The list laid out in place, its search in a pinned header:
+<LanguagePicker.Root locales={LOCALES} label="Interface language" value={locale} onValueChange={setLocale}>
+  <GuidedFlow.Header><LanguagePicker.Input /></GuidedFlow.Header>
+  <GuidedFlow.Panel><LanguagePicker.List /><LanguagePicker.Empty /></GuidedFlow.Panel>
+</LanguagePicker.Root>
+
+// A settings row that opens the list and reports the pick at its end:
+<LanguagePicker.Root locales={LOCALES} label="Language" value={locale} onValueChange={set} open={open} onOpenChange={setOpen}>
+  <ListRow.Root label="Language" onPress={() => setOpen(true)}>
+    <ListRow.Label>Language</ListRow.Label>
+    <ListRow.Trailing><LanguagePicker.Value /></ListRow.Trailing>
+  </ListRow.Root>
+</LanguagePicker.Root>
+```
+
+<Scene name="In place">
+  The list laid out on the page, as the setup's first screen has it: the search,
+  the suggestions from a device that asks for Japanese then English, and every
+  language after them.
+
+  <InPlace />
+</Scene>
+
+<Do>
+- Pass the device's languages as `preferred` from a native shell; the browser's are the default.
+- Name each language in every catalog (`lang.<code>`), so a reader sees it in their own language beside its own name.
+</Do>
+
+<Dont>
+- Draw a flag as an emoji, or pick one for a language no one country speaks for.
+- Use a segmented control or a plain select for the interface language.
+</Dont>
