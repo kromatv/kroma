@@ -91,8 +91,8 @@ mod tests {
     fn a_number_is_known_by_its_digit_its_numeral_and_every_language_s_word() {
         let lexicon = Lexicon::shared();
 
-        assert_eq!(lexicon.spellings("2"), ["ii", "two", "deux"]);
-        assert_eq!(lexicon.spellings("trois"), ["3", "iii", "three"]);
+        assert_eq!(lexicon.spellings("2"), ["ii", "two", "deux", "둘"]);
+        assert_eq!(lexicon.spellings("trois"), ["3", "iii", "three", "셋"]);
         assert_eq!(lexicon.spellings("x"), Vec::<String>::new());
         assert_eq!(lexicon.spellings("dune"), Vec::<String>::new());
     }

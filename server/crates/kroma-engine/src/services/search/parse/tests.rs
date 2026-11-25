@@ -79,8 +79,8 @@ fn a_sequel_number_carries_its_other_spellings() {
     let two = &read("rocky 2").tokens[1];
     let roman = &read("rocky iii").tokens[1];
 
-    assert_eq!(two.aliases, ["ii", "two", "deux"]);
-    assert_eq!(roman.aliases, ["3", "three", "trois"]);
+    assert_eq!(two.aliases, ["ii", "two", "deux", "둘"]);
+    assert_eq!(roman.aliases, ["3", "three", "trois", "셋"]);
 }
 
 #[test]
