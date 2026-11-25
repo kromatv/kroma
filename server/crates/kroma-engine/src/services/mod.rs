@@ -35,6 +35,7 @@ pub mod releases;
 pub mod rematch;
 pub mod remote_art;
 pub mod scan;
+pub mod screens;
 pub mod search;
 pub mod sections;
 pub mod settings;

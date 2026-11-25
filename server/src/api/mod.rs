@@ -206,6 +206,8 @@ mod it_reset_faults;
 #[cfg(test)]
 mod it_saved_titles;
 #[cfg(test)]
+mod it_screens;
+#[cfg(test)]
 mod it_search;
 #[cfg(test)]
 mod it_server_restart;

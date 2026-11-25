@@ -75,6 +75,13 @@ pub enum ServerEvent {
         #[serde(rename = "receiverId")]
         receiver_id: String,
     },
+    #[serde(rename = "screen.request")]
+    ScreenRequest {
+        #[serde(rename = "screenId")]
+        screen_id: String,
+        #[serde(rename = "requestId")]
+        request_id: String,
+    },
     #[serde(rename = "settings.updated")]
     SettingsUpdated,
     #[serde(rename = "job.started")]

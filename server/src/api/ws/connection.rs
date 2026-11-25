@@ -2,7 +2,8 @@ use axum::extract::ws::{Message, WebSocket};
 use tokio::sync::broadcast::error::RecvError;
 
 use super::cast::release_controller;
-use super::message::{handle_client, ClientMessage};
+use super::message::handle_client;
+use super::screen::ScreenSeat;
 use super::Viewer;
 use crate::infra::events::ServerEvent;
 use crate::state::SharedState;
@@ -10,14 +11,13 @@ use crate::state::SharedState;
 pub(super) async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer) {
     let mut rx = state.events.subscribe();
 
-    let Ok(hello) = serde_json::to_string(&ServerEvent::Hello {
-        version: crate::VERSION,
-    }) else {
+    let Some(hello) = hello_frame() else {
         return;
     };
-    if socket.send(Message::Text(hello.into())).await.is_err() {
+    if socket.send(hello).await.is_err() {
         return;
     }
+    let screen = ScreenSeat::open(&state);
 
     // Periodic ping so a half-open socket (client vanished without a Close
     // frame) is detected as a failed send rather than lingering forever.
@@ -56,7 +56,7 @@ pub(super) async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer)
                 Some(Ok(Message::Text(text))) => {
                     // Unrecognized frames are ignored, not fatal: an older server
                     // must not drop the socket of a newer client.
-                    if let Ok(message) = serde_json::from_str::<ClientMessage>(&text) {
+                    if let Some(message) = screen.read(&who, &text) {
                         handle_client(
                             &state,
                             &who,
@@ -100,4 +100,12 @@ pub(super) async fn pump(mut socket: WebSocket, state: SharedState, who: Viewer)
     if controlling {
         release_controller(&state, &controller_id);
     }
+}
+
+fn hello_frame() -> Option<Message> {
+    let hello = ServerEvent::Hello {
+        version: crate::VERSION,
+    };
+    let json = serde_json::to_string(&hello).ok()?;
+    Some(Message::Text(json.into()))
 }
