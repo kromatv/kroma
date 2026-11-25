@@ -3,6 +3,7 @@ import { draftOf, editOf } from './title-info-draft';
 
 const NOTHING = {
   title: null,
+  originalTitle: null,
   sortTitle: null,
   overview: null,
   year: null,
@@ -13,6 +14,7 @@ const NOTHING = {
 it('shows nothing in the form for a title that follows the provider', () => {
   expect(draftOf(NOTHING)).toEqual({
     title: '',
+    originalTitle: '',
     sortTitle: '',
     overview: '',
     released: '',
@@ -23,6 +25,7 @@ it('shows nothing in the form for a title that follows the provider', () => {
 it('puts the genres on one line, and reads them back one by one', () => {
   const edit = {
     title: 'Heat',
+    originalTitle: 'Heat',
     sortTitle: 'Heat (1995)',
     overview: 'Two men.',
     year: 1995,
@@ -34,6 +37,7 @@ it('puts the genres on one line, and reads them back one by one', () => {
 
   expect(draft).toEqual({
     title: 'Heat',
+    originalTitle: 'Heat',
     sortTitle: 'Heat (1995)',
     overview: 'Two men.',
     released: '1995',
@@ -52,7 +56,14 @@ it('shows the release date in place of its year, and sends it alone', () => {
 });
 
 it('hands every field left blank back to the provider', () => {
-  const draft = { title: '  ', sortTitle: ' ', overview: '', released: ' ', genres: ' , ,' };
+  const draft = {
+    title: '  ',
+    originalTitle: ' ',
+    sortTitle: ' ',
+    overview: '',
+    released: ' ',
+    genres: ' , ,',
+  };
 
   expect(editOf(draft)).toEqual(NOTHING);
 });
@@ -60,6 +71,7 @@ it('hands every field left blank back to the provider', () => {
 it('keeps each field trimmed', () => {
   const draft = {
     title: ' Heat ',
+    originalTitle: ' Das Boot ',
     sortTitle: '',
     overview: ' Two men. ',
     released: ' 1995 ',
@@ -68,6 +80,7 @@ it('keeps each field trimmed', () => {
 
   expect(editOf(draft)).toEqual({
     title: 'Heat',
+    originalTitle: 'Das Boot',
     sortTitle: null,
     overview: 'Two men.',
     year: 1995,

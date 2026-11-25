@@ -297,6 +297,12 @@ titles arrived and the most-watched panel of the dashboard name a title by what 
 or its `.nfo` file says (LIB-83, LIB-84), before the scanned or fetched name. They show the
 poster or the backdrop kept for it (MEDIA-48 to MEDIA-50) before the fetched one.
 
+**LIB-94** (SHIPPED) - A film or a show shows its original title, the one it was made under,
+below the name shown when the two differ by more than their case, as Jellyfin does. It comes
+from the provider, the `.nfo` file's `<originaltitle>` (LIB-84) comes before it, and what a
+person writes (LIB-83) comes before both, the same in every language. Search finds a title by
+its original title too.
+
 The specific providers, and whether more than one is consulted, are configuration and
 architecture rather than product rules, and are not fixed here.
 

@@ -3,6 +3,7 @@
  * change a title show it where nothing was written or uploaded. */
 export interface TitleShown {
   title: string;
+  originalTitle: string | null;
   year: number | null;
   overview: string | null;
   genres: readonly string[];

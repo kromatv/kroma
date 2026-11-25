@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { mediaItem } from '#web/shared/lib/cast.fixture';
-import type { TitleSeason } from '#web/shared/lib/title-view';
+import type { TitleSeason } from '#web/shared/lib/title-seasons';
 import { WebRuntimeProvider } from '#web/shared/lib/web-runtime';
 import { createWebTestRuntime } from '#web/shared/lib/web-runtime.fixture';
 import { SeasonPosterButton } from './season-poster-button.component';

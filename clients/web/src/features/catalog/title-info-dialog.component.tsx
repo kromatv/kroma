@@ -30,6 +30,7 @@ const upTo = (max: number) => (text: string) => text.slice(0, max);
 
 const FIT: Readonly<Record<keyof TitleDraft, (text: string) => string>> = {
   title: upTo(TITLE_EDIT_LIMITS.title),
+  originalTitle: upTo(TITLE_EDIT_LIMITS.title),
   sortTitle: upTo(TITLE_EDIT_LIMITS.title),
   overview: upTo(TITLE_EDIT_LIMITS.overview),
   released: (text) => text.replace(/[^\d-]/g, '').slice(0, 10),
@@ -79,13 +80,14 @@ function placeholdersOf(shown: TitleShown | undefined): Placeholders {
   }
   return {
     title: shown.title,
+    originalTitle: shown.originalTitle ?? undefined,
     overview: shown.overview ?? undefined,
     released: shown.year === null ? undefined : String(shown.year),
     genres: shown.genres.join(', ') || undefined,
   };
 }
 
-type Hinted = 'sortTitle' | 'released' | 'genres';
+type Hinted = 'originalTitle' | 'sortTitle' | 'released' | 'genres';
 
 type Fields = Readonly<{ draft: TitleDraft; change: Change; placeholders: Placeholders }>;
 
@@ -131,6 +133,7 @@ function TitleFields(fields: Fields) {
   return (
     <>
       <NameField {...fields} />
+      <HintedField field="originalTitle" {...fields} />
       <HintedField field="sortTitle" {...fields} />
       <HintedField field="released" {...fields} />
       <SummaryField {...fields} />

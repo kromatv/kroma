@@ -10,6 +10,7 @@ describe('buildTitleView: movie source', () => {
     video: { codec: 'hevc' },
     metadata: {
       tmdbId: 438631,
+      originalTitle: 'Dune: Part One',
       rating: 8.1,
       overview: 'ov',
       tagline: 'tl',
@@ -38,6 +39,7 @@ describe('buildTitleView: movie source', () => {
     expect(v.localId).toBe('mv1');
     expect(v.inLibrary).toBe(true);
     expect(v.year).toBe(2021);
+    expect(v.originalTitle).toBe('Dune: Part One');
     expect(v.rating).toBe(8.1);
     expect(v.genres).toEqual(['Sci-Fi', 'genre.adventure']);
     expect(v.runtimeMin).toBeNull();
