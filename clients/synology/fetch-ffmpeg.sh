@@ -16,6 +16,9 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 CACHE="${3:-$HERE/.cache}"
 LOCK="$HERE/ffmpeg.lock"
 
+RETRY=(--retry 3 --retry-delay 4)
+if curl --retry-all-errors --version >/dev/null 2>&1; then RETRY+=(--retry-all-errors); fi
+
 sha256() {
   local file="$1"
   if command -v shasum >/dev/null; then shasum -a 256 "$file"; else sha256sum "$file"; fi | cut -d' ' -f1
@@ -26,8 +29,9 @@ fetch() {
   local url="$1" want="$2"
   local file="$CACHE/$want-$(basename "$url")"
   if [[ ! -f "$file" || "$(sha256 "$file")" != "$want" ]]; then
-    curl -fsSL --show-error --connect-timeout 20 --retry 3 --retry-delay 4 --retry-all-errors \
-      --proto '=https' --proto-redir '=https' "$url" -o "$file.part"
+    curl -fsSL --show-error --connect-timeout 20 "${RETRY[@]}" \
+      --proto '=https' --proto-redir '=https' "$url" -o "$file.part" ||
+      { echo "could not download $url" >&2; rm -f "$file.part"; exit 1; }
     [[ "$(sha256 "$file.part")" == "$want" ]] || { echo "$url does not match ffmpeg.lock" >&2; rm -f "$file.part"; exit 1; }
     mv "$file.part" "$file"
   fi
