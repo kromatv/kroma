@@ -59,6 +59,16 @@ describe('a refusal text', () => {
     );
   });
 
+  it('names the limit a release of unknown size could not be checked against', () => {
+    expect(refusal('size-unknown', { limitBytes: 10 })).toBe(
+      'acq.refusal.sizeUnknown {"limit":"10B"}',
+    );
+  });
+
+  it('reads a rule named like an object key as a rule it does not know', () => {
+    expect(refusal('constructor')).toBe('acq.refusal.other');
+  });
+
   it('names the shapes of a wrong-shape release', () => {
     expect(refusal('wrong-shape', { wanted: 'movie', found: 'season' })).toBe(
       'acq.refusal.wrongShape {"wanted":"acq.shapeMovie","found":"acq.shapeSeason"}',

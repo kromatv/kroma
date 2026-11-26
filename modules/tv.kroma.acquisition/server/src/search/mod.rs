@@ -25,8 +25,35 @@ pub use targets::{
 };
 
 use kroma_module_sdk::db::WantedRow;
+use kroma_module_sdk::host::HostStorage;
 
 use crate::dtos::ScoredReleaseView;
+
+/// The link to hand the queue for a release a search chose. A built-in
+/// indexer's search row can carry its details page rather than the download,
+/// and only the indexer knows how to follow it; any other link is the download.
+pub fn grab_link<S: HostStorage>(
+    state: &S,
+    release: &ScoredReleaseView,
+    magnet_or_url: &str,
+) -> anyhow::Result<String> {
+    if magnet_or_url.starts_with("magnet:") {
+        return Ok(magnet_or_url.to_string());
+    }
+    let indexer = crate::peers::indexers::get(state, &release.indexer_id)?;
+    match indexer {
+        Some(i) if i.kind == crate::peers::indexers::KIND_BUILTIN => {
+            crate::resolve_builtin_download(
+                state,
+                &i.id,
+                &release.title,
+                release.details_url.as_deref(),
+                magnet_or_url,
+            )
+        }
+        _ => Ok(magnet_or_url.to_string()),
+    }
+}
 
 /// Build a grab spec from a scored release the search chose, for a specific
 /// request/title. `upgrade` marks a grab that replaces media already on disk.

@@ -139,7 +139,7 @@ pub(crate) fn title_kind(unit_kind: &str) -> RequestKind {
 
 // Rows sharing an air-recency bucket share a base delay, so one UPDATE per
 // bucket covers the batch instead of one per row.
-fn schedule_retries<S: HostStorage>(
+pub(crate) fn schedule_retries<S: HostStorage>(
     state: &S,
     due: &[&db::WantedRow],
     today: &str,
@@ -279,9 +279,10 @@ pub(crate) fn grab_candidate<S: HostStorage>(
     grab: Grab,
 ) -> Result<()> {
     let (title, year) = grab.title.unzip();
+    let link = crate::search::grab_link(state, &candidate.view, &candidate.magnet_or_url)?;
     let spec = crate::search::grab_spec_from_release(
         &candidate.view,
-        &candidate.magnet_or_url,
+        &link,
         candidate.tmdb_id,
         title,
         year.flatten(),

@@ -176,6 +176,7 @@
   "acq.refusal.other": "une règle du profil",
   "acq.refusal.quality": "{quality} est hors du profil",
   "acq.refusal.seeders": "{have} sources, il en faut {need}",
+  "acq.refusal.sizeUnknown": "taille non indiquée : impossible de vérifier la limite de {limit}",
   "acq.refusal.tooBig": "{size}, au-dessus de {limit}",
   "acq.refusal.tooSmall": "{size}, en dessous de {limit}",
   "acq.refusal.wrongEpisode": "{unit}, pas {wanted}",

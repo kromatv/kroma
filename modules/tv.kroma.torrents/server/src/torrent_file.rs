@@ -66,6 +66,28 @@ pub fn parse(bytes: &[u8]) -> Result<ParsedTorrentFile> {
     })
 }
 
+/// Whether the bytes decode to a torrent: a bencoded dictionary holding an
+/// `info` dictionary. What a fetched link has to be before a client sees it.
+pub fn is_torrent(bytes: &[u8]) -> bool {
+    let Some(torrent) = bencode::parse(bytes) else {
+        return false;
+    };
+    torrent
+        .get(b"info")
+        .and_then(|info| info.get(b"name"))
+        .is_some()
+}
+
+/// The v1 info hash of a `.torrent`, which is the client ref an engine files it
+/// under. `None` for bytes that do not decode, and for a v2-only torrent, whose
+/// ref is a truncated SHA-256 rather than this.
+pub fn v1_info_hash(bytes: &[u8]) -> Option<String> {
+    let torrent = bencode::parse(bytes)?;
+    let info = torrent.get(b"info")?;
+    info.get(b"pieces")?;
+    Some(crate::magnet::to_hex(&info_hash(info)))
+}
+
 struct TorrentEntry<'a> {
     components: Vec<&'a [u8]>,
     length: u64,

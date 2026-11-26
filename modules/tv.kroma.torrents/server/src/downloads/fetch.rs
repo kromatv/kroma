@@ -10,6 +10,30 @@ use crate::db;
 const PURPOSE: &str = "torrent-file";
 const CALL_SECS: u32 = 10;
 
+/// A link that answered with something other than a `.torrent`: a login or
+/// details page, a challenge, an error document. Fetching it again does not
+/// change that, and neither does handing it to another client.
+#[derive(Debug)]
+pub(crate) struct NotATorrent(String);
+
+impl NotATorrent {
+    fn from_body(body: &[u8]) -> Self {
+        Self(snippet(body))
+    }
+}
+
+impl std::fmt::Display for NotATorrent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "indexer did not return a .torrent file (got: {})",
+            self.0
+        )
+    }
+}
+
+impl std::error::Error for NotATorrent {}
+
 pub(super) fn fetch_torrent_for(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u8>> {
     // Trackers behind Cloudflare intermittently drop the TLS connection
     // (`curl (35) SSL_ERROR_ZERO_RETURN`, reset, timeout) and a fresh attempt
@@ -38,10 +62,17 @@ fn fetch_torrent_once(host: &dyn HostCtx, row: &db::DownloadRow) -> Result<Vec<u
         if let Some(bytes) =
             crate::port::indexers::fetch_torrent(host, indexer_id, &row.magnet_or_url)?
         {
-            return Ok(bytes);
+            return checked(bytes);
         }
     }
     fetch_torrent_file(host, &row.magnet_or_url)
+}
+
+fn checked(bytes: Vec<u8>) -> Result<Vec<u8>> {
+    if !crate::torrent_file::is_torrent(&bytes) {
+        return Err(NotATorrent::from_body(&bytes).into());
+    }
+    Ok(bytes)
 }
 
 fn is_transient_fetch(err: &anyhow::Error) -> bool {
@@ -58,14 +89,7 @@ pub(super) fn fetch_torrent_file(host: &dyn HostCtx, url: &str) -> Result<Vec<u8
     if resp.body.is_empty() {
         bail!("indexer returned an empty response");
     }
-    // A tracker error page is HTML/JSON, not a bencoded torrent (starts with 'd').
-    if resp.body.first() != Some(&b'd') {
-        bail!(
-            "indexer did not return a .torrent file (got: {})",
-            snippet(&resp.body)
-        );
-    }
-    Ok(resp.body)
+    checked(resp.body)
 }
 
 // The URL carries the indexer's passkey, so an error names its host only.
@@ -125,6 +149,37 @@ mod tests {
     #[test]
     fn without_a_vpn_a_torrent_link_goes_out_directly() {
         assert!(route(&StubHost::new(), PRIVATE_LINK).is_ok());
+    }
+
+    #[test]
+    fn a_page_in_place_of_a_torrent_is_told_apart_from_a_failed_fetch() {
+        let page = b"<!DOCTYPE html><html><body>Please log in</body></html>".to_vec();
+
+        let err = checked(page).unwrap_err();
+
+        assert!(err.is::<NotATorrent>());
+        assert!(err.to_string().contains("Please log in"), "{err}");
+    }
+
+    #[test]
+    fn bencode_that_describes_no_torrent_is_not_one() {
+        assert!(
+            checked(b"d5:errori1ee".to_vec())
+                .unwrap_err()
+                .is::<NotATorrent>()
+        );
+        assert!(
+            checked(b"d4:info".to_vec())
+                .unwrap_err()
+                .is::<NotATorrent>()
+        );
+    }
+
+    #[test]
+    fn a_torrent_is_handed_back_untouched() {
+        let torrent = b"d4:infod6:lengthi1e4:name1:a12:piece lengthi16384e6:pieces0:ee".to_vec();
+
+        assert_eq!(checked(torrent.clone()).unwrap(), torrent);
     }
 
     #[test]

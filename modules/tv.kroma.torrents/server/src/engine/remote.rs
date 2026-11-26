@@ -69,32 +69,28 @@ impl DownloadClient for RemoteEngine {
     }
 
     fn protocols(&self) -> Vec<String> {
-        #[derive(Deserialize, Default)]
-        #[serde(default)]
-        struct Caps {
-            protocols: Vec<String>,
-        }
-        match self.ask::<Caps>("caps", json!({})) {
-            Ok(caps) if !caps.protocols.is_empty() => caps.protocols,
+        match self.caps() {
+            Some(caps) if !caps.protocols.is_empty() => caps.protocols,
             _ => vec![TORRENT.to_string()],
         }
     }
 
     fn add(&self, req: &AddTorrentReq) -> anyhow::Result<String> {
-        // `only_files` and `torrent_bytes` are not sent: no external engine reads
-        // them (file selection is the embedded engine's, and a pre-fetched
-        // `.torrent` is a URL to an external client). An engine that wants either
-        // gets a new key, which is additive.
-        self.ask(
-            "add",
-            json!({
-                "magnet_or_url": req.magnet_or_url,
-                "protocol": req.protocol,
-                "name": req.name,
-                "download_dir": req.download_dir,
-                "label": req.label,
-            }),
-        )
+        let mut args = json!({
+            "magnet_or_url": req.magnet_or_url,
+            "protocol": req.protocol,
+            "name": req.name,
+            "download_dir": req.download_dir,
+            "label": req.label,
+        });
+        if let Some(bytes) = self.uploadable(req.torrent_bytes) {
+            use base64::Engine as _;
+            args["torrent_b64"] = base64::engine::general_purpose::STANDARD
+                .encode(bytes)
+                .into();
+            args["info_hash"] = crate::torrent_file::v1_info_hash(bytes).into();
+        }
+        self.ask("add", args)
     }
 
     fn list_files(
@@ -134,6 +130,28 @@ impl DownloadClient for RemoteEngine {
             "remove",
             json!({ "client_ref": client_ref, "delete_data": delete_data }),
         )
+    }
+}
+
+const MAX_UPLOAD_BYTES: usize = 8 * 1024 * 1024;
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+struct Caps {
+    protocols: Vec<String>,
+    torrent_file: bool,
+}
+
+impl RemoteEngine {
+    fn caps(&self) -> Option<Caps> {
+        self.ask::<Caps>("caps", json!({})).ok()
+    }
+
+    fn uploadable<'a>(&self, bytes: Option<&'a [u8]>) -> Option<&'a [u8]> {
+        let bytes = bytes.filter(|b| b.len() <= MAX_UPLOAD_BYTES)?;
+        self.caps()
+            .is_some_and(|caps| caps.torrent_file)
+            .then_some(bytes)
     }
 }
 

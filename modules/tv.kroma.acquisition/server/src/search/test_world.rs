@@ -19,6 +19,7 @@ pub(crate) struct Fakes {
     pub(crate) releases: Vec<Value>,
     pub(crate) search_error: Option<String>,
     pub(crate) grab_error: Option<String>,
+    pub(crate) resolved: Option<Value>,
     pub(crate) grabs: Arc<Mutex<Vec<Value>>>,
 }
 
@@ -32,6 +33,7 @@ impl Fakes {
             releases: Vec::new(),
             search_error: None,
             grab_error: None,
+            resolved: None,
             grabs: Arc::default(),
         }
     }
@@ -47,6 +49,15 @@ impl Fakes {
             .unwrap()
             .iter()
             .map(|g| g["release_title"].as_str().unwrap().to_string())
+            .collect()
+    }
+
+    pub(crate) fn grabbed_links(&self) -> Vec<String> {
+        self.grabs
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|g| g["magnet_or_url"].as_str().unwrap().to_string())
             .collect()
     }
 
@@ -85,6 +96,8 @@ pub(crate) async fn host(fakes: &Fakes) -> StubHost {
     let grab_error = fakes.grab_error.clone();
     let grabs = fakes.grabs.clone();
     let gate = fakes.gate;
+    let known = fakes.indexers.clone();
+    let resolved = fakes.resolved.clone();
     let router = axum::Router::new()
         .route(
             "/_port/tv.kroma.torrents/grab/gate-open",
@@ -113,6 +126,25 @@ pub(crate) async fn host(fakes: &Fakes) -> StubHost {
             post(move |Json(_): Json<Value>| {
                 let indexers = indexers.clone();
                 async move { Json(Ok::<_, String>(indexers)) }
+            }),
+        )
+        .route(
+            "/_port/tv.kroma.indexer/db/get",
+            post(move |Json(ask): Json<Value>| {
+                let found = known.iter().find(|i| i["id"] == ask["id"]).cloned();
+                async move { Json(Ok::<_, String>(found)) }
+            }),
+        )
+        .route(
+            "/_port/tv.kroma.indexer/search/resolve-download",
+            post(move |Json(_): Json<Value>| {
+                let resolved = resolved.clone();
+                async move {
+                    match resolved {
+                        Some(target) => Json(Ok::<_, String>(target)),
+                        None => Json(Err("no download rule".to_string())),
+                    }
+                }
             }),
         )
         .route(

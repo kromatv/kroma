@@ -8,7 +8,7 @@ use serde_json::json;
 use crate::db::{self, DownloadClientRow, DownloadRow};
 use crate::{AddTorrentReq, DownloadClient};
 
-use super::fetch::fetch_torrent_for;
+use super::fetch::{NotATorrent, fetch_torrent_for};
 use super::{DownloadManager, GrabSpec, LABEL};
 
 impl DownloadManager {
@@ -182,7 +182,7 @@ impl DownloadManager {
         client: &DownloadClientRow,
     ) -> Result<Option<Vec<u8>>, ()> {
         if client.kind != "rqbit" {
-            return Ok(None);
+            return self.prefetch_for_external(host, row);
         }
         if let Some(bytes) =
             crate::torrent_file::stored_bytes(&self.state_dir, self.uploaded_hash(row).as_deref())
@@ -203,6 +203,29 @@ impl DownloadManager {
                 tracing::warn!(id = %row.id, error = %msg, "torrent file fetch failed");
                 let _ = db::set_download_status(self.core(), &row.id, "failed", Some(&msg));
                 Err(())
+            }
+        }
+    }
+
+    fn prefetch_for_external(
+        &self,
+        host: &dyn HostCtx,
+        row: &DownloadRow,
+    ) -> Result<Option<Vec<u8>>, ()> {
+        if row.protocol != crate::engine::TORRENT || !row.magnet_or_url.starts_with("http") {
+            return Ok(None);
+        }
+        match fetch_torrent_for(host, row) {
+            Ok(bytes) => Ok(Some(bytes)),
+            Err(e) if e.is::<NotATorrent>() => {
+                let msg = format!("the release link is not a .torrent: {e:#}");
+                tracing::warn!(id = %row.id, error = %msg, "torrent link refused before the client saw it");
+                let _ = db::set_download_status(self.core(), &row.id, "failed", Some(&msg));
+                Err(())
+            }
+            Err(e) => {
+                tracing::warn!(id = %row.id, error = %format!("{e:#}"), "could not fetch the .torrent; the client gets the link");
+                Ok(None)
             }
         }
     }

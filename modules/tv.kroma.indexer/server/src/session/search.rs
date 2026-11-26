@@ -1,6 +1,6 @@
 use crate::{engine, Query};
 
-use super::response::{declared_empty, refusal, snippet};
+use super::response::{browser_json, declared_empty, refusal, snippet};
 use super::{SearchOutcome, Session, RATE_LIMIT_COOLDOWN};
 
 impl Session {
@@ -67,6 +67,7 @@ impl Session {
                 return;
             }
         };
+        let body = self.unwrapped(&req.response_kind, body);
         let bytes = body.len();
         let body = engine::preprocess(&self.def, &self.cfg, &body);
         if let Some(message) = refusal(&req.response_kind, &body) {
@@ -101,6 +102,13 @@ impl Session {
                     .push(format!("{}: parse: {e:#}", self.def.name));
             }
         }
+    }
+
+    fn unwrapped(&self, kind: &str, body: String) -> String {
+        if kind != "json" || self.flaresolverr.is_none() {
+            return body;
+        }
+        browser_json(&body).unwrap_or(body)
     }
 
     // A tracker that refuses the query answers 200 with an error document, which

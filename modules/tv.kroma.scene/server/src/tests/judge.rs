@@ -209,16 +209,47 @@ fn a_pack_of_another_season_is_refused() {
     assert_eq!(rule(result), "wrong-season");
 }
 
-#[test]
-fn a_release_with_no_reported_size_is_still_judged() {
-    let f = fixture();
-    let sizeless = Candidate {
+fn sizeless() -> Candidate<'static> {
+    Candidate {
         size_bytes: None,
         ..cand(0, 10)
-    };
+    }
+}
+
+#[test]
+fn a_release_with_no_reported_size_is_refused_where_a_maximum_applies() {
+    let f = fixture();
+
+    let result = f.judge_with("Movie.2020.1080p.BluRay.x265", sizeless(), movie());
+
+    let refused = result.unwrap_err();
+    assert_eq!(refused.rule, "size-unknown");
+    assert!(refused.params["limitBytes"].as_u64().is_some_and(|b| b > 0));
+}
+
+#[test]
+fn a_release_with_no_reported_size_is_refused_where_only_a_minimum_applies() {
+    let mut f = fixture();
+    for limit in &mut f.sizes.movie {
+        limit.max = None;
+        limit.min = 5.0;
+    }
+
+    let result = f.judge_with("Movie.2020.1080p.BluRay.x265", sizeless(), movie());
+
+    assert_eq!(rule(result), "size-unknown");
+}
+
+#[test]
+fn a_release_with_no_reported_size_is_still_judged_where_no_limit_applies() {
+    let mut f = fixture();
+    for limit in &mut f.sizes.movie {
+        limit.max = None;
+        limit.min = 0.0;
+    }
 
     let judged = f
-        .judge_with("Movie.2020.1080p.BluRay.x265", sizeless, movie())
+        .judge_with("Movie.2020.1080p.BluRay.x265", sizeless(), movie())
         .unwrap();
 
     assert_eq!(judged.size_bytes, None);

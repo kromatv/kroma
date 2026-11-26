@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use kroma_module_sdk::host::{AuthUser, HostStorage};
 use kroma_scene::{
-    Candidate, Evaluation, Facts, Language, ParsedRelease, Query, Target, evaluate, judge,
+    Candidate, Evaluation, Facts, Language, ParsedRelease, Query, Rules, Sizes, Target, evaluate,
+    judge,
 };
 
 use super::routes::require_reader;
@@ -70,11 +71,19 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
         runtime_minutes: None,
         original,
     };
+    let unlimited = Sizes {
+        movie: Vec::new(),
+        episode: Vec::new(),
+        ..book.sizes.clone()
+    };
     let profiles = book
         .profiles
         .iter()
         .map(|profile| {
-            let rules = book.rules(profile);
+            let rules = Rules {
+                sizes: &unlimited,
+                ..book.rules(profile)
+            };
             // A name says nothing about seeders or size, so neither refuses.
             let candidate = Candidate::default();
             ProfileVerdict {

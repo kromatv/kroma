@@ -5,9 +5,11 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use kroma_module_sdk::db::WantedRow;
 use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::primitives::now_ms;
 use kroma_module_sdk::host::HostStorage;
+use kroma_module_sdk::requests::lifecycle::today_ymd;
 use rusqlite::params;
 
 use crate::auto::title_kind;
@@ -22,6 +24,7 @@ pub struct FailureSummary {
     pub stalled: usize,
     pub blocklisted: usize,
     pub missing_again: usize,
+    pub held_back: usize,
 }
 
 /// One download as this pass reads it from the shared ledger.
@@ -35,6 +38,7 @@ struct Download {
     release_title: String,
     info_hash: Option<String>,
     indexer_id: Option<String>,
+    client_ref: String,
     status: String,
     error: Option<String>,
     progress: f64,
@@ -54,7 +58,11 @@ impl Download {
         matches!(self.status.as_str(), "queued" | "downloading" | "paused")
     }
 
-    fn covers(&self, row: &kroma_module_sdk::db::WantedRow) -> bool {
+    fn never_reached_a_client(&self) -> bool {
+        self.failed() && self.client_ref.is_empty()
+    }
+
+    fn covers(&self, row: &WantedRow) -> bool {
         if row.tmdb_id != self.tmdb_id || title_kind(&row.kind) != title_kind(&self.kind) {
             return false;
         }
@@ -104,22 +112,64 @@ pub fn failure_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<F
     let conn = state.db().get()?;
     let grabbed = kroma_module_sdk::db::wanted_in_status(&conn, "grabbed")?;
     drop(conn);
-    let orphaned: Vec<String> = grabbed
+    let (held, orphaned): (Vec<&WantedRow>, Vec<&WantedRow>) = grabbed
         .iter()
         .filter(|row| !downloads.iter().any(|d| d.live() && d.covers(row)))
-        .map(|row| row.id.clone())
-        .collect();
-    if !orphaned.is_empty() {
-        kroma_module_sdk::db::set_wanted_status(state.db(), &orphaned, "wanted", now)?;
-        kroma_module_sdk::db::reset_wanted_search(state.db(), &orphaned, now)?;
-        log(format!(
-            "{} episode(s) or film(s) lost their download; searching again",
-            orphaned.len()
-        ));
-        state.trigger_job("acquisition.search", "download-failed");
-    }
-    summary.missing_again = orphaned.len();
+        .partition(|row| last_never_reached_a_client(&downloads, row));
+    search_again_now(state, &ids_of(&orphaned), now, log)?;
+    search_again_later(state, &held, now, log)?;
+    summary.missing_again = orphaned.len() + held.len();
+    summary.held_back = held.len();
     Ok(summary)
+}
+
+fn last_never_reached_a_client(downloads: &[Download], row: &WantedRow) -> bool {
+    downloads
+        .iter()
+        .filter(|d| d.covers(row))
+        .max_by_key(|d| d.grabbed_at)
+        .is_some_and(Download::never_reached_a_client)
+}
+
+fn ids_of(rows: &[&WantedRow]) -> Vec<String> {
+    rows.iter().map(|row| row.id.clone()).collect()
+}
+
+fn search_again_now<S: HostStorage>(
+    state: &S,
+    ids: &[String],
+    now: i64,
+    log: &dyn Fn(String),
+) -> Result<()> {
+    if ids.is_empty() {
+        return Ok(());
+    }
+    kroma_module_sdk::db::set_wanted_status(state.db(), ids, "wanted", now)?;
+    kroma_module_sdk::db::reset_wanted_search(state.db(), ids, now)?;
+    log(format!(
+        "{} episode(s) or film(s) lost their download; searching again",
+        ids.len()
+    ));
+    state.trigger_job("acquisition.search", "download-failed");
+    Ok(())
+}
+
+fn search_again_later<S: HostStorage>(
+    state: &S,
+    rows: &[&WantedRow],
+    now: i64,
+    log: &dyn Fn(String),
+) -> Result<()> {
+    if rows.is_empty() {
+        return Ok(());
+    }
+    kroma_module_sdk::db::set_wanted_status(state.db(), &ids_of(rows), "wanted", now)?;
+    crate::auto::schedule_retries(state, rows, &today_ymd(), now)?;
+    log(format!(
+        "{} episode(s) or film(s) lost a download the client never took; searching again after the usual wait",
+        rows.len()
+    ));
+    Ok(())
 }
 
 fn stalled(d: &Download, moved_at: Option<i64>, now: i64, stall_hours: i64) -> bool {
@@ -174,7 +224,7 @@ fn read_downloads<S: HostStorage>(state: &S) -> Result<Vec<Download>> {
     let conn = state.db().get()?;
     let mut stmt = conn.prepare(
         "SELECT id, kind, tmdb_id, season, episodes, release_title, info_hash, indexer_id, \
-                status, error, progress, grabbed_at FROM downloads",
+                status, error, progress, grabbed_at, client_ref FROM downloads",
     )?;
     let rows = stmt.query_map([], |r| {
         let episodes: Option<String> = r.get(4)?;
@@ -191,6 +241,7 @@ fn read_downloads<S: HostStorage>(state: &S) -> Result<Vec<Download>> {
             error: r.get(9)?,
             progress: r.get(10)?,
             grabbed_at: r.get(11)?,
+            client_ref: r.get(12)?,
         })
     })?;
     Ok(rows.collect::<rusqlite::Result<_>>()?)
