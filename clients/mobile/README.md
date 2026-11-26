@@ -108,6 +108,29 @@ commands the chrome issues (transport, track, filter, rate, shutdown):
   reach for `@tabler/icons-react-native` itself; it declares it because
   `@kromatv/ui` is consumed as source and imports it.
 
+## Interface language
+
+`src/lib/i18n.tsx` renders the first of: the language picked on this device,
+the system's language for the app (its per-app setting, else the device's),
+the account's, then the default. Two things pick a language on the device, and
+both go through one path (`useLanguageChoice`), which also writes the account
+when someone is signed in:
+
+- **The app's picker** (Settings > Interface language, and the gear on the
+  sign-in screen). On Android 13 and later the pick is handed to
+  `LocaleManager`, so Settings > Apps > KROMA > Language shows it. iOS has no
+  API for that: the language screen names the language Settings still holds and
+  opens it (`src/components/system-language-note.component.tsx`).
+- **The system's setting.** When the system's language for the app differs
+  from the one it had when the app last looked, the app takes it: at launch on
+  iOS, which relaunches an app whose language changed, and as it happens on
+  Android. The first launch that compares the two only remembers, so an update
+  changes nobody's language.
+
+The rule is `src/lib/language-sync.ts`, the native half
+`modules/app-language`, and the platform facts behind both
+[docs/reference/per-app-language.md](../../docs/reference/per-app-language.md).
+
 Dev auto-login: put `EXPO_PUBLIC_KROMA_SERVER` and
 `EXPO_PUBLIC_KROMA_DEV_LOGIN=user:pass` in `.env.local` (gitignored) to boot
 straight into a session.

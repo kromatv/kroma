@@ -1,43 +1,23 @@
-// Interface language: device override, synced to the account like the other
-// clients so the choice follows the user everywhere.
+// Interface language: picked for this device, synced to the account like the
+// other clients so the choice follows the user everywhere.
 
 import { LOCALES } from '@kromatv/core';
-import type { Locale } from '@kromatv/i18n';
 import { Box, LanguagePicker, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
 import { ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/page-header.component';
+import { SystemLanguageNote } from '#mobile/components/system-language-note.component';
 import { Screen } from '#mobile/components/ui';
 import { osLanguageTags, useI18n, useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
-import { useClient, useSession } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
 
 export default function LanguageSettings() {
   const s = useStyles(sDefinition);
 
   const t = useT();
-  const client = useClient();
-  const { setUser } = useSession();
-  const { locale, setOverride } = useI18n();
-  const [saving, setSaving] = useState(false);
+  const { locale, choose } = useI18n();
   const [device] = useState(osLanguageTags);
-
-  const pick = async (next: Locale) => {
-    if (next === locale || saving) {
-      return;
-    }
-    setOverride(next);
-    setSaving(true);
-    try {
-      const { user: updated } = await client.accounts.updateLanguage(next);
-      setUser(updated);
-    } catch {
-      // Device override still applies; the account sync is best-effort.
-    } finally {
-      setSaving(false);
-    }
-  };
 
   return (
     <Screen padded={false}>
@@ -46,11 +26,12 @@ export default function LanguageSettings() {
         locales={LOCALES}
         label={t('account.uiLanguage')}
         value={locale}
-        onValueChange={(next) => void pick(next)}
+        onValueChange={choose}
         preferred={device}
       >
         <Box style={s.head}>
           <Text style={s.hint}>{t('account.uiLanguageDesc')}</Text>
+          <SystemLanguageNote />
           <LanguagePicker.Input />
         </Box>
         <ScrollView>
