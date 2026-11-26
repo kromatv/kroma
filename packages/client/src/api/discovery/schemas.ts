@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CastMember, CrewMember } from '../media';
+import { AgeRating, CastMember, CrewMember } from '../media';
 import { RequestId, RequestKind, RequestStatus } from '../requests';
 
 /** TMDB namespace filter for a discovery search. */
@@ -46,6 +46,7 @@ export type DiscoverSeason = z.infer<typeof DiscoverSeason>;
 
 /** `GET /api/discover/{movie,tv}/:tmdbId`. */
 export const DiscoverDetail = DiscoverEntry.extend({
+  originalTitle: z.string().nullable().default(null),
   tagline: z.string().nullable(),
   genres: z.array(z.string()),
   tmdbGenreIds: z.array(z.number()).nullish(),
@@ -53,6 +54,8 @@ export const DiscoverDetail = DiscoverEntry.extend({
   seasons: z.array(DiscoverSeason),
   cast: z.array(CastMember),
   crew: z.array(CrewMember),
+  studios: z.array(z.string()).default([]),
+  ageRating: AgeRating.nullable().default(null),
   similar: z.array(DiscoverEntry),
   airStatus: z.string().nullable(),
   nextAirDate: z.string().nullable(),

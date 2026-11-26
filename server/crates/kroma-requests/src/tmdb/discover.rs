@@ -5,11 +5,13 @@
 //! before they become wire types.
 
 use crate::model::metadata::{CastMember, CrewMember};
-use crate::model::RequestKind;
+use crate::model::{CountryRatings, RequestKind};
 
 use super::{api, tmdb_json, IMG};
-use super::common::{build_cast, build_crew};
+use super::certifications::Certifications;
+use super::common::{build_cast, build_crew, studios_of};
 
+mod english;
 mod hits;
 mod release;
 #[cfg(test)]
@@ -17,9 +19,10 @@ mod tests;
 mod wire;
 
 pub use hits::{search, trending};
+use english::{english, written};
 use hits::hit_from;
 use release::movie_dates;
-use wire::DetailResp;
+use wire::{DetailResp, RawEpisodeStub, RawSeasonResp};
 
 const MAX_CAST: usize = 12;
 const MAX_CREW: usize = 6;
@@ -70,6 +73,8 @@ pub struct DiscoverRawDetail {
     pub crew: Vec<CrewMember>,
     // TMDB recommendations for the "Titres similaires" rail (unflagged).
     pub similar: Vec<DiscoverHit>,
+    pub studios: Vec<String>,
+    pub ratings: CountryRatings,
     // TMDB airing status ("Returning Series"/"Ended"/"Canceled" for shows;
     // "Released"/"Post Production"/… for movies). Feeds the refresh skip gate.
     pub status: Option<String>,
@@ -124,44 +129,22 @@ pub fn detail(
     // `recommendations` is TMDB's editorially-tuned "more like this" (better than
     // the raw `similar` genre overlap); `credits` carries cast + crew. Movies add
     // `release_dates` for the typed home-availability windows (digital / physical /
-    // theatrical); shows carry `status` + `next_episode_to_air` natively (no append).
+    // theatrical) and the age ratings, shows `content_ratings`; shows carry
+    // `status` + `next_episode_to_air` natively. `translations` stands in for an
+    // overview or tagline the asked language lacks.
     let append = match kind {
-        RequestKind::Movie => "external_ids,credits,recommendations,release_dates",
-        RequestKind::Show => "external_ids,credits,recommendations",
+        RequestKind::Movie => "external_ids,credits,recommendations,release_dates,translations",
+        RequestKind::Show => "external_ids,credits,recommendations,content_ratings,translations",
     };
     let params = vec![
         ("language", language.to_string()),
         ("append_to_response", append.to_string()),
     ];
-    let mut d: DetailResp =
-        match tmdb_json(
-            super::PURPOSE,
-            &format!("{}/{path}/{tmdb_id}", api()),
-            api_key,
-            &params,
-        ) {
-            Ok(d) => d,
-            // TMDB 404s arrive as an HTTP error status; treat any failure on the detail
-            // endpoint as "not found" only when the id namespace mismatched is
-            // indistinguishable, so callers surface a uniform not-found.
-            Err(()) => return Err(()),
-        };
-    let title = match d.title.or(d.name) {
-        Some(t) => t,
-        None => return Ok(None),
+    let url = format!("{}/{path}/{tmdb_id}", api());
+    let mut d: DetailResp = tmdb_json(super::PURPOSE, &url, api_key, &params)?;
+    let Some(title) = d.title.take().or(d.name.take()) else {
+        return Ok(None);
     };
-    let seasons = d
-        .seasons
-        .into_iter()
-        .filter(|s| s.season_number.unwrap_or(0) >= 1)
-        .map(|s| RawSeason {
-            season: s.season_number.unwrap_or(1),
-            name: s.name.filter(|n| !n.is_empty()),
-            episode_count: s.episode_count.unwrap_or(0),
-            air_date: s.air_date.filter(|a| !a.is_empty()),
-            poster_url: s.poster_path.map(|p| format!("{IMG}/w342{p}")),
-        })
-        .collect();
     let (raw_cast, raw_crew) = d.credits.map(|c| (c.cast, c.crew)).unwrap_or_default();
     let cast = build_cast(raw_cast, MAX_CAST, true);
     let crew = build_crew(raw_crew, d.created_by, MAX_CREW);
@@ -175,16 +158,12 @@ pub fn detail(
         .filter_map(|h| hit_from(kind, h))
         .take(MAX_SIMILAR)
         .collect();
-    // Airing signals for the request refresh pass + "coming soon" badges.
-    let status = d.status.take().filter(|s| !s.is_empty());
-    let next_air = d.next_episode_to_air.take().and_then(|e| {
-        let date = e.air_date.filter(|s| !s.is_empty())?;
-        Some((
-            date,
-            e.season_number.unwrap_or(0),
-            e.episode_number.unwrap_or(0),
-        ))
-    });
+    let ratings = d
+        .release_dates
+        .as_ref()
+        .or(d.content_ratings.as_ref())
+        .map(Certifications::every_country)
+        .unwrap_or_default();
     let dates = match kind {
         RequestKind::Movie => movie_dates(d.release_dates.take(), d.release_date.as_deref()),
         RequestKind::Show => Default::default(),
@@ -194,6 +173,7 @@ pub fn detail(
         .take()
         .or(d.original_name.take())
         .filter(|o| !o.is_empty() && *o != title);
+    let english = english(d.translations.take());
     Ok(Some(DiscoverRawDetail {
         kind,
         tmdb_id,
@@ -201,8 +181,8 @@ pub fn detail(
         year: year_of(d.release_date.as_deref().or(d.first_air_date.as_deref())),
         poster_url: d.poster_path.map(|p| format!("{IMG}/w500{p}")),
         backdrop_url: d.backdrop_path.map(|p| format!("{IMG}/w1280{p}")),
-        overview: d.overview.filter(|s| !s.is_empty()),
-        tagline: d.tagline.filter(|s| !s.is_empty()),
+        overview: written(d.overview).or(english.overview),
+        tagline: written(d.tagline).or(english.tagline),
         tmdb_genre_ids: d.genres.iter().map(|g| g.id).collect(),
         genres: d.genres.into_iter().map(|g| g.name).collect(),
         rating: d.vote_average.filter(|v| *v > 0.0),
@@ -211,12 +191,14 @@ pub fn detail(
             .imdb_id
             .or(d.external_ids.and_then(|e| e.imdb_id))
             .filter(|s| !s.is_empty()),
-        seasons,
+        seasons: seasons_of(d.seasons),
         cast,
         crew,
         similar,
-        status,
-        next_air,
+        studios: studios_of(d.production_companies, d.networks),
+        ratings,
+        status: d.status.take().filter(|s| !s.is_empty()),
+        next_air: next_air_of(d.next_episode_to_air.take()),
         available_date: dates.available,
         home_date: dates.home,
         cinema_date: dates.cinema,
@@ -224,6 +206,30 @@ pub fn detail(
         original_title,
         origin_country: d.origin_country.into_iter().next(),
     }))
+}
+
+fn seasons_of(seasons: Vec<RawSeasonResp>) -> Vec<RawSeason> {
+    seasons
+        .into_iter()
+        .filter(|s| s.season_number.unwrap_or(0) >= 1)
+        .map(|s| RawSeason {
+            season: s.season_number.unwrap_or(1),
+            name: s.name.filter(|n| !n.is_empty()),
+            episode_count: s.episode_count.unwrap_or(0),
+            air_date: s.air_date.filter(|a| !a.is_empty()),
+            poster_url: s.poster_path.map(|p| format!("{IMG}/w342{p}")),
+        })
+        .collect()
+}
+
+fn next_air_of(next: Option<RawEpisodeStub>) -> Option<(String, u32, u32)> {
+    let next = next?;
+    let date = next.air_date.filter(|s| !s.is_empty())?;
+    Some((
+        date,
+        next.season_number.unwrap_or(0),
+        next.episode_number.unwrap_or(0),
+    ))
 }
 
 // Truncates a TMDB date/datetime ("2024-02-27T00:00:00.000Z") to `YYYY-MM-DD`.

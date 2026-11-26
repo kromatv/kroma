@@ -9,6 +9,8 @@ use crate::model::{
 };
 use crate::testing::FakeTmdb;
 
+use super::test_support::raw_title;
+
 pub(super) fn ep(season: u32, episode: u32) -> EpisodeRef {
     EpisodeRef { season, episode }
 }
@@ -90,33 +92,7 @@ pub(super) fn wanted(
 }
 
 pub(super) fn raw_detail(imdb: Option<&str>, avail: Option<&str>) -> discover::DiscoverRawDetail {
-    discover::DiscoverRawDetail {
-        kind: RequestKind::Movie,
-        tmdb_id: 42,
-        title: "T".into(),
-        year: Some(2020),
-        poster_url: None,
-        backdrop_url: None,
-        overview: None,
-        tagline: None,
-        genres: Vec::new(),
-        tmdb_genre_ids: Vec::new(),
-        rating: None,
-        runtime_min: None,
-        imdb_id: imdb.map(str::to_string),
-        seasons: Vec::new(),
-        cast: Vec::new(),
-        crew: Vec::new(),
-        similar: Vec::new(),
-        status: None,
-        next_air: None,
-        available_date: avail.map(str::to_string),
-        home_date: avail.map(str::to_string),
-        cinema_date: None,
-        original_language: None,
-        original_title: None,
-        origin_country: None,
-    }
+    raw_title(RequestKind::Movie, 42, imdb, avail)
 }
 
 pub(super) fn user(id: &str, permissions: Vec<Permission>) -> User {
@@ -146,33 +122,7 @@ pub(super) fn detail(
     tmdb_id: u64,
     available: Option<&str>,
 ) -> discover::DiscoverRawDetail {
-    discover::DiscoverRawDetail {
-        kind,
-        tmdb_id,
-        title: "T".into(),
-        year: Some(2020),
-        poster_url: None,
-        backdrop_url: None,
-        overview: None,
-        tagline: None,
-        genres: Vec::new(),
-        tmdb_genre_ids: Vec::new(),
-        rating: None,
-        runtime_min: None,
-        imdb_id: Some("tt0000001".into()),
-        seasons: Vec::new(),
-        cast: Vec::new(),
-        crew: Vec::new(),
-        similar: Vec::new(),
-        status: None,
-        next_air: None,
-        available_date: available.map(str::to_string),
-        home_date: available.map(str::to_string),
-        cinema_date: None,
-        original_language: None,
-        original_title: None,
-        origin_country: None,
-    }
+    raw_title(kind, tmdb_id, Some("tt0000001"), available)
 }
 
 pub(super) fn movie_detail(title: &str, year: &str) -> serde_json::Value {

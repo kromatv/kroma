@@ -3,8 +3,8 @@
 
 use serde::Deserialize;
 
-use super::super::common::{RawCreatedBy, RawCredits};
-use super::certification::Certifications;
+use super::super::common::{Company, RawCreatedBy, RawCredits};
+use super::super::certifications::Certifications;
 use super::MAX_KEYWORDS;
 
 #[derive(Debug, Deserialize)]
@@ -83,12 +83,6 @@ pub(super) fn collect_keywords(k: Keywords) -> Vec<String> {
 #[derive(Debug, Deserialize)]
 pub(super) struct Genre {
     pub(super) id: u32,
-    pub(super) name: String,
-}
-
-#[derive(Debug, Deserialize)]
-pub(super) struct Company {
-    #[serde(default)]
     pub(super) name: String,
 }
 

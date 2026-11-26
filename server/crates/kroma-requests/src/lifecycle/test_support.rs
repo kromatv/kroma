@@ -2,6 +2,7 @@ use kroma_module_host::HostStorage;
 use kroma_primitives::now_ms;
 
 use crate::db;
+use crate::tmdb::discover;
 use crate::model::{RequestKind, RequestStatus};
 
 pub(super) type TestHost = kroma_module_host::testing::StubHost;
@@ -107,4 +108,41 @@ pub(super) fn wanted_pairs(host: &TestHost, id: &str) -> Vec<(u32, u32)> {
         .collect();
     pairs.sort_unstable();
     pairs
+}
+
+pub(super) fn raw_title(
+    kind: RequestKind,
+    tmdb_id: u64,
+    imdb: Option<&str>,
+    available: Option<&str>,
+) -> discover::DiscoverRawDetail {
+    discover::DiscoverRawDetail {
+        kind,
+        tmdb_id,
+        title: "T".into(),
+        year: Some(2020),
+        poster_url: None,
+        backdrop_url: None,
+        overview: None,
+        tagline: None,
+        genres: Vec::new(),
+        tmdb_genre_ids: Vec::new(),
+        rating: None,
+        runtime_min: None,
+        imdb_id: imdb.map(str::to_string),
+        seasons: Vec::new(),
+        cast: Vec::new(),
+        crew: Vec::new(),
+        similar: Vec::new(),
+        studios: Vec::new(),
+        ratings: Default::default(),
+        status: None,
+        next_air: None,
+        available_date: available.map(str::to_string),
+        home_date: available.map(str::to_string),
+        cinema_date: None,
+        original_language: None,
+        original_title: None,
+        origin_country: None,
+    }
 }

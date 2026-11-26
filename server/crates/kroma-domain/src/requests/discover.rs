@@ -4,6 +4,7 @@
 use serde::Serialize;
 
 use crate::metadata::{CastMember, CrewMember};
+use crate::ratings::AgeRating;
 
 use super::{RequestKind, RequestStatus};
 
@@ -74,6 +75,8 @@ pub struct DiscoverDetail {
     pub kind: RequestKind,
     pub tmdb_id: u64,
     pub title: String,
+    // Only when it differs from `title`.
+    pub original_title: Option<String>,
     pub year: Option<u32>,
     pub poster_url: Option<String>,
     pub backdrop_url: Option<String>,
@@ -93,6 +96,10 @@ pub struct DiscoverDetail {
     // Key crew (directors / creators / writers), for the "Réalisation" line.
     #[serde(default)]
     pub crew: Vec<CrewMember>,
+    // A show's networks, else the production companies, at most three.
+    pub studios: Vec<String>,
+    // The label of the viewer's ratings country, else the one it borrows.
+    pub age_rating: Option<AgeRating>,
     // "Titres similaires" TMDB recommendations, flagged against the local
     // catalog + open requests so each tile deep-links correctly.
     #[serde(default)]

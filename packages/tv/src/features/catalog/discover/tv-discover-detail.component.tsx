@@ -1,6 +1,6 @@
 import { hasPermission } from '@kromatv/client/accounts';
 import { type DiscoverEntry, tmdbKindOf } from '@kromatv/client/discovery';
-import { formatRuntime } from '@kromatv/core';
+import { ageRatingOf, formatRuntime } from '@kromatv/core';
 import { useAskForTitle } from '@kromatv/core/react';
 import { useT } from '@kromatv/ui';
 import {
@@ -75,7 +75,7 @@ export function TvDiscoverDetail() {
       title={entry.title}
       backdrop={client.media.artwork.resolve(entry.backdropUrl ?? entry.posterUrl, STAGE_W)}
       rating={entry.rating}
-      ageRating={null}
+      ageRating={ageRatingOf(detail)}
       meta={meta}
       badge={null}
       overview={detail?.overview ?? entry.overview}

@@ -18,6 +18,9 @@ describe('buildTitleView: discover source (not owned)', () => {
     backdropUrl: 'https://cdn/bd.jpg',
     crew: [{ job: 'Director', name: 'Ava' }],
     cast: [{ name: 'Lead' }],
+    studios: ['Comet Pictures'],
+    ageRating: { label: 'R', country: 'US', borrowed: true },
+    originalTitle: 'Sender',
     seasons: [
       {
         season: 1,
@@ -65,13 +68,14 @@ describe('buildTitleView: discover source (not owned)', () => {
     const v = build({ source: 'discover', detail: baseDetail as never }, requester);
     expect(v.kind).toBe('movie');
     expect(v.inLibrary).toBe(false);
-    expect(v.originalTitle).toBeNull();
+    expect(v.originalTitle).toBe('Sender');
+    expect(v.ageRating).toEqual({ label: 'R', country: 'US', borrowed: true });
     expect(v.runtimeMin).toBe(120);
     // Relative art is resolved against the API base; absolute passes through.
     expect(v.poster).toBe('http://localhost:4040/api/p.jpg');
     expect(v.backdrop).toBe('https://cdn/bd.jpg');
     expect(v.directors.map((d) => d.name)).toEqual(['Ava']);
-    expect(v.studios).toEqual([]);
+    expect(v.studios).toEqual(['Comet Pictures']);
     expect(v.video).toBeNull();
     expect(v.playable).toBeNull();
     expect(v.canRequest).toBe(true);

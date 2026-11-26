@@ -103,6 +103,8 @@ fn raw(kind: RequestKind, tmdb_id: u64) -> discover::DiscoverRawDetail {
         cast: Vec::new(),
         crew: Vec::new(),
         similar: Vec::new(),
+        studios: Vec::new(),
+        ratings: Default::default(),
         status: None,
         next_air: None,
         available_date: None,
@@ -166,9 +168,10 @@ fn grab(t: &TestApp, status: &str, progress: f64) {
         .unwrap();
 }
 
-fn detail(t: &TestApp, viewer: &User, d: discover::DiscoverRawDetail) -> DiscoverDetail {
+fn detail(t: &TestApp, user: &User, d: discover::DiscoverRawDetail) -> DiscoverDetail {
+    let viewer = Viewer::load(&t.state, user.clone()).unwrap();
     let conn = t.state.db.get().unwrap();
-    flag_detail(&conn, d, viewer).unwrap()
+    flag_detail(&conn, d, &viewer).unwrap()
 }
 
 #[test]

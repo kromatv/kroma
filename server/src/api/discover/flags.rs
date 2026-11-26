@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use rusqlite::Connection;
 
 use crate::api::downloads_overlay::{active_downloads, ActiveDownload};
+use crate::api::visibility::Viewer;
 use crate::db;
 use crate::infra::metadata::discover;
 use crate::model::{
@@ -95,9 +96,9 @@ fn overlay_active(
 pub fn flag_detail(
     conn: &Connection,
     d: discover::DiscoverRawDetail,
-    viewer: &User,
+    viewer: &Viewer,
 ) -> anyhow::Result<DiscoverDetail> {
-    let local_id = local_id_for(conn, d.kind, d.tmdb_id, viewer)?;
+    let local_id = local_id_for(conn, d.kind, d.tmdb_id, &viewer.user)?;
     let request = db::latest_request_for(conn, d.kind, d.tmdb_id)?;
 
     let active = active_downloads(conn);
@@ -107,16 +108,12 @@ pub fn flag_detail(
     // covered by the newest open request (None = whole show).
     let seasons = flag_seasons(conn, &d, local_id.as_deref())?;
 
-    let air_status = d.status.clone();
-    let next_air_date = match d.kind {
-        RequestKind::Show => d.next_air.as_ref().map(|(dt, _, _)| dt.clone()),
-        RequestKind::Movie => d.available_date.clone(),
-    };
-
+    let next_air_date = next_air_date(&d);
     Ok(DiscoverDetail {
         kind: d.kind,
         tmdb_id: d.tmdb_id,
         title: d.title,
+        original_title: d.original_title,
         year: d.year,
         poster_url: d.poster_url,
         backdrop_url: d.backdrop_url,
@@ -129,15 +126,24 @@ pub fn flag_detail(
         seasons,
         cast: d.cast,
         crew: d.crew,
-        similar: flag_hits_with(conn, d.similar, &active, viewer)?,
+        studios: d.studios,
+        age_rating: viewer.ceiling.shown(&d.ratings),
+        similar: flag_hits_with(conn, d.similar, &active, &viewer.user)?,
         in_library: local_id.is_some(),
         local_id,
         request_id: request.as_ref().map(|(id, _)| id.clone()),
         request_status,
         request_progress,
-        air_status,
+        air_status: d.status,
         next_air_date,
     })
+}
+
+fn next_air_date(d: &discover::DiscoverRawDetail) -> Option<String> {
+    match d.kind {
+        RequestKind::Show => d.next_air.as_ref().map(|(dt, _, _)| dt.clone()),
+        RequestKind::Movie => d.available_date.clone(),
+    }
 }
 
 fn flag_seasons(

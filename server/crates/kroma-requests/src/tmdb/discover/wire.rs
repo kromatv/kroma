@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
-use super::super::common::{RawCreatedBy, RawCredits};
+use super::super::certifications::Certifications;
+use super::super::common::{Company, RawCreatedBy, RawCredits};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct PageResp {
@@ -90,7 +91,15 @@ pub(super) struct DetailResp {
     #[allow(dead_code)]
     pub(super) number_of_episodes: Option<u32>,
     #[serde(default)]
-    pub(super) release_dates: Option<ReleaseDatesResp>,
+    pub(super) release_dates: Option<Certifications>,
+    #[serde(default)]
+    pub(super) content_ratings: Option<Certifications>,
+    #[serde(default)]
+    pub(super) production_companies: Vec<Company>,
+    #[serde(default)]
+    pub(super) networks: Vec<Company>,
+    #[serde(default)]
+    pub(super) translations: Option<TranslationsResp>,
     #[serde(default)]
     pub(super) original_language: Option<String>,
     #[serde(default)]
@@ -138,24 +147,25 @@ pub(super) struct RawEpisodeStub {
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct ReleaseDatesResp {
+pub(super) struct TranslationsResp {
     #[serde(default)]
-    pub(super) results: Vec<ReleaseDatesCountry>,
+    pub(super) translations: Vec<RawTranslation>,
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct ReleaseDatesCountry {
+pub(super) struct RawTranslation {
     #[serde(default)]
-    pub(super) iso_3166_1: Option<String>,
+    pub(super) iso_639_1: String,
     #[serde(default)]
-    pub(super) release_dates: Vec<ReleaseDateEntry>,
+    pub(super) iso_3166_1: String,
+    #[serde(default)]
+    pub(super) data: RawTranslationData,
 }
 
-#[derive(Debug, Deserialize)]
-pub(super) struct ReleaseDateEntry {
-    // 3 = theatrical, 4 = digital, 5 = physical (others exist).
-    #[serde(rename = "type", default)]
-    pub(super) kind: u32,
+#[derive(Debug, Default, Deserialize)]
+pub(super) struct RawTranslationData {
     #[serde(default)]
-    pub(super) release_date: Option<String>,
+    pub(super) overview: Option<String>,
+    #[serde(default)]
+    pub(super) tagline: Option<String>,
 }

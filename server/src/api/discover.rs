@@ -179,7 +179,7 @@ pub async fn detail(
     visibility::gate(&state, &viewer, Title::Tmdb(kind, tmdb_id)).await?;
     let asked = DetailAsk {
         language: settings::metadata_language_for(&state.settings, &state.config, reader),
-        user: viewer.user.clone(),
+        viewer: viewer.clone(),
         engine: state.clone(),
         title: (kind, tmdb_id),
         key,
@@ -195,7 +195,7 @@ struct DetailAsk {
     key: String,
     language: String,
     title: (RequestKind, u64),
-    user: User,
+    viewer: Viewer,
     engine: SharedState,
 }
 
@@ -206,7 +206,7 @@ impl DetailAsk {
             .map_err(|()| anyhow::anyhow!("TMDB detail failed"))?;
         let conn = self.engine.db.get()?;
         detail
-            .map(|d| flag_detail(&conn, d, &self.user))
+            .map(|d| flag_detail(&conn, d, &self.viewer))
             .transpose()
     }
 }

@@ -1,5 +1,5 @@
-//! Raw TMDB `credits` / `created_by` JSON shapes and the JSON->domain mappers
-//! shared by the two TMDB adapters: the core's library enrichment and
+//! Raw TMDB `credits` / `created_by` / company JSON shapes and the JSON->domain
+//! mappers shared by the two TMDB adapters: the core's library enrichment and
 //! [`super::discover`] (the request flow's window onto the outside catalog). Both
 //! parse the same blocks into the same [`CastMember`] / [`CrewMember`] shapes, so
 //! the shapes and mappers live here once.
@@ -12,6 +12,9 @@ use super::IMG;
 
 // TMDB crew jobs we surface, ranked; anything else (gaffer, editor, …) is dropped.
 pub const KEY_CREW_JOBS: &[&str] = &["Director", "Creator", "Writer", "Screenplay", "Story"];
+
+/// The most studios [`studios_of`] keeps.
+pub const MAX_STUDIOS: usize = 3;
 
 /// The appended `credits` block cast + crew.
 #[derive(Debug, Deserialize)]
@@ -57,6 +60,29 @@ pub struct RawCreatedBy {
     pub name: String,
     #[serde(default)]
     pub profile_path: Option<String>,
+}
+
+/// One entry of a detail's `production_companies` or `networks`.
+#[derive(Debug, Deserialize)]
+pub struct Company {
+    #[serde(default)]
+    pub name: String,
+}
+
+/// A show's networks when it has any, its production companies otherwise,
+/// named and capped at [`MAX_STUDIOS`].
+pub fn studios_of(companies: Vec<Company>, networks: Vec<Company>) -> Vec<String> {
+    let made_by = if networks.is_empty() {
+        companies
+    } else {
+        networks
+    };
+    made_by
+        .into_iter()
+        .map(|company| company.name)
+        .filter(|name| !name.trim().is_empty())
+        .take(MAX_STUDIOS)
+        .collect()
 }
 
 /// Top-billed cast (TMDB orders by `order` ascending; sort defensively), capped at

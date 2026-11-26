@@ -1,6 +1,7 @@
 //! TMDB, as the request flow reads it, through [`kroma_http::Fetch`]: the one
 //! request every lookup makes, and the detail and season shapes built on it.
 
+pub mod certifications;
 pub mod common;
 pub mod discover;
 mod seasons;
