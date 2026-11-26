@@ -24,6 +24,8 @@ import { RouteLink } from '#web/shared/ui/route-link.component';
 
 export const POSTER_W = 44;
 
+export const COLUMN_GAP = 16;
+
 export const COLUMN = {
   status: 128,
   held: 150,
@@ -63,7 +65,7 @@ export function LibraryRow({
 }>) {
   const t = useT();
   return (
-    <Row align="center" gap={16} minW={0} flex self="stretch">
+    <Row align="center" gap={COLUMN_GAP} minW={0} flex self="stretch">
       <RowBody
         row={row}
         columns={columns}
@@ -71,8 +73,8 @@ export function LibraryRow({
         selected={selected}
         onSelect={onSelect}
       />
-      {row.tmdbId === null ? null : (
-        <Box w={COLUMN.search} shrink={0} align="flex-end">
+      <Box w={COLUMN.search} shrink={0} align="flex-end">
+        {row.tmdbId === null ? null : (
           <ModuleSlot
             name="monitoring.search"
             kind={row.kind}
@@ -82,8 +84,8 @@ export function LibraryRow({
             episode={null}
             compact
           />
-        </Box>
-      )}
+        )}
+      </Box>
       <Box w={COLUMN.follow} shrink={0} align="center" pe={8}>
         <FollowToggle
           state={row.monitored ? 'on' : 'off'}
@@ -149,7 +151,7 @@ function RowBody({
 
 function Facts({ row, columns }: Readonly<{ row: LibraryTitle; columns: RowColumns }>) {
   return (
-    <Row align="center" gap={16} minW={0} flex>
+    <Row align="center" gap={COLUMN_GAP} minW={0} flex>
       <Poster row={row} />
       <TitleCell row={row} columns={columns} />
       {columns.counts ? <StatusCell row={row} /> : null}

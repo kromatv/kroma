@@ -87,5 +87,5 @@ function sortClaim(state: SortState): { 'aria-sort'?: string } {
   return a11ySort(ARIA_SORT[state]);
 }
 
-export type { SortColumn, SortDirection, TableSort };
+export type { SortColumn, SortDirection, SortPlace, TableSort };
 export { nextSort, SORT_GLYPH, SortContext, sortClaim, sortPlace, useTableSort };

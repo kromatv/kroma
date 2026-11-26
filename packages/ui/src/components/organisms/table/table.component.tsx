@@ -1,5 +1,4 @@
 import { type ReactNode, useMemo } from 'react';
-import type { ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import type { ResizableStorage } from '#ui/components/organisms/resizable';
 import { useBreakpointStep, useStyleScope } from '#ui/core';
@@ -10,6 +9,7 @@ import { Cell } from './table-cell.component';
 import {
   breakpointMask,
   columnBox,
+  fitHeadings,
   GridContext,
   minWidthOf,
   NO_COLUMNS,
@@ -17,6 +17,7 @@ import {
 } from './table-columns';
 import { type TableSectionProps, type TableVariant, useTable } from './table-context';
 import { FRAME_RADIUS, Frame } from './table-frame.component';
+import { useHeadingWidths } from './table-heading-widths.hook';
 import { ResizeContext, useColumnLayout } from './table-layout';
 import { Placed, parts } from './table-place';
 import { Row } from './table-row.component';
@@ -29,7 +30,8 @@ interface TableRootProps {
   label?: string;
   /** One entry per column, in the order the cells are written. Left out, every
    *  cell takes an equal share. When the `width`s and `min`s of the columns
-   *  drawn add up to more than the room, the table scrolls sideways. */
+   *  drawn, each at least its heading, add up to more than the room, the table
+   *  scrolls sideways. */
   columns?: readonly TableColumn[];
   /** The columns the rows are ordered by, first key first. The table never
    *  reorders its own rows: they are the caller's. */
@@ -70,7 +72,6 @@ function Root({
   storage,
   children,
 }: Readonly<TableRootProps>) {
-  const scope = useStyleScope();
   const sections = useMemo(() => parts(children), [children]);
   const places = useMemo(
     () =>
@@ -83,14 +84,7 @@ function Root({
       })),
     [variant, sections],
   );
-  const declared = useMemo(() => {
-    const list = columns ?? NO_COLUMNS;
-    return {
-      list,
-      boxes: list.map((column) => columnBox(column, scope)),
-      breakpoints: breakpointMask(list),
-    };
-  }, [columns, scope]);
+  const declared = columns ?? NO_COLUMNS;
   const press = useStableCallback((column: string) => {
     onSortChange?.(nextSort(sort ?? NO_SORT, column, { multiple, required }), { column });
   });
@@ -102,14 +96,7 @@ function Root({
   }, [sort, onSortChange, press]);
   return (
     <SortContext value={sorting}>
-      <GridScope
-        columns={declared.list}
-        boxes={declared.boxes}
-        breakpoints={declared.breakpoints}
-        resizable={resizable}
-        autoSaveId={autoSaveId}
-        storage={storage}
-      >
+      <GridScope columns={declared} resizable={resizable} autoSaveId={autoSaveId} storage={storage}>
         <RingScope placement="inside" corner={FRAME_RADIUS}>
           <Frame variant={variant} label={label}>
             <Placed places={places} items={sections} />
@@ -120,29 +107,31 @@ function Root({
   );
 }
 
-function GridScope({
-  columns,
-  boxes,
-  breakpoints,
-  resizable,
-  autoSaveId,
-  storage,
-  children,
-}: Readonly<{
+interface GridScopeProps {
   columns: readonly TableColumn[];
-  boxes: readonly ViewStyle[];
-  breakpoints: number;
   resizable: boolean;
   autoSaveId: string | undefined;
   storage: ResizableStorage | null | undefined;
   children: ReactNode;
-}>) {
-  const step = useBreakpointStep(breakpoints);
-  const layout = useColumnLayout({ columns, step, resizable, autoSaveId, storage });
+}
+
+function GridScope({
+  columns,
+  resizable,
+  autoSaveId,
+  storage,
+  children,
+}: Readonly<GridScopeProps>) {
+  const scope = useStyleScope();
+  const step = useBreakpointStep(breakpointMask(columns));
+  const { headings, fit } = useHeadingWidths();
+  const sized = useMemo(() => fitHeadings(columns, headings), [columns, headings]);
+  const layout = useColumnLayout({ columns: sized, step, resizable, autoSaveId, storage });
+  const boxes = useMemo(() => sized.map((column) => columnBox(column, scope)), [sized, scope]);
   const dragged = layout.boxes ?? boxes;
   const value = useMemo(
-    () => ({ columns, boxes: dragged, step, minWidth: minWidthOf(columns, step) }),
-    [columns, dragged, step],
+    () => ({ columns: sized, boxes: dragged, step, minWidth: minWidthOf(sized, step), fit }),
+    [sized, dragged, step, fit],
   );
   return (
     <ResizeContext value={layout.resize}>

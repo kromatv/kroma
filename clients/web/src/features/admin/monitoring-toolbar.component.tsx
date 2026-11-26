@@ -20,6 +20,7 @@ import type {
 } from '#web/features/admin/monitoring-index-model';
 import {
   COLUMN,
+  COLUMN_GAP,
   POSTER_W,
   type RowColumns,
 } from '#web/features/admin/monitoring-title-row.component';
@@ -111,7 +112,7 @@ export function LibraryHead({
   const sortBy = (sort: LibrarySort) =>
     onChange({ ...filter, sort, descending: filter.sort === sort ? !filter.descending : false });
   return (
-    <Row align="center" gap={16} px={16} py={10} minW={0}>
+    <Row align="center" gap={COLUMN_GAP} px={16} py={10} minW={0}>
       {selecting ? <Box w={20} shrink={0} /> : null}
       <Box w={POSTER_W} shrink={0} />
       <Box flex minW={0}>
@@ -153,11 +154,12 @@ export function LibraryHead({
           </Text>
         </Box>
       ) : null}
-      <Box w={COLUMN.search} shrink={0} />
-      <Box w={COLUMN.follow} shrink={0} align="center">
-        <Text variant="overline" color="textMuted" lines={1}>
-          {t('monitoring.colFollowed')}
-        </Text>
+      <Box w={COLUMN.search + COLUMN_GAP + COLUMN.follow} shrink={0} align="flex-end">
+        <Box minW={COLUMN.follow} align="center">
+          <Text variant="overline" color="textMuted" lines={1}>
+            {t('monitoring.colFollowed')}
+          </Text>
+        </Box>
       </Box>
     </Row>
   );

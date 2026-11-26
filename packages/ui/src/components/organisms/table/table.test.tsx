@@ -43,6 +43,8 @@ function Grid({ variant }: Readonly<{ variant?: 'framed' | 'plain' }>) {
   );
 }
 
+const HIDDEN = 'script, style, [aria-hidden="true"] *';
+
 const isRule = (node: Element) => {
   const style = getComputedStyle(node);
   return style.position === 'absolute' && style.height === '1px';
@@ -90,7 +92,7 @@ describe('<Table>', () => {
 
   it('sets a string cell in the type of the section it sits in', () => {
     render(<Grid />);
-    const head = getComputedStyle(screen.getByText('Port')).fontSize;
+    const head = getComputedStyle(screen.getByText('Port', { ignore: HIDDEN })).fontSize;
     const body = getComputedStyle(screen.getByText('41310')).fontSize;
     expect(head).not.toBe(body);
   });
@@ -141,7 +143,8 @@ const headings = () => screen.getAllByRole('columnheader');
 
 const heading = (at: number) => headings()[at] as HTMLElement;
 
-const rank = (at: number) => within(heading(at)).queryByText(/^\d+$/)?.textContent ?? null;
+const rank = (at: number) =>
+  within(heading(at)).queryByText(/^\d+$/, { ignore: HIDDEN })?.textContent ?? null;
 
 const press = (name: string) =>
   fireEvent.click(screen.getByRole('button', { name: new RegExp(`^${name}`) }));
@@ -389,7 +392,9 @@ describe('a declared column', () => {
     pinDesignWidth(480);
     render(<Declared />);
 
-    expect(headings().map((head) => head.textContent)).toEqual(['Title', 'State', 'Size']);
+    expect(
+      headings().map((head) => within(head).getByText(/./, { ignore: HIDDEN }).textContent),
+    ).toEqual(['Title', 'State', 'Size']);
   });
 
   it('sits a column at the end when it asks for one', () => {

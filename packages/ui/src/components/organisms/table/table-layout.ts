@@ -16,7 +16,7 @@ import {
   writeLayout,
 } from '#ui/components/organisms/resizable/resizable-store';
 import { space } from '#ui/core/tokens';
-import { drawn, type TableColumn } from './table-columns';
+import { drawn, type GridColumn } from './table-columns';
 
 const FLOOR = space[14];
 
@@ -30,7 +30,7 @@ interface ColumnResize {
 }
 
 interface ResizeOptions {
-  columns: readonly TableColumn[];
+  columns: readonly GridColumn[];
   step: number;
   resizable: boolean;
   autoSaveId: string | undefined;
@@ -56,12 +56,14 @@ function useColumnResize(): ColumnResize | null {
 
 const NONE: readonly number[] = [];
 
-function floorOf(column: TableColumn | undefined): number {
-  return column?.min ?? Math.min(column?.width ?? FLOOR, FLOOR);
+function floorOf(column: GridColumn | undefined): number {
+  const stated = column?.min ?? Math.min(column?.width ?? FLOOR, FLOOR);
+  return Math.max(stated, column?.heading ?? 0);
 }
 
-function shareBox(size: number, column: TableColumn | undefined): ViewStyle {
-  return { flexGrow: 0, flexShrink: 1, flexBasis: `${size}%`, minWidth: column?.min ?? 0 };
+function shareBox(size: number, column: GridColumn | undefined): ViewStyle {
+  const minWidth = Math.max(column?.min ?? 0, column?.heading ?? 0);
+  return { flexGrow: 0, flexShrink: 1, flexBasis: `${size}%`, minWidth };
 }
 
 function sameShares(a: readonly number[], b: readonly number[]): boolean {

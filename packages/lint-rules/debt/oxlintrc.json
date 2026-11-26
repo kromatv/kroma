@@ -1465,7 +1465,6 @@
         "packages/ui/src/components/organisms/selection-bar/selection-bar.component.tsx",
         "packages/ui/src/components/organisms/selection-bar/selection-bar.fixtures.tsx",
         "packages/ui/src/components/organisms/splash-backdrop/splash-backdrop.component.tsx",
-        "packages/ui/src/components/organisms/table/table-cell.component.tsx",
         "packages/ui/src/components/organisms/table/table-layout.ts",
         "packages/ui/src/components/organisms/table/table-sort-cell.component.tsx",
         "packages/ui/src/components/organisms/table/table.component.tsx",
