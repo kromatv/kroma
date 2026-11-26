@@ -16,6 +16,7 @@ use crate::api::etag;
 use crate::db;
 use crate::i18n::ContentLocale;
 use crate::model::{MediaCard, MediaItem, Show, ShowCard, ShowLanguages};
+use crate::services::settings;
 use crate::state::SharedState;
 use axum::routing::get;
 use axum::Router;
@@ -171,9 +172,10 @@ pub async fn list_shows(
     let uid = viewer.user.id.clone();
     let library = q.library;
     let cards = matches!(q.view, Some(ListView::Card));
+    let thresholds = settings::watch_thresholds(&state.settings);
     let (mut shows, languages) = query(&state.db, move |pool| {
         let mut shows = db::list_shows(&pool, library.as_deref())?;
-        let prog = db::show_progress(&pool, &uid).unwrap_or_default();
+        let prog = db::show_progress(&pool, &uid, thresholds).unwrap_or_default();
         for s in &mut shows {
             s.progress = prog.get(&s.id).copied();
         }
@@ -210,11 +212,13 @@ pub async fn get_show(
 ) -> Result<Response, Response> {
     visibility::gate(&state, &viewer, Title::Show(&id)).await?;
     let uid = viewer.user.id.clone();
+    let thresholds = settings::watch_thresholds(&state.settings);
     let detail = query(&state.db, move |pool| {
         let Some(mut detail) = db::get_show(&pool, &id)? else {
             return Ok(None);
         };
-        detail.show.progress = db::show_progress_one(&pool, &uid, &detail.show.id).unwrap_or(None);
+        detail.show.progress =
+            db::show_progress_one(&pool, (&uid, &detail.show.id), thresholds).unwrap_or(None);
         db::localize::overlay_show_detail(&pool, &mut detail, locale)?;
         Ok(Some(detail))
     })

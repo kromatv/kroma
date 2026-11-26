@@ -4,6 +4,7 @@
 use time::{OffsetDateTime, Weekday};
 
 use crate::db::{self, Pool};
+use crate::model::WatchThresholds;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PartOfDay {
@@ -33,15 +34,14 @@ impl PartOfDay {
 }
 
 impl Context {
-    pub fn build(pool: &Pool, user_id: &str, played_percent: i64) -> Self {
+    pub fn build(pool: &Pool, user_id: &str, thresholds: WatchThresholds) -> Self {
         let now = OffsetDateTime::now_utc();
         let part_of_day = PartOfDay::at(now.hour());
         Self {
             month: u8::from(now.month()),
             weekday: now.weekday(),
             part_of_day,
-            in_progress: db::continue_watching_ids(pool, user_id, played_percent)
-                .unwrap_or_default(),
+            in_progress: db::continue_watching_ids(pool, user_id, thresholds).unwrap_or_default(),
         }
     }
 

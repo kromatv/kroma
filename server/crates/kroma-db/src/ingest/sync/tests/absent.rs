@@ -60,7 +60,12 @@ fn a_title_whose_file_is_gone_from_a_folder_that_was_read_is_kept_with_its_watch
     let kept = crate::get_item(&p, "m2").unwrap().unwrap();
     assert!(kept.files.is_empty());
     assert_eq!(kept.metadata.map(|m| m.tmdb_id), Some(329865));
-    let position = crate::get_progress(&p, &viewer, "m2").unwrap();
+    let position = crate::get_progress(
+        &p,
+        (&viewer, "m2"),
+        kroma_domain::WatchThresholds::default(),
+    )
+    .unwrap();
     assert_eq!(position.map(|p| p.position_ms), Some(600_000));
 }
 
@@ -97,7 +102,12 @@ fn a_title_whose_file_comes_back_is_listed_again_with_everything_it_had() {
     assert_eq!(movie_ids(&p), ["m2", "m1"]);
     let back = crate::get_item(&p, "m2").unwrap().unwrap();
     assert_eq!(back.metadata.map(|m| m.tmdb_id), Some(329865));
-    let position = crate::get_progress(&p, &viewer, "m2").unwrap();
+    let position = crate::get_progress(
+        &p,
+        (&viewer, "m2"),
+        kroma_domain::WatchThresholds::default(),
+    )
+    .unwrap();
     assert_eq!(position.map(|p| p.position_ms), Some(600_000));
 }
 
@@ -131,8 +141,9 @@ fn a_show_stays_listed_while_one_of_its_episodes_is_present() {
 fn an_absent_title_leaves_the_home_rails_and_continue_watching_until_it_is_back() {
     let p = pool();
     let viewer = both_resumed(&p);
-    let resumed =
-        |p: &Pool| -> Vec<String> { crate::continue_watching_ids(p, &viewer, 90).unwrap() };
+    let resumed = |p: &Pool| -> Vec<String> {
+        crate::continue_watching_ids(p, &viewer, kroma_domain::WatchThresholds::default()).unwrap()
+    };
     let before = resumed(&p);
 
     walked(&p, &[dune()]);

@@ -80,7 +80,13 @@ mod tests {
         mark_watched(&pool, &uid, "m1").unwrap();
         assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["m1".to_string()]);
         assert!(
-            get_progress(&pool, &uid, "m1").unwrap().is_none(),
+            get_progress(
+                &pool,
+                (&uid, "m1"),
+                kroma_domain::WatchThresholds::default()
+            )
+            .unwrap()
+            .is_none(),
             "marking watched clears resume"
         );
 
@@ -110,7 +116,13 @@ mod tests {
         mark_finished(&pool, &uid, "m1").unwrap();
 
         assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["m1".to_string()]);
-        let kept = get_progress(&pool, &uid, "m1").unwrap().unwrap();
+        let kept = get_progress(
+            &pool,
+            (&uid, "m1"),
+            kroma_domain::WatchThresholds::default(),
+        )
+        .unwrap()
+        .unwrap();
         assert_eq!(kept.position_ms, 110_000);
     }
 

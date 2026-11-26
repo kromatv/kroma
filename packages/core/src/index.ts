@@ -40,6 +40,7 @@ export * from './player';
 export * from './player-error-status';
 export * from './progress-queue';
 export * from './push-labels';
+export * from './resume';
 export * from './route-under';
 export * from './shaka-master';
 export * from './slug';

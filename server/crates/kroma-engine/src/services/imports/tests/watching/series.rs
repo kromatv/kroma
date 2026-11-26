@@ -80,9 +80,13 @@ fn a_series_brings_its_favourite_and_nothing_else() {
             .contains(&show)
     );
     assert!(
-        db::get_progress(&world.state.db, &world.ana, &show)
-            .unwrap()
-            .is_none()
+        db::get_progress(
+            &world.state.db,
+            (&world.ana, &show),
+            crate::model::WatchThresholds::default()
+        )
+        .unwrap()
+        .is_none()
     );
 }
 

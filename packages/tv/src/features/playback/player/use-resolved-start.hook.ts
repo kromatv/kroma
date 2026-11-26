@@ -1,5 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { MediaItem } from '@kromatv/client/media';
+import { resumeSeconds } from '@kromatv/core';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface ResolvedStart {
@@ -31,10 +32,7 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
     client.playback
       .itemProgress(item.id)
       .then((p) => {
-        const durMs = p?.durationMs ?? item.durationMs ?? 0;
-        const posSec = p ? p.positionMs / 1000 : 0;
-        // Resume only when meaningfully into the title and not ~finished.
-        settle(p && posSec > 15 && (!durMs || p.positionMs < durMs * 0.95) ? posSec : 0);
+        settle(resumeSeconds(p, item.durationMs ?? 0));
       })
       .catch(() => settle(0));
     return () => {

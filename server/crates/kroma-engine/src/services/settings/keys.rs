@@ -6,6 +6,7 @@ use std::sync::OnceLock;
 use kroma_module_host::SettingReach;
 use serde_json::{json, Value};
 
+use super::thresholds::threshold_defaults;
 use crate::services::backup::schedule;
 
 #[cfg(test)]
@@ -108,10 +109,9 @@ fn declared() -> Declared {
     m.module_declared("themeSongs", json!(false));
     // off | chapters (free, from embedded chapters) | fingerprint (heavy audio job).
     m.module_declared("introDetection", json!("chapters"));
-    m.module_declared(
-        "playedThreshold",
-        json!(kroma_domain::DEFAULT_PLAYED_PERCENT.to_string()),
-    );
+    for (key, value) in threshold_defaults() {
+        m.module_declared(key, value);
+    }
     m.module_declared("theme", json!("Sombre (Kroma)"));
     m.module_declared("dateFormat", json!("JJ/MM/AAAA"));
     m.module_declared("moduleAutoUpdate", json!(true));

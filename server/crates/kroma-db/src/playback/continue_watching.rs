@@ -7,18 +7,18 @@ use super::on_deck::on_deck;
 use crate::hydrate::items_by_ids_ordered;
 use crate::rows::parse_metadata;
 use crate::{Pool, IN_CHUNK};
-use kroma_domain::{ContinueItem, Kind, MediaItem};
+use kroma_domain::{ContinueItem, Kind, MediaItem, WatchThresholds};
 
 const LIMIT: usize = 30;
 
-/// "Continue watching": resumable items (started, not finished by the watched
-/// rule at `played_percent`), plus the episode a show is left on when none of it
-/// is mid-play (at position 0). Newest first, each carried as a full
+/// "Continue watching": resumable items (past the resume threshold, not finished
+/// by the watched rule), plus the episode a show is left on when none of it is
+/// mid-play (at position 0). Newest first, each carried as a full
 /// [`MediaItem`] so clients render normal cards.
 pub fn continue_watching(
     pool: &Pool,
     user_id: &str,
-    played_percent: i64,
+    thresholds: WatchThresholds,
 ) -> Result<Vec<ContinueItem>> {
     let conn = pool.get()?;
     // The JOIN drops any orphan progress row whose item no longer exists.
@@ -27,7 +27,7 @@ pub fn continue_watching(
          FROM progress p JOIN items i ON i.id = p.item_id \
          WHERE p.user_id = ?1 AND i.absent_since IS NULL AND {} \
          ORDER BY p.updated_at DESC LIMIT ?2",
-        super::resumable_sql(played_percent)
+        super::resumable_sql(thresholds)
     ))?;
     let mut rows: Vec<(String, i64, Option<i64>, String)> = stmt
         .query_map(params![user_id, LIMIT as i64], |r| {
@@ -40,7 +40,7 @@ pub fn continue_watching(
     // off the list entirely: the episode it is left on joins at position 0, ordered
     // among the rest by when that show was last watched.
     rows.extend(
-        on_deck(&conn, user_id, LIMIT, played_percent)?
+        on_deck(&conn, user_id, LIMIT, thresholds)?
             .into_iter()
             .map(|(id, at)| (id, 0, None, at)),
     );
@@ -111,21 +111,21 @@ pub fn continue_watching(
 pub fn continue_watching_ids(
     pool: &Pool,
     user_id: &str,
-    played_percent: i64,
+    thresholds: WatchThresholds,
 ) -> Result<Vec<String>> {
     let conn = pool.get()?;
     let mut stmt = conn.prepare(&format!(
         "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
          WHERE p.user_id = ?1 AND i.absent_since IS NULL AND {} \
          ORDER BY p.updated_at DESC LIMIT ?2",
-        super::resumable_sql(played_percent)
+        super::resumable_sql(thresholds)
     ))?;
     let mut ids: Vec<String> = stmt
         .query_map(params![user_id, LIMIT as i64], |r| r.get::<_, String>(0))?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     drop(stmt);
     ids.extend(
-        on_deck(&conn, user_id, LIMIT, played_percent)?
+        on_deck(&conn, user_id, LIMIT, thresholds)?
             .into_iter()
             .map(|(id, _)| id),
     );
@@ -139,7 +139,18 @@ pub fn continue_watching_ids(
 mod tests {
     use super::*;
     use crate::playback::test_support::*;
+    use crate::playback::{mark_watched, upsert_progress};
     use kroma_domain::MarkerKind;
+
+    const TWO_HOURS: i64 = 7_200_000;
+
+    fn rail(pool: &Pool, uid: &str, thresholds: WatchThresholds) -> Vec<String> {
+        continue_watching(pool, uid, thresholds)
+            .unwrap()
+            .into_iter()
+            .map(|c| c.item.id)
+            .collect()
+    }
 
     #[test]
     fn continue_watching_filters_and_orders() {
@@ -169,7 +180,7 @@ mod tests {
             }
         }
 
-        let cw = continue_watching(&pool, &uid, 90).unwrap();
+        let cw = continue_watching(&pool, &uid, WatchThresholds::default()).unwrap();
         let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
         // Only the two resumable rows, newest-first (m1 then nodur).
         assert_eq!(ids, vec!["m1", "nodur"]);
@@ -199,7 +210,7 @@ mod tests {
             .unwrap();
         }
 
-        let mut ids = continue_watching_ids(&pool, &uid, 90).unwrap();
+        let mut ids = continue_watching_ids(&pool, &uid, WatchThresholds::default()).unwrap();
         ids.sort();
 
         assert_eq!(ids, vec!["e1".to_string(), "s1".to_string()]);
@@ -230,7 +241,7 @@ mod tests {
             }
         }
 
-        let cw = continue_watching(&pool, &uid, 90).unwrap();
+        let cw = continue_watching(&pool, &uid, WatchThresholds::default()).unwrap();
 
         let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
         assert_eq!(ids, vec!["m1"]);
@@ -261,7 +272,7 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid, 90).unwrap();
+        let cw = continue_watching(&pool, &uid, WatchThresholds::default()).unwrap();
         assert_eq!(cw.len(), 1);
         let meta = cw[0]
             .item
@@ -288,7 +299,7 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid, 90).unwrap();
+        let cw = continue_watching(&pool, &uid, WatchThresholds::default()).unwrap();
 
         let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
         assert_eq!(ids, vec!["e2"]);
@@ -320,10 +331,63 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid, 90).unwrap();
+        let cw = continue_watching(&pool, &uid, WatchThresholds::default()).unwrap();
 
         let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
         assert_eq!(ids, vec!["b2"]);
         assert_eq!(cw[0].position_ms, 20_000);
+    }
+
+    #[test]
+    fn a_title_left_short_of_the_resume_threshold_stays_off_the_rail() {
+        let (pool, uid) = pool_with_user();
+        seed_movie(&pool, "m2");
+
+        upsert_progress(&pool, &uid, "m1", 300_000, Some(TWO_HOURS)).unwrap();
+        upsert_progress(&pool, &uid, "m2", 600_000, Some(TWO_HOURS)).unwrap();
+
+        assert_eq!(rail(&pool, &uid, WatchThresholds::default()), vec!["m2"]);
+    }
+
+    #[test]
+    fn a_resume_threshold_of_zero_keeps_every_title_past_the_floor() {
+        let (pool, uid) = pool_with_user();
+        let thresholds = WatchThresholds {
+            resume_percent: 0,
+            ..WatchThresholds::default()
+        };
+
+        upsert_progress(&pool, &uid, "m1", 300_000, Some(TWO_HOURS)).unwrap();
+
+        assert_eq!(rail(&pool, &uid, thresholds), vec!["m1"]);
+    }
+
+    #[test]
+    fn a_position_saved_without_a_runtime_is_judged_against_the_catalogue_one() {
+        let (pool, uid) = pool_with_user();
+        seed_movie(&pool, "m2");
+        pool.get()
+            .unwrap()
+            .execute("UPDATE items SET duration_ms = 7200000", [])
+            .unwrap();
+
+        upsert_progress(&pool, &uid, "m1", 7_000_000, None).unwrap();
+        upsert_progress(&pool, &uid, "m2", 200_000, Some(0)).unwrap();
+
+        assert!(rail(&pool, &uid, WatchThresholds::default()).is_empty());
+    }
+
+    #[test]
+    fn a_next_episode_barely_started_is_still_the_one_offered() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 3);
+        mark_watched(&pool, &uid, "e1").unwrap();
+
+        upsert_progress(&pool, &uid, "e2", 10_000, Some(1_200_000)).unwrap();
+        let cw = continue_watching(&pool, &uid, WatchThresholds::default()).unwrap();
+
+        let ids: Vec<&str> = cw.iter().map(|c| c.item.id.as_str()).collect();
+        assert_eq!(ids, vec!["e2"]);
+        assert_eq!(cw[0].position_ms, 0);
     }
 }

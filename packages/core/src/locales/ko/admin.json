@@ -247,6 +247,8 @@
   "admin.playHistory": "재생 기록",
   "admin.playedThreshold": "시청 완료 기준",
   "admin.playedThresholdHint": "크레딧이 감지되지 않은 작품을 시청한 것으로 볼 재생 시간 비율입니다. 감지된 크레딧에 도달하면 항상 시청한 것으로 봅니다. Plex와 Jellyfin은 90을 사용합니다.",
+  "admin.resumeThreshold": "이어보기 기준",
+  "admin.resumeThresholdHint": "멈춘 위치에서 이어서 재생하려면 도달해야 하는 재생 시간 비율입니다. 이보다 적으면 처음부터 재생되며 이어보기에도 나타나지 않습니다. 0으로 두면 처음 15초만 무시합니다. Jellyfin은 5를 사용합니다.",
   "admin.playing": "재생 중",
   "admin.plays": "재생",
   "admin.port": "서버 포트",

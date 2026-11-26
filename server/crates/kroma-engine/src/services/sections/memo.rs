@@ -11,7 +11,7 @@ use anyhow::Result;
 use time::OffsetDateTime;
 
 use crate::db::{self, HeroCandidate, HomeActivity, Pool};
-use crate::model::{Section, SectionItem};
+use crate::model::{Section, SectionItem, WatchThresholds};
 use crate::services::jobs::now_ms;
 use crate::services::settings;
 use crate::state::SharedState;
@@ -37,7 +37,7 @@ struct Inputs {
     day: i64,
     part_of_day: PartOfDay,
     show_recent: bool,
-    played_percent: i64,
+    thresholds: WatchThresholds,
 }
 
 impl Inputs {
@@ -50,7 +50,7 @@ impl Inputs {
             day: now_ms.div_euclid(DAY_MS),
             part_of_day: PartOfDay::at(hour),
             show_recent: state.settings.get_bool("showRecentHome", true),
-            played_percent: settings::played_percent(&state.settings),
+            thresholds: settings::watch_thresholds(&state.settings),
         })
     }
 }

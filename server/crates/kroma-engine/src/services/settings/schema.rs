@@ -2,6 +2,7 @@
 //! renders, with each row's current value overlaid from the store.
 
 use super::ratings_country::ratings_country_row;
+use super::thresholds::{PLAYED_THRESHOLD_KEY, RESUME_THRESHOLD_KEY, threshold_row};
 use super::tmdb_language::metadata_language_row;
 use std::sync::OnceLock;
 
@@ -247,15 +248,8 @@ pub fn groups(
                         g("introDetection"),
                         true,
                     ),
-                    row(
-                        "playedThreshold",
-                        t("admin.playedThreshold"),
-                        Some(t("admin.playedThresholdHint")),
-                        "select",
-                        &["75", "80", "85", "90", "95"],
-                        g("playedThreshold"),
-                        true,
-                    ),
+                    threshold_row(locale, RESUME_THRESHOLD_KEY, g(RESUME_THRESHOLD_KEY)),
+                    threshold_row(locale, PLAYED_THRESHOLD_KEY, g(PLAYED_THRESHOLD_KEY)),
                 ],
             ),
             group(

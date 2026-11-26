@@ -1,24 +1,38 @@
 //! How far through a show a user is, as a percent.
 
 use anyhow::Result;
+use kroma_domain::WatchThresholds;
 use rusqlite::params;
 
 use crate::Pool;
 
+const EPISODES_PER_SHOW: &str = "SELECT show_id, COUNT(*) FROM items \
+     WHERE kind = 'episode' AND show_id IS NOT NULL GROUP BY show_id";
+
+const WATCHED_PER_SHOW: &str = "SELECT i.show_id, COUNT(*) FROM watched w \
+     JOIN items i ON i.id = w.item_id \
+     WHERE w.user_id = ?1 AND i.kind = 'episode' AND i.show_id IS NOT NULL GROUP BY i.show_id";
+
+const EPISODES_OF_SHOW: &str = "SELECT COUNT(*) FROM items WHERE kind = 'episode' AND show_id = ?1";
+
+const WATCHED_OF_SHOW: &str = "SELECT COUNT(*) FROM watched w JOIN items i ON i.id = w.item_id \
+     WHERE w.user_id = ?1 AND i.kind = 'episode' AND i.show_id = ?2";
+
 /// Per-user progress through each show, as a percent 0–100 (only shows with >0).
 /// `(watched episodes + the in-progress episode's fraction) / total episodes`
 /// a Plex-style series completion bar for show cards.
-pub fn show_progress(pool: &Pool, user_id: &str) -> Result<std::collections::HashMap<String, u8>> {
+pub fn show_progress(
+    pool: &Pool,
+    user_id: &str,
+    thresholds: WatchThresholds,
+) -> Result<std::collections::HashMap<String, u8>> {
     use std::collections::HashMap;
     let conn = pool.get()?;
 
     // Total episodes per show.
     let mut totals: HashMap<String, i64> = HashMap::new();
     {
-        let mut s = conn.prepare(
-            "SELECT show_id, COUNT(*) FROM items \
-             WHERE kind = 'episode' AND show_id IS NOT NULL GROUP BY show_id",
-        )?;
+        let mut s = conn.prepare(EPISODES_PER_SHOW)?;
         for row in s.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?)))? {
             let (show, n) = row?;
             totals.insert(show, n);
@@ -28,10 +42,7 @@ pub fn show_progress(pool: &Pool, user_id: &str) -> Result<std::collections::Has
     // Watched episodes per show.
     let mut watched: HashMap<String, i64> = HashMap::new();
     {
-        let mut s = conn.prepare(
-            "SELECT i.show_id, COUNT(*) FROM watched w JOIN items i ON i.id = w.item_id \
-             WHERE w.user_id = ?1 AND i.kind = 'episode' AND i.show_id IS NOT NULL GROUP BY i.show_id",
-        )?;
+        let mut s = conn.prepare(WATCHED_PER_SHOW)?;
         for row in s.query_map(params![user_id], |r| {
             Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)?))
         })? {
@@ -44,12 +55,12 @@ pub fn show_progress(pool: &Pool, user_id: &str) -> Result<std::collections::Has
     // disjoint: mark_watched deletes the progress row).
     let mut frac: HashMap<String, f64> = HashMap::new();
     {
-        let mut s = conn.prepare(
+        let mut s = conn.prepare(&format!(
             "SELECT i.show_id, p.position_ms, p.duration_ms FROM progress p JOIN items i ON i.id = p.item_id \
-             WHERE p.user_id = ?1 AND i.kind = 'episode' AND i.show_id IS NOT NULL AND p.position_ms > 15000 \
-               AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
+             WHERE p.user_id = ?1 AND i.kind = 'episode' AND i.show_id IS NOT NULL AND {} \
              ORDER BY p.updated_at DESC",
-        )?;
+            super::resumable_sql(thresholds)
+        ))?;
         for row in s.query_map(params![user_id], |r| {
             Ok((
                 r.get::<_, String>(0)?,
@@ -83,29 +94,24 @@ pub fn show_progress(pool: &Pool, user_id: &str) -> Result<std::collections::Has
 
 /// Series-completion percent (0–100) for a single show, or `None` if no progress
 /// (lighter than [`show_progress`] for a one-show detail page).
-pub fn show_progress_one(pool: &Pool, user_id: &str, show_id: &str) -> Result<Option<u8>> {
+pub fn show_progress_one(
+    pool: &Pool,
+    (user_id, show_id): (&str, &str),
+    thresholds: WatchThresholds,
+) -> Result<Option<u8>> {
     let conn = pool.get()?;
-    let total: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM items WHERE kind = 'episode' AND show_id = ?1",
-        params![show_id],
-        |r| r.get(0),
-    )?;
+    let total: i64 = conn.query_row(EPISODES_OF_SHOW, params![show_id], |r| r.get(0))?;
     if total <= 0 {
         return Ok(None);
     }
-    let watched: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM watched w JOIN items i ON i.id = w.item_id \
-         WHERE w.user_id = ?1 AND i.kind = 'episode' AND i.show_id = ?2",
-        params![user_id, show_id],
-        |r| r.get(0),
-    )?;
+    let watched: i64 = conn.query_row(WATCHED_OF_SHOW, params![user_id, show_id], |r| r.get(0))?;
     let frac = {
-        let mut s = conn.prepare(
+        let mut s = conn.prepare(&format!(
             "SELECT p.position_ms, p.duration_ms FROM progress p JOIN items i ON i.id = p.item_id \
-             WHERE p.user_id = ?1 AND i.show_id = ?2 AND i.kind = 'episode' AND p.position_ms > 15000 \
-               AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
+             WHERE p.user_id = ?1 AND i.show_id = ?2 AND i.kind = 'episode' AND {} \
              ORDER BY p.updated_at DESC LIMIT 1",
-        )?;
+            super::resumable_sql(thresholds)
+        ))?;
         let row = s
             .query_map(params![user_id, show_id], |r| {
                 Ok((r.get::<_, i64>(0)?, r.get::<_, Option<i64>>(1)?))
@@ -127,7 +133,7 @@ pub fn show_progress_one(pool: &Pool, user_id: &str, show_id: &str) -> Result<Op
 mod tests {
     use super::*;
     use crate::playback::test_support::*;
-    use crate::playback::{continue_watching, mark_watched, upsert_progress};
+    use crate::playback::{continue_watching, mark_watched, save_progress, upsert_progress};
 
     #[test]
     fn show_progress_and_one_compute_percent() {
@@ -145,7 +151,7 @@ mod tests {
         mark_watched(&pool, &uid, "g1").unwrap();
         mark_watched(&pool, &uid, "g2").unwrap();
 
-        let map = show_progress(&pool, &uid).unwrap();
+        let map = show_progress(&pool, &uid, WatchThresholds::default()).unwrap();
         assert_eq!(map.get("s1"), Some(&60));
         assert_eq!(map.get("s3"), Some(&100));
         // s2 has no progress -> excluded (0% rows are dropped).
@@ -154,11 +160,20 @@ mod tests {
         assert_eq!(map.get("m1"), None);
 
         // Single-show variant agrees, and is None for no-progress / unknown shows.
-        assert_eq!(show_progress_one(&pool, &uid, "s1").unwrap(), Some(60));
-        assert_eq!(show_progress_one(&pool, &uid, "s3").unwrap(), Some(100));
-        assert_eq!(show_progress_one(&pool, &uid, "s2").unwrap(), None);
         assert_eq!(
-            show_progress_one(&pool, &uid, "no-such-show").unwrap(),
+            show_progress_one(&pool, (&uid, "s1"), WatchThresholds::default()).unwrap(),
+            Some(60)
+        );
+        assert_eq!(
+            show_progress_one(&pool, (&uid, "s3"), WatchThresholds::default()).unwrap(),
+            Some(100)
+        );
+        assert_eq!(
+            show_progress_one(&pool, (&uid, "s2"), WatchThresholds::default()).unwrap(),
+            None
+        );
+        assert_eq!(
+            show_progress_one(&pool, (&uid, "no-such-show"), WatchThresholds::default()).unwrap(),
             None
         );
     }
@@ -187,7 +202,7 @@ mod tests {
             .unwrap();
         }
 
-        let cw = continue_watching(&pool, &uid, 90).unwrap();
+        let cw = continue_watching(&pool, &uid, WatchThresholds::default()).unwrap();
         let meta = cw[0]
             .item
             .metadata
@@ -207,8 +222,16 @@ mod tests {
         mark_watched(&pool, &uid, "e1").unwrap();
         upsert_progress(&pool, &uid, "e2", 30_000, None).unwrap();
 
-        assert_eq!(show_progress(&pool, &uid).unwrap().get("s1"), Some(&25));
-        assert_eq!(show_progress_one(&pool, &uid, "s1").unwrap(), Some(25));
+        assert_eq!(
+            show_progress(&pool, &uid, WatchThresholds::default())
+                .unwrap()
+                .get("s1"),
+            Some(&25)
+        );
+        assert_eq!(
+            show_progress_one(&pool, (&uid, "s1"), WatchThresholds::default()).unwrap(),
+            Some(25)
+        );
     }
 
     #[test]
@@ -219,12 +242,25 @@ mod tests {
             .unwrap()
             .execute_batch("DROP TABLE watched")
             .unwrap();
-        assert!(show_progress_one(&pool, &uid, "s1").is_err());
+        assert!(show_progress_one(&pool, (&uid, "s1"), WatchThresholds::default()).is_err());
 
         pool.get()
             .unwrap()
             .execute_batch("DROP TABLE items")
             .unwrap();
-        assert!(show_progress_one(&pool, &uid, "s1").is_err());
+        assert!(show_progress_one(&pool, (&uid, "s1"), WatchThresholds::default()).is_err());
+    }
+
+    #[test]
+    fn an_episode_finished_short_of_its_end_counts_once() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 4);
+
+        save_progress(&pool, &uid, "e1", 920_000, Some(1_000_000), 90).unwrap();
+        let one = show_progress_one(&pool, (&uid, "s1"), WatchThresholds::default()).unwrap();
+        let all = show_progress(&pool, &uid, WatchThresholds::default()).unwrap();
+
+        assert_eq!(one, Some(25));
+        assert_eq!(all.get("s1"), Some(&25));
     }
 }

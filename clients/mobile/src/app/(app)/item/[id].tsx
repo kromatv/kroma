@@ -1,8 +1,15 @@
 // Movie / episode detail: cinematic hero, Netflix-style action block, genre
 // chips, cast and similar rails.
 
-import { ItemId, type MediaItem, type ProgressEntry } from '@kromatv/client/media';
-import { ageRatingOf, episodeTag, formatRuntime, qualityBadge, sizedImageUrl } from '@kromatv/core';
+import { ItemId, type MediaItem } from '@kromatv/client/media';
+import {
+  ageRatingOf,
+  episodeTag,
+  formatRuntime,
+  qualityBadge,
+  resumeSeconds,
+  sizedImageUrl,
+} from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { formatTimecode } from '@kromatv/ui/intl';
 import { AgeRating, Box, styles, Text, useStyles } from '@kromatv/ui/kit';
@@ -32,12 +39,6 @@ function episodeContext(media: MediaItem): string | undefined {
   }
   const numbering = episodeTag(media);
   return numbering ? `${media.showTitle} · ${numbering}` : media.showTitle;
-}
-
-const RESUME_THRESHOLD_MS = 30_000;
-
-function resumeSeconds(progress: ProgressEntry | null | undefined): number {
-  return progress && progress.positionMs > RESUME_THRESHOLD_MS ? progress.positionMs / 1000 : 0;
 }
 
 // With a TV connected, Play stops meaning "here": the label says where it will land.
@@ -133,7 +134,7 @@ function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
     Math.min(1280, width),
   );
   const title = media.metadata?.title ?? media.title;
-  const resumeSec = resumeSeconds(progress.data);
+  const resumeSec = resumeSeconds(progress.data, media.durationMs ?? 0);
   const cardW = posterWidth(width);
   const cast = media.metadata?.cast ?? [];
 

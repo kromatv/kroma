@@ -77,7 +77,12 @@ fn two_walks_that_overlap_keep_the_resume_position_of_a_replaced_file() {
     .unwrap();
     second.unwrap().join().unwrap();
 
-    let resume = db::get_progress(&state.db, &viewer.id, &heat).unwrap();
+    let resume = db::get_progress(
+        &state.db,
+        (&viewer.id, &heat),
+        crate::model::WatchThresholds::default(),
+    )
+    .unwrap();
     assert_eq!(resume.map(|entry| entry.position_ms), Some(60_000));
     assert_eq!(file_rows(&state), 1);
 }

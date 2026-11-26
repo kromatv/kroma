@@ -155,19 +155,31 @@ and *Play from start*, with resume the default. The stored position is the repor
 rounded chapter.
 
 **PLAY-37** (SHIPPED) - A title is **watched** at a credits or end marker where the media has
-one, and otherwise at **97% of runtime or more**.
+one, and otherwise at the **watched threshold**: a share of the runtime an admin sets, 90% by
+default, the figure Plex, Jellyfin and Kodi ship with.
 
-The marker is the real signal and the percentage is only the fallback for media without one,
-which is why the fallback errs tight rather than generous. Requiring 100% would strand finished
-titles in the row forever. Going the other way, a loose threshold marks a long film watched
-while twenty minutes are left, and losing a person's place in a film they had not finished is a
-worse failure than leaving a finished episode in a row they can dismiss.
+The marker is the real signal and the percentage is only the fallback for media without one.
+Requiring 100% would strand finished titles in the row forever. Going the other way, a loose
+threshold marks a long film watched while twenty minutes are left, which is why the choice stops
+at 75%.
 
 **PLAY-38** (SHIPPED) - At the watched threshold, continue-watching drops the title and, for
 episodic content, surfaces the next episode instead.
 
-**PLAY-39** (AGREED) - Below the threshold, progress is retained and the title stays in
-continue-watching.
+**PLAY-39** (AGREED) - Between the resume threshold and the watched threshold, progress is
+retained and the title stays in continue-watching.
+
+**PLAY-61** (SHIPPED) - A position short of the **resume threshold** does not resume: the title
+plays from the start and stays out of continue-watching, as if it had never been opened. The
+threshold is a share of the runtime an admin sets, 5% by default as in Jellyfin, and the first
+15 seconds never count whatever it is set to.
+
+A person who opens a film and leaves after the opening logos has not started it. Offering to
+resume it, and keeping it in the row, is the clutter this threshold removes.
+
+**PLAY-62** (SHIPPED) - Both thresholds judge the stored position each time it is read, so
+changing one moves titles in or out of continue-watching at once, and no stored position is
+lost to a setting.
 
 **PLAY-40** (AGREED) - Starting a watched title again resets it to unwatched and clears the
 stored position.

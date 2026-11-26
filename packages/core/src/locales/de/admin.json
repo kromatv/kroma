@@ -252,6 +252,8 @@
   "admin.playHistory": "Wiedergabeverlauf",
   "admin.playedThreshold": "Schwelle für „Gesehen“",
   "admin.playedThresholdHint": "Anteil der Laufzeit in Prozent, ab dem ein Titel als gesehen gilt, wenn kein Abspann erkannt wurde. Wer den erkannten Abspann erreicht, hat den Titel immer gesehen. Plex und Jellyfin nutzen 90.",
+  "admin.resumeThreshold": "Schwelle für das Fortsetzen",
+  "admin.resumeThresholdHint": "Anteil der Laufzeit in Prozent, den ein Titel erreichen muss, damit er dort weiterläuft, wo er angehalten wurde. Darunter beginnt er von vorn und erscheint nicht unter „Weiterschauen“. Bei 0 werden nur die ersten 15 Sekunden ignoriert. Jellyfin nutzt 5.",
   "admin.playing": "Läuft",
   "admin.plays": "{count} Wiedergaben",
   "admin.plays_one": "{count} Wiedergabe",

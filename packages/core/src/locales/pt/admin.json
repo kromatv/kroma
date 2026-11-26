@@ -257,6 +257,8 @@
   "admin.playHistory": "Histórico de reprodução",
   "admin.playedThreshold": "Limite para marcar como assistido",
   "admin.playedThresholdHint": "Porcentagem da duração a partir da qual um título conta como assistido quando os créditos não foram detectados. Chegar aos créditos detectados sempre conta. O Plex e o Jellyfin usam 90.",
+  "admin.resumeThreshold": "Limite para retomar",
+  "admin.resumeThresholdHint": "Porcentagem da duração que um título precisa atingir para continuar de onde parou. Abaixo disso, ele recomeça do início e não aparece em Continuar assistindo. Com 0, só os primeiros 15 segundos são ignorados. O Jellyfin usa 5.",
   "admin.playing": "Em reprodução",
   "admin.plays": "{count} reproduções",
   "admin.plays_zero": "{count} reproduções",

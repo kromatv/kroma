@@ -231,7 +231,10 @@ const Resume = z.object({
   updatedAt: z.string(),
 });
 
-export const ProgressEntry = Resume.extend({ itemId: ItemId });
+/** A saved position. `resumable` is the server's verdict on picking it up:
+ * past its resume threshold and not yet watched. A server older than the
+ * verdict leaves it out. */
+export const ProgressEntry = Resume.extend({ itemId: ItemId, resumable: z.boolean().optional() });
 export type ProgressEntry = z.infer<typeof ProgressEntry>;
 
 export const ContinueItem = Resume.extend({ item: MediaItem });

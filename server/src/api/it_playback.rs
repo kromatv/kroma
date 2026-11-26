@@ -310,6 +310,34 @@ async fn the_played_threshold_setting_moves_the_line() {
 }
 
 #[tokio::test]
+async fn the_resume_threshold_setting_decides_where_a_title_picks_up() {
+    let t = test_app();
+    let item = demo_item_id("Sintel");
+    let path = format!("/api/progress/{item}");
+    send(
+        &t.app,
+        "PUT",
+        &path,
+        Some(&t.token),
+        Some(json!({ "positionMs": 100_000, "durationMs": 888_000 })),
+    )
+    .await;
+
+    let (_, by_default) = get(&t.app, &path, Some(&t.token)).await;
+    t.state.settings.set_patch(
+        &t.state.db,
+        [("resumeThreshold".to_string(), json!("15"))].into(),
+    );
+    let (_, raised) = get(&t.app, &path, Some(&t.token)).await;
+    let (_, rail) = get(&t.app, "/api/continue", Some(&t.token)).await;
+
+    assert_eq!(by_default["resumable"], json!(true));
+    assert_eq!(raised["resumable"], json!(false));
+    assert_eq!(raised["positionMs"], json!(100_000));
+    assert_eq!(rail, json!([]));
+}
+
+#[tokio::test]
 async fn progress_rejects_a_body_missing_the_position() {
     let t = test_app();
     let item = demo_item_id("Big Buck Bunny");

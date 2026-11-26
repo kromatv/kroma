@@ -832,6 +832,8 @@
     "admin.resetting": "d995f75b ab8e78f3 mt",
     "admin.restrictionsAdmin": "66691511 744a1f8a mt",
     "admin.restrictionsOwnProfile": "dd984036 040829dd mt",
+    "admin.resumeThreshold": "cfb2a670 c74e38ca mt",
+    "admin.resumeThresholdHint": "f7334e6b f032821f mt",
     "admin.revoke": "d8432559 7fcbccec mt",
     "admin.roleMember": "a6d44fad 35268659 mt",
     "admin.roleOwner": "6a515cb3 8755e5ac mt",

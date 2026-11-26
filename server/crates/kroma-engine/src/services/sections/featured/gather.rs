@@ -34,7 +34,7 @@ pub(super) fn seen_ids(pool: &Pool, user_id: &str, recent: &[String]) -> HashSet
         .into_iter()
         .collect();
     out.extend(
-        db::list_progress(pool, user_id)
+        db::list_progress(pool, user_id, crate::model::WatchThresholds::default())
             .unwrap_or_default()
             .into_iter()
             .map(|p| p.item_id),

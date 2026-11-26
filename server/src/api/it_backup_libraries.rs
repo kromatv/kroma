@@ -104,7 +104,12 @@ async fn a_restore_that_is_not_a_reset_keeps_this_servers_library_and_its_watch_
 
     assert_eq!(status, StatusCode::OK);
     assert!(library_ids(&target).contains(&"series".to_string()));
-    let kept = db::get_progress(&target.state.db, &target.user_id, &item).unwrap();
+    let kept = db::get_progress(
+        &target.state.db,
+        (&target.user_id, &item),
+        crate::model::WatchThresholds::default(),
+    )
+    .unwrap();
     assert_eq!(kept.map(|p| p.position_ms), Some(600_000));
 }
 

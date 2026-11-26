@@ -145,13 +145,13 @@ fn answer(engine: &SharedState, pool: &db::Pool, asked: Asked) -> anyhow::Result
 }
 
 fn favoured(state: &SharedState, pool: &db::Pool, user: &User) -> HashMap<String, f32> {
-    let played = settings::played_percent(&state.settings);
+    let thresholds = settings::watch_thresholds(&state.settings);
     let mut out: HashMap<String, f32> = db::list_my_list(pool, &user.id)
         .unwrap_or_default()
         .into_iter()
         .map(|id| (id, SAVED))
         .collect();
-    for id in db::continue_watching_ids(pool, &user.id, played).unwrap_or_default() {
+    for id in db::continue_watching_ids(pool, &user.id, thresholds).unwrap_or_default() {
         out.insert(id, IN_PROGRESS);
     }
     out

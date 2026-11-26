@@ -7605,7 +7605,7 @@
     "space": "playback",
     "number": 39,
     "status": "AGREED",
-    "text": "Below the threshold, progress is retained and the title stays in",
+    "text": "Between the resume threshold and the watched threshold, progress is",
     "file": "docs/spec/playback/README.md",
     "line": 169
   },
@@ -7617,7 +7617,7 @@
     "status": "AGREED",
     "text": "Starting a watched title again resets it to unwatched and clears the",
     "file": "docs/spec/playback/README.md",
-    "line": 172
+    "line": 184
   },
   {
     "id": "PLAY-41",
@@ -7627,7 +7627,7 @@
     "status": "SHIPPED",
     "text": "A device watching offline queues its unsent progress reports and, on",
     "file": "docs/spec/playback/README.md",
-    "line": 175
+    "line": 187
   },
   {
     "id": "PLAY-42",
@@ -7637,7 +7637,7 @@
     "status": "AGREED",
     "text": "When queued reports from two offline sessions land for the same person",
     "file": "docs/spec/playback/README.md",
-    "line": 184
+    "line": 196
   },
   {
     "id": "PLAY-43",
@@ -7647,7 +7647,7 @@
     "status": "AGREED",
     "text": "An explicit **reset to start**, from finishing a title or choosing",
     "file": "docs/spec/playback/README.md",
-    "line": 190
+    "line": 202
   },
   {
     "id": "PLAY-44",
@@ -7657,7 +7657,7 @@
     "status": "AGREED",
     "text": "If either device crossed the watched threshold, the title is watched.",
     "file": "docs/spec/playback/README.md",
-    "line": 194
+    "line": 206
   },
   {
     "id": "PLAY-45",
@@ -7667,7 +7667,7 @@
     "status": "AGREED",
     "text": "One account may play on several clients at once. KROMA enforces no",
     "file": "docs/spec/playback/README.md",
-    "line": 200
+    "line": 212
   },
   {
     "id": "PLAY-46",
@@ -7677,7 +7677,7 @@
     "status": "AGREED",
     "text": "Each playing client is an independent session with its own fallback",
     "file": "docs/spec/playback/README.md",
-    "line": 204
+    "line": 216
   },
   {
     "id": "PLAY-47",
@@ -7687,7 +7687,7 @@
     "status": "AGREED",
     "text": "Sessions interleave into one continue-watching state under the",
     "file": "docs/spec/playback/README.md",
-    "line": 208
+    "line": 220
   },
   {
     "id": "PLAY-48",
@@ -7697,7 +7697,7 @@
     "status": "AGREED",
     "text": "KROMA does not hand off an active session between devices as a",
     "file": "docs/spec/playback/README.md",
-    "line": 211
+    "line": 223
   },
   {
     "id": "PLAY-49",
@@ -7707,7 +7707,7 @@
     "status": "AGREED",
     "text": "When a stream dies mid-playback, whether the network drops, a transcode",
     "file": "docs/spec/playback/README.md",
-    "line": 219
+    "line": 231
   },
   {
     "id": "PLAY-50",
@@ -7717,7 +7717,7 @@
     "status": "AGREED",
     "text": "A **transient** failure, a network drop or a brief server hiccup, is",
     "file": "docs/spec/playback/README.md",
-    "line": 224
+    "line": 236
   },
   {
     "id": "PLAY-51",
@@ -7727,7 +7727,7 @@
     "status": "SHIPPED",
     "text": "A **fatal** failure, a source gone, a transcode that cannot start, or",
     "file": "docs/spec/playback/README.md",
-    "line": 227
+    "line": 239
   },
   {
     "id": "PLAY-52",
@@ -7737,7 +7737,7 @@
     "status": "SHIPPED",
     "text": "When a television's older decoder cannot play a file a modern phone",
     "file": "docs/spec/playback/README.md",
-    "line": 235
+    "line": 247
   },
   {
     "id": "PLAY-53",
@@ -7757,7 +7757,7 @@
     "status": "SHIPPED",
     "text": "A detail page offers a trailer button only when the server can play the",
     "file": "docs/spec/playback/README.md",
-    "line": 253
+    "line": 265
   },
   {
     "id": "PLAY-55",
@@ -7767,7 +7767,7 @@
     "status": "SHIPPED",
     "text": "The trailer offered is the best one for the viewer's language: spoken in",
     "file": "docs/spec/playback/README.md",
-    "line": 257
+    "line": 269
   },
   {
     "id": "PLAY-56",
@@ -7777,7 +7777,7 @@
     "status": "SHIPPED",
     "text": "The button says when the trailer is not spoken in the viewer's language:",
     "file": "docs/spec/playback/README.md",
-    "line": 261
+    "line": 273
   },
   {
     "id": "PLAY-57",
@@ -7787,7 +7787,7 @@
     "status": "SHIPPED",
     "text": "A trailer never plays an AI-dubbed audio track. It plays the track its",
     "file": "docs/spec/playback/README.md",
-    "line": 264
+    "line": 276
   },
   {
     "id": "PLAY-58",
@@ -7797,7 +7797,7 @@
     "status": "SHIPPED",
     "text": "The first play of a trailer may wait while the server fetches it, and the",
     "file": "docs/spec/playback/README.md",
-    "line": 267
+    "line": 279
   },
   {
     "id": "PLAY-59",
@@ -7807,7 +7807,7 @@
     "status": "SHIPPED",
     "text": "A trailer saves no progress, marks nothing watched and offers no next",
     "file": "docs/spec/playback/README.md",
-    "line": 271
+    "line": 283
   },
   {
     "id": "PLAY-60",
@@ -7817,7 +7817,27 @@
     "status": "SHIPPED",
     "text": "When a trailer cannot be fetched, the player says so plainly. Where the",
     "file": "docs/spec/playback/README.md",
-    "line": 274
+    "line": 286
+  },
+  {
+    "id": "PLAY-61",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 61,
+    "status": "SHIPPED",
+    "text": "A position short of the **resume threshold** does not resume: the title",
+    "file": "docs/spec/playback/README.md",
+    "line": 172
+  },
+  {
+    "id": "PLAY-62",
+    "domain": "PLAY",
+    "space": "playback",
+    "number": 62,
+    "status": "SHIPPED",
+    "text": "Both thresholds judge the stored position each time it is read, so",
+    "file": "docs/spec/playback/README.md",
+    "line": 180
   },
   {
     "id": "SURF-1",

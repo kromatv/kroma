@@ -62,9 +62,13 @@ fn kept(t: &TestApp, film: &str) -> (bool, Option<i64>) {
         .unwrap()
         .iter()
         .any(|library| library.id == "lib-owner");
-    let resume = crate::db::get_progress(&t.state.db, &t.user_id, film)
-        .unwrap()
-        .map(|entry| entry.position_ms);
+    let resume = crate::db::get_progress(
+        &t.state.db,
+        (&t.user_id, film),
+        crate::model::WatchThresholds::default(),
+    )
+    .unwrap()
+    .map(|entry| entry.position_ms);
     (library, resume)
 }
 

@@ -33,6 +33,7 @@ mod schema;
 mod shared_files;
 mod sign_in;
 mod store;
+mod thresholds;
 mod tmdb_language;
 
 pub use accessors::*;
@@ -52,6 +53,7 @@ pub use schema::*;
 pub use shared_files::{holds, library_sharing_files};
 pub use sign_in::*;
 pub use store::*;
+pub use thresholds::{PLAYED_THRESHOLD_KEY, RESUME_THRESHOLD_KEY, watch_thresholds};
 pub use tmdb_language::*;
 
 /// The statistics feature's own settings keys and the identity behind them.

@@ -3,6 +3,7 @@
 // reports the playback heartbeat, and autoplays the next episode on end.
 
 import { ItemId } from '@kromatv/client/media';
+import { resumeSeconds } from '@kromatv/core';
 import { useQuery } from '@tanstack/react-query';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useState } from 'react';
@@ -21,19 +22,6 @@ import { useClient } from '#mobile/lib/session';
 import { PlayerBody } from '#mobile/player/player-body.component';
 import { PlayerStatusScreen } from '#mobile/player/player-status-screen.component';
 import { nativePlaybackFailure, playbackFailureCopy } from '#mobile/player/playback-failure';
-
-const RESUME_MIN_MS = 30_000;
-const RESUME_NEAR_END_RATIO = 0.95;
-
-function resumeSec(positionMs: number | undefined, durationMs: number | null): number {
-  if (!positionMs || positionMs < RESUME_MIN_MS) {
-    return 0;
-  }
-  if (durationMs && positionMs > durationMs * RESUME_NEAR_END_RATIO) {
-    return 0;
-  }
-  return positionMs / 1000;
-}
 
 export default function PlayerRoute() {
   const id = routeParam(useLocalSearchParams<{ id?: string }>().id);
@@ -102,9 +90,7 @@ function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
         key={`${offline.itemId}:${attempt}`}
         item={offline.item}
         startSec={
-          lastPosition ??
-          handedBack ??
-          resumeSec(progress.data?.positionMs, offline.item.durationMs)
+          lastPosition ?? handedBack ?? resumeSeconds(progress.data, offline.item.durationMs ?? 0)
         }
         localUri={offline.fileUri}
         offline={offline}
@@ -137,7 +123,7 @@ function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
       key={`${item.data.id}:${attempt}`}
       item={item.data}
       startSec={
-        lastPosition ?? handedBack ?? resumeSec(progress.data?.positionMs, item.data.durationMs)
+        lastPosition ?? handedBack ?? resumeSeconds(progress.data, item.data.durationMs ?? 0)
       }
       onRetry={retryPlayback}
       onPosition={setLastPosition}
