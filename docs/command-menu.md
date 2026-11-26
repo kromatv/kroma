@@ -74,6 +74,7 @@ server's own words when it sent any. So a command only says what success looks l
 | `always` | Stays listed whatever is typed, below what matched. For a row the server matched. |
 | `primaryLabel` | What Enter and a click do, said at the foot of the menu. Left out, "Ouvrir la page" or "Lancer". |
 | `actions` | What else the row can do. See below. |
+| `items` | Rows of its own, listed in place of the menu's when it is chosen. See below. |
 | `tone`, `confirm`, `done` | Same as on an action. |
 | `id` | Only for two rows in one group sharing a label. A plain route is identified by its `to`, so a page reached twice is listed once. |
 
@@ -115,6 +116,32 @@ An action takes `to` or `run` like a row, and `cap`, and a falsy one is skipped.
 | `tone: 'danger'` | Drawn in red and moved apart at the end of the panel, so it can never be the first or the second. |
 | `confirm` | Asks first, with `title`, and `message` and `confirmLabel` if you want them. The label is the action's by default. |
 | `done` | A success toast. A failure already gets one. |
+
+## Giving a row a list of its own
+
+A row with `items` opens them in place of the menu's, as a Raycast list opens
+another: Enter, a click or its first action lists them, the field empties for
+the list and the row's name sits before it as the way back. Escape goes back,
+and so does Backspace in an empty field, with what was typed before and the
+cursor on the row that was opened. A chevron at the end of the row says it opens
+a list.
+
+```ts
+{
+  label: t('account.uiLanguage'),
+  icon: 'language',
+  meta: current.name,
+  to: '/account',
+  search: { section: 'preferences' },
+  items: languages.map((language) => ({ label: language.name, run: () => choose(language) })),
+}
+```
+
+The row's own `to` or `run` becomes its second action, `⌘Enter` or
+`Ctrl+Enter`. The rows in the list are rows like any other, so they take
+`actions`, `status` and the rest, and a falsy one is skipped. A row whose list
+is left empty is a plain row. What is typed at the top searches the top rows
+only, so a list of two hundred languages never crowds a search for a title.
 
 ## How search works
 
@@ -178,26 +205,24 @@ A module cannot add its own rows or actions yet. `useCommands` is not part of
 ## Preferences
 
 Everything the account page lets a viewer set is in the menu too, under
-"Preferences", and a pick there goes through the same call as the page, so it
-saves and applies the same way. `features/accounts/use-preference-commands.hook.ts`
-lists them:
+"Preferences", one row each, and a pick there goes through the same call as the
+page, so it saves and applies the same way.
+`features/accounts/use-preference-commands.hook.ts` lists them:
 
-| Preference | With nothing typed | Once something is typed |
+| Preference | The row | Its list |
 |---|---|---|
-| Interface language | Its name, the language in use with its flag | One row per language on offer: its flag, its own name, its name in the language on screen |
+| Interface language | Its name, the language in use with its flag | Each language on offer: its flag, its own name, its name in the language on screen |
 | Background blur | A switch | |
-| Preferred audio language | Its name, the language in use | One row per language, and no preference |
-| Preferred subtitle language | Its name, the language in use | One row per language, no preference and none at all |
-| Age ratings | Its name, the country in use | One row per country, with its flag, and the server's own |
+| Preferred audio language | Its name, the language in use | Each language, and no preference |
+| Preferred subtitle language | Its name, the language in use | Each language, no preference and none at all |
+| Age ratings | Its name, the country in use | Each country, with its flag, and the server's own |
 | Push on this device | A switch, unless the browser cannot receive pushes | |
 | Notification settings | Its name | A switch per category and per kind, for each channel |
 
 A switch flips on Enter, and the foot of the menu says which way. Its badge says
-whether it is on, off, or on for only part of what it speaks for. The row that
-names a list opens its place on the account page, and the value in use is the one
-with a "Current" badge. A list of more than twelve values joins the results only
-once a word of the query names it, so `audio` or `sous-titres anglais` lists the
-audio or subtitle languages, and `dune` does not wade through two hundred of them.
+whether it is on, off, or on for only part of what it speaks for. Enter on a row
+with a list opens it, with the value in use marked "Current", and `⌘Enter` opens
+its place on the account page instead.
 
 A Kids session never opens the account page, so it gets none of these rows, and
 the menu asks the server nothing for them.

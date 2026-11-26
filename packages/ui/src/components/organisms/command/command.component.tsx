@@ -6,11 +6,9 @@
 // the nth row sits in the scroller - and there is no arrangement of nested
 // children that keeps that true, nor any DOM to ask the way cmdk does.
 
-import { type ReactNode, useCallback, useMemo } from 'react';
-import { useCommandKey } from '#ui/lib/command-key';
+import { type ReactNode, useMemo } from 'react';
 import { type ChangeDetails, defineControl, useControl } from '#ui/lib/control';
 import { useDeliberateHover } from '#ui/lib/deliberate-hover.hook';
-import { useListCursorKeys } from '#ui/lib/list-cursor-keys.hook';
 import { Actions, Primary, Trigger } from './command-actions.component';
 import { CommandContext, type CommandState } from './command-context.hook';
 import { CommandLayer, CommandModal } from './command-layer.component';
@@ -25,6 +23,9 @@ import {
 } from './command-list';
 import { Empty, Footer, Input, List } from './command-parts';
 import { useActionPanel } from './use-action-panel.hook';
+import { useCommandChoice } from './use-command-choice.hook';
+import { useCommandPages } from './use-command-pages.hook';
+import { leave, usePaletteKeys } from './use-palette-keys.hook';
 import { useQueryCursor } from './use-query-cursor.hook';
 
 const commandControl = defineControl('command', { state: { query: '' } });
@@ -53,6 +54,8 @@ interface CommandRootProps {
   modal?: boolean;
   /** The accessible name of the scrim, which closes the palette. */
   closeLabel?: string;
+  /** The accessible name of what goes back out of a row's own list. */
+  backLabel?: string;
   /** `<Command.Input>`, `<Command.List>`, `<Command.Empty>`, `<Command.Footer>` and
    *  `<Command.Actions>`, in the order they should be stacked. */
   children?: ReactNode;
@@ -78,50 +81,30 @@ function Root({
   onClose,
   modal = false,
   closeLabel = 'Close search',
+  backLabel = 'Back',
   children,
   ...props
 }: Readonly<CommandRootProps>) {
   const [{ query, setQuery }] = useControl(commandControl, props);
-  const [cursor, setCursor] = useQueryCursor(query);
-  const sections = useMemo(() => sectionsOf(items, query, boost), [items, query, boost]);
+  const pages = useCommandPages({ items, query, setQuery });
+  const [cursor, setCursor] = useQueryCursor(pages.scope, pages.start);
+  const sections = useMemo(
+    () => sectionsOf(pages.listed, query, boost),
+    [pages.listed, query, boost],
+  );
   const flat = useMemo(() => flatten(sections), [sections]);
   const at = Math.min(cursor, Math.max(0, flat.length - 1));
 
   const current = flat[at];
   const actions = useActionPanel(current);
-
-  const run = useCallback(
-    (item: CommandItem, action: CommandAction | undefined) => {
-      onSelect(item, action);
-      onClose();
-    },
-    [onSelect, onClose],
-  );
-
-  const choose = useCallback(
-    (item: CommandItem | undefined) => {
-      if (item) {
-        run(item, item.actions?.[0]);
-      }
-    },
-    [run],
-  );
-
-  const chooseAction = useCallback(
-    (action: CommandAction) => {
-      if (current) {
-        run(current, action);
-      }
-    },
-    [current, run],
-  );
-
-  const chooseSecondary = () => {
-    const second = current?.actions?.[1];
-    if (current && second) {
-      run(current, second);
-    }
-  };
+  const { choose, chooseAction, chooseSecondary } = useCommandChoice({
+    current,
+    at,
+    actions,
+    pages,
+    onSelect,
+    onClose,
+  });
 
   // Stable, because it is a prop on every row: rebuilt with the rest of the
   // context it would re-render the whole list on a keystroke that only moved
@@ -133,43 +116,30 @@ function Root({
     }
   });
 
-  const cursorId = useListCursorKeys({
-    cursor: current?.id,
-    onStep: (rows) =>
-      actions.open ? actions.step(rows) : setCursor((prev) => stepTo(prev, rows, flat.length)),
-    onChoose: (secondary) => {
-      if (actions.open) {
-        if (actions.cursor) {
-          chooseAction(actions.cursor);
-        }
-      } else if (secondary) {
-        chooseSecondary();
-      } else {
-        choose(current);
-      }
-    },
-    onClose: actions.open ? actions.hide : onClose,
+  const cursorId = usePaletteKeys({
+    current,
+    actions,
+    pages,
+    step: (rows) => setCursor((prev) => stepTo(prev, rows, flat.length)),
+    choose,
+    chooseAction,
+    chooseSecondary,
+    onClose,
+    modal,
   });
-
-  useCommandKey(() => {
-    if (actions.open) {
-      actions.hide();
-    } else if (actions.available) {
-      actions.show();
-    } else {
-      onClose();
-    }
-  }, modal);
 
   const state = useMemo<CommandState>(
     () => ({
       shown: flat.length,
-      total: items.length,
+      total: pages.listed.length,
       query,
       current,
       sections,
       cursor: cursorId,
       selected,
+      page: pages.page,
+      back: pages.back,
+      backLabel,
       setQuery,
       point,
       choose,
@@ -180,12 +150,15 @@ function Root({
     }),
     [
       flat.length,
-      items.length,
+      pages.listed.length,
       query,
       current,
       sections,
       cursorId,
       selected,
+      pages.page,
+      pages.back,
+      backLabel,
       setQuery,
       point,
       choose,
@@ -203,7 +176,7 @@ function Root({
       </CommandLayer>
     </CommandContext>
   );
-  return modal ? <CommandModal onClose={onClose}>{palette}</CommandModal> : palette;
+  return modal ? <CommandModal onClose={leave(pages, onClose)}>{palette}</CommandModal> : palette;
 }
 
 /**

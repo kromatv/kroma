@@ -13,21 +13,32 @@ const STEP: Record<string, number> = {
   Escape: 0,
 };
 
+function handled(event: KeyboardEvent, onBack: (() => void) | undefined): boolean {
+  if (event.isComposing) {
+    return false;
+  }
+  return event.key in STEP || (event.key === 'Backspace' && onBack !== undefined);
+}
+
 /** Binds a list's keyboard cursor on the capture phase; returns the cursor where the platform draws one. */
 function useListCursorKeys<T>({
   onStep,
   onChoose,
   onClose,
+  onBack,
   cursor,
 }: ListCursorKeysOptions<T>): T | undefined {
   const onKey = useEffectEvent((event: KeyboardEvent) => {
-    if (event.isComposing || !(event.key in STEP)) {
+    if (!handled(event, onBack)) {
       return;
     }
     event.preventDefault();
     event.stopPropagation();
     if (event.key === 'Escape') {
       return onClose();
+    }
+    if (event.key === 'Backspace') {
+      return onBack?.();
     }
     if (event.key === 'Enter') {
       return onChoose(event.metaKey || event.ctrlKey);

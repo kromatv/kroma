@@ -7,6 +7,8 @@ export interface ListCursorKeysOptions<T> {
   /** Enter: open whatever the cursor is on. `secondary` when Command or Ctrl is held. */
   onChoose: (secondary: boolean) => void;
   onClose: () => void;
+  /** Backspace, while it is given: back out of a list opened from another. */
+  onBack?: () => void;
 }
 
 /** What PageUp and PageDown are worth. */

@@ -1,9 +1,6 @@
 import type { Translate } from '@kromatv/i18n';
-import { type IconName, matchText } from '@kromatv/ui/kit';
+import type { IconName } from '@kromatv/ui/kit';
 import type { CommandDef } from '#web/shared/lib/command-menu';
-
-const LONG_LIST = 12;
-const SHORTEST_NAME = 3;
 
 /** One value a preference can take, and what picking it does. */
 export interface PreferenceChoice {
@@ -38,30 +35,6 @@ export interface SwitchPreference {
   done?: string;
 }
 
-/** What the menu offers for one preference: `head` whatever is typed, and `values`
- *  once something is, a long list only once the query names it through `words`. */
-export interface PreferenceRows {
-  head: CommandDef | null;
-  values: readonly CommandDef[];
-  words: string;
-}
-
-/** Whether a word of `typed` names what `words` describe. A word under three letters
- *  names nothing, since it lands inside too many. */
-export function namesPreference(typed: string, words: string): boolean {
-  return typed
-    .split(/\s+/)
-    .some(
-      (term) => term.length >= SHORTEST_NAME && matchText(words, term, { strict: true }) !== null,
-    );
-}
-
-/** The rows of one preference for what is typed now. */
-export function listedRows({ head, values, words }: PreferenceRows, typed: string): CommandDef[] {
-  const opened = typed !== '' && (values.length <= LONG_LIST || namesPreference(typed, words));
-  return [...(head ? [head] : []), ...(opened ? values : [])];
-}
-
 function choiceRow(pref: ChoicePreference, choice: PreferenceChoice, t: Translate): CommandDef {
   const { label, subtitle, flag, lang, pick } = choice;
   return {
@@ -71,8 +44,6 @@ function choiceRow(pref: ChoicePreference, choice: PreferenceChoice, t: Translat
     flag,
     lang,
     icon: pref.icon,
-    meta: pref.name,
-    keywords: pref.keywords,
     status:
       choice.value === pref.current ? { label: t('commands.current'), tone: 'success' } : undefined,
     primaryLabel: t('commands.choose'),
@@ -81,24 +52,21 @@ function choiceRow(pref: ChoicePreference, choice: PreferenceChoice, t: Translat
   };
 }
 
-/** A preference that takes one value of a list: one row naming it, with the value in
- *  use at its end, which opens its place on the account page, and one row per value,
- *  the one in use marked. */
-export function choiceRows(pref: ChoicePreference, t: Translate): PreferenceRows {
+/** A preference that takes one value of a list, as one row naming it with the value in
+ *  use at its end. Its list holds one row per value, the one in use marked, and its
+ *  second action opens its place on the account page. */
+export function choiceCommand(pref: ChoicePreference, t: Translate): CommandDef {
   const picked = pref.choices.find((choice) => choice.value === pref.current);
   return {
-    head: {
-      id: `pref:${pref.id}`,
-      label: pref.name,
-      icon: pref.icon,
-      flag: picked?.flag,
-      keywords: pref.keywords,
-      meta: picked?.label,
-      to: '/account',
-      search: { section: 'preferences' },
-    },
-    values: pref.choices.map((choice) => choiceRow(pref, choice, t)),
-    words: `${pref.name} ${pref.keywords}`,
+    id: `pref:${pref.id}`,
+    label: pref.name,
+    icon: pref.icon,
+    flag: picked?.flag,
+    keywords: pref.keywords,
+    meta: picked?.label,
+    to: '/account',
+    search: { section: 'preferences' },
+    items: pref.choices.map((choice) => choiceRow(pref, choice, t)),
   };
 }
 

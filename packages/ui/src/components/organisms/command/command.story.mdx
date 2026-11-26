@@ -24,6 +24,8 @@ The search-and-jump overlay: one field, a grouped list that a query turns into o
 
 **A row can do several things.** Give an item `actions`, likeliest first: Enter runs the first, Command or Ctrl with Enter the second, and Command or Ctrl with K opens `Command.Actions`, a panel with a field of its own. In the footer, `Command.Primary` says what Enter and a press do right now and does it when pressed, and `Command.Trigger` is the way to the panel. Both draw nothing for a row with nothing to offer. An action marked `danger` is set apart at the end. `onSelect` is handed the row and the action.
 
+**A row can hold a list of its own**, as a Raycast list opens another. Give it `items`: its first action opens them in place of the palette's, with the way back before the field and the field emptied for the list, and a chevron at the end of the row says so. Escape goes back, and so does Backspace in an empty field, with what was typed and the cursor on the row that was opened. Its other actions run as on any row. `Command.Input` takes a `listPlaceholder` for the field inside a list, and the Root a `backLabel` for the way back.
+
 On the web the arrows drive a cursor the pointer shares, once the pointer has really moved: a row that slides under a mouse at rest does not take the cursor, so Enter opens what was typed for. On a television there is no keyboard, so the spatial navigator walks the rows and the palette draws no cursor of its own.
 
 **Over a whole app**, pass `modal`: it draws above everything, holds the focus and the page's scroll, and gives the focus back when it closes. `useCommandKey(toggle)` binds the key that opens it, `⌘K` on Apple hardware and `Ctrl+K` on Windows and Linux, and `<CommandKeys />` draws that key.

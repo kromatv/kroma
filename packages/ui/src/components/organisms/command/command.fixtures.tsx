@@ -34,13 +34,25 @@ export const LIBRARY: CommandItem[] = [
   { id: 'modules', label: 'Modules', group: 'Settings', icon: 'puzzle', keywords: 'extensions' },
   {
     id: 'language',
-    label: 'Français',
-    subtitle: 'French',
+    label: 'Interface language',
     group: 'Settings',
     icon: 'language',
     flag: 'FR',
-    lang: 'fr',
-    meta: 'Interface language',
+    meta: 'Français',
+    actions: [{ id: 'language#list', label: 'Open list', icon: 'chevron-right' }],
+    items: [
+      { id: 'de', label: 'Deutsch', subtitle: 'German', icon: 'language', flag: 'DE', lang: 'de' },
+      { id: 'en', label: 'English', icon: 'language', flag: 'GB', lang: 'en' },
+      {
+        id: 'fr',
+        label: 'Français',
+        subtitle: 'French',
+        icon: 'language',
+        flag: 'FR',
+        lang: 'fr',
+        status: { label: 'Current', tone: 'success' },
+      },
+    ],
   },
 ];
 

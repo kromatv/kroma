@@ -67,6 +67,9 @@ export type CommandActionDef = CommandTarget & {
  * `actions` is what else it can do, likeliest first, in the same shape: the first runs
  * on Command or Ctrl with Enter, and Command or Ctrl with K lists them all. A row that
  * opens a page can also open it in a new tab or copy its link, with nothing to declare.
+ *
+ * `items` are rows of its own, listed in place of the menu's when it is chosen, as in
+ * Raycast: Enter opens them, and its `to` or `run` moves to its second action.
  */
 export type CommandDef = CommandActionDef & {
   /** What Enter and a click do, said at the foot of the menu. Left out, it says the row
@@ -86,6 +89,7 @@ export type CommandDef = CommandActionDef & {
   status?: CommandItem['status'];
   always?: boolean;
   actions?: readonly (CommandActionDef | Skipped)[];
+  items?: readonly (CommandDef | Skipped)[];
 };
 
 function createCommandStore() {

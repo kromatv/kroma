@@ -1,11 +1,13 @@
 import { apiErrorText } from '@kromatv/client';
 import { hasPermission, type User } from '@kromatv/client/accounts';
 import type { useT } from '@kromatv/ui';
-import { type CommandItem, toast, type useConfirm } from '@kromatv/ui/kit';
+import { type CommandItem, type IconName, toast, type useConfirm } from '@kromatv/ui/kit';
 import type { useNavigate } from '@tanstack/react-router';
 import type { CommandActionDef, CommandDef } from '#web/shared/lib/command-menu';
 
 type Translate = ReturnType<typeof useT>;
+
+const LIST_ICON: IconName = 'chevron-right';
 
 /** One row as the palette lists it: what it is, and what each of its actions does. */
 export interface ResolvedCommand {
@@ -78,13 +80,16 @@ function actionsOf(
   ];
 }
 
-function faceOf(command: CommandDef, t: Translate): Omit<CommandItem, 'id' | 'actions'> {
+function faceOf(
+  command: CommandDef,
+  fallbackGroup: string | undefined,
+): Omit<CommandItem, 'id' | 'actions' | 'items'> {
   const { label, subtitle, group, icon, image, imageShape } = command;
   const { flag, lang, keywords, meta, status, always } = command;
   return {
     label,
     subtitle,
-    group: group ?? t('commands.groupPage'),
+    group: group ?? fallbackGroup,
     icon,
     image,
     imageShape,
@@ -97,9 +102,81 @@ function faceOf(command: CommandDef, t: Translate): Omit<CommandItem, 'id' | 'ac
   };
 }
 
+interface Resolving {
+  user: User;
+  t: Translate;
+  hrefOf: (command: CommandDef) => string;
+  byId: Map<string, ResolvedCommand>;
+}
+
+const isCommand = (row: CommandDef | false | null | undefined | ''): row is CommandDef =>
+  Boolean(row);
+
+function resolveAll(
+  commands: readonly CommandDef[],
+  context: Resolving,
+  fallbackGroup?: string,
+): CommandItem[] {
+  return commands.flatMap((command) => resolveOne(command, context, fallbackGroup) ?? []);
+}
+
+function listOf(command: CommandDef, context: Resolving): CommandItem[] | undefined {
+  const items = resolveAll((command.items ?? []).filter(isCommand), context);
+  return items.length > 0 ? items : undefined;
+}
+
+interface NamedAction {
+  id: string;
+  action: CommandActionDef;
+}
+
+function paletteActions(
+  id: string,
+  named: readonly NamedAction[],
+  { listed, t }: { listed: boolean; t: Translate },
+): NonNullable<CommandItem['actions']> {
+  const opening = listed
+    ? [{ id: `${id}#list`, label: t('commands.actionShow'), icon: LIST_ICON }]
+    : [];
+  return [
+    ...opening,
+    ...named.map(({ id: key, action }) => ({
+      id: key,
+      label: action.label,
+      icon: action.icon,
+      danger: action.tone === 'danger',
+    })),
+  ];
+}
+
+function resolveOne(
+  command: CommandDef,
+  context: Resolving,
+  fallbackGroup: string | undefined,
+): CommandItem | null {
+  const { user, t, hrefOf, byId } = context;
+  const id = commandId(command);
+  if (byId.has(id) || !allowed(command, user)) {
+    return null;
+  }
+  const named = actionsOf(command, user, t, hrefOf).map((action, at) => ({
+    id: `${id}#${at}`,
+    action,
+  }));
+  byId.set(id, { command, actions: new Map(named.map(({ id: key, action }) => [key, action])) });
+  const items = listOf(command, context);
+  return {
+    id,
+    ...faceOf(command, fallbackGroup),
+    actions: paletteActions(id, named, { listed: items !== undefined, t }),
+    items,
+  };
+}
+
 /** The rows one viewer gets, in the order given. A row with the id of an earlier one,
  *  a page reached twice, is dropped. Every row's first action is the row itself, and a
- *  row that opens a page can also open it in a new tab or copy its link, for nothing. */
+ *  row that opens a page can also open it in a new tab or copy its link, for nothing. A
+ *  row with `items` of its own opens them first, and its rows are found by id too. */
 export function visibleCommands(
   commands: readonly CommandDef[],
   user: User,
@@ -107,26 +184,7 @@ export function visibleCommands(
   hrefOf: (command: CommandDef) => string,
 ): { items: CommandItem[]; byId: ReadonlyMap<string, ResolvedCommand> } {
   const byId = new Map<string, ResolvedCommand>();
-  const items: CommandItem[] = [];
-  for (const command of commands) {
-    const id = commandId(command);
-    if (byId.has(id) || !allowed(command, user)) {
-      continue;
-    }
-    const actions = actionsOf(command, user, t, hrefOf);
-    const named = actions.map((action, at) => ({ id: `${id}#${at}`, action }));
-    byId.set(id, { command, actions: new Map(named.map(({ id: key, action }) => [key, action])) });
-    items.push({
-      id,
-      ...faceOf(command, t),
-      actions: named.map(({ id: key, action }) => ({
-        id: key,
-        label: action.label,
-        icon: action.icon,
-        danger: action.tone === 'danger',
-      })),
-    });
-  }
+  const items = resolveAll(commands, { user, t, hrefOf, byId }, t('commands.groupPage'));
   return { items, byId };
 }
 

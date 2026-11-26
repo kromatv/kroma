@@ -18,7 +18,6 @@ const language = (id: string, name: string): ChoicePreference => ({
 });
 
 interface Mocks {
-  query: string;
   kids: boolean;
   blur: boolean;
   setBlur: Mock;
@@ -30,7 +29,6 @@ interface Mocks {
 }
 
 const mocks: Mocks = vi.hoisted(() => ({
-  query: '',
   kids: false,
   blur: true,
   setBlur: vi.fn(),
@@ -75,15 +73,14 @@ vi.mock('#web/shared/lib/blur-pref', () => ({
 }));
 vi.mock('#web/shared/lib/use-kids-session.hook', () => ({ useKidsSession: () => mocks.kids }));
 vi.mock('#web/shared/lib/command-menu', async () => ({
-  useCommandQuery: () => mocks.query,
   useCommands: (await import('#web/shared/lib/command-menu.fixture')).useFakeCommands,
 }));
 
 const labels = () => listedCommands().map((command) => command.label);
 const row = (label: string) => listedCommands().find((command) => command.label === label);
+const listOf = (label: string) => (row(label)?.items ?? []).flatMap((one) => (one ? [one] : []));
 
 beforeEach(() => {
-  mocks.query = '';
   mocks.kids = false;
   mocks.blocker = null;
   mocks.ratings = { country: null, household: 'CH', countries: ['DE'] };
@@ -117,12 +114,14 @@ describe('the preferences in the command menu', () => {
     expect(listedCommands().every((command) => command.group === 'account.preferences')).toBe(true);
   });
 
-  it('list each value once something is typed', () => {
-    mocks.query = ' deu ';
-
+  it('keep their values in a list of their own, out of the menu’s', () => {
     renderHook(() => usePreferenceCommands());
 
-    expect(labels().filter((label) => label === 'Deutsch')).toHaveLength(3);
+    expect(listOf('account.audioLanguage').map((value) => value.label)).toEqual([
+      'No preference',
+      'Deutsch',
+    ]);
+    expect(labels()).not.toContain('Deutsch');
   });
 
   it('leave a Kids session nothing, and ask the server nothing for it', () => {
@@ -167,10 +166,8 @@ describe('the preferences in the command menu', () => {
   });
 
   it('offer each country of the age ratings with its flag, and save a pick', () => {
-    mocks.query = 'germany';
-
     renderHook(() => usePreferenceCommands());
-    const germany = row('Germany');
+    const germany = listOf('account.ratingsCountry').find((value) => value.label === 'Germany');
     void germany?.run?.();
 
     expect(germany?.flag).toBe('DE');
