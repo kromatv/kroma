@@ -591,7 +591,6 @@
     "clients/mobile/src/app/(app)/player/[id].tsx": 1,
     "clients/mobile/src/app/(app)/profile-pin.tsx": 1,
     "clients/mobile/src/app/(app)/report/[id].tsx": 1,
-    "clients/mobile/src/app/(app)/settings/language.tsx": 1,
     "clients/mobile/src/app/(app)/settings/notifications.tsx": 2,
     "clients/mobile/src/app/(app)/show/[id].tsx": 2,
     "clients/mobile/src/app/(app)/trailer/[kind]/[tmdbId].tsx": 1,

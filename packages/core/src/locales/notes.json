@@ -1,4 +1,5 @@
 {
+  "account.uiLanguageInSettings": "Shown on a phone when the language picked in KROMA is not the one the phone's own settings hold for the app. {language} is that language's own name, as the phone's settings list it (Deutsch, Français), and is not translated.",
   "commands.choose": "A verb: what Enter does on a row that is one value of a preference, said at the foot of the command menu.",
   "commands.current": "A badge on the value a preference holds now, such as the interface language in use. Short, and it fits a language, a country or no preference alike.",
   "commands.off": "A badge saying a switch is off now, not a button.",

@@ -72,6 +72,23 @@ other.
 Away from home, the app reaches the server only if the server is reachable from
 the internet. See [HTTPS, reverse proxies and remote access](network.md).
 
+## Change the language
+
+KROMA starts in your phone's language. To pick another one, in KROMA, open
+**Account** > **Settings** > **Interface language**. Your other devices
+follow the choice for your profile.
+
+You can also pick it in the phone's own settings:
+
+- **iPhone and iPad:** open **Settings** > **KROMA** > **Language**. iOS
+  restarts KROMA in that language. A language picked in KROMA does not change
+  this setting: if the two differ, KROMA shows it under **Interface language**,
+  with **Open settings** to change it there too. If **Language** is missing,
+  add a second language in **Settings** > **General** > **Language & Region**:
+  iOS shows the row only to people who use more than one.
+- **Android 13 or later:** open **Settings** > **Apps** > **KROMA** >
+  **Language**. A language picked in KROMA shows there too.
+
 ## Next steps
 
 - Sign in a TV from your phone: [TVs](tv.md#sign-in-on-the-tv).

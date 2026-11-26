@@ -608,7 +608,6 @@
         "clients/mobile/src/app/\\(app\\)/player/\\[id\\].tsx",
         "clients/mobile/src/app/\\(app\\)/profile-pin.tsx",
         "clients/mobile/src/app/\\(app\\)/report/\\[id\\].tsx",
-        "clients/mobile/src/app/\\(app\\)/settings/language.tsx",
         "clients/mobile/src/app/\\(app\\)/settings/notifications.tsx",
         "clients/mobile/src/app/\\(app\\)/show/\\[id\\].tsx",
         "clients/mobile/src/app/\\(app\\)/trailer/\\[kind\\]/\\[tmdbId\\].tsx",

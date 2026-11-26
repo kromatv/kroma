@@ -110,9 +110,12 @@
   "account.title": "Mon profil",
   "account.uiLanguage": "Langue de l'interface",
   "account.uiLanguageDesc": "La langue des menus et des boutons.",
+  "account.uiLanguageInSettings": "Les réglages de l'appareil indiquent encore {language} pour KROMA",
+  "account.uiLanguageInSettingsHint": "Choisissez-y la même langue pour que les deux correspondent.",
+  "account.uiLanguageOpenSettings": "Ouvrir les réglages",
   "account.unknownDevice": "Appareil inconnu",
+  "account.updatePassword": "Changer le mot de passe",
   "account.ratingsCountry": "Classification par âge",
   "account.ratingsCountryDesc": "Le pays dont la classification s'affiche sur les titres.",
-  "account.ratingsCountryHousehold": "Comme le serveur ({country})",
-  "account.updatePassword": "Changer le mot de passe"
+  "account.ratingsCountryHousehold": "Comme le serveur ({country})"
 }

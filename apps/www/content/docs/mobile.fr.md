@@ -79,6 +79,25 @@ Hors de chez vous, l'application n'atteint le serveur que si celui-ci est
 accessible depuis Internet. Consultez
 [HTTPS, reverse proxy et accès distant](network.md).
 
+## Changer de langue
+
+KROMA démarre dans la langue de votre téléphone. Pour en choisir une autre,
+dans KROMA, ouvrez **Compte** > **Réglages** > **Langue de l'interface**. Vos
+autres appareils suivent ce choix pour votre profil.
+
+Vous pouvez aussi la choisir dans les réglages du téléphone :
+
+- **iPhone et iPad :** ouvrez **Réglages** > **KROMA** > **Langue**. iOS
+  relance KROMA dans cette langue. Une langue choisie dans KROMA ne modifie pas
+  ce réglage : si les deux diffèrent, KROMA l'indique sous **Langue de
+  l'interface**, avec **Ouvrir les réglages** pour la changer là aussi. Si
+  **Langue** n'apparaît pas, ajoutez une deuxième langue dans **Réglages** >
+  **Général** > **Langue et région** : iOS n'affiche ce réglage qu'aux personnes
+  qui en utilisent plusieurs.
+- **Android 13 ou version ultérieure :** ouvrez **Paramètres** >
+  **Applications** > **KROMA** > **Langue**. Une langue choisie dans KROMA s'y
+  affiche aussi.
+
 ## Étapes suivantes
 
 - Connectez un téléviseur depuis votre téléphone :
