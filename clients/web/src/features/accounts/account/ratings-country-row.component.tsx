@@ -1,31 +1,10 @@
 import type { RatingsCountry } from '@kromatv/client/accounts';
-import { countryName, countryOptions } from '@kromatv/core';
 import { useLocale, useT } from '@kromatv/ui';
 import { ListRow, Select, Text } from '@kromatv/ui/kit';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
+import { ratingsChoices, ratingsValue } from '#web/features/accounts/account/ratings-choices';
 import { PrefRow, useSave } from '#web/features/accounts/account/ui';
-import { useAuth } from '#web/shared/lib/auth';
-
-const HOUSEHOLD = 'household';
-const RATINGS_COUNTRY = ['account', 'ratings-country'] as const;
-
-function useRatingsCountry() {
-  const t = useT();
-  const { client } = useAuth();
-  const queryClient = useQueryClient();
-  const save = useSave();
-  const ratings = useQuery({
-    queryKey: RATINGS_COUNTRY,
-    queryFn: () => client.accounts.ratings.get(),
-  });
-  const choose = (value: string) =>
-    void save.run(async () => {
-      const saved = await client.accounts.ratings.set(value === HOUSEHOLD ? null : value);
-      queryClient.setQueryData(RATINGS_COUNTRY, saved);
-    }, t('account.saveFailed'));
-  return { ratings: ratings.data, save, choose };
-}
+import { useRatingsCountry } from '#web/features/accounts/account/use-ratings-country.hook';
 
 function CountrySelect({
   ratings,
@@ -33,22 +12,16 @@ function CountrySelect({
 }: Readonly<{ ratings: RatingsCountry; onPick: (value: string) => void }>) {
   const t = useT();
   const locale = useLocale();
-  const options = useMemo(() => countryOptions(ratings.countries, locale), [ratings, locale]);
+  const choices = useMemo(() => ratingsChoices(ratings, { t, locale }), [ratings, t, locale]);
   return (
     <Select.Root
       label={t('account.ratingsCountry')}
-      value={ratings.country ?? HOUSEHOLD}
+      value={ratingsValue(ratings)}
       onValueChange={onPick}
     >
       <Select.Trigger />
-      <Select.Item
-        value={HOUSEHOLD}
-        label={t('account.ratingsCountryHousehold', {
-          country: countryName(ratings.household, locale),
-        })}
-      />
-      {options.map((option) => (
-        <Select.Item key={option.code} value={option.code} label={option.label} />
+      {choices.map((choice) => (
+        <Select.Item key={choice.value} value={choice.value} label={choice.label} />
       ))}
     </Select.Root>
   );
@@ -59,7 +32,9 @@ function CountrySelect({
  * next request on, and tells the account's other screens to refresh. */
 export function RatingsCountryRow() {
   const t = useT();
-  const { ratings, save, choose } = useRatingsCountry();
+  const { ratings, choose } = useRatingsCountry();
+  const save = useSave();
+  const pick = (value: string) => void save.run(() => choose(value), t('account.saveFailed'));
   if (!ratings) {
     return null;
   }
@@ -69,7 +44,7 @@ export function RatingsCountryRow() {
         icon="world"
         label={t('account.ratingsCountry')}
         desc={t('account.ratingsCountryDesc')}
-        control={<CountrySelect ratings={ratings} onPick={choose} />}
+        control={<CountrySelect ratings={ratings} onPick={pick} />}
       />
       {save.status === 'error' ? (
         <ListRow.Root>

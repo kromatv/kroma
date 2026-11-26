@@ -327,7 +327,7 @@ describe('an installed module in the command menu', () => {
     const actions = moduleRows(offeredTo('settings.manage'))[0]?.actions;
 
     expect(actions?.map((one) => one && one.label)).toEqual([
-      'commands.moduleDisable',
+      'commands.turnOff',
       'admin.modulesRestart',
       'admin.modulesUninstall',
     ]);
@@ -341,7 +341,7 @@ describe('an installed module in the command menu', () => {
 
     expect(page?.actions?.map((one) => one && one.label)).toEqual([
       'commands.moduleSettings',
-      'commands.moduleDisable',
+      'commands.turnOff',
       'admin.modulesRestart',
       'admin.modulesUninstall',
     ]);

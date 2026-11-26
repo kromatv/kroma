@@ -11,7 +11,10 @@ export interface ChannelReach {
 
 export const CHANNELS: readonly NotificationChannel[] = ['inApp', 'push'];
 
-const CHANNEL: Record<NotificationChannel, { label: MessageKey; on: IconName; off: IconName }> = {
+export const CHANNEL: Record<
+  NotificationChannel,
+  { label: MessageKey; on: IconName; off: IconName }
+> = {
   inApp: { label: 'notifications.channelInApp', on: 'bell', off: 'bell-off' },
   push: { label: 'notifications.channelPush', on: 'device-mobile', off: 'device-mobile-off' },
 };

@@ -57,7 +57,8 @@ export type CommandActionDef = CommandTarget & {
  * to find and draw it.
  *
  * `group` is the heading, "This page" when left out. `subtitle` is a second line, and
- * `image` a small poster in place of the `icon`. `keywords` are searched as well as the
+ * `image` a small poster in place of the `icon`, or `flag` a country's flag. `lang` is the
+ * language the label is written in, where it is not the interface's. `keywords` are searched as well as the
  * label, so they hold synonyms in any language, and `meta` is printed at the end of the
  * row and searched too. `always` keeps it listed whatever is typed, below what matched:
  * for a row the server already matched, on something the palette cannot see. `id` is
@@ -77,6 +78,8 @@ export type CommandDef = CommandActionDef & {
   image?: string;
   /** A `poster` by default, or a square `tile` for something like a module. */
   imageShape?: 'poster' | 'tile';
+  flag?: string;
+  lang?: string;
   keywords?: string;
   meta?: string;
   /** A state drawn as a badge at the very end of the row. */

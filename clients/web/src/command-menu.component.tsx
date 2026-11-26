@@ -1,4 +1,5 @@
 import { useAccountCommands } from '#web/features/accounts/use-account-commands.hook';
+import { usePreferenceCommands } from '#web/features/accounts/use-preference-commands.hook';
 import { useAdminCommands } from '#web/features/admin/use-admin-commands.hook';
 import { useCatalogCommands } from '#web/features/catalog/use-catalog-commands.hook';
 import { useLibrarySearchCommands } from '#web/features/catalog/use-library-search-commands.hook';
@@ -9,6 +10,7 @@ import { CommandPalette } from '#web/shared/ui/command-palette.component';
 export function CommandMenu() {
   useCatalogCommands();
   useAccountCommands();
+  usePreferenceCommands();
   useAdminCommands();
   useLibrarySearchCommands();
   return <CommandPalette />;

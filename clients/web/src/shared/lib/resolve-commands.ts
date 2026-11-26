@@ -78,6 +78,25 @@ function actionsOf(
   ];
 }
 
+function faceOf(command: CommandDef, t: Translate): Omit<CommandItem, 'id' | 'actions'> {
+  const { label, subtitle, group, icon, image, imageShape } = command;
+  const { flag, lang, keywords, meta, status, always } = command;
+  return {
+    label,
+    subtitle,
+    group: group ?? t('commands.groupPage'),
+    icon,
+    image,
+    imageShape,
+    flag,
+    lang,
+    keywords,
+    meta,
+    status,
+    always,
+  };
+}
+
 /** The rows one viewer gets, in the order given. A row with the id of an earlier one,
  *  a page reached twice, is dropped. Every row's first action is the row itself, and a
  *  row that opens a page can also open it in a new tab or copy its link, for nothing. */
@@ -97,20 +116,9 @@ export function visibleCommands(
     const actions = actionsOf(command, user, t, hrefOf);
     const named = actions.map((action, at) => ({ id: `${id}#${at}`, action }));
     byId.set(id, { command, actions: new Map(named.map(({ id: key, action }) => [key, action])) });
-    const { label, subtitle, group, icon, image, imageShape, keywords, meta, status, always } =
-      command;
     items.push({
       id,
-      label,
-      subtitle,
-      group: group ?? t('commands.groupPage'),
-      icon,
-      image,
-      imageShape,
-      keywords,
-      meta,
-      status,
-      always,
+      ...faceOf(command, t),
       actions: named.map(({ id: key, action }) => ({
         id: key,
         label: action.label,

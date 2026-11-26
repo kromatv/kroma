@@ -70,7 +70,7 @@ afterEach(cleanup);
 describe('what the menu offers to do to a module', () => {
   it('offers to disable a module that runs, restart it and uninstall it', () => {
     expect(labels(actionsFor())).toEqual([
-      'commands.moduleDisable',
+      'commands.turnOff',
       'admin.modulesRestart',
       'admin.modulesUninstall',
     ]);
@@ -78,7 +78,7 @@ describe('what the menu offers to do to a module', () => {
 
   it('offers to enable one that is off, and nothing to restart', () => {
     expect(labels(actionsFor({ ...ROKU, enabled: false }))).toEqual([
-      'commands.moduleEnable',
+      'commands.turnOn',
       'admin.modulesUninstall',
     ]);
   });
@@ -109,14 +109,14 @@ describe('what the menu offers to do to a module', () => {
 
 describe('running them', () => {
   it('disables a module that runs, then refreshes the host', async () => {
-    await named(actionsFor(), 'commands.moduleDisable').run();
+    await named(actionsFor(), 'commands.turnOff').run();
 
     expect(mocks.moduleApi.setModuleEnabled).toHaveBeenCalledWith('tv.kroma.roku', false);
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
   });
 
   it('enables a module that is off', async () => {
-    await named(actionsFor({ ...ROKU, enabled: false }), 'commands.moduleEnable').run();
+    await named(actionsFor({ ...ROKU, enabled: false }), 'commands.turnOn').run();
 
     expect(mocks.moduleApi.setModuleEnabled).toHaveBeenCalledWith('tv.kroma.roku', true);
   });
@@ -124,7 +124,7 @@ describe('running them', () => {
   it('passes on a warning the server had about a change', async () => {
     mocks.moduleApi.setModuleEnabled.mockResolvedValue({ warning: 'Something depends on it.' });
 
-    await named(actionsFor(), 'commands.moduleDisable').run();
+    await named(actionsFor(), 'commands.turnOff').run();
 
     expect(mocks.toast).toHaveBeenCalledWith(
       expect.objectContaining({ detail: 'Something depends on it.', tone: 'plain' }),

@@ -1,9 +1,9 @@
 # The command menu
 
 `⌘K` on a Mac, `Ctrl+K` on Windows and Linux, or the search button in any
-navigation band. It lists the pages and actions this viewer may use, and finds
-titles in the library. It belongs to the web client: a television searches with
-its keyboard screen instead.
+navigation band. It lists the pages and actions this viewer may use, changes
+any of their preferences, and finds titles in the library. It belongs to the
+web client: a television searches with its keyboard screen instead.
 
 ## Adding a command
 
@@ -65,6 +65,8 @@ server's own words when it sent any. So a command only says what success looks l
 | `icon` | A kit icon name, drawn in the square every row's mark shares. |
 | `image` | Artwork drawn in place of the icon, which stays as the fallback. |
 | `imageShape` | `poster` by default, as wide as an icon's square and taller, which draws the row taller. `tile` fills the same square as an icon, for a module's icon. |
+| `flag` | A country's code, `DE`, whose flag sits in the icon's square. The icon stays for anything else, and an `image` wins over both. |
+| `lang` | The language the label is written in, where it is not the interface's: a language's own name, so `日本語` is shaped and read as Japanese. |
 | `keywords` | Searched but never shown: synonyms, in any language. `vpn pare-feu` finds the network page. |
 | `meta` | Shown at the end of the row, and searched. |
 | `status` | A state drawn as a badge at the very end: `{ label, tone }`, with `neutral`, `success`, `warning` or `danger`. Not searched. |
@@ -93,7 +95,7 @@ the rest with `actions`, likeliest first:
   to: '/admin/modules/$id',
   params: { id: module.id },
   actions: [
-    module.enabled && { label: t('commands.moduleDisable'), icon: 'player-pause', run: disable },
+    module.enabled && { label: t('commands.turnOff'), icon: 'player-pause', run: disable },
     {
       label: t('admin.modulesUninstall'),
       icon: 'trash',
@@ -172,6 +174,37 @@ confirmation as its page, and a second one when other modules depend on it.
 
 A module cannot add its own rows or actions yet. `useCommands` is not part of
 `@kromatv/module-sdk`, because no module has needed one.
+
+## Preferences
+
+Everything the account page lets a viewer set is in the menu too, under
+"Preferences", and a pick there goes through the same call as the page, so it
+saves and applies the same way. `features/accounts/use-preference-commands.hook.ts`
+lists them:
+
+| Preference | With nothing typed | Once something is typed |
+|---|---|---|
+| Interface language | Its name, the language in use with its flag | One row per language on offer: its flag, its own name, its name in the language on screen |
+| Background blur | A switch | |
+| Preferred audio language | Its name, the language in use | One row per language, and no preference |
+| Preferred subtitle language | Its name, the language in use | One row per language, no preference and none at all |
+| Age ratings | Its name, the country in use | One row per country, with its flag, and the server's own |
+| Push on this device | A switch, unless the browser cannot receive pushes | |
+| Notification settings | Its name | A switch per category and per kind, for each channel |
+
+A switch flips on Enter, and the foot of the menu says which way. Its badge says
+whether it is on, off, or on for only part of what it speaks for. The row that
+names a list opens its place on the account page, and the value in use is the one
+with a "Current" badge. A list of more than twelve values joins the results only
+once a word of the query names it, so `audio` or `sous-titres anglais` lists the
+audio or subtitle languages, and `dune` does not wade through two hundred of them.
+
+A Kids session never opens the account page, so it gets none of these rows, and
+the menu asks the server nothing for them.
+
+A preference added to the account page gets its row by building a `ChoicePreference`
+or a `SwitchPreference` (`features/accounts/preference-commands.ts`) around the same
+call the page makes, and adding it to that hook in the page's order.
 
 ## Rows that depend on what is typed
 

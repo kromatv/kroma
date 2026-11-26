@@ -10,6 +10,9 @@ vi.mock('#web/features/catalog/use-catalog-commands.hook', () => ({
 vi.mock('#web/features/accounts/use-account-commands.hook', () => ({
   useAccountCommands: () => mocks.calls.push('account'),
 }));
+vi.mock('#web/features/accounts/use-preference-commands.hook', () => ({
+  usePreferenceCommands: () => mocks.calls.push('preferences'),
+}));
 vi.mock('#web/features/admin/use-admin-commands.hook', () => ({
   useAdminCommands: () => mocks.calls.push('admin'),
 }));
@@ -21,11 +24,11 @@ vi.mock('#web/shared/ui/command-palette.component', () => ({ CommandPalette: () 
 afterEach(cleanup);
 
 describe('CommandMenu', () => {
-  it('lists the catalogue, the account and the console, with search last so ties stay below', () => {
+  it('lists the catalogue, the account, its preferences and the console, with search last so ties stay below', () => {
     mocks.calls = [];
 
     render(<CommandMenu />);
 
-    expect(mocks.calls).toEqual(['catalog', 'account', 'admin', 'search']);
+    expect(mocks.calls).toEqual(['catalog', 'account', 'preferences', 'admin', 'search']);
   });
 });

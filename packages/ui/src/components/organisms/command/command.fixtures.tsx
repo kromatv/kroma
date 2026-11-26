@@ -32,6 +32,16 @@ export const LIBRARY: CommandItem[] = [
   { id: 'accounts', label: 'Accounts', group: 'Settings', icon: 'users', keywords: 'profiles' },
   { id: 'playback', label: 'Playback', group: 'Settings', icon: 'settings', keywords: 'bitrate' },
   { id: 'modules', label: 'Modules', group: 'Settings', icon: 'puzzle', keywords: 'extensions' },
+  {
+    id: 'language',
+    label: 'Français',
+    subtitle: 'French',
+    group: 'Settings',
+    icon: 'language',
+    flag: 'FR',
+    lang: 'fr',
+    meta: 'Interface language',
+  },
 ];
 
 export function Tally() {
