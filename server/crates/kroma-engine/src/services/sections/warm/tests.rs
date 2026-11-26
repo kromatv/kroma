@@ -38,6 +38,36 @@ fn the_viewer_seen_last_finds_their_home_already_built() {
     assert_eq!(calls.load(Ordering::SeqCst), asked_while_warming);
 }
 
+#[tokio::test]
+async fn warming_up_builds_the_home_off_the_caller() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let state = counted(&calls);
+    let user = viewer(&state, "last");
+    db::touch_last_seen(&state.db, &user).unwrap();
+
+    warm_up(state.clone()).await.unwrap();
+
+    assert!(calls.load(Ordering::SeqCst) > 0);
+}
+
+#[test]
+fn a_viewer_that_cannot_be_read_builds_no_home() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let state = counted(&calls);
+    let user = viewer(&state, "last");
+    db::touch_last_seen(&state.db, &user).unwrap();
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute("ALTER TABLE users RENAME TO users_gone", [])
+        .unwrap();
+
+    warm(&state);
+
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
+}
+
 #[test]
 fn nobody_seen_yet_builds_no_home() {
     let calls = Arc::new(AtomicUsize::new(0));

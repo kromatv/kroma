@@ -94,6 +94,7 @@ impl Board<'_> {
     /// the embedder puts them.
     pub(super) fn authored(&self) -> Vec<Draft> {
         let embedder = embeddings::meta(&self.state.embedder);
+        let floor = embedder.relevance_floor;
         let open: HashSet<&str> = self.ranked.iter().map(|s| s.title.facts.id.as_str()).collect();
         generate::load(self.pool, &self.viewer.user_id)
             .into_iter()
@@ -103,7 +104,7 @@ impl Board<'_> {
                 let near = self.state.vectors.nearest(&query, FETCH * 2, &HashSet::new());
                 let ids: Vec<String> = db::keep_shelf(self.pool, near, &row.genres, row.form.kinds())
                     .into_iter()
-                    .filter(|(id, score)| *score >= embedder.relevance_floor && open.contains(id.as_str()))
+                    .filter(|(id, score)| *score >= floor && open.contains(id.as_str()))
                     .map(|(id, _)| id)
                     .collect();
                 let mut draft = Draft::rail(

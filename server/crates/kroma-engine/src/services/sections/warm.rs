@@ -2,6 +2,8 @@
 //! home reads is cold then (the embedder's model, the title vectors, the
 //! catalogue, the pages SQLite reads), and the first viewer paid for all of it.
 
+use tokio::task::JoinHandle;
+
 use crate::db;
 use crate::i18n;
 use crate::state::SharedState;
@@ -9,8 +11,9 @@ use crate::state::SharedState;
 /// Build the home of the viewer seen last, in the background, so what every
 /// home reads is warm by the time someone opens one. Call it once the installed
 /// modules are up: the embedder loads its model on the first call it answers.
-pub fn warm_up(state: SharedState) {
-    tokio::task::spawn_blocking(move || kroma_perf::job("sections.warm_up", || warm(&state)));
+/// Returns the build it started.
+pub fn warm_up(state: SharedState) -> JoinHandle<()> {
+    tokio::task::spawn_blocking(move || kroma_perf::job("sections.warm_up", || warm(&state)))
 }
 
 fn warm(state: &SharedState) {

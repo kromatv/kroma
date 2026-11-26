@@ -72,7 +72,10 @@ pub async fn run(
 
     rule_module_traffic(&state, &supervisor);
     let seam = open_seam(&state, &supervisor, subscriptions);
-    start_modules(&state, &supervisor);
+    supervisor.spawn_enabled(&*state);
+    supervisor.spawn_watchdog();
+    supervisor.spawn_hot_reload();
+    after_modules_start(&state, &supervisor);
 
     let https_handle = axum_server::Handle::new();
     spawn_https_listener(https, &app, https_handle.clone());
@@ -130,13 +133,10 @@ fn open_seam(
     (socket, served)
 }
 
-fn start_modules(
+fn after_modules_start(
     state: &state::SharedState,
     supervisor: &std::sync::Arc<kroma_module_supervisor::Supervisor>,
 ) {
-    supervisor.spawn_enabled(&**state);
-    supervisor.spawn_watchdog();
-    supervisor.spawn_hot_reload();
     spawn_module_auto_update(state, supervisor);
     kroma_engine::services::sections::warm_up(state.clone());
 }

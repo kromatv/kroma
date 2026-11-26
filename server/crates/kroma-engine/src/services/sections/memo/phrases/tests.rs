@@ -90,6 +90,26 @@ fn an_embedder_that_answers_nothing_is_asked_again_next_time() {
 }
 
 #[test]
+fn a_phrase_vector_that_cannot_be_kept_is_still_used() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let state = vector_module(&calls);
+    state
+        .db
+        .get()
+        .unwrap()
+        .execute("DROP TABLE phrase_vectors", [])
+        .unwrap();
+    let phrases = Phrases::default();
+
+    let first = phrases.vector(&state, 2, "slow burn mystery");
+    let again = phrases.vector(&state, 2, "slow burn mystery");
+
+    assert_eq!(&*first, &[0.6, 0.8]);
+    assert_eq!(&*again, &[0.6, 0.8]);
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+}
+
+#[test]
 fn an_embedder_that_gives_no_width_is_not_asked() {
     let calls = Arc::new(AtomicUsize::new(0));
     let state = vector_module(&calls);
