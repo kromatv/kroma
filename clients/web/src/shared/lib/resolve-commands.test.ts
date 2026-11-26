@@ -102,6 +102,13 @@ describe('visibleCommands', () => {
   it('keeps a group it was given', () => {
     expect(resolve([action('here', { group: 'More' })]).items[0]?.group).toBe('More');
   });
+
+  it('hands a row’s flag and the language of its label over to the palette', () => {
+    expect(resolve([action('Deutsch', { flag: 'DE', lang: 'de' })]).items[0]).toMatchObject({
+      flag: 'DE',
+      lang: 'de',
+    });
+  });
 });
 
 describe('a row’s actions', () => {

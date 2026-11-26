@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { type ReactNode, StrictMode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Text } from '#ui/components/atoms/text';
@@ -39,6 +39,8 @@ function show(children?: ReactNode) {
 }
 
 const row = (name: string) => screen.getByRole('button', { name });
+
+const wellOf = (name: string) => row(name).firstElementChild as HTMLElement;
 
 // <ScrollView> draws the scroller around a content container, so the box that
 // scrolls is two levels above a row.
@@ -127,12 +129,57 @@ describe('Command', () => {
       ),
     );
 
-    const wellOf = (name: string) => row(name).firstElementChild as HTMLElement;
-
     expect(wellOf('Tile').className).toBe(wellOf('Glyph').className);
     expect(row('Tile').querySelector('img')?.getAttribute('src')).toBe(
       'https://example.test/a.svg',
     );
+  });
+
+  it('draws a flag in the well an icon’s glyph sits in', async () => {
+    const items: CommandItem[] = [
+      { id: 'fr', label: 'Français', icon: 'language', flag: 'FR' },
+      { id: 'glyph', label: 'Glyph', icon: 'language' },
+    ];
+    render(
+      onScreen(
+        <Command.Root items={items} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    expect(wellOf('Français').className).toBe(wellOf('Glyph').className);
+    await waitFor(() => expect(wellOf('Français').innerHTML).toContain('<svg'));
+    expect(wellOf('Français').innerHTML).not.toBe(wellOf('Glyph').innerHTML);
+  });
+
+  it('keeps the icon of a row whose flag is no country code', () => {
+    const items: CommandItem[] = [
+      { id: 'eo', label: 'Esperanto', icon: 'language', flag: 'eo' },
+      { id: 'glyph', label: 'Glyph', icon: 'language' },
+    ];
+    render(
+      onScreen(
+        <Command.Root items={items} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    expect(wellOf('Esperanto').innerHTML).toBe(wellOf('Glyph').innerHTML);
+  });
+
+  it('says which language a label is written in', () => {
+    const items: CommandItem[] = [{ id: 'ja', label: '日本語', icon: 'language', lang: 'ja' }];
+    render(
+      onScreen(
+        <Command.Root items={items} onSelect={vi.fn()} onClose={vi.fn()}>
+          <Command.List />
+        </Command.Root>,
+      ),
+    );
+
+    expect(within(row('日本語')).getByText('日本語').closest('[lang="ja"]')).not.toBeNull();
   });
 
   it('draws a row’s status as a badge', () => {

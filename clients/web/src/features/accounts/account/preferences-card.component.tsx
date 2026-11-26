@@ -8,6 +8,10 @@ import { useLocale, useSetLocale, useT } from '@kromatv/ui';
 import { LanguagePicker, ListRow, Select, Switch, Text } from '@kromatv/ui/kit';
 import { useMemo, useState } from 'react';
 import { RatingsCountryRow } from '#web/features/accounts/account/ratings-country-row.component';
+import {
+  saveTrackLanguage,
+  type TrackLanguage,
+} from '#web/features/accounts/account/track-language';
 import { PrefRow, useSave } from '#web/features/accounts/account/ui';
 import { useAuth } from '#web/shared/lib/auth';
 import { useBlurPreference } from '#web/shared/lib/blur-pref';
@@ -16,31 +20,26 @@ import { useBlurPreference } from '#web/shared/lib/blur-pref';
 // and is mapped back to `null` on the way to the server.
 export const NONE = LANG_NO_PREF;
 
-type Track = 'audioLanguage' | 'subtitleLanguage';
-
 export function PreferencesCard() {
   const t = useT();
   const locale = useLocale();
   const setLocale = useSetLocale();
   const [blur, setBlur] = useBlurPreference();
-  const { user, client, updateUser } = useAuth();
+  const auth = useAuth();
+  const { user } = auth;
   // The server lower-cases a playback language (`fr-ca`) while the picker's
   // option is `fr-CA`; `prefValue` normalizes so a raw seed still matches.
   const [audio, setAudio] = useState(prefValue(user?.audioLanguage ?? null));
   const [subtitle, setSubtitle] = useState(prefValue(user?.subtitleLanguage ?? null));
   const save = useSave();
 
-  const choose = (track: Track, value: string) => {
+  const choose = (track: TrackLanguage, value: string) => {
     const set = track === 'audioLanguage' ? setAudio : setSubtitle;
     const before = track === 'audioLanguage' ? audio : subtitle;
     set(value);
     void save.run(async () => {
       try {
-        const { user: saved } = await client.accounts.update({
-          [track]: value === NONE ? null : value,
-        });
-        updateUser({ [track]: saved[track] ?? null });
-        set(prefValue(saved[track] ?? null));
+        set(await saveTrackLanguage(auth, track, value));
       } catch (error) {
         set(before);
         throw error;

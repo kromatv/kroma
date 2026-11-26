@@ -78,7 +78,7 @@ export function useModuleActions(): {
 
   const actionsOf = (module: AdminModule): CommandActionDef[] => [
     {
-      label: t(module.enabled ? 'commands.moduleDisable' : 'commands.moduleEnable'),
+      label: t(module.enabled ? 'commands.turnOff' : 'commands.turnOn'),
       icon: module.enabled ? 'player-pause' : 'player-play',
       cap: 'settings.manage',
       run: act(() => toggle(module)),

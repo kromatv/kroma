@@ -939,7 +939,7 @@
     "clients/web/src/shared/lib/command-menu.tsx": 2,
     "clients/web/src/shared/lib/mylist.tsx": 1,
     "clients/web/src/shared/lib/queries.ts": 1,
-    "clients/web/src/shared/lib/resolve-commands.ts": 2,
+    "clients/web/src/shared/lib/resolve-commands.ts": 1,
     "clients/web/src/shared/lib/title-view.ts": 1,
     "clients/web/src/shared/lib/watched.tsx": 1,
     "clients/web/src/shared/ui/cast-picker.component.tsx": 1,

@@ -23,10 +23,9 @@ import {
   Text,
   useStyles,
 } from '@kromatv/ui/kit';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { CHANNELS, ChannelToggles } from '#web/features/accounts/account/channel-toggles.component';
-import { useWebRuntime } from '#web/shared/lib/web-runtime';
+import { useNotificationPrefs } from '#web/features/accounts/account/use-notification-prefs.hook';
 
 const ROW = CONTROL.md;
 const KIND_INDENT = 48;
@@ -65,24 +64,20 @@ type Save = (key: string, update: PrefsUpdate) => void;
  * channel how many of its kinds arrive that way, and the kinds themselves once
  * the row is opened. */
 export function NotificationMatrix() {
-  const webRuntime = useWebRuntime();
   const t = useT();
-  const qc = useQueryClient();
-  const query = webRuntime.queries.userQueries.notificationPrefs();
-  const { data, isPending } = useQuery(query);
+  const { prefs: data, save: send } = useNotificationPrefs();
   const [saving, setSaving] = useState<string | null>(null);
 
   const save = async (key: string, update: PrefsUpdate) => {
     setSaving(key);
     try {
-      const saved = await webRuntime.client.notifications.setPrefs(update);
-      qc.setQueryData(query.queryKey, saved);
+      await send(update);
     } finally {
       setSaving(null);
     }
   };
 
-  if (isPending || !data) {
+  if (!data) {
     return (
       <Surface elevated pad="none" p={22} radius="xl" border="border">
         <Skeleton h={128} radius="sm" />

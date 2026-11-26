@@ -144,6 +144,7 @@ Never *~를 가지다* for a feature: *자막을 지원합니다*, not *자막�
 | Unknown | 알 수 없음 | |
 | Enabled / Disabled | 사용 / 사용 안 함 | 활성화 / 비활성화 |
 | On / Off | 켜기 / 끄기 | 온 / 오프 |
+| On / Off (a badge saying a switch's state) | 켜짐 / 꺼짐 | 켜기 / 끄기, which say what pressing does |
 | Automatic | 자동 | |
 | Custom | 사용자 지정 | 커스텀 |
 | Default | 기본값 | 디폴트 |

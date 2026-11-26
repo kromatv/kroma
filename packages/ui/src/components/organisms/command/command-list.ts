@@ -34,6 +34,12 @@ interface CommandItem {
   /** The shape of `image`: a `poster`, as wide as an icon's well and taller, by default,
    *  which draws the row taller, or a `tile`, which fills the well itself. */
   imageShape?: 'poster' | 'tile';
+  /** A country whose flag sits in the icon's well, as an uppercase ISO 3166 code. The
+   *  icon stays for anything that is not one, and an `image` wins over both. */
+  flag?: string;
+  /** The language `label` is written in, as a BCP 47 tag, where it is not the
+   *  interface's: a language's own name, say. */
+  lang?: string;
   /** Searched as well as the label: a summary, a path, a list of synonyms. */
   keywords?: string;
   /** Reported at the end of the row, after the label. */

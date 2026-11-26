@@ -1,4 +1,9 @@
 {
+  "commands.choose": "A verb: what Enter does on a row that is one value of a preference, said at the foot of the command menu.",
+  "commands.current": "A badge on the value a preference holds now, such as the interface language in use. Short, and it fits a language, a country or no preference alike.",
+  "commands.off": "A badge saying a switch is off now, not a button.",
+  "commands.on": "A badge saying a switch is on now, not a button.",
+  "commands.partly": "A badge on a notification switch that reaches only some of the kinds it speaks for.",
   "format.numberSample": "Never shown: the number twelve thousand three hundred forty-five and six tenths, as your language writes it. A television that cannot format numbers itself takes the thousands separator and the decimal separator from it. Keep the digits 12, 345 and 6 as they are, with at most one character between 12 and 345, and exactly one between 345 and 6.",
   "format.size.": "A data size. {size} is the number, already written with your language's decimal separator. Write the unit symbols your language uses for bytes (French writes o, Ko, Mo, Go, To, Po), with a space between the number and the unit where your language puts one."
 }

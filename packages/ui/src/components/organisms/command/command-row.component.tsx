@@ -5,17 +5,19 @@ import { fontSizes as textSizes } from '#ui/core/tokens';
 import type { StyleProp, TextStyle } from 'react-native';
 import { Badge } from '#ui/components/atoms/badge';
 import { Box } from '#ui/components/atoms/box';
+import { Flag, isFlagRegion } from '#ui/components/atoms/flag';
 import { Focusable } from '#ui/components/atoms/focusable';
 import { Icon } from '#ui/components/atoms/icon';
-import { IconWell } from '#ui/components/atoms/icon-well';
+import { IconWell, type IconWellTone, iconWellVariants } from '#ui/components/atoms/icon-well';
 import { Img } from '#ui/components/atoms/img';
 import { Text } from '#ui/components/atoms/text';
-import { styles, sv } from '#ui/core';
+import { styles, sv, useSv } from '#ui/core';
 import { matchText, textRuns } from '#ui/lib/text-match';
 import { type CommandItem, isTall, METRICS } from './command-list';
 
 const MARK = 30;
 const POSTER = { w: MARK, h: 45 };
+const FLAG = 20;
 
 /** Where the sheet's content starts: a heading, a row's mark and the footer's first key
  *  all share this left edge, which leaves a mark as far from the side of its row as from
@@ -58,7 +60,7 @@ function CommandRow({ item, query, open, cursor, onHover, onPress }: Readonly<Co
         <>
           <RowMedia item={item} open={open} />
           <Box flex minW={0} gap={2}>
-            <Text variant="meta" style={slots.label} lines={1}>
+            <Text variant="meta" style={slots.label} lines={1} lang={item.lang}>
               <Marked text={item.label} query={query} hitStyle={s.hit} />
             </Text>
             {item.subtitle ? (
@@ -108,15 +110,31 @@ function Marked({
   );
 }
 
-function RowMedia({ item, open }: Readonly<{ item: CommandItem; open: boolean }>) {
-  const { icon, image, imageShape } = item;
+function FlagWell({ region, tone }: Readonly<{ region: string; tone: IconWellTone }>) {
+  const well = useSv(iconWellVariants)({ size: 'xs', tone });
+  return (
+    <Box style={well.root}>
+      <Flag region={region} size={FLAG} />
+    </Box>
+  );
+}
+
+function RowWell({ item, open }: Readonly<{ item: CommandItem; open: boolean }>) {
+  const { icon, image, flag } = item;
+  const tone = open ? 'accent' : 'neutral';
+  if (!image && isFlagRegion(flag)) {
+    return <FlagWell region={flag} tone={tone} />;
+  }
   if (!icon && !image) {
     return null;
   }
+  return <IconWell name={icon ?? 'photo'} size="xs" tone={tone} src={image} />;
+}
+
+function RowMedia({ item, open }: Readonly<{ item: CommandItem; open: boolean }>) {
+  const { icon, image, imageShape } = item;
   if (!image || imageShape === 'tile') {
-    return (
-      <IconWell name={icon ?? 'photo'} size="xs" tone={open ? 'accent' : 'neutral'} src={image} />
-    );
+    return <RowWell item={item} open={open} />;
   }
   return (
     <Box w={POSTER.w} h={POSTER.h} shrink={0} center radius="sm" overflow="hidden" bg="tint/6">
