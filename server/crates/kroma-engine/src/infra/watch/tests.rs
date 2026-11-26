@@ -1,6 +1,10 @@
 use std::path::Path;
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
+use std::time::Duration;
 
-use super::signature;
+use notify::RecommendedWatcher;
+
+use super::{signature, watch_folders};
 use crate::services::scan::scan_all;
 use crate::services::settings::LibraryDef;
 
@@ -102,4 +106,37 @@ fn an_nfo_put_beside_a_show_or_edited_changes_the_signature() {
 
     assert_ne!(put_beside, before);
     assert_ne!(signed(root.path()), put_beside);
+}
+
+fn watching(root: &Path) -> (RecommendedWatcher, Receiver<()>) {
+    let (tx, rx) = mpsc::channel();
+    let watcher = watch_folders(&[root.to_path_buf()], tx).unwrap();
+    (watcher, rx)
+}
+
+#[test]
+fn walking_the_library_or_reading_a_video_does_not_wake_the_watcher() {
+    let root = kroma_testing::temp_dir("watch-own-walk");
+    put(root.path(), "Show/Season 1/Show S01E01.mkv", b"one");
+    put(root.path(), "Show/tvshow.nfo", b"<tvshow/>");
+    let (_watcher, rx) = watching(root.path());
+
+    signed(root.path());
+    std::fs::read(root.path().join("Show/Season 1/Show S01E01.mkv")).unwrap();
+
+    assert_eq!(
+        rx.recv_timeout(Duration::from_millis(500)),
+        Err(RecvTimeoutError::Timeout)
+    );
+}
+
+#[test]
+fn a_file_added_to_a_watched_folder_wakes_the_watcher() {
+    let root = kroma_testing::temp_dir("watch-added");
+    put(root.path(), "Show/Season 1/Show S01E01.mkv", b"one");
+    let (_watcher, rx) = watching(root.path());
+
+    put(root.path(), "Show/Season 1/Show S01E02.mkv", b"two");
+
+    assert_eq!(rx.recv_timeout(Duration::from_secs(5)), Ok(()));
 }
