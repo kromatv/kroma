@@ -110,7 +110,7 @@ async function onScreen(page: {
 
 // A dev port is a squattable thing, and photographing whatever else answered is
 // the one failure that looks like success. Every shell titles itself KROMA.
-async function assertKroma(
+export async function assertKroma(
   page: { title: () => Promise<string> },
   target: Target,
   port: number,

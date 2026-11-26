@@ -4,6 +4,7 @@ import type { PropSummary, PropValue } from './prop-summary';
 import type { ScreenControl } from './screen-controls';
 import { type ScreenRow, type ScreenRows, screenRows } from './screen-rows';
 import type { StateSummary, StateValue } from './state-summary';
+import type { TextClip } from './text-clip';
 
 const TAG = /^\[(?:function|element|object|symbol|bigint|array \d+)\]$/;
 
@@ -45,9 +46,14 @@ function controlText(control: ScreenControl | undefined): string[] {
   return [`state: ${state.join(' ')}`, actions];
 }
 
+function clipText({ width, height }: TextClip): string {
+  return `(clipped +${Math.round(width)}x${Math.round(height)})`;
+}
+
 function headText(row: ScreenRow): string {
   const name = row.control ? `${row.name} [${row.control.ref}]` : row.name;
-  return row.focused ? `${name} (focused)` : name;
+  const focus = row.focused ? '(focused)' : '';
+  return [name, focus, row.clipped ? clipText(row.clipped) : ''].filter(Boolean).join(' ');
 }
 
 function rowText(row: ScreenRow): string {
@@ -61,7 +67,8 @@ function rowText(row: ScreenRow): string {
 }
 
 /** A screen as text, one kit component a line, indented two spaces a level:
- *  its name, `(focused)` on the one that holds the focus, its box as
+ *  its name, `(focused)` on the one that holds the focus, `(clipped +WxH)` on a
+ *  text its box cuts by W pixels across and H down, its box as
  *  `x,y widthxheight`, then its props. A prop that is `true` is its name alone,
  *  and one that is not a primitive (a function, an element, an object) is left
  *  out. A component that runs a control has its ref after its name, `[c4]`,

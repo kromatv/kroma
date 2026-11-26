@@ -17,7 +17,7 @@ use kroma_primitives::clean_label;
 use serde::Serialize;
 use tokio::sync::oneshot;
 
-pub use screen::{PropValue, Screen, ScreenBox, ScreenRow, MAX_ROWS};
+pub use screen::{PropValue, Screen, ScreenBox, ScreenClip, ScreenRow, MAX_ROWS};
 
 /// How long a request waits for its device to answer.
 pub const REPLY_TIMEOUT: Duration = Duration::from_secs(5);

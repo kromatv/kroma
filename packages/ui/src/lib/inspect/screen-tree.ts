@@ -1,5 +1,6 @@
 import { componentName } from '../component-names';
 import { type HostBox, hostBox } from './host-box';
+import { hostClip } from './host-clip';
 import { hostView } from './host-view';
 import { type PropSummary, summarizeProps } from './prop-summary';
 import {
@@ -13,16 +14,18 @@ import {
   siblingOf,
 } from './react-fiber';
 import { type Roster, type ScreenControl, screenControl } from './screen-controls';
+import type { TextClip } from './text-clip';
 
 /** A mounted kit component: its public name, its props, its box, whether it
- *  holds the focus, the control it runs, and the kit components under it. A
- *  component the kit did not name is here too when it runs a control, under
- *  the control's kind. */
+ *  holds the focus, on a `Text` what its box cuts off it, the control it runs,
+ *  and the kit components under it. A component the kit did not name is here
+ *  too when it runs a control, under the control's kind. */
 export type KitNode = {
   name: string;
   props: PropSummary;
   box: HostBox | null;
   focused?: true;
+  clipped?: TextClip;
   control?: ScreenControl;
   children: KitNode[];
 };
@@ -33,6 +36,15 @@ export type ScreenTree = { fibers: number; nodes: KitNode[] };
 type Visit = { fiber: Fiber; owner: KitNode };
 
 const NO_CONTROLS: Roster = new Map();
+
+const TEXT = 'Text';
+
+function markClip(node: KitNode, fiber: Fiber): void {
+  const clipped = node.name === TEXT ? hostClip(fiber) : null;
+  if (clipped) {
+    node.clipped = clipped;
+  }
+}
 
 function nodeOf(fiber: Fiber, roster: Roster): KitNode | null {
   const mounted = heldByHook(fiber, roster);
@@ -46,6 +58,7 @@ function nodeOf(fiber: Fiber, roster: Roster): KitNode | null {
     box: hostBox(fiber),
     children: [],
   };
+  markClip(node, fiber);
   if (mounted) {
     node.control = screenControl(name, fiber, mounted);
   }

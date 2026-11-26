@@ -42,15 +42,23 @@ export const ScreenBox = z.object({
 });
 export type ScreenBox = z.infer<typeof ScreenBox>;
 
+/** How many pixels of a text its box cuts off, across and down. */
+export const ScreenClip = z.object({
+  width: z.number().nonnegative(),
+  height: z.number().nonnegative(),
+});
+export type ScreenClip = z.infer<typeof ScreenClip>;
+
 /** One mounted kit component, `depth` levels under the top of the screen, with
- * its public name, a bounded summary of its props, its box, and `focused` on
- * the one that holds the focus. */
+ * its public name, a bounded summary of its props, its box, `focused` on the
+ * one that holds the focus, and `clipped` on a text its box cuts. */
 export const ScreenRow = z.object({
   depth: z.number().int().nonnegative(),
   name: z.string().nonempty().max(128),
   props: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
   box: ScreenBox.nullable(),
   focused: z.boolean().optional(),
+  clipped: ScreenClip.optional(),
 });
 export type ScreenRow = z.infer<typeof ScreenRow>;
 

@@ -23,6 +23,15 @@ describe('a screen on the wire', () => {
     expect(ScreenRow.safeParse({ ...ROW, focused: 'yes' }).success).toBe(false);
   });
 
+  it('reads what the box of a text cuts off it and refuses a negative cut', () => {
+    const clipped = { ...ROW, name: 'Text', clipped: { width: 68, height: 0 } };
+
+    expect(ScreenRow.parse(clipped)).toEqual(clipped);
+    expect(ScreenRow.safeParse({ ...clipped, clipped: { width: -1, height: 0 } }).success).toBe(
+      false,
+    );
+  });
+
   it('refuses a nested prop, a negative depth and an empty name', () => {
     expect(ScreenRow.safeParse({ ...ROW, props: { style: { a: 1 } } }).success).toBe(false);
     expect(ScreenRow.safeParse({ ...ROW, depth: -1 }).success).toBe(false);

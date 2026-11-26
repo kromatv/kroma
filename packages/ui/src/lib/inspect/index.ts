@@ -8,3 +8,4 @@ export { type ControlRow, snapshot } from './screen-snapshot';
 export { screenText } from './screen-text';
 export type { KitNode, ScreenTree } from './screen-tree';
 export type { StateSummary, StateValue } from './state-summary';
+export type { TextClip } from './text-clip';

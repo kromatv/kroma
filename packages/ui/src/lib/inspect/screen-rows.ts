@@ -2,6 +2,7 @@ import type { HostBox } from './host-box';
 import type { PropSummary } from './prop-summary';
 import type { ScreenControl } from './screen-controls';
 import type { KitNode, ScreenTree } from './screen-tree';
+import type { TextClip } from './text-clip';
 
 /** One mounted kit component, `depth` levels under the top of the screen. */
 export type ScreenRow = {
@@ -10,6 +11,7 @@ export type ScreenRow = {
   props: PropSummary;
   box: HostBox | null;
   focused?: true;
+  clipped?: TextClip;
   control?: ScreenControl;
 };
 
@@ -61,6 +63,9 @@ function rowOf({ node, depth }: Pending): ScreenRow {
   const row: ScreenRow = { depth, name: node.name, props: node.props, box: node.box };
   if (node.focused) {
     row.focused = true;
+  }
+  if (node.clipped) {
+    row.clipped = node.clipped;
   }
   if (node.control) {
     row.control = node.control;

@@ -78,6 +78,20 @@ describe('a screen as text', () => {
     expect(text(rows)).toBe('Button\n  Focusable (focused)  label="Lire"');
   });
 
+  it('marks a text its box cuts, with how far it reaches past it across and down', () => {
+    const rows = [
+      row(0, 'Text', { clipped: { width: 68.4, height: 0 }, props: { children: 'Gefolgt' } }),
+    ];
+
+    expect(text(rows)).toBe('Text (clipped +68x0)  children="Gefolgt"');
+  });
+
+  it('marks a clipped text that holds the focus with both', () => {
+    const rows = [row(0, 'Text', { focused: true, clipped: { width: 0, height: 40 } })];
+
+    expect(text(rows)).toBe('Text (focused) (clipped +0x40)');
+  });
+
   it('writes the ref, the state and the actions of a component that runs a control', () => {
     const control = {
       ref: 'c3',
