@@ -7,7 +7,7 @@ mod readers;
 mod sign_ins;
 
 use anyhow::Result;
-use kroma_module_sdk::db::Pool;
+use kroma_module_sdk::db::{Pool, Run, Step};
 use kroma_module_sdk::primitives::random_token;
 
 pub(crate) use pending::{drop_pending, open_pending, pending, sweep_pending, Pending};
@@ -49,14 +49,22 @@ pub(crate) const MIGRATIONS: &str = "
         token   TEXT NOT NULL,
         PRIMARY KEY (sign_in, server, user)
     );
-    CREATE TABLE IF NOT EXISTS unlocked (
-        sign_in TEXT NOT NULL,
-        server  TEXT NOT NULL,
-        user    TEXT NOT NULL,
-        token   TEXT NOT NULL,
-        PRIMARY KEY (sign_in, server, user)
-    );
 ";
+
+/// Every change to this module's database since [`MIGRATIONS`], oldest first.
+pub(crate) const STEPS: &[Step] = &[Step {
+    name: "unlocked",
+    run: Run::Sql(
+        "CREATE TABLE IF NOT EXISTS unlocked (
+            sign_in TEXT NOT NULL,
+            server  TEXT NOT NULL,
+            user    TEXT NOT NULL,
+            token   TEXT NOT NULL,
+            PRIMARY KEY (sign_in, server, user)
+        );",
+    ),
+    rebuilds: false,
+}];
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ServerKey<'a> {

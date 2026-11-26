@@ -49,7 +49,7 @@ async fn the_core_keeps_no_pin_and_says_none_back() {
 
     let (status, body) = unlock(&t, for_cleo(PIN)).await;
 
-    assert_eq!(status, StatusCode::BAD_GATEWAY);
+    assert_eq!(status, StatusCode::FAILED_DEPENDENCY);
     assert_eq!(body, json!({ "error": "plex.tv did not take ****" }));
     assert!(on_disk(&t, "owner@test.dev"));
     assert!(!on_disk(&t, PIN));

@@ -134,23 +134,23 @@ async fn survey_reads_what_a_server_holds_through_the_reference() {
 }
 
 #[tokio::test]
-async fn an_importer_s_own_failure_is_a_502_in_its_words() {
+async fn an_importer_s_own_failure_is_a_424_in_its_words() {
     let (t, _) = importer_answering(json!({ "Err": "the other server did not answer" }));
 
     let (status, body) = ask(&t, "survey", json!({ "signIn": "s-1", "server": "srv" })).await;
 
-    assert_eq!(status, StatusCode::BAD_GATEWAY);
+    assert_eq!(status, StatusCode::FAILED_DEPENDENCY);
     assert_eq!(body, json!({ "error": "the other server did not answer" }));
 }
 
 #[tokio::test]
-async fn an_answer_the_core_cannot_read_is_a_502_that_does_not_repeat_it() {
+async fn an_answer_the_core_cannot_read_is_a_424_that_does_not_repeat_it() {
     let (t, _) =
         importer_answering(json!({ "Ok": { "users": [{ "id": "" }], "libraries": "leaked" } }));
 
     let (status, body) = ask(&t, "survey", json!({ "signIn": "s-1", "server": "srv" })).await;
 
-    assert_eq!(status, StatusCode::BAD_GATEWAY);
+    assert_eq!(status, StatusCode::FAILED_DEPENDENCY);
     assert_eq!(
         body,
         json!({ "error": "the importer gave an answer this server cannot read" })

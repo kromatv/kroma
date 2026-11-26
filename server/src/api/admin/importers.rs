@@ -143,11 +143,14 @@ fn unanswered(user: &User, why: Unanswered) -> Response {
             StatusCode::NOT_FOUND,
             "error.moduleDisabled",
         ),
-        Unanswered::Failed(reason) => json_error(StatusCode::BAD_GATEWAY, &reason),
+        Unanswered::Failed(reason) => {
+            tracing::warn!(%reason, "an importer could not answer");
+            json_error(StatusCode::FAILED_DEPENDENCY, &reason)
+        }
         Unanswered::Unreadable(detail) => {
             tracing::warn!(%detail, "an importer's answer could not be used");
             json_error(
-                StatusCode::BAD_GATEWAY,
+                StatusCode::FAILED_DEPENDENCY,
                 "the importer gave an answer this server cannot read",
             )
         }

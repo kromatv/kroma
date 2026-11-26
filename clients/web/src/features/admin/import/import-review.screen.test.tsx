@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { KromaApiError } from '@kromatv/client';
 import {
   ImportServer,
   ImportServerId,
@@ -170,5 +171,13 @@ describe('starting the import', () => {
     expect(
       screen.getByText('KROMA could not read what this server holds. Go back and sign in again.'),
     ).toBeTruthy();
+  });
+
+  it('shows the cause the other server gave under the failure', async () => {
+    const cause = 'the Plex server did not answer at any address plex.tv lists';
+    importers.survey.mockRejectedValue(new KromaApiError(424, 'failed', { error: cause }));
+    await review();
+
+    expect(screen.getByText(cause)).toBeTruthy();
   });
 });
