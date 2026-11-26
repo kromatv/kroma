@@ -3,6 +3,7 @@
 //! best-effort `notify` watcher, both feeding one debounced worker thread.
 
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::path::PathBuf;
 use std::sync::mpsc::{self, RecvTimeoutError};
 use std::time::Duration;
 
@@ -67,16 +68,21 @@ fn watch_interval(state: &SharedState) -> u64 {
 }
 
 fn make_watcher(state: &SharedState, tx: mpsc::Sender<()>) -> Option<notify::RecommendedWatcher> {
+    let folders = crate::services::settings::all_folders(&state.settings, &state.config);
+    watch_folders(&folders, tx)
+}
+
+fn watch_folders(folders: &[PathBuf], tx: mpsc::Sender<()>) -> Option<notify::RecommendedWatcher> {
     let mut watcher = notify::recommended_watcher(move |res: notify::Result<notify::Event>| {
-        if res.is_ok() {
+        if res.is_ok_and(|event| !event.kind.is_access()) {
             let _ = tx.send(());
         }
     })
     .map_err(|e| warn!(error = %e, "filesystem watcher unavailable (periodic re-scan only)"))
     .ok()?;
 
-    for dir in crate::services::settings::all_folders(&state.settings, &state.config) {
-        if let Err(e) = watcher.watch(&dir, RecursiveMode::Recursive) {
+    for dir in folders {
+        if let Err(e) = watcher.watch(dir, RecursiveMode::Recursive) {
             warn!(path = %dir.display(), error = %e, "could not watch media dir");
         }
     }
