@@ -198,6 +198,45 @@ describe('a row’s actions', () => {
 const at = (commands: readonly CommandDef[], pathname: string) =>
   commandAt(resolve(commands).byId, pathname);
 
+function language(items: CommandDef['items']): CommandDef {
+  return page('Interface language', { id: 'language', group: 'Preferences', items });
+}
+
+describe('a row with a list of its own', () => {
+  const french = action('Français', { id: 'fr' });
+
+  it('opens it first, and does what the row itself does second', () => {
+    expect(actionLabels(language([french]))).toEqual([
+      'commands.actionShow',
+      'commands.actionOpen',
+      'commands.actionNewTab',
+      'commands.actionCopyLink',
+    ]);
+  });
+
+  it('hands its rows over, under no heading of their own', () => {
+    const [row] = resolve([language([french, false])]).items;
+
+    expect(row?.items).toEqual([
+      expect.objectContaining({ id: 'fr', label: 'Français', group: undefined }),
+    ]);
+  });
+
+  it('runs a row of the list by the id it listed it under', () => {
+    const { items, byId } = resolve([language([french])]);
+    const chosen = items[0]?.items?.[0]?.actions?.[0];
+
+    expect(chosen && byId.get('fr')?.actions.get(chosen.id)?.label).toBe('commands.actionRun');
+  });
+
+  it('is a plain row when nothing in it applies', () => {
+    const [row] = resolve([language([action('gated', { cap: 'settings.manage' })])]).items;
+
+    expect(row?.items).toBeUndefined();
+    expect(row?.actions?.[0]?.label).toBe('commands.actionOpen');
+  });
+});
+
 describe('commandAt', () => {
   const darkTitle = page('Dark', { id: 'title:s1', to: '/shows/$id', params: { id: 's1' } });
 

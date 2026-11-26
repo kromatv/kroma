@@ -9,11 +9,8 @@ import {
 } from '@kromatv/core';
 import type { Translate } from '@kromatv/i18n';
 import { CHANNEL, CHANNELS } from '#web/features/accounts/account/channel-toggles.component';
-import {
-  type PreferenceRows,
-  type SwitchPreference,
-  switchRow,
-} from '#web/features/accounts/preference-commands';
+import { type SwitchPreference, switchRow } from '#web/features/accounts/preference-commands';
+import type { CommandDef } from '#web/shared/lib/command-menu';
 
 const KEYWORDS = 'notifications alerts alertes push';
 
@@ -63,33 +60,29 @@ function asSwitch(face: ChannelSwitch, { t, save }: Context): SwitchPreference {
     label: face.label,
     subtitle: face.subtitle,
     icon: CHANNEL[face.channel].on,
-    keywords: KEYWORDS,
+    keywords: '',
     reach: face.reach,
     setOn: (on) => save(face.update(on)),
     done: t('common.saved'),
   };
 }
 
-/** The account's delivery matrix in the command menu: a row that opens it on the
- *  account page, and one switch per category and per kind for each channel, with no
- *  matrix to read yet only the first. */
-export function notificationRows(
+/** The account's delivery matrix in the command menu, as one row whose list holds a
+ *  switch per category and per kind for each channel, and whose second action opens the
+ *  matrix on the account page. With no matrix to read yet, the row only opens the page. */
+export function notificationCommand(
   prefs: NotificationPrefs | undefined,
   context: Context,
-): PreferenceRows {
+): CommandDef {
   const { t } = context;
-  const name = t('notifications.settings');
   const switches = prefs ? channelSwitches(prefs, t) : [];
   return {
-    head: {
-      id: 'pref:notifications',
-      label: name,
-      icon: 'bell',
-      keywords: KEYWORDS,
-      to: '/account',
-      search: { section: 'notifications' },
-    },
-    values: switches.map((face) => switchRow(asSwitch(face, context), t)),
-    words: `${name} ${KEYWORDS} ${CHANNELS.map((channel) => t(CHANNEL[channel].label)).join(' ')}`,
+    id: 'pref:notifications',
+    label: t('notifications.settings'),
+    icon: 'bell',
+    keywords: `${KEYWORDS} ${CHANNELS.map((channel) => t(CHANNEL[channel].label)).join(' ')}`,
+    to: '/account',
+    search: { section: 'notifications' },
+    items: switches.map((face) => switchRow(asSwitch(face, context), t)),
   };
 }

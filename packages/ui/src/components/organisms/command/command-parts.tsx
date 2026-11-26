@@ -6,9 +6,11 @@ import { typeSpec as textRoles } from '#ui/core/tokens';
 import type { ReactNode } from 'react';
 import { ScrollView, useWindowDimensions } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
+import { Focusable } from '#ui/components/atoms/focusable';
+import { Icon } from '#ui/components/atoms/icon';
 import { Text } from '#ui/components/atoms/text';
 import { Field } from '#ui/components/molecules/field';
-import { styles } from '#ui/core';
+import { styles, sv } from '#ui/core';
 import { useCommand } from './command-context.hook';
 import { type CommandItem, type CommandSection, METRICS } from './command-list';
 
@@ -17,6 +19,9 @@ import { useCursorScroll } from './use-cursor-scroll.hook';
 
 interface CommandInputProps {
   placeholder?: string;
+  /** What the field says inside a row's own list, where `placeholder` would promise
+   *  more than the list holds. Left out, `placeholder`. */
+  listPlaceholder?: string;
   /** The accessible name of the field. Give it something the control that
    *  opened the palette does not also say. */
   label?: string;
@@ -30,23 +35,25 @@ function useListHeight(): number {
   return Math.min(METRICS.maxHeight, Math.max(METRICS.tallRow * 2, height - AROUND_LIST));
 }
 
-/** The one thing a palette can be typed into. */
-function Input({ placeholder, label = 'Search' }: Readonly<CommandInputProps>) {
+/** The one thing a palette can be typed into, after the way back out of a row's own
+ *  list while one is shown. */
+function Input({ placeholder, listPlaceholder, label = 'Search' }: Readonly<CommandInputProps>) {
   const s = useStyles(sDefinition);
 
-  const { query, setQuery, sections, choose } = useCommand('Input');
+  const { query, setQuery, sections, choose, page } = useCommand('Input');
   return (
-    <Box row align="center" px={GUTTER} style={s.rule}>
+    <Box row align="center" gap={10} px={GUTTER} style={s.rule}>
+      {page ? <Back page={page} /> : null}
       <Box flex>
         <Field.Root label={label} hideLabel>
           <Field.Input
             value={query}
             onValueChange={setQuery}
             onSubmit={() => choose(firstOf(sections))}
-            placeholder={placeholder}
+            placeholder={page ? (listPlaceholder ?? placeholder) : placeholder}
             physicalKeyboard
             autoFocus
-            icon="search"
+            icon={page ? undefined : 'search'}
             // The sheet is the shell here: the palette opens focused, and a
             // fill, an edge or a ring on this row would outline a box the
             // dialog's own corners clip.
@@ -60,6 +67,19 @@ function Input({ placeholder, label = 'Search' }: Readonly<CommandInputProps>) {
         </Field.Root>
       </Box>
     </Box>
+  );
+}
+
+function Back({ page }: Readonly<{ page: CommandItem }>) {
+  const s = useStyles(sDefinition);
+  const { back, backLabel } = useCommand('Input');
+  return (
+    <Focusable label={backLabel} ring={false} onPress={back} sv={backChip}>
+      <Icon name="arrow-left" size={14} color="textMuted" />
+      <Text variant="meta" color="textMuted" lines={1} style={s.backLabel}>
+        {page.label}
+      </Text>
+    </Focusable>
   );
 }
 
@@ -146,11 +166,29 @@ function Footer({ children }: Readonly<{ children?: ReactNode }>) {
 
 const FOOTER_HEIGHT = 48;
 
+const backChip = sv({
+  base: {
+    row: true,
+    align: 'center',
+    gap: 6,
+    h: 28,
+    ps: 8,
+    pe: 10,
+    maxW: 220,
+    shrink: 0,
+    radius: 'sm',
+    bg: 'tint/7',
+    _hover: { bg: 'tint/12' },
+    _focus: { bg: 'tint/12' },
+  },
+});
+
 const sDefinition = styles({
   rule: { borderBottomWidth: 1, borderBottomColor: 'border' },
   ruleTop: { borderTopWidth: 1, borderTopColor: 'border' },
   listBody: { p: METRICS.pad },
   entry: { fontSize: textRoles.label.size, fontWeight: '500' },
+  backLabel: { fontWeight: '600' },
 });
 
 export type { CommandInputProps };

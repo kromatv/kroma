@@ -8,6 +8,7 @@ import {
   Row,
   Text,
   useBreakpoint,
+  useCommandResults,
   useConfirm,
 } from '@kromatv/ui/kit';
 import { useNavigate, useRouter, useRouterState } from '@tanstack/react-router';
@@ -42,6 +43,7 @@ function Bar() {
   const t = useT();
   const step = useBreakpoint();
   const wide = step === 'lg' || step === 'tv';
+  const { page } = useCommandResults();
 
   return (
     <Command.Footer>
@@ -51,7 +53,7 @@ function Bar() {
             <Kbd icon="arrow-up" />
             <Kbd icon="arrow-down" />
           </Hint>
-          <Hint label={t('commands.hintClose')}>
+          <Hint label={t(page ? 'commands.hintBack' : 'commands.hintClose')}>
             <Kbd>esc</Kbd>
           </Hint>
         </>
@@ -101,6 +103,7 @@ function Palette({ user }: Readonly<{ user: User }>) {
     <Command.Root
       modal
       closeLabel={t('commands.close')}
+      backLabel={t('common.back')}
       items={listed}
       boost={boost}
       selected={current}
@@ -120,7 +123,11 @@ function Palette({ user }: Readonly<{ user: User }>) {
       }}
       onClose={close}
     >
-      <Command.Input label={t('commands.field')} placeholder={t('commands.placeholder')} />
+      <Command.Input
+        label={t('commands.field')}
+        placeholder={t('commands.placeholder')}
+        listPlaceholder={t('commands.placeholderList')}
+      />
       <Command.List />
       <Command.Empty>{t('commands.empty')}</Command.Empty>
       <Bar />

@@ -76,15 +76,24 @@ function CommandRow({ item, query, open, cursor, onHover, onPress }: Readonly<Co
               </Text>
             </Box>
           ) : null}
-          {item.status ? (
-            <Box shrink={0}>
-              <Badge tone={item.status.tone ?? 'neutral'}>{item.status.label}</Badge>
-            </Box>
-          ) : null}
-          {open ? <Box w={5} h={5} radius="pill" bg="accent" /> : null}
+          <RowEnd item={item} open={open} />
         </>
       )}
     </Focusable>
+  );
+}
+
+function RowEnd({ item, open }: Readonly<{ item: CommandItem; open: boolean }>) {
+  return (
+    <>
+      {item.status ? (
+        <Box shrink={0}>
+          <Badge tone={item.status.tone ?? 'neutral'}>{item.status.label}</Badge>
+        </Box>
+      ) : null}
+      {item.items ? <Icon name="chevron-right" size={14} color="textDim" /> : null}
+      {open ? <Box w={5} h={5} radius="pill" bg="accent" /> : null}
+    </>
   );
 }
 

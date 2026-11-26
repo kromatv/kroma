@@ -1,7 +1,7 @@
 import type { NotificationPrefs } from '@kromatv/client/notifications';
 import type { Translate } from '@kromatv/i18n';
 import { describe, expect, it, vi } from 'vitest';
-import { notificationRows } from './notification-commands';
+import { notificationCommand } from './notification-commands';
 
 const t: Translate = (key: string, _vars?: unknown) => key;
 
@@ -28,15 +28,18 @@ const PREFS: NotificationPrefs = {
   ],
 };
 
-const rowsFor = (prefs: NotificationPrefs | undefined, save = vi.fn(async () => {})) =>
-  notificationRows(prefs, { t, save });
+const commandFor = (prefs: NotificationPrefs | undefined, save = vi.fn(async () => {})) =>
+  notificationCommand(prefs, { t, save });
+
+const switchesOf = (prefs: NotificationPrefs | undefined, save = vi.fn(async () => {})) =>
+  (commandFor(prefs, save).items ?? []).flatMap((one) => (one ? [one] : []));
 
 const row = (label: string, subtitle: string) =>
-  rowsFor(PREFS).values.find((one) => one.label === label && one.subtitle === subtitle);
+  switchesOf(PREFS).find((one) => one.label === label && one.subtitle === subtitle);
 
 describe('the notification matrix in the command menu', () => {
   it('stands as one row that opens it on the account page', () => {
-    expect(rowsFor(PREFS).head).toMatchObject({
+    expect(commandFor(PREFS)).toMatchObject({
       label: 'notifications.settings',
       to: '/account',
       search: { section: 'notifications' },
@@ -44,11 +47,11 @@ describe('the notification matrix in the command menu', () => {
   });
 
   it('offers no switch before the matrix has arrived', () => {
-    expect(rowsFor(undefined).values).toEqual([]);
+    expect(switchesOf(undefined)).toEqual([]);
   });
 
   it('switches each category and each kind on each channel', () => {
-    expect(rowsFor(PREFS).values.map((one) => [one.label, one.subtitle])).toEqual([
+    expect(switchesOf(PREFS).map((one) => [one.label, one.subtitle])).toEqual([
       ['notifications.category.requests', 'notifications.channelInApp'],
       ['New request', 'notifications.category.requests · notifications.channelInApp'],
       ['Request declined', 'notifications.category.requests · notifications.channelInApp'],
@@ -69,7 +72,7 @@ describe('the notification matrix in the command menu', () => {
 
   it('moves a category and every kind under it with one row', async () => {
     const save = vi.fn(async () => {});
-    const requestsPush = rowsFor(PREFS, save).values[3];
+    const requestsPush = switchesOf(PREFS, save)[3];
 
     await requestsPush?.run?.();
 
@@ -84,7 +87,7 @@ describe('the notification matrix in the command menu', () => {
 
   it('sends one kind with both of its switches as they now stand', async () => {
     const save = vi.fn(async () => {});
-    const declinedInApp = rowsFor(PREFS, save).values[2];
+    const declinedInApp = switchesOf(PREFS, save)[2];
 
     await declinedInApp?.run?.();
 
@@ -93,7 +96,7 @@ describe('the notification matrix in the command menu', () => {
     });
   });
 
-  it('is named by either channel', () => {
-    expect(rowsFor(PREFS).words).toContain('notifications.channelPush');
+  it('is found by either channel', () => {
+    expect(commandFor(PREFS).keywords).toContain('notifications.channelPush');
   });
 });

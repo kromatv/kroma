@@ -52,6 +52,10 @@ interface CommandItem {
   /** What it can do, likeliest first: Enter runs the first, Command or Ctrl with
    *  Enter runs the second, and Command or Ctrl with K lists them all. */
   actions?: readonly CommandAction[];
+  /** Rows of its own, listed in place of the palette's once it is chosen, as a
+   *  Raycast list opens another: its first action opens them, and Escape, or
+   *  Backspace in an empty field, goes back. */
+  items?: readonly CommandItem[];
 }
 
 /** A run of items under one heading. An empty title is a run with no heading. */

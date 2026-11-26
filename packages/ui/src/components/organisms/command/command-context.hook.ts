@@ -17,6 +17,8 @@ interface CommandResults {
   query: string;
   /** The row under the cursor. */
   current: CommandItem | undefined;
+  /** The row whose own list is shown in place of the palette's, if one is. */
+  page: CommandItem | undefined;
 }
 
 interface CommandState extends CommandResults {
@@ -25,6 +27,8 @@ interface CommandState extends CommandResults {
   cursor: string | undefined;
   /** The row already open behind the palette. */
   selected: string | undefined;
+  back: () => void;
+  backLabel: string;
   setQuery: (next: string) => void;
   /** The pointer moves the SAME cursor the arrows do. */
   point: (item: CommandItem) => void;
@@ -43,8 +47,8 @@ const [CommandContext, useCommand] = partContext<CommandState>('Command.Root');
  * at any depth under a `<Command.Root>`; throws outside one.
  */
 function useCommandResults(): CommandResults {
-  const { shown, total, query, current } = useCommand('Root');
-  return { shown, total, query, current };
+  const { shown, total, query, current, page } = useCommand('Root');
+  return { shown, total, query, current, page };
 }
 
 export type { CommandResults, CommandState };
