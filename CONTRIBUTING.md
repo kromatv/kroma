@@ -32,11 +32,11 @@ These steps work on macOS and Linux. On Windows, use WSL 2.
 | Tool | Version | Used for |
 | --- | --- | --- |
 | [Git](https://git-scm.com) | any recent | the repository |
-| [Bun](https://bun.sh) | 1.4 or later | installing packages and running every script |
+| [Bun](https://bun.sh) | 1.4.4 or later | installing packages and running every script |
 | [Node.js](https://nodejs.org) | 22.12 or later | the lint plugins and the Expo command line |
 | [Rust](https://rustup.rs), through `rustup` | the version in `rust-toolchain.toml` | the server and the modules |
 | `cargo-watch` | any | rebuilding the server when you save |
-| ffmpeg and ffprobe | any recent | reading media and converting it |
+| ffmpeg and ffprobe | 6 or later | reading media and converting it |
 
 1. Install Bun:
 
@@ -69,6 +69,11 @@ These steps work on macOS and Linux. On Windows, use WSL 2.
 
    Check that `node --version` prints 22.12 or later. If your distribution ships
    an older one, install Node.js from [nodejs.org](https://nodejs.org) instead.
+
+   Check that `ffprobe -version` prints 6 or later, the version CI tests on.
+   Ubuntu 22.04 ships 4.4, whose ffprobe does not report the frame timestamps
+   the server reads, so the server cannot start a stream with it. Install a
+   static build from [ffmpeg.org](https://ffmpeg.org/download.html) instead.
 
 ### Get the code
 
