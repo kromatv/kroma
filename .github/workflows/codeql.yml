@@ -101,7 +101,6 @@ jobs:
             RUSTSEC-2023-0071 # rsa 0.9 under kroma-push (Marvin): no patched 0.9 exists
             RUSTSEC-2026-0387 # crypto-bigint 0.5 under p256 0.13: patched from 0.7.6, which 0.13 cannot take
             RUSTSEC-2026-0385 # ctutils 0.4.3 under chacha20poly1305: `cargo update -p ctutils` in server/
-            RUSTSEC-2026-0594 # cookie 0.18.2 under tauri, built without `private`: `cargo update -p cookie` in clients/desktop/src-tauri/ once 0.18.3 is 3 days old (26 Nov)
           )
           ignore=()
           for id in "${known[@]}"; do ignore+=(--ignore "$id"); done
