@@ -90,7 +90,7 @@ function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
         key={`${offline.itemId}:${attempt}`}
         item={offline.item}
         startSec={
-          lastPosition ?? handedBack ?? resumeSeconds(progress.data, offline.item.durationMs ?? 0)
+          lastPosition ?? handedBack ?? resumeSeconds(progress.data, offline.item.durationMs)
         }
         localUri={offline.fileUri}
         offline={offline}
@@ -122,9 +122,7 @@ function PlayerScreen({ id }: Readonly<{ id: ItemId }>) {
     <PlayerBody
       key={`${item.data.id}:${attempt}`}
       item={item.data}
-      startSec={
-        lastPosition ?? handedBack ?? resumeSeconds(progress.data, item.data.durationMs ?? 0)
-      }
+      startSec={lastPosition ?? handedBack ?? resumeSeconds(progress.data, item.data.durationMs)}
       onRetry={retryPlayback}
       onPosition={setLastPosition}
     />

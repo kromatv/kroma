@@ -134,7 +134,7 @@ function ItemDetail({ id }: Readonly<{ id: ItemId }>) {
     Math.min(1280, width),
   );
   const title = media.metadata?.title ?? media.title;
-  const resumeSec = resumeSeconds(progress.data, media.durationMs ?? 0);
+  const resumeSec = resumeSeconds(progress.data, media.durationMs);
   const cardW = posterWidth(width);
   const cast = media.metadata?.cast ?? [];
 

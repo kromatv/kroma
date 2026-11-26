@@ -47,7 +47,7 @@ export function useResumeAnchor(
         if (cancelled) {
           return;
         }
-        const resume = resumeSeconds(p, item.durationMs ?? 0);
+        const resume = resumeSeconds(p, item.durationMs);
         setAnchor(resume);
         setResolved({ id: item.id, viewer, value: resume });
       })

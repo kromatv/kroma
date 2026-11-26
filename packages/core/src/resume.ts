@@ -3,7 +3,7 @@ import type { ProgressEntry } from '@kromatv/client/media';
 const LEGACY_FLOOR_MS = 15_000;
 const LEGACY_END = 0.95;
 
-function legacyResumes(entry: ProgressEntry, runtimeMs: number): boolean {
+function legacyResumes(entry: ProgressEntry, runtimeMs: number | null | undefined): boolean {
   const duration = entry.durationMs ?? runtimeMs;
   return (
     entry.positionMs > LEGACY_FLOOR_MS && (!duration || entry.positionMs < duration * LEGACY_END)
@@ -14,7 +14,10 @@ function legacyResumes(entry: ProgressEntry, runtimeMs: number): boolean {
  * server says it resumes, else the beginning. A server too old to say is
  * judged by the rule every player used to apply, against `runtimeMs` when the
  * entry carries no duration. */
-export function resumeSeconds(entry: ProgressEntry | null | undefined, runtimeMs = 0): number {
+export function resumeSeconds(
+  entry: ProgressEntry | null | undefined,
+  runtimeMs?: number | null,
+): number {
   if (!entry) {
     return 0;
   }

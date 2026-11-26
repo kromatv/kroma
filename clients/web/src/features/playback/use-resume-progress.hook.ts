@@ -29,7 +29,7 @@ export function useResumeProgress(
     client.playback
       .itemProgress(item.id)
       .then((p) => {
-        const at = resumeSeconds(p, item.durationMs ?? 0);
+        const at = resumeSeconds(p, item.durationMs);
         if (!cancelled && at > 0) {
           setResumeAt(at);
         }

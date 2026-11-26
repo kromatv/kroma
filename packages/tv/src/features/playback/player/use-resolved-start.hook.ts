@@ -32,7 +32,7 @@ export function useResolvedStart(client: KromaClient, item: MediaItem): Resolved
     client.playback
       .itemProgress(item.id)
       .then((p) => {
-        settle(resumeSeconds(p, item.durationMs ?? 0));
+        settle(resumeSeconds(p, item.durationMs));
       })
       .catch(() => settle(0));
     return () => {
