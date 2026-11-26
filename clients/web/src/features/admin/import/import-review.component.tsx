@@ -1,3 +1,4 @@
+import { apiErrorBody } from '@kromatv/client';
 import type { ImportCounts, ImportSurvey } from '@kromatv/client/importers';
 import type { ImportFolder } from '@kromatv/client/imports';
 import { useT } from '@kromatv/ui';
@@ -182,7 +183,10 @@ export function ImportReview({ target, onBack }: Readonly<ReviewProps>) {
       <ImportFrame.Panel>
         {data ? <Survey survey={data} places={places} /> : null}
         {!data && !error ? <Loading /> : null}
-        <StepFailure error={error ? t('setup.importReviewFailed') : null} />
+        <StepFailure
+          error={error ? t('setup.importReviewFailed') : null}
+          detail={apiErrorBody(error).error}
+        />
         <StepFailure error={failed ? t('setup.importStartFailed') : null} />
         <KeptSignIn />
       </ImportFrame.Panel>

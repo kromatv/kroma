@@ -20,6 +20,10 @@ where
     fn migrations(&self) -> &'static str {
         store::MIGRATIONS
     }
+
+    fn steps(&self) -> &'static [kroma_module_sdk::db::Step] {
+        store::STEPS
+    }
 }
 
 pub fn server_module<S: HostStorage + Clone + Send + Sync + 'static>() -> Box<dyn ServerModule<S>> {

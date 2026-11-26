@@ -1,18 +1,19 @@
 mod household;
 mod recorded;
 
-use kroma_module_sdk::db::apply_migrations;
+use kroma_module_sdk::db::migrate_store;
 use kroma_module_sdk::db::testing::{temp_pool, TempPool};
 use kroma_module_sdk::primitives::random_token;
 
-use crate::store::MIGRATIONS;
+use crate::store::{MIGRATIONS, STEPS};
+use crate::MODULE_ID;
 
 pub(crate) use household::{Household, ACCOUNT, LOCAL, LOCAL_PLAIN, MACHINE, OWNER, RELAY, REMOTE};
 pub(crate) use recorded::{get, post, Seen, When};
 
 pub(crate) fn store() -> TempPool {
     let pool = temp_pool("plex-import");
-    apply_migrations(&pool.get().unwrap(), MIGRATIONS).unwrap();
+    migrate_store(&pool, MODULE_ID, MIGRATIONS, STEPS).unwrap();
     pool
 }
 

@@ -1,3 +1,5 @@
+use kroma_module_sdk::host::testing::StubHost;
+
 use crate::store;
 use crate::test_support::{
     filled, get, mint, post, Household, Seen, ACCOUNT, LOCAL, MACHINE, OWNER,
@@ -186,4 +188,13 @@ fn forgetting_twice_is_not_an_error() {
     let again = home.plex.forget(&ask);
 
     assert!(again.is_ok());
+}
+
+#[test]
+fn the_module_hands_the_host_every_schema_step() {
+    let module = crate::server_module::<StubHost>();
+
+    let steps: Vec<&str> = module.steps().iter().map(|step| step.name).collect();
+
+    assert_eq!(steps, vec!["unlocked"]);
 }

@@ -1,6 +1,10 @@
+use kroma_module_sdk::db::migrate_store;
+use kroma_module_sdk::db::testing::temp_pool;
+
 use super::*;
 
 use crate::test_support::{mint, store};
+use crate::MODULE_ID;
 
 fn pending_row(id: &str, expires_at: i64) -> Pending {
     Pending {
@@ -168,4 +172,23 @@ fn forgetting_a_sign_in_that_is_not_held_is_not_an_error() {
     let forgotten = forget(&pool, "never-kept");
 
     assert!(forgotten.is_ok());
+}
+
+#[test]
+fn a_database_made_before_pins_could_be_opened_keeps_the_users_a_pin_opens() {
+    let pool = temp_pool("plex-import-0-1-0");
+    migrate_store(&pool, MODULE_ID, MIGRATIONS, &[]).unwrap();
+    let key = ServerKey {
+        sign_in: "s-1",
+        server: "a",
+    };
+    let token = mint("reader");
+
+    migrate_store(&pool, MODULE_ID, MIGRATIONS, STEPS).unwrap();
+
+    keep_unlocked(&pool, key, ("7004", &token)).unwrap();
+    assert_eq!(
+        unlocked(&pool, key).unwrap(),
+        vec![("7004".to_string(), token)]
+    );
 }
