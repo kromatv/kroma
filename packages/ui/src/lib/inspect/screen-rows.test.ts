@@ -66,4 +66,16 @@ describe('a screen as flat rows', () => {
     expect(rows.map((row) => row.control)).toEqual([undefined, control]);
     expect(rows[0]).not.toHaveProperty('control');
   });
+
+  it('keeps what the box of a text cuts off it', () => {
+    const clipped = { width: 68, height: 0 };
+
+    const { rows } = screenRows({
+      fibers: 2,
+      nodes: [node('Card', [{ ...node('Text'), clipped }])],
+    });
+
+    expect(rows.map((row) => row.clipped)).toEqual([undefined, clipped]);
+    expect(rows[0]).not.toHaveProperty('clipped');
+  });
 });

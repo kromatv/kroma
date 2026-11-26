@@ -7,7 +7,7 @@ import { nameComponent } from '../component-names';
 import { createControlEngine } from '../control';
 import { createFocusHolder } from '../focus-holder';
 import { describeScreen } from './describe-screen';
-import { focusedPaths, paths } from './inspect.fixtures';
+import { find, focusedPaths, paths } from './inspect.fixtures';
 import { InspectAnchor } from './inspect-anchor';
 
 afterEach(cleanup);
@@ -25,6 +25,25 @@ nameComponent(Part, 'Menu.Part');
 const Field = memo(() => <input aria-label="field" />);
 
 nameComponent(Field, 'Field');
+
+function Line({ children }: Readonly<{ children: string }>) {
+  return <div style={{ overflowX: 'hidden', overflowY: 'hidden' }}>{children}</div>;
+}
+const Panel = memo(Line);
+
+nameComponent(Line, 'Text');
+nameComponent(Panel, 'Panel');
+
+type Size = { width: number; height: number };
+
+function measured(element: HTMLElement, scroll: Size, client: Size): void {
+  Object.defineProperties(element, {
+    scrollWidth: { value: scroll.width },
+    scrollHeight: { value: scroll.height },
+    clientWidth: { value: client.width },
+    clientHeight: { value: client.height },
+  });
+}
 
 const focusedForm = (
   <Card>
@@ -47,6 +66,12 @@ function mount(ui: ReactNode) {
 function read(ui: ReactNode) {
   mount(ui);
   return describeScreen();
+}
+
+function readMeasured(ui: ReactNode, scroll: Size) {
+  mount(ui);
+  measured(screen.getByText('Einstellungen'), scroll, { width: 120, height: 20 });
+  return describeScreen().nodes;
 }
 
 const never = new Promise<never>(() => {});
@@ -111,5 +136,23 @@ describe('the tree walk', () => {
     focus.hold(document.createElement('input'));
 
     expect(focusedPaths(describeScreen().nodes)).toEqual([]);
+  });
+
+  it('marks a text its box cuts with how far the text reaches past it', () => {
+    const nodes = readMeasured(<Line>Einstellungen</Line>, { width: 188, height: 20 });
+
+    expect(find(nodes, 'Text')?.clipped).toEqual({ width: 68, height: 0 });
+  });
+
+  it('leaves a text that fits its box unmarked', () => {
+    const nodes = readMeasured(<Line>Einstellungen</Line>, { width: 120, height: 20 });
+
+    expect(find(nodes, 'Text')).not.toHaveProperty('clipped');
+  });
+
+  it('measures a text and no other component', () => {
+    const nodes = readMeasured(<Panel>Einstellungen</Panel>, { width: 188, height: 20 });
+
+    expect(find(nodes, 'Panel')).not.toHaveProperty('clipped');
   });
 });

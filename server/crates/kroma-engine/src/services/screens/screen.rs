@@ -22,8 +22,9 @@ pub struct Screen {
     pub rows: Vec<ScreenRow>,
 }
 
-/// One mounted kit component, `depth` levels under the screen's top, and
-/// `focused` on the one that holds the focus.
+/// One mounted kit component, `depth` levels under the screen's top,
+/// `focused` on the one that holds the focus, and `clipped` on a text its box
+/// cuts.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScreenRow {
     pub depth: u32,
@@ -33,6 +34,15 @@ pub struct ScreenRow {
     pub bounds: Option<ScreenBox>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub focused: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub clipped: Option<ScreenClip>,
+}
+
+/// How many pixels of a text its box cuts off, across and down.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ScreenClip {
+    pub width: f64,
+    pub height: f64,
 }
 
 /// Where a component sits, in the device's viewport pixels.
@@ -115,6 +125,22 @@ mod tests {
         assert_eq!(row.props["title"], PropValue::Text("Réglages".into()));
         assert_eq!(row.props["icon"], PropValue::Null);
         assert_eq!(row.bounds.as_ref().map(|b| b.width), Some(1920.0));
+    }
+
+    #[test]
+    fn a_row_keeps_what_the_box_of_a_text_cuts_off_it() {
+        let said = json!({
+            "depth": 4,
+            "name": "Text",
+            "props": { "children": "Gefolgt" },
+            "box": null,
+            "clipped": { "width": 8.0, "height": 0.0 },
+        });
+
+        let row: ScreenRow = serde_json::from_value(said.clone()).expect("a row");
+
+        assert_eq!(row.clipped, Some(ScreenClip { width: 8.0, height: 0.0 }));
+        assert_eq!(serde_json::to_value(&row).unwrap(), said);
     }
 
     #[test]

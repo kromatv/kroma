@@ -4,7 +4,8 @@ import { childOf, type Fiber, isHost, siblingOf } from './react-fiber';
 /** Where a component sits on screen, in the viewport's pixels. */
 export type HostBox = Readonly<{ x: number; y: number; width: number; height: number }>;
 
-function firstHost(fiber: Fiber): Fiber | null {
+/** The first host element under a component fiber, depth first, or null. */
+export function firstHost(fiber: Fiber): Fiber | null {
   const pending: Fiber[] = [];
   let at: Fiber | null = childOf(fiber);
   while (at) {

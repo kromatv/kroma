@@ -2,7 +2,8 @@
 
 The kit can say what it has on screen: the kit components that are mounted,
 under their public names (`Dialog.Footer`, `ChoiceList.Item`), with a short
-summary of their props and the box each one occupies. A developer tool reads it
+summary of their props, the box each one occupies, and which texts that box
+cuts off. A developer tool reads it
 in a browser. A television in a release build has no debugger, so an admin reads
 it through the server instead, over the event socket the television already
 keeps open while it is signed in.
@@ -18,7 +19,7 @@ the function the component itself calls on a press, with no press simulated.
 
 ```ts
 { fibers: number; nodes: KitNode[] }
-// KitNode = { name, props, box, focused?, control?, children: KitNode[] }
+// KitNode = { name, props, box, focused?, clipped?, control?, children: KitNode[] }
 ```
 
 - `fibers` is how many React fibers the walk read.
@@ -41,6 +42,20 @@ the function the component itself calls on a press, with no press simulated.
   control it is (`Button`, `MediaCard`). No other node has the key, and none
   has it when nothing holds the focus. A control records its element as it
   takes the focus and forgets it as it loses it, so a render does nothing more.
+- `clipped` is on a `Text` its own box cuts, as `{ width, height }`: how many
+  pixels of the text lie past the box across and down, whether a `lines` clamp
+  (an ellipsis, a line clamp) or an `overflow` in its style cuts them. No other
+  node has the key, and neither does a text that fits. Across, a pixel of
+  rounding does not count. Down, the cut has to pass half a line, so a line box
+  shorter than its font is not taken for a dropped line: the reader cannot
+  tell a cut accent from spare room above the letters, so neither is reported.
+  A text that fits its own box while a parent cuts that box is not marked
+  either. In a browser the reader measures the text's element: how far its
+  content scrolls past its client box, on each axis its computed `overflow`
+  does not leave `visible`. Under React Native (Apple TV, Android TV, the
+  phones) it does not measure it yet and no node has the key: a paragraph lays
+  out only the lines it keeps, and `onTextLayout` does not say on every
+  platform whether it dropped any.
 - `control` is on a component that runs a control (`useControl`, see
   [`DESIGN.md`](../packages/ui/src/components/DESIGN.md) §5), as
   `{ ref, kind, state, actions }`. `ref` names the control in a call: `c4`, its
@@ -81,6 +96,17 @@ row has the key:
 { "depth": 16, "name": "Focusable", "props": { "autoFocus": true, "label": "Play" }, "box": { "x": 61, "y": 586, "width": 155, "height": 71 }, "focused": true }
 ```
 
+The row of a text its box cuts carries `clipped`, here a German label 8 pixels
+wider than its column:
+
+```json
+{ "depth": 12, "name": "Text", "props": { "children": "Gefolgt", "lines": 1 }, "box": { "x": 412, "y": 188, "width": 60, "height": 20 }, "clipped": { "width": 8, "height": 0 } }
+```
+
+`bun run shots:clip` reads every page of the web client and the main screens
+of the TV app this way, in every language the product offers, and lists each
+clipped text: see [`packages/shots/README.md`](../packages/shots/README.md#clipped-text).
+
 A row keeps the `control` of its node:
 
 ```json
@@ -104,8 +130,9 @@ development server and in a release build, from the developer tools console or
 from anything that can evaluate in the page.
 
 `screenText()` is the form to read. It writes one component a line, indented
-two spaces a level: its name, `(focused)` on the one that holds the focus, its
-box as `x,y widthxheight`, then its props. A prop that is `true` is its name
+two spaces a level: its name, `(focused)` on the one that holds the focus,
+`(clipped +WxH)` on a text its box cuts by W pixels across and H down, its box
+as `x,y widthxheight`, then its props. A prop that is `true` is its name
 alone, and one that is not a primitive (a function, an element, an object) is
 left out. On the home screen of the browser TV shell it is 136 lines, half the
 characters of the tree as JSON:
@@ -124,6 +151,12 @@ a key and reading where the focus went is two lines:
 ```js
 await page.keyboard.press('ArrowDown');
 console.log(await page.evaluate(() => globalThis.__KROMA_UI__.screenText()));
+```
+
+A text its box cuts says by how much, after its name:
+
+```
+Text (clipped +8x0)  412,188 60x20  children="Gefolgt" lines=1
 ```
 
 A component that runs a control has its ref after its name and ends with its
@@ -212,7 +245,8 @@ message. Every kit component whose value or open state an app can also own
 runs a control: Switch, Checkbox, Disclosure, TextField, TextArea, OtpField,
 PinField, Command, Menu, Select, Stepper, Chart, Cropper and Resizable. A
 Field's value is held by the entry it renders. The television routes below
-carry the rows without `control`, and have no route for a call yet.
+carry the rows without `control` (with `clipped`), and have no route for a call
+yet.
 
 ## As WebMCP tools
 

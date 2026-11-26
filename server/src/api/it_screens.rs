@@ -31,6 +31,13 @@ fn screen() -> Value {
                 "box": { "x": 0.5, "y": 8.0, "width": 1920.0, "height": 1080.0 },
             },
             { "depth": 1, "name": "Dialog.Footer", "props": {}, "box": null, "focused": true },
+            {
+                "depth": 2,
+                "name": "Text",
+                "props": { "children": "Gefolgt" },
+                "box": null,
+                "clipped": { "width": 8.0, "height": 0.0 },
+            },
         ],
     })
 }

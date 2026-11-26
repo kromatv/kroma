@@ -24,7 +24,7 @@ export const screenTools: readonly ScreenTool[] = [
   {
     name: 'read_screen',
     description:
-      'Reads what the page shows, one kit component a line, indented by depth: its name, (focused) on the one that holds the focus, its box as x,y widthxheight, then its props. A component that runs a control has its ref after its name, [c4], and ends with its state and the actions change_controls can run on it now. Read it first, and again after a change.',
+      'Reads what the page shows, one kit component a line, indented by depth: its name, (focused) on the one that holds the focus, (clipped +WxH) on a text its box cuts off by W pixels across and H down, its box as x,y widthxheight, then its props. A component that runs a control has its ref after its name, [c4], and ends with its state and the actions change_controls can run on it now. Read it first, and again after a change.',
     inputSchema: NO_INPUT,
     annotations: READS,
     execute: async () => screenText(),

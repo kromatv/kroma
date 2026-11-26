@@ -10,6 +10,8 @@ bun run shots:pr about-hardware --route about --targets tizen --publish
 
 Not to be confused with `bun run shots`, which shoots the kit's component
 stories (`packages/ui/scripts/shoot-stories.ts`). This one shoots the product.
+`bun run shots:clip` reads the same screens in every language for texts their
+box cuts off: see [Clipped text](#clipped-text).
 
 ## Why it exists
 
@@ -135,6 +137,94 @@ puts it in the process list for as long as the upload runs.
 | `appletv` | Captured end to end from the simulator; the app on it had no Metro, which is what prompted the Metro precondition. The `--keys` path is written but has not driven a real screen. |
 | `androidtv` | SDK, AVD and precondition paths exercised. The emulator was not booted and no capture has been taken. |
 | `web` | Not run: nothing was serving :3000 at the time. |
+
+## Clipped text
+
+A label that fits in English can lose its end to an ellipsis in German or
+Vietnamese, and nobody sees it until a screenshot. `bun run shots:clip` reads
+every screen in every language and lists each text its box cuts off:
+
+```bash
+KROMA_EMAIL=owner KROMA_PASSWORD=… bun run shots:clip --port web=3200 --port tizen=5274
+```
+
+It reads what the kit's screen reader says
+([`docs/inspecting-a-screen.md`](../../docs/inspecting-a-screen.md)): a `Text`
+row carries `clipped` when its own box cuts it, with how many pixels across and
+down. So the shells it reads must be dev servers of this checkout, and like a
+capture it never starts one.
+
+### What it needs
+
+- **A server**, `--server` (default `http://localhost:4040`).
+- **The dev shells**, `web` and `tizen` by default (`--targets web,tizen,webos`),
+  each on its default port unless `--port <id>=<n>` moves it.
+- **An account**, never written in the repository. `KROMA_EMAIL` (an email or a
+  username) and `KROMA_PASSWORD` sign it in, as they do for the `kroma` CLI,
+  and the sweep signs out again at the end. Or `--seed <file>`, the same
+  localStorage JSON as `shots:pr` takes, whose `kroma.session` it uses as it is.
+  An admin account reaches the admin pages too.
+
+The account's language beats the browser's in every shell, so the sweep sets
+it, one language at a time, and puts back the one it had at the end. Two sweeps
+on one account at once would read each other's languages: a screen that does
+not come up in the language asked for is listed as not read.
+
+### What it reads
+
+- **Languages**: every one `packages/core/src/locales/i18n.json` offers (the
+  source and each stage past `draft`), or `--langs de,vi`.
+- **The web client**: every page of `clients/web/src/routes` under a layout that
+  takes no param, then every link those pages hold, and the links of those. One
+  page stands for each route that takes a param (one title for every title), a
+  page a splat route serves is read on its own, and nothing under the player is
+  opened. `--max-pages` (default 150) bounds the crawl.
+- **The TV app**: home, the three grids, the genres, search, the signed-in
+  settings and the release notes, then the first movie and the first show the
+  library lists, each landed on through `dev-nav` over home.
+
+Each screen is read once it speaks the language and its text has stopped
+changing, or after five seconds on one that keeps changing. A page that
+crashes, or does not answer in three minutes, is listed as not read and the
+sweep goes on in a new one.
+
+### What it prints
+
+```
+From the catalogs:
+de       web   /admin/monitoring  "Gefolgt" (de:monitoring.followed)  misses 8px across
+
+Not from a catalog:
+all      web   /trending  "The Hunger Games: Sunrise on the Reaping"  misses 87px across
+
+Not read:
+vi       tizen search  not read: it stayed in "de"
+
+2 clipped texts, 1 from the catalogs: en 1, de 2, vi 1.
+```
+
+A text is matched against the catalogs of its language and of the source
+(core and modules), so a message gets its key (`en:` when a translation still
+shows the English) and a title, a name or a message the server sent does not.
+A message with `{variables}` reads a text only when its own words make a third
+of the text's letters, so `{head} and {last}` is not taken for every sentence
+that holds an "and".
+A text clipped the same way in every language swept says `all`, and one a
+screen repeats says how often, `(x20)`.
+
+It exits non-zero when it lists a clipped text or a screen it could not read.
+`--catalog-only` lists and fails on the catalogs' texts alone, which is what a
+translation can fix; `--report` always exits 0; `--json` prints the findings
+and the screens not read as JSON.
+
+### What it does not see
+
+- A native shell. React Native does not report a cut text yet, so the sweep
+  reads the browser shells only.
+- A text that fits its own box while a parent cuts the box, and a line box
+  shorter than its font (the reader cannot tell a cut accent from spare room).
+- What a screen shows only after a key press: the settings show their first
+  group, a dialog shows only once opened.
 
 ## Ports
 

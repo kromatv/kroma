@@ -168,6 +168,19 @@ bun run i18n check
 
 It runs in CI as part of the tests.
 
+A message the check passes can still not fit where it shows. Before a
+translation pull request, start a server and the dev shells of this checkout,
+then read every screen in your language:
+
+```bash
+KROMA_EMAIL=… KROMA_PASSWORD=… bun run shots:clip --langs de --catalog-only
+```
+
+It lists each message a box cuts off, with its key and how many pixels it
+misses by, and exits non-zero while there is one. Shorten the translation or
+tell a maintainer the layout is too tight. See
+[`packages/shots/README.md`](../packages/shots/README.md#clipped-text).
+
 ## Ship it
 
 A maintainer changes the stage in `packages/core/src/locales/i18n.json`:

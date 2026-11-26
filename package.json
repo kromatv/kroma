@@ -33,6 +33,7 @@
     "shots": "bun run --filter '@kromatv/ui' shots",
     "shots:attach": "bun packages/shots/src/attach-cli.ts",
     "shots:pr": "bun packages/shots/src/cli.ts",
+    "shots:clip": "bun packages/shots/src/clip/cli.ts",
     "kit:dom": "bun packages/ui/scripts/dom-audit.ts",
     "kit:compiler": "bun packages/ui/scripts/compiler-coverage.ts",
     "kit:fanout": "bun packages/ui/scripts/fanout-audit.ts",
