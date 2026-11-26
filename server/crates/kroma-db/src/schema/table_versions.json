@@ -192,6 +192,10 @@
       "broke": 50,
       "changed": 50
     },
+    "phrase_vectors": {
+      "broke": 52,
+      "changed": 52
+    },
     "pin_attempts": {
       "broke": 1,
       "changed": 1
@@ -293,5 +297,5 @@
       "changed": 1
     }
   },
-  "version": 51
+  "version": 52
 }

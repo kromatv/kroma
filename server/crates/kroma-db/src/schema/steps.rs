@@ -74,4 +74,5 @@ pub(super) const STEPS: &[Step] = &[
     sql_step!("0049_title_cast"),
     sql_step!("0050_people_found"),
     sql_step!("0051_text_beside_studio"),
+    sql_step!("0052_phrase_vectors"),
 ];
