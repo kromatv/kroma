@@ -28,24 +28,30 @@ pub fn embed_batch(point: &Point, texts: &[String]) -> Vec<Vec<f32>> {
 /// stored vector of another width is noise, so this is what the pipeline stamps
 /// its signature with.
 pub fn dim(point: &Point) -> usize {
-    meta(point).map_or(0, |m| m.dim)
+    meta(point).dim
 }
 
 /// Minimum cosine for a themed-query hit to count as signal. `1.0` when nothing
 /// answers: a floor of zero would let every candidate through on a similarity
 /// nothing computed, which is worse than recommending none.
 pub fn relevance_floor(point: &Point) -> f32 {
-    meta(point).map_or(1.0, |m| m.relevance_floor)
+    meta(point).relevance_floor
 }
 
+/// [`dim`] and [`relevance_floor`] in one call, for a caller that needs both.
+pub fn meta(point: &Point) -> Meta {
+    point.call("meta", &json!({})).unwrap_or_default()
+}
+
+/// What the module answering says of its vectors.
 // Tolerant on purpose: the module ships on its own tag, so a field it stops
 // sending has to fall back to the "nothing answers" value rather than break the
 // call.
-#[derive(serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
 #[serde(default)]
-struct Meta {
-    dim: usize,
-    relevance_floor: f32,
+pub struct Meta {
+    pub dim: usize,
+    pub relevance_floor: f32,
 }
 
 impl Default for Meta {
@@ -55,10 +61,6 @@ impl Default for Meta {
             relevance_floor: 1.0,
         }
     }
-}
-
-fn meta(point: &Point) -> Option<Meta> {
-    point.call("meta", &json!({}))
 }
 
 #[cfg(test)]

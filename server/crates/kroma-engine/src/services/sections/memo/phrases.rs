@@ -1,19 +1,18 @@
 //! The embedder's vector for each phrase a home asks about on every build: a
-//! theme's mood and the rows a model named.
+//! theme's mood and the rows a model named. Kept in the database too, so the
+//! first home after a start does not embed them all again.
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use crate::point::Point;
+use crate::db::{self, Phrase};
 use crate::services::embeddings;
-use crate::services::jobs::now_ms;
+use crate::state::SharedState;
 
-const FRESH_FOR_MS: i64 = 60 * 60_000;
 const MOST_HELD: usize = 128;
 
 struct Held {
     module: String,
-    built_at_ms: i64,
     vector: Arc<[f32]>,
 }
 
@@ -24,23 +23,25 @@ pub struct Phrases {
 
 impl Phrases {
     /// The vector of `phrase`, computed once per module answering the embedder
-    /// and reused for an hour. Empty when nothing answers, and never kept then.
-    pub fn vector(&self, embedder: &Point, phrase: &str) -> Arc<[f32]> {
-        self.vector_at(embedder, phrase, now_ms())
-    }
-
-    fn vector_at(&self, embedder: &Point, phrase: &str, now_ms: i64) -> Arc<[f32]> {
-        let Some(module) = embedder.answering().into_iter().next() else {
-            return Arc::from([]);
+    /// and per width `dim` it says its vectors have, then reused, across starts
+    /// too. Empty when nothing answers or `dim` is `0`, and never kept then.
+    pub fn vector(&self, state: &SharedState, dim: usize, phrase: &str) -> Arc<[f32]> {
+        let module = match state.embedder.answering().into_iter().next() {
+            Some(module) if dim > 0 => module,
+            _ => return Arc::from([]),
         };
-        if let Some(vector) = self.recall(&module, phrase, now_ms) {
+        if let Some(vector) = self.recall(&module, dim, phrase) {
             return vector;
         }
-        let vector: Arc<[f32]> = embeddings::embed(embedder, phrase).into();
-        if !vector.is_empty() {
+        let asked = Phrase {
+            module: &module,
+            dim,
+            text: phrase,
+        };
+        let vector = kept_or_embedded(state, &asked);
+        if vector.len() == dim {
             let entry = Held {
                 module,
-                built_at_ms: now_ms,
                 vector: Arc::clone(&vector),
             };
             self.keep(phrase, entry);
@@ -48,16 +49,15 @@ impl Phrases {
         vector
     }
 
-    fn recall(&self, module: &str, phrase: &str, now_ms: i64) -> Option<Arc<[f32]>> {
+    fn recall(&self, module: &str, dim: usize, phrase: &str) -> Option<Arc<[f32]>> {
         let held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
         held.get(phrase)
-            .filter(|h| h.module == module && now_ms - h.built_at_ms < FRESH_FOR_MS)
+            .filter(|h| h.module == module && h.vector.len() == dim)
             .map(|h| Arc::clone(&h.vector))
     }
 
     fn keep(&self, phrase: &str, entry: Held) {
         let mut held = self.held.lock().unwrap_or_else(PoisonError::into_inner);
-        held.retain(|_, h| entry.built_at_ms - h.built_at_ms < FRESH_FOR_MS);
         if held.len() >= MOST_HELD {
             held.clear();
         }
@@ -65,89 +65,18 @@ impl Phrases {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::sync::atomic::{AtomicUsize, Ordering};
-
-    use serde_json::{json, Value};
-
-    use super::*;
-    use crate::point::StubFn;
-
-    fn counting(calls: &Arc<AtomicUsize>, answer: Value) -> StubFn {
-        let calls = Arc::clone(calls);
-        Arc::new(move |_, _| {
-            calls.fetch_add(1, Ordering::SeqCst);
-            Some(answer.clone())
-        })
+fn kept_or_embedded(state: &SharedState, phrase: &Phrase) -> Arc<[f32]> {
+    if let Ok(Some(kept)) = db::phrase_vector(&state.db, phrase) {
+        return kept.into();
     }
-
-    fn embedder(module: &str, calls: &Arc<AtomicUsize>) -> Point {
-        Point::stubs(
-            "embedder",
-            vec![(module, counting(calls, json!([0.6, 0.8])))],
-        )
+    let vector = embeddings::embed(&state.embedder, phrase.text);
+    if vector.len() == phrase.dim {
+        if let Err(e) = db::keep_phrase_vector(&state.db, phrase, &vector) {
+            tracing::warn!(target: "sections", "a phrase vector could not be kept: {e:#}");
+        }
     }
-
-    #[test]
-    fn a_phrase_asked_again_is_not_embedded_again() {
-        let calls = Arc::new(AtomicUsize::new(0));
-        let phrases = Phrases::default();
-        let point = embedder("tv.kroma.vector", &calls);
-
-        let first = phrases.vector_at(&point, "cozy autumn drama", 0);
-        let again = phrases.vector_at(&point, "cozy autumn drama", FRESH_FOR_MS - 1);
-
-        assert_eq!(&*first, &[0.6, 0.8]);
-        assert_eq!(&*again, &[0.6, 0.8]);
-        assert_eq!(calls.load(Ordering::SeqCst), 1);
-    }
-
-    #[test]
-    fn a_phrase_is_embedded_again_once_its_hour_is_over() {
-        let calls = Arc::new(AtomicUsize::new(0));
-        let phrases = Phrases::default();
-        let point = embedder("tv.kroma.vector", &calls);
-
-        phrases.vector_at(&point, "heist thriller", 0);
-        phrases.vector_at(&point, "heist thriller", FRESH_FOR_MS);
-
-        assert_eq!(calls.load(Ordering::SeqCst), 2);
-    }
-
-    #[test]
-    fn another_module_answering_embeds_the_phrase_itself() {
-        let calls = Arc::new(AtomicUsize::new(0));
-        let phrases = Phrases::default();
-
-        phrases.vector_at(&embedder("tv.kroma.vector", &calls), "action movie", 0);
-        phrases.vector_at(&embedder("org.example.vectors", &calls), "action movie", 1);
-
-        assert_eq!(calls.load(Ordering::SeqCst), 2);
-    }
-
-    #[test]
-    fn an_embedder_that_answers_nothing_is_asked_again_next_time() {
-        let calls = Arc::new(AtomicUsize::new(0));
-        let phrases = Phrases::default();
-        let point = Point::stubs(
-            "embedder",
-            vec![("tv.kroma.vector", counting(&calls, json!([])))],
-        );
-
-        let first = phrases.vector_at(&point, "tearjerker", 0);
-        phrases.vector_at(&point, "tearjerker", 1);
-
-        assert!(first.is_empty());
-        assert_eq!(calls.load(Ordering::SeqCst), 2);
-    }
-
-    #[test]
-    fn no_embedder_installed_reads_as_no_vector() {
-        let phrases = Phrases::default();
-
-        let vector = phrases.vector(&Point::absent("embedder"), "neon night drive");
-
-        assert!(vector.is_empty());
-    }
+    vector.into()
 }
+
+#[cfg(test)]
+mod tests;

@@ -19,11 +19,13 @@ mod shelves;
 pub mod taste;
 mod themed;
 mod themes;
+mod warm;
 pub mod world;
 
 pub use cache::VectorCache;
 pub use memo::{hero, home, HomeMemo};
 pub use page::{adapt, Accepts};
+pub use warm::warm_up;
 
 use crate::db::{self, Pool};
 use crate::i18n;

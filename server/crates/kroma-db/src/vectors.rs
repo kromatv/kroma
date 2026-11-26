@@ -10,12 +10,14 @@ use rusqlite::OptionalExtension;
 
 use super::{now_or_blank, params, Pool, Result};
 
+mod phrases;
 mod recommendations;
 mod search;
 
 #[cfg(test)]
 mod test_support;
 
+pub use phrases::*;
 pub use recommendations::*;
 pub use search::*;
 

@@ -4,7 +4,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::db;
-use crate::services::embeddings;
+use crate::services::embeddings::{self, Meta};
 use crate::services::reco::rank::{rank, spread};
 use crate::services::reco::{Scored, Signals};
 
@@ -24,25 +24,25 @@ impl Board<'_> {
     /// The themes worth a row today, the seasonal ones first, then the ones
     /// whose best members suit the viewer most.
     pub(super) fn themes(&self) -> Vec<Draft> {
-        let floor = embeddings::relevance_floor(&self.state.embedder);
-        let embeds = floor < 1.0;
+        let embedder = embeddings::meta(&self.state.embedder);
+        let embeds = embedder.relevance_floor < 1.0;
         let mut rows: Vec<(f32, Draft)> = themes::eligible(self.ctx)
             .into_iter()
             .filter(|theme| embeds || !theme.is_a_mood())
-            .filter_map(|theme| self.theme(theme, embeds.then_some(floor)))
+            .filter_map(|theme| self.theme(theme, embeds.then_some(embedder)))
             .collect();
         rows.sort_by(|a, b| b.0.total_cmp(&a.0).then_with(|| a.1.id.cmp(&b.1.id)));
         rows.into_iter().take(MAX_THEMED).map(|(_, draft)| draft).collect()
     }
 
-    fn theme(&self, theme: &Theme, floor: Option<f32>) -> Option<(f32, Draft)> {
+    fn theme(&self, theme: &Theme, embedder: Option<Meta>) -> Option<(f32, Draft)> {
         let pool = self.ranked.iter().map(|s| s.title);
         let mut members = theme.members(pool, &self.state.search);
         if members.len() < MIN_THEME_ITEMS {
             return None;
         }
-        let near = self.near(theme, floor);
-        if let (true, Some(floor)) = (theme.is_a_mood(), floor) {
+        let near = self.near(theme, embedder);
+        if let (true, Some(floor)) = (theme.is_a_mood(), embedder.map(|e| e.relevance_floor)) {
             members.retain(|(title, _)| near.get(&title.facts.id).is_some_and(|c| *c >= floor));
         }
         let strength: HashMap<&str, f32> = members
@@ -74,11 +74,11 @@ impl Board<'_> {
         Some((head + lead, draft))
     }
 
-    fn near(&self, theme: &Theme, floor: Option<f32>) -> HashMap<String, f32> {
-        let (Some(vibe), Some(_)) = (theme.vibe, floor) else {
+    fn near(&self, theme: &Theme, embedder: Option<Meta>) -> HashMap<String, f32> {
+        let (Some(vibe), Some(embedder)) = (theme.vibe, embedder) else {
             return HashMap::new();
         };
-        let query = self.state.home.phrases.vector(&self.state.embedder, vibe);
+        let query = self.state.home.phrases.vector(self.state, embedder.dim, vibe);
         if query.is_empty() {
             return HashMap::new();
         }
@@ -93,17 +93,17 @@ impl Board<'_> {
     /// genres; the members are catalogue titles of those genres, in the order
     /// the embedder puts them.
     pub(super) fn authored(&self) -> Vec<Draft> {
-        let floor = embeddings::relevance_floor(&self.state.embedder);
+        let embedder = embeddings::meta(&self.state.embedder);
         let open: HashSet<&str> = self.ranked.iter().map(|s| s.title.facts.id.as_str()).collect();
         generate::load(self.pool, &self.viewer.user_id)
             .into_iter()
             .filter(|row| !row.genres.is_empty())
             .map(|row| {
-                let query = self.state.home.phrases.vector(&self.state.embedder, &row.query);
+                let query = self.state.home.phrases.vector(self.state, embedder.dim, &row.query);
                 let near = self.state.vectors.nearest(&query, FETCH * 2, &HashSet::new());
                 let ids: Vec<String> = db::keep_shelf(self.pool, near, &row.genres, row.form.kinds())
                     .into_iter()
-                    .filter(|(id, score)| *score >= floor && open.contains(id.as_str()))
+                    .filter(|(id, score)| *score >= embedder.relevance_floor && open.contains(id.as_str()))
                     .map(|(id, _)| id)
                     .collect();
                 let mut draft = Draft::rail(

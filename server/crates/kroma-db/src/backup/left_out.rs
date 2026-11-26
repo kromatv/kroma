@@ -23,6 +23,7 @@ const REBUILT_FROM_THE_MEDIA_AND_ITS_PROVIDERS: &[&str] = &[
     "markers",
     "metadata_core",
     "people_found",
+    "phrase_vectors",
     "pipeline_tasks",
     "season_meta",
     "translations",

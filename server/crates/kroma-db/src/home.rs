@@ -10,6 +10,7 @@ mod fresh;
 mod genre_guard;
 mod hero_candidates;
 mod hydration;
+mod last_viewer;
 mod title_facts;
 
 #[cfg(test)]
@@ -21,6 +22,7 @@ pub use fresh::*;
 pub use genre_guard::*;
 pub use hero_candidates::*;
 pub use hydration::*;
+pub use last_viewer::*;
 pub use title_facts::*;
 
 /// Top `n` *entity* ids by recency-weighted play count over the last 30 days a
