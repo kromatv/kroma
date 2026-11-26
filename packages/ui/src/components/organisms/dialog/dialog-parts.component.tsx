@@ -4,10 +4,10 @@ import { RING_ROOM, type StyleScope, sharedStyle, styles, useStyleScope } from '
 // scrolls, the other two stay put.
 
 import { createContext, type ReactNode, useContext } from 'react';
-import { ScrollView } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 
 import { useStyles } from '#ui/core/styles';
+import { FocusScrollView } from '#ui/lib/focus-scroll-view.component';
 import { SurfaceBand } from '#ui/lib/surface-band.component';
 import { DIALOG_PAD } from '#ui/lib/surface-shell';
 
@@ -69,7 +69,7 @@ function Panel({ children }: Readonly<{ children: ReactNode }>) {
   const room = pad > 0 ? RING_ROOM : 0;
   return (
     <SurfaceBand part="Dialog.Panel">
-      <ScrollView
+      <FocusScrollView
         style={s.panel}
         contentContainerStyle={bandOf(
           pad,
@@ -80,7 +80,7 @@ function Panel({ children }: Readonly<{ children: ReactNode }>) {
         )}
       >
         {children}
-      </ScrollView>
+      </FocusScrollView>
     </SurfaceBand>
   );
 }

@@ -39,5 +39,21 @@ function nearestOffset({ top, size, current, margin, viewport, content }: Neares
   return current;
 }
 
+/** {@link nearestOffset}, carried on to an end of the content when what lies
+ *  between the row and that end is shorter than the row, so a heading or the
+ *  content's padding, and the row stays whole there. */
+function bandOffset(metrics: NearestMetrics): number {
+  const { top, size, margin, viewport, content } = metrics;
+  const offset = nearestOffset(metrics);
+  const last = Math.max(0, content - viewport);
+  if (last - offset < size && top - margin >= last) {
+    return last;
+  }
+  if (offset < size && top + size + margin <= viewport) {
+    return 0;
+  }
+  return offset;
+}
+
 export type { NearestMetrics, PageMetrics };
-export { nearestOffset, pageOffset };
+export { bandOffset, nearestOffset, pageOffset };
