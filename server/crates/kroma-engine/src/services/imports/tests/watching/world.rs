@@ -188,7 +188,12 @@ impl World {
     }
 
     pub(super) fn resume_point(&self, file: &str) -> Option<(i64, String)> {
-        let saved = db::get_progress(&self.state.db, &self.ana, &self.title_of(file)).unwrap();
+        let saved = db::get_progress(
+            &self.state.db,
+            (&self.ana, &self.title_of(file)),
+            crate::model::WatchThresholds::default(),
+        )
+        .unwrap();
         saved.map(|saved| (saved.position_ms, saved.updated_at))
     }
 

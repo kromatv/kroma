@@ -6,6 +6,7 @@ use std::collections::{HashMap, HashSet};
 use crate::db;
 use crate::i18n;
 use crate::model::{Layout, Section, SectionItem};
+use crate::services::settings;
 
 use super::board::{Board, Draft};
 
@@ -181,10 +182,16 @@ pub(super) fn compose(board: &Board, show_recent: bool) -> Vec<Section> {
         }
     }
     let mut sections: Vec<Section> = placed.into_iter().flatten().take(MAX_SECTIONS).collect();
+    dress(board, &mut sections);
+    sections
+}
 
-    let progress = db::show_progress(board.pool, &board.viewer.user_id).unwrap_or_default();
+fn dress(board: &Board, sections: &mut [Section]) {
+    let thresholds = settings::watch_thresholds(&board.state.settings);
+    let progress =
+        db::show_progress(board.pool, &board.viewer.user_id, thresholds).unwrap_or_default();
     let content_locale = i18n::content_locale(board.locale);
-    for section in &mut sections {
+    for section in sections {
         for item in &mut section.items {
             if let SectionItem::Show { show } = item {
                 show.progress = progress.get(&show.id).copied();
@@ -192,7 +199,6 @@ pub(super) fn compose(board: &Board, show_recent: bool) -> Vec<Section> {
         }
         let _ = db::localize::overlay_section_items(board.pool, &mut section.items, content_locale);
     }
-    sections
 }
 
 /// The layouts a client says it can draw, beyond a rail.

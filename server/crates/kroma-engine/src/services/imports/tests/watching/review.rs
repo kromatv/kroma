@@ -2,7 +2,6 @@ use super::*;
 
 const DARK_1: &str = "shows/Dark/Season 01/Dark S01E01.mkv";
 const DARK_2: &str = "shows/Dark/Season 01/Dark S01E02.mkv";
-const PLAYED_PERCENT: i64 = 90;
 
 fn watched(title: &str) -> Value {
     json!({ "title": title, "watched": true, "lastPlayedAt": LAST_WEEK })
@@ -43,11 +42,15 @@ fn watched_here(world: &World) -> Vec<String> {
 }
 
 fn continue_watching(world: &World) -> Vec<(String, i64)> {
-    db::continue_watching(&world.state.db, &world.ana, PLAYED_PERCENT)
-        .unwrap()
-        .into_iter()
-        .map(|resumable| (resumable.item.id, resumable.position_ms))
-        .collect()
+    db::continue_watching(
+        &world.state.db,
+        &world.ana,
+        crate::model::WatchThresholds::default(),
+    )
+    .unwrap()
+    .into_iter()
+    .map(|resumable| (resumable.item.id, resumable.position_ms))
+    .collect()
 }
 
 fn now_secs() -> i64 {

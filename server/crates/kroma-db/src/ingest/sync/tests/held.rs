@@ -49,6 +49,11 @@ fn a_state_an_import_holds_shows_as_soon_as_a_batch_of_the_walk_writes_its_file(
     )
     .unwrap();
 
-    let resumed = crate::get_progress(&p, &account, "heat").unwrap();
+    let resumed = crate::get_progress(
+        &p,
+        (&account, "heat"),
+        kroma_domain::WatchThresholds::default(),
+    )
+    .unwrap();
     assert_eq!(resumed.map(|entry| entry.position_ms), Some(5_025_000));
 }

@@ -40,7 +40,7 @@ use context::Context;
 #[tracing::instrument(level = "trace", skip_all)]
 pub fn build_home(state: &SharedState, pool: &Pool, locale: &str, user_id: &str) -> Vec<Section> {
     let _ = state.vectors.refresh_if_stale(pool);
-    let ctx = Context::build(pool, user_id, settings::played_percent(&state.settings));
+    let ctx = Context::build(pool, user_id, settings::watch_thresholds(&state.settings));
     let catalog = state.home.catalog.get(state, pool);
     let now = crate::services::jobs::now_ms().div_euclid(1000);
     let viewer = Viewer::read(state, pool, &catalog, user_id, now);

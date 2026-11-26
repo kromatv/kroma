@@ -1,5 +1,6 @@
 import type { KromaClient } from '@kromatv/client';
 import type { UserId } from '@kromatv/client/accounts';
+import { resumeSeconds } from '@kromatv/core';
 import { useEffect, useState } from 'react';
 import type { MovieView } from '#web/shared/lib/api';
 
@@ -46,9 +47,7 @@ export function useResumeAnchor(
         if (cancelled) {
           return;
         }
-        const durMs = p?.durationMs ?? item.durationMs ?? 0;
-        const posSec = (p?.positionMs ?? 0) / 1000;
-        const resume = p && posSec > 15 && (!durMs || p.positionMs < durMs * 0.95) ? posSec : 0;
+        const resume = resumeSeconds(p, item.durationMs);
         setAnchor(resume);
         setResolved({ id: item.id, viewer, value: resume });
       })

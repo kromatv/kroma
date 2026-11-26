@@ -6,7 +6,7 @@
 //! [`up_next`] which episode comes next.
 
 use super::{now_or_blank, params, Connection, Pool, Result, Row};
-use kroma_domain::ProgressEntry;
+use kroma_domain::{ProgressEntry, WatchThresholds};
 use rusqlite::OptionalExtension;
 
 mod continue_watching;
@@ -29,18 +29,24 @@ pub use watch_state::*;
 
 pub(crate) const RESUME_FLOOR_MS: i64 = 15_000;
 
+const RUNTIME_SQL: &str = "COALESCE(NULLIF(p.duration_ms, 0), \
+     (SELECT NULLIF(d.duration_ms, 0) FROM items d WHERE d.id = p.item_id))";
+
 pub(crate) fn finished_sql(played_percent: i64) -> String {
     format!(
-        "((p.duration_ms IS NOT NULL AND p.position_ms * 100 >= p.duration_ms * {played_percent}) \
+        "(COALESCE(p.position_ms * 100 >= {RUNTIME_SQL} * {played_percent}, 0) \
           OR EXISTS (SELECT 1 FROM markers m WHERE m.item_id = p.item_id \
                       AND m.kind = 'credits' AND p.position_ms >= m.start_ms))"
     )
 }
 
-pub(crate) fn resumable_sql(played_percent: i64) -> String {
+pub(crate) fn resumable_sql(thresholds: WatchThresholds) -> String {
     format!(
-        "p.position_ms > {RESUME_FLOOR_MS} AND NOT {}",
-        finished_sql(played_percent)
+        "(p.position_ms > {RESUME_FLOOR_MS} \
+          AND p.position_ms * 100 >= COALESCE({RUNTIME_SQL}, 0) * {} \
+          AND NOT {})",
+        thresholds.resume_percent,
+        finished_sql(thresholds.played_percent)
     )
 }
 
@@ -96,13 +102,14 @@ pub fn upsert_progress(
     Ok(())
 }
 
-/// One item's saved progress for a user, if any.
-pub fn get_progress(pool: &Pool, user_id: &str, item_id: &str) -> Result<Option<ProgressEntry>> {
+/// One item's saved progress for a user, if any, judged against `thresholds`.
+pub fn get_progress(
+    pool: &Pool,
+    (user_id, item_id): (&str, &str),
+    thresholds: WatchThresholds,
+) -> Result<Option<ProgressEntry>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "SELECT item_id,position_ms,duration_ms,updated_at FROM progress \
-         WHERE user_id = ?1 AND item_id = ?2",
-    )?;
+    let mut stmt = conn.prepare(&progress_sql(thresholds, "AND p.item_id = ?2"))?;
     let mut rows = stmt.query_map(params![user_id, item_id], row_to_progress)?;
     match rows.next() {
         Some(p) => Ok(Some(p?)),
@@ -110,15 +117,24 @@ pub fn get_progress(pool: &Pool, user_id: &str, item_id: &str) -> Result<Option<
     }
 }
 
-/// Every saved progress row for a user (newest first).
-pub fn list_progress(pool: &Pool, user_id: &str) -> Result<Vec<ProgressEntry>> {
+/// Every saved progress row for a user (newest first), judged against `thresholds`.
+pub fn list_progress(
+    pool: &Pool,
+    user_id: &str,
+    thresholds: WatchThresholds,
+) -> Result<Vec<ProgressEntry>> {
     let conn = pool.get()?;
-    let mut stmt = conn.prepare(
-        "SELECT item_id,position_ms,duration_ms,updated_at FROM progress \
-         WHERE user_id = ?1 ORDER BY updated_at DESC",
-    )?;
+    let mut stmt = conn.prepare(&progress_sql(thresholds, "ORDER BY p.updated_at DESC"))?;
     let rows = stmt.query_map(params![user_id], row_to_progress)?;
     Ok(rows.collect::<rusqlite::Result<Vec<_>>>()?)
+}
+
+fn progress_sql(thresholds: WatchThresholds, rest: &str) -> String {
+    format!(
+        "SELECT p.item_id,p.position_ms,p.duration_ms,p.updated_at,{} FROM progress p \
+         WHERE p.user_id = ?1 {rest}",
+        resumable_sql(thresholds)
+    )
 }
 
 /// Remove a saved position (e.g. finished, or "remove from Continue Watching").
@@ -139,13 +155,14 @@ pub(crate) fn remove_progress(
     Ok(())
 }
 
-// Map a row of `item_id,position_ms,duration_ms,updated_at` to a [`ProgressEntry`].
+// Map a row of `item_id,position_ms,duration_ms,updated_at,resumable` to a [`ProgressEntry`].
 fn row_to_progress(r: &Row) -> rusqlite::Result<ProgressEntry> {
     Ok(ProgressEntry {
         item_id: r.get(0)?,
         position_ms: r.get(1)?,
         duration_ms: r.get(2)?,
         updated_at: r.get(3)?,
+        resumable: r.get(4)?,
     })
 }
 
@@ -162,22 +179,39 @@ mod tests {
         seed_movie(&pool, "m3");
 
         // Nothing saved yet.
-        assert!(get_progress(&pool, &uid, "m1").unwrap().is_none());
-        assert!(list_progress(&pool, &uid).unwrap().is_empty());
+        assert!(
+            get_progress(&pool, (&uid, "m1"), WatchThresholds::default())
+                .unwrap()
+                .is_none()
+        );
+        assert!(
+            list_progress(&pool, &uid, WatchThresholds::default())
+                .unwrap()
+                .is_empty()
+        );
 
         // Insert path.
         upsert_progress(&pool, &uid, "m1", 1000, Some(2000)).unwrap();
-        let p = get_progress(&pool, &uid, "m1").unwrap().unwrap();
+        let p = get_progress(&pool, (&uid, "m1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(p.item_id, "m1");
         assert_eq!(p.position_ms, 1000);
         assert_eq!(p.duration_ms, Some(2000));
 
         // ON CONFLICT update path: new position, duration cleared to NULL, still one row.
         upsert_progress(&pool, &uid, "m1", 5000, None).unwrap();
-        let p = get_progress(&pool, &uid, "m1").unwrap().unwrap();
+        let p = get_progress(&pool, (&uid, "m1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(p.position_ms, 5000);
         assert_eq!(p.duration_ms, None);
-        assert_eq!(list_progress(&pool, &uid).unwrap().len(), 1);
+        assert_eq!(
+            list_progress(&pool, &uid, WatchThresholds::default())
+                .unwrap()
+                .len(),
+            1
+        );
 
         // list_progress is newest (updated_at DESC) first; control timestamps for a
         // deterministic order (RFC3339 text sorts chronologically).
@@ -197,7 +231,7 @@ mod tests {
                 .unwrap();
             }
         }
-        let ids: Vec<String> = list_progress(&pool, &uid)
+        let ids: Vec<String> = list_progress(&pool, &uid, WatchThresholds::default())
             .unwrap()
             .into_iter()
             .map(|p| p.item_id)
@@ -209,14 +243,19 @@ mod tests {
 
         // Delete one; deleting a missing id is a harmless no-op.
         delete_progress(&pool, &uid, "m2").unwrap();
-        let ids: Vec<String> = list_progress(&pool, &uid)
+        let ids: Vec<String> = list_progress(&pool, &uid, WatchThresholds::default())
             .unwrap()
             .into_iter()
             .map(|p| p.item_id)
             .collect();
         assert_eq!(ids, vec!["m3".to_string(), "m1".to_string()]);
         delete_progress(&pool, &uid, "does-not-exist").unwrap();
-        assert_eq!(list_progress(&pool, &uid).unwrap().len(), 2);
+        assert_eq!(
+            list_progress(&pool, &uid, WatchThresholds::default())
+                .unwrap()
+                .len(),
+            2
+        );
     }
 
     #[test]
@@ -228,7 +267,9 @@ mod tests {
         assert!(save_progress(&pool, &uid, "m1", 91_000, Some(100_000), 90).unwrap());
 
         assert_eq!(list_watched(&pool, &uid).unwrap(), vec!["m1".to_string()]);
-        let kept = get_progress(&pool, &uid, "m1").unwrap().unwrap();
+        let kept = get_progress(&pool, (&uid, "m1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(kept.position_ms, 91_000);
     }
 
@@ -254,6 +295,29 @@ mod tests {
 
         assert!(save_progress(&pool, &uid, "m1", 95_000, None, 90).unwrap());
         assert!(!save_progress(&pool, &uid, "m2", 95_000, None, 90).unwrap());
+    }
+
+    #[test]
+    fn a_saved_position_says_whether_it_resumes() {
+        let (pool, uid) = pool_with_user();
+        crate::set_marker(
+            &pool,
+            "m1",
+            MarkerKind::Credits,
+            800_000,
+            1_000_000,
+            "video",
+        )
+        .unwrap();
+        let resumes = |position_ms| {
+            upsert_progress(&pool, &uid, "m1", position_ms, Some(1_000_000)).unwrap();
+            let entry = get_progress(&pool, (&uid, "m1"), WatchThresholds::default());
+            entry.unwrap().is_some_and(|entry| entry.resumable)
+        };
+
+        let verdicts = [40_000, 60_000, 799_000, 800_000].map(resumes);
+
+        assert_eq!(verdicts, [false, true, true, false]);
     }
 
     // Guards the `cast` reserved-keyword quoting in season_meta SQL.

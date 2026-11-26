@@ -75,7 +75,8 @@ pub async fn delete_progress(
 }
 
 /// `GET /api/progress/:id` (Bearer) → `ProgressEntry | null` for one item, so the
-/// player can resume without fetching the whole list.
+/// player can resume without fetching the whole list. `resumable` says whether
+/// it should: past the resume threshold and not yet watched.
 pub async fn get_progress(
     State(state): State<SharedState>,
     AuthViewer(viewer): AuthViewer,
@@ -84,8 +85,9 @@ pub async fn get_progress(
     if let Err(resp) = visibility::gate(&state, &viewer, Title::Item(&item_id)).await {
         return resp;
     }
+    let thresholds = settings::watch_thresholds(&state.settings);
     match query(&state.db, move |pool| {
-        db::get_progress(&pool, &viewer.user.id, &item_id)
+        db::get_progress(&pool, (&viewer.user.id, &item_id), thresholds)
     })
     .await
     {
@@ -97,7 +99,12 @@ pub async fn get_progress(
 /// `GET /api/progress` (Bearer) → `ProgressEntry[]` (all saved positions).
 pub async fn list_progress(State(state): State<SharedState>, AuthViewer(viewer): AuthViewer) -> Response {
     let uid = viewer.user.id.clone();
-    let mut entries = match query(&state.db, move |pool| db::list_progress(&pool, &uid)).await {
+    let thresholds = settings::watch_thresholds(&state.settings);
+    let mut entries = match query(&state.db, move |pool| {
+        db::list_progress(&pool, &uid, thresholds)
+    })
+    .await
+    {
         Ok(p) => p,
         Err(resp) => return resp,
     };
@@ -118,9 +125,9 @@ pub async fn continue_watching(
     ContentLocale(locale): ContentLocale,
 ) -> Response {
     let uid = viewer.user.id.clone();
-    let played_percent = settings::played_percent(&state.settings);
+    let thresholds = settings::watch_thresholds(&state.settings);
     match query(&state.db, move |pool| {
-        let mut rows = db::continue_watching(&pool, &uid, played_percent)?;
+        let mut rows = db::continue_watching(&pool, &uid, thresholds)?;
         db::localize::overlay_each(&pool, rows.iter_mut().map(|r| &mut r.item), locale)?;
         Ok(rows)
     })

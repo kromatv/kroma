@@ -247,6 +247,8 @@
   "admin.playHistory": "再生履歴",
   "admin.playedThreshold": "視聴済みのしきい値",
   "admin.playedThresholdHint": "クレジットが検出されなかった作品を視聴済みとみなす、再生時間の割合です。検出されたクレジットまで再生した場合は、常に視聴済みになります。PlexとJellyfinは90を使用しています。",
+  "admin.resumeThreshold": "再開のしきい値",
+  "admin.resumeThresholdHint": "中断した位置から再開するために、作品が到達している必要がある再生時間の割合です。これに満たない場合は最初から再生され、「続きを見る」にも表示されません。0にすると、最初の15秒だけが無視されます。Jellyfinは5を使用しています。",
   "admin.playing": "再生中",
   "admin.plays": "{count}回再生",
   "admin.port": "サーバーのポート",

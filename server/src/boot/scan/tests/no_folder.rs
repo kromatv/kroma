@@ -33,7 +33,12 @@ fn a_library_whose_folders_were_removed_keeps_its_titles_and_their_positions_at_
         ["lib-1"]
     );
     assert!(db::get_item(&pool, &item).unwrap().is_some());
-    let kept = db::get_progress(&pool, &user, &item).unwrap();
+    let kept = db::get_progress(
+        &pool,
+        (&user, &item),
+        crate::model::WatchThresholds::default(),
+    )
+    .unwrap();
     assert_eq!(kept.map(|p| p.position_ms), Some(600_000));
 }
 

@@ -1,13 +1,15 @@
 //! The episode a show is left on, for shows with nothing mid-play.
 
 use anyhow::Result;
+use kroma_domain::WatchThresholds;
 use rusqlite::{params, Connection};
 
 // The episode after the last watched one, for every show the user has watched and
 // left with no episode in progress, newest show first: `(item_id, watched_at)`.
 // A show that is caught up yields no row (the JOIN finds nothing to play).
-fn sql(played_percent: i64) -> String {
-    let resumable = crate::playback::resumable_sql(played_percent);
+fn sql(thresholds: WatchThresholds) -> String {
+    let resumable = crate::playback::resumable_sql(thresholds);
+    let finished = crate::playback::finished_sql(thresholds.played_percent);
     format!(
         "\
 WITH busy AS ( \
@@ -29,10 +31,9 @@ SELECT next.id, seen.watched_at \
        SELECT e.id FROM items e \
         WHERE e.show_id = seen.show_id AND e.kind = 'episode' AND e.absent_since IS NULL \
           AND COALESCE(e.season,0) * 1000000 + COALESCE(e.episode,0) > seen.rank \
-          AND NOT EXISTS (SELECT 1 FROM watched w2 \
-                           WHERE w2.user_id = ?1 AND w2.item_id = e.id) \
-          AND NOT EXISTS (SELECT 1 FROM progress p2 \
-                           WHERE p2.user_id = ?1 AND p2.item_id = e.id) \
+          AND NOT EXISTS (SELECT 1 FROM watched w2 WHERE w2.user_id = ?1 AND w2.item_id = e.id) \
+          AND NOT EXISTS (SELECT 1 FROM progress p \
+                           WHERE p.user_id = ?1 AND p.item_id = e.id AND {finished}) \
         ORDER BY e.season, e.episode LIMIT 1) \
  ORDER BY seen.watched_at DESC LIMIT ?2"
     )
@@ -42,9 +43,9 @@ pub(super) fn on_deck(
     conn: &Connection,
     user_id: &str,
     limit: usize,
-    played_percent: i64,
+    thresholds: WatchThresholds,
 ) -> Result<Vec<(String, String)>> {
-    let mut stmt = conn.prepare(&sql(played_percent))?;
+    let mut stmt = conn.prepare(&sql(thresholds))?;
     let rows = stmt
         .query_map(params![user_id, limit as i64], |r| {
             Ok((r.get(0)?, r.get(1)?))

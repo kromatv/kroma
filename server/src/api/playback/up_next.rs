@@ -9,6 +9,7 @@ use crate::api::util::query;
 use crate::api::visibility::{self, AuthViewer, Title};
 use crate::db;
 use crate::i18n::ContentLocale;
+use crate::services::settings;
 use crate::state::SharedState;
 
 const UP_NEXT_EPISODES: usize = 20;
@@ -24,8 +25,9 @@ pub async fn up_next(
     if let Err(resp) = visibility::gate(&state, &viewer, Title::Show(&show_id)).await {
         return resp;
     }
+    let thresholds = settings::watch_thresholds(&state.settings);
     match query(&state.db, move |pool| {
-        let mut found = db::up_next_episode(&pool, &viewer.user.id, &show_id)?;
+        let mut found = db::up_next_episode(&pool, (&viewer.user.id, &show_id), thresholds)?;
         db::localize::overlay_each(&pool, found.as_mut().map(|(i, _)| i), locale)?;
         Ok(found)
     })

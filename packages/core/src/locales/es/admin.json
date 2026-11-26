@@ -252,6 +252,8 @@
   "admin.playHistory": "Historial de reproducción",
   "admin.playedThreshold": "Umbral de visto",
   "admin.playedThresholdHint": "Porcentaje de la duración a partir del cual un título cuenta como visto cuando no se han detectado sus créditos. Llegar a los créditos detectados siempre cuenta. Plex y Jellyfin usan 90.",
+  "admin.resumeThreshold": "Umbral para reanudar",
+  "admin.resumeThresholdHint": "Porcentaje de la duración que debe alcanzar un título para reanudarse donde se dejó. Por debajo, empieza desde el principio y no aparece en “Seguir viendo”. Con 0, solo se ignoran los primeros 15 segundos. Jellyfin usa 5.",
   "admin.playing": "Reproduciendo",
   "admin.plays": "reproducciones",
   "admin.plays_one": "{count} reproducción",

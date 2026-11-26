@@ -9,6 +9,29 @@ use crate::media::MediaItem;
 /// percentage of its runtime. Plex, Jellyfin and Kodi all default to 90.
 pub const DEFAULT_PLAYED_PERCENT: i64 = 90;
 
+/// The share of a runtime, as a percentage, a position must reach before it
+/// resumes: short of it the title starts over and stays off "Continue
+/// watching". Jellyfin defaults to 5.
+pub const DEFAULT_RESUME_PERCENT: i64 = 5;
+
+/// The two ends of a resumable position, each a percentage of the runtime: past
+/// `resume_percent` a title picks up where it was left, past `played_percent`
+/// (or its credits) it counts as watched.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WatchThresholds {
+    pub resume_percent: i64,
+    pub played_percent: i64,
+}
+
+impl Default for WatchThresholds {
+    fn default() -> Self {
+        Self {
+            resume_percent: DEFAULT_RESUME_PERCENT,
+            played_percent: DEFAULT_PLAYED_PERCENT,
+        }
+    }
+}
+
 /// Whether `position_ms` finished a title: its credits have started, or the
 /// played threshold of its runtime is crossed. Without a duration only the
 /// credits marker can answer.
@@ -38,6 +61,8 @@ pub struct ProgressEntry {
     pub duration_ms: Option<i64>,
     #[serde(rename = "updatedAt")]
     pub updated_at: String,
+    #[serde(default)]
+    pub resumable: bool,
 }
 
 /// A "continue watching" entry: the resumable item plus where to resume from.

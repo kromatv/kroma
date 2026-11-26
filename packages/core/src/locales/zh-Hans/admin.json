@@ -247,6 +247,8 @@
   "admin.playHistory": "播放历史",
   "admin.playedThreshold": "已看阈值",
   "admin.playedThresholdHint": "未检测到片尾时，播放进度超过时长的这一百分比即算作已看。播放到检测出的片尾则一律算作已看。Plex 和 Jellyfin 使用 90。",
+  "admin.resumeThreshold": "续播阈值",
+  "admin.resumeThresholdHint": "播放进度需达到时长的这一百分比，才会从上次停下的位置继续播放。未达到时将从头播放，也不会出现在“继续观看”中。设为 0 时，只忽略前 15 秒。Jellyfin 使用 5。",
   "admin.playing": "播放中",
   "admin.plays": "{count} 次播放",
   "admin.port": "服务器端口",

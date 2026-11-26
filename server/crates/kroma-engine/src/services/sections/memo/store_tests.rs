@@ -17,7 +17,7 @@ fn inputs() -> Inputs {
         day: 0,
         part_of_day: PartOfDay::Morning,
         show_recent: true,
-        played_percent: 90,
+        thresholds: crate::model::WatchThresholds::default(),
     }
 }
 

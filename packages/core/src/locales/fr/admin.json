@@ -252,6 +252,8 @@
   "admin.playHistory": "Historique de lecture",
   "admin.playedThreshold": "Seuil de visionnage",
   "admin.playedThresholdHint": "Pourcentage de la durée à partir duquel un titre compte comme vu, quand son générique n'a pas été détecté. Un titre dont on atteint le générique compte toujours comme vu. Plex et Jellyfin utilisent 90.",
+  "admin.resumeThreshold": "Seuil de reprise",
+  "admin.resumeThresholdHint": "Pourcentage de la durée à atteindre pour qu'un titre reprenne là où il s'était arrêté. En deçà, il repart du début et n'apparaît pas dans « Reprendre la lecture ». À 0, seules les 15 premières secondes sont ignorées. Jellyfin utilise 5.",
   "admin.playing": "En lecture",
   "admin.plays": "lectures",
   "admin.plays_one": "{count} lecture",

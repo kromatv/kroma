@@ -247,6 +247,8 @@
   "admin.playHistory": "Lịch sử phát",
   "admin.playedThreshold": "Ngưỡng tính là đã xem",
   "admin.playedThresholdHint": "Phần trăm thời lượng cần xem để một phim được tính là đã xem khi chưa nhận diện được danh đề. Xem tới đoạn danh đề đã nhận diện thì luôn được tính. Plex và Jellyfin dùng mức 90.",
+  "admin.resumeThreshold": "Ngưỡng xem tiếp",
+  "admin.resumeThresholdHint": "Phần trăm thời lượng một phim cần đạt để được phát tiếp từ chỗ đã dừng. Chưa tới mức này, phim sẽ phát lại từ đầu và không hiện trong mục Xem tiếp. Ở mức 0, chỉ bỏ qua 15 giây đầu. Jellyfin dùng mức 5.",
   "admin.playing": "Đang phát",
   "admin.plays": "{count} lượt phát",
   "admin.port": "Cổng máy chủ",

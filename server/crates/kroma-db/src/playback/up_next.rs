@@ -7,13 +7,17 @@ use crate::hydrate::{attach_files, attach_files_batch};
 use crate::Pool;
 use crate::rows::row_to_item;
 use crate::schema::ITEM_COLS;
-use kroma_domain::MediaItem;
+use kroma_domain::{MediaItem, WatchThresholds};
 
 // Resume: the most-recently-updated in-progress episode of this show.
-const RESUMED_SQL: &str = "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
-     WHERE p.user_id = ?1 AND i.show_id = ?2 AND p.position_ms > 15000 \
-       AND (p.duration_ms IS NULL OR p.position_ms < p.duration_ms * 95 / 100) \
-     ORDER BY p.updated_at DESC LIMIT 1";
+fn resumed_sql(thresholds: WatchThresholds) -> String {
+    format!(
+        "SELECT p.item_id FROM progress p JOIN items i ON i.id = p.item_id \
+         WHERE p.user_id = ?1 AND i.show_id = ?2 AND {} \
+         ORDER BY p.updated_at DESC LIMIT 1",
+        crate::playback::resumable_sql(thresholds)
+    )
+}
 
 const WATCHED_SQL: &str = "SELECT w.item_id FROM watched w JOIN items i ON i.id = w.item_id \
      WHERE w.user_id = ?1 AND i.show_id = ?2";
@@ -23,8 +27,8 @@ const WATCHED_SQL: &str = "SELECT w.item_id FROM watched w JOIN items i ON i.id 
 /// Returns the hydrated episode plus whether it has a saved resume position.
 pub fn up_next_episode(
     pool: &Pool,
-    user_id: &str,
-    show_id: &str,
+    (user_id, show_id): (&str, &str),
+    thresholds: WatchThresholds,
 ) -> Result<Option<(MediaItem, bool)>> {
     let conn = pool.get()?;
     let episodes = show_episodes(&conn, show_id)?;
@@ -32,7 +36,7 @@ pub fn up_next_episode(
         return Ok(None);
     }
     let resume_id = conn
-        .query_row(RESUMED_SQL, params![user_id, show_id], |r| {
+        .query_row(&resumed_sql(thresholds), params![user_id, show_id], |r| {
             r.get::<_, String>(0)
         })
         .optional()?;
@@ -128,7 +132,7 @@ pub fn next_episode(pool: &Pool, item_id: &str) -> Result<Option<MediaItem>> {
 mod tests {
     use super::*;
     use crate::playback::test_support::*;
-    use crate::playback::{mark_watched, unmark_watched, upsert_progress};
+    use crate::playback::{mark_watched, save_progress, unmark_watched, upsert_progress};
 
     #[test]
     fn up_next_and_next_episode() {
@@ -151,13 +155,17 @@ mod tests {
         }
 
         // Fresh: nothing watched / in progress → first episode, not a resume.
-        let (item, resume) = up_next_episode(&pool, &uid, "s1").unwrap().unwrap();
+        let (item, resume) = up_next_episode(&pool, (&uid, "s1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(item.id, "e1");
         assert!(!resume);
 
         // e1 watched → continue after the last watched = e2.
         mark_watched(&pool, &uid, "e1").unwrap();
-        let (item, resume) = up_next_episode(&pool, &uid, "s1").unwrap().unwrap();
+        let (item, resume) = up_next_episode(&pool, (&uid, "s1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(item.id, "e2");
         assert!(!resume);
 
@@ -165,13 +173,17 @@ mod tests {
         // not the first unwatched (e1). This is the on-deck behaviour.
         unmark_watched(&pool, &uid, "e1").unwrap();
         mark_watched(&pool, &uid, "e2").unwrap();
-        let (item, resume) = up_next_episode(&pool, &uid, "s1").unwrap().unwrap();
+        let (item, resume) = up_next_episode(&pool, (&uid, "s1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(item.id, "e3");
         assert!(!resume);
 
         // e2 in progress → resume e2 (takes priority over on-deck).
         upsert_progress(&pool, &uid, "e2", 60_000, Some(600_000)).unwrap();
-        let (item, resume) = up_next_episode(&pool, &uid, "s1").unwrap().unwrap();
+        let (item, resume) = up_next_episode(&pool, (&uid, "s1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(item.id, "e2");
         assert!(resume);
 
@@ -210,11 +222,27 @@ mod tests {
             .unwrap();
         upsert_progress(&pool, &uid, "extra", 60_000, Some(600_000)).unwrap();
 
-        let (item, resume) = up_next_episode(&pool, &uid, "s1").unwrap().unwrap();
+        let (item, resume) = up_next_episode(&pool, (&uid, "s1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
         assert_eq!(item.id, "e1");
         assert!(
             !resume,
             "a bonus feature carries no episode resume position"
         );
+    }
+
+    #[test]
+    fn an_episode_finished_short_of_its_end_hands_over_to_the_next() {
+        let (pool, uid) = pool_with_user();
+        seed_show(&pool, "s1", "e", 3);
+
+        save_progress(&pool, &uid, "e1", 920_000, Some(1_000_000), 90).unwrap();
+        let (item, resume) = up_next_episode(&pool, (&uid, "s1"), WatchThresholds::default())
+            .unwrap()
+            .unwrap();
+
+        assert_eq!(item.id, "e2");
+        assert!(!resume);
     }
 }

@@ -1,3 +1,4 @@
+import { resumeSeconds } from '@kromatv/core';
 import { useCallback, useEffect, useState } from 'react';
 import type { MovieView } from '#web/shared/lib/api';
 import { useAuth } from '#web/shared/lib/auth';
@@ -28,13 +29,9 @@ export function useResumeProgress(
     client.playback
       .itemProgress(item.id)
       .then((p) => {
-        if (cancelled || !p) {
-          return;
-        }
-        const durMs = p.durationMs ?? item.durationMs ?? 0;
-        const posSec = p.positionMs / 1000;
-        if (posSec > 15 && (!durMs || p.positionMs < durMs * 0.95)) {
-          setResumeAt(posSec);
+        const at = resumeSeconds(p, item.durationMs);
+        if (!cancelled && at > 0) {
+          setResumeAt(at);
         }
       })
       .catch(() => undefined);

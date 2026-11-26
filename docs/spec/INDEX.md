@@ -3,7 +3,7 @@
 
 # Requirement index
 
-844 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
+846 requirements across the spec. The machine-readable source is [`requirements.json`](requirements.json).
 
 ## ACCT - [accounts](accounts/)
 
@@ -788,7 +788,7 @@
 - **PLAY-36** (SHIPPED) - Reopening a title in progress offers *Resume* from the stored position
 - **PLAY-37** (SHIPPED) - A title is **watched** at a credits or end marker where the media has
 - **PLAY-38** (SHIPPED) - At the watched threshold, continue-watching drops the title and, for
-- **PLAY-39** (AGREED) - Below the threshold, progress is retained and the title stays in
+- **PLAY-39** (AGREED) - Between the resume threshold and the watched threshold, progress is
 - **PLAY-40** (AGREED) - Starting a watched title again resets it to unwatched and clears the
 - **PLAY-41** (SHIPPED) - A device watching offline queues its unsent progress reports and, on
 - **PLAY-42** (AGREED) - When queued reports from two offline sessions land for the same person
@@ -810,6 +810,8 @@
 - **PLAY-58** (SHIPPED) - The first play of a trailer may wait while the server fetches it, and the
 - **PLAY-59** (SHIPPED) - A trailer saves no progress, marks nothing watched and offers no next
 - **PLAY-60** (SHIPPED) - When a trailer cannot be fetched, the player says so plainly. Where the
+- **PLAY-61** (SHIPPED) - A position short of the **resume threshold** does not resume: the title
+- **PLAY-62** (SHIPPED) - Both thresholds judge the stored position each time it is read, so
 
 ## SURF - [surfaces](surfaces/)
 
