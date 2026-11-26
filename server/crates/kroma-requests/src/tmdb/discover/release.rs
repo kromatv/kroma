@@ -1,4 +1,4 @@
-use super::wire::{ReleaseDatesCountry, ReleaseDatesResp};
+use super::super::certifications::{Certifications, CountryEntry};
 use super::ymd;
 
 // TMDB release types we key on for a movie's home-availability date.
@@ -15,11 +15,11 @@ pub(super) struct MovieDates {
 
 // Reads the US window (most complete for digital) and falls back to any
 // country. All dates normalized to `YYYY-MM-DD`.
-pub(super) fn movie_dates(rd: Option<ReleaseDatesResp>, basic: Option<&str>) -> MovieDates {
+pub(super) fn movie_dates(rd: Option<Certifications>, basic: Option<&str>) -> MovieDates {
     let results = rd.map(|r| r.results).unwrap_or_default();
     let block = results
         .iter()
-        .find(|c| c.iso_3166_1.as_deref() == Some("US"))
+        .find(|c| c.country == "US")
         .or_else(|| results.first());
     let basic = basic.and_then(ymd);
     let theatrical = block.and_then(|b| typed_release(b, REL_THEATRICAL));
@@ -36,7 +36,7 @@ pub(super) fn movie_dates(rd: Option<ReleaseDatesResp>, basic: Option<&str>) -> 
     }
 }
 
-fn typed_release(block: &ReleaseDatesCountry, want: u32) -> Option<String> {
+fn typed_release(block: &CountryEntry, want: u32) -> Option<String> {
     block
         .release_dates
         .iter()

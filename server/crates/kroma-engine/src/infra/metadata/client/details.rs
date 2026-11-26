@@ -1,10 +1,11 @@
 use crate::domain::metadata::{CastMember, CrewMember, Metadata};
 use crate::domain::ratings::{reader_rating, AgeRating, CountryRatings};
 
-use super::super::common::{build_cast, build_crew};
-use super::certification::{country_of, Certifications};
-use super::details_json::{collect_keywords, pick_logo, Company, Details};
-use super::{api, tmdb_json, Target, IMG, MAX_CAST, MAX_CREW, MAX_STUDIOS};
+use super::super::certifications::Certifications;
+use super::super::common::{build_cast, build_crew, studios_of};
+use super::certification::country_of;
+use super::details_json::{collect_keywords, pick_logo, Details};
+use super::{api, tmdb_json, Target, IMG, MAX_CAST, MAX_CREW};
 
 pub(super) fn fetch_details(
     api_key: &str,
@@ -84,20 +85,6 @@ fn texts_of(d: Details) -> Metadata {
         backdrop_url: d.backdrop_path.map(|p| format!("{IMG}/w1280{p}")),
         ..Metadata::blank()
     }
-}
-
-fn studios_of(companies: Vec<Company>, networks: Vec<Company>) -> Vec<String> {
-    let made_by = if networks.is_empty() {
-        companies
-    } else {
-        networks
-    };
-    made_by
-        .into_iter()
-        .map(|company| company.name)
-        .filter(|name| !name.trim().is_empty())
-        .take(MAX_STUDIOS)
-        .collect()
 }
 
 fn ids_of(d: &mut Details) -> (Option<String>, Option<u64>) {

@@ -184,3 +184,47 @@ fn a_director_and_a_creator_carry_their_portrait() {
     );
     assert_eq!(url("No Photo"), None);
 }
+
+#[test]
+fn a_text_the_asked_language_lacks_is_read_in_american_english_first() {
+    let raw = r#"{ "translations": { "translations": [
+        { "iso_639_1": "en", "iso_3166_1": "GB", "data": { "overview": "Colour." } },
+        { "iso_639_1": "fr", "iso_3166_1": "FR", "data": { "overview": "Couleur." } },
+        { "iso_639_1": "en", "iso_3166_1": "US", "data": { "overview": "Color.", "tagline": "" } }
+    ]}}"#;
+
+    let d: DetailResp = serde_json::from_str(raw).unwrap();
+    let texts = english(d.translations);
+
+    assert_eq!(texts.overview.as_deref(), Some("Color."));
+    assert_eq!(texts.tagline, None);
+}
+
+#[test]
+fn a_title_with_no_american_text_reads_another_english_one() {
+    let raw = r#"{ "translations": { "translations": [
+        { "iso_639_1": "en", "iso_3166_1": "GB", "data": { "tagline": "Mind the gap." } }
+    ]}}"#;
+
+    let d: DetailResp = serde_json::from_str(raw).unwrap();
+
+    assert_eq!(
+        english(d.translations).tagline.as_deref(),
+        Some("Mind the gap.")
+    );
+}
+
+#[test]
+fn a_show_is_credited_to_its_network_before_its_studios() {
+    let raw = r#"{
+        "networks": [{ "name": "Apple TV+" }],
+        "production_companies": [{ "name": "Red Hour" }, { "name": "" }]
+    }"#;
+
+    let d: DetailResp = serde_json::from_str(raw).unwrap();
+
+    assert_eq!(
+        studios_of(d.production_companies, d.networks),
+        ["Apple TV+"]
+    );
+}

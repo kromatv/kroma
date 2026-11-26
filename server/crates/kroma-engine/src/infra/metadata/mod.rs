@@ -11,7 +11,7 @@ pub mod person_search;
 mod search;
 mod videos;
 
-use kroma_requests::tmdb::common;
+use kroma_requests::tmdb::{certifications, common};
 
 const MOST_OFFERED: usize = 10;
 
