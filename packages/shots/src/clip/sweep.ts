@@ -99,7 +99,7 @@ async function sweepLanguage(browser: Browser, plan: SweepPlan, language: string
     process.stderr.write(`${language} ${target.id} …\n`);
     return sweepTarget(browser, { plan, target, language, account });
   });
-  return sweeps.reduce(joined, NOTHING);
+  return sweeps.reduce((all, one) => joined(all, one), NOTHING);
 }
 
 /** Reads every screen of the plan in each of its languages, one language at a
@@ -112,7 +112,7 @@ export async function sweep(plan: SweepPlan): Promise<Sweep> {
     const sweeps = await inTurn(plan.languages, (language) =>
       sweepLanguage(browser, plan, language),
     );
-    return sweeps.reduce(joined, NOTHING);
+    return sweeps.reduce((all, one) => joined(all, one), NOTHING);
   } finally {
     await browser.close();
   }

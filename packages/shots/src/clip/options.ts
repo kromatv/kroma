@@ -22,9 +22,10 @@ export const USAGE = `usage: bun run shots:clip [options]
   --targets <list>   web, tizen or webos, comma-separated (default: web,tizen)
   --port <id>=<n>    The dev-server port of one target, e.g. --port web=3200 (repeatable)
   --langs <list>     The languages to read (default: every language i18n.json offers)
-  --server <url>     The KROMA server the shells talk to (default: ${DEFAULT_SERVER})
-  --seed <file>      JSON of localStorage entries for a signed-in session,
-                     instead of KROMA_EMAIL and KROMA_PASSWORD
+  --server <url>     The KROMA server the shells talk to, on this machine
+                     (default: ${DEFAULT_SERVER})
+  --seed <file>      JSON of localStorage entries for a signed-in session, under
+                     the current directory, instead of KROMA_EMAIL and KROMA_PASSWORD
   --max-pages <n>    The most web pages the crawl visits (default: ${DEFAULT_MAX_PAGES})
   --catalog-only     List and fail on the texts of the catalogs only, not on
                      titles, names and messages the server sends

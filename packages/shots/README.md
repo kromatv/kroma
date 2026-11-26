@@ -156,13 +156,14 @@ capture it never starts one.
 
 ### What it needs
 
-- **A server**, `--server` (default `http://localhost:4040`).
+- **A server** on this machine, `--server` (default `http://localhost:4040`).
 - **The dev shells**, `web` and `tizen` by default (`--targets web,tizen,webos`),
   each on its default port unless `--port <id>=<n>` moves it.
 - **An account**, never written in the repository. `KROMA_EMAIL` (an email or a
   username) and `KROMA_PASSWORD` sign it in, as they do for the `kroma` CLI,
-  and the sweep signs out again at the end. Or `--seed <file>`, the same
-  localStorage JSON as `shots:pr` takes, whose `kroma.session` it uses as it is.
+  and the sweep signs out again at the end. Or `--seed <file>` under the current
+  directory, the same localStorage JSON as `shots:pr` takes, whose
+  `kroma.session` it uses as it is.
   An admin account reaches the admin pages too.
 
 The account's language beats the browser's in every shell, so the sweep sets

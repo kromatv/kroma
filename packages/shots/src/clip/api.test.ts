@@ -37,4 +37,14 @@ describe('a call to a KROMA server', () => {
 
     await expect(sendApi('http://localhost:4040/api/auth/me', init)).rejects.toThrow(message);
   });
+
+  it.each([
+    ['another machine', 'http://192.168.1.20:4040/api/auth/me'],
+    ['another scheme', 'file:///etc/passwd'],
+  ])('refuses a server on %s', async (_case, url) => {
+    const fetch = answering(200, {});
+
+    await expect(sendApi(url)).rejects.toThrow('is not a KROMA server on this machine');
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

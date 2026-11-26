@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { resolve, sep } from 'node:path';
 import { z } from 'zod';
 import { callApi, sendApi } from './api';
 import { type AccountUser, LoginAnswer, MeAnswer, SessionAnswer } from './schemas';
@@ -44,9 +45,18 @@ export function seededAccessToken(entries: unknown): string {
   return SeedSession.parse(session).accessToken;
 }
 
+function readSeed(seed: string): unknown {
+  const base = process.cwd();
+  const file = resolve(base, seed);
+  if (!file.startsWith(`${base}${sep}`)) {
+    throw new Error(`the seed file must sit under ${base}: ${seed}`);
+  }
+  return JSON.parse(readFileSync(file, 'utf8'));
+}
+
 async function accessTokenOf(server: string, signIn: SignIn): Promise<string> {
   if ('seed' in signIn) {
-    return seededAccessToken(JSON.parse(readFileSync(signIn.seed, 'utf8')));
+    return seededAccessToken(readSeed(signIn.seed));
   }
   const body = JSON.stringify({ email: signIn.identifier, password: signIn.password });
   return (await callApi(`${server}/api/auth/login`, LoginAnswer, { method: 'POST', body }))

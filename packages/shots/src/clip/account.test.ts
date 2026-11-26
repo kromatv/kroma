@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { seededAccessToken, signedInStorage, signInFrom, type SweepAccount } from './account';
+import {
+  seededAccessToken,
+  signedInStorage,
+  signInAccount,
+  signInFrom,
+  type SweepAccount,
+} from './account';
 
 const ACCOUNT: SweepAccount = {
   server: 'http://localhost:4040',
@@ -31,6 +37,12 @@ describe('how a sweep signs in', () => {
     const entries = { 'kroma.session': JSON.stringify({ accessToken: 'device-token', user: {} }) };
 
     expect(seededAccessToken(entries)).toBe('device-token');
+  });
+
+  it('refuses a seed file outside the current directory', async () => {
+    await expect(
+      signInAccount('http://localhost:4040', { seed: '../../secrets.json' }),
+    ).rejects.toThrow('the seed file must sit under');
   });
 
   it('refuses a seed file that holds no session', () => {

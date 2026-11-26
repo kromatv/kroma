@@ -62,5 +62,5 @@ async function readTvScreen(tab: Tab<TvPage>, run: TvRun, screen: TvScreen): Pro
  *  restores from `sessionStorage['kroma:dev-nav']`, and reads it. */
 export async function sweepTv(tab: Tab<TvPage>, run: TvRun): Promise<Sweep> {
   const sweeps = await inTurn(run.screens, (screen) => readTvScreen(tab, run, screen));
-  return sweeps.reduce(joined, NOTHING);
+  return sweeps.reduce((all, one) => joined(all, one), NOTHING);
 }

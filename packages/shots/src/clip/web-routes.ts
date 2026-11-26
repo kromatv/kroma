@@ -47,7 +47,7 @@ export function crawlSeeds(routes: readonly WebRoute[]): string[] {
   const seeds = routes.filter(
     (route) => route.nested && !route.splat && !route.player && !route.segments.includes(PARAM),
   );
-  return [...new Set(seeds.map(pathOf))].sort();
+  return [...new Set(seeds.map(pathOf))].sort((a, b) => a.localeCompare(b));
 }
 
 function matches(route: WebRoute, segments: readonly string[]): boolean {
