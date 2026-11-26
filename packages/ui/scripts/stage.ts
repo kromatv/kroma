@@ -4,8 +4,16 @@
 // `exports` point at JS and declarations.
 
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import {
+  cpSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PUBLISHED_TWINS } from './published-twins.ts';
 import {
@@ -40,6 +48,15 @@ execFileSync(bun, ['x', 'vite', 'build', '--config', 'vite.lib.config.ts'], {
   stdio: 'inherit',
   env: { ...process.env, KROMA_UI_TARGET: 'native' },
 });
+
+const dropped = readdirSync(dist, { recursive: true, encoding: 'utf8' }).filter((path) =>
+  path.split(sep).includes('node_modules'),
+);
+if (dropped.length > 0) {
+  throw new Error(
+    `the build wrote ${dropped.length} files under node_modules, which npm pack leaves out of the tarball: ${dropped[0]}`,
+  );
+}
 
 const source = JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8'));
 const bundled = bundledPackages(join(pkgRoot, '..'), source.dependencies);
@@ -158,6 +175,7 @@ const manifest = {
   dependencies: {
     '@lezer/highlight': source.dependencies['@lezer/highlight'],
     '@lezer/javascript': source.dependencies['@lezer/javascript'],
+    'country-flag-icons': source.dependencies['country-flag-icons'],
     zod: source.dependencies.zod,
   },
   peerDependencies: {

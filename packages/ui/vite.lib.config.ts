@@ -11,6 +11,9 @@ const src = (p: string) => fileURLToPath(new URL(`./src/${p}`, import.meta.url))
 
 const NATIVE = process.env.KROMA_UI_TARGET === 'native';
 const NO_LOCALE_NAMES = '\0kroma-ui-no-locale-names';
+const FLAG_DIR = '/node_modules/country-flag-icons/';
+const FLAG_MODULE = /\/string\/1x1\/([A-Z]{2})\.js$/;
+const NO_FLAG = '\0kroma-ui-no-flag';
 
 // Metro's precedence in reverse of the web's: a plain file wins, and `.native.*`
 // wins over it. `.web.*` is never seen.
@@ -68,6 +71,22 @@ export default defineConfig({
       },
     },
     {
+      name: 'kroma-ui-external-flags',
+      enforce: 'pre' as const,
+      resolveId(id: string) {
+        if (!id.includes(FLAG_DIR)) {
+          return null;
+        }
+        const flag = FLAG_MODULE.exec(id)?.[1];
+        return flag === undefined
+          ? NO_FLAG
+          : { id: `country-flag-icons/string/1x1/${flag}`, external: true };
+      },
+      load(id: string) {
+        return id === NO_FLAG ? 'export default undefined;' : null;
+      },
+    },
+    {
       name: 'kroma-ui-icon-subset',
       enforce: 'pre' as const,
       load(id: string) {
@@ -110,6 +129,7 @@ export default defineConfig({
         'react-dom/client',
         /^zod(?:\/|$)/,
         /^@lezer\//,
+        /^country-flag-icons(?:\/|$)/,
         '@testing-library/react',
         ...(NATIVE ? NATIVE_EXTERNAL : ['react-native-web', /^@tabler\/icons-react(?:\/|$)/]),
       ],

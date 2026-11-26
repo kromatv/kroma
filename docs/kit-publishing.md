@@ -105,6 +105,21 @@ function App() {
 covers the whole set: a name outside the subset typechecks and draws the
 fallback, which is what lets an icon name arrive from data.
 
+## Flags
+
+`country-flag-icons` is a dependency of the staged package, not part of it. The
+web build keeps each country's square flag a bare
+`import('country-flag-icons/string/1x1/<code>')`, so a consumer's bundler gives
+every flag a chunk of its own and a browser fetches one the first time it is
+drawn. The native build imports the whole set, as the source does. Only the
+two-letter codes, the ones the kit asks for, become imports: the rest of the
+folder (the subdivision flags and the index) resolves to an empty module,
+because two of the subdivisions are missing from the package's `exports`.
+
+`stage` fails when a build writes any file under `node_modules`, because
+`npm pack` leaves every such folder out of the tarball. A dependency the source
+reaches by a path rather than by its name lands there; make it external.
+
 ## Words
 
 The kit's own chrome says about 95 phrases. In this repo they come from KROMA's
