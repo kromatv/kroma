@@ -4,12 +4,13 @@ import { type StyleScope, sharedStyle, styles, useStyleScope } from '#ui/core';
 // scrolls, the other two stay put behind a hairline.
 
 import { createContext, type ReactNode, useContext } from 'react';
-import { ScrollView, type StyleProp, type ViewStyle } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { Box } from '#ui/components/atoms/box';
 import { Divider } from '#ui/components/atoms/divider';
 import { IconButton, type IconButtonProps } from '#ui/components/atoms/icon-button';
 
 import { useStyles } from '#ui/core/styles';
+import { FocusScrollView } from '#ui/lib/focus-scroll-view.component';
 import { SurfaceBand } from '#ui/lib/surface-band.component';
 import { useTDefault } from '#ui/services/i18n';
 
@@ -65,14 +66,14 @@ function Panel({ children, style }: Readonly<DrawerBandProps>) {
   const { pad } = useShell();
   return (
     <SurfaceBand part="Drawer.Panel">
-      <ScrollView
+      <FocusScrollView
         style={[s.panel, style]}
         // Grows to the sheet's height so a short body can still pin something to
         // its bottom edge with `mt="auto"`, as the navigation sheets do.
         contentContainerStyle={bandOf(pad, scope)}
       >
         {children}
-      </ScrollView>
+      </FocusScrollView>
     </SurfaceBand>
   );
 }
