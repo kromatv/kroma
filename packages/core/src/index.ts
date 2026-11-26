@@ -19,6 +19,7 @@ export * from './handoff';
 export * from './hevc';
 export * from './i18n';
 export * from './licenses';
+export * from './locale-choices';
 export * from './locale-label';
 export * from './lang';
 export * from './lang-labels';

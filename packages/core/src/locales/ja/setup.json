@@ -89,8 +89,6 @@
   "setup.importUserSome": "ライブラリ{count}個",
   "setup.importUserYou": "ご自身のアカウント",
   "setup.importUsers": "ユーザー",
-  "setup.languageNone": "一致する言語はありません。英語はいつでも選択できます。",
-  "setup.languageSearch": "言語を検索",
   "setup.languageSub": "KROMAの表示言語を選択してください。",
   "setup.languageTitle": "ようこそ",
   "setup.mediaAddMore": "フォルダーを追加",

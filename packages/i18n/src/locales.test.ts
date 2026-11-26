@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { createLocales, directionOf } from './locales';
+import { createLocales, deviceLanguageTags, directionOf, matchLocale } from './locales';
 import type { TextDirection } from './types';
 
 const locales = createLocales({ en: 'English', fr: 'Français' }, 'en');
@@ -53,6 +53,44 @@ describe('createLocales', () => {
 
     expect(set.normalizeLocale('zh')).toBe('zh-Hant');
     expect(set.normalizeLocale('zh-Hant-TW')).toBe('zh-Hant');
+  });
+});
+
+describe('deviceLanguageTags', () => {
+  it('lists the languages the browser asks for, in its order', () => {
+    vi.stubGlobal('navigator', { languages: ['fr-CH', 'de'], language: 'fr-CH' });
+
+    expect(deviceLanguageTags()).toEqual(['fr-CH', 'de']);
+  });
+
+  it('settles for the one language a browser without a list names', () => {
+    vi.stubGlobal('navigator', { language: 'ko-KR' });
+
+    expect(deviceLanguageTags()).toEqual(['ko-KR']);
+  });
+
+  it('lists nothing where there is no navigator', () => {
+    vi.stubGlobal('navigator', undefined);
+
+    expect(deviceLanguageTags()).toEqual([]);
+  });
+});
+
+describe('matchLocale', () => {
+  const CODES = ['en', 'pt-BR', 'zh-Hans'] as const;
+
+  it('finds the locale a tag names, whatever its case and separator', () => {
+    expect(matchLocale(CODES, 'PT_br')).toBe('pt-BR');
+  });
+
+  it('falls back to the language when the region is not offered', () => {
+    expect(matchLocale(CODES, 'en-GB')).toBe('en');
+    expect(matchLocale(CODES, 'pt-PT')).toBe('pt-BR');
+    expect(matchLocale(CODES, 'zh-Hans-CN')).toBe('zh-Hans');
+  });
+
+  it('matches nothing for a language that is not offered', () => {
+    expect(matchLocale(CODES, 'de-DE')).toBeNull();
   });
 });
 

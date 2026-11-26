@@ -1,0 +1,22 @@
+import { defineStory } from '@kromatv/workbench/story';
+import { Every } from './flag.fixtures';
+
+export const story = defineStory({
+  group: 'Media',
+  args: { size: 16 },
+  controls: { size: { min: 10, max: 48, step: 2 } },
+  render: (args) => <Every {...args} />,
+});
+
+A country's flag, for the one place a flag says something words do not: which language a row is in, before the reader can read it. Drawn square from vectors (`country-flag-icons`, MIT), so every flag takes the same box whatever its own proportions, and never as an emoji, which some televisions draw as two letters and Windows does not draw at all. A hairline edge keeps a white field readable on a white ground, and the flag says nothing to assistive tech, since the words beside it name the thing.
+
+The kit draws every country's flag, and nothing lists them. A browser fetches each flag on its own the first time it is drawn, so a page carries only the flags it shows, and the square stays tinted until it arrives; a native bundle, which Metro cannot split, holds them all. Which flag stands for a language is `flagRegion` in `@kromatv/i18n`: the country CLDR finds it most likely written in (`en` is the United States, `pt` Brazil), answered the same on a television without `Intl.Locale`, and none for a language no one country speaks for.
+
+```tsx
+const region = flagRegion(locale);
+{isFlagRegion(region) ? <Flag region={region} size={16} /> : <Icon name="language" />}
+```
+
+<Dont>
+- Use a flag to stand for a language no one country speaks for, or as decoration.
+</Dont>

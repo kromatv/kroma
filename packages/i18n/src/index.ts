@@ -26,7 +26,15 @@ export {
   parseCatalogPath,
   sourcesByFile,
 } from './layout';
-export { createLocales, directionOf, LABEL_NAMESPACE, labelKey } from './locales';
+export { flagRegion } from './locale-flag';
+export {
+  createLocales,
+  deviceLanguageTags,
+  directionOf,
+  LABEL_NAMESPACE,
+  labelKey,
+  matchLocale,
+} from './locales';
 export {
   baseKeys,
   COUNT,

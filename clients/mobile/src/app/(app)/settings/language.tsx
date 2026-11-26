@@ -1,13 +1,14 @@
 // Interface language: device override, synced to the account like the other
 // clients so the choice follows the user everywhere.
 
+import { LOCALES } from '@kromatv/core';
 import type { Locale } from '@kromatv/i18n';
-import { Box, styles, Text, useStyles } from '@kromatv/ui/kit';
+import { Box, LanguagePicker, styles, Text, useStyles } from '@kromatv/ui/kit';
 import { useState } from 'react';
-import { LocalePicker } from '#mobile/components/locale-picker.component';
+import { ScrollView } from 'react-native';
 import { PageHeader } from '#mobile/components/page-header.component';
 import { Screen } from '#mobile/components/ui';
-import { useI18n, useT } from '#mobile/lib/i18n';
+import { osLanguageTags, useI18n, useT } from '#mobile/lib/i18n';
 import { boxed, contentWidth } from '#mobile/lib/layout';
 import { useClient, useSession } from '#mobile/lib/session';
 import { spacing, type } from '#mobile/lib/theme';
@@ -20,6 +21,7 @@ export default function LanguageSettings() {
   const { setUser } = useSession();
   const { locale, setOverride } = useI18n();
   const [saving, setSaving] = useState(false);
+  const [device] = useState(osLanguageTags);
 
   const pick = async (next: Locale) => {
     if (next === locale || saving) {
@@ -40,15 +42,30 @@ export default function LanguageSettings() {
   return (
     <Screen padded={false}>
       <PageHeader title={t('account.uiLanguage')} />
-      <Box style={s.body}>
-        <Text style={s.hint}>{t('account.uiLanguageDesc')}</Text>
-        <LocalePicker locale={locale} onPick={(next) => void pick(next)} />
-      </Box>
+      <LanguagePicker.Root
+        locales={LOCALES}
+        label={t('account.uiLanguage')}
+        value={locale}
+        onValueChange={(next) => void pick(next)}
+        preferred={device}
+      >
+        <Box style={s.head}>
+          <Text style={s.hint}>{t('account.uiLanguageDesc')}</Text>
+          <LanguagePicker.Input />
+        </Box>
+        <ScrollView>
+          <Box style={s.body}>
+            <LanguagePicker.List />
+            <LanguagePicker.Empty />
+          </Box>
+        </ScrollView>
+      </LanguagePicker.Root>
     </Screen>
   );
 }
 
 const sDefinition = styles({
+  head: { gap: spacing.sm, px: spacing.md, pt: spacing.md, ...boxed(contentWidth.reading) },
   body: { gap: spacing.sm, p: spacing.md, ...boxed(contentWidth.reading) },
-  hint: { ...type.caption, px: 4, mb: spacing.xs },
+  hint: { ...type.caption, px: 4 },
 });

@@ -26,8 +26,9 @@ interface BaseItem {
 }
 
 /** `cycle` steps to the next value in place; `list` opens a dialog instead,
- * for a choice too long to cycle through (e.g. the full language list). */
-export type ChoicePick = 'cycle' | 'list';
+ * for a choice too long to cycle through (e.g. the full language list);
+ * `language` opens the kit's language picker, for the interface language. */
+export type ChoicePick = 'cycle' | 'list' | 'language';
 
 export interface ChoiceItem extends BaseItem {
   kind: 'choice';

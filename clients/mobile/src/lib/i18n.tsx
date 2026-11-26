@@ -42,9 +42,14 @@ export function useI18n(): I18n {
   return value;
 }
 
+/** The languages the phone asks for, most wanted first, as BCP 47 tags. */
+export function osLanguageTags(): string[] {
+  return getLocales().map((l) => l.languageTag);
+}
+
 function osLocale(): Locale | null {
-  for (const l of getLocales()) {
-    const match = normalizeLocale(l.languageTag);
+  for (const tag of osLanguageTags()) {
+    const match = normalizeLocale(tag);
     if (match) {
       return match;
     }

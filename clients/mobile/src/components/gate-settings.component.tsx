@@ -1,4 +1,3 @@
-import { IconButton, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // The sign-in gate's corner gear, the phone's answer to the TV's "Paramètres"
 // chip and the web gate's corner panel: the few things that have to be
 // reachable BEFORE anyone can sign in.
@@ -7,23 +6,27 @@ import { IconButton, useStyleScope, useThemeVersion } from '@kromatv/ui/kit';
 // syncs the choice to the account, but there is no account yet at the gate,
 // and a viewer who cannot read the sign-in screen cannot get to one.
 
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
-
-import { useRef } from 'react';
-import { useI18n, useT } from '#mobile/lib/i18n';
-import { LocalePicker } from './locale-picker.component';
-import { SheetBody, SheetTitle, sheetChrome } from './ui/sheet';
+import { LOCALES } from '@kromatv/core';
+import { IconButton, LanguagePicker } from '@kromatv/ui/kit';
+import { useState } from 'react';
+import { osLanguageTags, useI18n, useT } from '#mobile/lib/i18n';
 
 export function GateSettings() {
-  const scope = useStyleScope();
-  useThemeVersion();
-
   const t = useT();
   const { locale, setOverride } = useI18n();
-  const sheet = useRef<BottomSheetModal>(null);
+  const [open, setOpen] = useState(false);
+  const [device] = useState(osLanguageTags);
 
   return (
-    <>
+    <LanguagePicker.Root
+      locales={LOCALES}
+      label={t('account.uiLanguage')}
+      value={locale}
+      onValueChange={setOverride}
+      open={open}
+      onOpenChange={setOpen}
+      preferred={device}
+    >
       {/* The same disc as <BackButton> in the opposite corner: same size, same
           scrim, so the gate's two corner controls read as a pair. */}
       <IconButton
@@ -34,20 +37,8 @@ export function GateSettings() {
         ring={false}
         hitSlop={8}
         label={t('nav.settings')}
-        onPress={() => sheet.current?.present()}
+        onPress={() => setOpen(true)}
       />
-      <BottomSheetModal ref={sheet} {...sheetChrome(scope)}>
-        <SheetBody>
-          <SheetTitle>{t('account.uiLanguage')}</SheetTitle>
-          <LocalePicker
-            locale={locale}
-            onPick={(next) => {
-              setOverride(next);
-              sheet.current?.dismiss();
-            }}
-          />
-        </SheetBody>
-      </BottomSheetModal>
-    </>
+    </LanguagePicker.Root>
   );
 }

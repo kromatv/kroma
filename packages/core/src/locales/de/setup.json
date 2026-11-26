@@ -90,8 +90,6 @@
   "setup.importUserSome_one": "{count} Bibliothek",
   "setup.importUserYou": "Dein Konto",
   "setup.importUsers": "Personen",
-  "setup.languageNone": "Keine passende Sprache. Englisch ist immer verfügbar.",
-  "setup.languageSearch": "Sprache suchen",
   "setup.languageSub": "Wähle die Sprache, in der KROMA mit dir spricht.",
   "setup.languageTitle": "Hallo.",
   "setup.mediaAddMore": "Weiteren Ordner hinzufügen",

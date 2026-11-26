@@ -13,11 +13,18 @@ function Leading({ children }: Readonly<{ children: ReactNode }>) {
   return children;
 }
 
+interface LabelProps {
+  /** The language the title is written in, where it is not the interface's,
+   *  as `<Text lang>` takes it. */
+  lang?: string;
+  children: ReactNode;
+}
+
 /** The row's title. Written first, its plain text is the row's accessible name. */
-function Label({ children }: Readonly<{ children: ReactNode }>) {
+function Label({ lang, children }: Readonly<LabelProps>) {
   const { slots } = useListRow('Label');
   return (
-    <Text lines={1} style={slots.label}>
+    <Text lines={1} lang={lang} style={slots.label}>
       {children}
     </Text>
   );
@@ -59,5 +66,5 @@ function Trailing({ shrink = false, children }: Readonly<TrailingProps>) {
   );
 }
 
-export type { HintProps, TrailingProps };
+export type { HintProps, LabelProps, TrailingProps };
 export { Hint, Label, Leading, Trailing };

@@ -26,6 +26,7 @@ import {
   themed,
   useBreakpointStep,
 } from '#ui/core';
+import { languageProps } from '#ui/lib/language-props';
 import { isStaticText, StaticText } from '#ui/lib/static-text.component';
 
 // Registered, not spread: a role read straight off the theme is a plain object,
@@ -53,6 +54,10 @@ interface TextProps extends Omit<RNTextProps, 'style' | 'role'>, TextLayoutProps
   style?: StyleProp<TextStyle>;
   /** Clamp to N lines with an ellipsis (the RN spelling of line-clamp). */
   lines?: number;
+  /** The BCP 47 tag of the language the text is in, where it is not the
+   *  interface's: it picks the glyphs (Japanese and Chinese draw some Han
+   *  characters apart) and the voice a screen reader uses. */
+  lang?: string;
 }
 
 // A style that resizes the text carries two absolutes sized for the role's
@@ -96,6 +101,7 @@ function Text({
   font,
   style,
   lines,
+  lang,
   ...props
 }: Readonly<TextProps>) {
   const paint = {
@@ -104,7 +110,7 @@ function Text({
     font,
     style,
     lines,
-    split: splitShorthand(props, TEXT_STYLE_PROPS),
+    split: splitShorthand(lang ? { ...props, ...languageProps(lang) } : props, TEXT_STYLE_PROPS),
   };
   // Only a string stating a value per breakpoint follows the design width, and
   // only it pays for a subscription; see <Box>.
