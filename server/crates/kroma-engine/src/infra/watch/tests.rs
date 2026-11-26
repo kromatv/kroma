@@ -1,10 +1,9 @@
 use std::path::Path;
-use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
+use std::sync::mpsc::RecvTimeoutError;
 use std::time::Duration;
 
-use notify::RecommendedWatcher;
-
-use super::{signature, watch_folders};
+use super::signature;
+use super::watched::Watched;
 use crate::services::scan::scan_all;
 use crate::services::settings::LibraryDef;
 
@@ -108,10 +107,18 @@ fn an_nfo_put_beside_a_show_or_edited_changes_the_signature() {
     assert_ne!(signed(root.path()), put_beside);
 }
 
-fn watching(root: &Path) -> (RecommendedWatcher, Receiver<()>) {
-    let (tx, rx) = mpsc::channel();
-    let watcher = watch_folders(&[root.to_path_buf()], tx).unwrap();
-    (watcher, rx)
+fn watching(root: &Path) -> Watched {
+    let watched = Watched::start(vec![root.to_path_buf()]);
+    assert!(watched.fs_events());
+    watched
+}
+
+fn stays_asleep(watched: &Watched) -> bool {
+    watched.rx.recv_timeout(Duration::from_millis(500)) == Err(RecvTimeoutError::Timeout)
+}
+
+fn wakes(watched: &Watched) -> bool {
+    watched.rx.recv_timeout(Duration::from_secs(5)).is_ok()
 }
 
 #[test]
@@ -119,24 +126,53 @@ fn walking_the_library_or_reading_a_video_does_not_wake_the_watcher() {
     let root = kroma_testing::temp_dir("watch-own-walk");
     put(root.path(), "Show/Season 1/Show S01E01.mkv", b"one");
     put(root.path(), "Show/tvshow.nfo", b"<tvshow/>");
-    let (_watcher, rx) = watching(root.path());
+    let watched = watching(root.path());
 
     signed(root.path());
     std::fs::read(root.path().join("Show/Season 1/Show S01E01.mkv")).unwrap();
 
-    assert_eq!(
-        rx.recv_timeout(Duration::from_millis(500)),
-        Err(RecvTimeoutError::Timeout)
-    );
+    assert!(stays_asleep(&watched));
 }
 
 #[test]
 fn a_file_added_to_a_watched_folder_wakes_the_watcher() {
     let root = kroma_testing::temp_dir("watch-added");
     put(root.path(), "Show/Season 1/Show S01E01.mkv", b"one");
-    let (_watcher, rx) = watching(root.path());
+    let watched = watching(root.path());
 
     put(root.path(), "Show/Season 1/Show S01E02.mkv", b"two");
 
-    assert_eq!(rx.recv_timeout(Duration::from_secs(5)), Ok(()));
+    assert!(wakes(&watched));
+}
+
+#[test]
+fn a_file_the_nas_writes_in_its_eadir_folder_does_not_wake_the_watcher() {
+    let root = kroma_testing::temp_dir("watch-eadir");
+    put(
+        root.path(),
+        "Show/Season 1/@eaDir/Show S01E01.mkv/SYNOVIDEO_VIDEO_SCREENSHOT.jpg",
+        b"jpg",
+    );
+    let watched = watching(root.path());
+
+    put(
+        root.path(),
+        "Show/Season 1/@eaDir/Show S01E01.mkv/SYNOINDEX_MEDIA_INFO",
+        b"info",
+    );
+
+    assert!(stays_asleep(&watched));
+}
+
+#[test]
+fn a_file_added_to_a_folder_made_after_the_watcher_started_wakes_it() {
+    let root = kroma_testing::temp_dir("watch-new-folder");
+    let mut watched = watching(root.path());
+    std::fs::create_dir_all(root.path().join("New Show/Season 1")).unwrap();
+    while !stays_asleep(&watched) {}
+
+    watched.refresh();
+    put(root.path(), "New Show/Season 1/New Show S01E01.mkv", b"one");
+
+    assert!(wakes(&watched));
 }

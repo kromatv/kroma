@@ -3,17 +3,19 @@
 //! best-effort `notify` watcher, both feeding one debounced worker thread.
 
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::path::PathBuf;
-use std::sync::mpsc::{self, RecvTimeoutError};
+use std::sync::mpsc::RecvTimeoutError;
 use std::time::Duration;
 
-use notify::{RecursiveMode, Watcher};
 use tokio::runtime::Handle;
-use tracing::{info, warn};
+use tracing::info;
 
 use crate::services::jobs::{Trigger, TriggerError};
 use crate::services::scan::{self, ScanData};
 use crate::state::SharedState;
+
+use watched::Watched;
+
+mod watched;
 
 const DEFAULT_INTERVAL_SECS: u64 = 300;
 const DEBOUNCE: Duration = Duration::from_secs(2);
@@ -25,32 +27,32 @@ pub fn spawn(state: SharedState, baseline: u64) {
     let handle = Handle::current();
 
     std::thread::spawn(move || {
-        let (tx, rx) = mpsc::channel::<()>();
-        let watcher = make_watcher(&state, tx); // kept alive for the thread's life
-        info!(fs_events = watcher.is_some(), "library watcher started");
+        let folders = crate::services::settings::all_folders(&state.settings, &state.config);
+        let mut watched = Watched::start(folders);
+        info!(fs_events = watched.fs_events(), "library watcher started");
 
-        watch_loop(&state, &handle, &rx, baseline);
-        drop(watcher);
+        watch_loop(&state, &handle, &mut watched, baseline);
     });
 }
 
-fn watch_loop(state: &SharedState, handle: &Handle, rx: &mpsc::Receiver<()>, baseline: u64) {
+fn watch_loop(state: &SharedState, handle: &Handle, watched: &mut Watched, baseline: u64) {
     let mut last = baseline;
     loop {
         // Re-read each iteration so an admin change needs no restart.
         let interval = watch_interval(state);
         let recv = if interval > 0 {
-            rx.recv_timeout(Duration::from_secs(interval))
+            watched.rx.recv_timeout(Duration::from_secs(interval))
         } else {
-            rx.recv().map_err(|_| RecvTimeoutError::Disconnected)
+            watched.rx.recv().map_err(|_| RecvTimeoutError::Disconnected)
         };
         let from_event = match recv {
             Ok(()) => true,
             Err(RecvTimeoutError::Timeout) => false,
             Err(RecvTimeoutError::Disconnected) => break,
         };
+        watched.refresh();
         if from_event {
-            while rx.recv_timeout(DEBOUNCE).is_ok() {}
+            while watched.rx.recv_timeout(DEBOUNCE).is_ok() {}
         }
         trigger_if_changed(state, handle, &mut last);
     }
@@ -65,28 +67,6 @@ fn watch_interval(state: &SharedState) -> u64 {
             .and_then(|s| s.trim().parse::<u64>().ok())
             .unwrap_or(DEFAULT_INTERVAL_SECS),
     }
-}
-
-fn make_watcher(state: &SharedState, tx: mpsc::Sender<()>) -> Option<notify::RecommendedWatcher> {
-    let folders = crate::services::settings::all_folders(&state.settings, &state.config);
-    watch_folders(&folders, tx)
-}
-
-fn watch_folders(folders: &[PathBuf], tx: mpsc::Sender<()>) -> Option<notify::RecommendedWatcher> {
-    let mut watcher = notify::recommended_watcher(move |res: notify::Result<notify::Event>| {
-        if res.is_ok_and(|event| !event.kind.is_access()) {
-            let _ = tx.send(());
-        }
-    })
-    .map_err(|e| warn!(error = %e, "filesystem watcher unavailable (periodic re-scan only)"))
-    .ok()?;
-
-    for dir in folders {
-        if let Err(e) = watcher.watch(dir, RecursiveMode::Recursive) {
-            warn!(path = %dir.display(), error = %e, "could not watch media dir");
-        }
-    }
-    Some(watcher)
 }
 
 fn trigger_if_changed(state: &SharedState, handle: &Handle, last: &mut u64) {

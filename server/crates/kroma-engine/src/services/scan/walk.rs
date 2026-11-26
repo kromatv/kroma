@@ -208,7 +208,7 @@ fn walk_threads() -> usize {
 }
 
 // Directories pruned from the walk: Synology metadata (`@eaDir`) and hidden.
-fn is_pruned_dir(name: &std::ffi::OsStr) -> bool {
+pub(crate) fn is_pruned_dir(name: &std::ffi::OsStr) -> bool {
     let n = name.to_string_lossy();
     n == "@eaDir" || n.starts_with('.')
 }
