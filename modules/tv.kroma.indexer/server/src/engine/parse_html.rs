@@ -279,4 +279,39 @@ search:
         assert_eq!(rels[0].title, "Cool Movie");
         assert_eq!(rels[0].guid, "Cool Movie FREELEECH");
     }
+
+    #[test]
+    fn a_size_cell_that_also_holds_the_seeders_still_reads_as_the_size() {
+        let def = build_def(
+            r#"
+id: t
+name: T
+caps: {}
+search:
+  rows:
+    selector: "tr:has(a[href^=\"/torrent/\"])"
+  fields:
+    title:
+      selector: td[class^="coll-1"] a[href^="/torrent/"]
+    details:
+      selector: td[class^="coll-1"] a[href^="/torrent/"]
+      attribute: href
+    seeders:
+      selector: td[class^="coll-2"]
+    size:
+      selector: td[class^="coll-4"]
+"#,
+        );
+        let body = r#"<table><tr>
+            <td class="coll-1 name"><a href="/torrent/1/Some-Movie-2020/">Some Movie 2020</a></td>
+            <td class="coll-2 seeds">812</td>
+            <td class="coll-3 leeches">40</td>
+            <td class="coll-4 size mob-uploader">1.4 GB<span class="seeds">812</span></td>
+        </tr></table>"#;
+
+        let rels = parse_html(&def, &cfg("https://x/"), body).unwrap();
+
+        assert_eq!(rels[0].size_bytes, Some(1_503_238_553));
+        assert_eq!(rels[0].seeders, Some(812));
+    }
 }

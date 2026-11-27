@@ -202,6 +202,63 @@ async fn a_release_of_a_missing_film_is_grabbed_for_its_row() {
     assert_eq!(fakes.grabbed_rows(), [["m1"]]);
 }
 
+fn behind_a_details_page(mut fakes: Fakes, kind: &str) -> Fakes {
+    fakes.indexers[0]["kind"] = kind.into();
+    fakes.releases[0]["magnet"] = serde_json::Value::Null;
+    fakes.releases[0]["link"] = "https://tracker.invalid/details/1".into();
+    fakes.resolved = Some(json!({ "TorrentUrl": "https://tracker.invalid/download/1" }));
+    fakes
+}
+
+#[tokio::test]
+async fn a_built_in_indexer_release_is_grabbed_by_its_download_link_not_its_details_page() {
+    let fakes = behind_a_details_page(Fakes::new().offering(&[DUNE_1080]), "builtin");
+    let host = wanting_dune(&fakes).await;
+
+    rss(host).await;
+
+    assert_eq!(
+        fakes.grabbed_links(),
+        ["https://tracker.invalid/download/1"]
+    );
+}
+
+#[tokio::test]
+async fn a_release_the_built_in_indexer_cannot_resolve_is_not_grabbed() {
+    let mut fakes = behind_a_details_page(Fakes::new().offering(&[DUNE_1080]), "builtin");
+    fakes.resolved = None;
+    let host = wanting_dune(&fakes).await;
+
+    let (summary, _) = rss(host).await;
+
+    assert_eq!(summary.grabbed, 0);
+    assert!(fakes.grabbed_links().is_empty());
+}
+
+#[tokio::test]
+async fn a_release_whose_link_cannot_be_resolved_is_blocked_so_the_next_pass_skips_it() {
+    let mut fakes = behind_a_details_page(Fakes::new().offering(&[DUNE_1080]), "builtin");
+    fakes.resolved = None;
+    let host = wanting_dune(&fakes).await;
+
+    rss(host.clone()).await;
+
+    let blocked = blocklist::for_title(host.store(), RequestKind::Movie, 2).unwrap();
+    assert_eq!(blocked.len(), 1);
+    assert!(blocked[0].matches(DUNE_1080, None));
+    assert!(blocked[0].reason.contains("not resolved"), "{}", blocked[0].reason);
+}
+
+#[tokio::test]
+async fn an_external_indexer_link_is_grabbed_as_it_came() {
+    let fakes = behind_a_details_page(Fakes::new().offering(&[DUNE_1080]), "torznab");
+    let host = wanting_dune(&fakes).await;
+
+    rss(host).await;
+
+    assert_eq!(fakes.grabbed_links(), ["https://tracker.invalid/details/1"]);
+}
+
 #[tokio::test]
 async fn of_two_releases_for_one_row_only_the_better_is_grabbed() {
     let fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);

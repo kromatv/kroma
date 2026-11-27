@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use kroma_module_sdk::host::{AuthUser, HostStorage};
 use kroma_scene::{
-    Candidate, Evaluation, Facts, Language, ParsedRelease, Query, Target, evaluate, judge,
+    Candidate, Evaluation, Facts, Language, ParsedRelease, Query, Rules, Sizes, Target, evaluate,
+    judge,
 };
 
 use super::routes::require_reader;
@@ -70,18 +71,21 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
         runtime_minutes: None,
         original,
     };
+    let unlimited = without_limits(&book.sizes);
     let profiles = book
         .profiles
         .iter()
         .map(|profile| {
-            let rules = book.rules(profile);
-            // A name says nothing about seeders or size, so neither refuses.
-            let candidate = Candidate::default();
+            let rules = Rules {
+                sizes: &unlimited,
+                ..book.rules(profile)
+            };
             ProfileVerdict {
                 profile_id: profile.id.clone(),
                 profile_name: profile.name.clone(),
                 evaluation: evaluate(&facts, original, &rules),
-                refusal: judge(&parsed, &facts, &candidate, &query, &rules)
+                // A name says nothing about seeders or size, so neither refuses.
+                refusal: judge(&parsed, &facts, &Candidate::default(), &query, &rules)
                     .as_ref()
                     .err()
                     .map(RefusalView::from),
@@ -89,6 +93,14 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
         })
         .collect();
     TestView { facts, profiles }
+}
+
+fn without_limits(sizes: &Sizes) -> Sizes {
+    Sizes {
+        movie: Vec::new(),
+        episode: Vec::new(),
+        ..sizes.clone()
+    }
 }
 
 fn target_of(parsed: &ParsedRelease) -> Target {

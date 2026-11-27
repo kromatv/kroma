@@ -16,7 +16,9 @@ pub struct ClientDef {
     pub password: String,
 }
 
-/// A torrent to add.
+/// A torrent to add. `torrent_bytes` is the `.torrent` the caller already
+/// fetched, uploaded instead of handing qBittorrent the link; `info_hash` is
+/// that file's v1 hash, which saves diffing the category for it.
 #[derive(Debug, Clone)]
 pub struct AddTorrentReq<'a> {
     pub magnet_or_url: &'a str,
@@ -24,6 +26,7 @@ pub struct AddTorrentReq<'a> {
     pub label: &'a str,
     pub only_files: Option<&'a [usize]>,
     pub torrent_bytes: Option<&'a [u8]>,
+    pub info_hash: Option<&'a str>,
 }
 
 /// What a torrent is doing, in the vocabulary the caller reads.

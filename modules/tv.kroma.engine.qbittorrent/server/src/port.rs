@@ -9,7 +9,7 @@
 //! which of the operator's configured clients it is serving: an operator may have
 //! two qBittorrent instances, and the credentials belong to the row, not here.
 
-use axum::extract::State;
+use axum::extract::{DefaultBodyLimit, State};
 use axum::http::StatusCode;
 use axum::routing::post;
 use axum::{Json, Router};
@@ -25,7 +25,10 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
     Router::new()
         .route("/_port/tv.kroma.torrents/client/caps", post(caps))
         .route("/_port/tv.kroma.torrents/client/test", post(test::<S>))
-        .route("/_port/tv.kroma.torrents/client/add", post(add::<S>))
+        .route(
+            "/_port/tv.kroma.torrents/client/add",
+            post(add::<S>).layer(DefaultBodyLimit::max(MAX_ADD_BYTES)),
+        )
         .route("/_port/tv.kroma.torrents/client/status", post(status::<S>))
         .route("/_port/tv.kroma.torrents/client/pause", post(pause::<S>))
         .route("/_port/tv.kroma.torrents/client/resume", post(resume::<S>))
@@ -35,6 +38,8 @@ pub fn routes<S: HostCtx + Clone + Send + Sync + 'static>() -> Router<S> {
         )
         .route("/_port/tv.kroma.torrents/client/remove", post(remove::<S>))
 }
+
+const MAX_ADD_BYTES: usize = 16 * 1024 * 1024;
 
 /// The configured client a call is for. Tolerant: the consumer is separately
 /// released, so a field it adds is ignored and one it omits defaults.
@@ -61,6 +66,8 @@ struct Args {
     label: String,
     client_ref: String,
     delete_data: bool,
+    torrent_b64: Option<String>,
+    info_hash: Option<String>,
 }
 
 /// A torrent as this engine reports it. The keys are what the consumer reads; a
@@ -99,7 +106,9 @@ fn engine<S: HostCtx>(host: &S, client: &Client) -> QBittorrent {
 }
 
 async fn caps() -> Json<Result<serde_json::Value, String>> {
-    Json(Ok(serde_json::json!({ "protocols": ["torrent"] })))
+    Json(Ok(
+        serde_json::json!({ "protocols": ["torrent"], "torrent_file": true }),
+    ))
 }
 
 async fn test<S: HostCtx + Clone + Send + Sync + 'static>(
@@ -114,16 +123,29 @@ async fn add<S: HostCtx + Clone + Send + Sync + 'static>(
     Json(call): Json<Call>,
 ) -> Json<Result<String, String>> {
     port_reply(move || {
+        let torrent = uploaded(&call.args)?;
         let req = crate::AddTorrentReq {
             magnet_or_url: &call.args.magnet_or_url,
             download_dir: call.args.download_dir.as_deref(),
             label: &call.args.label,
             only_files: None,
-            torrent_bytes: None,
+            torrent_bytes: torrent.as_deref(),
+            info_hash: call.args.info_hash.as_deref(),
         };
         engine(&host, &call.client).add(&req)
     })
     .await
+}
+
+fn uploaded(args: &Args) -> anyhow::Result<Option<Vec<u8>>> {
+    use base64::Engine as _;
+    let Some(encoded) = &args.torrent_b64 else {
+        return Ok(None);
+    };
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(encoded)
+        .map_err(|_| anyhow::anyhow!("the .torrent file did not arrive intact"))?;
+    Ok(Some(bytes))
 }
 
 // Not the `Result` envelope: `None` is a torrent the engine has forgotten, which
@@ -281,11 +303,28 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn an_add_carrying_a_large_torrent_file_is_not_refused_for_its_size() {
+        let torrent = "A".repeat(4 * 1024 * 1024);
+        let (status, answer) = call(
+            "/_port/tv.kroma.torrents/client/add",
+            json!({
+                "client": unreachable_client(),
+                "args": { "magnet_or_url": "https://t/1", "label": "kroma", "torrent_b64": torrent },
+            }),
+        )
+        .await;
+
+        assert_eq!(status, StatusCode::OK);
+        assert!(answer["Err"].is_string(), "{answer}");
+    }
+
+    #[tokio::test]
     async fn caps_name_the_torrent_protocol() {
         let (status, answer) = call("/_port/tv.kroma.torrents/client/caps", json!({})).await;
 
         assert_eq!(status, StatusCode::OK);
         assert_eq!(answer["Ok"]["protocols"], json!(["torrent"]));
+        assert_eq!(answer["Ok"]["torrent_file"], json!(true));
     }
 
     #[tokio::test]
@@ -328,6 +367,54 @@ mod tests {
         assert_eq!(call.args.download_dir.as_deref(), Some("/downloads"));
         assert_eq!(call.args.label, "kroma");
         assert!(!call.args.delete_data);
+    }
+
+    #[test]
+    fn an_add_can_carry_the_torrent_file_and_its_hash() {
+        let body = json!({
+            "client": { "url": "http://nas:8080" },
+            "args": {
+                "magnet_or_url": "https://tracker.invalid/download/1",
+                "label": "kroma",
+                "torrent_b64": "ZDQ6aW5mb2Vl",
+                "info_hash": "0123456789abcdef0123456789abcdef01234567",
+            },
+        });
+
+        let call: Call = serde_json::from_value(body).unwrap();
+
+        assert_eq!(
+            uploaded(&call.args).unwrap().as_deref(),
+            Some(&b"d4:infoee"[..])
+        );
+        assert_eq!(
+            call.args.info_hash.as_deref(),
+            Some("0123456789abcdef0123456789abcdef01234567")
+        );
+    }
+
+    #[test]
+    fn an_add_without_a_file_hands_over_the_link_alone() {
+        let call: Call = serde_json::from_value(json!({
+            "client": { "url": "http://nas:8080" },
+            "args": { "magnet_or_url": "magnet:?xt=urn:btih:AB" },
+        }))
+        .unwrap();
+
+        assert!(uploaded(&call.args).unwrap().is_none());
+    }
+
+    #[test]
+    fn a_torrent_file_that_is_not_base64_is_refused_with_a_reason() {
+        let call: Call = serde_json::from_value(json!({
+            "client": { "url": "http://nas:8080" },
+            "args": { "torrent_b64": "not base64 at all!" },
+        }))
+        .unwrap();
+
+        let err = uploaded(&call.args).unwrap_err().to_string();
+
+        assert!(err.contains("did not arrive intact"), "{err}");
     }
 
     #[test]

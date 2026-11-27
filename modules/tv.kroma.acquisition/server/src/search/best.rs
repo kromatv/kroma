@@ -234,6 +234,28 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn a_release_whose_indexer_gave_no_size_is_not_grabbed_past_a_size_limit() {
+        let mut fakes = Fakes::new().offering(&[DUNE_1080]);
+        fakes.releases[0]["size_bytes"] = serde_json::Value::Null;
+
+        let (out, _) = sweep(fakes, Vec::new()).await;
+
+        assert!(out.best.is_none());
+        let refusal = out.top_reject.unwrap_or_default();
+        assert!(refusal.contains("size not reported"), "{refusal}");
+    }
+
+    #[tokio::test]
+    async fn a_release_of_known_size_still_wins_over_one_of_unknown_size() {
+        let mut fakes = Fakes::new().offering(&[DUNE_720, DUNE_1080]);
+        fakes.releases[1]["size_bytes"] = serde_json::Value::Null;
+
+        let (out, _) = sweep(fakes, Vec::new()).await;
+
+        assert_eq!(out.best.unwrap().view.title, DUNE_720);
+    }
+
+    #[tokio::test]
     async fn a_sweep_nothing_fits_says_what_the_first_refusal_was() {
         let fakes = Fakes::new().offering(&["Arrival.2016.1080p.BluRay.x264-GRP"]);
 

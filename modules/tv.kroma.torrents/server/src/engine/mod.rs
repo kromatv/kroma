@@ -108,6 +108,11 @@ pub trait DownloadClient: Send + Sync {
     fn protocols(&self) -> Vec<String> {
         vec![TORRENT.to_string()]
     }
+    // Whether `add` reads `torrent_bytes`. An engine that does not is handed
+    // the link, so nothing fetches the file ahead of it.
+    fn takes_torrent_file(&self) -> bool {
+        false
+    }
     // `Ok(None)` = the engine no longer knows this torrent.
     fn status(&self, client_ref: &str) -> anyhow::Result<Option<TorrentStatus>>;
     fn pause(&self, client_ref: &str) -> anyhow::Result<()>;

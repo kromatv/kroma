@@ -1,6 +1,6 @@
 use crate::{engine, Query};
 
-use super::response::{declared_empty, refusal, snippet};
+use super::response::{browser_json, declared_empty, refusal, snippet};
 use super::{SearchOutcome, Session, RATE_LIMIT_COOLDOWN};
 
 impl Session {
@@ -49,23 +49,8 @@ impl Session {
         seen: &mut std::collections::HashSet<String>,
         outcome: &mut SearchOutcome,
     ) {
-        let fetched = match req.method.as_str() {
-            "post" => self.post_form_text(&req.url, &req.inputs),
-            _ => self.get_text(&req.url, &req.inputs),
-        };
-        let body = match fetched {
-            Ok(b) => b,
-            Err(e) => {
-                tracing::warn!(
-                    indexer = %self.def.name,
-                    url = %req.url,
-                    method = %req.method,
-                    error = %format!("{e:#}"),
-                    "fetch failed",
-                );
-                outcome.errors.push(format!("{}: {e:#}", self.def.name));
-                return;
-            }
+        let Some(body) = self.body_of(req, outcome) else {
+            return;
         };
         let bytes = body.len();
         let body = engine::preprocess(&self.def, &self.cfg, &body);
@@ -101,6 +86,34 @@ impl Session {
                     .push(format!("{}: parse: {e:#}", self.def.name));
             }
         }
+    }
+
+    fn body_of(&self, req: &engine::SearchRequest, outcome: &mut SearchOutcome) -> Option<String> {
+        let fetched = match req.method.as_str() {
+            "post" => self.post_form_text(&req.url, &req.inputs),
+            _ => self.get_text(&req.url, &req.inputs),
+        };
+        match fetched {
+            Ok(body) => Some(self.unwrapped(&req.response_kind, body)),
+            Err(e) => {
+                tracing::warn!(
+                    indexer = %self.def.name,
+                    url = %req.url,
+                    method = %req.method,
+                    error = %format!("{e:#}"),
+                    "fetch failed",
+                );
+                outcome.errors.push(format!("{}: {e:#}", self.def.name));
+                None
+            }
+        }
+    }
+
+    fn unwrapped(&self, kind: &str, body: String) -> String {
+        if kind != "json" || self.flaresolverr.is_none() {
+            return body;
+        }
+        browser_json(&body).unwrap_or(body)
     }
 
     // A tracker that refuses the query answers 200 with an error document, which

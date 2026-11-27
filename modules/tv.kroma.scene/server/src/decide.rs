@@ -7,7 +7,7 @@ use crate::shape::{check_shape, reject};
 use crate::terms::check_terms;
 use crate::{
     Candidate, Facts, FormatSet, Language, Params, ParsedRelease, Quality, QualityProfile, Reject,
-    ScoreLine, Sizes, Target,
+    ScoreLine, SizeLimit, Sizes, Target,
 };
 
 /// The rules one decision is made under.
@@ -165,7 +165,7 @@ fn check_size(
         .preferred
         .map(|per_minute| (per_minute * minutes * MB) as u64);
     let Some(size) = size_bytes else {
-        return Ok(preferred);
+        return unknown_size(limit, minutes).map(|()| preferred);
     };
     let per_minute = size as f64 / MB / minutes;
     if per_minute < limit.min {
@@ -185,6 +185,22 @@ fn check_size(
         ));
     }
     Ok(preferred)
+}
+
+fn unknown_size(limit: &SizeLimit, minutes: f64) -> Result<(), Reject> {
+    let bound = limit.max.or((limit.min > 0.0).then_some(limit.min));
+    let Some(per_minute) = bound else {
+        return Ok(());
+    };
+    let limit_bytes = (per_minute * minutes * MB) as u64;
+    Err(reject(
+        "size-unknown",
+        format!(
+            "size not reported, so the {} limit cannot be checked",
+            gb(limit_bytes)
+        ),
+        [("limitBytes", json!(limit_bytes))],
+    ))
 }
 
 fn size_params(size: u64, limit: u64) -> [(&'static str, Value); 2] {

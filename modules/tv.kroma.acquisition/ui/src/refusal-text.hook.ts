@@ -37,61 +37,85 @@ function shapeName(t: Translate, params: Params, key: string): string {
   return t(SHAPES[text(params, key)] ?? 'acq.shapeNone');
 }
 
-function sizeSentence(t: Translate, bytes: Bytes, key: string, params: Params): string {
-  return t(key, {
-    size: bytes(count(params, 'sizeBytes')),
-    limit: bytes(count(params, 'limitBytes')),
-  });
+interface Context {
+  t: Translate;
+  bytes: Bytes;
+  params: Params;
 }
 
-function shortfall(t: Translate, key: string, params: Params): string {
-  return t(key, { have: count(params, 'have'), need: count(params, 'need') });
+type Sentence = (context: Context) => string;
+
+function sizeSentence(key: string): Sentence {
+  return ({ t, bytes, params }) =>
+    t(key, {
+      size: bytes(count(params, 'sizeBytes')),
+      limit: bytes(count(params, 'limitBytes')),
+    });
 }
 
-function sentence(t: Translate, bytes: Bytes, { rule, params }: RefusalLike): string | null {
-  switch (rule) {
-    case 'quality':
-      return t('acq.refusal.quality', {
+function shortfall(key: string): Sentence {
+  return ({ t, params }) => t(key, { have: count(params, 'have'), need: count(params, 'need') });
+}
+
+const SENTENCES = new Map<string, Sentence>([
+  [
+    'quality',
+    ({ t, params }) =>
+      t('acq.refusal.quality', {
         quality: qualityLabel(text(params, 'quality')) ?? t('acq.qualityUnknown'),
-      });
-    case 'format-score':
-      return shortfall(t, 'acq.refusal.formatScore', params);
-    case 'seeders':
-      return shortfall(t, 'acq.refusal.seeders', params);
-    case 'forbidden-keyword':
-      return t('acq.refusal.forbiddenKeyword', { term: text(params, 'term') });
-    case 'missing-required-keyword':
-      return t('acq.refusal.missingKeyword', { terms: text(params, 'terms') });
-    case 'too-small':
-      return sizeSentence(t, bytes, 'acq.refusal.tooSmall', params);
-    case 'too-big':
-      return sizeSentence(t, bytes, 'acq.refusal.tooBig', params);
-    case 'wrong-shape':
-      return t('acq.refusal.wrongShape', {
+      }),
+  ],
+  ['format-score', shortfall('acq.refusal.formatScore')],
+  ['seeders', shortfall('acq.refusal.seeders')],
+  [
+    'forbidden-keyword',
+    ({ t, params }) => t('acq.refusal.forbiddenKeyword', { term: text(params, 'term') }),
+  ],
+  [
+    'missing-required-keyword',
+    ({ t, params }) => t('acq.refusal.missingKeyword', { terms: text(params, 'terms') }),
+  ],
+  ['too-small', sizeSentence('acq.refusal.tooSmall')],
+  ['too-big', sizeSentence('acq.refusal.tooBig')],
+  [
+    'size-unknown',
+    ({ t, bytes, params }) =>
+      t('acq.refusal.sizeUnknown', { limit: bytes(count(params, 'limitBytes')) }),
+  ],
+  [
+    'wrong-shape',
+    ({ t, params }) =>
+      t('acq.refusal.wrongShape', {
         wanted: shapeName(t, params, 'wanted'),
         found: shapeName(t, params, 'found'),
-      });
-    case 'wrong-year':
-      return t('acq.refusal.wrongYear', {
+      }),
+  ],
+  [
+    'wrong-year',
+    ({ t, params }) =>
+      t('acq.refusal.wrongYear', {
         year: count(params, 'year'),
         wantedYear: count(params, 'wantedYear'),
-      });
-    case 'wrong-season':
-      return t('acq.refusal.wrongSeason', {
+      }),
+  ],
+  [
+    'wrong-season',
+    ({ t, params }) =>
+      t('acq.refusal.wrongSeason', {
         season: count(params, 'season'),
         wantedSeason: count(params, 'wantedSeason'),
-      });
-    case 'wrong-episode':
-      return t('acq.refusal.wrongEpisode', {
+      }),
+  ],
+  [
+    'wrong-episode',
+    ({ t, params }) =>
+      t('acq.refusal.wrongEpisode', {
         unit: unit(count(params, 'season'), count(params, 'episode')),
         wanted: unit(count(params, 'wantedSeason'), count(params, 'wantedEpisode')),
-      });
-    case 'blocklist':
-      return t('acq.refusal.blocklist');
-    default:
-      return null;
-  }
-}
+      }),
+  ],
+  ['blocklist', ({ t }) => t('acq.refusal.blocklist')],
+]);
 
 /** The refusal written out in the reader's language. A rule this build does
  *  not know falls back to the English the server also sent, and then to a
@@ -107,7 +131,11 @@ export function useRefusalText(): (
       if (!refusal) {
         return fallback ?? null;
       }
-      return sentence(t, fmt.bytes, refusal) ?? fallback ?? t('acq.refusal.other');
+      const write = SENTENCES.get(refusal.rule);
+      if (!write) {
+        return fallback ?? t('acq.refusal.other');
+      }
+      return write({ t, bytes: fmt.bytes, params: refusal.params });
     },
     [t, fmt],
   );

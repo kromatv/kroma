@@ -208,6 +208,97 @@ async fn an_add_sends_the_link_its_protocol_and_where_to_put_it_and_nothing_else
     );
 }
 
+const TORRENT_FILE: &[u8] = b"d4:infod6:lengthi1e4:name1:a12:piece lengthi16384e6:pieces0:ee";
+
+async fn engine_reading_files(reads: bool) -> StubHost {
+    use axum::Json;
+    use axum::routing::post;
+    use serde_json::Value;
+
+    let caps = move |Json(_): Json<Value>| async move {
+        Json(Ok::<_, String>(
+            json!({ "protocols": ["torrent"], "torrent_file": reads }),
+        ))
+    };
+    async fn add(Json(call): Json<Value>) -> Json<Result<String, String>> {
+        let args = &call["args"];
+        Json(Ok(format!(
+            "{}|{}",
+            args["torrent_b64"].as_str().unwrap_or("-"),
+            args["info_hash"].as_str().unwrap_or("-")
+        )))
+    }
+    let router = axum::Router::new()
+        .route("/_port/tv.kroma.torrents/client/caps", post(caps))
+        .route("/_port/tv.kroma.torrents/client/add", post(add));
+    let resolve = kroma_module_sdk::testing::serve(router, ()).await;
+    let (base, token) = resolve().expect("the fake engine is up");
+    StubHost::new().with_point(DOWNLOAD_CLIENT, Some("qbittorrent"), &base, &token)
+}
+
+fn link_with_its_file(bytes: &'static [u8]) -> AddTorrentReq<'static> {
+    AddTorrentReq {
+        magnet_or_url: "https://tracker.invalid/download/1",
+        protocol: super::super::TORRENT,
+        name: "Dune",
+        download_dir: None,
+        label: "kroma",
+        only_files: None,
+        torrent_bytes: Some(bytes),
+    }
+}
+
+#[tokio::test]
+async fn an_engine_that_reads_torrent_files_is_sent_the_file_and_its_hash() {
+    let host = engine_reading_files(true).await;
+    let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
+
+    let echoed =
+        kroma_module_sdk::testing::blocking(move || engine.add(&link_with_its_file(TORRENT_FILE)))
+            .await
+            .unwrap();
+
+    use base64::Engine as _;
+    let (file, hash) = echoed.split_once('|').unwrap();
+    assert_eq!(
+        base64::engine::general_purpose::STANDARD
+            .decode(file)
+            .unwrap(),
+        TORRENT_FILE
+    );
+    assert_eq!(
+        Some(hash.to_string()),
+        crate::torrent_file::v1_info_hash(TORRENT_FILE)
+    );
+    assert_eq!(hash.len(), 40);
+}
+
+#[tokio::test]
+async fn a_torrent_file_too_large_to_send_leaves_the_engine_the_link() {
+    let host = engine_reading_files(true).await;
+    let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
+    let huge: &'static [u8] = Vec::leak(vec![b'd'; 9 * 1024 * 1024]);
+
+    let echoed = kroma_module_sdk::testing::blocking(move || engine.add(&link_with_its_file(huge)))
+        .await
+        .unwrap();
+
+    assert_eq!(echoed, "-|-");
+}
+
+#[tokio::test]
+async fn an_engine_that_does_not_say_it_reads_torrent_files_gets_the_link_alone() {
+    let host = engine_reading_files(false).await;
+    let engine = RemoteEngine::new(&host, def("qbittorrent")).unwrap();
+
+    let echoed =
+        kroma_module_sdk::testing::blocking(move || engine.add(&link_with_its_file(TORRENT_FILE)))
+            .await
+            .unwrap();
+
+    assert_eq!(echoed, "-|-");
+}
+
 #[tokio::test]
 async fn a_status_crosses_field_for_field() {
     let (host, _) = engine_on("qbittorrent").await;

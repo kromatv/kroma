@@ -5,10 +5,9 @@ use kroma_module_sdk::host::{Event, HostCtx};
 use kroma_module_sdk::primitives::now_ms;
 use serde_json::json;
 
-use crate::db::{self, DownloadClientRow, DownloadRow};
+use crate::db::{self, DownloadRow};
 use crate::{AddTorrentReq, DownloadClient};
 
-use super::fetch::fetch_torrent_for;
 use super::{DownloadManager, GrabSpec, LABEL};
 
 impl DownloadManager {
@@ -114,42 +113,10 @@ impl DownloadManager {
             );
             return;
         }
-        let client = match self
-            .store()
-            .get()
-            .and_then(|c| Ok(db::get_download_client(&c, &row.client_id)?))
-        {
-            Ok(Some(c)) => c,
-            _ => {
-                let _ = db::set_download_status(
-                    self.core(),
-                    &row.id,
-                    "failed",
-                    Some("download client unavailable"),
-                );
-                return;
-            }
+        let Some(engine) = self.engine_ready_for(row) else {
+            return;
         };
-        let engine = match self.engine_for(&client) {
-            Ok(e) => e,
-            Err(_) if self.engine_pending(&client) => {
-                tracing::info!(
-                    release = %row.release_title,
-                    "engine still starting; download held in the queue"
-                );
-                return;
-            }
-            Err(e) => {
-                let _ = db::set_download_status(
-                    self.core(),
-                    &row.id,
-                    "failed",
-                    Some(&format!("engine unavailable: {e:#}")),
-                );
-                return;
-            }
-        };
-        let prefetched = match self.prefetch_torrent(host, row, &client) {
+        let prefetched = match self.prefetch_torrent(host, row, &*engine) {
             Ok(p) => p,
             Err(()) => return,
         };
@@ -160,62 +127,70 @@ impl DownloadManager {
             download_dir: row.save_path.as_deref(),
             label: LABEL,
             only_files: row.only_files.as_deref(),
-            torrent_bytes: prefetched.as_deref(),
+            torrent_bytes: prefetched.torrent.as_deref(),
         });
         match added {
             Ok(client_ref) => self.reconcile_added(row, &*engine, &client_ref),
             Err(e) if e.is::<crate::StillAdding>() => {
                 tracing::debug!(release = %row.release_title, "torrent metadata still on its way");
             }
+            Err(e) => self.fail_add(row, &e, prefetched.unfetched.as_deref()),
+        }
+    }
+
+    fn engine_ready_for(&self, row: &DownloadRow) -> Option<Box<dyn DownloadClient>> {
+        let engine = self.engine_of(row)?;
+        let Err(e) = engine.test() else {
+            return Some(engine);
+        };
+        let msg =
+            format!("the download client does not answer, so the download waits for it: {e:#}");
+        tracing::warn!(id = %row.id, release = %row.release_title, error = %msg, "download held in the queue");
+        let _ = db::set_download_status(self.core(), &row.id, "queued", Some(&msg));
+        None
+    }
+
+    fn engine_of(&self, row: &DownloadRow) -> Option<Box<dyn DownloadClient>> {
+        let client = self
+            .store()
+            .get()
+            .ok()
+            .and_then(|c| db::get_download_client(&c, &row.client_id).ok().flatten());
+        let Some(client) = client else {
+            self.fail(row, "download client unavailable");
+            return None;
+        };
+        match self.engine_for(&client) {
+            Ok(engine) => Some(engine),
+            Err(_) if self.engine_pending(&client) => {
+                tracing::info!(release = %row.release_title, "engine still starting; download held in the queue");
+                None
+            }
             Err(e) => {
-                let msg = format!("{e:#}");
-                tracing::warn!(id = %row.id, release = %row.release_title, error = %msg, "torrent add failed");
-                let _ = db::set_download_status(self.core(), &row.id, "failed", Some(&msg));
+                self.fail(row, &format!("engine unavailable: {e:#}"));
+                None
             }
         }
     }
 
-    fn prefetch_torrent(
-        &self,
-        host: &dyn HostCtx,
-        row: &DownloadRow,
-        client: &DownloadClientRow,
-    ) -> Result<Option<Vec<u8>>, ()> {
-        if client.kind != "rqbit" {
-            return Ok(None);
-        }
-        if let Some(bytes) =
-            crate::torrent_file::stored_bytes(&self.state_dir, self.uploaded_hash(row).as_deref())
-        {
-            tracing::info!(id = %row.id, bytes = bytes.len(), "starting from the uploaded .torrent");
-            return Ok(Some(bytes));
-        }
-        if !row.magnet_or_url.starts_with("http") {
-            return Ok(None);
-        }
-        match fetch_torrent_for(host, row) {
-            Ok(bytes) => {
-                tracing::info!(id = %row.id, bytes = bytes.len(), "fetched .torrent ahead of the engine");
-                Ok(Some(bytes))
+    fn fail(&self, row: &DownloadRow, msg: &str) {
+        let _ = db::set_download_status(self.core(), &row.id, "failed", Some(msg));
+    }
+
+    fn fail_add(&self, row: &DownloadRow, error: &anyhow::Error, unfetched: Option<&str>) {
+        let msg = match unfetched {
+            Some(cause) => {
+                format!("{error:#} (this server could not fetch the link either: {cause})")
             }
-            Err(e) => {
-                let msg = format!("could not fetch .torrent from the indexer: {e:#}");
-                tracing::warn!(id = %row.id, error = %msg, "torrent file fetch failed");
-                let _ = db::set_download_status(self.core(), &row.id, "failed", Some(&msg));
-                Err(())
-            }
-        }
+            None => format!("{error:#}"),
+        };
+        tracing::warn!(id = %row.id, release = %row.release_title, error = %msg, "torrent add failed");
+        let _ = db::set_download_status(self.core(), &row.id, "failed", Some(&msg));
     }
 
     pub fn keep_uploaded_torrent(&self, info_hash: &str, bytes: &[u8]) -> anyhow::Result<()> {
         crate::torrent_file::store(&self.state_dir, info_hash, bytes)?;
         Ok(())
-    }
-
-    fn uploaded_hash(&self, row: &DownloadRow) -> Option<String> {
-        row.info_hash
-            .clone()
-            .or_else(|| crate::engine::magnet_info_hash(&row.magnet_or_url))
     }
 
     fn reconcile_added(&self, row: &DownloadRow, engine: &dyn DownloadClient, client_ref: &str) {

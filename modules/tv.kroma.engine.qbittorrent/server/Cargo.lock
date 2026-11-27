@@ -638,6 +638,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "base64",
  "kroma-module-runtime",
  "kroma-module-sdk",
  "serde",

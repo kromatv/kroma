@@ -140,6 +140,7 @@ fn a_download_that_has_not_moved_for_the_limit_has_stalled() {
         release_title: "M".into(),
         info_hash: None,
         indexer_id: None,
+        client_ref: String::new(),
         status: "downloading".into(),
         error: None,
         progress: 0.4,
@@ -171,6 +172,7 @@ fn a_download_still_moving_is_not_given_up_on_however_long_ago_it_was_grabbed() 
         release_title: "M".into(),
         info_hash: None,
         indexer_id: None,
+        client_ref: String::new(),
         status: "downloading".into(),
         error: None,
         progress: 0.9,
@@ -188,4 +190,104 @@ fn a_download_grabbed_long_ago_but_still_moving_survives_the_pass() {
     let summary = failure_pass(&host, &|_| {}).unwrap();
 
     assert_eq!(summary.stalled, 0);
+}
+
+fn handed_to(host: &StubHost, id: &str, client_ref: &str) {
+    host.db()
+        .get()
+        .unwrap()
+        .execute(
+            "UPDATE downloads SET client_ref = ?2 WHERE id = ?1",
+            rusqlite::params![id, client_ref],
+        )
+        .unwrap();
+}
+
+fn schedule_of(host: &StubHost, id: &str) -> (Option<i64>, i64) {
+    host.db()
+        .get()
+        .unwrap()
+        .query_row(
+            "SELECT next_search_at, search_attempts FROM wanted WHERE id = ?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap()
+}
+
+fn grabbed_at(host: &StubHost, id: &str, at: i64) {
+    host.db()
+        .get()
+        .unwrap()
+        .execute(
+            "UPDATE downloads SET grabbed_at = ?2 WHERE id = ?1",
+            rusqlite::params![id, at],
+        )
+        .unwrap();
+}
+
+fn charged_by_its_search(host: &StubHost, id: &str) -> (Option<i64>, i64) {
+    db::schedule_next_search(host.db(), &[id.into()], now_ms(), 60_000).unwrap();
+    schedule_of(host, id)
+}
+
+#[test]
+fn one_download_no_client_took_is_replaced_at_once() {
+    let host = host();
+    grabbed(&host, "w1", 1);
+    charged_by_its_search(&host, "w1");
+    download(&host, "d1", "[1]", "failed");
+
+    let summary = failure_pass(&host, &|_| {}).unwrap();
+
+    assert_eq!(status_of(&host, "w1"), "wanted");
+    assert_eq!(summary.held_back, 0);
+    assert_eq!(schedule_of(&host, "w1"), (None, 0));
+}
+
+#[test]
+fn two_downloads_in_a_row_no_client_took_wait_for_the_backoff_the_search_set() {
+    let host = host();
+    grabbed(&host, "w1", 1);
+    let charged = charged_by_its_search(&host, "w1");
+    download(&host, "d1", "[1]", "failed");
+    download(&host, "d2", "[1]", "failed");
+    grabbed_at(&host, "d2", 2);
+
+    let summary = failure_pass(&host, &|_| {}).unwrap();
+
+    assert_eq!(status_of(&host, "w1"), "wanted");
+    assert_eq!(summary.held_back, 1);
+    assert_eq!(summary.missing_again, 1);
+    assert_eq!(schedule_of(&host, "w1"), charged);
+    assert!(charged.0.is_some_and(|at| at > now_ms()), "{charged:?}");
+}
+
+#[test]
+fn a_download_no_client_took_after_one_a_client_took_is_replaced_at_once() {
+    let host = host();
+    grabbed(&host, "w1", 1);
+    download(&host, "d1", "[1]", "failed");
+    handed_to(&host, "d1", "abc123");
+    download(&host, "d2", "[1]", "failed");
+    grabbed_at(&host, "d2", 2);
+
+    let summary = failure_pass(&host, &|_| {}).unwrap();
+
+    assert_eq!(summary.held_back, 0);
+    assert_eq!(schedule_of(&host, "w1"), (None, 0));
+}
+
+#[test]
+fn a_download_the_client_took_and_lost_is_searched_again_at_once() {
+    let host = host();
+    grabbed(&host, "w1", 1);
+    download(&host, "d1", "[1]", "failed");
+    handed_to(&host, "d1", "abc123");
+
+    let summary = failure_pass(&host, &|_| {}).unwrap();
+
+    assert_eq!(status_of(&host, "w1"), "wanted");
+    assert_eq!(summary.held_back, 0);
+    assert_eq!(schedule_of(&host, "w1"), (None, 0));
 }

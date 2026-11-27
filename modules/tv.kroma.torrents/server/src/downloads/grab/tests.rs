@@ -132,3 +132,298 @@ fn a_link_that_is_neither_a_magnet_nor_a_web_url_is_refused_before_it_is_queued(
     assert!(grabbed.unwrap_err().to_string().contains("magnet"));
     assert!(db::active_download_by_url(&conn, "@/some/path").unwrap().is_none());
 }
+
+mod external {
+    use std::io::{Read as _, Write as _};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::{Arc, Mutex};
+
+    use axum::Json;
+    use axum::routing::post;
+    use kroma_module_sdk::host::testing::StubHost;
+    use kroma_module_sdk::testing::{blocking, serve};
+    use serde_json::{Value, json};
+
+    use super::status_of;
+    use crate::db;
+    use crate::downloads::test_support::{host_over, restarted};
+    use crate::engine::remote::DOWNLOAD_CLIENT;
+
+    const TORRENT: &[u8] = b"d4:infod6:lengthi1e4:name1:a12:piece lengthi16384e6:pieces0:ee";
+    const LOGIN_PAGE: &[u8] = b"<!DOCTYPE html><html><body>Please log in</body></html>";
+
+    fn tracker_serving(body: &'static [u8]) -> String {
+        tracker_counting(body).0
+    }
+
+    fn tracker_counting(body: &'static [u8]) -> (String, Arc<AtomicUsize>) {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let asked = Arc::new(AtomicUsize::new(0));
+        let counted = Arc::clone(&asked);
+        std::thread::spawn(move || {
+            for stream in listener.incoming() {
+                let Ok(mut stream) = stream else { break };
+                counted.fetch_add(1, Ordering::SeqCst);
+                let mut request = [0u8; 4096];
+                let _ = stream.read(&mut request);
+                let head = format!(
+                    "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                    body.len()
+                );
+                let _ = stream.write_all(head.as_bytes());
+                let _ = stream.write_all(body);
+            }
+        });
+        (format!("http://127.0.0.1:{port}/download/1"), asked)
+    }
+
+    fn unreachable_link() -> String {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = listener.local_addr().unwrap().port();
+        drop(listener);
+        format!("http://127.0.0.1:{port}/download/1")
+    }
+
+    struct FakeEngine {
+        answers: bool,
+        takes_file: bool,
+        refuses: bool,
+        adds: Arc<Mutex<Vec<Value>>>,
+    }
+
+    async fn qbittorrent_with(tag: &str, link: &str, adds: Arc<Mutex<Vec<Value>>>) -> StubHost {
+        let engine = FakeEngine {
+            answers: true,
+            takes_file: true,
+            refuses: false,
+            adds,
+        };
+        client_of(tag, link, engine).await
+    }
+
+    async fn client_of(tag: &str, link: &str, engine: FakeEngine) -> StubHost {
+        let FakeEngine {
+            answers,
+            takes_file,
+            refuses,
+            adds,
+        } = engine;
+        let row = db::DownloadRow {
+            client_id: "qb".into(),
+            magnet_or_url: link.into(),
+            ..db::test_support::download("d1", "queued", 1)
+        };
+        let host = host_over(tag, &[row]);
+        db::insert_download_client(
+            host_store(&host),
+            &db::DownloadClientRow {
+                kind: "qbittorrent".into(),
+                ..db::test_support::client("qb", 50, true, 1)
+            },
+        )
+        .unwrap();
+        let caps = move |Json(_): Json<Value>| async move {
+            Json(Ok::<_, String>(
+                json!({ "protocols": ["torrent"], "torrent_file": takes_file }),
+            ))
+        };
+        let add = move |Json(call): Json<Value>| {
+            let adds = adds.clone();
+            async move {
+                adds.lock().unwrap().push(call["args"].clone());
+                if refuses {
+                    return Json(Err("the client added no torrent".to_string()));
+                }
+                Json(Ok::<_, String>(
+                    "abcdef0123456789abcdef0123456789abcdef01".to_string(),
+                ))
+            }
+        };
+        let test = move |Json(_): Json<Value>| async move {
+            Json(if answers {
+                Ok("fake 1.0".to_string())
+            } else {
+                Err("connection refused".to_string())
+            })
+        };
+        let router = axum::Router::new()
+            .route("/_port/tv.kroma.torrents/client/test", post(test))
+            .route("/_port/tv.kroma.torrents/client/caps", post(caps))
+            .route("/_port/tv.kroma.torrents/client/add", post(add));
+        let resolve = serve(router, ()).await;
+        let (base, token) = resolve().expect("the fake engine is up");
+        host.with_point(DOWNLOAD_CLIENT, Some("qbittorrent"), &base, &token)
+    }
+
+    fn host_store(host: &StubHost) -> &kroma_module_sdk::db::Pool {
+        use kroma_module_sdk::host::HostStorage as _;
+        host.store()
+    }
+
+    async fn activated(host: StubHost) -> db::DownloadRow {
+        blocking(move || {
+            let manager = restarted(&host);
+            manager.activate(&host, &status_of(&manager, "d1"));
+            status_of(&manager, "d1")
+        })
+        .await
+    }
+
+    #[tokio::test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    async fn an_external_client_is_handed_the_torrent_file_the_link_served() {
+        let adds = Arc::default();
+        let host = qbittorrent_with(
+            "grab-ext-file",
+            &tracker_serving(TORRENT),
+            Arc::clone(&adds),
+        )
+        .await;
+
+        let row = activated(host).await;
+
+        let adds = adds.lock().unwrap();
+        assert_eq!(row.status, "downloading");
+        assert_eq!(row.client_ref, "abcdef0123456789abcdef0123456789abcdef01");
+        assert_eq!(adds.len(), 1);
+        assert!(adds[0]["torrent_b64"].is_string(), "{}", adds[0]);
+        assert_eq!(adds[0]["info_hash"].as_str().map(str::len), Some(40));
+    }
+
+    #[tokio::test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    async fn a_link_that_serves_a_page_fails_before_the_external_client_sees_it() {
+        let adds = Arc::default();
+        let host = qbittorrent_with(
+            "grab-ext-page",
+            &tracker_serving(LOGIN_PAGE),
+            Arc::clone(&adds),
+        )
+        .await;
+
+        let row = activated(host).await;
+
+        assert_eq!(row.status, "failed");
+        let error = row.error.unwrap_or_default();
+        assert!(error.contains("not a .torrent"), "{error}");
+        assert!(error.contains("Please log in"), "{error}");
+        assert!(adds.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    async fn a_link_this_server_cannot_reach_is_left_to_the_external_client() {
+        let adds = Arc::default();
+        let link = unreachable_link();
+        let host = qbittorrent_with("grab-ext-unreachable", &link, Arc::clone(&adds)).await;
+
+        let row = activated(host).await;
+
+        let adds = adds.lock().unwrap();
+        assert_eq!(row.status, "downloading");
+        assert_eq!(adds.len(), 1);
+        assert_eq!(adds[0]["magnet_or_url"], link.as_str());
+        assert!(adds[0]["torrent_b64"].is_null());
+    }
+
+    #[tokio::test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    async fn a_client_that_takes_no_torrent_file_gets_the_link_and_nothing_fetches_it_first() {
+        let adds = Arc::default();
+        let (link, asked) = tracker_counting(TORRENT);
+        let engine = FakeEngine {
+            answers: true,
+            takes_file: false,
+            refuses: false,
+            adds: Arc::clone(&adds),
+        };
+        let host = client_of("grab-ext-no-file", &link, engine).await;
+
+        let row = activated(host).await;
+
+        let adds = adds.lock().unwrap();
+        assert_eq!(row.status, "downloading");
+        assert_eq!(adds[0]["magnet_or_url"], link.as_str());
+        assert!(adds[0]["torrent_b64"].is_null());
+        assert_eq!(asked.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    async fn a_refused_link_this_server_could_not_fetch_either_says_why_the_fetch_failed() {
+        let engine = FakeEngine {
+            answers: true,
+            takes_file: true,
+            refuses: true,
+            adds: Arc::default(),
+        };
+        let host = client_of("grab-ext-both-fail", &unreachable_link(), engine).await;
+
+        let row = activated(host).await;
+
+        let error = row.error.unwrap_or_default();
+        assert_eq!(row.status, "failed");
+        assert!(error.contains("the client added no torrent"), "{error}");
+        assert!(error.contains("could not fetch the link either"), "{error}");
+    }
+
+    #[tokio::test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    async fn a_download_whose_client_does_not_answer_waits_in_the_queue_and_says_why() {
+        let adds = Arc::default();
+        let (link, asked) = tracker_counting(TORRENT);
+        let engine = FakeEngine {
+            answers: false,
+            takes_file: true,
+            refuses: false,
+            adds: Arc::clone(&adds),
+        };
+        let host = client_of("grab-ext-away", &link, engine).await;
+
+        let row = activated(host).await;
+
+        let error = row.error.unwrap_or_default();
+        assert_eq!(row.status, "queued");
+        assert!(error.contains("does not answer"), "{error}");
+        assert!(error.contains("connection refused"), "{error}");
+        assert!(adds.lock().unwrap().is_empty());
+        assert_eq!(asked.load(Ordering::SeqCst), 0);
+    }
+
+    #[tokio::test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    async fn a_magnet_reaches_the_external_client_as_it_came() {
+        let adds = Arc::default();
+        let magnet = "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567";
+        let host = qbittorrent_with("grab-ext-magnet", magnet, Arc::clone(&adds)).await;
+
+        let row = activated(host).await;
+
+        let adds = adds.lock().unwrap();
+        assert_eq!(row.status, "downloading");
+        assert_eq!(adds[0]["magnet_or_url"], magnet);
+        assert!(adds[0]["torrent_b64"].is_null());
+    }
+}

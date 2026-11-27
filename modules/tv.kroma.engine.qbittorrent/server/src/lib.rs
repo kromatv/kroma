@@ -1,14 +1,16 @@
 //! qBittorrent WebUI connector (`/api/v2`, cookie-authenticated form posts
 //! over curl). The SID cookie lives in a per-endpoint jar file; a 403 answer
 //! re-logs-in once and replays. qBittorrent's add endpoint returns no hash, so
-//! the ref comes from the magnet URI, else from diffing the KROMA category
-//! before/after the add.
+//! the ref comes from the magnet URI or the caller's hash of the `.torrent` it
+//! uploads, else from diffing the KROMA category before/after the add.
 
 use std::path::PathBuf;
+use std::time::Duration;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{Result, bail};
 use serde_json::Value;
 
+mod add;
 pub mod port;
 pub mod types;
 
@@ -21,6 +23,7 @@ pub struct QBittorrent {
     username: String,
     password: String,
     jar: PathBuf,
+    poll: Duration,
 }
 
 impl QBittorrent {
@@ -30,6 +33,7 @@ impl QBittorrent {
             username: def.username.clone(),
             password: def.password.clone(),
             jar,
+            poll: Duration::from_millis(700),
         }
     }
 
@@ -72,18 +76,25 @@ impl QBittorrent {
         resp.ensure_ok()
     }
 
+    fn send(
+        &self,
+        call: impl Fn(kroma_module_sdk::http::Fetch) -> Result<kroma_module_sdk::http::Response>,
+    ) -> Result<kroma_module_sdk::http::Response> {
+        let resp = call(self.fetch())?;
+        if resp.status == 403 {
+            self.login()?;
+            return call(self.fetch());
+        }
+        Ok(resp)
+    }
+
     fn post(
         &self,
         path: &str,
         fields: &[(&str, &str)],
     ) -> Result<kroma_module_sdk::http::Response> {
         let url = format!("{}{path}", self.base);
-        let resp = self.fetch().post_form(&url, fields)?;
-        if resp.status == 403 {
-            self.login()?;
-            return self.fetch().post_form(&url, fields)?.ensure_ok();
-        }
-        resp.ensure_ok()
+        self.send(|f| f.post_form(&url, fields))?.ensure_ok()
     }
 
     fn torrents_info(&self, params: &[(&str, &str)]) -> Result<Vec<Value>> {
@@ -112,48 +123,6 @@ impl QBittorrent {
         self.login()?;
         let version = self.get("/api/v2/app/version", &[])?.text();
         Ok(format!("qBittorrent {}", version.trim()))
-    }
-
-    pub fn add(&self, req: &AddTorrentReq) -> Result<String> {
-        // Known hash up-front for magnets; otherwise diff the category.
-        let known = magnet_info_hash(req.magnet_or_url);
-        let before: Vec<String> = if known.is_none() {
-            self.torrents_info(&[("category", req.label)])?
-                .iter()
-                .filter_map(|t| t.get("hash").and_then(Value::as_str))
-                .map(str::to_string)
-                .collect()
-        } else {
-            Vec::new()
-        };
-
-        let mut fields: Vec<(&str, &str)> =
-            vec![("urls", req.magnet_or_url), ("category", req.label)];
-        if let Some(dir) = req.download_dir {
-            fields.push(("savepath", dir));
-        }
-        let resp = self.post("/api/v2/torrents/add", &fields)?;
-        if resp.text().contains("Fails") {
-            bail!("qBittorrent rejected the torrent");
-        }
-        if let Some(hash) = known {
-            return Ok(hash);
-        }
-        // .torrent-URL adds return no hash: poll the category for the new one.
-        for _ in 0..10 {
-            std::thread::sleep(std::time::Duration::from_millis(700));
-            let now = self.torrents_info(&[("category", req.label)])?;
-            if let Some(hash) = now
-                .iter()
-                .filter_map(|t| t.get("hash").and_then(Value::as_str))
-                .find(|h| !before.iter().any(|b| b == h))
-            {
-                return Ok(hash.to_string());
-            }
-        }
-        Err(anyhow!(
-            "added, but could not identify the new torrent's hash"
-        ))
     }
 
     pub fn status(&self, client_ref: &str) -> Result<Option<TorrentStatus>> {
@@ -277,6 +246,7 @@ mod tests {
     struct FakeQbit {
         base: String,
         seen: Arc<Mutex<Vec<String>>>,
+        bodies: Arc<Mutex<Vec<Vec<u8>>>>,
         jar_dir: kroma_module_sdk::testing::TempDir,
     }
 
@@ -329,6 +299,8 @@ mod tests {
             let port = listener.local_addr().unwrap().port();
             let seen = Arc::new(Mutex::new(Vec::new()));
             let log = Arc::clone(&seen);
+            let bodies = Arc::new(Mutex::new(Vec::new()));
+            let kept = Arc::clone(&bodies);
 
             std::thread::spawn(move || {
                 let mut counts: std::collections::HashMap<String, usize> =
@@ -340,11 +312,9 @@ mod tests {
                         continue;
                     };
 
-                    // Drain the body so curl sees a clean close.
-                    if len > 0 {
-                        let mut body = vec![0u8; len];
-                        let _ = reader.read_exact(&mut body);
-                    }
+                    let mut body = vec![0u8; len];
+                    let _ = reader.read_exact(&mut body);
+                    kept.lock().unwrap().push(body);
 
                     let n = counts.entry(key.clone()).or_insert(0);
                     *n += 1;
@@ -357,6 +327,7 @@ mod tests {
             Self {
                 base: format!("http://127.0.0.1:{port}"),
                 seen,
+                bodies,
                 jar_dir: kroma_module_sdk::testing::temp_dir("qbit-jar"),
             }
         }
@@ -373,6 +344,17 @@ mod tests {
 
         fn requests(&self) -> Vec<String> {
             self.seen.lock().unwrap().clone()
+        }
+
+        fn impatient(&self) -> QBittorrent {
+            let mut client = self.client();
+            client.poll = Duration::ZERO;
+            client
+        }
+
+        fn last_body(&self) -> String {
+            let bodies = self.bodies.lock().unwrap();
+            String::from_utf8_lossy(bodies.last().map_or(&[][..], Vec::as_slice)).into_owned()
         }
     }
 
@@ -507,6 +489,7 @@ mod tests {
             download_dir: Some("/downloads"),
             only_files: None,
             torrent_bytes: None,
+            info_hash: None,
         };
         let hash = s.client().add(&req).unwrap();
 
@@ -532,11 +515,161 @@ mod tests {
             download_dir: None,
             only_files: None,
             torrent_bytes: None,
+            info_hash: None,
         };
         // Another 200-with-a-failure-body: silently returning a hash here would
         // leave the ledger tracking a download that never started.
         let err = s.client().add(&req).unwrap_err().to_string();
         assert!(err.contains("rejected"), "{err}");
+    }
+
+    fn torrent_link(label: &'static str) -> AddTorrentReq<'static> {
+        AddTorrentReq {
+            magnet_or_url: "https://tracker.invalid/download/1",
+            label,
+            download_dir: None,
+            only_files: None,
+            torrent_bytes: None,
+            info_hash: None,
+        }
+    }
+
+    const TORRENT: &[u8] = b"d4:infod6:lengthi1e4:name1:a12:piece lengthi16384e6:pieces0:ee";
+
+    #[test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    fn a_link_qbittorrent_never_lists_reads_as_not_added_rather_than_as_a_lost_hash() {
+        let s = FakeQbit::start(|key, _| match key {
+            "GET /api/v2/torrents/info" => (200, "[]".into()),
+            _ => (200, "Ok.".into()),
+        });
+
+        let err = s
+            .impatient()
+            .add(&torrent_link("kroma"))
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("listed no torrent from it in time"), "{err}");
+        assert!(!err.contains("could not identify"), "{err}");
+    }
+
+    #[test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    fn a_link_is_identified_by_the_torrent_that_appears_in_the_category() {
+        let s = FakeQbit::start(|key, n| match (key, n) {
+            ("GET /api/v2/torrents/info", 1) => (200, r#"[{"hash":"old"}]"#.into()),
+            ("GET /api/v2/torrents/info", 2) => (200, r#"[{"hash":"old"}]"#.into()),
+            ("GET /api/v2/torrents/info", _) => (200, r#"[{"hash":"old"},{"hash":"new"}]"#.into()),
+            _ => (200, "Ok.".into()),
+        });
+
+        assert_eq!(s.impatient().add(&torrent_link("kroma")).unwrap(), "new");
+    }
+
+    #[test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    fn a_fetched_torrent_file_is_uploaded_and_answers_the_hash_it_came_with() {
+        let s = FakeQbit::start(healthy);
+        let req = AddTorrentReq {
+            torrent_bytes: Some(TORRENT),
+            info_hash: Some("ABCDEF0123456789ABCDEF0123456789ABCDEF01"),
+            download_dir: Some("/downloads"),
+            ..torrent_link("kroma")
+        };
+
+        let hash = s.impatient().add(&req).unwrap();
+
+        assert_eq!(hash, "abcdef0123456789abcdef0123456789abcdef01");
+        let body = s.last_body();
+        assert!(
+            body.contains("name=\"torrents\"; filename=\"kroma.torrent\""),
+            "{body}"
+        );
+        assert!(body.contains("6:pieces0:ee"), "{body}");
+        assert!(
+            body.contains("name=\"category\"\r\n\r\nkroma\r\n"),
+            "{body}"
+        );
+        assert!(
+            !body.contains("tracker.invalid"),
+            "the link is not sent: {body}"
+        );
+        assert!(
+            !s.requests()
+                .iter()
+                .any(|r| r == "GET /api/v2/torrents/info")
+        );
+    }
+
+    #[test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    fn a_torrent_file_qbittorrent_calls_invalid_is_refused_as_invalid() {
+        let s = FakeQbit::start(|key, _| match key {
+            "POST /api/v2/torrents/add" => (415, "Torrent file is not valid".into()),
+            _ => (200, "Ok.".into()),
+        });
+        let req = AddTorrentReq {
+            torrent_bytes: Some(TORRENT),
+            info_hash: Some("abcdef0123456789abcdef0123456789abcdef01"),
+            ..torrent_link("kroma")
+        };
+
+        let err = s.impatient().add(&req).unwrap_err().to_string();
+
+        assert!(err.contains("invalid"), "{err}");
+    }
+
+    #[test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    fn an_add_qbittorrent_answers_with_a_server_error_says_so() {
+        let s = FakeQbit::start(|key, _| match key {
+            "POST /api/v2/torrents/add" => (500, "internal error".into()),
+            "GET /api/v2/torrents/info" => (200, "[]".into()),
+            _ => (200, "Ok.".into()),
+        });
+
+        let err = s
+            .impatient()
+            .add(&torrent_link("kroma"))
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("HTTP 500"), "{err}");
+    }
+
+    #[test]
+    #[cfg_attr(
+        target_family = "wasm",
+        ignore = "binds a test server, and a component holds no socket"
+    )]
+    fn a_torrent_file_with_no_hash_is_found_by_the_category_diff() {
+        let s = FakeQbit::start(|key, n| match (key, n) {
+            ("GET /api/v2/torrents/info", 1) => (200, "[]".into()),
+            ("GET /api/v2/torrents/info", _) => (200, r#"[{"hash":"fresh"}]"#.into()),
+            _ => (200, "Ok.".into()),
+        });
+        let req = AddTorrentReq {
+            torrent_bytes: Some(TORRENT),
+            ..torrent_link("kroma")
+        };
+
+        assert_eq!(s.impatient().add(&req).unwrap(), "fresh");
     }
 
     #[test]

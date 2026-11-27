@@ -13,6 +13,23 @@ pub(super) fn snippet(body: &str) -> String {
     }
 }
 
+pub(super) fn browser_json(body: &str) -> Option<String> {
+    if !body.trim_start().starts_with('<') {
+        return None;
+    }
+    let page = crate::selector::parse_document(body);
+    let root = page.root_element();
+    let [pre] = crate::selector::select_all(root, "body > pre")[..] else {
+        return None;
+    };
+    let json: String = pre.text().collect();
+    if root.text().collect::<String>().trim() != json.trim() {
+        return None;
+    }
+    serde_json::from_str::<serde_json::Value>(&json).ok()?;
+    Some(json)
+}
+
 /// Whether a torznab/newznab feed states in its own response header that it has
 /// no results, which separates an honest empty answer from a broken selector.
 pub(super) fn declared_empty(body: &str) -> bool {
@@ -168,6 +185,53 @@ mod response_tests {
         ));
         // No header at all: the two cases stay indistinguishable, so it warns.
         assert!(!declared_empty(r#"<rss><channel></channel></rss>"#));
+    }
+
+    const CHROME_JSON: &str = r#"<html><head><meta name="color-scheme" content="light dark"><meta charset="utf-8"></head><body><pre>{"results":[{"title":"Big &amp; Bold &lt;2160p&gt;","seeders":3}]}</pre><div class="json-formatter-container"></div></body></html>"#;
+
+    #[test]
+    fn json_a_browser_rendered_comes_back_as_the_document_it_showed() {
+        let json = browser_json(CHROME_JSON).expect("the document");
+
+        assert_eq!(
+            json,
+            r#"{"results":[{"title":"Big & Bold <2160p>","seeders":3}]}"#
+        );
+        assert!(refusal("json", &json).is_none());
+    }
+
+    #[test]
+    fn a_page_that_holds_more_than_the_document_is_not_unwrapped() {
+        let page = r#"<html><body><h1>Results</h1><pre>{"a":1}</pre></body></html>"#;
+
+        assert!(browser_json(page).is_none());
+    }
+
+    #[test]
+    fn a_page_of_two_documents_is_not_unwrapped() {
+        let page = r#"<html><body><pre>{"a":1}</pre><pre>{"b":2}</pre></body></html>"#;
+
+        assert!(browser_json(page).is_none());
+    }
+
+    #[test]
+    fn a_pre_that_is_not_json_is_not_unwrapped() {
+        let page = "<html><body><pre>Access denied</pre></body></html>";
+
+        assert!(browser_json(page).is_none());
+    }
+
+    #[test]
+    fn a_login_page_is_not_unwrapped_and_stays_a_refusal() {
+        let page = "<html><body>Please sign in</body></html>";
+
+        assert!(browser_json(page).is_none());
+        assert!(refusal("json", page).is_some());
+    }
+
+    #[test]
+    fn json_that_was_never_wrapped_is_left_to_the_parser() {
+        assert!(browser_json(r#"{"results":[]}"#).is_none());
     }
 
     #[test]
