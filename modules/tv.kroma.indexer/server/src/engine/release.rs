@@ -78,26 +78,37 @@ fn parse_int(s: &str) -> Option<u32> {
 /// Parse a human size (`1.5 GB`, `700 MiB`, `1,024 KB`, `1,5 Go`, a bare byte
 /// count) to bytes. The first number and the unit right after it are read and
 /// anything that follows is ignored, because a size cell often carries more
-/// (`1.4 GB<span>812</span>` reads as `1.4 GB812`). A comma followed by
-/// exactly three digits groups thousands; any other comma is a decimal point.
+/// (`1.4 GB<span>812</span>` reads as `1.4 GB812`). A comma or a space
+/// followed by exactly three digits groups thousands; any other comma is a
+/// decimal point, and a number followed by another number is no size.
 pub fn parse_size(s: &str) -> Option<u64> {
     let (value, unit) = number_and_unit(s)?;
     Some((value * multiplier(&unit)?) as u64)
 }
 
 fn number_and_unit(s: &str) -> Option<(f64, String)> {
-    let start = s.find(|c: char| c.is_ascii_digit())?;
+    let digit = s.find(|c: char| c.is_ascii_digit())?;
+    let start = digit - usize::from(s[..digit].ends_with('.'));
     let rest = &s[start..];
-    let end = rest
-        .find(|c: char| !(c.is_ascii_digit() || c == '.' || c == ','))
-        .unwrap_or(rest.len());
-    let value = decimal(&rest[..end])?;
-    let unit: String = rest[end..]
-        .trim_start()
-        .chars()
-        .take_while(|c| c.is_alphabetic())
-        .collect();
-    Some((value, unit.to_uppercase()))
+    let end = number_end(rest);
+    let number: String = rest[..end].chars().filter(|c| !c.is_whitespace()).collect();
+    let after = rest[end..].trim_start();
+    if after.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let unit: String = after.chars().take_while(|c| c.is_alphabetic()).collect();
+    Some((decimal(&number)?, unit.to_uppercase()))
+}
+
+fn number_end(rest: &str) -> usize {
+    rest.char_indices()
+        .find(|&(at, c)| !in_number(c, &rest[at + c.len_utf8()..]))
+        .map_or(rest.len(), |(at, _)| at)
+}
+
+fn in_number(c: char, after: &str) -> bool {
+    let digits = after.chars().take_while(char::is_ascii_digit).count();
+    c.is_ascii_digit() || c == '.' || c == ',' || (c.is_whitespace() && digits == 3)
 }
 
 fn decimal(number: &str) -> Option<f64> {
@@ -167,6 +178,24 @@ mod tests {
         assert_eq!(parse_size("1,234,567"), Some(1_234_567));
         assert_eq!(parse_size("1,234.5 MB"), Some(1_294_467_072));
         assert_eq!(parse_size("2,25 GB"), Some(2_415_919_104));
+    }
+
+    #[test]
+    fn a_space_between_digit_groups_groups_thousands() {
+        assert_eq!(parse_size("1 234,5 Mo"), Some(1_294_467_072));
+        assert_eq!(parse_size("1\u{a0}234,5 Mo"), Some(1_294_467_072));
+        assert_eq!(parse_size("1 234 567"), Some(1_234_567));
+    }
+
+    #[test]
+    fn a_number_followed_by_another_number_is_no_size() {
+        assert_eq!(parse_size("12 34 GB"), None);
+        assert_eq!(parse_size("2048 40"), None);
+    }
+
+    #[test]
+    fn a_size_that_starts_at_its_decimal_point_keeps_it() {
+        assert_eq!(parse_size(".5 GB"), Some(536_870_912));
     }
 
     #[test]

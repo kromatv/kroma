@@ -29,6 +29,7 @@ mod gate;
 mod grab;
 mod ledger;
 pub mod matching;
+mod prefetch;
 mod reseed;
 mod supervise;
 #[cfg(test)]

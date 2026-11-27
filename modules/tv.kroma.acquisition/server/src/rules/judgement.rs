@@ -71,11 +71,7 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
         runtime_minutes: None,
         original,
     };
-    let unlimited = Sizes {
-        movie: Vec::new(),
-        episode: Vec::new(),
-        ..book.sizes.clone()
-    };
+    let unlimited = without_limits(&book.sizes);
     let profiles = book
         .profiles
         .iter()
@@ -84,13 +80,12 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
                 sizes: &unlimited,
                 ..book.rules(profile)
             };
-            // A name says nothing about seeders or size, so neither refuses.
-            let candidate = Candidate::default();
             ProfileVerdict {
                 profile_id: profile.id.clone(),
                 profile_name: profile.name.clone(),
                 evaluation: evaluate(&facts, original, &rules),
-                refusal: judge(&parsed, &facts, &candidate, &query, &rules)
+                // A name says nothing about seeders or size, so neither refuses.
+                refusal: judge(&parsed, &facts, &Candidate::default(), &query, &rules)
                     .as_ref()
                     .err()
                     .map(RefusalView::from),
@@ -98,6 +93,14 @@ fn verdicts(book: &RuleBook, name: &str, original: Option<&Language>) -> TestVie
         })
         .collect();
     TestView { facts, profiles }
+}
+
+fn without_limits(sizes: &Sizes) -> Sizes {
+    Sizes {
+        movie: Vec::new(),
+        episode: Vec::new(),
+        ..sizes.clone()
+    }
 }
 
 fn target_of(parsed: &ParsedRelease) -> Target {

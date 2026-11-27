@@ -44,20 +44,19 @@ impl Fakes {
     }
 
     pub(crate) fn grabbed_titles(&self) -> Vec<String> {
-        self.grabs
-            .lock()
-            .unwrap()
-            .iter()
-            .map(|g| g["release_title"].as_str().unwrap().to_string())
-            .collect()
+        self.grabbed("release_title")
     }
 
     pub(crate) fn grabbed_links(&self) -> Vec<String> {
+        self.grabbed("magnet_or_url")
+    }
+
+    fn grabbed(&self, field: &str) -> Vec<String> {
         self.grabs
             .lock()
             .unwrap()
             .iter()
-            .map(|g| g["magnet_or_url"].as_str().unwrap().to_string())
+            .map(|g| g[field].as_str().unwrap().to_string())
             .collect()
     }
 
@@ -89,15 +88,37 @@ pub(crate) fn release_json(title: &str) -> Value {
     })
 }
 
+fn resolving(fakes: &Fakes) -> axum::Router {
+    let known = fakes.indexers.clone();
+    let resolved = fakes.resolved.clone();
+    axum::Router::new()
+        .route(
+            "/_port/tv.kroma.indexer/db/get",
+            post(move |Json(ask): Json<Value>| {
+                let found = known.iter().find(|i| i["id"] == ask["id"]).cloned();
+                async move { Json(Ok::<_, String>(found)) }
+            }),
+        )
+        .route(
+            "/_port/tv.kroma.indexer/search/resolve-download",
+            post(move |Json(_): Json<Value>| {
+                let resolved = resolved.clone();
+                async move {
+                    match resolved {
+                        Some(target) => Json(Ok::<_, String>(target)),
+                        None => Json(Err("no download rule".to_string())),
+                    }
+                }
+            }),
+        )
+}
+
 pub(crate) async fn host(fakes: &Fakes) -> StubHost {
     let releases = fakes.releases.clone();
     let indexers = fakes.indexers.clone();
     let search_error = fakes.search_error.clone();
     let grab_error = fakes.grab_error.clone();
-    let grabs = fakes.grabs.clone();
-    let gate = fakes.gate;
-    let known = fakes.indexers.clone();
-    let resolved = fakes.resolved.clone();
+    let (grabs, gate) = (fakes.grabs.clone(), fakes.gate);
     let router = axum::Router::new()
         .route(
             "/_port/tv.kroma.torrents/grab/gate-open",
@@ -128,25 +149,7 @@ pub(crate) async fn host(fakes: &Fakes) -> StubHost {
                 async move { Json(Ok::<_, String>(indexers)) }
             }),
         )
-        .route(
-            "/_port/tv.kroma.indexer/db/get",
-            post(move |Json(ask): Json<Value>| {
-                let found = known.iter().find(|i| i["id"] == ask["id"]).cloned();
-                async move { Json(Ok::<_, String>(found)) }
-            }),
-        )
-        .route(
-            "/_port/tv.kroma.indexer/search/resolve-download",
-            post(move |Json(_): Json<Value>| {
-                let resolved = resolved.clone();
-                async move {
-                    match resolved {
-                        Some(target) => Json(Ok::<_, String>(target)),
-                        None => Json(Err("no download rule".to_string())),
-                    }
-                }
-            }),
-        )
+        .merge(resolving(fakes))
         .route(
             "/_port/tv.kroma.indexer/db/note-result",
             post(|Json(_): Json<Value>| async { Json(Ok::<_, String>(())) }),

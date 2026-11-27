@@ -18,17 +18,16 @@ pub(crate) struct NotATorrent(String);
 
 impl NotATorrent {
     fn from_body(body: &[u8]) -> Self {
-        Self(snippet(body))
+        Self(format!(
+            "indexer did not return a .torrent file (got: {})",
+            snippet(body)
+        ))
     }
 }
 
 impl std::fmt::Display for NotATorrent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "indexer did not return a .torrent file (got: {})",
-            self.0
-        )
+        f.write_str(&self.0)
     }
 }
 

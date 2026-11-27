@@ -49,25 +49,9 @@ impl Session {
         seen: &mut std::collections::HashSet<String>,
         outcome: &mut SearchOutcome,
     ) {
-        let fetched = match req.method.as_str() {
-            "post" => self.post_form_text(&req.url, &req.inputs),
-            _ => self.get_text(&req.url, &req.inputs),
+        let Some(body) = self.body_of(req, outcome) else {
+            return;
         };
-        let body = match fetched {
-            Ok(b) => b,
-            Err(e) => {
-                tracing::warn!(
-                    indexer = %self.def.name,
-                    url = %req.url,
-                    method = %req.method,
-                    error = %format!("{e:#}"),
-                    "fetch failed",
-                );
-                outcome.errors.push(format!("{}: {e:#}", self.def.name));
-                return;
-            }
-        };
-        let body = self.unwrapped(&req.response_kind, body);
         let bytes = body.len();
         let body = engine::preprocess(&self.def, &self.cfg, &body);
         if let Some(message) = refusal(&req.response_kind, &body) {
@@ -100,6 +84,27 @@ impl Session {
                 outcome
                     .errors
                     .push(format!("{}: parse: {e:#}", self.def.name));
+            }
+        }
+    }
+
+    fn body_of(&self, req: &engine::SearchRequest, outcome: &mut SearchOutcome) -> Option<String> {
+        let fetched = match req.method.as_str() {
+            "post" => self.post_form_text(&req.url, &req.inputs),
+            _ => self.get_text(&req.url, &req.inputs),
+        };
+        match fetched {
+            Ok(body) => Some(self.unwrapped(&req.response_kind, body)),
+            Err(e) => {
+                tracing::warn!(
+                    indexer = %self.def.name,
+                    url = %req.url,
+                    method = %req.method,
+                    error = %format!("{e:#}"),
+                    "fetch failed",
+                );
+                outcome.errors.push(format!("{}: {e:#}", self.def.name));
+                None
             }
         }
     }

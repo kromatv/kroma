@@ -135,3 +135,25 @@ fn a_challenge_page_through_flaresolverr_is_still_a_refusal() {
         out.errors
     );
 }
+
+#[test]
+#[cfg_attr(
+    target_family = "wasm",
+    ignore = "binds a test server, and a component holds no socket"
+)]
+fn a_search_whose_request_fails_reports_the_failure_and_no_release() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let dead = format!("http://{}", listener.local_addr().unwrap());
+    drop(listener);
+    let (session, _dir) = json_tracker_behind(dead, "idx-fs-dead");
+
+    let out = session.search(
+        &crate::Query::Text {
+            query: "dune".into(),
+        },
+        &[2000],
+    );
+
+    assert!(out.releases.is_empty());
+    assert_eq!(out.errors.len(), 1, "{:?}", out.errors);
+}

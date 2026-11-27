@@ -67,6 +67,10 @@ impl DownloadClient for RqbitClient {
         Ok(format!("rqbit {} (helper)", self.engine.version))
     }
 
+    fn takes_torrent_file(&self) -> bool {
+        true
+    }
+
     fn add(&self, req: &AddTorrentReq) -> Result<String> {
         let engine = &self.engine;
         refuse_unsealed_fetch(engine, req.torrent_bytes, req.magnet_or_url)?;

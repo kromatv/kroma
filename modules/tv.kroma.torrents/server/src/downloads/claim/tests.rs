@@ -17,7 +17,12 @@ async fn counting_engine() -> (String, String, Arc<AtomicUsize>) {
         Json(Ok((adds.fetch_add(1, Ordering::SeqCst) + 1).to_string()))
     }
     let adds = Arc::new(AtomicUsize::new(0));
-    let router = axum::Router::new().route("/_port/tv.kroma.torrents/client/add", post(add));
+    async fn test() -> Json<Result<String, String>> {
+        Json(Ok("fake 1.0".to_string()))
+    }
+    let router = axum::Router::new()
+        .route("/_port/tv.kroma.torrents/client/test", post(test))
+        .route("/_port/tv.kroma.torrents/client/add", post(add));
     let resolve = kroma_module_sdk::testing::serve(router, adds.clone()).await;
     let (base, token) = resolve().expect("the fake engine is up");
     (base, token, adds)

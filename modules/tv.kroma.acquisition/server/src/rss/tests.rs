@@ -236,6 +236,20 @@ async fn a_release_the_built_in_indexer_cannot_resolve_is_not_grabbed() {
 }
 
 #[tokio::test]
+async fn a_release_whose_link_cannot_be_resolved_is_blocked_so_the_next_pass_skips_it() {
+    let mut fakes = behind_a_details_page(Fakes::new().offering(&[DUNE_1080]), "builtin");
+    fakes.resolved = None;
+    let host = wanting_dune(&fakes).await;
+
+    rss(host.clone()).await;
+
+    let blocked = blocklist::for_title(host.store(), RequestKind::Movie, 2).unwrap();
+    assert_eq!(blocked.len(), 1);
+    assert!(blocked[0].matches(DUNE_1080, None));
+    assert!(blocked[0].reason.contains("not resolved"), "{}", blocked[0].reason);
+}
+
+#[tokio::test]
 async fn an_external_indexer_link_is_grabbed_as_it_came() {
     let fakes = behind_a_details_page(Fakes::new().offering(&[DUNE_1080]), "torznab");
     let host = wanting_dune(&fakes).await;

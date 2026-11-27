@@ -78,13 +78,16 @@ pub fn is_torrent(bytes: &[u8]) -> bool {
         .is_some()
 }
 
-/// The v1 info hash of a `.torrent`, which is the client ref an engine files it
-/// under. `None` for bytes that do not decode, and for a v2-only torrent, whose
-/// ref is a truncated SHA-256 rather than this.
+/// The v1 info hash of a v1 `.torrent`, which is the client ref an engine files
+/// it under. `None` for bytes that do not decode, and for a v2 or hybrid
+/// torrent, which a client may file under a truncated SHA-256 instead.
 pub fn v1_info_hash(bytes: &[u8]) -> Option<String> {
     let torrent = bencode::parse(bytes)?;
     let info = torrent.get(b"info")?;
     info.get(b"pieces")?;
+    if info.get(b"meta version").is_some() {
+        return None;
+    }
     Some(crate::magnet::to_hex(&info_hash(info)))
 }
 

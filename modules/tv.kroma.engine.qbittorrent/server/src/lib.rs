@@ -553,7 +553,7 @@ mod tests {
             .unwrap_err()
             .to_string();
 
-        assert!(err.contains("added no torrent"), "{err}");
+        assert!(err.contains("listed no torrent from it in time"), "{err}");
         assert!(!err.contains("could not identify"), "{err}");
     }
 

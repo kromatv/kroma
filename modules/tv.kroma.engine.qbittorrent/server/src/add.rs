@@ -8,9 +8,10 @@ const ADD: &str = "/api/v2/torrents/add";
 const BOUNDARY: &str = "kroma-qbittorrent-torrent-upload";
 const POLLS: usize = 10;
 
-const LINK_NOT_ADDED: &str = "qBittorrent accepted the link but added no torrent from it: the \
-     link did not serve a .torrent qBittorrent could read (a login or details page, an expired \
-     link), or qBittorrent already holds that torrent. qBittorrent's log names the cause";
+const LINK_NOT_ADDED: &str = "qBittorrent accepted the link but listed no torrent from it in \
+     time: the link did not serve a .torrent qBittorrent could read (a login or details page, \
+     an expired link), qBittorrent already holds that torrent, or it is still fetching the \
+     link. qBittorrent's log names the cause";
 
 const FILE_NOT_LISTED: &str = "qBittorrent took the .torrent file but listed no new torrent \
      for it; it most likely holds that torrent already";

@@ -75,6 +75,10 @@ impl DownloadClient for RemoteEngine {
         }
     }
 
+    fn takes_torrent_file(&self) -> bool {
+        self.caps().is_some_and(|caps| caps.torrent_file)
+    }
+
     fn add(&self, req: &AddTorrentReq) -> anyhow::Result<String> {
         let mut args = json!({
             "magnet_or_url": req.magnet_or_url,
@@ -149,9 +153,7 @@ impl RemoteEngine {
 
     fn uploadable<'a>(&self, bytes: Option<&'a [u8]>) -> Option<&'a [u8]> {
         let bytes = bytes.filter(|b| b.len() <= MAX_UPLOAD_BYTES)?;
-        self.caps()
-            .is_some_and(|caps| caps.torrent_file)
-            .then_some(bytes)
+        self.takes_torrent_file().then_some(bytes)
     }
 }
 

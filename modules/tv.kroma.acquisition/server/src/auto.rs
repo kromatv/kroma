@@ -11,11 +11,12 @@ use anyhow::Result;
 
 use kroma_module_sdk::db;
 use kroma_module_sdk::domain::RequestKind;
-use kroma_module_sdk::primitives::now_ms;
+use kroma_module_sdk::primitives::{now_ms, short_hash};
 use kroma_module_sdk::requests::lifecycle::today_ymd;
 use kroma_module_sdk::host::HostStorage;
 use kroma_scene::Verdict;
 
+use crate::rules::blocklist::Blocked;
 use crate::rules::files::judge_title_files;
 use crate::rules::RuleBook;
 use crate::search::backoff::base_delay_ms;
@@ -139,7 +140,7 @@ pub(crate) fn title_kind(unit_kind: &str) -> RequestKind {
 
 // Rows sharing an air-recency bucket share a base delay, so one UPDATE per
 // bucket covers the batch instead of one per row.
-pub(crate) fn schedule_retries<S: HostStorage>(
+fn schedule_retries<S: HostStorage>(
     state: &S,
     due: &[&db::WantedRow],
     today: &str,
@@ -279,7 +280,7 @@ pub(crate) fn grab_candidate<S: HostStorage>(
     grab: Grab,
 ) -> Result<()> {
     let (title, year) = grab.title.unzip();
-    let link = crate::search::grab_link(state, &candidate.view, &candidate.magnet_or_url)?;
+    let link = resolved_link(state, candidate)?;
     let spec = crate::search::grab_spec_from_release(
         &candidate.view,
         &link,
@@ -296,6 +297,35 @@ pub(crate) fn grab_candidate<S: HostStorage>(
     }
     crate::peers::downloads::activate(state, &row.id);
     Ok(())
+}
+
+fn resolved_link<S: HostStorage>(
+    state: &S,
+    candidate: &crate::search::CachedRelease,
+) -> Result<String> {
+    let kind = title_kind(&candidate.view.target);
+    let unresolved =
+        match crate::search::grab_link(state, &candidate.view, &candidate.magnet_or_url) {
+            Ok(link) => return Ok(link),
+            Err(e) => e,
+        };
+    let entry = Blocked {
+        id: short_hash(&format!(
+            "unresolved|{}|{}|{}",
+            kind.as_str(),
+            candidate.tmdb_id,
+            candidate.view.title
+        )),
+        kind,
+        tmdb_id: candidate.tmdb_id,
+        release_title: candidate.view.title.clone(),
+        info_hash: candidate.info_hash.clone(),
+        indexer_id: Some(candidate.view.indexer_id.clone()),
+        reason: format!("download link not resolved: {unresolved:#}"),
+        added_at: now_ms(),
+    };
+    crate::rules::blocklist::add(state.store(), &entry)?;
+    Err(unresolved.context("the release is blocklisted, its download link was not resolved"))
 }
 
 #[cfg(test)]

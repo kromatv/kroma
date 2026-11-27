@@ -119,3 +119,17 @@ fn stored_bytes_come_back_by_hash_and_a_miss_is_not_an_error() {
     assert_eq!(stored_bytes(dir.path(), Some("missing")), None);
     assert_eq!(stored_bytes(dir.path(), None), None);
 }
+
+#[test]
+fn a_v1_torrent_is_filed_under_the_hash_of_its_info_dict() {
+    let parsed = parse(&sample()).unwrap();
+
+    assert_eq!(v1_info_hash(&sample()), Some(parsed.info_hash));
+}
+
+#[test]
+fn a_hybrid_torrent_has_no_v1_hash_a_client_is_sure_to_file_it_under() {
+    let hybrid = b"d4:infod6:lengthi1e12:meta versioni2e4:name1:a12:piece lengthi16384e6:pieces0:ee";
+
+    assert_eq!(v1_info_hash(hybrid), None);
+}

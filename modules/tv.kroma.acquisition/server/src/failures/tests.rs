@@ -215,44 +215,67 @@ fn schedule_of(host: &StubHost, id: &str) -> (Option<i64>, i64) {
         .unwrap()
 }
 
+fn grabbed_at(host: &StubHost, id: &str, at: i64) {
+    host.db()
+        .get()
+        .unwrap()
+        .execute(
+            "UPDATE downloads SET grabbed_at = ?2 WHERE id = ?1",
+            rusqlite::params![id, at],
+        )
+        .unwrap();
+}
+
+fn charged_by_its_search(host: &StubHost, id: &str) -> (Option<i64>, i64) {
+    db::schedule_next_search(host.db(), &[id.into()], now_ms(), 60_000).unwrap();
+    schedule_of(host, id)
+}
+
 #[test]
-fn a_download_the_client_never_took_is_searched_again_after_a_wait_not_at_once() {
+fn one_download_no_client_took_is_replaced_at_once() {
     let host = host();
     grabbed(&host, "w1", 1);
+    charged_by_its_search(&host, "w1");
     download(&host, "d1", "[1]", "failed");
 
     let summary = failure_pass(&host, &|_| {}).unwrap();
 
-    let (next, attempts) = schedule_of(&host, "w1");
     assert_eq!(status_of(&host, "w1"), "wanted");
-    assert_eq!(summary.held_back, 1);
-    assert_eq!(attempts, 1);
-    assert!(next.is_some_and(|at| at > now_ms()), "{next:?}");
+    assert_eq!(summary.held_back, 0);
+    assert_eq!(schedule_of(&host, "w1"), (None, 0));
 }
 
 #[test]
-fn each_failure_before_the_client_waits_longer_than_the_last() {
+fn two_downloads_in_a_row_no_client_took_wait_for_the_backoff_the_search_set() {
+    let host = host();
+    grabbed(&host, "w1", 1);
+    let charged = charged_by_its_search(&host, "w1");
+    download(&host, "d1", "[1]", "failed");
+    download(&host, "d2", "[1]", "failed");
+    grabbed_at(&host, "d2", 2);
+
+    let summary = failure_pass(&host, &|_| {}).unwrap();
+
+    assert_eq!(status_of(&host, "w1"), "wanted");
+    assert_eq!(summary.held_back, 1);
+    assert_eq!(summary.missing_again, 1);
+    assert_eq!(schedule_of(&host, "w1"), charged);
+    assert!(charged.0.is_some_and(|at| at > now_ms()), "{charged:?}");
+}
+
+#[test]
+fn a_download_no_client_took_after_one_a_client_took_is_replaced_at_once() {
     let host = host();
     grabbed(&host, "w1", 1);
     download(&host, "d1", "[1]", "failed");
-    failure_pass(&host, &|_| {}).unwrap();
-    let (first, _) = schedule_of(&host, "w1");
-    kroma_module_sdk::db::set_wanted_status(host.db(), &["w1".into()], "grabbed", 2).unwrap();
+    handed_to(&host, "d1", "abc123");
     download(&host, "d2", "[1]", "failed");
-    host.db()
-        .get()
-        .unwrap()
-        .execute("UPDATE downloads SET grabbed_at = 2 WHERE id = 'd2'", [])
-        .unwrap();
+    grabbed_at(&host, "d2", 2);
 
-    failure_pass(&host, &|_| {}).unwrap();
+    let summary = failure_pass(&host, &|_| {}).unwrap();
 
-    let (second, attempts) = schedule_of(&host, "w1");
-    assert_eq!(attempts, 2);
-    assert!(
-        second.unwrap() > first.unwrap(),
-        "{first:?} then {second:?}"
-    );
+    assert_eq!(summary.held_back, 0);
+    assert_eq!(schedule_of(&host, "w1"), (None, 0));
 }
 
 #[test]

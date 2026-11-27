@@ -9,7 +9,6 @@ use kroma_module_sdk::db::WantedRow;
 use kroma_module_sdk::domain::RequestKind;
 use kroma_module_sdk::primitives::now_ms;
 use kroma_module_sdk::host::HostStorage;
-use kroma_module_sdk::requests::lifecycle::today_ymd;
 use rusqlite::params;
 
 use crate::auto::title_kind;
@@ -112,64 +111,65 @@ pub fn failure_pass<S: HostStorage>(state: &S, log: &dyn Fn(String)) -> Result<F
     let conn = state.db().get()?;
     let grabbed = kroma_module_sdk::db::wanted_in_status(&conn, "grabbed")?;
     drop(conn);
-    let (held, orphaned): (Vec<&WantedRow>, Vec<&WantedRow>) = grabbed
-        .iter()
-        .filter(|row| !downloads.iter().any(|d| d.live() && d.covers(row)))
-        .partition(|row| last_never_reached_a_client(&downloads, row));
-    search_again_now(state, &ids_of(&orphaned), now, log)?;
-    search_again_later(state, &held, now, log)?;
-    summary.missing_again = orphaned.len() + held.len();
-    summary.held_back = held.len();
+    let lost = Lost::among(&grabbed, &downloads);
+    lost.back_to_wanted(state, now, log)?;
+    summary.missing_again = lost.orphaned.len() + lost.held.len();
+    summary.held_back = lost.held.len();
     Ok(summary)
 }
 
-fn last_never_reached_a_client(downloads: &[Download], row: &WantedRow) -> bool {
-    downloads
-        .iter()
-        .filter(|d| d.covers(row))
-        .max_by_key(|d| d.grabbed_at)
-        .is_some_and(Download::never_reached_a_client)
+struct Lost {
+    orphaned: Vec<String>,
+    held: Vec<String>,
+}
+
+impl Lost {
+    fn among(grabbed: &[WantedRow], downloads: &[Download]) -> Self {
+        let (held, orphaned): (Vec<&WantedRow>, Vec<&WantedRow>) = grabbed
+            .iter()
+            .filter(|row| !downloads.iter().any(|d| d.live() && d.covers(row)))
+            .partition(|row| failed_twice_before_a_client(downloads, row));
+        Self {
+            orphaned: ids_of(&orphaned),
+            held: ids_of(&held),
+        }
+    }
+
+    fn back_to_wanted<S: HostStorage>(
+        &self,
+        state: &S,
+        now: i64,
+        log: &dyn Fn(String),
+    ) -> Result<()> {
+        let all: Vec<String> = self.orphaned.iter().chain(&self.held).cloned().collect();
+        kroma_module_sdk::db::set_wanted_status(state.db(), &all, "wanted", now)?;
+        if !self.held.is_empty() {
+            log(format!(
+                "{} episode(s) or film(s) lost two downloads in a row before a client took either; searching again after the usual wait",
+                self.held.len()
+            ));
+        }
+        if self.orphaned.is_empty() {
+            return Ok(());
+        }
+        kroma_module_sdk::db::reset_wanted_search(state.db(), &self.orphaned, now)?;
+        log(format!(
+            "{} episode(s) or film(s) lost their download; searching again",
+            self.orphaned.len()
+        ));
+        state.trigger_job("acquisition.search", "download-failed");
+        Ok(())
+    }
+}
+
+fn failed_twice_before_a_client(downloads: &[Download], row: &WantedRow) -> bool {
+    let mut covering: Vec<&Download> = downloads.iter().filter(|d| d.covers(row)).collect();
+    covering.sort_by_key(|d| std::cmp::Reverse(d.grabbed_at));
+    covering.len() >= 2 && covering[..2].iter().all(|d| d.never_reached_a_client())
 }
 
 fn ids_of(rows: &[&WantedRow]) -> Vec<String> {
     rows.iter().map(|row| row.id.clone()).collect()
-}
-
-fn search_again_now<S: HostStorage>(
-    state: &S,
-    ids: &[String],
-    now: i64,
-    log: &dyn Fn(String),
-) -> Result<()> {
-    if ids.is_empty() {
-        return Ok(());
-    }
-    kroma_module_sdk::db::set_wanted_status(state.db(), ids, "wanted", now)?;
-    kroma_module_sdk::db::reset_wanted_search(state.db(), ids, now)?;
-    log(format!(
-        "{} episode(s) or film(s) lost their download; searching again",
-        ids.len()
-    ));
-    state.trigger_job("acquisition.search", "download-failed");
-    Ok(())
-}
-
-fn search_again_later<S: HostStorage>(
-    state: &S,
-    rows: &[&WantedRow],
-    now: i64,
-    log: &dyn Fn(String),
-) -> Result<()> {
-    if rows.is_empty() {
-        return Ok(());
-    }
-    kroma_module_sdk::db::set_wanted_status(state.db(), &ids_of(rows), "wanted", now)?;
-    crate::auto::schedule_retries(state, rows, &today_ymd(), now)?;
-    log(format!(
-        "{} episode(s) or film(s) lost a download the client never took; searching again after the usual wait",
-        rows.len()
-    ));
-    Ok(())
 }
 
 fn stalled(d: &Download, moved_at: Option<i64>, now: i64, stall_hours: i64) -> bool {
